@@ -1,6 +1,10 @@
 const _ = require('lodash');
+const klona = require('klona');
 
 module.exports = {
+  options: {
+    localized: true
+  },
   cascades: [ 'fields' ],
   fields(self, options) {
     return {
@@ -125,11 +129,19 @@ module.exports = {
             });
             return self.emit('afterRescue', req, doc);
           }
+        },
+        async autopublish(req, doc, options) {
+          if (!self.options.autopublish) {
+            return;
+          }
+          if (doc.aposLocale.includes(':draft')) {
+            return self.publish(req, doc, options);
+          }
         }
       },
       afterTrash: {
         deduplicateTrash(req, doc) {
-          const deduplicateKey = doc._id;
+          const deduplicateKey = doc.aposDocId;
           if (doc.parkedId === 'trash') {
             // The primary trashcan itself should not deduplicate
             return;
@@ -171,7 +183,7 @@ module.exports = {
             // The primary trashcan itself should not deduplicate
             return;
           }
-          const deduplicateKey = doc._id;
+          const deduplicateKey = doc.aposDocId;
           const prefix = 'deduplicate-' + deduplicateKey + '-';
           const suffix = '-deduplicate-' + deduplicateKey;
           const $set = {};
@@ -198,8 +210,8 @@ module.exports = {
               type: self.name,
               _id: { $ne: doc._id }
             };
-            if (doc.workflowLocale) {
-              query.workflowLocale = doc.workflowLocale;
+            if (doc.aposLocale) {
+              query.aposLocale = doc.aposLocale;
             }
             query[name] = $set[name];
             if ($set[name] === '') {
@@ -424,6 +436,10 @@ module.exports = {
         });
       },
 
+      isLocalized() {
+        return this.options.localized;
+      },
+
       // This method provides the back end of /autocomplete routes.
       // For the implementation of the autocomplete() query builder see autocomplete.js.
       //
@@ -507,6 +523,8 @@ module.exports = {
         const data = _.pick(options, 'name', 'label', 'pluralLabel');
         data.action = self.action;
         data.schema = self.allowedSchema(req);
+        data.localized = self.isLocalized();
+        data.autopublish = self.options.autopublish;
         return data;
       },
 
@@ -591,6 +609,183 @@ module.exports = {
       },
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
+      },
+      // Publish the given draft. If `options.permissions` is explicitly
+      // set to `false`, permissions checks are bypassed.
+      async publish(req, draft, options = {}) {
+        let firstTime = false;
+        if (!self.isLocalized()) {
+          throw new Error(`${self.__meta.name} is not a localized type, cannot be published`);
+        }
+        const publishedLocale = draft.aposLocale.replace(':draft', ':published');
+        const publishedId = `${draft.aposDocId}:${publishedLocale}`;
+        let previousPublished;
+        let published = await self.findOneForEditing(req, {
+          _id: publishedId
+        }, {
+          locale: publishedLocale
+        });
+        if (!published) {
+          firstTime = true;
+          published = {
+            _id: publishedId,
+            aposDocId: draft.aposDocId,
+            aposLocale: publishedLocale
+          };
+          self.copyForPublication(req, draft, published);
+          await self.emit('beforePublish', req, {
+            draft,
+            published,
+            options,
+            firstTime
+          });
+          published = await self.insertPublishedOf(req, draft, published, options);
+        } else {
+          previousPublished = klona(published);
+          self.copyForPublication(req, draft, published);
+          await self.emit('beforePublish', req, {
+            draft,
+            published,
+            options,
+            firstTime
+          });
+          published = await self.update({
+            ...req,
+            mode: 'published'
+          }, published, options);
+        }
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $set: {
+            modified: false,
+            lastPublishedAt: new Date()
+          }
+        });
+        // Now that we're sure publication worked, update "previous" so we
+        // can revert the most recent publication if desired
+        if (previousPublished) {
+          previousPublished._id = previousPublished._id.replace(':published', ':previous');
+          previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
+          await self.apos.doc.db.replaceOne({
+            _id: previousPublished._id
+          }, previousPublished, {
+            upsert: true
+          });
+        }
+        await self.emit('afterPublish', req, {
+          draft,
+          published,
+          options,
+          firstTime
+        });
+      },
+      // Reverts the given draft to the most recent publication.
+      //
+      // Returns the draft's new value, or `false` if the draft
+      // was not modified from the published version (`modified: false`)
+      // or no published version exists yet.
+      //
+      // This is *not* the on-page `undo/redo` backend. This is the
+      // "Revert to Published" feature.
+      //
+      // Emits the `afterRevertDraftToPublished` event before
+      // returning, which receives `req, { draft }` and may
+      // replace the `draft` property to alter the returned value.
+      async revertDraftToPublished(req, draft) {
+        const published = await self.apos.doc.db.findOne({
+          _id: draft._id.replace(':draft', ':published')
+        });
+        if (!published) {
+          return false;
+        }
+        if (!draft.modified) {
+          return false;
+        }
+        // Draft and published roles intentionally reversed
+        self.copyForPublication(req, published, draft);
+        draft.modified = false;
+        draft = await self.update({
+          ...req,
+          mode: 'draft'
+        }, draft);
+        const result = {
+          draft
+        };
+        await self.emit('afterRevertDraftToPublished', req, result);
+        return result.draft;
+      },
+      async revertPublishedToPrevious(req, published) {
+        const previousId = published._id.replace(':published', ':previous');
+        const previous = await self.apos.doc.db.findOne({
+          _id: previousId
+        });
+        if (!previous) {
+          return false;
+        }
+        self.copyForPublication(req, previous, published);
+        published = await self.update({
+          ...req,
+          mode: 'published'
+        }, published);
+        self.apos.doc.db.removeOne({
+          _id: previousId
+        });
+        const result = {
+          published
+        };
+        await self.emit('afterRevertPublishedToPrevious', req, result);
+        const modified = await self.isModified(req, result.published);
+        await self.apos.doc.db.updateOne({
+          _id: published._id.replace(':published', ':draft')
+        }, {
+          $set: {
+            modified
+          }
+        });
+        return result.published;
+      },
+
+      // Returns true if the given draft has been modified from the published
+      // version of the same document. If the draft has no published version
+      // it is always considered modified.
+      //
+      // For convenience, you may also call with the published document. The
+      // document mode you did not pass is retrieved and compared to the
+      // one you did pass.
+      async isModified(req, draftOrPublished) {
+        // Straight to mongo for speed. We can even compare relationships without
+        // loading joins because we are only interested in the permanent
+        // storage of the ids and fields
+        let draft, published;
+        if (draftOrPublished._id.endsWith(':published')) {
+          published = draftOrPublished;
+          draft = await self.apos.doc.db.findOne({
+            _id: published._id.replace(':published', ':draft')
+          });
+        } else {
+          draft = draftOrPublished;
+          published = await self.apos.doc.db.findOne({
+            _id: draft._id.replace(':draft', ':published')
+          });
+        }
+        if (!(published && draft)) {
+          return true;
+        }
+        const schema = self.schema;
+        return !self.apos.schema.isEqual(req, schema, draft, published);
+      },
+      // Called for you by `apos.doc.publish`. Copies properties from
+      // `draft` to `published` where appropriate.
+      copyForPublication(req, from, to) {
+        // By default, we copy all schema properties not expressly excluded,
+        // and no others.
+        const schema = self.schema;
+        for (const field of schema) {
+          if (!field.unpublished) {
+            to[field.name] = from[field.name];
+          }
+        }
       }
     };
   },
@@ -633,6 +828,10 @@ module.exports = {
         // `.and({ price: { $gte: 0 } })` requires the query to match only documents
         // with a price greater than 0, in addition to all other criteria for the
         // query.
+        //
+        // Since this is the main way additional criteria get merged, this method
+        // performs a few transformations of the query to make it more readable
+        // when APOS_LOG_ALL_QUERIES=1 is in the environment.
 
         and: {
           set(c) {
@@ -640,13 +839,27 @@ module.exports = {
               // So we don't crash on our default value
               return;
             }
+            if (!Object.keys(c).length) {
+              // Don't add empty criteria objects to $and
+              return;
+            }
+            // Simplify an $or chain of one
+            if (c.$or && (Object.keys(c).length === 1) && (c.$or.length === 1)) {
+              c = c.$or[0];
+            }
             const criteria = query.get('criteria');
-            if (!criteria) {
+            // If the existing criteria is {} just replace it
+            if ((!criteria) || (!Object.keys(criteria).length)) {
               query.criteria(c);
             } else {
-              query.criteria({
-                $and: [ criteria, c ]
-              });
+              if (criteria.$and) {
+                // Improve readability, avoid nesting
+                criteria.$and.push(c);
+              } else {
+                query.criteria({
+                  $and: [ criteria, c ]
+                });
+              }
             }
           }
         },
@@ -1296,6 +1509,31 @@ module.exports = {
           set(choices) {
             query.choices(choices);
             query.set('counts', true);
+          }
+        },
+
+        locale: {
+          def: null,
+          launder(locale) {
+            return self.apos.launder.string(locale);
+          },
+          finalize() {
+            if (!self.isLocalized()) {
+              return;
+            }
+            const locale = query.get('locale') || `${query.req.locale}:${query.req.mode}`;
+            if (locale) {
+              query.and({
+                $or: [
+                  {
+                    aposLocale: locale
+                  },
+                  {
+                    aposLocale: null
+                  }
+                ]
+              });
+            }
           }
         }
 

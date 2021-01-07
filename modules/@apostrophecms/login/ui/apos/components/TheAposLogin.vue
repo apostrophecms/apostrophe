@@ -84,8 +84,19 @@ export default {
     }
   },
   async beforeCreate () {
+    const stateChange = parseInt(window.sessionStorage.getItem('aposStateChange'));
+    const seen = JSON.parse(window.sessionStorage.getItem('aposStateChangeSeen') || '{}');
+    if (!seen[window.location.href]) {
+      const lastModified = Date.parse(document.lastModified);
+      if (stateChange && lastModified && (lastModified < stateChange)) {
+        seen[window.location.href] = true;
+        window.sessionStorage.setItem('aposStateChangeSeen', JSON.stringify(seen));
+        location.reload();
+        return;
+      }
+    }
     try {
-      this.context = await apos.http.get(`${apos.modules['@apostrophecms/login'].action}/context`, {
+      this.context = await apos.http.get(`${apos.login.action}/context`, {
         busy: true
       });
     } catch (e) {
@@ -100,16 +111,18 @@ export default {
       this.busy = true;
       this.error = '';
       try {
-        await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
+        await apos.http.post(`${apos.login.action}/login`, {
           busy: true,
           body: {
             ...this.doc.data,
             session: true
           }
         });
+        window.sessionStorage.setItem('aposStateChange', Date.now());
+        window.sessionStorage.setItem('aposStateChangeSeen', '{}');
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
-        window.location.href = `/${apos.prefix}`;
+        window.location.href = `${apos.prefix}/`;
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
       } finally {
@@ -117,7 +130,7 @@ export default {
       }
     }
   }
-}
+};
 </script>
 
 <style lang="scss" scoped>

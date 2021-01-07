@@ -592,10 +592,14 @@ module.exports = {
         _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));
       },
 
-      // Locate modules with middleware and add it to the list
+      // Locate modules with middleware and add it to the list. By default
+      // the order is: middleware of this module, then middleware of all other
+      // modules in module registration order. The "before" keyword can be used
+      // to change this
       findModuleMiddleware() {
         const labeledList = [];
-        for (const name of Object.keys(self.apos.modules)) {
+        const moduleNames = Array.from(new Set([ self.__meta.name, ...Object.keys(self.apos.modules) ]));
+        for (const name of moduleNames) {
           const middleware = self.apos.modules[name].middleware;
           if (!middleware) {
             continue;

@@ -23,7 +23,6 @@ module.exports = {
     '@apostrophecms/login': {},
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
-    '@apostrophecms/version': {},
     '@apostrophecms/modal': {},
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},

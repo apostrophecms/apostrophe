@@ -200,7 +200,8 @@ export default {
           body: {
             slug,
             _id: this.docId
-          }
+          },
+          draft: true
         });
         // Still relevant?
         if (slug === this.next) {

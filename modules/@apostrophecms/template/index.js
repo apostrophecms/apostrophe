@@ -597,6 +597,8 @@ module.exports = {
         const aposBodyData = {
           modules: {},
           prefix: self.apos.prefix,
+          locale: req.locale,
+          mode: req.mode,
           csrfCookieName: self.apos.csrfCookieName,
           htmlPageId: self.apos.util.generateId(),
           scene

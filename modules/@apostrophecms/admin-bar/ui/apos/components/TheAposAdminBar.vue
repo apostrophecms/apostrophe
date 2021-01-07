@@ -7,7 +7,7 @@
         <ul class="apos-admin-bar__items">
           <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
             <AposButton
-              type="default" label="Page Tree"
+              type="subtle" label="Page Tree"
               icon="file-tree-icon" class="apos-admin-bar__btn"
               :modifiers="['no-motion']"
               @click="emitEvent('@apostrophecms/page:manager')"
@@ -18,7 +18,7 @@
             class="apos-admin-bar__item"
           >
             <AposButton
-              v-if="item.options" type="quiet"
+              v-if="item.options" type="subtle"
               @click="emitEvent(item.action)"
               :label="item.label"
               :modifiers="['no-motion']"
@@ -28,7 +28,9 @@
               v-else-if="item.items" class="apos-admin-bar__sub"
               :menu="item.items" :button="{
                 label: item.label,
-                modifiers: ['no-motion']
+                modifiers: ['no-motion'],
+                class: 'apos-admin-bar__btn',
+                type: 'subtle'
               }"
               @item-clicked="emitEvent"
             />
@@ -69,7 +71,10 @@
               @click="undo"
             />
           </div>
-          <div v-if="editMode" :key="'redo'" v-tooltip="undoTooltips.redo">
+          <div
+            v-if="editMode" :key="'redo'"
+            v-tooltip="undoTooltips.redo"
+          >
             <AposButton
               :disabled="undone.length === 0"
               type="subtle" :modifiers="['small', 'no-motion']"
@@ -78,7 +83,10 @@
               @click="redo"
             />
           </div>
-          <div v-if="editMode" :key="'status'" class="apos-admin-bar__status">
+          <div
+            v-if="editMode" :key="'status'"
+            class="apos-admin-bar__status"
+          >
             <span class="apos-admin-bar__status__inner">
               <component
                 :is="savingIndicator.el"
@@ -98,17 +106,29 @@
         >
           <span
             v-show="true"
-            class="apos-admin-bar__title__wrapper"
+            class="apos-admin-bar__title"
             :key="'title'"
           >
-            <!-- TODO add last save timestamp and last save author to tooltip -->
             <AposIndicator
               icon="information-outline-icon"
               fill-color="var(--a-primary)"
               :tooltip="docTooltip"
               class="apos-admin-bar__title__indicator"
             />
-            {{ moduleOptions.context.title }}
+            <span class="apos-admin-bar__title__document-title">
+              {{ moduleOptions.context.title }}
+            </span>
+            <span class="apos-admin-bar__title__separator">
+              —
+            </span>
+            <AposContextMenu
+              class="apos-admin-bar__title__document"
+              :button="draftButton"
+              :menu="draftMenu"
+              @item-clicked="switchDraftMode"
+              menu-offset="13, 10"
+              menu-placement="bottom-end"
+            />
           </span>
         </transition-group>
         <transition-group
@@ -116,7 +136,7 @@
           class="apos-admin-bar__control-set apos-admin-bar__control-set--mode-and-settings"
           name="flip"
         >
-          <div 
+          <div
             v-if="!editMode" :key="'switchToEditMode'"
             class="apos-admin-bar__control-set__group"
           >
@@ -128,7 +148,7 @@
                 content: 'Toggle Edit Mode',
                 placement: 'bottom'
               }"
-              @click="switchToEditMode"
+              @click="switchEditMode(true)"
             />
           </div>
           <div
@@ -152,8 +172,17 @@
                 }
               })"
             />
+            <!-- TODO later the v-if will go away because options like duplicate and share
+              do not require that the draft be modified, but right now we just have
+              Discard Draft which requires a modified draft -->
             <AposDocMoreMenu
               :doc-id="moduleOptions.contextId"
+              v-if="draftIsModified"
+              :is-modified="draftIsModified"
+              :can-discard-draft="draftIsModified"
+              :is-modified-from-published="draftIsModified"
+              :options="{ saveDraft: false }"
+              @discardDraft="onDiscardDraft"
             />
             <AposButton
               class="apos-admin-bar__context-button"
@@ -162,7 +191,15 @@
                 placement: 'bottom'
               }"
               type="subtle" :modifiers="['small', 'no-motion']"
-              @click="switchToPreviewMode"
+              @click="switchEditMode(false)"
+            />
+            <AposButton
+              v-if="editMode"
+              type="primary" label="Publish Changes"
+              :disabled="!readyToPublish"
+              class="apos-admin-bar__btn apos-admin-bar__context-button"
+              @click="onPublish"
+              :modifiers="['no-motion']"
             />
           </div>
         </transition-group>
@@ -174,9 +211,11 @@
 <script>
 import klona from 'klona';
 import dayjs from 'dayjs';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 
 export default {
   name: 'TheAposAdminBar',
+  mixins: [ AposPublishMixin ],
   props: {
     items: {
       type: Array,
@@ -194,6 +233,7 @@ export default {
       undone: [],
       patchesSinceSave: [],
       editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
+      draftMode: window.apos.mode,
       original: null,
       saving: false,
       editing: false,
@@ -201,6 +241,7 @@ export default {
       retrying: false,
       saved: false,
       savingTimeout: null,
+      draftIsModified: window.apos.adminBar.context.modified,
       savingStatus: {
         transitioning: false,
         messages: {
@@ -305,32 +346,62 @@ export default {
       }
       return false;
     },
-    readyToSave() {
-      return this.patchesSinceSave.length;
+    needToAutosave() {
+      return !!this.patchesSinceSave.length;
+    },
+    readyToPublish() {
+      return this.draftIsModified && (!this.needToAutosave) && (!this.editing);
     },
     moduleOptions() {
       return window.apos.adminBar;
     },
     contextEditorName() {
       return this.moduleOptions.contextEditorName;
+    },
+    draftButton() {
+      return {
+        label: (this.draftMode === 'draft') ? 'Draft' : 'Published',
+        icon: 'chevron-down-icon',
+        modifiers: [ 'icon-right', 'no-motion' ],
+        type: 'quiet'
+      };
+    },
+    draftMenu() {
+      return [
+        {
+          label: (this.draftMode === 'draft') ? '✓ Draft' : 'Draft',
+          name: 'draft',
+          action: 'draft',
+          modifiers: (this.draftMode === 'draft') ? [ 'disabled' ] : null
+        },
+        {
+          label: (this.draftMode === 'published') ? '✓ Published' : 'Published',
+          name: 'published',
+          action: 'published',
+          modifiers: (this.draftMode === 'published') ? [ 'disabled' ] : null
+        }
+      ];
     }
   },
   watch: {
     savingStep(newVal) {
-      const self = this;
-      apos.util.removeClass(self.$refs.statusLabel, 'is-hidden');
-      if (this.savingTimeout) {
-        clearTimeout(this.savingTimeout);
-      }
-      this.savingTimeout = setTimeout(fade, 5000);
-
-      function fade() {
-        apos.util.addClass(self.$refs.statusLabel, 'is-hidden');
+      if (this.$refs.statusLabel) {
+        const self = this;
+        apos.util.removeClass(self.$refs.statusLabel, 'is-hidden');
+        if (this.savingTimeout) {
+          clearTimeout(this.savingTimeout);
+        }
+        this.savingTimeout = setTimeout(() => {
+          apos.util.addClass(self.$refs.statusLabel, 'is-hidden');
+        }, 5000);
       }
     }
   },
   mounted() {
-    // A unique identifier for this current page's lifetime
+    // Listen for bus events coming from notification UI
+    apos.bus.$on('revert-published-to-previous', this.revertPublishedToPrevious);
+
+    // A unique identifier for this current page'ss lifetime
     // in this browser right now. Not the same thing as a page id
     // or session id. Used for advisory locks, to distinguish
     // different tabs owned by the same user
@@ -394,12 +465,22 @@ export default {
     });
 
     if (this.editMode) {
-      // The page always initially loads with fully rendered content,
-      // so refetch the content with the area placeholders and data instead
-      this.refresh();
+      // Watch out for legacy situations where edit mode is active
+      // but we are not in draft
+      if (this.draftMode !== 'draft') {
+        // Also refreshes
+        this.switchDraftMode('draft');
+      } else {
+        // The page always initially loads with fully rendered content,
+        // so refetch the content with the area placeholders and data instead
+        this.refresh();
+      }
     }
   },
   methods: {
+    onPublish(e) {
+      this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId);
+    },
     beforeUnload(e) {
       if (this.patchesSinceSave.length || this.saving || this.editing) {
         e.preventDefault();
@@ -408,7 +489,7 @@ export default {
         e.returnValue = '';
       }
     },
-    emitEvent: function (name) {
+    emitEvent(name) {
       apos.bus.$emit('admin-menu-click', name);
     },
     async save() {
@@ -422,11 +503,12 @@ export default {
         this.patchesSinceSave = [];
         try {
           this.saved = false;
-          await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
+          const doc = await apos.http.patch(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
             body: {
               _patches: patchesSinceSave
             }
           });
+          this.draftIsModified = doc.modified;
           this.retrying = false;
         } catch (e) {
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
@@ -440,15 +522,57 @@ export default {
       this.saving = false;
       this.saved = true;
     },
-    switchToEditMode() {
-      window.sessionStorage.setItem('aposEditMode', 'true');
-      this.editMode = true;
-      this.refresh();
+    // TODO switchLocale will need smilar logic and we'll do some
+    // code reuse between them
+    async switchDraftMode(mode) {
+      if (mode === this.draftMode) {
+        return;
+      }
+      try {
+        const doc = await apos.http.post(`${apos.login.action}/set-locale`, {
+          body: {
+            mode,
+            locale: apos.locale,
+            _id: this.moduleOptions.contextId
+          }
+        });
+        window.sessionStorage.setItem('aposStateChange', Date.now());
+        window.sessionStorage.setItem('aposStateChangeSeen', '{}');
+        if (mode === 'published') {
+          window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
+          this.editMode = false;
+        }
+        this.draftMode = mode;
+        this.moduleOptions.context = doc;
+        // Changes the ending from :published to :draft, etc.
+        this.moduleOptions.contextId = doc._id;
+        this.refreshOrReload(doc._url);
+      } catch (e) {
+        if (e.status === 404) {
+          // TODO don't get this far, check this in advance and disable it in the UI
+          await apos.alert({
+            heading: 'Not Yet Published',
+            description: 'This document has never been published.'
+          });
+        } else {
+          // Should not happen
+          await apos.alert({
+            heading: 'An Error Occurred',
+            description: 'Unable to switch modes.'
+          });
+        }
+      }
     },
-    switchToPreviewMode() {
-      window.sessionStorage.setItem('aposEditMode', 'false');
-      this.editMode = false;
-      this.refresh();
+    switchEditMode(editing) {
+      window.sessionStorage.setItem('aposEditMode', JSON.stringify(editing));
+      this.editMode = editing;
+      if (this.draftMode !== 'draft') {
+        // Entering edit mode implies entering draft mode.
+        // Also takes care of refresh
+        this.switchDraftMode('draft');
+      } else {
+        this.refresh();
+      }
     },
     async refresh() {
       let url = window.location.href;
@@ -501,6 +625,44 @@ export default {
       // is already smart enough to not run them twice, it's OK
       apos.util.runPlayers();
     },
+    async onDiscardDraft(e) {
+      const result = await this.discardDraft(this.moduleOptions.contextAction, this.moduleOptions.contextId, !!this.moduleOptions.context.lastPublishedAt);
+      if (!result) {
+        return;
+      }
+      if (result.doc) {
+        this.refreshOrReload(result.doc._url);
+      } else {
+        // With the current page gone, we need to move to safe ground
+        location.assign('/');
+      }
+    },
+    async revertPublishedToPrevious(data) {
+      try {
+        const doc = await apos.http.post(`${data.action}/${data._id}/revert-published-to-previous`, {
+          body: {},
+          busy: true
+        });
+        apos.notify('Restored previously published version.', {
+          type: 'success',
+          dismiss: true
+        });
+        // This handler covers all "undo publish" buttons, so make sure it's
+        // for the context document before altering any admin bar state
+        // because of it
+        if (doc.aposDocId === (this.context && this.context.aposDocId)) {
+          this.draftIsModified = true;
+          this.publishedAt = null;
+          this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;
+          this.refreshOrReload(doc._url);
+        }
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred',
+          description: e.message || 'An error occurred while restoring the previously published version.'
+        });
+      }
+    },
     async undo() {
       this.undone.push(this.patchesSinceLoaded.pop());
       await this.refreshAfterHistoryChange('The operation could not be undone.');
@@ -512,7 +674,7 @@ export default {
     async refreshAfterHistoryChange(errorMessage) {
       this.saving = true;
       try {
-        await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
+        await apos.http.patch(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
           body: {
             _patches: [
               this.original,
@@ -527,6 +689,17 @@ export default {
         apos.notify(errorMessage, { type: 'error' });
       } finally {
         this.saving = false;
+      }
+    },
+    async refreshOrReload(url) {
+      // URL might or might not include hostname part
+      url = url.replace(/^https?:\/\/.*?\//, '/');
+      if (url === (window.location.pathname + (window.location.search || ''))) {
+        // No URL change means we can refresh just the content area
+        this.refresh();
+      } else {
+        // Slug changed, must navigate
+        window.location.assign(url);
       }
     }
   }
@@ -543,12 +716,6 @@ function depth(el) {
 </script>
 
 <style lang="scss" scoped>
-$menu-row-height: 50px;
-$menu-h-space: 12px;
-$menu-v-space: 25px;
-$admin-bar-h-pad: 20px;
-$admin-bar-h-pad--small: 5px;
-$admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar-wrapper {
   z-index: $z-index-admin-bar;
@@ -566,8 +733,9 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__row {
   display: flex;
   align-items: center;
-  padding: 0 $admin-bar-h-pad 0 0;
-  border-bottom: $admin-bar-border;
+  height: 30px;
+  padding: 5px 20px;
+  border-bottom: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__control-set--title {
@@ -575,9 +743,32 @@ $admin-bar-border: 1px solid var(--a-base-9);
   align-items: center;
 }
 
-.apos-admin-bar__title__wrapper {
+.apos-admin-bar__title {
   display: inline-flex;
   align-items: center;
+
+  &__document-title,
+  &__separator {
+    display: inline-flex;
+  }
+
+  &__document-title {
+    margin-top: 1px;
+  }
+
+  &__separator {
+    align-items: center;
+    padding: 0 7px;
+    margin-top: 1px;
+  }
+
+  &__document {
+    margin-top: 3.5px;
+  }
+
+  & /deep/ .apos-indicator {
+    margin-top: 1px;
+  }
 }
 
 .apos-admin-bar__title__indicator {
@@ -595,23 +786,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   height: 26px;
 }
 
-.apos-admin-bar__sub /deep/ .apos-context-menu__btn,
-.apos-admin-bar__btn,
-.apos-admin-bar__btn.apos-button {
-  @include type-base;
-  border-radius: 0;
-  height: $menu-row-height;
-
-  &:hover,
-  &:focus {
-    box-shadow: none;
-    outline-width: 0;
-    border-width: 0;
-    background-color: var(--a-base-9);
-    color: currentColor;
-    text-decoration: none;
-  }
-}
 .apos-admin-bar__item {
   display: inline-flex;
   align-items: center;
@@ -622,40 +796,17 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__logo {
-  margin-right: $menu-h-space;
-}
-
-.apos-admin-bar__sub /deep/ .apos-button,
-.apos-admin-bar__btn,
-.apos-admin-bar__row /deep/ .apos-admin-bar__btn {
-  @include apos-button-reset();
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  margin: 0;
-  padding-right: $menu-h-space;
-  padding-left: $menu-h-space;
-  border: 0;
-  color: var(--a-text-primary);
-  text-decoration: none;
-  cursor: pointer;
+  margin-right: 10px;
 }
 
 .apos-admin-bar__sub /deep/ .apos-context-menu__popup {
   top: calc(100% + 5px);
 }
 
-.apos-admin-bar__row {
-  padding: 0 $admin-bar-h-pad;
-}
-
 .apos-admin-bar__row--utils {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 30px;
-  padding-top: $admin-bar-h-pad--small;
-  padding-bottom: $admin-bar-h-pad--small;
   /deep/ .apos-button--subtle { // optical consistency
     padding: 9px;
   }
@@ -670,6 +821,9 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__control-set--mode-and-settings {
   justify-content: flex-end;
+  & /deep/ .apos-button {
+    margin-left: 4px;
+  }
 }
 
 .apos-admin-bar__control-set__group {
@@ -749,7 +903,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .flip-enter { // to the ground
-  transform: translateY(-50%);
+  transform: translateY(-20%);
   opacity: 0;
 }
 .flip-leave { // in the frame
@@ -761,7 +915,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
   opacity: 1;
 }
 .flip-leave-to { // to the sky
-  transform: translateY(50%);
+  transform: translateY(20%);
   opacity: 0;
 }
 

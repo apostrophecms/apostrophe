@@ -72,6 +72,13 @@ export default {
         return 'indeterminate';
       }
       return 'empty';
+    },
+    // Default implementation of isModified is based on whether the
+    // selection has changed, but you can override this and combine
+    // that bit with your own if your manager allows in-context editing
+    // of a piece (i.e. AposMediaManager)
+    isModified() {
+      return this.relationshipIsModified();
     }
   },
   watch: {
@@ -144,13 +151,6 @@ export default {
     saveRelationship() {
       this.$emit('modal-result', this.checkedDocs);
       this.modal.showModal = false;
-    },
-    // Default implementation of isModified is based on whether the
-    // selection has changed, but you can override this and combine
-    // that bit with your own if your manager allows in-context editing
-    // of a piece (i.e. AposMediaManager)
-    isModified() {
-      return this.relationshipIsModified();
     },
     // Easy to reuse if you have a custom isModified method
     relationshipIsModified() {

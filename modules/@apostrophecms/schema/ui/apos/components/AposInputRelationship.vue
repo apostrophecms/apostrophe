@@ -109,7 +109,8 @@ export default {
         if (this.searchTerm.length) {
           this.searching = true;
           const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`, {
-            busy: true
+            busy: true,
+            draft: true
           });
 
           // filter items already selected

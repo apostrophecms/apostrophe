@@ -245,12 +245,20 @@ module.exports = {
         }
         const closeDelay = self.options.closeDelay;
         const context = req.data.piece || req.data.page;
+        // Page caching is never desirable when possibly
+        // editing that page
+        if (context && context._edit) {
+          req.res.setHeader('Cache-Control', 'no-cache');
+        }
         let contextEditorName;
+        let contextAction;
         if (context) {
           if (self.apos.page.isPage(context)) {
             contextEditorName = '@apostrophecms/page:editor';
+            contextAction = self.apos.page.action;
           } else {
             contextEditorName = `${context.type}:editor`;
+            contextAction = self.apos.doc.getManager(context.type).action;
           }
         }
         return {
@@ -265,10 +273,13 @@ module.exports = {
             type: context.type,
             _url: context._url,
             slug: context.slug,
+            modified: context.modified,
             updatedAt: context.updatedAt,
-            updatedBy: context.updatedBy
-
+            updatedBy: context.updatedBy,
+            lastPublishedAt: context.lastPublishedAt
           },
+          // Base API URL appropriate to the context document
+          contextAction,
           // Simplifies frontend logic
           contextId: context && context._id,
           htmlPageId: cuid(),

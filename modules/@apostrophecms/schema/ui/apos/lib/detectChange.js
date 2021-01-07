@@ -11,6 +11,8 @@ export function detectDocChange(schema, v1, v2) {
 }
 
 export function detectFieldChange(field, v1, v2) {
+  v1 = relevant(v1);
+  v2 = relevant(v2);
   if (isEqual(v1, v2)) {
     return false;
   } else if (!v1 && !v2) {
@@ -19,5 +21,25 @@ export function detectFieldChange(field, v1, v2) {
     return false;
   } else {
     return true;
+  }
+  function relevant(o) {
+    if ((o != null) && ((typeof o) === 'object')) {
+      const newObject = {};
+      for (const [ key, val ] of Object.entries(o)) {
+        if (key === '_docId') {
+          newObject._docId = o._docId.replace(/:.*$/, '');
+        } else if (key === '_id') {
+          newObject._id = o._id;
+        } else if (key.substring(0, 1) === '_') {
+          // Different results for temporary properties
+          // don't matter
+          continue;
+        } else {
+          newObject[key] = relevant(val);
+        }
+      }
+      return newObject;
+    }
+    return o;
   }
 }

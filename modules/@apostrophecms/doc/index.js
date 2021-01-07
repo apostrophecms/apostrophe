@@ -32,6 +32,7 @@ module.exports = {
     await self.enableCollection();
     await self.createIndexes();
     self.addDuplicateOrMissingWidgetIdMigration();
+    self.addDraftPublishedMigration();
   },
   restApiRoutes(self, options) {
     return {
@@ -41,26 +42,6 @@ module.exports = {
       // know the doc _id.
       async getOne(req, _id) {
         return self.find(req, { _id }).toObject();
-      },
-
-      // PATCH /api/v1/@apostrophecms/doc/_id works for any document type,
-      // at the expense of one extra query to determine what module should
-      // be asked to do the work. Simplifies browser-side logic for
-      // on-page editing: the frontend only has to know the doc _id.
-      async patch(req, _id) {
-        const doc = await self.find(req, { _id }).project({
-          type: 1,
-          slug: 1
-        }).toObject();
-        if (!doc) {
-          throw self.apos.error('notfound');
-        }
-        if (self.apos.page.isPage(doc)) {
-          return self.apos.page.patch(req, _id);
-        } else {
-          const manager = self.apos.doc.getManager(doc.type);
-          return manager.patch(req, _id);
-        }
       }
     };
   },
@@ -92,10 +73,39 @@ module.exports = {
   handlers(self, options) {
     return {
       '@apostrophecms/doc-type:beforeInsert': {
+        setLocale(req, doc, options) {
+          const manager = self.getManager(doc.type);
+          if (manager.isLocalized()) {
+            doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
+          }
+        },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
           self.testInsertPermissions(req, doc, options);
+          const manager = self.getManager(doc.type);
+          if (doc._id && manager.isLocalized()) {
+            if (!doc.aposDocId) {
+              const components = doc._id.split(':');
+              if (components.length < 3) {
+                throw new Error('If you supply your own _id it must end with :locale:mode, like :en:published');
+              }
+              doc.aposDocId = components[0];
+              doc.aposLocale = `${components[1]}:${components[2]}`;
+            }
+          }
+          if (!doc.aposDocId) {
+            doc.aposDocId = self.apos.util.generateId();
+          }
           if (!doc._id) {
-            doc._id = self.apos.util.generateId();
+            if (!doc.aposLocale) {
+              if (manager.isLocalized()) {
+                doc.aposLocale = `${req.locale}:${req.mode}`;
+              }
+            }
+            if (doc.aposLocale) {
+              doc._id = `${doc.aposDocId}:${doc.aposLocale}`;
+            } else {
+              doc._id = doc.aposDocId;
+            }
           }
           doc.metaType = 'doc';
           doc.createdAt = new Date();
@@ -121,8 +131,8 @@ module.exports = {
       },
       '@apostrophecms/doc-type:beforeSave': {
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
-          self.ensureSlug(doc);
           const manager = self.getManager(doc.type);
+          manager.ensureSlug(doc);
           _.each(manager.schema, function (field) {
             if (field.sortify) {
               doc[field.name + 'Sortified'] = self.apos.util.sortify(doc[field.name] ? doc[field.name] : '');
@@ -137,6 +147,34 @@ module.exports = {
           } : {
             username: 'ApostropheCMS'
           };
+        }
+      },
+      '@apostrophecms/doc-type:afterInsert': {
+        async ensureDraftExists(req, doc, options) {
+          const manager = self.getManager(doc.type);
+          if (!manager.isLocalized()) {
+            return;
+          }
+          if (self.isDraft(doc)) {
+            return;
+          }
+          const draftLocale = doc.aposLocale.replace(':published', ':draft');
+          const draftId = `${doc.aposDocId}:${draftLocale}`;
+          if (await self.db.findOne({
+            _id: draftId
+          }, {
+            projection: {
+              _id: 1
+            }
+          })) {
+            return;
+          }
+          const draft = {
+            ...doc,
+            _id: draftId,
+            aposLocale: draftLocale
+          };
+          return manager.insertDraftOf(req, doc, draft);
         }
       },
       fixUniqueError: {
@@ -157,6 +195,43 @@ module.exports = {
         baseUnversionedFields(req, doc, fields) {
           fields.push('visibility');
         }
+      },
+      '@apostrophecms/doc-type:afterDelete': {
+        // If deleting draft also delete published,
+        // and vice versa. (Note that when the user
+        // "discards the draft" of a previously published
+        // document it is not really deleted, it is reset
+        // to the current contents of the published mode,
+        // so we don't lose both in that scenario.)
+        async deleteOtherModeAfterDelete(req, doc) {
+          if (doc.aposLocale.endsWith(':draft')) {
+            return cleanup('published');
+          } else {
+            return cleanup('draft');
+          }
+          async function cleanup(mode) {
+            const manager = self.getManager(doc.type);
+            const _req = {
+              ...req,
+              mode
+            };
+            const peer = await manager.findOneForEditing(_req, {
+              aposDocId: doc.aposDocId
+            });
+            if (peer) {
+              await manager.delete(_req, peer);
+            }
+          }
+        },
+        // Remove the copy we keep around for undoing publish
+        async deletePreviousAfterDelete(req, doc) {
+          if (doc.aposLocale.endsWith('published')) {
+            return self.db.removeOne({
+              aposDocId: doc.aposDocId,
+              aposLocale: doc.aposDocLocale.replace(':published', ':previous')
+            });
+          }
+        }
       }
     };
   },
@@ -170,12 +245,16 @@ module.exports = {
         return self.db.createIndex(params, { unique: true });
       },
       getSlugIndexParams() {
-        return { slug: 1 };
+        return {
+          slug: 1,
+          aposLocale: 1
+        };
       },
       getPathLevelIndexParams() {
         return {
           path: 1,
-          level: 1
+          level: 1,
+          aposLocale: 1
         };
       },
       async createIndexes() {
@@ -326,6 +405,35 @@ module.exports = {
         await m.emit('afterLoad', req, [ doc ]);
         return doc;
       },
+
+      // True delete. To place a document in the trash,
+      // update the trash property (for a piece) or move it
+      // to be a child of the trash (for a page). True delete
+      // cannot be undone
+      async delete(req, doc, options = {}) {
+        options = options || {};
+        const m = self.getManager(doc.type);
+        await m.emit('beforeDelete', req, doc, options);
+        await self.deleteBody(req, doc, options);
+        await m.emit('afterDelete', req, doc, options);
+      },
+
+      // Publish the given draft. If `options.permissions` is explicitly
+      // set to `false`, permissions checks are bypassed.
+      async publish(req, draft, options = {}) {
+        const m = self.getManager(draft.type);
+        return m.publish(req, draft, options);
+      },
+
+      // Revert to the previously published content, or if
+      // already equal to the previously published content, to the
+      // publication before that. Returns `false` if the draft
+      // cannot be reverted any further.
+      async revert(req, draft) {
+        const m = self.getManager(draft.type);
+        return m.revert(req, draft);
+      },
+
       // Recursively visit every property of a doc,
       // invoking an iterator function for each one. Optionally
       // deletes properties.
@@ -445,17 +553,6 @@ module.exports = {
           }
         }
       },
-      // If the doc does not yet have a slug, add one based on the
-      // title; throw an error if there is no title
-      ensureSlug(doc) {
-        if (!doc.slug || doc.slug === 'none') {
-          if (doc.title) {
-            doc.slug = self.apos.util.slugify(doc.title);
-          } else if (doc.slug !== 'none') {
-            throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
-          }
-        }
-      },
       // Do not call this yourself, it is called
       // by .update(). You will usually want to call the
       // update method of the appropriate doc type manager instead:
@@ -464,10 +561,44 @@ module.exports = {
       //
       // You may override this method to change the implementation.
       async updateBody(req, doc, options) {
-        return self.retryUntilUnique(req, doc, async function () {
+        const manager = self.apos.doc.getManager(doc.type);
+        if (manager.isLocalized(doc.type)) {
+          // Performance hit now at write time is better than inaccurate
+          // indicators of which docs are modified later (per Ben)
+          if (doc.aposLocale.endsWith(':draft')) {
+            doc.modified = await manager.isModified(req, doc);
+          }
+        }
+        const result = await self.retryUntilUnique(req, doc, async () => {
           return self.db.replaceOne({ _id: doc._id }, self.apos.util.clonePermanent(doc));
         });
+        if (manager.isLocalized(doc.type)) {
+          if (doc.aposLocale.endsWith(':published')) {
+            // The reverse can happen too: published changes
+            // (for instance because a move operation gets
+            // repeated on it) and draft is no longer out of sync
+            const modified = await manager.isModified(req, doc);
+            await self.apos.doc.db.updateOne({
+              _id: doc._id.replace(':published', ':draft')
+            }, {
+              $set: {
+                modified
+              }
+            });
+          }
+        }
+        return result;
       },
+
+      async deleteBody(req, doc, options) {
+        if ((options.permissions !== false) && (!self.apos.permission.can(req, 'delete', doc))) {
+          throw self.apos.error('forbidden');
+        }
+        return self.db.removeOne({
+          _id: doc._id
+        });
+      },
+
       // Insert the given document. Called by `.insert()`. You will usually want to
       // call the update method of the appropriate doc type manager instead:
       //
@@ -478,10 +609,17 @@ module.exports = {
       // However you can override this method to alter the
       // implementation.
       async insertBody(req, doc, options) {
+        const manager = self.apos.doc.getManager(doc.type);
+        if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
+          // We are inserting the draft for the first time so it is always
+          // different from the published, which won't exist yet
+          doc.modified = true;
+        }
         return self.retryUntilUnique(req, doc, async function () {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
         });
       },
+
       // Given either an id (as a string) or a criteria
       // object, return a criteria object.
       idOrCriteria(idOrCriteria) {
@@ -735,6 +873,61 @@ module.exports = {
             }
           });
         });
+      },
+      addDraftPublishedMigration() {
+        self.apos.migration.add('add-draft-published', async () => {
+          const indexes = await self.apos.doc.db.indexes();
+          for (const index of indexes) {
+            let keys = Object.keys(index.key);
+            keys.sort();
+            keys = keys.join(',');
+            if ((keys === 'slug') && index.unique) {
+              await self.apos.doc.db.dropIndex(index.name);
+            }
+            if ((keys === 'path') && index.unique) {
+              await self.apos.doc.db.dropIndex(index.name);
+            }
+          }
+          // If a document should be localized but is not, localize it in
+          // all locales and modes, as a migration strategy from alpha 2
+          const types = Object.keys(self.managers).filter(type => {
+            return self.managers[type].isLocalized();
+          });
+          if (!types.length) {
+            return;
+          }
+          return self.apos.migration.eachDoc({
+            aposLocale: {
+              $exists: 0
+            },
+            type: {
+              $in: types
+            }
+          }, 5, async (doc) => {
+            const locales = self.apos.i18n.locales;
+            for (const locale of locales) {
+              await self.apos.doc.db.insertOne({
+                ...doc,
+                _id: `${doc._id}:${locale}:draft`,
+                aposLocale: `${locale}:draft`,
+                aposDocId: doc._id,
+                lastPublishedAt: doc.updatedAt
+              });
+              await self.apos.doc.db.insertOne({
+                ...doc,
+                _id: `${doc._id}:${locale}:published`,
+                aposLocale: `${locale}:published`,
+                aposDocId: doc._id
+              });
+            }
+            await self.apos.doc.db.removeOne({
+              _id: doc._id
+            });
+          });
+        });
+      },
+      isDraft(doc) {
+        return doc.aposLocale.endsWith(':draft');
       }
     };
   }

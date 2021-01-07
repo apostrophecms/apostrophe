@@ -68,7 +68,7 @@ describe('Pages', function() {
     assert(home);
     homeId = home._id;
     assert(home.slug === '/');
-    assert(home.path === home._id);
+    assert(`${home.path}:en:published` === home._id);
     assert(home.type === '@apostrophecms/home-page');
     assert(home.parked);
     assert(home.visibility === 'public');
@@ -78,7 +78,7 @@ describe('Pages', function() {
     const trash = await apos.page.find(apos.task.getReq(), { slug: '/trash' }).trash(null).toObject();
     assert(trash);
     assert(trash.slug === '/trash');
-    assert(trash.path === `${homeId}/${trash._id}`);
+    assert(trash.path === `${homeId.replace(':en:published', '')}/${trash._id.replace(':en:published', '')}`);
     assert(trash.type === '@apostrophecms/trash');
     assert(trash.parked);
     // Verify that clonePermanent did its
@@ -90,61 +90,81 @@ describe('Pages', function() {
   it('should be able to use db to insert documents', async function() {
     const testItems = [
       {
-        _id: 'parent',
+        _id: 'parent:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'parent',
         type: 'test-page',
         slug: '/parent',
         visibility: 'public',
-        path: `${homeId}/parent`,
+        path: `${homeId.replace(':en:published', '')}/parent`,
         level: 1,
         rank: 0
       },
       {
-        _id: 'child',
+        _id: 'child:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'child',
         type: 'test-page',
         slug: '/child',
         visibility: 'public',
-        path: `${homeId}/parent/child`,
+        path: `${homeId.replace(':en:published', '')}/parent/child`,
         level: 2,
         rank: 0
       },
       {
-        _id: 'grandchild',
+        _id: 'grandchild:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'grandchild',
         type: 'test-page',
         slug: '/grandchild',
         visibility: 'public',
-        path: `${homeId}/parent/child/grandchild`,
+        path: `${homeId.replace(':en:published', '')}/parent/child/grandchild`,
         level: 3,
         rank: 0
       },
       {
-        _id: 'sibling',
+        _id: 'sibling:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'sibling',
         type: 'test-page',
         slug: '/sibling',
         visibility: 'public',
-        path: `${homeId}/parent/sibling`,
+        path: `${homeId.replace(':en:published', '')}/parent/sibling`,
         level: 2,
         rank: 1
 
       },
       {
-        _id: 'cousin',
+        _id: 'cousin:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'cousin',
         type: 'test-page',
         slug: '/cousin',
         visibility: 'public',
-        path: `${homeId}/parent/sibling/cousin`,
+        path: `${homeId.replace(':en:published', '')}/parent/sibling/cousin`,
         level: 3,
         rank: 0
       },
       {
-        _id: 'another-parent',
+        _id: 'another-parent:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'another-parent',
         type: 'test-page',
         slug: '/another-parent',
         visibility: 'public',
-        path: `${homeId}/another-parent`,
+        path: `${homeId.replace(':en:published', '')}/another-parent`,
         level: 1,
         rank: 1
       }
     ];
+    // Insert draft versions too to match the A3 data model
+    const draftItems = await apos.doc.db.insertMany(testItems.map(item => ({
+      ...item,
+      aposLocale: item.aposLocale.replace(':published', ':draft'),
+      _id: item._id.replace(':published', ':draft')
+    })));
+    assert(draftItems.result.ok === 1);
+    assert(draftItems.insertedCount === 6);
 
     const items = await apos.doc.db.insertMany(testItems);
 
@@ -166,7 +186,7 @@ describe('Pages', function() {
 
     // There should be only 1 result.
     assert(page);
-    assert(page.path === page._id);
+    assert(`${page.path}:en:published` === page._id);
     assert(page.rank === 0);
   });
 
@@ -178,7 +198,7 @@ describe('Pages', function() {
     // There should be only 1 result.
     assert(page);
     // It should have a path of /parent/child
-    assert(page.path === `${homeId}/parent/child`);
+    assert(page.path === `${homeId.replace(':en:published', '')}/parent/child`);
   });
 
   it('should be able to include the ancestors of a page', async function() {
@@ -191,9 +211,9 @@ describe('Pages', function() {
     // There should be 2 ancestors.
     assert(page._ancestors.length === 2);
     // The first ancestor should be the homepage
-    assert.strictEqual(page._ancestors[0].path, homeId);
+    assert.strictEqual(`${page._ancestors[0].path}:en:published`, homeId);
     // The second ancestor should be 'parent'
-    assert.strictEqual(page._ancestors[1].path, `${homeId}/parent`);
+    assert.strictEqual(page._ancestors[1].path, `${homeId.replace(':en:published', '')}/parent`);
   });
 
   it('should be able to include just one ancestor of a page, i.e. the parent', async function() {
@@ -206,7 +226,7 @@ describe('Pages', function() {
     // There should be 1 ancestor returned.
     assert(page._ancestors.length === 1);
     // The first ancestor returned should be 'parent'
-    assert.strictEqual(page._ancestors[0].path, `${homeId}/parent`);
+    assert.strictEqual(page._ancestors[0].path, `${homeId.replace(':en:published', '')}/parent`);
   });
 
   it('should be able to include the children of the ancestors of a page', async function() {
@@ -221,15 +241,15 @@ describe('Pages', function() {
     // The second ancestor should have children
     assert(page._ancestors[1]._children);
     // The first ancestor's child should have a path '/parent/child'
-    assert.strictEqual(page._ancestors[1]._children[0].path, `${homeId}/parent/child`);
+    assert.strictEqual(page._ancestors[1]._children[0].path, `${homeId.replace(':en:published', '')}/parent/child`);
     // The second ancestor's child should have a path '/parent/sibling'
-    assert.strictEqual(page._ancestors[1]._children[1].path, `${homeId}/parent/sibling`);
+    assert.strictEqual(page._ancestors[1]._children[1].path, `${homeId.replace(':en:published', '')}/parent/sibling`);
   });
 
   // INSERTING
 
   it('is able to insert a new page', async function() {
-    const parentId = 'parent';
+    const parentId = 'parent:en:published';
 
     const newPage = {
       slug: '/new-page',
@@ -241,7 +261,7 @@ describe('Pages', function() {
     const page = await apos.page.insert(apos.task.getReq(), parentId, 'lastChild', newPage);
 
     // Is the path generally correct?
-    assert.strictEqual(page.path, `${homeId}/parent/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/${page._id.replace(':en:published', '')}`);
   });
 
   it('is able to insert a new page in the correct order', async function() {
@@ -258,14 +278,14 @@ describe('Pages', function() {
   // MOVING
 
   it('is able to move root/parent/sibling/cousin after root/parent', async function() {
-    await apos.page.move(apos.task.getReq(), 'cousin', 'parent', 'after');
+    await apos.page.move(apos.task.getReq(), 'cousin:en:published', 'parent:en:published', 'after');
 
-    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin:en:published' });
 
     const page = await cursor.toObject();
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/cousin`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/cousin`);
     // Is the rank correct?
     assert.strictEqual(page.rank, 1);
   });
@@ -274,36 +294,36 @@ describe('Pages', function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
 
-    await apos.page.move(apos.task.getReq(), 'cousin', 'child', 'before');
-    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin' });
+    await apos.page.move(apos.task.getReq(), 'cousin:en:published', 'child:en:published', 'before');
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin:en:published' });
     const page = await cursor.toObject();
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/cousin`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/cousin`);
     // Is the rank correct?
     assert.strictEqual(page.rank, 0);
   });
 
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
-    await apos.page.move(apos.task.getReq(), 'cousin', 'sibling', 'firstChild');
+    await apos.page.move(apos.task.getReq(), 'cousin:en:published', 'sibling:en:published', 'firstChild');
 
-    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin:en:published' });
     const page = await cursor.toObject();
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/sibling/cousin`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/sibling/cousin`);
     // Is the rank correct?
     assert.strictEqual(page.rank, 0);
   });
 
   it('moving /parent into /another-parent should also move /parent/sibling', async function() {
-    await apos.page.move(apos.task.getReq(), 'parent', 'another-parent', 'firstChild');
+    await apos.page.move(apos.task.getReq(), 'parent:en:published', 'another-parent:en:published', 'firstChild');
 
-    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'sibling' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'sibling:en:published' });
     const page = await cursor.toObject();
 
     // Is the grandchild's path correct?
-    assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/another-parent/parent/sibling`);
   });
 
   it('should be able to serve a page', async function() {
@@ -378,7 +398,7 @@ describe('Pages', function() {
   });
 
   it('is able to move parent to the trash', async function() {
-    await apos.page.moveToTrash(apos.task.getReq(), 'parent');
+    await apos.page.moveToTrash(apos.task.getReq(), 'parent:en:published');
 
     const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'parent' });
     const page = await cursor.toObject();
@@ -388,9 +408,9 @@ describe('Pages', function() {
     const req = apos.task.getReq();
     const trash = await apos.page.findOneForEditing(req, { parkedId: 'trash' });
     const trashed = await apos.page.findOneForEditing(req, {
-      _id: 'parent'
+      _id: 'parent:en:published'
     });
-    assert.strictEqual(trashed.path, `${homeId}/${trash._id}/${trashed._id}`);
+    assert.strictEqual(trashed.path, `${homeId.replace(':en:published', '')}/${trash._id.replace(':en:published', '')}/${trashed._id.replace(':en:published', '')}`);
     assert(trashed.trash);
     assert.strictEqual(trashed.level, 2);
   });
@@ -402,13 +422,14 @@ describe('Pages', function() {
 
     // There should be only 1 result.
     assert(page);
-    assert(page.path === page._id);
+    assert(`${page.path}:en:published` === page._id);
     assert(page.rank === 0);
   });
 
   it('After everything else, ranks must still be unduplicated among peers and level must be consistent with path', async function() {
     const pages = await apos.doc.db.find({
-      slug: /^\//
+      slug: /^\//,
+      aposLocale: 'en:published'
     }).sort({
       path: 1
     }).toArray();

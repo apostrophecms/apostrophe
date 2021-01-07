@@ -195,29 +195,31 @@ describe('Pieces', function() {
   }
 
   const testThing = {
-    _id: 'testThing',
+    _id: 'testThing:en:published',
+    aposDocId: 'testThing',
+    aposLocale: 'en:published',
     title: 'hello',
     foo: 'bar'
   };
 
   const additionalThings = [
     {
-      _id: 'thing1',
+      _id: 'thing1:en:published',
       title: 'Red'
     },
     {
-      _id: 'thing2',
+      _id: 'thing2:en:published',
       title: 'Blue'
     },
     {
-      _id: 'thing3',
+      _id: 'thing3:en:published',
       title: 'Green'
     }
   ];
 
   const testPeople = [
     {
-      _id: 'person1',
+      _id: 'person1:en:published',
       title: 'Bob',
       type: 'person',
       thingsIds: [ 'thing2', 'thing3' ]
@@ -241,9 +243,9 @@ describe('Pieces', function() {
   it('should be able to retrieve a piece by id from the database', async () => {
     assert(apos.modules.things.requireOneForEditing);
     const req = apos.task.getReq();
-    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing' });
+    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing:en:published' });
     assert(req.piece);
-    assert(req.piece._id === 'testThing');
+    assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.title === 'hello');
     assert(req.piece.foo === 'bar');
   });
@@ -256,9 +258,9 @@ describe('Pieces', function() {
     assert(testThing === piece);
     // Now let's get the piece and check if it was updated
     const req = apos.task.getReq();
-    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing' });
+    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing:en:published' });
     assert(req.piece);
-    assert(req.piece._id === 'testThing');
+    assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.foo === 'moo');
   });
 
@@ -311,7 +313,7 @@ describe('Pieces', function() {
   it('should be able to trash a piece with proper deduplication', async () => {
     assert(apos.modules.things.requireOneForEditing);
     const req = apos.task.getReq();
-    const id = 'testThing';
+    const id = 'testThing:en:published';
     req.body = { _id: id };
     // let's make sure the piece is not trashed to start
     const piece = await findPiece(req, id);
@@ -323,12 +325,12 @@ describe('Pieces', function() {
     assert(piece2);
     assert(piece2.trash === true);
     assert(piece2.aposWasTrash === true);
-    assert(piece2.slug === 'deduplicate-testThing-hello');
+    assert.equal(piece2.slug, 'deduplicate-testThing-hello');
   });
 
   it('should be able to rescue a trashed piece with proper deduplication', async () => {
     const req = apos.task.getReq();
-    const id = 'testThing';
+    const id = 'testThing:en:published';
     req.body = {
       _id: id
     };
@@ -552,7 +554,7 @@ describe('Pieces', function() {
       body: {
         ...updateProduct,
         title: 'I like cheese',
-        _id: 'should-not-change'
+        _id: 'should-not-change:en:published'
       },
       jar
     };
@@ -797,7 +799,7 @@ describe('Pieces', function() {
   let advisoryLockTestId;
 
   it('can insert a product for advisory lock testing', async () => {
-    const response = await apos.http.post('/api/v1/article', {
+    const response = await apos.http.post('/api/v1/product', {
       body: {
         title: 'Advisory Test',
         name: 'advisory-test'
@@ -811,7 +813,7 @@ describe('Pieces', function() {
   });
 
   it('can get an advisory lock on a product while patching a property', async () => {
-    const product = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const product = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -826,7 +828,7 @@ describe('Pieces', function() {
 
   it('cannot get an advisory lock with a different context id', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
         jar,
         body: {
           _advisoryLock: {
@@ -844,7 +846,7 @@ describe('Pieces', function() {
   });
 
   it('can get an advisory lock with a different context id if forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -857,7 +859,7 @@ describe('Pieces', function() {
   });
 
   it('can renew the advisory lock with the second context id after forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -869,7 +871,7 @@ describe('Pieces', function() {
   });
 
   it('can unlock the advisory lock while patching a property', async () => {
-    const product = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const product = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -883,7 +885,7 @@ describe('Pieces', function() {
   });
 
   it('can relock with the first context id after unlocking', async () => {
-    const doc = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const doc = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -928,7 +930,7 @@ describe('Pieces', function() {
 
   it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {

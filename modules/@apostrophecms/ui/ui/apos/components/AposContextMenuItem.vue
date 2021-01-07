@@ -75,5 +75,15 @@ export default {
         color: var(--a-danger-button-active);
       }
     }
+
+    &--disabled {
+      color: var(--a-base-5);
+      &:hover,
+      &:focus,
+      &:active {
+        cursor: not-allowed;
+        color: var(--a-base-5);
+      }
+    }
   }
 </style>

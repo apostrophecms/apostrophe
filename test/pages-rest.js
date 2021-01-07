@@ -188,7 +188,7 @@ describe('Pages REST', function() {
     assert(home.slug === '/');
     // make sure new style paths used
     assert(home.path !== '/');
-    assert(home.path === home._id);
+    assert(`${home.path}:en:published` === home._id);
     assert(home.level === 0);
     homeId = home._id;
   });
@@ -196,70 +196,93 @@ describe('Pages REST', function() {
   it('should be able to use db to insert documents', async function() {
     const testItems = [
       {
-        _id: 'parent',
+        _id: 'parent:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'parent',
         type: 'test-page',
         slug: '/parent',
         visibility: 'public',
-        path: `${homeId}/parent`,
+        path: `${homeId.replace(':en:published', '')}/parent`,
         level: 1,
         rank: 0
       },
       {
-        _id: 'child',
-        type: 'test-page',
+        _id: 'child:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'child',
         slug: '/child',
+        type: 'test-page',
         visibility: 'public',
-        path: `${homeId}/parent/child`,
+        path: `${homeId.replace(':en:published', '')}/parent/child`,
         level: 2,
         rank: 0
       },
       {
-        _id: 'grandchild',
+        _id: 'grandchild:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'grandchild',
         type: 'test-page',
         slug: '/grandchild',
         visibility: 'public',
-        path: `${homeId}/parent/child/grandchild`,
+        path: `${homeId.replace(':en:published', '')}/parent/child/grandchild`,
         level: 3,
         rank: 0
       },
       {
-        _id: 'sibling',
+        _id: 'sibling:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'sibling',
         type: 'test-page',
         slug: '/sibling',
         visibility: 'public',
-        path: `${homeId}/parent/sibling`,
+        path: `${homeId.replace(':en:published', '')}/parent/sibling`,
         level: 2,
         rank: 1
 
       },
       {
-        _id: 'cousin',
+        _id: 'cousin:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'cousin',
         type: 'test-page',
         slug: '/cousin',
         visibility: 'public',
-        path: `${homeId}/parent/sibling/cousin`,
+        path: `${homeId.replace(':en:published', '')}/parent/sibling/cousin`,
         level: 3,
         rank: 0
       },
       {
-        _id: 'another-parent',
+        _id: 'another-parent:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'another-parent',
         type: 'test-page',
         slug: '/another-parent',
         visibility: 'public',
-        path: `${homeId}/another-parent`,
+        path: `${homeId.replace(':en:published', '')}/another-parent`,
         level: 1,
         rank: 1
       },
       {
-        _id: 'neighbor',
+        _id: 'neighbor:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'neighbor',
         type: 'test-page',
         slug: '/neighbor',
         visibility: 'public',
-        path: `${homeId}/neighbor`,
+        path: `${homeId.replace(':en:published', '')}/neighbor`,
         level: 1,
         rank: 2
       }
     ];
+
+    // Insert draft versions too to match the A3 data model
+    const draftItems = await apos.doc.db.insertMany(testItems.map(item => ({
+      ...item,
+      aposLocale: item.aposLocale.replace(':published', ':draft'),
+      _id: item._id.replace(':published', ':draft')
+    })));
+    assert(draftItems.result.ok === 1);
+    assert(draftItems.insertedCount === 7);
 
     const items = await apos.doc.db.insertMany(testItems);
 
@@ -284,7 +307,7 @@ describe('Pages REST', function() {
     assert(page);
     assert(page.title === 'New Tab');
     // Is the path generally correct?
-    assert.strictEqual(page.path, `${homeId}/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${page._id.replace(':en:published', '')}`);
     assert.strictEqual(page.level, 1);
   });
 
@@ -306,9 +329,14 @@ describe('Pages REST', function() {
     assert(page);
     assert(page.title === 'Second New');
     // Is the path generally correct?
-    assert.strictEqual(page.path, `${homeId}/${page._id}`);
-    assert.strictEqual(page.level, 1);
-    assert.strictEqual(page.rank, 1);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${page._id.replace(':en:published', '')}`);
+    const home = await apos.http.get('/api/v1/@apostrophecms/page?children=1', {
+      jar
+    });
+    assert(home);
+    assert(home._children);
+    assert(home._children[1]);
+    assert(home._children[1]._id === page._id);
   });
 
   let newPageId;
@@ -319,7 +347,7 @@ describe('Pages REST', function() {
       visibility: 'public',
       type: 'test-page',
       title: 'New Page',
-      _targetId: 'parent',
+      _targetId: 'parent:en:published',
       _position: 'lastChild'
     };
 
@@ -332,7 +360,7 @@ describe('Pages REST', function() {
     assert(page);
     assert(page.title === 'New Page');
     // Is the path generally correct?
-    assert.strictEqual(page.path, `${homeId}/parent/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/${page._id.replace(':en:published', '')}`);
     assert.strictEqual(page.level, 2);
     assert.strictEqual(page.rank, 2);
   });
@@ -355,16 +383,16 @@ describe('Pages REST', function() {
   });
 
   it('should be able to find just a single page with ancestors', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/page/child');
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/child:en:published');
 
     assert(page);
-    assert(page.path === `${homeId}/parent/child`);
+    assert(page.path === `${homeId.replace(':en:published', '')}/parent/child`);
     // There should be 2 ancestors.
     assert(page._ancestors.length === 2);
     // The first ancestor should be the homepage
-    assert.strictEqual(page._ancestors[0].path, homeId);
+    assert.strictEqual(page._ancestors[0].path, `${homeId.replace(':en:published', '')}`);
     // The second ancestor should be 'parent'
-    assert.strictEqual(page._ancestors[1].path, `${homeId}/parent`);
+    assert.strictEqual(page._ancestors[1].path, `${homeId.replace(':en:published', '')}/parent`);
 
     // There should be only 1 result.
     assert(page);
@@ -373,66 +401,68 @@ describe('Pages REST', function() {
   });
 
   it('should be able to find just a single page with children', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/page/parent');
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/parent:en:published');
 
     assert(page);
-    assert(page.path === `${homeId}/parent`);
+    assert(page.path === `${homeId.replace(':en:published', '')}/parent`);
     // There should be 1 ancestor
     assert(page._ancestors.length === 1);
     // The first ancestor should be the homepage
-    assert.strictEqual(page._ancestors[0].path, homeId);
+    assert.strictEqual(page._ancestors[0].path, `${homeId.replace(':en:published', '')}`);
 
     // There should be children
     assert(page._children);
     assert(page._children.length === 3);
-    assert(page._children[0]._id === 'child');
-    assert(page._children[1]._id === 'sibling');
+    assert(page._children[0]._id === 'child:en:published');
+    assert(page._children[1]._id === 'sibling:en:published');
     assert(page._children[2].slug === '/new-page');
   });
 
   it('is able to move root/parent/sibling/cousin after root/parent', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin:en:published', {
       body: {
-        _targetId: 'parent',
+        _targetId: 'parent:en:published',
         _position: 'after'
       },
       jar
     });
     assert(page._id);
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/cousin`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/cousin`);
     // Is the rank correct?
-    assert.strictEqual(page.rank, 3);
+    const home = await apos.http.get('/api/v1/@apostrophecms/page', {});
+    assert(home._children);
+    assert(home._children[3]._id === 'cousin:en:published');
   });
 
   it('is able to move root/cousin before root/parent/child', async function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin:en:published', {
       body: {
-        _targetId: 'child',
+        _targetId: 'child:en:published',
         _position: 'before'
       },
       jar
     });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/cousin`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/cousin`);
     // Is the rank correct?
     assert.strictEqual(page.rank, 0);
   });
 
   it('is able to move root/parent/child before root/parent/cousin using numerical position', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/child', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/child:en:published', {
       body: {
-        _targetId: 'parent',
+        _targetId: 'parent:en:published',
         _position: 0
       },
       jar
     });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/child`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/child`);
     // Is the rank correct?
     assert.strictEqual(page.rank, 0);
   });
@@ -440,157 +470,157 @@ describe('Pages REST', function() {
   it('is able to move root/parent/new-page between root/parent/cousin and root/parent/sibling using numerical position', async function() {
     const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${newPageId}`, {
       body: {
-        _targetId: 'parent',
+        _targetId: 'parent:en:published',
         _position: 2
       },
       jar
     });
 
-    const cousin = await apos.http.get('/api/v1/@apostrophecms/page/cousin', { jar });
-    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const cousin = await apos.http.get('/api/v1/@apostrophecms/page/cousin:en:published', { jar });
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/${newPageId}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/${newPageId.replace(':en:published', '')}`);
     // Is the rank correct?
     assert(page.rank > cousin.rank);
     assert(page.rank < sibling.rank);
   });
 
   it('is able to move root/neighbor as the last child of /root/parent using numerical position', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/neighbor', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/neighbor:en:published', {
       body: {
-        _targetId: 'parent',
+        _targetId: 'parent:en:published',
         _position: 4
       },
       jar
     });
 
     // `sibling` was previously the last child of `parent`.
-    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/neighbor`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/neighbor`);
     // Is the rank correct?
     assert(page.rank > sibling.rank);
   });
 
   it('allows positioning a page at its existing location (lastChild) using numerical position', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/neighbor', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/neighbor:en:published', {
       body: {
-        _targetId: 'parent',
+        _targetId: 'parent:en:published',
         _position: 4
       },
       jar
     });
 
     // `sibling` was previously the last child of `parent`.
-    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/neighbor`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/neighbor`);
     // Is the rank correct?
     assert(page.rank > sibling.rank);
   });
   it('is able to move root/parent/child/grandchild to the next-to-last position under `parent`', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild:en:published', {
       body: {
-        _targetId: 'parent',
+        _targetId: 'parent:en:published',
         _position: 4
       },
       jar
     });
 
     // `sibling` was previously the next-to-last child of `parent`.
-    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    const neighbor = await apos.http.get('/api/v1/@apostrophecms/page/neighbor', { jar });
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    const neighbor = await apos.http.get('/api/v1/@apostrophecms/page/neighbor:en:published', { jar });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/grandchild`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/grandchild`);
     // Is the rank correct?
     assert(page.rank > sibling.rank);
     assert(page.rank < neighbor.rank);
   });
 
   it('allows positioning a page at its existing location (4 of 5) using numerical position', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild:en:published', {
       body: {
-        _targetId: 'parent',
+        _targetId: 'parent:en:published',
         _position: 4
       },
       jar
     });
 
     // `sibling` was previously the next-to-last child of `parent`.
-    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    const neighbor = await apos.http.get('/api/v1/@apostrophecms/page/neighbor', { jar });
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    const neighbor = await apos.http.get('/api/v1/@apostrophecms/page/neighbor:en:published', { jar });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/grandchild`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/grandchild`);
     // Is the rank correct?
     assert(page.rank > sibling.rank);
     assert(page.rank < neighbor.rank);
   });
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin:en:published', {
       body: {
-        _targetId: 'sibling',
+        _targetId: 'sibling:en:published',
         _position: 'firstChild'
       },
       jar
     });
 
     // Is the new path correct?
-    assert.strictEqual(page.path, `${homeId}/parent/sibling/cousin`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/sibling/cousin`);
     // Is the rank correct?
     assert.strictEqual(page.rank, 0);
   });
 
   it('moving /parent into /another-parent should also move /parent/sibling', async function() {
-    await apos.http.patch('/api/v1/@apostrophecms/page/parent', {
+    await apos.http.patch('/api/v1/@apostrophecms/page/parent:en:published', {
       body: {
-        _targetId: 'another-parent',
+        _targetId: 'another-parent:en:published',
         _position: 'firstChild'
       },
       jar
     });
-    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
 
     // Is the grandchild's path correct?
-    assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/another-parent/parent/sibling`);
   });
 
   it('can use PUT to modify a page', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page);
     page.title = 'Changed Title';
     page.color = 'blue';
-    await apos.http.put('/api/v1/@apostrophecms/page/sibling', {
+    await apos.http.put('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: page,
       jar
     });
-    const page2 = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const page2 = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert.strictEqual(page2.title, 'Changed Title');
     assert.strictEqual(page2.color, 'blue');
   });
 
   it('can use PATCH to modify one property of a page', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page);
     page.title = 'Changed Title';
-    await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         title: 'New Title'
       },
       jar
     });
-    const page2 = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const page2 = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert.strictEqual(page2.title, 'New Title');
     // Did not modify this
     assert.strictEqual(page2.color, 'blue');
   });
 
   it('can use PATCH to move a page beneath the home page with _targetId: _home', async function() {
-    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin:en:published', {
       body: {
         _targetId: '_home',
         _position: 'firstChild'
@@ -598,13 +628,13 @@ describe('Pages REST', function() {
       jar
     });
     assert(page._id);
-    assert.strictEqual(page.path, `${homeId}/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${page.aposDocId}`);
     assert.strictEqual(page.level, 1);
     assert.strictEqual(page.rank, 0);
   });
 
   it('can use PATCH to move a page into the trash using _trash as _targetId', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin:en:published', {
       body: {
         _targetId: '_trash',
         _position: 'firstChild'
@@ -619,18 +649,18 @@ describe('Pages REST', function() {
     // Verify this is really working because of the _trash
     // shortcut
     assert(trash._id !== '_trash');
-    assert.strictEqual(page.path, `${homeId}/${trash._id}/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${trash.aposDocId}/${page.aposDocId}`);
     assert.strictEqual(page.level, 2);
     assert.strictEqual(page.rank, 0);
-    page = await apos.http.get('/api/v1/@apostrophecms/page/cousin?_edit=1&trash=1', {
+    page = await apos.http.get('/api/v1/@apostrophecms/page/cousin:en:published?_edit=1&trash=1', {
       jar
     });
     assert(page.trash);
   });
 
   it('Can use PATCH to add a widget to an area by path', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         $push: {
           'body.items': {
@@ -642,14 +672,14 @@ describe('Pages REST', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/<b>Bold<\/b>/));
   });
 
   it('Can use PATCH to update a widget by path', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         'body.items.0': {
           metaType: 'widget',
@@ -659,15 +689,15 @@ describe('Pages REST', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/normal/));
   });
 
   it('Can use PATCH to update a widget via @ syntax', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     const _id = `@${page.body.items[0]._id}`;
-    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         [_id]: {
           metaType: 'widget',
@@ -677,14 +707,14 @@ describe('Pages REST', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/I @ syntax/));
   });
 
   it('Can use $position to insert a widget at the beginning of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         $push: {
           'body.items': {
@@ -701,7 +731,7 @@ describe('Pages REST', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);
@@ -710,8 +740,8 @@ describe('Pages REST', function() {
   });
 
   it('Can use $position to insert a widget in the middle of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         $push: {
           'body.items': {
@@ -728,7 +758,7 @@ describe('Pages REST', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);
@@ -739,8 +769,8 @@ describe('Pages REST', function() {
   });
 
   it('Can use $before to insert a widget in the middle of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         $push: {
           'body.items': {
@@ -757,7 +787,7 @@ describe('Pages REST', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);
@@ -770,8 +800,8 @@ describe('Pages REST', function() {
   });
 
   it('Can use $after to insert a widget in the middle of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
         $push: {
           'body.items': {
@@ -788,7 +818,7 @@ describe('Pages REST', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);
@@ -939,9 +969,9 @@ describe('Pages REST', function() {
         ]
       }
     });
-    const bodyId = (await apos.doc.db.findOne({ _id: 'sibling' })).body._id;
+    const bodyId = (await apos.doc.db.findOne({ _id: 'sibling:en:published' })).body._id;
     // apply the patch that fails without the fix
-    await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+    await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       jar,
       body: {
         _patches: [
@@ -1376,7 +1406,7 @@ describe('Pages REST', function() {
   });
 
   it('can get an advisory lock on a page while patching a property', async () => {
-    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1391,7 +1421,7 @@ describe('Pages REST', function() {
 
   it('cannot get an advisory lock with a different context id', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
         jar,
         body: {
           _advisoryLock: {
@@ -1409,7 +1439,7 @@ describe('Pages REST', function() {
   });
 
   it('can get an advisory lock with a different context id if forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1422,7 +1452,7 @@ describe('Pages REST', function() {
   });
 
   it('can renew the advisory lock with the second context id after forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1434,7 +1464,7 @@ describe('Pages REST', function() {
   });
 
   it('can unlock the advisory lock while patching a property', async () => {
-    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1448,7 +1478,7 @@ describe('Pages REST', function() {
   });
 
   it('can relock with the first context id after unlocking', async () => {
-    const doc = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const doc = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1493,7 +1523,7 @@ describe('Pages REST', function() {
 
   it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {

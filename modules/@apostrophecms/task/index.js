@@ -198,9 +198,14 @@ module.exports = {
           },
           query: {},
           url: '/',
+          locale: self.apos.modules['@apostrophecms/i18n'].defaultLocale,
+          mode: 'published',
           aposNeverLoad: {},
           aposStack: []
         };
+        if (properties && properties.mode && properties.mode.draft) {
+          req.mode = 'draft';
+        }
         _.extend(req, properties || {});
         self.apos.modules['@apostrophecms/express'].addAbsoluteUrlsToReq(req);
         return req;

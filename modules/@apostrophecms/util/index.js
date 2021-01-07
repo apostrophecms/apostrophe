@@ -259,9 +259,10 @@ module.exports = {
       },
       // Get file size in bytes. Async. Returns size.
       async fileLength(filename) {
-        return Promise.promisify(function (name, cb) {
+        const stat = await Promise.promisify(function (name, cb) {
           return fs.stat(name, cb);
         })(filename);
+        return stat.size;
       },
       // Turn the provided string into a string suitable for use as a slug.
       // ONE punctuation character normally forbidden in slugs may

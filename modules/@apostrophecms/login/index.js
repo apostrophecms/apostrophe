@@ -158,6 +158,36 @@ module.exports = {
             await destroySession();
           }
         },
+        async setLocale(req) {
+          if (!(self.apos.i18n.isValidLocale(req.body.locale) && [ 'draft', 'published' ].includes(req.body.mode))) {
+            throw self.apos.error('invalid');
+          }
+          const locale = req.body.locale;
+          const mode = req.body.mode;
+          let _id = self.apos.launder.id(req.body._id);
+          const [ cuid ] = _id.split(':');
+          _id = `${cuid}:${locale}:${mode}`;
+          let doc = await self.apos.doc.db.findOne({
+            _id
+          });
+          if (!doc) {
+            throw self.apos.error('notfound');
+          }
+          // Now we know the type and we can find it again with the right query builder
+          doc = await self.apos.doc.getManager(doc.type).findOneForEditing({
+            ...req,
+            locale,
+            mode
+          }, {
+            _id: doc._id
+          });
+          if (!doc) {
+            throw self.apos.error('notfound');
+          }
+          req.session.locale = locale;
+          req.session.mode = mode;
+          return doc;
+        },
         ...(options.passwordReset ? {
           async resetRequest(req) {
             const site = (req.headers.host || '').replace(/:\d+$/, '');

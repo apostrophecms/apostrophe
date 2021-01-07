@@ -162,7 +162,8 @@ export default {
           qs: {
             all: 1,
             trash: null
-          }
+          },
+          draft: true
         }
       ));
 
@@ -191,7 +192,8 @@ export default {
       try {
         await apos.http.patch(route, {
           busy: true,
-          body
+          body,
+          draft: true
         });
       } catch (error) {
         await apos.notify(error.body.message || 'An error occurred while updating the page tree.', {

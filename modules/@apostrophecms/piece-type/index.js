@@ -182,6 +182,7 @@ module.exports = {
     },
     async getOne(req, _id) {
       self.publicApiCheck(req);
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -198,20 +199,80 @@ module.exports = {
     },
     async put(req, _id) {
       self.publicApiCheck(req);
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
-    // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
-    // In a CMS that usually leads to unhappy customers. To manipulate apostrophe's trash status for something, use
-    // a `PATCH` call to modify the `trash` property and set it to `true` or `false`.
     async delete(req, _id) {
       self.publicApiCheck(req);
-      throw self.apos.error('unimplemented');
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+      const piece = await self.findOneForEditing(req, {
+        _id
+      });
+      return self.delete(req, piece);
     },
     patch(req, _id) {
       self.publicApiCheck(req);
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
       return self.patch(req, _id);
     }
   }),
+  apiRoutes(self, options) {
+    return {
+      post: {
+        ':_id/publish': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.publish(req, draft);
+        },
+        ':_id/revert-draft-to-published': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertDraftToPublished(req, draft);
+        },
+        ':_id/revert-published-to-previous': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const published = await self.findOneForEditing({
+            ...req,
+            mode: 'published'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!published) {
+            throw self.apos.error('notfound');
+          }
+          if (!published.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertPublishedToPrevious(req, published);
+        }
+      }
+    };
+  },
   handlers(self, options) {
     return {
       beforeInsert: {
@@ -241,6 +302,27 @@ module.exports = {
   },
   methods(self, options) {
     return {
+      // Accepts a doc, a preliminary draft, and the options
+      // originally passed to insert(). Default implementation
+      // inserts `draft` in the database normally. This method is
+      // called only when a draft is being created on the fly
+      // for a published document that does not yet have a draft.
+      // Apostrophe only has one corresponding draft at a time
+      // per published document.
+      async insertDraftOf(req, doc, draft) {
+        const inserted = await self.insert({
+          ...req,
+          mode: 'draft'
+        }, draft);
+        return inserted;
+      },
+      // Similar to insertDraftOf, invoked on first publication.
+      insertPublishedOf(req, doc, published) {
+        return self.insert({
+          ...req,
+          mode: 'published'
+        }, published);
+      },
       finalizeControls() {
         self.createControls = self.options.createControls || [
           {
@@ -325,6 +407,10 @@ module.exports = {
       // and `afterSave` async events are emitted by this module.
       async update(req, piece, options) {
         return self.apos.doc.update(req, piece, options);
+      },
+      // True delete
+      async delete(req, piece, options = {}) {
+        return self.apos.doc.delete(req, piece, options);
       },
       composeFilters() {
         self.filters = Object.keys(self.filters).map(key => ({
@@ -680,6 +766,17 @@ module.exports = {
         if (!self.options.publicApiProjection) {
           if (!self.apos.permission.can(req, 'edit', self.name)) {
             throw self.apos.error('notfound');
+          }
+        }
+      },
+      // If the piece does not yet have a slug, add one based on the
+      // title; throw an error if there is no title
+      ensureSlug(piece) {
+        if (!piece.slug || piece.slug === 'none') {
+          if (piece.title) {
+            piece.slug = self.apos.util.slugify(piece.title);
+          } else if (piece.slug !== 'none') {
+            throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
           }
         }
       }
