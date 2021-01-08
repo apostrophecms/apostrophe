@@ -43,7 +43,8 @@ module.exports = {
     quickCreate: false,
     adminOnly: true,
     searchable: false,
-    slugPrefix: 'user-'
+    slugPrefix: 'user-',
+    localized: false
   },
   fields(self, options) {
     return {

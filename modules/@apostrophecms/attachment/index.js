@@ -220,6 +220,9 @@ module.exports = {
           self.db = await self.apos.db.collection('aposAttachments');
           await self.db.createIndex({ docIds: 1 });
           await self.db.createIndex({ trashDocIds: 1 });
+        },
+        addFixLengthPropertyMigration() {
+          self.addFixLengthPropertyMigration();
         }
       },
       'apostrophe:destroy': {
@@ -240,6 +243,13 @@ module.exports = {
       '@apostrophecms/doc-type:afterRescue': {
         async updateDocReferencesAfterRescue(req, doc) {
           return self.updateDocReferences(doc);
+        }
+      },
+      '@apostrophecms/doc-type:afterDelete': {
+        async updateDocReferencesAfterDelete(req, doc) {
+          return self.updateDocReferences(doc, {
+            deleted: true
+          });
         }
       }
     };
@@ -757,6 +767,25 @@ module.exports = {
           }
         }
       },
+      addFixLengthPropertyMigration() {
+        self.apos.migration.add('fix-length-property', async () => {
+          return self.each({
+            'length.size': {
+              $exists: 1
+            }
+          }, 5, attachment => {
+            if (attachment.length && attachment.length.size) {
+              return self.db.updateOne({
+                _id: attachment._id
+              }, {
+                $set: {
+                  length: attachment.length.size
+                }
+              });
+            }
+          });
+        });
+      },
       // Returns true if, based on the provided attachment object,
       // a valid focal point has been specified. Useful to avoid
       // the default of `background-position: center center` if
@@ -827,16 +856,33 @@ module.exports = {
       // trash, its permissions should change to reflect that so
       // it is no longer web-accessible to those who know the URL.
       //
+      // If the doc has no more trashed *or* live docs associated
+      // with it, truly delete the attachment.
+      //
       // This method is invoked after any doc is inserted, updated, trashed
       // or rescued.
-      async updateDocReferences(doc) {
+      //
+      // If a document is truly deleted, call with the `{ deleted: true}` option.
+      async updateDocReferences(doc, options = {
+        deleted: false
+      }) {
         const attachments = self.all(doc);
         const ids = _.uniq(_.map(attachments, '_id'));
         // Build an array of mongo commands to run. Each
         // entry in the array is a 2-element array. Element 0
         // is the criteria, element 1 is the command
         const commands = [];
-        if (!doc.trash) {
+        if (options.deleted) {
+          commands.push([
+            { _id: { $in: ids } },
+            {
+              $pull: {
+                docIds: doc._id,
+                trashDocIds: doc._id
+              }
+            }
+          ]);
+        } else if (!doc.trash) {
           commands.push([
             { _id: { $in: ids } },
             { $addToSet: { docIds: doc._id } }
@@ -874,9 +920,9 @@ module.exports = {
         for (const command of commands) {
           await self.db.updateMany(command[0], command[1]);
         }
-        await self.updatePermissions();
+        await self.alterAttachments();
       },
-      // Update the permissions in uploadfs of all attachments
+      // Enable/disable access in uploadfs to all attachments
       // based on whether the documents containing them
       // are in the trash or not. Specifically, if an attachment
       // has been utilized at least once but no longer has
@@ -889,9 +935,15 @@ module.exports = {
       // This method is invoked at the end of `updateDocReferences`
       // and also at the end of the migration that adds `docIds`
       // to legacy sites. You should not need to invoke it yourself.
-      async updatePermissions() {
+      //
+      // This method also handles actually deleting attachments
+      // if they have been utilized but are no longer associated
+      // with any document, not even in the trash, as will occur
+      // if the document is truly deleted.
+      async alterAttachments() {
         await hide();
         await show();
+        await _delete();
         async function hide() {
           const attachments = await self.db.find({
             utilized: true,
@@ -899,7 +951,7 @@ module.exports = {
             trash: { $ne: true }
           }).toArray();
           for (const attachment of attachments) {
-            await permissionsOne(attachment, true);
+            await alterOne(attachment, 'disable');
           }
         }
         async function show() {
@@ -909,28 +961,48 @@ module.exports = {
             trash: { $ne: false }
           }).toArray();
           for (const attachment of attachments) {
-            await permissionsOne(attachment, false);
+            await alterOne(attachment, 'enable');
           }
         }
-        async function permissionsOne(attachment, trash) {
-          await self.applyPermissions(attachment, trash);
-          await self.db.updateOne({ _id: attachment._id }, { $set: { trash: trash } });
+        async function _delete() {
+          const attachments = await self.db.find({
+            utilized: true,
+            'docIds.0': { $exists: 0 },
+            'trashDocIds.0': { $exists: 0 }
+          }).toArray();
+          for (const attachment of attachments) {
+            await alterOne(attachment, 'remove');
+          }
+        }
+        async function alterOne(attachment, action) {
+          await self.alterAttachment(attachment, action);
+          if (action === 'remove') {
+            await self.db.removeOne({ _id: attachment._id });
+          } else {
+            await self.db.updateOne({
+              _id: attachment._id
+            }, {
+              $set: {
+                trash: (action === 'disable')
+              }
+            });
+          }
         }
       },
-      // Enable or disable access to the given attachment via uploadfs, based on whether
-      // trash is true or false. If the attachment is an image, access
-      // to the size indicated by the `sizeAvailableInTrash` option
-      // (usually `one-sixth`) remains available. This operation is carried
+      // Enable access, disable access, or truly remove the given attachment via uploadfs,
+      // based on whether `action` is `enable`, `disable`, or `remove`. If the attachment
+      // is an image, access to the size indicated by the `sizeAvailableInTrash` option
+      // (usually `one-sixth`) remains available except when removing. This operation is carried
       // out across all sizes and crops.
-      async applyPermissions(attachment, trash) {
-        let method = trash ? self.uploadfs.disable : self.uploadfs.enable;
+      async alterAttachment(attachment, action) {
+        let method = self.uploadfs[action];
         method = Promise.promisify(method);
         await original();
         await crops();
         // Handle the original image and its scaled versions
         // here ("original" means "not cropped")
         async function original() {
-          if (!trash && attachment.trash === undefined) {
+          if ((action === 'enable') && attachment.trash === undefined) {
             // Trash status not set at all yet means
             // it'll be a live file as of this point,
             // skip extra API calls
@@ -943,7 +1015,7 @@ module.exports = {
             sizes = self.imageSizes.concat([ { name: 'original' } ]);
           }
           for (const size of sizes) {
-            if (size.name === self.sizeAvailableInTrash) {
+            if ((action !== 'remove') && (size.name === self.sizeAvailableInTrash)) {
               // This size is always kept accessible for preview
               // in the media library
               continue;
@@ -956,12 +1028,12 @@ module.exports = {
               await method(path);
             } catch (e) {
               // afterSave is not a good place for fatal errors
-              self.apos.util.warn('Unable to set permissions on ' + path + ', most likely already done');
+              self.apos.util.warn(`Unable to ${action} ${path}, most likely already done`);
             }
           }
         }
         async function crops() {
-          if (!trash && attachment.trash === undefined) {
+          if ((action === 'enable') && (attachment.trash === undefined)) {
             // Trash status not set at all yet means
             // it'll be a live file as of this point,
             // skip extra API calls
@@ -987,7 +1059,7 @@ module.exports = {
               await method(path);
             } catch (e) {
               // afterSave is not a good place for fatal errors
-              self.apos.util.warn('Unable to set permissions on ' + path + ', possibly it does not exist');
+              self.apos.util.warn(`Unable to ${action} ${path}, most likely already done`);
             }
           }
         }

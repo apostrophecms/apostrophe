@@ -7,9 +7,10 @@
         :size="icon ? 16 : 12"
       />
     </span>
-    <span class="apos-notification__label">
-      {{ label }}
-    </span>
+    <span
+      class="apos-notification__label" v-html="label"
+      ref="label"
+    />
     <div
       class="apos-notification__progress"
       v-if="progress && progress.current"
@@ -98,6 +99,11 @@ export default {
         this.$emit('close', this.id);
       }, 1000 * this.dismiss);
     }
+    this.$refs.label.addEventListener('click', (e) => {
+      if (e.target.hasAttribute('data-apos-bus-event')) {
+        this.close();
+      }
+    });
   },
   methods: {
     close () {
@@ -175,6 +181,14 @@ export default {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+
+    & /deep/ button {
+      @include apos-button-reset();
+      text-decoration: underline;
+      text-decoration-color: var(--a-success);
+      text-underline-offset: 3px;
+      padding: 0 3px;
+    }
   }
 
   .apos-notification__progress {

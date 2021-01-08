@@ -14,6 +14,8 @@ export default function() {
       return;
     }
     await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/logout`, {});
-    location.reload(true);
+    window.sessionStorage.setItem('aposStateChange', Date.now());
+    window.sessionStorage.setItem('aposStateChangeSeen', '{}');
+    location.reload();
   });
 };

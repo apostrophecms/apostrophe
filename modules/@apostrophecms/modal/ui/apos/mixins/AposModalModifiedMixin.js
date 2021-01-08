@@ -20,7 +20,7 @@ export default {
   methods: {
     async confirmAndCancel() {
       let dismiss;
-      if (this.isModified()) {
+      if (this.isModified) {
         const discard = await apos.confirm({
           heading: this.cancelHeading,
           description: this.cancelDescription,

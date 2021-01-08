@@ -91,6 +91,131 @@ module.exports = {
           }
           await matched.handler(req);
         }
+      },
+      afterMove: {
+        async replayMoveAfterMoved(req, doc) {
+          if (!doc._id.includes(':draft')) {
+            return;
+          }
+          const published = await self.findOneForEditing({
+            ...req,
+            mode: 'published'
+          }, {
+            _id: doc._id.replace(':draft', ':published')
+          }, {
+            permission: false
+          });
+          if (published && doc.aposLastTargetId) {
+            return self.apos.page.move({
+              ...req,
+              mode: 'published'
+            }, published._id, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition);
+          }
+        }
+      },
+      beforePublish: {
+        async ancestorsMustBePublished(req, { draft, published }) {
+          const ancestorAposDocIds = draft.path.split('/');
+          // Self is not a parent
+          ancestorAposDocIds.pop();
+          const publishedAncestors = await self.apos.doc.db.find({
+            aposDocId: {
+              $in: ancestorAposDocIds
+            },
+            aposLocale: published.aposLocale
+          }).project({
+            _id: 1,
+            aposDocId: 1,
+            title: 1
+          }).toArray();
+          if (publishedAncestors.length !== ancestorAposDocIds.length) {
+            const draftAncestors = await self.apos.doc.db.find({
+              aposDocId: {
+                $in: ancestorAposDocIds
+              },
+              aposLocale: draft.aposLocale
+            }).project({
+              _id: 1,
+              aposDocId: 1,
+              title: 1
+            }).toArray();
+            throw self.apos.error('invalid', {
+              unpublishedAncestors: draftAncestors.filter(draftAncestor => !publishedAncestors.find(publishedAncestor => draftAncestor.aposDocId === publishedAncestor.aposDocId))
+            });
+          }
+        }
+      },
+      afterPublish: {
+        async replayMoveAfterPublish(req, { published, firstTime }) {
+          if (!firstTime) {
+            // We already do this after every move of the draft, so
+            // if there was already a published version it will have
+            // already been moved
+            return;
+          }
+          // Home page does not move
+          if (published.aposLastTargetId) {
+            return self.apos.page.move({
+              ...req,
+              mode: 'published'
+            }, published._id, published.aposLastTargetId, published.aposLastPosition);
+          }
+        }
+      },
+      afterRevertDraftToPublished: {
+        async replayMoveAfterRevert(req, result) {
+          const _req = {
+            ...req,
+            mode: 'draft'
+          };
+          if (!result.draft.level) {
+            // The home page cannot move, so there is no
+            // chance we need to "replay" such a move
+            return;
+          }
+          await self.apos.page.move(_req, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
+          const draft = await self.apos.page.findOneForEditing(_req, {
+            _id: result.draft._id
+          });
+          result.draft = draft;
+        }
+      },
+      afterRevertPublishedToPrevious: {
+        async replayMoveAfterRevert(req, result) {
+          const publishedReq = {
+            ...req,
+            mode: 'published'
+          };
+          if (!result.published.level) {
+            // The home page cannot move, so there is no
+            // chance we need to "replay" such a move
+            return;
+          }
+          await self.apos.page.move(publishedReq, result.published._id, result.published.aposLastTargetId, result.published.aposLastPosition);
+          const published = await self.apos.page.findOneForEditing(publishedReq, {
+            _id: result.published._id
+          });
+          result.published = published;
+        }
+      },
+      beforeDelete: {
+        async checkForParked(req, doc, options) {
+          if (doc.level === 0) {
+            throw self.apos.error('invalid', 'The home page may not be removed.');
+          }
+          if (doc.parked) {
+            throw self.apos.error('invalid', 'This page is "parked" and may not be removed.');
+          }
+        },
+        async checkForChildren(req, doc, options) {
+          const descendants = await self.apos.doc.db.countDocuments({
+            path: self.apos.page.matchDescendants(doc),
+            aposLocale: doc.aposLocale
+          });
+          if (descendants) {
+            throw self.apos.error('invalid', 'You must delete the children of this page first.');
+          }
+        }
       }
     };
   },
@@ -169,11 +294,82 @@ module.exports = {
       // are invoked as methods on the query with their values.
       find(req, criteria = {}, options = {}) {
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options).type(self.name);
+      },
+      // Called for you when a page is inserted directly in
+      // the published locale, to ensure there is an equivalent
+      // draft page. You don't need to invoke this.
+      async insertDraftOf(req, doc, draft) {
+        const _req = {
+          ...req,
+          mode: 'draft'
+        };
+        if (doc.aposLastTargetId) {
+          // Replay the high level positioning used to place it in the published locale
+          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft);
+        } else if (!doc.level) {
+          // Insert the home page
+          return self.apos.doc.insert(_req, draft);
+        } else {
+          throw new Error('Page inserted without using the page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent draft');
+        }
+      },
+      // Called for you when a page is inserted in
+      // the published locale, to ensure there is an equivalent
+      // draft page. You don't need to invoke this.
+      async insertPublishedOf(req, doc, published, options = {}) {
+        const _req = {
+          ...req,
+          mode: 'published'
+        };
+        if (doc.aposLastTargetId) {
+          // Replay the high level positioning used to place it in the published locale
+          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition, published, options);
+        } else if (!doc.level) {
+          // Insert the home page
+          return self.apos.doc.db.insert(_req, published, options);
+        } else {
+          throw new Error('insertPublishedOf called on a page that was never inserted via the standard page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent published page');
+        }
+      },
+      // Update a page. The `options` argument may be omitted entirely.
+      // if it is present and `options.permissions` is set to `false`,
+      // permissions are not checked.
+      //
+      // This is a convenience wrapper for `apos.page.update`, for the
+      // benefit of code that expects all managers to have an update method.
+      // Pages are usually updated via `apos.page.update`.
+      async update(req, page, options = {}) {
+        return self.apos.page.update(req, page, options);
+      },
+      // If the page does not yet have a slug, add one based on the
+      // title; throw an error if there is no title
+      ensureSlug(page) {
+        if (!page.slug || (!page.slug.match(/^\//))) {
+          if (page.title) {
+            // Parent-based slug would be better, but this is not an
+            // async function and callers will typically have done
+            // that already, so skip the overhead. This is just a fallback
+            // for naive use of the APIs
+            page.slug = '/' + self.apos.util.slugify(page.title);
+          } else {
+            throw self.apos.error('invalid', 'Page has neither a slug beginning with / or a title, giving up');
+          }
+        }
       }
     };
   },
   extendMethods(self, options) {
     return {
+      copyForPublication(_super, req, from, to) {
+        _super(req, from, to);
+        const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';
+        const oldMode = (newMode === ':published') ? ':draft' : ':published';
+        // Home pages will not have this
+        if (from.aposLastTargetId) {
+          to.aposLastTargetId = from.aposLastTargetId.replace(oldMode, newMode);
+          to.aposLastPosition = from.aposLastPosition;
+        }
+      },
       getAutocompleteProjection(_super, query) {
         const projection = _super(query);
         projection.slug = 1;

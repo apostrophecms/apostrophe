@@ -20,43 +20,84 @@
 export default {
   name: 'AposDocMoreMenu',
   props: {
-    docId: {
-      type: String,
+    isModified: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    isModifiedFromPublished: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    canDiscardDraft: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    options: {
+      type: Object,
       required: true
+      // subproperties:
+      // saveDraft: Boolean
+      // If true, the save draft option is offered
+      // when isModified is currently true. This does
+      // not make sense in the onpage contextual editor,
+      // because it continuously saves drafts.
     }
   },
   data() {
-    return {
+    const menu = {
       isOpen: false,
-      menu: [
-        {
-          label: 'Share Draft',
-          action: 'share'
-        },
-        {
-          label: 'Duplicate Document',
-          action: 'duplicate'
-        },
-        {
-          label: 'Revert to Last Published',
-          action: 'revertToLastPublished',
-          modifiers: [ 'danger' ]
-        }
-      ]
+      menu: this.recomputeMenu()
     };
+    return menu;
+  },
+  watch: {
+    isModified() {
+      this.menu = this.recomputeMenu();
+    },
+    isModifiedFromPublished() {
+      this.menu = this.recomputeMenu();
+    }
   },
   methods: {
-    async duplicate() {
-      console.log('TODO: stub for Duplicate action');
+    menuHandler(action) {
+      this.$emit(action);
     },
-    async share() {
-      console.log('TODO: stub for Share Draft action');
-    },
-    async revertToLastPublished() {
-      console.log('TODO: stub for revertToLastPublished action');
-    },
-    async menuHandler(action) {
-      this[action]();
+    recomputeMenu() {
+      return [
+        // TODO
+        // ...(this.isModifiedFromPublished ? [
+        //   {
+        //     label: 'Share Draft',
+        //     action: 'share'
+        //   }
+        // ] : []),
+        // TODO
+        // // You can always do this, if you do it with a new item
+        // // it just saves and you start a second one
+        // {
+        //   label: 'Duplicate Document',
+        //   action: 'duplicate'
+        // },
+        ...(this.canDiscardDraft ? [
+          {
+            label: 'Discard Draft',
+            action: 'discardDraft',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
+        ...((this.isModified && this.options.saveDraft) ? [
+          {
+            label: 'Save Draft',
+            action: 'saveDraft'
+          }
+        ] : [])
+      ];
     }
   }
 };

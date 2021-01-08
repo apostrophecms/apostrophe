@@ -101,7 +101,8 @@ export default {
           busy: true,
           body: {
             _newInstance: true
-          }
+          },
+          draft: true
         });
         await apos.notify(
           // TODO: i18n
@@ -182,7 +183,8 @@ export default {
       try {
         const imgPiece = await apos.http.post(this.action, {
           busy: true,
-          body: imageData
+          body: imageData,
+          draft: true
         });
 
         return imgPiece;

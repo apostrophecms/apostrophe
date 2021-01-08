@@ -83,6 +83,7 @@ module.exports = {
     self.enableBrowserData();
     self.addDeduplicateRanksMigration();
     self.addFixHomePagePathMigration();
+    self.addMissingLastTargetIdAndPositionMigration();
     await self.createIndexes();
   },
   restApiRoutes(self, options) {
@@ -206,14 +207,8 @@ module.exports = {
       // `_home` or `_trash`
       async getOne(req, _id) {
         self.publicApiCheck(req);
-        const criteria = (_id === '_home') ? {
-          level: 0
-        } : (_id === '_trash') ? {
-          level: 1,
-          trash: true
-        } : {
-          _id
-        };
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
           throw self.apos.error('notfound');
@@ -237,12 +232,14 @@ module.exports = {
       async post(req) {
         self.publicApiCheck(req);
         req.body._position = req.body._position || 'lastChild';
-
-        const {
-          targetId,
-          position
-        } = await self.getTargetIdAndPosition(req, null, req.body._targetId, req.body._position);
-
+        let targetId = self.apos.launder.string(req.body._targetId);
+        let position = self.apos.launder.string(req.body._position);
+        // Here we have to normalize before calling insert because we
+        // need the parent page to call newChild(). insert calls again but
+        // sees there's no work to be done, so no performance hit
+        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = normalized.targetId;
+        position = normalized.position;
         const copyingId = self.apos.launder.id(req.body._copyingId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
         if (typeof (input) !== 'object') {
@@ -254,7 +251,7 @@ module.exports = {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return;
           const parentPage = await self.findForEditing(req, { _id: targetId })
-            .permission('edit-@apostrophecms/page').toObject();
+            .permission('edit', '@apostrophecms/page').toObject();
           return self.newChild(parentPage);
         }
 
@@ -312,6 +309,7 @@ module.exports = {
 
       async put(req, _id) {
         self.publicApiCheck(req);
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {
@@ -341,11 +339,8 @@ module.exports = {
           await manager.convert(req, input, page);
           await self.update(req, page);
           if (input._targetId) {
-            const {
-              targetId,
-              position
-            } = await self.getTargetIdAndPosition(req, page._id, input._targetId, input._position);
-
+            const targetId = self.apos.launder.string(input._targetId);
+            const position = self.apos.launder.string(input._position);
             await self.move(req, page._id, targetId, position);
           }
           if (htmlPageId && !lock) {
@@ -361,7 +356,11 @@ module.exports = {
       // fully deleted, which isn't the same as having references still in the trash.
       async delete(req, _id) {
         self.publicApiCheck(req);
-        throw self.apos.error('unimplemented');
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        const page = await self.findOneForEditing(req, {
+          _id
+        });
+        return self.delete(req, page);
       },
       // Patch some properties of the page.
       //
@@ -371,6 +370,63 @@ module.exports = {
       patch(req, _id) {
         self.publicApiCheck(req);
         return self.patch(req, _id);
+      }
+    };
+  },
+  apiRoutes(self, options) {
+    return {
+      post: {
+        ':_id/publish': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.publish(req, draft);
+        },
+        ':_id/revert-draft-to-published': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertDraftToPublished(req, draft);
+        },
+        ':_id/revert-published-to-previous': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const published = await self.findOneForEditing({
+            ...req,
+            mode: 'published'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!published) {
+            throw self.apos.error('notfound');
+          }
+          if (!published.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertPublishedToPrevious(req, published);
+        }
       }
     };
   },
@@ -452,6 +508,9 @@ database.`);
                 },
                 isAdminOnly() {
                   return true;
+                },
+                isLocalized() {
+                  return false;
                 }
               };
             }
@@ -475,6 +534,16 @@ database.`);
     return {
       find(req, criteria = {}, options = {}) {
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
+      },
+      getIdCriteria(_id) {
+        return (_id === '_home') ? {
+          level: 0
+        } : (_id === '_trash') ? {
+          level: 1,
+          trash: true
+        } : {
+          _id
+        };
       },
       // Implementation of the PATCH route. Factored as a method to allow
       // it to be called from the universal @apostrophecms/doc PATCH route
@@ -506,8 +575,6 @@ database.`);
         return self.withLock(req, async () => {
           const input = req.body;
           const page = await self.findOneForEditing(req, { _id });
-          let _targetId;
-          let _position;
           let result;
           if (!page) {
             throw self.apos.error('notfound');
@@ -532,18 +599,13 @@ database.`);
                 force
               });
             }
-            if (input._targetId) {
-              _targetId = input._targetId;
-              _position = input._position;
-            }
             await self.applyPatch(req, page, input);
             if (i === (patches.length - 1)) {
               await self.update(req, page);
-              if (_targetId) {
-                const result = await self.getTargetIdAndPosition(req, page._id, _targetId, _position);
-                const actualTargetId = result.targetId;
-                const actualPosition = result.position;
-                await self.move(req, page._id, actualTargetId, actualPosition);
+              if (input._targetId) {
+                const targetId = self.apos.launder.string(input._targetId);
+                const position = self.apos.launder.string(input._position);
+                await self.move(req, page._id, targetId, position);
               }
               result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
@@ -576,6 +638,11 @@ database.`);
         await self.apos.schema.convert(req, schema, input, page);
         await self.emit('afterConvert', req, input, page);
       },
+      // True delete. Will throw an error if the page
+      // has descendants
+      async delete(req, page, options = {}) {
+        return self.apos.doc.delete(req, page, options);
+      },
       getBrowserData(req) {
         const browserOptions = _.pick(self, 'action', 'schema', 'types');
         _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
@@ -607,27 +674,30 @@ database.`);
         return query;
       },
       // Insert a page. `targetId` must be an existing page id, and
-      // `position` may be `before`, `inside` or `after`.
+      // `position` may be `before`, `inside` or `after`. Alternatively
+      // `position` may be a zero-based offset for the new child
+      // of `targetId` (note that the `rank` property of sibling pages
+      // is not strictly ascending, so use an array index into `_children` to
+      // dtermine this parameter instead).
       //
       // The `options` argument may be omitted completely. If
-      // `options.permissions` is set to false, permissions checks
+      // `options.permissions` is explicitly set to false, permissions checks
       // are bypassed.
       //
       // Returns the new page.
-      async insert(req, targetId, position, page, options = { permissions: true }) {
+      //
+      // If `options.permissions` is explicitly set to false, permissions checks
+      // are bypassed.
+      async insert(req, targetId, position, page, options = {}) {
+        // Handle numeric positions
+        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = normalized.targetId;
+        position = normalized.position;
         return self.withLock(req, async () => {
           let peers;
-          const query = self.findForEditing(req, { _id: targetId });
-          if ((position === 'firstChild') || (position === 'lastChild')) {
-            query.children({
-              depth: 1,
-              trash: null,
-              orphan: null,
-              areas: false,
-              permission: false
-            });
-          }
-          const target = await query.toObject();
+          page.aposLastTargetId = targetId;
+          page.aposLastPosition = position;
+          const target = await self.getTarget(req, targetId, position);
           if (!target) {
             throw self.apos.error('notfound');
           }
@@ -702,8 +772,19 @@ database.`);
               }
             });
           }
-          page._id = self.apos.util.generateId();
-          page.path = self.apos.util.addSlashIfNeeded(parent.path) + page._id;
+          // Normally we generate the aposDocId here so we can complete
+          // the path before calling doc.insert, but watch out for values
+          // already being present
+          if (page._id) {
+            const components = page._id.split(':');
+            if (components.length < 3) {
+              throw new Error('If you supply your own _id it must end with :locale:mode, like :en:published');
+            }
+            page.aposDocId = components[0];
+          } else if (!page.aposDocId) {
+            page.aposDocId = self.apos.util.generateId();
+          }
+          page.path = self.apos.util.addSlashIfNeeded(parent.path) + page.aposDocId;
           page.level = parent.level + 1;
           await self.apos.doc.insert(req, page, options);
           return page;
@@ -794,9 +875,12 @@ database.`);
       },
       // Move a page already in the page tree to another location.
       //
-      // position can be 'before', 'after', `firstChild` or `lastChild` and
-      // determines the moved page's new relationship to
-      // the target page.
+      // Insert a page. `targetId` must be an existing page id, and
+      // `position` may be `before`, `inside` or `after`. Alternatively
+      // `position` may be a zero-based offset for the new child
+      // of `targetId` (note that the `rank` property of sibling pages
+      // is not strictly ascending, so use an array index into `_children` to
+      // dtermine this parameter instead).
       //
       // As a shorthand, `targetId` may be `_trash` to refer to the trash can,
       // or `_home` to refer to the home page.
@@ -809,6 +893,10 @@ database.`);
       // After the moved and target pages are fetched, the `beforeMove` event is emitted with
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
+        // Handle numeric positions
+        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = normalized.targetId;
+        position = normalized.position;
         if (!options) {
           options = {};
         } else {
@@ -840,7 +928,7 @@ database.`);
           await moveSelf();
           await updateDescendants();
           await trashDescendants();
-          await self.emit('afterMove', req, moved, {
+          await self.apos.doc.getManager(moved.type).emit('afterMove', req, moved, {
             originalSlug,
             originalPath,
             changed,
@@ -853,8 +941,9 @@ database.`);
             options
           };
           async function getMoved() {
-            const moved = await self.find(req, { _id: movedId }).permission(false).trash(null).areas(false).ancestors({
+            const moved = await self.findForEditing(req, { _id: movedId }).permission(false).ancestors({
               depth: 1,
+              visibility: null,
               trash: null,
               areas: false,
               permission: false
@@ -948,6 +1037,8 @@ database.`);
             }
             moved.level = level;
             moved.rank = rank;
+            moved.aposLastTargetId = targetId;
+            moved.aposLastPosition = position;
             // Are we in the trashcan? Our new parent reveals that
             if (parent.trash) {
               moved.trash = true;
@@ -987,14 +1078,7 @@ database.`);
       // value. `position` is used to prevent attempts to move after the trash
       // "page."
       async getTarget(req, targetId, position) {
-        const criteria = (targetId === '_home') ? {
-          level: 0
-        } : (targetId === '_trash') ? {
-          level: 1,
-          trash: true
-        } : {
-          _id: targetId
-        };
+        const criteria = self.getIdCriteria(targetId);
         const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,
@@ -1023,7 +1107,6 @@ database.`);
       // if applicable.
       async getTargetIdAndPosition(req, pageId, targetId, position) {
         targetId = self.apos.launder.id(targetId);
-
         position = self.apos.launder.string(position);
 
         if (isNaN(parseInt(position)) || parseInt(position) < 0) {
@@ -1063,7 +1146,6 @@ database.`);
           targetId = target._children[position]._id;
           position = 'before';
         }
-
         return {
           targetId,
           position
@@ -1181,6 +1263,43 @@ database.`);
         await self.emit('beforeSave', req, page, options);
         await self.apos.doc.update(req, page, options);
         return page;
+      },
+      // Publish a draft, updating the published locale.
+      async publish(req, draft, options = {}) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.publish(req, draft, options);
+      },
+      // Reverts the given draft to the most recent publication.
+      //
+      // Returns the draft's new value, or `false` if the draft
+      // was not modified from the published version (`modified: false`)
+      // or no published version exists yet.
+      //
+      // This is *not* the on-page `undo/redo` backend. This is the
+      // "Revert to Published" feature.
+      //
+      // Emits the `afterRevertDraftToPublished` event before
+      // returning, which receives `req, { draft }` and may
+      // replace the `draft` property to alter the returned value.
+      async revertDraftToPublished(req, draft) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.revertDraftToPublished(req, draft);
+      },
+      // Given a draft document, this method reverts both the draft and
+      // the corresponding published document to the previously published
+      // version, and returns the updated draft and published
+      // documents as `{ draft, published}`.
+      //
+      // If it is not possible to revert because the document is new or
+      // has already been reverted to the previously published version,
+      // this method returns `false`.
+      //
+      // Emits the `afterRevertDraftAndPublishedToPrevious` event before
+      // returning, which receives `req, { draft, published }` and may
+      // replace those properties to alter the returned value.
+      async revertPublishedToPrevious(req, published) {
+        const manager = self.apos.doc.getManager(published.type);
+        return manager.revertPublishedToPrevious(req, published);
       },
       // Ensure the existence of a page or array of pages and
       // lock them in place in the page tree.
@@ -1452,14 +1571,10 @@ database.`);
         await self.ensureLevelRankIndex();
       },
       async ensurePathIndex() {
-        const params = self.getPathIndexParams();
-        await self.apos.doc.db.createIndex(params, {
-          unique: true,
-          sparse: true
+        await self.apos.doc.db.createIndex({
+          path: 1,
+          aposLocale: 1
         });
-      },
-      getPathIndexParams() {
-        return { path: 1 };
       },
       async ensureLevelRankIndex() {
         const params = self.getLevelRankIndexParams();
@@ -1620,8 +1735,9 @@ database.`);
           };
           delete _item._children;
           if (!parent) {
-            _item._id = self.apos.util.generateId();
-            _item.path = _item._id;
+            // Parking the home page for the first time
+            _item.aposDocId = self.apos.util.generateId();
+            _item.path = _item.aposDocId;
             return self.apos.doc.insert(req, _item);
           } else {
             return self.insert(req, parent._id, 'lastChild', _item);
@@ -1672,12 +1788,13 @@ database.`);
         return doc.slug && doc.slug.match(/^\//);
       },
       // Returns a regular expression to match the `path` property of the descendants of the given page,
-      // but not itself
-      matchDescendants(page) {
+      // but not itself. You can also pass the path rather than the entire page object.
+      matchDescendants(pageOrPath) {
+        const path = pageOrPath.path || pageOrPath;
         // Make sure there is a trailing slash, but don't add two (the home page already has one).
         // Also make sure there is at least one additional character, which there always will be,
         // in order to prevent the home page from matching as its own descendant
-        return new RegExp(`^${self.apos.util.regExpQuote(page.path)}/.`);
+        return new RegExp(`^${self.apos.util.regExpQuote(path)}/.`);
       },
       // Returns the path property of the page's parent. For use in queries to fetch the parent.
       getParentPath(page) {
@@ -2021,8 +2138,64 @@ database.`);
             _id: home._id
           }, {
             $set: {
-              path: home._id
+              path: home._id.replace(/:.*$/)
             }
+          });
+        });
+      },
+      addMissingLastTargetIdAndPositionMigration() {
+        self.apos.migration.add('missing-last-target-id-and-position', async () => {
+          await self.apos.migration.eachDoc({
+            slug: /^\//,
+            // Home page should not have them, that's OK
+            level: {
+              $gte: 0
+            },
+            aposLastTargetId: {
+              $exists: 0
+            }
+          }, 5, async (doc) => {
+            const parentPath = self.getParentPath(doc);
+            const parentAposDocId = parentPath.split('/').pop();
+            let parentId;
+            if (doc.aposLocale) {
+              parentId = `${parentAposDocId}:${doc.aposLocale}`;
+            } else {
+              parentId = parentAposDocId;
+            }
+            const peerCriteria = {
+              path: self.matchDescendants(parentPath),
+              level: doc.level
+            };
+            if (doc.aposLocale) {
+              peerCriteria.aposLocale = doc.aposLocale;
+            }
+            const peers = await self.apos.doc.db.find(peerCriteria).sort({
+              rank: 1
+            }).project({
+              _id: 1
+            }).toArray();
+            let targetId;
+            let position;
+            const index = peers.findIndex(peer => peer._id === doc._id);
+            if (index === -1) {
+              return;
+            }
+            if (index === 0) {
+              targetId = parentId;
+              position = 'firstChild';
+            } else {
+              targetId = peers[index - 1]._id;
+              position = 'after';
+            }
+            return self.apos.doc.db.updateOne({
+              _id: doc._id
+            }, {
+              $set: {
+                aposLastTargetId: targetId,
+                aposLastPosition: position
+              }
+            });
           });
         });
       }

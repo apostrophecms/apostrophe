@@ -11,7 +11,7 @@ const joinr = module.exports = {
   // The second argument is the name of an array property in each of those documents
   // that identifies related documents by id (for instance, groupIds).
   //
-  // The optional third argument is the name of an object property in each of
+  // The third argument is the name of an object property in each of
   // those documents that describes the relationship between the document and each
   // of the related documents. This object is expected to be structured like this:
   //
@@ -24,12 +24,17 @@ const joinr = module.exports = {
   //   }
   // }
   //
+  // If no relationship fields are needed it may be falsy.
+  //
   // The fourth argument is the array property name in which to store the related
   // documents after fetching them (for instance, _groups).
   //
   // The fifth argument is the function to call to fetch the related documents.
   // This function will receive an array of IDs and its awaited return value
   // must be an array of documents.
+  //
+  // The sixth argument is a function to transform each `_id`. This is
+  // used to add or rewrite the locale suffix.
   //
   // Afterwards the related documents will be attached directly to the items under the
   // array property name specified by objectsField.
@@ -53,29 +58,23 @@ const joinr = module.exports = {
   //   return groupsCollection.find({ groupIds: { $in: ids } }).toArray();
   // });
 
-  byArray: async function(items, idsStorage, fieldsStorage, objectsField, getter) {
-    if (arguments.length === 4) {
-      // Allow fieldsStorage to be skipped
-      getter = objectsField;
-      objectsField = fieldsStorage;
-      fieldsStorage = undefined;
-    }
+  byArray: async function(items, idsStorage, fieldsStorage, objectsField, getter, idMapper) {
     let otherIds = [];
     const othersById = {};
     for (const item of items) {
       if (joinr._has(item, idsStorage)) {
-        otherIds = otherIds.concat(joinr._get(item, idsStorage));
+        otherIds = otherIds.concat(joinr._get(item, idsStorage).map(idMapper));
       }
     }
     if (otherIds.length) {
       const others = await getter(otherIds);
       // Make a lookup table of the others by id
       for (const other of others) {
-        othersById[other._id] = other;
+        othersById[idMapper(other._id)] = other;
       }
       // Attach the others to the items
       for (const item of items) {
-        for (const id of (joinr._get(item, idsStorage) || [])) {
+        for (const id of (joinr._get(item, idsStorage) || []).map(idMapper)) {
           if (othersById[id]) {
             if (!item[objectsField]) {
               item[objectsField] = [];
@@ -130,10 +129,13 @@ const joinr = module.exports = {
   // your original collection. It will be awaited, and the resolved value must
   // be an array of documents.
   //
+  // The sixth argument is a function to transform each `_id`. This is
+  // used to add or rewrite the locale suffix.
+  //
   // Afterwards The related documents will be attached directly to the items under the
   // property name specified by `objectsField`.
   //
-  // *If the fieldsStorage argument is present*, then each related document
+  // *If the fieldsStorage argument is truthy*, then each related document
   // gains an extra `_fields` property, containing the relationship data
   // for that object. Note that the related documents are shallowly cloned to
   // ensure the same document can be related to two items but with different
@@ -150,23 +152,17 @@ const joinr = module.exports = {
   //   return usersCollection.find({ placeIds: { $in: ids } }).toArray();
   // });
 
-  byArrayReverse: async function(items, idsStorage, fieldsStorage, objectsField, getter) {
-    if (arguments.length === 4) {
-      // Allow fieldsStorage to be skipped
-      getter = objectsField;
-      objectsField = fieldsStorage;
-      fieldsStorage = undefined;
-    }
-    const itemIds = items.map(item => item._id);
+  byArrayReverse: async function(items, idsStorage, fieldsStorage, objectsField, getter, idMapper) {
+    const itemIds = items.map(item => idMapper(item._id));
     if (itemIds.length) {
       const others = await getter(itemIds);
       const itemsById = {};
       for (const item of items) {
-        itemsById[item._id] = item;
+        itemsById[idMapper(item._id)] = item;
       }
       // Attach the others to the items
       for (const other of others) {
-        for (const id of (joinr._get(other, idsStorage) || [])) {
+        for (const id of (joinr._get(other, idsStorage) || []).map(idMapper)) {
           if (itemsById[id]) {
             const item = itemsById[id];
             if (!item[objectsField]) {
@@ -176,7 +172,7 @@ const joinr = module.exports = {
               const fieldsById = joinr._get(other, fieldsStorage) || {};
               item[objectsField].push({
                 ...other,
-                _fields: fieldsById[item._id] || {}
+                _fields: fieldsById[idMapper(item._id)] || {}
               });
             } else {
               item[objectsField].push(other);

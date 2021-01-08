@@ -64,6 +64,7 @@
   // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
   // parsed as JSON only if the content-type is application/json)
   // `headers` (an object containing header names and values)
+  // `draft` (if true, always add apos-mode=draft to the query string, creating one if needed)
   // `csrf` (unless explicitly set to `false`, send the X-XSRF-TOKEN header when talking to the same site)
   // `fullResponse` (if true, return an object with `status`, `headers` and `body`
   // properties, rather than returning the body directly; the individual `headers` are canonicalized
@@ -103,9 +104,31 @@
         });
       });
     }
+
     if (apos.prefix) {
       if (apos.util.sameSite(url)) {
         url = apos.prefix + url;
+      }
+    }
+
+    var query;
+    var qat;
+
+    if (options.draft) {
+      if (options.qs) {
+        // Already assumes no query parameters baked into URL, so OK to
+        // just extend qs
+        options.qs = apos.util.assign({ 'apos-mode': 'draft' }, options.qs);
+      } else {
+        // Careful, there could be existing query parameters baked into url
+        qat = url.indexOf('?');
+        if (qat !== -1) {
+          query = apos.http.parseQuery(url.substring(qat));
+        } else {
+          query = {};
+        }
+        query['apos-mode'] = 'draft';
+        url = apos.http.addQueryToUrl(url, query);
       }
     }
 
@@ -360,4 +383,5 @@
       }
     }
   };
+
 })();

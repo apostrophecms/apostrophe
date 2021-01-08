@@ -12,12 +12,21 @@
       />
     </template>
     <template #primaryControls>
+      <!-- TODO: these conditions will need adjusting when we get to the
+        "Duplicate" feature, but without them we would have an empty
+        menu in many cases because all of the operations
+        depend on modification from published -->
       <AposDocMoreMenu
-        v-if="docId"
-        :doc-id="docId"
+        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished || canDiscardDraft)"
+        :is-modified="isModified"
+        :is-modified-from-published="isModifiedFromPublished"
+        :can-discard-draft="canDiscardDraft"
+        :options="{ saveDraft: true }"
+        @saveDraft="saveDraft"
+        @discardDraft="onDiscardDraft"
       />
       <AposButton
-        type="primary" label="Save"
+        type="primary" :label="saveLabel"
         :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
         @click="submit"
       />
@@ -81,6 +90,7 @@
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import klona from 'klona';
@@ -90,7 +100,8 @@ export default {
   mixins: [
     AposModalTabsMixin,
     AposModalModifiedMixin,
-    AposEditorMixin
+    AposEditorMixin,
+    AposPublishMixin
   ],
   props: {
     moduleName: {
@@ -133,6 +144,7 @@ export default {
       schemaOtherFields: [],
       triggerValidation: false,
       original: null,
+      published: null,
       locked: false,
       lockTimeout: null,
       lockRefreshing: null
@@ -183,10 +195,10 @@ export default {
       };
       return tabs;
     },
-    modalTitle () {
+    modalTitle() {
       return `Edit ${this.moduleOptions.label || ''}`;
     },
-    currentFields: function() {
+    currentFields() {
       if (this.currentTab) {
         const tabFields = this.tabs.find((item) => {
           return item.name === this.currentTab;
@@ -196,6 +208,31 @@ export default {
       } else {
         return [];
       }
+    },
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+    },
+    saveLabel() {
+      if (this.manuallyPublished) {
+        return 'Publish Changes';
+      } else {
+        return 'Save';
+      }
+    },
+    isModified() {
+      if (!this.original) {
+        return false;
+      }
+      return detectDocChange(this.schema, this.original, this.unsplitDoc());
+    },
+    isModifiedFromPublished() {
+      if (!this.published) {
+        return false;
+      }
+      return detectDocChange(this.schema, this.published, this.unsplitDoc());
+    },
+    canDiscardDraft() {
+      return (this.docId && (!this.published)) || this.isModifiedFromPublished;
     }
   },
   watch: {
@@ -233,8 +270,8 @@ export default {
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
       let docData;
+      const getOnePath = `${this.moduleAction}/${this.docId}`;
       try {
-        const getOnePath = `${this.moduleAction}/${this.docId}`;
         try {
           await apos.http.patch(getOnePath, {
             body: {
@@ -242,7 +279,8 @@ export default {
                 htmlPageId: apos.adminBar.htmlPageId,
                 lock: true
               }
-            }
+            },
+            draft: true
           });
           this.markLockedAndScheduleRefresh();
         } catch (e) {
@@ -268,7 +306,8 @@ export default {
                       lock: true,
                       force: true
                     }
-                  }
+                  },
+                  draft: true
                 });
                 this.markLockedAndScheduleRefresh();
               } catch (e) {
@@ -284,15 +323,16 @@ export default {
         }
         docData = await apos.http.get(getOnePath, {
           busy: true,
-          qs: this.filterValues
+          qs: this.filterValues,
+          draft: true
         });
       } catch {
-        await apos.notify(`The requested ${this.moduleLabels.label.toLowerCase()} was not found.`, {
+        // TODO a nicer message here, but moduleLabels is undefined here
+        await apos.notify('The requested document was not found.', {
           type: 'warning',
           icon: 'alert-circle-icon',
           dismiss: true
         });
-        console.error('The requested piece was not found.', this.docId);
         await this.confirmAndCancel();
       } finally {
         if (docData.type !== this.docType) {
@@ -302,6 +342,27 @@ export default {
         this.docFields.data = docData;
         this.docReady = true;
         this.splitDoc();
+      }
+      try {
+        if (this.manuallyPublished) {
+          this.published = await apos.http.get(getOnePath, {
+            busy: true,
+            qs: {
+              ...this.filterValues,
+              'apos-mode': 'published'
+            }
+          });
+        }
+      } catch (e) {
+        if (e.name !== 'notfound') {
+          console.error(e);
+          // TODO a nicer message here, but moduleLabels is undefined here
+          await apos.notify('An error occurred fetching the published version of the document.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+        }
       }
     } else {
       this.$nextTick(() => {
@@ -324,7 +385,8 @@ export default {
               htmlPageId: apos.adminBar.htmlPageId,
               lock: false
             }
-          }
+          },
+          draft: true
         });
       } catch (e) {
         // Not our concern, just being polite
@@ -345,7 +407,8 @@ export default {
                 htmlPageId: apos.adminBar.htmlPageId,
                 lock: true
               }
-            }
+            },
+            draft: true
           });
           // Reset this each time to avoid various race conditions
           this.lockTimeout = setTimeout(this.refreshLock, 10000);
@@ -377,6 +440,9 @@ export default {
       }
     },
     submit() {
+      this.save(this.manuallyPublished);
+    },
+    save(andPublish = false) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
@@ -404,7 +470,8 @@ export default {
           requestMethod = apos.http.post;
 
           if (this.moduleName === '@apostrophecms/page') {
-            body._targetId = apos.page.page._id;
+            // New pages are always born as drafts
+            body._targetId = apos.page.page._id.replace(':published', ':draft');
             body._position = 'lastChild';
           }
         }
@@ -412,19 +479,24 @@ export default {
         try {
           doc = await requestMethod(route, {
             busy: true,
-            body
+            body,
+            draft: true
           });
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
           if (e.body && (e.body.name === 'locked')) {
             await this.showLockedError(e);
             this.modal.showModal = false;
+            return;
           } else {
             await this.handleSaveError(e, {
               fallback: 'An error occurred saving the document.'
             });
             return;
           }
+        }
+        if (andPublish) {
+          await this.publish(this.moduleAction, doc._id);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
@@ -433,18 +505,20 @@ export default {
         }
       });
     },
-    async getNewInstance () {
+    async getNewInstance() {
       try {
         const body = {
           _newInstance: true
         };
 
         if (this.moduleName === '@apostrophecms/page') {
-          body._targetId = apos.page.page._id;
+          // New pages are always born as drafts
+          body._targetId = apos.page.page._id.replace(':published', ':draft');
           body._position = 'lastChild';
         }
         const newDoc = await apos.http.post(this.moduleAction, {
-          body
+          body,
+          draft: true
         });
         return newDoc;
       } catch (error) {
@@ -496,12 +570,6 @@ export default {
         ...this.docOtherFields.data
       };
     },
-    isModified() {
-      if (!this.original) {
-        return false;
-      }
-      return detectDocChange(this.schema, this.original, this.unsplitDoc());
-    },
     // Override of a mixin method to accommodate the tabs/utility rail split
     getFieldValue(name) {
       if (this.docUtilityFields.data[name] !== undefined) {
@@ -523,6 +591,14 @@ export default {
       } else {
         return this.$refs.otherSchema;
       }
+    },
+    async onDiscardDraft(e) {
+      if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+        this.modal.showModal = false;
+      }
+    },
+    saveDraft() {
+      this.save(false);
     }
   }
 };
