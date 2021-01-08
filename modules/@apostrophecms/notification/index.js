@@ -5,8 +5,8 @@
 // ## Options
 //
 // ### `queryInterval`: interval in milliseconds between MongoDB
-// queries while long polling for notifications. Defaults to 1000
-// (1 second). Set it longer if you prefer fewer queries, however
+// queries while long polling for notifications. Defaults to 500
+// (1/2 second). Set it longer if you prefer fewer queries, however
 // these are indexed queries on a small amount of information and
 // should not significantly impact your app.
 //
@@ -153,7 +153,9 @@ module.exports = {
 
         Object.assign(notification, options);
 
-        return self.db.updateOne(
+        // We await here rather than returning because we
+        // expressly do not want to leak mongodb metadata to the browser
+        await self.db.updateOne(
           notification,
           {
             $set: notification,
@@ -162,7 +164,8 @@ module.exports = {
             }
           }, {
             upsert: true
-          });
+          }
+        );
       },
 
       // Resolves with an object with `notifications` and `dismissed`

@@ -114,9 +114,12 @@ export default {
             return !dismissed.some(element => notification._id === element._id);
           });
         }
+        // Long polling, we should reconnect promptly, the server
+        // is responsible for keeping that request open for a reasonable
+        // amount of time if there are no new messages, not us
+        setTimeout(this.poll, 50);
       } catch (err) {
         console.error(err);
-      } finally {
         setTimeout(this.poll, 5000);
       }
     }
