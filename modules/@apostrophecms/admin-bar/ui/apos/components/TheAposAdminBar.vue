@@ -241,7 +241,7 @@ export default {
       retrying: false,
       saved: false,
       savingTimeout: null,
-      draftIsModified: window.apos.adminBar.context.modified,
+      draftIsModified: window.apos.adminBar.context && window.apos.adminBar.context.modified,
       savingStatus: {
         transitioning: false,
         messages: {
@@ -399,8 +399,8 @@ export default {
   },
   mounted() {
     // Listen for bus events coming from notification UI
-    apos.bus.$on('revert-published-to-previous', this.revertPublishedToPrevious);
-
+    apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
+    apos.bus.$on('set-context', this.onSetContext);
     // A unique identifier for this current page'ss lifetime
     // in this browser right now. Not the same thing as a page id
     // or session id. Used for advisory locks, to distinguish
@@ -524,18 +524,57 @@ export default {
       this.saving = false;
       this.saved = true;
     },
-    // TODO switchLocale will need smilar logic and we'll do some
-    // code reuse between them
-    async switchDraftMode(mode) {
-      if (mode === this.draftMode) {
-        return;
+    // Switch the mode to 'published' or 'draft'.
+    //
+    // May refresh or navigate to another URL if needed, depending on whether
+    // _url differs between draft and published. May do nothing if the mode
+    // matches the existing one
+    switchDraftMode(mode) {
+      apos.bus.$emit('set-context', {
+        mode
+      });
+    },
+    // Implements the `set-context` Apostrophe event, which can change the mode
+    // (`draft` or `published`), the locale (such as `en`), and the context
+    // document (`doc`). Navigates to `doc._url` if it differs from the browser's
+    // current URL in the new mode, whether it is the current context doc or not.
+    //
+    // Accepts `mode`, `locale` and `doc` properties in its options object. Whether
+    // the mode and locale are changing or not, if the `_url` of `doc` in the
+    // final mode and locale does not match the current URL, navigate to it.
+    // `doc` becomes the new context doc if it is not already.
+    //
+    // You should not emit `set-context` with a doc that has no `_url`, nor
+    // do you need to because the user's browsing context does not change
+    // when creating such a doc.
+    //
+    // If `locale` or `mode` are not passed, those parameters remain unchanged.
+    // If `doc` is not passed the current context doc is assumed.
+    //
+    // TODO: locales are not fully implemented in the UI yet. They are considered
+    // in this API to reduce bc breaks in forthcoming betas.
+    async onSetContext({
+      mode,
+      locale,
+      doc
+    }) {
+      mode = mode || this.draftMode;
+      locale = locale || apos.locale;
+      doc = doc || this.moduleOptions.context;
+      if ((mode === this.draftMode) && (locale === apos.locale)) {
+        if (!this.urlDiffers(doc._url)) {
+          return;
+        } else {
+          window.location.assign(doc._url);
+        }
       }
       try {
-        const doc = await apos.http.post(`${apos.login.action}/set-locale`, {
+        // Returns the doc as represented in the new locale and mode
+        const modeDoc = await apos.http.post(`${apos.login.action}/set-context`, {
           body: {
             mode,
             locale: apos.locale,
-            _id: this.moduleOptions.contextId
+            _id: doc._id
           }
         });
         window.sessionStorage.setItem('aposStateChange', Date.now());
@@ -545,16 +584,16 @@ export default {
           this.editMode = false;
         }
         this.draftMode = mode;
-        this.moduleOptions.context = doc;
+        this.moduleOptions.context = modeDoc;
         // Changes the ending from :published to :draft, etc.
-        this.moduleOptions.contextId = doc._id;
-        this.refreshOrReload(doc._url);
+        this.moduleOptions.contextId = modeDoc._id;
+        this.refreshOrReload(modeDoc._url);
       } catch (e) {
         if (e.status === 404) {
           // TODO don't get this far, check this in advance and disable it in the UI
           await apos.alert({
-            heading: 'Not Yet Published',
-            description: 'This document has never been published.'
+            heading: 'Does Not Exist Yet',
+            description: `That document is not yet available as ${mode} in the ${locale} locale.`
           });
         } else {
           // Should not happen
@@ -636,7 +675,7 @@ export default {
         location.assign('/');
       }
     },
-    async revertPublishedToPrevious(data) {
+    async onRevertPublishedToPrevious(data) {
       try {
         const doc = await apos.http.post(`${data.action}/${data._id}/revert-published-to-previous`, {
           body: {},
@@ -691,14 +730,21 @@ export default {
       }
     },
     async refreshOrReload(url) {
+      if (this.urlDiffers(url)) {
+        // Slug changed, must navigate
+        window.location.assign(url);
+      } else {
+        // No URL change means we can refresh just the content area
+        this.refresh();
+      }
+    },
+    urlDiffers(url) {
       // URL might or might not include hostname part
       url = url.replace(/^https?:\/\/.*?\//, '/');
       if (url === (window.location.pathname + (window.location.search || ''))) {
-        // No URL change means we can refresh just the content area
-        this.refresh();
+        return false;
       } else {
-        // Slug changed, must navigate
-        window.location.assign(url);
+        return true;
       }
     }
   }

@@ -158,7 +158,7 @@ module.exports = {
             await destroySession();
           }
         },
-        async setLocale(req) {
+        async setContext(req) {
           if (!(self.apos.i18n.isValidLocale(req.body.locale) && [ 'draft', 'published' ].includes(req.body.mode))) {
             throw self.apos.error('invalid');
           }
