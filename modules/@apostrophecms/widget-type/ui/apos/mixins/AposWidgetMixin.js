@@ -72,7 +72,6 @@ export default {
         return;
       }
       const el = this.$el.querySelector(this.playerOpts.selector);
-      console.info(el);
       if (el && this.playerOpts.player) {
         this.playerOpts.player(el);
       }
