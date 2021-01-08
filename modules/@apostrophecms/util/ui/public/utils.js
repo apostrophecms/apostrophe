@@ -137,7 +137,7 @@
   // called when the DOM is ready on initial page load, and also
   // when the main content area has been refreshed by the editor.
 
-  apos.util.onReadyAndRefresh = function(fn, once) {
+  apos.util.onReadyAndRefresh = function(fn) {
     onReady(fn);
     apos.bus && apos.bus.$on('refreshed', fn);
     function onReady(fn) {
