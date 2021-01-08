@@ -130,20 +130,28 @@
 
   apos.util.widgetPlayers = {};
 
-  // On DOMready, similar to jQuery. Always defers at least to next tick.
-  // http://youmightnotneedjquery.com/
+  // Run the given function whenever the DOM has new changes that
+  // may require attention. For instance, we use this function to
+  // schedule apos.util.runPlayers to run widget player code for
+  // widgets that are new in the DOM. The passed function will be
+  // called when the DOM is ready on initial page load, and also
+  // when the main content area has been refreshed by the editor.
 
-  apos.util.onReady = function(fn) {
-    if (document.readyState !== 'loading') {
-      setTimeout(fn, 0);
-    } else if (document.addEventListener) {
-      document.addEventListener('DOMContentLoaded', fn);
-    } else {
-      document.attachEvent('onreadystatechange', function() {
-        if (document.readyState !== 'loading') {
-          fn();
-        }
-      });
+  apos.util.onReadyAndRefresh = function(fn) {
+    onReady(fn);
+    apos.bus && apos.bus.$on('refreshed', fn);
+    function onReady(fn) {
+      if (document.readyState !== 'loading') {
+        setTimeout(fn, 0);
+      } else if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', fn);
+      } else {
+        document.attachEvent('onreadystatechange', function() {
+          if (document.readyState !== 'loading') {
+            fn();
+          }
+        });
+      }
     }
   };
 
@@ -187,11 +195,10 @@
     }
   };
 
-  // Schedule runPlayers to run as soon as the document is ready.
-  // You can run it again with apos.util.runPlayers() if you AJAX-load some widgets.
+  // Schedule runPlayers to run as soon as the document is ready, and also
+  // when the page is partially refreshed by the editor.
 
-  apos.util.onReady(function() {
-    // Indirection so you can override `apos.util.runPlayers` first if you want to for some reason
+  apos.util.onReadyAndRefresh(function() {
     apos.util.runPlayers();
   });
 
