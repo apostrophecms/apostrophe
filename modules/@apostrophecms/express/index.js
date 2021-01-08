@@ -178,7 +178,7 @@ module.exports = {
         }
       },
       'apostrophe:modulesReady': {
-        async addCsrfAndModuleMiddleware() {
+        async addCsrfAndModuleMiddlewareAndRoutes() {
           self.enableCsrf();
           // This has to happen on modulesReady, so that it happens before
           // the adding of routes by other, later modules on modulesReady,
@@ -188,6 +188,7 @@ module.exports = {
           for (const middleware of self.finalModuleMiddleware) {
             self.apos.app.use(middleware);
           }
+          await self.emit('addRoutes');
         }
       }
     };

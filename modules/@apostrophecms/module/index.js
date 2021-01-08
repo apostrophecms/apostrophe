@@ -612,17 +612,19 @@ module.exports = {
   handlers(self, options) {
     return {
       'apostrophe:modulesReady': {
-        // Enable CORS headers for all APIs of this module
-        enableCors() {
-          if (self.apos.app) {
-            self.apos.app.use(self.action, cors());
-          }
-        },
         addHelpers() {
           // We check this just to allow init in bootstrap tests that
           // have no templates module
           if (self.apos.template) {
             self.apos.template.addHelpersForModule(self, self.__helpers);
+          }
+        }
+      },
+      '@apostrophecms/express:addRoutes': {
+        // Enable CORS headers for all APIs of this module
+        enableCors() {
+          if (self.apos.app) {
+            self.apos.app.use(self.action, cors());
           }
         },
         addAllRoutes() {
