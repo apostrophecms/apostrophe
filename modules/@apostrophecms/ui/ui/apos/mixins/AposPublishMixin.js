@@ -11,7 +11,7 @@ export default {
     // A notification of success is displayed, with a button to revert the published
     // mode of the document to its previous value.
     //
-    // Returns true if the document was in fact published.
+    // Returns `true` if the document was ultimately published.
     async publish(action, _id) {
       try {
         await apos.http.post(`${action}/${_id}/publish`, {
@@ -58,6 +58,7 @@ export default {
             description: e.message || 'An error occurred while publishing the document.'
           });
         }
+        return false;
       }
       return false;
     },

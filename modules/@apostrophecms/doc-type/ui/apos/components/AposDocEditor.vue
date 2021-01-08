@@ -21,6 +21,7 @@
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
+        :is-published="!!published"
         :options="{ saveDraft: true }"
         @saveDraft="saveDraft"
         @discardDraft="onDiscardDraft"

@@ -181,6 +181,7 @@
               :is-modified="draftIsModified"
               :can-discard-draft="draftIsModified"
               :is-modified-from-published="draftIsModified"
+              :is-published="!!moduleOptions.context.lastPublishedAt"
               :options="{ saveDraft: false }"
               @discardDraft="onDiscardDraft"
             />
@@ -399,12 +400,9 @@ export default {
   },
   mounted() {
     // Listen for bus events coming from notification UI
+    apos.bus.$on('revert-published-to-previous', this.revertPublishedToPrevious);
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('set-context', this.onSetContext);
-    // A unique identifier for this current page'ss lifetime
-    // in this browser right now. Not the same thing as a page id
-    // or session id. Used for advisory locks, to distinguish
-    // different tabs owned by the same user
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
 
@@ -479,7 +477,9 @@ export default {
   },
   methods: {
     async onPublish(e) {
-      if (await this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId)) {
+      const published = await this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId);
+      if (published) {
+        this.moduleOptions.context.lastPublishedAt = Date.now();
         this.draftIsModified = false;
       }
     },
