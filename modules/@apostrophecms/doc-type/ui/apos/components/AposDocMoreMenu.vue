@@ -32,6 +32,12 @@ export default {
         return false;
       }
     },
+    isPublished: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canDiscardDraft: {
       type: Boolean,
       default() {
@@ -86,7 +92,7 @@ export default {
         // },
         ...(this.canDiscardDraft ? [
           {
-            label: 'Discard Draft',
+            label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
             action: 'discardDraft',
             modifiers: [ 'danger' ]
           }
