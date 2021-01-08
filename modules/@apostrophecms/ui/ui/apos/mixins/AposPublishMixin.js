@@ -60,7 +60,6 @@ export default {
         }
         return false;
       }
-      return false;
     },
 
     // A UI method to revert a draft document to the last published version or, if the document
