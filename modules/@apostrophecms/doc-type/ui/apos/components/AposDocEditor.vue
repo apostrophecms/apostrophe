@@ -441,9 +441,18 @@ export default {
       }
     },
     submit() {
-      this.save(this.manuallyPublished);
+      this.save({
+        andPublish: this.manuallyPublished,
+        savingDraft: false
+      });
     },
-    save(andPublish = false) {
+    // If andPublish is true, publish after saving.
+    // If savingDraft is true, make sure we're in draft
+    // mode before redirecting to the _url of the draft.
+    async save({
+      andPublish = false,
+      savingDraft = false
+    }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
@@ -501,8 +510,11 @@ export default {
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
-        if ((this.moduleName === '@apostrophecms/page') && (!this.docId)) {
-          window.location.href = doc._url;
+        if (doc._url && (!this.docId)) {
+          apos.bus.$emit('set-context', {
+            mode: savingDraft ? 'draft' : null,
+            doc
+          });
         }
       });
     },
@@ -599,7 +611,10 @@ export default {
       }
     },
     saveDraft() {
-      this.save(false);
+      this.save({
+        andPublish: false,
+        savingDraft: true
+      });
     }
   }
 };
