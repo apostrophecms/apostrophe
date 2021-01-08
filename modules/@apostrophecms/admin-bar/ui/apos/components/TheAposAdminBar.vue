@@ -626,6 +626,7 @@ export default {
       if (!result) {
         return;
       }
+      this.draftIsModified = false;
       if (result.doc) {
         this.refreshOrReload(result.doc._url);
       } else {
