@@ -10,6 +10,8 @@ export default {
     //
     // A notification of success is displayed, with a button to revert the published
     // mode of the document to its previous value.
+    //
+    // Returns true if the document was in fact published.
     async publish(action, _id) {
       try {
         await apos.http.post(`${action}/${_id}/publish`, {
@@ -27,6 +29,7 @@ export default {
           type: 'success',
           dismiss: true
         });
+        return true;
       } catch (e) {
         if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
           if (await apos.confirm({
@@ -56,6 +59,7 @@ export default {
           });
         }
       }
+      return false;
     },
 
     // A UI method to revert a draft document to the last published version or, if the document

@@ -478,8 +478,10 @@ export default {
     }
   },
   methods: {
-    onPublish(e) {
-      this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId);
+    async onPublish(e) {
+      if (await this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId)) {
+        this.draftIsModified = false;
+      }
     },
     beforeUnload(e) {
       if (this.patchesSinceSave.length || this.saving || this.editing) {
