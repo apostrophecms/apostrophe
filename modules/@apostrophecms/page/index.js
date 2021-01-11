@@ -207,7 +207,7 @@ module.exports = {
       // `_home` or `_trash`
       async getOne(req, _id) {
         self.publicApiCheck(req);
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id, true);
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -309,7 +309,7 @@ module.exports = {
 
       async put(req, _id) {
         self.publicApiCheck(req);
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id, true);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {
@@ -356,7 +356,7 @@ module.exports = {
       // fully deleted, which isn't the same as having references still in the trash.
       async delete(req, _id) {
         self.publicApiCheck(req);
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id, true);
         const page = await self.findOneForEditing(req, {
           _id
         });
@@ -377,7 +377,7 @@ module.exports = {
     return {
       post: {
         ':_id/publish': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id, true);
           const draft = await self.findOneForEditing({
             ...req,
             mode: 'draft'
@@ -394,7 +394,7 @@ module.exports = {
           return self.publish(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id, true);
           const draft = await self.findOneForEditing({
             ...req,
             mode: 'draft'
@@ -411,7 +411,7 @@ module.exports = {
           return self.revertDraftToPublished(req, draft);
         },
         ':_id/revert-published-to-previous': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id, true);
           const published = await self.findOneForEditing({
             ...req,
             mode: 'published'

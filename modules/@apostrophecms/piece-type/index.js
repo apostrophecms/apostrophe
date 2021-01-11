@@ -182,7 +182,7 @@ module.exports = {
     },
     async getOne(req, _id) {
       self.publicApiCheck(req);
-      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id, self.name);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -199,12 +199,12 @@ module.exports = {
     },
     async put(req, _id) {
       self.publicApiCheck(req);
-      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id, self.name);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
     async delete(req, _id) {
       self.publicApiCheck(req);
-      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id, self.name);
       const piece = await self.findOneForEditing(req, {
         _id
       });
@@ -212,7 +212,7 @@ module.exports = {
     },
     patch(req, _id) {
       self.publicApiCheck(req);
-      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+      _id = self.apos.i18n.inferIdLocaleAndMode(req, _id, self.name);
       return self.patch(req, _id);
     }
   }),
@@ -220,7 +220,7 @@ module.exports = {
     return {
       post: {
         ':_id/publish': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id, self.name);
           const draft = await self.findOneForEditing({
             ...req,
             mode: 'draft'
@@ -237,7 +237,7 @@ module.exports = {
           return self.publish(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id, self.name);
           const draft = await self.findOneForEditing({
             ...req,
             mode: 'draft'
@@ -254,7 +254,7 @@ module.exports = {
           return self.revertDraftToPublished(req, draft);
         },
         ':_id/revert-published-to-previous': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id, self.name);
           const published = await self.findOneForEditing({
             ...req,
             mode: 'published'
