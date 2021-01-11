@@ -129,6 +129,10 @@ export default {
   }
 </style>
 
+<!--
+  This styleblock is unscoped so that it reaches the color field's implementation
+  of AposContextMenu, which is outside the component's DOM tree
+-->
 <style lang="scss">
   .apos-popover .vc-sketch {
     padding: 0;
