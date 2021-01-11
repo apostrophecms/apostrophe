@@ -105,6 +105,11 @@ export default {
           return 'required';
         }
       }
+
+      if (!value) {
+        return false;
+      }
+
       const color = tinycolor(value);
       return color.isValid() ? false : 'Error';
     }
@@ -116,15 +121,17 @@ export default {
   .apos-color {
     display: flex;
     align-items: center;
-
-    & /deep/ .vc-sketch {
-      padding: 0;
-      box-shadow: none;
-    }
   }
 
   .apos-color__info {
     @include type-base;
     margin-left: 15px;
+  }
+</style>
+
+<style lang="scss">
+  .apos-popover .vc-sketch {
+    padding: 0;
+    box-shadow: none;
   }
 </style>
