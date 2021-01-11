@@ -38,7 +38,7 @@
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
-        :rendering="renderings[widget._id]"
+        :rendering="rendering(widget)"
         @up="up"
         @down="down"
         @remove="remove"
@@ -116,7 +116,8 @@ export default {
       focusedWidget: null,
       contextMenuOptions: {
         menu: this.choices
-      }
+      },
+      edited: {}
     };
   },
   computed: {
@@ -327,6 +328,7 @@ export default {
         widget,
         ...this.next.slice(index + 1)
       ];
+      this.edited[widget._id] = true;
     },
     // Add a widget into a *singleton* area.
     async add(name) {
@@ -410,6 +412,13 @@ export default {
             return result;
           }
         }
+      }
+    },
+    rendering(widget) {
+      if (this.edited[widget._id]) {
+        return null;
+      } else {
+        return this.renderings[widget._id];
       }
     }
   }

@@ -35,7 +35,7 @@
           <li class="apos-area-widget__breadcrumb">
             <AposButton
               type="quiet"
-              @click="foreign ? $emit('edit', i) : getFocus($event, item.id)"
+              @click="foreign ? $emit('edit', i) : false"
               :label="foreign ? 'Edit ' + widgetLabel : widgetLabel"
               tooltip="Click to edit this content in its natural context"
               :icon="foreign ? 'earth-icon' : null"
