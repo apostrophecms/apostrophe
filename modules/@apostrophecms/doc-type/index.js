@@ -625,12 +625,15 @@ module.exports = {
         }, {
           locale: publishedLocale
         });
+        const lastPublishedAt = new Date();
         if (!published) {
           firstTime = true;
           published = {
             _id: publishedId,
             aposDocId: draft.aposDocId,
-            aposLocale: publishedLocale
+            aposLocale: publishedLocale,
+            lastPublishedAt,
+            publicationCount: 1
           };
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
@@ -649,6 +652,8 @@ module.exports = {
             options,
             firstTime
           });
+          published.lastPublishedAt = lastPublishedAt;
+          published.publicationCount = (published.publicationCount || 1) + 1;
           published = await self.update({
             ...req,
             mode: 'published'
@@ -659,7 +664,10 @@ module.exports = {
         }, {
           $set: {
             modified: false,
-            lastPublishedAt: new Date()
+            lastPublishedAt
+          },
+          $inc: {
+            publicationCount: 1
           }
         });
         // Now that we're sure publication worked, update "previous" so we
@@ -715,15 +723,47 @@ module.exports = {
         await self.emit('afterRevertDraftToPublished', req, result);
         return result.draft;
       },
+      // Used to implement "Undo Publish."
+      //
+      // Revert the doc `published` to its content as of its most recent
+      // previous publication. If it has only been published once,
+      // delete the published version of the document completely.
+      // Does not affect the related draft document.
+      //
+      // Returns `false` if it is not possible to revert because
+      // only one previous version is available and it has already
+      // been used in this way.
       async revertPublishedToPrevious(req, published) {
+        if (published.publicationCount === 1) {
+          await self.apos.doc.delete({
+            ...req,
+            mode: 'published'
+          }, published);
+          await self.apos.doc.db.updateOne({
+            _id: published._id.replace(':published', ':draft')
+          }, {
+            $set: {
+              publicationCount: 0,
+              lastPublishedAt: null,
+              modified: true
+            }
+          });
+          // Successfully unpublished by deleting the
+          // first and only publication altogether, so
+          // we do not return a new published state
+          return false;
+        }
         const previousId = published._id.replace(':published', ':previous');
         const previous = await self.apos.doc.db.findOne({
           _id: previousId
         });
         if (!previous) {
-          return false;
+          // Feature has already been used
+          throw self.apos.error('invalid');
         }
         self.copyForPublication(req, previous, published);
+        published.lastPublishedAt = previous.lastPublishedAt;
+        published.publicationCount = previous.publicationCount;
         published = await self.update({
           ...req,
           mode: 'published'

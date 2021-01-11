@@ -197,17 +197,11 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:afterDelete': {
-        // If deleting draft also delete published,
-        // and vice versa. (Note that when the user
-        // "discards the draft" of a previously published
-        // document it is not really deleted, it is reset
-        // to the current contents of the published mode,
-        // so we don't lose both in that scenario.)
+        // If deleting draft also delete published, but
+        // not vice versa ("undo publish" is a thing).
         async deleteOtherModeAfterDelete(req, doc) {
           if (doc.aposLocale.endsWith(':draft')) {
             return cleanup('published');
-          } else {
-            return cleanup('draft');
           }
           async function cleanup(mode) {
             const manager = self.getManager(doc.type);
@@ -228,7 +222,7 @@ module.exports = {
           if (doc.aposLocale.endsWith('published')) {
             return self.db.removeOne({
               aposDocId: doc.aposDocId,
-              aposLocale: doc.aposDocLocale.replace(':published', ':previous')
+              aposLocale: doc.aposLocale.replace(':published', ':previous')
             });
           }
         }

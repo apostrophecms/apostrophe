@@ -215,7 +215,7 @@ export default {
     },
     saveLabel() {
       if (this.manuallyPublished) {
-        if (this.original.lastPublishedAt) {
+        if (this.original && this.original.lastPublishedAt) {
           return 'Publish Changes';
         } else {
           return 'Publish';

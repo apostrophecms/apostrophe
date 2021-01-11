@@ -268,7 +268,17 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
-          return self.revertPublishedToPrevious(req, published);
+          const result = await self.revertPublishedToPrevious(req, published);
+          if (result) {
+            return {
+              message: 'Restored previously published version.',
+              lastPublishedAt: result.lastPublishedAt
+            };
+          } else {
+            return {
+              message: 'No longer published.'
+            };
+          }
         }
       }
     };

@@ -408,7 +408,6 @@ export default {
   },
   mounted() {
     // Listen for bus events coming from notification UI
-    apos.bus.$on('revert-published-to-previous', this.revertPublishedToPrevious);
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('set-context', this.onSetContext);
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
@@ -685,21 +684,24 @@ export default {
     },
     async onRevertPublishedToPrevious(data) {
       try {
-        const doc = await apos.http.post(`${data.action}/${data._id}/revert-published-to-previous`, {
+        const response = await apos.http.post(`${data.action}/${data._id}/revert-published-to-previous`, {
           body: {},
           busy: true
         });
-        apos.notify('Restored previously published version.', {
+        apos.notify(response.message, {
           type: 'success',
           dismiss: true
         });
         // This handler covers all "undo publish" buttons, so make sure it's
         // for the context document before altering any admin bar state
         // because of it
-        if (doc.aposDocId === (this.context && this.context.aposDocId)) {
+        const aposDocId = data._id.replace(/:.*$/, '');
+        if (data._id.replace(/:.*$/, '') === (this.moduleOptions.context && this.moduleOptions.context._id.replace(/:.*$/, ''))) {
           this.draftIsModified = true;
-          this.lastPublishedAt = doc.lastPublishedAt;
-          this.refreshOrReload(doc._url);
+          this.lastPublishedAt = response.lastPublishedAt;
+          // No refresh is needed here because we're still in draft mode
+          // looking at the draft mode, and the thing that changed is the
+          // published mode
         }
       } catch (e) {
         await apos.alert({
