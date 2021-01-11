@@ -16,9 +16,13 @@
   margin-right: 5px;
 }
 
-.apos-table__header-label {
-  @include type-base;
+.apos-table__header-label,
+.apos-table__cell-field {
   @include apos-button-reset();
+  @include type-base;
+}
+
+.apos-table__header-label {
   display: flex;
   align-items: center;
 }
@@ -53,13 +57,9 @@ span.apos-table__header-label:hover {
 }
 
 .apos-table__cell-field {
-  @include type-base;
   margin: 0;
 }
 
-button.apos-table__cell-field {
-  @include apos-button-reset();
-}
 // might have to be expanded kinda magic
 .apos-table__cell-field--title {
   max-width: 400px;
