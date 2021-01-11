@@ -65,6 +65,11 @@ module.exports = {
         }
         req.locale = locale;
         req.mode = mode;
+        if ((req.mode === 'draft') && (!self.apos.permission.can(req, 'view-draft'))) {
+          return res.status(403).send({
+            name: 'forbidden'
+          });
+        }
         return self.i18n.init(req, res, next);
       }
     };
@@ -96,6 +101,9 @@ module.exports = {
           // was in query params or defaults
           locale = req.locale;
           mode = req.mode;
+        }
+        if ((req.mode === 'draft') && (!self.apos.permission.can(req, 'view-draft'))) {
+          throw self.apos.error('forbidden');
         }
         if (_id.charAt(0) === '_') {
           // A shortcut such as _home or _trash,
