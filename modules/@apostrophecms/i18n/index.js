@@ -17,10 +17,15 @@
 
 const _ = require('lodash');
 const i18n = require('i18n');
+const cuid = require('cuid');
 
 module.exports = {
   options: {
-    alias: 'i18n'
+    alias: 'i18n',
+    sharedDrafts: {
+      // Default lifetime of a shared draft URL is 1 week
+      lifetime: 86400 * 7
+    }
   },
   init(self, options) {
     const i18nOptions = self.options || {};
@@ -36,7 +41,7 @@ module.exports = {
   },
   middleware(self, options) {
     return {
-      init(req, res, next) {
+      async init(req, res, next) {
         // Support for a single apos-locale query param that
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
@@ -65,7 +70,48 @@ module.exports = {
         }
         req.locale = locale;
         req.mode = mode;
+        if ((req.mode === 'draft') && (!self.apos.permission.can(req, 'view-draft'))) {
+          return res.status(403).send({
+            name: 'forbidden'
+          });
+        }
+        if (req.query['apos-share-draft']) {
+          // Bypass permissions for draft mode, but only if the URL
+          // matches, minus the apos-share-draft=xyz bit
+          const sharedDraft = await self.apos.cache.get('shared-drafts', req.query['apos-share-draft']);
+          if ((!sharedDraft) || (sharedDraft !== req.url.replace(/[?&]?apos-share-draft=[\w+]/, ''))) {
+            delete req.query['apos-share-draft'];
+          } else {
+            req.mode = 'draft';
+          }
+        }
         return self.i18n.init(req, res, next);
+      }
+    };
+  },
+  apiRoutes(self, options) {
+    return {
+      post: {
+        async sharedDraft(req) {
+          if (!self.apos.permission.can(req, 'view-draft')) {
+            throw self.apos.error('forbidden');
+          }
+          const _id = cuid();
+          const url = self.apos.launder.string(req.query.url).replace(/^#.*$/, '');
+          if ((!url) || (!url.match(/^\//))) {
+            throw self.apos.error('invalid');
+          }
+          await self.apos.cache.set('shared-drafts', _id, url, self.options.sharedDrafts.lifetime);
+          let shareUrl;
+          if (req.query.url.match(/?/)) {
+            shareUrl = `${url}&apos-share-draft=${_id}`;
+          } else {
+            shareUrl = `${url}?apos-share-draft=${_id}`;
+          }
+          return {
+            url: shareUrl
+          };
+        }
       }
     };
   },

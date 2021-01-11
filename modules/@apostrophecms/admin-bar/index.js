@@ -280,6 +280,7 @@ module.exports = {
           },
           // Base API URL appropriate to the context document
           contextAction,
+          contextLocalized: context && self.apos.doc.getManager(context.type).isLocalized(),
           // Simplifies frontend logic
           contextId: context && context._id,
           htmlPageId: cuid(),

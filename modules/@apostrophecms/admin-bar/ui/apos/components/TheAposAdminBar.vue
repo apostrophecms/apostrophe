@@ -179,6 +179,7 @@
               :doc-id="moduleOptions.contextId"
               v-if="draftIsModified"
               :is-modified="draftIsModified"
+              :can-share-draft="moduleOptions.contextIsLocalized"
               :can-discard-draft="draftIsModified"
               :is-modified-from-published="draftIsModified"
               :is-published="!!moduleOptions.context.lastPublishedAt"

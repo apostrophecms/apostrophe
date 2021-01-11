@@ -44,6 +44,12 @@ export default {
         return false;
       }
     },
+    canShareDraft: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     options: {
       type: Object,
       required: true
@@ -90,6 +96,12 @@ export default {
         //   label: 'Duplicate Document',
         //   action: 'duplicate'
         // },
+        ...(this.canShareDraft ? [
+          {
+            label: 'Share Draft',
+            action: 'shareDraft'
+          }
+        ] : []),
         ...(this.canDiscardDraft ? [
           {
             label: this.isPublished ? 'Discard Changes' : 'Discard Draft',

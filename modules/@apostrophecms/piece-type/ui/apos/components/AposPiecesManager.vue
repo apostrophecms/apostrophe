@@ -190,7 +190,6 @@ export default {
   },
   async mounted() {
     this.bindShortcuts();
-    // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
     if (this.relationshipField) {
