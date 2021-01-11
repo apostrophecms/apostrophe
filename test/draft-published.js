@@ -255,9 +255,14 @@ describe('Draft / Published', function() {
     const published = await apos.product.findOneForEditing(req, {
       aposDocId: testDraftProduct.aposDocId
     });
-    assert(!await apos.product.revertPublishedToPrevious(apos.task.getReq({
-      mode: 'draft'
-    }), published));
+    try {
+      await apos.product.revertPublishedToPrevious(apos.task.getReq({
+        mode: 'draft'
+      }), published);
+      assert(false);
+    } catch (e) {
+      assert(e.name === 'invalid');
+    }
   });
 
   let parent;
@@ -409,9 +414,14 @@ describe('Draft / Published', function() {
     const published = await apos.page.findOneForEditing(req, {
       aposDocId: parent.aposDocId
     });
-    assert(!await apos.page.revertPublishedToPrevious(apos.task.getReq({
-      mode: 'draft'
-    }), published));
+    try {
+      await apos.page.revertPublishedToPrevious(apos.task.getReq({
+        mode: 'draft'
+      }), published);
+      assert(false);
+    } catch (e) {
+      assert(e.name === 'invalid');
+    }
   });
 
   let sibling;

@@ -726,7 +726,7 @@ module.exports = {
       // Used to implement "Undo Publish."
       //
       // Revert the doc `published` to its content as of its most recent
-      // previous publication. If it has only been published once,
+      // previous publication. If it has only been published once ever,
       // delete the published version of the document completely.
       // Does not affect the related draft document.
       //
@@ -763,7 +763,7 @@ module.exports = {
         }
         self.copyForPublication(req, previous, published);
         published.lastPublishedAt = previous.lastPublishedAt;
-        published.publicationCount = previous.publicationCount;
+        // publicationCount count does NOT roll back
         published = await self.update({
           ...req,
           mode: 'published'
@@ -782,6 +782,7 @@ module.exports = {
           $set: {
             modified
           }
+          // publicationCount does NOT roll back, that's a lifetime count
         });
         return result.published;
       },
