@@ -215,7 +215,11 @@ export default {
     },
     saveLabel() {
       if (this.manuallyPublished) {
-        return 'Publish Changes';
+        if (this.original.lastPublishedAt) {
+          return 'Publish Changes';
+        } else {
+          return 'Publish';
+        }
       } else {
         return 'Save';
       }

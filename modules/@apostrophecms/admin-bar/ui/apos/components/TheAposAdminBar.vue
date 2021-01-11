@@ -181,7 +181,7 @@
               :is-modified="draftIsModified"
               :can-discard-draft="draftIsModified"
               :is-modified-from-published="draftIsModified"
-              :is-published="!!moduleOptions.context.lastPublishedAt"
+              :is-published="!!lastPublishedAt"
               :options="{ saveDraft: false }"
               @discardDraft="onDiscardDraft"
             />
@@ -196,7 +196,7 @@
             />
             <AposButton
               v-if="editMode"
-              type="primary" label="Publish Changes"
+              type="primary" :label="publishLabel"
               :disabled="!readyToPublish"
               class="apos-admin-bar__btn apos-admin-bar__context-button"
               @click="onPublish"
@@ -261,7 +261,8 @@ export default {
             class: 'is-warning'
           }
         }
-      }
+      },
+      lastPublishedAt: window.apos.adminBar.context && window.apos.adminBar.context.lastPublishedAt
     };
   },
   computed: {
@@ -382,6 +383,13 @@ export default {
           modifiers: (this.draftMode === 'published') ? [ 'disabled' ] : null
         }
       ];
+    },
+    publishLabel() {
+      if (this.lastPublishedAt) {
+        return 'Publish Changes';
+      } else {
+        return 'Publish';
+      }
     }
   },
   watch: {
@@ -479,7 +487,7 @@ export default {
     async onPublish(e) {
       const published = await this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId);
       if (published) {
-        this.moduleOptions.context.lastPublishedAt = Date.now();
+        this.lastPublishedAt = Date.now();
         this.draftIsModified = false;
       }
     },
@@ -663,7 +671,7 @@ export default {
       apos.bus.$emit('refreshed');
     },
     async onDiscardDraft(e) {
-      const result = await this.discardDraft(this.moduleOptions.contextAction, this.moduleOptions.contextId, !!this.moduleOptions.context.lastPublishedAt);
+      const result = await this.discardDraft(this.moduleOptions.contextAction, this.moduleOptions.contextId, !!this.lastPublishedAt);
       if (!result) {
         return;
       }
@@ -690,8 +698,7 @@ export default {
         // because of it
         if (doc.aposDocId === (this.context && this.context.aposDocId)) {
           this.draftIsModified = true;
-          this.publishedAt = null;
-          this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;
+          this.lastPublishedAt = doc.lastPublishedAt;
           this.refreshOrReload(doc._url);
         }
       } catch (e) {
