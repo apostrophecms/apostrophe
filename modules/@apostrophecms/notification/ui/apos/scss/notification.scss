@@ -1,6 +1,6 @@
 .apos-notifications {
   z-index: $z-index-notifications;
-  position: absolute;
+  position: fixed;
   right: 20px;
   bottom: 20px;
   display: flex;
