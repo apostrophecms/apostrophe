@@ -5,6 +5,7 @@
       v-bind="extendedContextMenuOptions"
       @open="menuOpen"
       @close="menuClose"
+      ref="contextMenu"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -164,6 +165,10 @@ export default {
       this.$emit('menu-open', e);
     },
     async add(name) {
+      // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
+      // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
+      // as it is often the logical experience (not always, see tag menus and filters)
+      this.$refs.contextMenu.isOpen = false;
       if (this.widgetIsContextual(name)) {
         this.insert({
           _id: cuid(),
@@ -180,7 +185,6 @@ export default {
           this.insert(result);
         }
       }
-      this.menuClose();
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
