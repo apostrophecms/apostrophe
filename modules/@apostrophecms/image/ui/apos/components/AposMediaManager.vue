@@ -191,6 +191,10 @@ export default {
   async mounted() {
     this.modal.active = true;
     await this.getMedia({ tags: true });
+    apos.bus.$on('content-changed', this.onContentChanged);
+  },
+  destroyed() {
+    apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
     // Update our current idea of whether the doc in the right hand rail
@@ -203,7 +207,7 @@ export default {
         ...this.filterValues,
         page: this.currentPage
       };
-
+      const filtered = !!Object.keys(this.filterValues).length;
       if (this.options && Array.isArray(this.options.filters)) {
         this.options.filters.forEach(filter => {
           if (!filter.choices && qs.choices) {
@@ -229,7 +233,23 @@ export default {
       ));
 
       if (options && options.tags) {
-        this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
+        if (filtered) {
+          // We never filter the tag list because they are presented like folders,
+          // and folders don't disappear when empty. So we need to make a
+          // separate query for distinct tags if our first query was filtered
+          const apiResponse = (await apos.http.get(
+            this.options.action, {
+              busy: true,
+              qs: {
+                choices: '_tags'
+              },
+              draft: true
+            }
+          ));
+          this.tagList = apiResponse.choices._tags;
+        } else {
+          this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
+        }
       }
 
       this.currentPage = apiResponse.currentPage;
@@ -356,6 +376,10 @@ export default {
     search(query) {
       // TODO stub
       this.$emit('search', query);
+    },
+
+    async onContentChanged() {
+      await this.getMedia({ tags: true });
     }
   }
 };
