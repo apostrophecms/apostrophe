@@ -695,7 +695,6 @@ export default {
         // This handler covers all "undo publish" buttons, so make sure it's
         // for the context document before altering any admin bar state
         // because of it
-        const aposDocId = data._id.replace(/:.*$/, '');
         if (data._id.replace(/:.*$/, '') === (this.moduleOptions.context && this.moduleOptions.context._id.replace(/:.*$/, ''))) {
           this.draftIsModified = true;
           this.lastPublishedAt = response.lastPublishedAt;
