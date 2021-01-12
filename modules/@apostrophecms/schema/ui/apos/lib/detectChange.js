@@ -29,7 +29,7 @@ export function detectFieldChange(field, v1, v2) {
         if (key === '_docId') {
           newObject._docId = o._docId.replace(/:.*$/, '');
         } else if (key === '_id') {
-          newObject._id = o._id;
+          newObject._id = o._id.replace(/:.*$/, '');
         } else if (key.substring(0, 1) === '_') {
           // Different results for temporary properties
           // don't matter
