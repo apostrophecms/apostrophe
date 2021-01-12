@@ -162,6 +162,22 @@ module.exports = {
           }
         }
       },
+      beforeUnpublish: {
+        async descendantsMustNotBePublished(req, published) {
+          const descendants = await self.apos.doc.db.countDocuments({
+            path: self.apos.page.matchDescendants(published),
+            aposLocale: published.aposLocale
+          });
+          if (descendants) {
+            // TODO it might be nice to have an option to automatically do it
+            // recursively, but right now this is a hypothetical because we
+            // only invoke the unpublish API as "undo publish," and "publish" is already
+            // guarded to happen from the bottom up. Just providing minimum
+            // acceptable coverage here for now
+            throw self.apos.error('invalid', 'You must unpublish child pages before unpublishing their parent.');
+          }
+        }
+      },
       afterRevertDraftToPublished: {
         async replayMoveAfterRevert(req, result) {
           const _req = {

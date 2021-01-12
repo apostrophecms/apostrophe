@@ -510,7 +510,7 @@ export default {
           }
         }
         if (andPublish) {
-          await this.publish(this.moduleAction, doc._id);
+          await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;

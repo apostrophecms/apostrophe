@@ -410,6 +410,7 @@ export default {
   mounted() {
     // Listen for bus events coming from notification UI
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
+    apos.bus.$on('unpublish', this.onUnpublish);
     apos.bus.$on('set-context', this.onSetContext);
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
@@ -485,7 +486,7 @@ export default {
   },
   methods: {
     async onPublish(e) {
-      const published = await this.publish(this.moduleOptions.contextAction, this.context._id);
+      const published = await this.publish(this.moduleOptions.contextAction, this.context._id, !!this.context.lastPublishedAt);
       if (published) {
         this.context = {
           ...this.context,
@@ -696,11 +697,41 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify(response ? 'Restored previously published version.' : 'No longer published.', {
+        apos.notify('Restored previously published version.', {
           type: 'success',
           dismiss: true
         });
-        // This handler covers all "undo publish" buttons, so make sure it's
+        // This handler covers the modals too, so make sure it's
+        // for the context document before altering any admin bar state
+        // because of it
+        if (data._id.replace(/:.*$/, '') === (this.context._id.replace(/:.*$/, ''))) {
+          this.context = {
+            ...this.context,
+            modified: true,
+            lastPublishedAt: response && response.lastPublishedAt
+          };
+          // No refresh is needed here because we're still in draft mode
+          // looking at the draft mode, and the thing that changed is the
+          // published mode
+        }
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred',
+          description: e.message || 'An error occurred while restoring the previously published version.'
+        });
+      }
+    },
+    async onUnpublish(data) {
+      try {
+        const response = await apos.http.post(`${data.action}/${data._id}/unpublish`, {
+          body: {},
+          busy: true
+        });
+        apos.notify('No longer published.', {
+          type: 'success',
+          dismiss: true
+        });
+        // This handler covers the modals too, so make sure it's
         // for the context document before altering any admin bar state
         // because of it
         if (data._id.replace(/:.*$/, '') === (this.context._id.replace(/:.*$/, ''))) {

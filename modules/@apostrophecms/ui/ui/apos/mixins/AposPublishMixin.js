@@ -12,14 +12,14 @@ export default {
     // mode of the document to its previous value.
     //
     // Returns `true` if the document was ultimately published.
-    async publish(action, _id) {
+    async publish(action, _id, previouslyPublished) {
       try {
         await apos.http.post(`${action}/${_id}/publish`, {
           body: {},
           busy: true
         });
         const event = {
-          name: 'revert-published-to-previous',
+          name: previouslyPublished ? 'revert-published-to-previous' : 'unpublish',
           data: {
             action,
             _id
@@ -44,7 +44,7 @@ export default {
                 });
               }
               // Retry now that ancestors are published
-              return this.publish(action, _id);
+              return this.publish(action, _id, previouslyPublished);
             } catch (e) {
               await apos.alert({
                 heading: 'An Error Occurred While Publishing',
