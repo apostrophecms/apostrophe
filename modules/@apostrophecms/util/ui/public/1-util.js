@@ -139,7 +139,10 @@
 
   apos.util.onReadyAndRefresh = function(fn) {
     onReady(fn);
-    apos.bus && apos.bus.$on('refreshed', fn);
+    // Allow Apostrophe to create the bus first
+    setTimeout(function() {
+      apos.bus && apos.bus.$on('refreshed', fn);
+    }, 0);
     function onReady(fn) {
       if (document.readyState !== 'loading') {
         setTimeout(fn, 0);
