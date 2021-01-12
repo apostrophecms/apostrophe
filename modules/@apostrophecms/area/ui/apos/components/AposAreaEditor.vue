@@ -267,11 +267,12 @@ export default {
             }
           );
           if (doc._url) {
+            const contextTitle = window.apos.adminBar.context.title;
             if (await apos.confirm({
-              heading: 'Open that document in a new tab?',
-              description: 'That content is part of another document. Would you like to edit that document in another tab?'
+              heading: `Leave ${contextTitle} to edit ${doc.title}?`,
+              description: `The content you're trying to edit belongs to another document and must be edited there.\nChanges made to ${contextTitle} are saved automatically.`
             })) {
-              window.open(doc._url);
+              location.assign(doc._url);
             }
           } else {
             apos.bus.$emit('admin-menu-click', {
