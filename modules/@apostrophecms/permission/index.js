@@ -40,6 +40,9 @@ module.exports = {
       // a string, this method checks whether the user can potentially carry out
       // the action on that doc type generally.
       //
+      // If a permission is not specific to particular documents,
+      // for instance `view-draft`, `docOrType` may be omitted.
+      //
       // The doc passed need not already exist in the database.
       //
       // See also `criteria` which can be called to build a MongoDB
@@ -50,7 +53,7 @@ module.exports = {
         if (req.user) {
           return true;
         }
-        const manager = self.apos.doc.getManager(docOrType.type || docOrType);
+        const manager = docOrType && (self.apos.doc.getManager(docOrType.type || docOrType));
         if (action === 'view') {
           if (manager.isAdminOnly()) {
             return false;
@@ -66,6 +69,9 @@ module.exports = {
 
       // Returns a MongoDB criteria object that retrieves only documents
       // the user is allowed to perform `action` on.
+      //
+      // If a permission is not specific to particular documents,
+      // for instance `view-draft`, `docOrType` may be omitted.
 
       criteria(req, action) {
         if (req.user) {

@@ -178,8 +178,10 @@ module.exports = {
         }
       },
       'apostrophe:modulesReady': {
-        async addCsrfAndModuleMiddlewareAndRoutes() {
+        addCsrf() {
           self.enableCsrf();
+        },
+        addModuleMiddleware() {
           // This has to happen on modulesReady, so that it happens before
           // the adding of routes by other, later modules on modulesReady,
           // and before the adding of the catch-all route for pages
@@ -188,6 +190,8 @@ module.exports = {
           for (const middleware of self.finalModuleMiddleware) {
             self.apos.app.use(middleware);
           }
+        },
+        async addModuleRoutes() {
           await self.emit('addRoutes');
         }
       }
