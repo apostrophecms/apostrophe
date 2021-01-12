@@ -116,7 +116,7 @@
               class="apos-admin-bar__title__indicator"
             />
             <span class="apos-admin-bar__title__document-title">
-              {{ moduleOptions.context.title }}
+              {{ context.title }}
             </span>
             <span class="apos-admin-bar__title__separator">
               —
@@ -157,7 +157,7 @@
             class="apos-admin-bar__control-set__group"
           >
             <AposButton
-              v-if="moduleOptions.contextId"
+              v-if="context._id"
               class="apos-admin-bar__context-button"
               label="Page Settings" :tooltip="{
                 content: 'Page Settings',
@@ -168,7 +168,7 @@
               @click="emitEvent({
                 itemName: contextEditorName,
                 props: {
-                  docId: moduleOptions.contextId
+                  docId: context._id
                 }
               })"
             />
@@ -176,12 +176,12 @@
               do not require that the draft be modified, but right now we just have
               Discard Draft which requires a modified draft -->
             <AposDocMoreMenu
-              :doc-id="moduleOptions.contextId"
-              v-if="draftIsModified"
-              :is-modified="draftIsModified"
-              :can-discard-draft="draftIsModified"
-              :is-modified-from-published="draftIsModified"
-              :is-published="!!lastPublishedAt"
+              :doc-id="context._id"
+              v-if="context.modified"
+              :is-modified="context.modified"
+              :can-discard-draft="context.modified"
+              :is-modified-from-published="context.modified"
+              :is-published="!!context.lastPublishedAt"
               :options="{ saveDraft: false }"
               @discardDraft="onDiscardDraft"
             />
@@ -242,7 +242,9 @@ export default {
       retrying: false,
       saved: false,
       savingTimeout: null,
-      draftIsModified: window.apos.adminBar.context && window.apos.adminBar.context.modified,
+      context: window.apos.adminBar.context ? {
+        ...window.apos.adminBar.context
+      } : {},
       savingStatus: {
         transitioning: false,
         messages: {
@@ -261,15 +263,14 @@ export default {
             class: 'is-warning'
           }
         }
-      },
-      lastPublishedAt: window.apos.adminBar.context && window.apos.adminBar.context.lastPublishedAt
+      }
     };
   },
   computed: {
     updatedBy() {
       let editorLabel = 'ApostropheCMS ■●▲';
-      if (this.moduleOptions.context.updatedBy) {
-        const editor = this.moduleOptions.context.updatedBy;
+      if (this.context.updatedBy) {
+        const editor = this.context.updatedBy;
         editorLabel = '';
         editorLabel += editor.firstName ? `${editor.firstName} ` : '';
         editorLabel += editor.lastName ? `${editor.lastName} ` : '';
@@ -278,7 +279,7 @@ export default {
       return editorLabel;
     },
     docTooltip() {
-      return `Last saved on ${dayjs(this.moduleOptions.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;
+      return `Last saved on ${dayjs(this.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;
     },
     undoTooltips() {
       const tooltips = {
@@ -352,7 +353,7 @@ export default {
       return !!this.patchesSinceSave.length;
     },
     readyToPublish() {
-      return this.draftIsModified && (!this.needToAutosave) && (!this.editing);
+      return this.context.modified && (!this.needToAutosave) && (!this.editing);
     },
     moduleOptions() {
       return window.apos.adminBar;
@@ -385,7 +386,7 @@ export default {
       ];
     },
     publishLabel() {
-      if (this.lastPublishedAt) {
+      if (this.context.lastPublishedAt) {
         return 'Publish Changes';
       } else {
         return 'Publish';
@@ -484,10 +485,13 @@ export default {
   },
   methods: {
     async onPublish(e) {
-      const published = await this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId);
+      const published = await this.publish(this.moduleOptions.contextAction, this.context._id);
       if (published) {
-        this.lastPublishedAt = Date.now();
-        this.draftIsModified = false;
+        this.context = {
+          ...this.context,
+          lastPublishedAt: Date.now(),
+          modified: false
+        };
       }
     },
     beforeUnload(e) {
@@ -512,12 +516,15 @@ export default {
         this.patchesSinceSave = [];
         try {
           this.saved = false;
-          const doc = await apos.http.patch(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
+          const doc = await apos.http.patch(`${this.moduleOptions.contextAction}/${this.context._id}`, {
             body: {
               _patches: patchesSinceSave
             }
           });
-          this.draftIsModified = doc.modified;
+          this.context = {
+            ...this.context,
+            modified: doc.modified
+          };
           this.retrying = false;
         } catch (e) {
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
@@ -567,7 +574,7 @@ export default {
     }) {
       mode = mode || this.draftMode;
       locale = locale || apos.locale;
-      doc = doc || this.moduleOptions.context;
+      doc = doc || this.context;
       if ((mode === this.draftMode) && (locale === apos.locale)) {
         if (!this.urlDiffers(doc._url)) {
           return;
@@ -591,9 +598,7 @@ export default {
           this.editMode = false;
         }
         this.draftMode = mode;
-        this.moduleOptions.context = modeDoc;
-        // Changes the ending from :published to :draft, etc.
-        this.moduleOptions.contextId = modeDoc._id;
+        this.context = modeDoc;
         this.refreshOrReload(modeDoc._url);
       } catch (e) {
         if (e.status === 404) {
@@ -649,7 +654,7 @@ export default {
           // "@ notation" PATCH feature. Sort the areas by DOM depth
           // to ensure parents patch before children
           this.original = {};
-          const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]')).filter(el => el.getAttribute('data-doc-id') === this.moduleOptions.contextId);
+          const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]')).filter(el => el.getAttribute('data-doc-id') === this.context._id);
           els.sort((a, b) => {
             const da = depth(a);
             const db = depth(b);
@@ -670,11 +675,14 @@ export default {
       apos.bus.$emit('refreshed');
     },
     async onDiscardDraft(e) {
-      const result = await this.discardDraft(this.moduleOptions.contextAction, this.moduleOptions.contextId, !!this.lastPublishedAt);
+      const result = await this.discardDraft(this.moduleOptions.contextAction, this.context._id, !!this.context.lastPublishedAt);
       if (!result) {
         return;
       }
-      this.draftIsModified = false;
+      this.context = {
+        ...this.context,
+        modified: false
+      };
       if (result.doc) {
         this.refreshOrReload(result.doc._url);
       } else {
@@ -688,16 +696,19 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify(response.message, {
+        apos.notify(response ? 'Restored previously published version.' : 'No longer published.', {
           type: 'success',
           dismiss: true
         });
         // This handler covers all "undo publish" buttons, so make sure it's
         // for the context document before altering any admin bar state
         // because of it
-        if (data._id.replace(/:.*$/, '') === (this.moduleOptions.context && this.moduleOptions.context._id.replace(/:.*$/, ''))) {
-          this.draftIsModified = true;
-          this.lastPublishedAt = response.lastPublishedAt;
+        if (data._id.replace(/:.*$/, '') === (this.context._id.replace(/:.*$/, ''))) {
+          this.context = {
+            ...this.context,
+            modified: true,
+            lastPublishedAt: response && response.lastPublishedAt
+          };
           // No refresh is needed here because we're still in draft mode
           // looking at the draft mode, and the thing that changed is the
           // published mode
@@ -720,7 +731,7 @@ export default {
     async refreshAfterHistoryChange(errorMessage) {
       this.saving = true;
       try {
-        await apos.http.patch(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
+        await apos.http.patch(`${this.moduleOptions.contextAction}/${this.context._id}`, {
           body: {
             _patches: [
               this.original,
