@@ -599,6 +599,11 @@ export default {
           this.editMode = false;
         }
         this.draftMode = mode;
+        // Patch the module options. This is necessary because we're simulating
+        // something that normally would involve a new page load, but without
+        // the UX negatives of that. TODO: VueX as a long term fix
+        window.apos.adminBar.context = modeDoc;
+        window.apos.adminBar.contextId = modeDoc._id;
         this.context = modeDoc;
         this.refreshOrReload(modeDoc._url);
       } catch (e) {
@@ -708,7 +713,10 @@ export default {
           this.context = {
             ...this.context,
             modified: true,
-            lastPublishedAt: response && response.lastPublishedAt
+            // If lastPublishedAt isn't present use a reasonable fallback, as
+            // there can be published documents that never went through the
+            // published API (parked pages not published since, etc)
+            lastPublishedAt: response && (response.lastPublishedAt || response.updatedAt)
           };
           // No refresh is needed here because we're still in draft mode
           // looking at the draft mode, and the thing that changed is the
@@ -723,7 +731,7 @@ export default {
     },
     async onUnpublish(data) {
       try {
-        const response = await apos.http.post(`${data.action}/${data._id}/unpublish`, {
+        await apos.http.post(`${data.action}/${data._id}/unpublish`, {
           body: {},
           busy: true
         });
@@ -738,7 +746,7 @@ export default {
           this.context = {
             ...this.context,
             modified: true,
-            lastPublishedAt: response && response.lastPublishedAt
+            lastPublishedAt: null
           };
           // No refresh is needed here because we're still in draft mode
           // looking at the draft mode, and the thing that changed is the
