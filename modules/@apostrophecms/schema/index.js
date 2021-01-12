@@ -1884,12 +1884,13 @@ module.exports = {
               }
             } else if (field.type === 'relationship') {
               if (Array.isArray(doc[field.name])) {
-                doc[field.idsStorage] = doc[field.name].map(relatedDoc => relatedDoc._id);
+                // Store only the aposDocId part, so that they are comparable between locales and modes
+                doc[field.idsStorage] = doc[field.name].map(relatedDoc => relatedDoc._id.replace(/:.*$/, ''));
                 if (field.fieldsStorage) {
                   const fieldsById = doc[field.fieldsStorage] || {};
                   for (const relatedDoc of doc[field.name]) {
                     if (relatedDoc._fields) {
-                      fieldsById[relatedDoc._id] = relatedDoc._fields;
+                      fieldsById[relatedDoc._id.replace(/:.*$/, '')] = relatedDoc._fields;
                     }
                   }
                   doc[field.fieldsStorage] = fieldsById;
