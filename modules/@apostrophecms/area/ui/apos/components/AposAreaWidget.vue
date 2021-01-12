@@ -76,6 +76,14 @@
           @down="$emit('down', i);"
         />
       </div>
+      <!--
+        Note: we will not need this guard layer when we implement widget controls outside of the widget DOM
+        because we will be drawing and fitting a new layer ontop of the widget, which we can use to proxy event handling.
+      -->
+      <div
+        class="apos-area-widget-guard"
+        :class="{'is-disabled': focused}"
+      />
       <!-- Still used for contextual editing components -->
       <component
         v-if="isContextual && !foreign"
@@ -322,7 +330,6 @@ export default {
     }
   },
   methods: {
-
     // Focus parent, useful for obtrusive UI
     focusParent() {
       // Something above us asked the focused widget to try and focus its parent
@@ -440,6 +447,18 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-area-widget-guard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .apos-area-widget-guard.is-disabled {
+    pointer-events: none;
+  }
+
   .apos-area-widget-wrapper {
     position: relative;
   }
