@@ -779,7 +779,7 @@ function depth(el) {
   display: flex;
   align-items: center;
   height: 30px;
-  padding: 5px 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid var(--a-base-9);
 }
 
@@ -852,9 +852,6 @@ function depth(el) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /deep/ .apos-button--subtle { // optical consistency
-    padding: 9px;
-  }
 }
 
 .apos-admin-bar__control-set {
