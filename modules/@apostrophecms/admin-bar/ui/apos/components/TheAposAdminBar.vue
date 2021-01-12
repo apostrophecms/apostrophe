@@ -747,7 +747,7 @@ export default {
       } catch (e) {
         await apos.alert({
           heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while restoring the previously published version.'
+          description: e.message || 'An error occurred while unpublishing the document.'
         });
       }
     },
