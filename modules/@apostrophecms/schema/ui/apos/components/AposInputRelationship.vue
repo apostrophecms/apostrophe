@@ -108,7 +108,6 @@ export default {
       if (!this.searching) {
         if (this.searchTerm.length) {
           this.searching = true;
-          console.log('search baby');
           const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`, {
             busy: false,
             draft: true
