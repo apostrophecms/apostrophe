@@ -215,7 +215,11 @@ export default {
     },
     saveLabel() {
       if (this.manuallyPublished) {
-        return 'Publish Changes';
+        if (this.original && this.original.lastPublishedAt) {
+          return 'Publish Changes';
+        } else {
+          return 'Publish';
+        }
       } else {
         return 'Save';
       }
@@ -506,7 +510,7 @@ export default {
           }
         }
         if (andPublish) {
-          await this.publish(this.moduleAction, doc._id);
+          await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;

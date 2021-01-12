@@ -625,12 +625,14 @@ module.exports = {
         }, {
           locale: publishedLocale
         });
+        const lastPublishedAt = new Date();
         if (!published) {
           firstTime = true;
           published = {
             _id: publishedId,
             aposDocId: draft.aposDocId,
-            aposLocale: publishedLocale
+            aposLocale: publishedLocale,
+            lastPublishedAt
           };
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
@@ -649,6 +651,7 @@ module.exports = {
             options,
             firstTime
           });
+          published.lastPublishedAt = lastPublishedAt;
           published = await self.update({
             ...req,
             mode: 'published'
@@ -659,7 +662,7 @@ module.exports = {
         }, {
           $set: {
             modified: false,
-            lastPublishedAt: new Date()
+            lastPublishedAt
           }
         });
         // Now that we're sure publication worked, update "previous" so we
@@ -715,15 +718,23 @@ module.exports = {
         await self.emit('afterRevertDraftToPublished', req, result);
         return result.draft;
       },
+      // Used to implement "Undo Publish."
+      //
+      // Revert the doc `published` to its content as of its most recent
+      // previous publication. If this has already been done or
+      // there is no previous publication, throws an `invalid` exception.
+
       async revertPublishedToPrevious(req, published) {
         const previousId = published._id.replace(':published', ':previous');
         const previous = await self.apos.doc.db.findOne({
           _id: previousId
         });
         if (!previous) {
-          return false;
+          // Feature has already been used
+          throw self.apos.error('invalid');
         }
         self.copyForPublication(req, previous, published);
+        published.lastPublishedAt = previous.lastPublishedAt;
         published = await self.update({
           ...req,
           mode: 'published'

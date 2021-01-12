@@ -236,6 +236,36 @@ module.exports = {
           }
           return self.publish(req, draft);
         },
+        ':_id/unpublish': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const aposDocId = _id.replace(/:.*$/, '');
+          const published = await self.findOneForEditing({
+            ...req,
+            mode: 'published'
+          }, {
+            aposDocId
+          });
+          if (!published) {
+            throw self.apos.error('notfound');
+          }
+          const manager = self.apos.doc.getManager(published.type);
+          manager.emit('beforeUnpublish', req, published);
+          await self.apos.doc.delete({
+            ...req,
+            mode: 'published'
+          }, published);
+          await self.apos.doc.db.updateOne({
+            _id: published._id.replace(':published', ':draft')
+          }, {
+            $set: {
+              modified: 1
+            },
+            $unset: {
+              lastPublishedAt: 1
+            }
+          });
+          return true;
+        },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
