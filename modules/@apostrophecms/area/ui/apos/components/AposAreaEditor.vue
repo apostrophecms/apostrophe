@@ -38,7 +38,7 @@
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
-        :rendering="renderings[widget._id]"
+        :rendering="rendering(widget)"
         @up="up"
         @down="down"
         @remove="remove"
@@ -116,7 +116,8 @@ export default {
       focusedWidget: null,
       contextMenuOptions: {
         menu: this.choices
-      }
+      },
+      edited: {}
     };
   },
   computed: {
@@ -267,11 +268,12 @@ export default {
             }
           );
           if (doc._url) {
+            const contextTitle = window.apos.adminBar.context.title;
             if (await apos.confirm({
-              heading: 'Open that document in a new tab?',
-              description: 'That content is part of another document. Would you like to edit that document in another tab?'
+              heading: `Leave ${contextTitle} to edit ${doc.title}?`,
+              description: `The content you're trying to edit belongs to another document and must be edited there.\nChanges made to ${contextTitle} are saved automatically.`
             })) {
-              window.open(doc._url);
+              location.assign(doc._url);
             }
           } else {
             apos.bus.$emit('admin-menu-click', {
@@ -327,6 +329,7 @@ export default {
         widget,
         ...this.next.slice(index + 1)
       ];
+      this.edited[widget._id] = true;
     },
     // Add a widget into a *singleton* area.
     async add(name) {
@@ -410,6 +413,13 @@ export default {
             return result;
           }
         }
+      }
+    },
+    rendering(widget) {
+      if (this.edited[widget._id]) {
+        return null;
+      } else {
+        return this.renderings[widget._id];
       }
     }
   }

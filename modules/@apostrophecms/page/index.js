@@ -207,7 +207,7 @@ module.exports = {
       // `_home` or `_trash`
       async getOne(req, _id) {
         self.publicApiCheck(req);
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        _id = self.inferIdLocaleAndMode(req, _id);
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -309,7 +309,7 @@ module.exports = {
 
       async put(req, _id) {
         self.publicApiCheck(req);
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        _id = self.inferIdLocaleAndMode(req, _id);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {
@@ -356,7 +356,7 @@ module.exports = {
       // fully deleted, which isn't the same as having references still in the trash.
       async delete(req, _id) {
         self.publicApiCheck(req);
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        _id = self.inferIdLocaleAndMode(req, _id);
         const page = await self.findOneForEditing(req, {
           _id
         });
@@ -377,7 +377,7 @@ module.exports = {
     return {
       post: {
         ':_id/publish': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
             ...req,
             mode: 'draft'
@@ -394,7 +394,7 @@ module.exports = {
           return self.publish(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
             ...req,
             mode: 'draft'
@@ -411,7 +411,7 @@ module.exports = {
           return self.revertDraftToPublished(req, draft);
         },
         ':_id/revert-published-to-previous': async (req) => {
-          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const published = await self.findOneForEditing({
             ...req,
             mode: 'published'
@@ -2198,6 +2198,15 @@ database.`);
             });
           });
         });
+      },
+      // Infer `req.locale` and `req.mode` from `_id` if they were
+      // not set already by explicit query parameters. Conversely,
+      // if the appropriate query parameters were set, rewrite
+      // `_id` accordingly. Returns `_id`, after rewriting if appropriate.
+      inferIdLocaleAndMode(req, _id) {
+        // For pages we currently always do this. For pieces it's conditional
+        // on whether the type is localized.
+        return self.apos.i18n.inferIdLocaleAndMode(req, _id);
       }
     };
   },
