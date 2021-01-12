@@ -327,7 +327,7 @@ export default {
   }
 
   .apos-button--subtle {
-    padding: 10px;
+    padding: 11px 10px; // extra pixel keeps them aligned with border'd buttons
     color: var(--a-text-primary);
     &:hover,
     &:focus,
