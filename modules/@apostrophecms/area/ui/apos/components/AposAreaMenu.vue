@@ -103,7 +103,7 @@ export default {
       type: Boolean
     }
   },
-  emits: [ 'menu-open', 'menu-close', 'insert' ],
+  emits: [ 'menu-close', 'menu-open', 'insert' ],
   data() {
     return {
       active: 0,
