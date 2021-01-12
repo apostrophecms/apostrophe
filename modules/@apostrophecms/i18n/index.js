@@ -76,16 +76,9 @@ module.exports = {
       },
       // Infer `req.locale` and `req.mode` from `_id` if they were
       // not set already by explicit query parameters. Conversely,
-      // if the parameters were set, rewrite `_id` accordingly.
-      // Returns `_id`, after rewriting if appropriate.
-      //
-      // If `localize` is `true`, or the name of a type that is localized,
-      // the method has its effect as described above. Otherwise it has no effect
-      // and returns `_id` unmodified.
-      inferIdLocaleAndMode(req, _id, localize) {
-        if ((localize === false) || ((localize !== true) && (!self.apos.doc.getManager(localize).isLocalized()))) {
-          return _id;
-        }
+      // if the appropriate query parameters were set, rewrite
+      // `_id` accordingly. Returns `_id`, after rewriting if appropriate.
+      inferIdLocaleAndMode(req, _id) {
         let [ cuid, locale, mode ] = _id.split(':');
         if (locale && mode) {
           if (!req.query['apos-locale']) {
