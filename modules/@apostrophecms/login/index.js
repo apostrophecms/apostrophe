@@ -431,15 +431,24 @@ module.exports = {
 
   middleware(self, options) {
     return {
-      passportInitialize: self.passport.initialize(),
-      passportSession: self.passport.session(),
-      // Add the `user` property to `req.data` when a user is logged in.
-      addUserToData(req, res, next) {
-        if (req.user) {
-          req.data.user = req.user;
-          return next();
-        } else {
-          return next();
+      passportInitialize: {
+        before: '@apostrophecms/i18n',
+        middleware: self.passport.initialize()
+      },
+      passportSession: {
+        before: '@apostrophecms/i18n',
+        middleware: self.passport.session()
+      },
+      addUserToData: {
+        before: '@apostrophecms/i18n',
+        middleware(req, res, next) {
+          // Add the `user` property to `req.data` when a user is logged in.
+          if (req.user) {
+            req.data.user = req.user;
+            return next();
+          } else {
+            return next();
+          }
         }
       }
     };
