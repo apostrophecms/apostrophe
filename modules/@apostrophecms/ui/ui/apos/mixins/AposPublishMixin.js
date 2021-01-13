@@ -34,7 +34,7 @@ export default {
         if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
           if (await apos.confirm({
             heading: 'One or more parent pages have not been published',
-            description: `To publish this page, you must also publish the following pages: ${e.body.data.unpublishedAncestors.map(page => page.title).join(', ')}\nDo you want to do that now?`
+            description: `To publish this page, you must also publish the following pages: ${e.body.data.unpublishedAncestors.map(page => page.title).join(', ')}.\nDo you want to do that now?`
           })) {
             try {
               for (const page of e.body.data.unpublishedAncestors) {
