@@ -2,7 +2,7 @@
 
 ## 3.0.0-alpha.3
 
-Third alpha release of 3.x. Introduced draft mode and the "Publish Changes" button. We are starting internal client projects on this release and intend to avoid unnecessary bc breaks between now and the 3.0 stable release. We encourage you to start projects as well.
+Third alpha release of 3.x. Introduced draft mode and the "Publish Changes" button.
 
 ## 3.0.0-alpha.2
 
