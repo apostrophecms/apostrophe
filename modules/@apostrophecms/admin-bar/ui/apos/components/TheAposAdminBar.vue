@@ -828,7 +828,7 @@ function depth(el) {
 .apos-admin-bar__row {
   display: flex;
   align-items: center;
-  height: 30px;
+  height: 35px;
   padding: 10px 20px;
   border-bottom: 1px solid var(--a-base-9);
 }
@@ -901,14 +901,13 @@ function depth(el) {
 .apos-admin-bar__row--utils {
   display: flex;
   align-items: center;
-  justify-content: space-between;
 }
 
 .apos-admin-bar__control-set {
   @include type-base;
   display: flex;
+  width: 100%;
   height: 100%;
-  min-width: 200px;
 }
 
 .apos-admin-bar__control-set--mode-and-settings {
