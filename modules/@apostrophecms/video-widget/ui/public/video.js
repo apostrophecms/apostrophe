@@ -54,6 +54,10 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
         if (result.width && result.height) {
           inner.style.width = '100%';
           inner.style.height = ((result.height / result.width) * inner.offsetWidth) + 'px';
+          // If we need to iniitally size the video, also resize it on window resize.
+          window.addEventListener('resize', function() {
+            inner.style.height = ((result.height / result.width) * inner.offsetWidth) + 'px';
+          });
         } else {
           // No, so assume the oembed HTML code is responsive.
         }
