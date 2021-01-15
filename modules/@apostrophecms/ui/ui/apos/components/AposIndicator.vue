@@ -2,7 +2,6 @@
   <span
     class="apos-indicator"
     v-tooltip="tooltip"
-    :style="`height: ${iconSize}px`"
   >
     <component
       :is="icon"
@@ -42,11 +41,5 @@ export default {
 
   .apos-indicator__icon {
     display: inline-flex;
-    max-width: 100%;
-    max-height: 100%;
-    /deep/ .material-design-icon__svg {
-      max-width: 100%;
-      max-height: 100%;
-    }
   }
 </style>
