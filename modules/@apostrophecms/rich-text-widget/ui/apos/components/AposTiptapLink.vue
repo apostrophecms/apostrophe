@@ -34,25 +34,23 @@
             label="Remove Link"
           />
         </div>
-        <form>
-          <AposSchema
-            :schema="schema"
-            v-model="value"
+        <AposSchema
+          :schema="schema"
+          v-model="value"
+          :modifiers="formModifiers"
+        />
+        <footer class="apos-link-control__footer">
+          <AposButton
+            type="default" label="Cancel"
+            @click="close"
             :modifiers="formModifiers"
           />
-          <footer class="apos-link-control__footer">
-            <AposButton
-              type="default" label="Cancel"
-              @click="close"
-              :modifiers="formModifiers"
-            />
-            <AposButton
-              type="primary" label="Save"
-              @click="save"
-              :modifiers="formModifiers"
-            />
-          </footer>
-        </form>
+          <AposButton
+            type="primary" label="Save"
+            @click="save"
+            :modifiers="formModifiers"
+          />
+        </footer>
       </AposContextMenuDialog>
     </div>
   </div>
@@ -169,6 +167,7 @@ export default {
         delete this.value.data.target;
       }
       this.editor.commands[this.name](this.value.data);
+      console.log('set to false');
       this.active = false;
     },
     keyboardHandler(e) {
