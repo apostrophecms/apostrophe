@@ -167,7 +167,6 @@ export default {
         delete this.value.data.target;
       }
       this.editor.commands[this.name](this.value.data);
-      console.log('set to false');
       this.active = false;
     },
     keyboardHandler(e) {
