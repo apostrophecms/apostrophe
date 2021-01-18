@@ -2,6 +2,7 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
   selector: '[data-apos-video-widget]',
   player: function(el) {
     const videoUrl = el.getAttribute('data-apos-video-url');
+    let queryResult;
 
     if (!videoUrl) {
       return;
@@ -19,6 +20,7 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
         return fail('undefined');
       }
       return query(options, function(err, result) {
+        queryResult = result;
         if (err || (options.type && (result.type !== options.type))) {
           return fail(err || 'inappropriate');
         }
@@ -40,6 +42,7 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
       const shaker = document.createElement('div');
       shaker.innerHTML = result.html;
       const inner = shaker.firstChild;
+      inner.setAttribute('data-apos-video-canvas', '');
       el.innerHTML = '';
       if (!inner) {
         return;
@@ -53,15 +56,26 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
         // video aspect ratio right
         if (result.width && result.height) {
           inner.style.width = '100%';
-          inner.style.height = ((result.height / result.width) * inner.offsetWidth) + 'px';
+          resizeVideo(inner);
           // If we need to iniitally size the video, also resize it on window resize.
-          window.addEventListener('resize', function() {
-            inner.style.height = ((result.height / result.width) * inner.offsetWidth) + 'px';
-          });
+          window.addEventListener('resize', resizeHandler);
         } else {
           // No, so assume the oembed HTML code is responsive.
         }
       }, 0);
+    }
+
+    function resizeVideo(canvasEl) {
+      canvasEl.style.height = ((queryResult.height / queryResult.width) * canvasEl.offsetWidth) + 'px';
+    };
+
+    function resizeHandler() {
+      const canvas = el.querySelector('[data-apos-video-canvas]');
+      if (canvas) {
+        resizeVideo(canvas);
+      } else {
+        window.removeEventListener('resize', resizeHandler);
+      }
     }
 
     function fail(err) {
