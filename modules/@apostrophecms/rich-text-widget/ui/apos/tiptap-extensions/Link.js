@@ -21,10 +21,6 @@ export default class Link extends Mark {
         target: {
           default: null
         }
-        // // In HTML5, the name attribute is obsolete
-        // id: {
-        //   default: null
-        // }
       },
       inclusive: false,
       parseDOM: [
@@ -32,8 +28,6 @@ export default class Link extends Mark {
           tag: 'a',
           getAttrs: dom => ({
             href: dom.getAttribute('href'),
-            // Fallback for legacy name attributes
-            // id: dom.getAttribute('id') || dom.getAttribute('name'),
             target: dom.getAttribute('target')
           })
         }
@@ -49,8 +43,6 @@ export default class Link extends Mark {
   commands({ type }) {
     return attrs => {
       if (attrs.href) {
-        console.log(type);
-        console.log(attrs);
         return updateMark(type, attrs);
       }
 
@@ -73,7 +65,6 @@ export default class Link extends Mark {
       new Plugin({
         props: {
           handleClick(view, pos) {
-            console.log('do i ever come here');
             const {
               schema, doc, tr
             } = view.state;
@@ -86,7 +77,6 @@ export default class Link extends Mark {
             const $start = doc.resolve(range.from);
             const $end = doc.resolve(range.to);
             const transaction = tr.setSelection(new TextSelection($start, $end));
-            console.log(transaction);
             view.dispatch(transaction);
           }
         }
