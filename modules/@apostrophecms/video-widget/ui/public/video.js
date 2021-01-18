@@ -70,9 +70,8 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
     };
 
     function resizeHandler() {
-      const canvas = el.querySelector('[data-apos-video-canvas]');
-      if (canvas) {
-        resizeVideo(canvas);
+      if (document.contains(el)) {
+        resizeVideo(el.querySelector('[data-apos-video-canvas]'));
       } else {
         window.removeEventListener('resize', resizeHandler);
       }
