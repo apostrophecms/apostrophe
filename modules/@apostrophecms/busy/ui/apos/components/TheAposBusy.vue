@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="apos-busy"
-    :class="{'is-busy': busy}"
-  >
+  <div class="apos-busy" :class="{'is-busy': busy}">
     <AposSpinner class="apos-busy__spinner" />
   </div>
 </template>
