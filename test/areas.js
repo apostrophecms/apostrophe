@@ -198,6 +198,20 @@ describe('Areas', function() {
     assert(secondRendered.includes('<marquee>The HTML <code>&lt;marquee&gt;</code> element'));
   });
 
+  it('populates a document object with rendered HTML areas using the renderDocsAreas method.', function () {
+    areaDocs.forEach(doc => {
+      // No rendered HTML yet.
+      assert(!doc.main._rendered);
+    });
+    apos.area.renderDocsAreas(areaDocs);
+    areaDocs.forEach(doc => {
+      // Now they're there.
+      assert(doc.main._rendered);
+    });
+    assert.equal(areaDocs[0].main._rendered, firstRendered);
+    assert.equal(areaDocs[1].main._rendered, secondRendered);
+  });
+
   it('area considered empty when it should be', function() {
     const doc = {
       type: 'test',
