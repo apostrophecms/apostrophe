@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.0-alpha.3
+
+Third alpha release of 3.x. Introduced draft mode and the "Publish Changes" button.
+
+## 3.0.0-alpha.2
+
+Second alpha release of 3.x. Introduced a distinct "edit" mode.
+
+## 3.0.0-alpha.1
+
+First alpha release of 3.x.
+
 ## 2.67.0
 
 Unit tests passing.

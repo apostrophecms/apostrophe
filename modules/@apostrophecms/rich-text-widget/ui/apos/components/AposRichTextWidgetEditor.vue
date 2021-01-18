@@ -113,7 +113,7 @@ export default {
           new Blockquote(),
           new CodeBlock(),
           new HorizontalRule()
-        ].concat((apos.tiptapExtensions || []).map(C => new C(this.options))),
+        ].concat((apos.tiptapExtensions || []).map(C => new C(computeEditorOptions(this.type, this.options)))),
         autoFocus: true,
         onUpdate: this.editorUpdate,
         content: this.stripPlaceholderBrs(this.value.content)
@@ -132,17 +132,7 @@ export default {
       return moduleOptionsBody(this.type);
     },
     editorOptions() {
-      const defaultOptions = this.moduleOptions.defaultOptions;
-
-      const activeOptions = Object.assign({}, this.options);
-
-      // Allow toolbar option to pass through if `false`
-      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
-        ? activeOptions.toolbar : defaultOptions.toolbar;
-
-      activeOptions.styles = activeOptions.styles || defaultOptions.styles;
-
-      return activeOptions;
+      return computeEditorOptions(this.type, this.options);
     },
     menuType() {
       if (this.options.menuType && this.options.menuType === 'block') {
@@ -227,6 +217,20 @@ export default {
     }
   }
 };
+
+function computeEditorOptions(type, explicitOptions) {
+  const defaultOptions = moduleOptionsBody(type).defaultOptions;
+
+  const activeOptions = Object.assign({}, explicitOptions);
+
+  // Allow toolbar option to pass through if `false`
+  activeOptions.toolbar = (activeOptions.toolbar !== undefined)
+    ? activeOptions.toolbar : defaultOptions.toolbar;
+
+  activeOptions.styles = activeOptions.styles || defaultOptions.styles;
+
+  return activeOptions;
+}
 </script>
 
 <style lang="scss" scoped>
