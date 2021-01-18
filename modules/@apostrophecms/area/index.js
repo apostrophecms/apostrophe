@@ -105,6 +105,18 @@ module.exports = {
           self.missingWidgetTypes[name] = true;
         }
       },
+      prepForRender(area, doc, fieldName) {
+        const manager = self.apos.util.getManagerOf(doc);
+        const field = manager.schema.find(field => field.name === fieldName);
+        if (!field) {
+          throw new Error(`The doc of type ${doc.type} with the slug ${doc.slug} has no field named ${fieldName}.
+  In Apostrophe 3.x areas must be part of the schema for each page or piece type.`);
+        }
+        area._fieldId = field._id;
+        area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+        area._edit = doc._edit;
+        return area;
+      },
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %}` and `{% singleton %}`
       // custom tags.

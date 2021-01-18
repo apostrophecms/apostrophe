@@ -16,7 +16,41 @@ describe('Areas', function() {
 
   it('should initialize', async function() {
     apos = await t.create({
-      root: module
+      root: module,
+
+      modules: {
+        article: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'articles',
+            name: 'article',
+            label: 'Article'
+          },
+          fields: {
+            add: {
+              main: {
+                type: 'area',
+                name: 'main',
+                label: 'Main area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {
+                      toolbar: [ 'bold' ],
+                      styles: [
+                        {
+                          tag: 'p',
+                          label: 'Paragraph'
+                        }
+                      ]
+                    },
+                    '@apostrophecms/html': {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
     assert(apos.modules['@apostrophecms/area']);
     assert(apos.area);
@@ -132,6 +166,38 @@ describe('Areas', function() {
     }, { limit: 15 }), 'So cool...');
   });
 
+  it('can populate an area object with required properties using the prepForRender method', async function () {
+    apos.area.prepForRender(rteArea, areaDocs[0], 'main');
+
+    assert(rteArea._fieldId);
+    assert(rteArea._docId);
+    assert(rteArea._edit !== undefined);
+  });
+
+  let firstRendered;
+  let secondRendered;
+
+  it('renders an area passed to the `renderArea` method', async function () {
+    const req = apos.task.getReq();
+    firstRendered = await apos.area.renderArea(req, rteArea, areaDocs[0]);
+
+    assert(firstRendered);
+    assert.equal(firstRendered, `
+<div class="apos-area"><div data-rich-text><p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We're fighting for our right to live, to exist.</p></div>
+</div>
+`);
+  });
+
+  it('returns rendered HTML from the `renderAarea` method for a mixed widget area', async function() {
+    const req = apos.task.getReq();
+    apos.area.prepForRender(mixedArea, areaDocs[1], 'main');
+
+    secondRendered = await apos.area.renderArea(req, mixedArea, areaDocs[1]);
+
+    assert(secondRendered.includes('<div data-rich-text><p>Good morning.'));
+    assert(secondRendered.includes('<marquee>The HTML <code>&lt;marquee&gt;</code> element'));
+  });
+
   it('area considered empty when it should be', function() {
     const doc = {
       type: 'test',
@@ -241,3 +307,57 @@ describe('Areas', function() {
     );
   });
 });
+
+const rteArea = {
+  _id: 'ckjyva89o000k2a67vcgl914k',
+  items: [
+    {
+      _id: 'ckjyvagy9000p2a67fbf8nwd3',
+      metaType: 'widget',
+      type: '@apostrophecms/rich-text',
+      content: '<p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We\'re fighting for our right to live, to exist.</p>'
+    }
+  ],
+  metaType: 'area'
+};
+const mixedArea = {
+  _id: 'ckjyv67wt001a2a67wibekp0c',
+  items: [
+    {
+      _id: 'ckjyv6ezu001f2a67s572cvn2',
+      metaType: 'widget',
+      type: '@apostrophecms/rich-text',
+      content: '<p>Good morning. In less than an hour, aircraft from here will join others from around the world. And you will be launching the largest aerial battle in this history of mankind.</p>'
+    },
+    {
+      _id: 'ckk32go3e00152a67tbbgzcf9',
+      code: '<marquee>The HTML <code>&lt;marquee&gt;</code> element is used to insert a scrolling area of text. You can control what happens when the text reaches the edges of its content area using its attributes.</marquee>',
+      metaType: 'widget',
+      type: '@apostrophecms/html'
+    }
+  ],
+  metaType: 'area'
+};
+
+const areaDocs = [
+  {
+    _id: 'ckjyvbpgb000mki3rbtar64y7:en:published',
+    _edit: true,
+    aposDocId: 'ckjyvbpgb000mki3rbtar64y7',
+    aposLocale: 'en:published',
+    title: 'Nested article bits',
+    main: rteArea,
+    type: 'article',
+    metaType: 'doc'
+  },
+  {
+    _id: 'ckjyv9oyv000bki3r0007oajd:en:published',
+    _edit: true,
+    aposDocId: 'ckjyv9oyv000bki3r0007oajd',
+    aposLocale: 'en:published',
+    title: 'Fresh article',
+    main: mixedArea,
+    type: 'article',
+    metaType: 'doc'
+  }
+];
