@@ -172,7 +172,7 @@ module.exports = {
       result.currentPage = query.get('page') || 1;
       result.results = await query.toArray();
       if (self.apos.launder.boolean(req.query.renderareas) === true) {
-        self.apos.area.renderDocsAreas(req, result.results);
+        await self.apos.area.renderDocsAreas(req, result.results);
       }
       self.apos.attachment.all(result.results, { annotate: true });
       if (query.get('choicesResults')) {

@@ -211,6 +211,7 @@ module.exports = {
           });
 
           deep(doc, `${path}._rendered`, areaRendered);
+          deep(doc, `${path}._fieldId`, undefined);
           deep(doc, `${path}.items`, undefined);
         }
       },
