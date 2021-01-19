@@ -190,6 +190,9 @@ module.exports = {
       if (!doc) {
         throw self.apos.error('notfound');
       }
+      if (self.apos.launder.boolean(req.query.renderareas) === true) {
+        await self.apos.area.renderDocsAreas(req, [ doc ]);
+      }
       self.apos.attachment.all(doc, { annotate: true });
       return doc;
     },
