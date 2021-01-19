@@ -183,10 +183,18 @@ module.exports = {
           const rendered = [];
 
           const areasToRender = {};
+
           self.walk(doc, async function (area, dotPath) {
             if (rendered.findIndex(path => dotPath.startsWith(path)) > -1) {
               return;
             }
+            // We're only rendering areas on the document, not ancestor or
+            // child page documents.
+            const regex = /^_(ancestors|children)|\._(ancestors|children)/;
+            if (dotPath.match(regex)) {
+              return;
+            }
+
             rendered.push(dotPath);
             areasToRender[dotPath] = area;
           });
@@ -352,6 +360,7 @@ module.exports = {
       // modifications are made. This happens in memory only;
       // the database is not modified.
       walk(doc, iterator) {
+        // o = object/doc, k = key, v = value
         return self.apos.doc.walk(doc, function (o, k, v, dotPath) {
           if (v && v.metaType === 'area') {
             return iterator(v, dotPath);
