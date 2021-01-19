@@ -130,12 +130,13 @@ module.exports = {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }
         const choices = [];
+
         let field = self.apos.schema.getFieldById(area._fieldId);
 
         if (!field.options && !opts.pathToArrayAreaField) {
           throw new Error('An area must have options (including widgets), or path information to get options (e.g., when inside an array). Area details:\n\n' + JSON.stringify(area));
         } else if (!field.options) {
-
+          // Use the array schema's area field for the options during render.
           const arrayFieldName = opts.pathToArrayAreaField;
           const areaSchema = field.schema.find(f => f.name === arrayFieldName);
 
@@ -172,9 +173,9 @@ module.exports = {
           canEdit
         });
       },
-      // Replace area objects on documents passed in with rendered HTML for
-      // each area. This is used by GET requests including the `renderAreas`
-      // query parameter. `within` is an array of Apos documents to process.
+      // Replace documents' area objects with rendered HTML for each area.
+      // This is used by GET requests including the `renderAreas` query
+      // parameter. `within` is an array of Apostrophe documents.
       async renderDocsAreas(req, within) {
         within = Array.isArray(within) ? within : [];
         let index = 0;
