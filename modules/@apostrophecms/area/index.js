@@ -106,6 +106,11 @@ module.exports = {
         }
       },
       prepForRender(area, doc, fieldName) {
+        if (fieldName.includes('.')) {
+          // If we're passing in a dot path, the doc field is the first part.
+          fieldName = fieldName.split('.')[0];
+        }
+
         const manager = self.apos.util.getManagerOf(doc);
         const field = manager.schema.find(field => field.name === fieldName);
         if (!field) {
@@ -120,12 +125,23 @@ module.exports = {
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %}` and `{% singleton %}`
       // custom tags.
-      async renderArea(req, area, context) {
+      async renderArea(req, area, context, opts) {
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }
         const choices = [];
-        const field = self.apos.schema.getFieldById(area._fieldId);
+        let field = self.apos.schema.getFieldById(area._fieldId);
+
+        if (!field.options && !opts.pathToArrayAreaField) {
+          throw new Error('An area must have options (including widgets), or path information to get options (e.g., when inside an array). Area details:\n\n' + JSON.stringify(area));
+        } else if (!field.options) {
+
+          const arrayFieldName = opts.pathToArrayAreaField;
+          const areaSchema = field.schema.find(f => f.name === arrayFieldName);
+
+          field = areaSchema;
+        }
+
         const options = field.options;
         _.each(options.widgets, function (options, name) {
           const manager = self.widgetManagers[name];
@@ -155,6 +171,48 @@ module.exports = {
           context,
           canEdit
         });
+      },
+      // Replace area objects on documents passed in with rendered HTML for
+      // each area. This is used by GET requests including the `renderAreas`
+      // query parameter. `within` is an array of Apos documents to process.
+      async renderDocsAreas(req, within) {
+        within = Array.isArray(within) ? within : [];
+        let index = 0;
+        for (const doc of within) {
+          const rendered = [];
+
+          const areasToRender = {};
+          self.walk(doc, async function (area, dotPath) {
+            if (rendered.findIndex(path => dotPath.startsWith(path)) > -1) {
+              return;
+            }
+            rendered.push(dotPath);
+            areasToRender[dotPath] = area;
+          });
+
+          for (const path of Object.keys(areasToRender)) {
+            await render(areasToRender[path], path, doc);
+          }
+
+          within[index] = doc;
+          index++;
+        }
+
+        async function render(area, path, doc, opts) {
+          const preppedArea = self.prepForRender(area, doc, path);
+
+          const areaRendered = await self.apos.area.renderArea(req, preppedArea, doc, {
+            // Arrays can only be inside arrays or other areas. If in an area,
+            // it would be rendered as part of its parent area. We know this is
+            // the path within an array field, then. So the path within the
+            // array field is the document path, minus the array field name and
+            // the array index.
+            pathToArrayAreaField: path.split('.').slice(2).join('.')
+          });
+
+          deep(doc, `${path}._rendered`, areaRendered);
+          deep(doc, `${path}.items`, undefined);
+        }
       },
       // Sanitize an input array of items intended to become
       // the `items` property of an area. Invokes the

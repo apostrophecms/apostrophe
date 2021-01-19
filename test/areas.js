@@ -30,7 +30,6 @@ describe('Areas', function() {
             add: {
               main: {
                 type: 'area',
-                name: 'main',
                 label: 'Main area',
                 options: {
                   widgets: {
@@ -44,6 +43,23 @@ describe('Areas', function() {
                       ]
                     },
                     '@apostrophecms/html': {}
+                  }
+                }
+              },
+              moreAreas: {
+                type: 'array',
+                label: 'Some more areas',
+                fields: {
+                  add: {
+                    someWidgets: {
+                      type: 'area',
+                      label: 'Some widgets in the area',
+                      options: {
+                        widgets: {
+                          '@apostrophecms/html': {}
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -198,16 +214,28 @@ describe('Areas', function() {
     assert(secondRendered.includes('<marquee>The HTML <code>&lt;marquee&gt;</code> element'));
   });
 
-  it('populates a document object with rendered HTML areas using the renderDocsAreas method.', function () {
+  it('populates a document object with rendered HTML areas using the renderDocsAreas method.', async function () {
+    const req = apos.task.getReq();
     areaDocs.forEach(doc => {
       // No rendered HTML yet.
       assert(!doc.main._rendered);
     });
-    apos.area.renderDocsAreas(areaDocs);
+
+    await apos.area.renderDocsAreas(req, areaDocs);
+
     areaDocs.forEach(doc => {
       // Now they're there.
       assert(doc.main._rendered);
+      assert(!doc.main.items);
+
+      if (doc.moreAreas) {
+        doc.moreAreas.forEach(area => {
+          assert(area.someWidgets._rendered);
+          assert(!area.someWidgets.items);
+        });
+      }
     });
+
     assert.equal(areaDocs[0].main._rendered, firstRendered);
     assert.equal(areaDocs[1].main._rendered, secondRendered);
   });
@@ -360,9 +388,10 @@ const areaDocs = [
     aposDocId: 'ckjyvbpgb000mki3rbtar64y7',
     aposLocale: 'en:published',
     title: 'Nested article bits',
-    main: rteArea,
+    slug: 'nested-article-bits',
     type: 'article',
-    metaType: 'doc'
+    metaType: 'doc',
+    main: rteArea
   },
   {
     _id: 'ckjyv9oyv000bki3r0007oajd:en:published',
@@ -370,8 +399,39 @@ const areaDocs = [
     aposDocId: 'ckjyv9oyv000bki3r0007oajd',
     aposLocale: 'en:published',
     title: 'Fresh article',
-    main: mixedArea,
+    slug: 'fresh-article',
     type: 'article',
-    metaType: 'doc'
+    metaType: 'doc',
+    main: mixedArea,
+    moreAreas: [
+      {
+        _id: 'ckk4746rp004i2a67iiw024yl',
+        someWidgets: {
+          _id: 'ckk4746s7004k2a67of8ra2zn',
+          items: [
+            {
+              _id: 'ckk474uzf004q2a67fy06gwba',
+              code: '<h1>🌝</h1>',
+              metaType: 'widget',
+              type: '@apostrophecms/html'
+            },
+            {
+              _id: '32l474uzf004q2adddy06gwba',
+              code: '<h2>🌚</h2>',
+              metaType: 'widget',
+              type: '@apostrophecms/html'
+            }
+          ],
+          metaType: 'area'
+        }
+      }, {
+        _id: 'ckk4763vq00642a67udf3hqbx',
+        someWidgets: {
+          _id: 'ckk477sm0000qw43r94lpmn2m',
+          items: [],
+          metaType: 'area'
+        }
+      }
+    ]
   }
 ];
