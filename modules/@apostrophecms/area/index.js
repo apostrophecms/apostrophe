@@ -179,11 +179,12 @@ module.exports = {
       async renderDocsAreas(req, within) {
         within = Array.isArray(within) ? within : [];
         let index = 0;
+        // Loop over the docs in the array passed in.
         for (const doc of within) {
           const rendered = [];
 
           const areasToRender = {};
-
+          // Walk the document's areas and stash the areas for rendering later.
           self.walk(doc, async function (area, dotPath) {
             if (rendered.findIndex(path => dotPath.startsWith(path)) > -1) {
               return;
@@ -198,7 +199,7 @@ module.exports = {
             rendered.push(dotPath);
             areasToRender[dotPath] = area;
           });
-
+          // Now go over the stashed areas and render their areas into HTML.
           for (const path of Object.keys(areasToRender)) {
             await render(areasToRender[path], path, doc);
           }
