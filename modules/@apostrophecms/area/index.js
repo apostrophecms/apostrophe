@@ -174,7 +174,7 @@ module.exports = {
         });
       },
       // Replace documents' area objects with rendered HTML for each area.
-      // This is used by GET requests including the `renderAreas` query
+      // This is used by GET requests including the `renderareas` query
       // parameter. `within` is an array of Apostrophe documents.
       async renderDocsAreas(req, within) {
         within = Array.isArray(within) ? within : [];
