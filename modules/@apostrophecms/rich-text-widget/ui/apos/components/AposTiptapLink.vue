@@ -17,7 +17,8 @@
     <div
       v-if="active"
       v-click-outside-element="close"
-      class="apos-link-control__dialog"
+      class="apos-popover apos-link-control__dialog"
+      x-placement="bottom"
       :class="{
         'is-triggered': active,
         'has-selection': hasSelection
