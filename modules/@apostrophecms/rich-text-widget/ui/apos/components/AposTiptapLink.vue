@@ -17,7 +17,8 @@
     <div
       v-if="active"
       v-click-outside-element="close"
-      class="apos-link-control__dialog"
+      class="apos-popover apos-link-control__dialog"
+      x-placement="bottom"
       :class="{
         'is-triggered': active,
         'has-selection': hasSelection
@@ -34,25 +35,23 @@
             label="Remove Link"
           />
         </div>
-        <form>
-          <AposSchema
-            :schema="schema"
-            v-model="value"
+        <AposSchema
+          :schema="schema"
+          v-model="value"
+          :modifiers="formModifiers"
+        />
+        <footer class="apos-link-control__footer">
+          <AposButton
+            type="default" label="Cancel"
+            @click="close"
             :modifiers="formModifiers"
           />
-          <footer class="apos-link-control__footer">
-            <AposButton
-              type="default" label="Cancel"
-              @click="close"
-              :modifiers="formModifiers"
-            />
-            <AposButton
-              type="primary" label="Save"
-              @click="save"
-              :modifiers="formModifiers"
-            />
-          </footer>
-        </form>
+          <AposButton
+            type="primary" label="Save"
+            @click="save"
+            :modifiers="formModifiers"
+          />
+        </footer>
       </AposContextMenuDialog>
     </div>
   </div>

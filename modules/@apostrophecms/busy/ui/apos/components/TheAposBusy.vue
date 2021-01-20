@@ -1,6 +1,6 @@
 <template>
-  <div v-if="busy" class="apos-busy">
-    <AposLoading class="apos-busy__spinner" />
+  <div class="apos-busy" :class="{'is-busy': busy}">
+    <AposSpinner class="apos-busy__spinner" />
   </div>
 </template>
 
@@ -42,22 +42,29 @@ export default {
   bottom: 0;
   left: 0;
   display: flex;
+  width: 100%;
+  height: 100%;
   justify-content: center;
   align-items: center;
+  background: var(--a-overlay);
+  transition: opacity 0.5s ease;
+  transition-delay: 0.3s;
+  opacity: 0;
+  pointer-events: none;
+}
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--a-overlay);
-    opacity: 0.5;
-  }
+.apos-busy.is-busy {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .apos-busy__spinner {
   z-index: $z-index-default;
+  width: 60px;
+  height: 60px;
+  & /deep/ svg {
+    width: 100%;
+    height: 100%;
+  }
 }
 </style>
