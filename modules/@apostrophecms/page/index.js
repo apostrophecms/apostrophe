@@ -2135,7 +2135,8 @@ database.`);
           level: 1,
           visibility: 1,
           trash: 1,
-          parked: 1
+          parked: 1,
+          lastPublishedAt: 1
         };
       },
       addDeduplicateRanksMigration() {

@@ -78,8 +78,11 @@
             class="apos-tree__cell__icon"
             :icon-size="15"
           />
-          <span class="apos-tree__cell__label" v-show="!col.iconOnly">
-            {{ row[col.name] }}
+          <span
+            class="apos-tree__cell__label"
+            v-show="!col.iconOnly"
+          >
+            {{ getEffectiveValue(col, row) }}
           </span>
         </component>
       </div>
@@ -203,6 +206,7 @@ export default {
     }
   },
   mounted() {
+    console.log(this.myRows);
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
       if (!this.$refs['tree-branches']) {
@@ -279,6 +283,7 @@ export default {
         'apos-tree__row',
         {
           'is-parked': !!row.parked,
+          'is-unpublished': !row.lastPublishedAt,
           'apos-tree__row--parent': row.children && row.children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
@@ -301,6 +306,23 @@ export default {
         return false;
       } else {
         return this.icons[col.icon];
+      }
+    },
+    getEffectiveValue(col, row) {
+      const excludedTypes = [ '@apostrophecms/trash' ];
+      // Opportunity to display a custom true/false label for cell value
+      if (col.value) {
+        if (excludedTypes.includes(row.type)) {
+          return;
+        }
+        if (row[col.name]) {
+          return col.value.true;
+        } else {
+          return col.value.false;
+        }
+      // Original default of just printing the row property value
+      } else {
+        return row[col.name];
       }
     },
     getCellClasses(col, row) {
@@ -352,6 +374,9 @@ export default {
 
   .apos-tree__row {
     &.is-dragging {
+      opacity: 0.5;
+    }
+    &.is-unpublished > .apos-tree__row-data{
       opacity: 0.5;
     }
   }

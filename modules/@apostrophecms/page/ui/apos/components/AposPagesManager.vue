@@ -85,6 +85,14 @@ export default {
             name: 'title'
           },
           {
+            label: 'Published',
+            name: 'lastPublishedAt',
+            value: {
+              true: '',
+              false: 'Unpublished'
+            }
+          },
+          {
             label: 'Edit',
             name: '_id',
             icon: 'pencil',
