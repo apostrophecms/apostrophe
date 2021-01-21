@@ -291,7 +291,7 @@ export default {
     right: 0;
     bottom: 0;
     left: 0;
-    background-color: var(--a-overlay);
+    background-color: var(--a-overlay-modal);
 
     .apos-modal--slide &,
     .apos-modal--overlay & {
