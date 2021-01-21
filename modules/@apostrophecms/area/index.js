@@ -125,23 +125,13 @@ module.exports = {
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %}` and `{% singleton %}`
       // custom tags.
-      async renderArea(req, area, context, opts) {
+      async renderArea(req, area, context) {
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }
         const choices = [];
 
-        let field = self.apos.schema.getFieldById(area._fieldId);
-
-        if (!field.options && !opts.pathToArrayAreaField) {
-          throw new Error('An area must have options (including widgets), or path information to get options (e.g., when inside an array). Area details:\n\n' + JSON.stringify(area));
-        } else if (!field.options) {
-          // Use the array schema's area field for the options during render.
-          const arrayFieldName = opts.pathToArrayAreaField;
-          const areaSchema = field.schema.find(f => f.name === arrayFieldName);
-
-          field = areaSchema;
-        }
+        const field = self.apos.schema.getFieldById(area._fieldId);
 
         const options = field.options;
         _.each(options.widgets, function (options, name) {
@@ -195,9 +185,14 @@ module.exports = {
             if (dotPath.match(regex)) {
               return;
             }
-
-            rendered.push(dotPath);
-            areasToRender[dotPath] = area;
+            const pathSplit = dotPath.split('.');
+            const parentDotPath = pathSplit.slice(0, pathSplit.length - 1).join('.');
+            const parent = deep(doc, parentDotPath) || doc;
+            // Only render areas whose parent has a metaType.
+            if (parent && parent.metaType) {
+              rendered.push(dotPath);
+              areasToRender[dotPath] = area;
+            }
           });
           // Now go over the stashed areas and render their areas into HTML.
           for (const path of Object.keys(areasToRender)) {
@@ -211,14 +206,7 @@ module.exports = {
         async function render(area, path, doc, opts) {
           const preppedArea = self.prepForRender(area, doc, path);
 
-          const areaRendered = await self.apos.area.renderArea(req, preppedArea, doc, {
-            // Arrays can only be inside arrays or other areas. If in an area,
-            // it would be rendered as part of its parent area. We know this is
-            // the path within an array field, then. So the path within the
-            // array field is the document path, minus the array field name and
-            // the array index.
-            pathToArrayAreaField: path.split('.').slice(2).join('.')
-          });
+          const areaRendered = await self.apos.area.renderArea(req, preppedArea, doc);
 
           deep(doc, `${path}._rendered`, areaRendered);
           deep(doc, `${path}._fieldId`, undefined);
