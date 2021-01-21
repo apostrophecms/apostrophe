@@ -78,10 +78,7 @@
             class="apos-tree__cell__icon"
             :icon-size="15"
           />
-          <span
-            class="apos-tree__cell__label"
-            v-show="!col.iconOnly"
-          >
+          <span v-show="!col.iconOnly" class="apos-tree__cell__label">
             {{ getEffectiveValue(col, row) }}
           </span>
         </component>
@@ -206,7 +203,6 @@ export default {
     }
   },
   mounted() {
-    console.log(this.myRows);
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
       if (!this.$refs['tree-branches']) {
@@ -376,7 +372,7 @@ export default {
     &.is-dragging {
       opacity: 0.5;
     }
-    &.is-unpublished > .apos-tree__row-data{
+    &.is-unpublished > .apos-tree__row-data {
       opacity: 0.5;
     }
   }
