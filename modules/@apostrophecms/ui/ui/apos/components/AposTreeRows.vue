@@ -112,7 +112,6 @@
 
 <script>
 import VueDraggable from 'vuedraggable';
-import _ from 'lodash';
 
 export default {
   name: 'AposTreeRows',
@@ -342,7 +341,7 @@ export default {
       const boolStr = (!!row[col.property]).toString();
 
       // Opportunity to display a custom true/false label for cell value
-      if (_.isObject(col.cellValue)) {
+      if (this.isObject(col.cellValue)) {
 
         if (excludedTypes.includes(row.type)) {
           return false;
@@ -351,7 +350,7 @@ export default {
         // if we have a custom label
         if (col.cellValue[boolStr]) {
           // if custom is just a string
-          if (_.isString(col.cellValue[boolStr])) {
+          if (typeof col.cellValue[boolStr] === 'string') {
             return col.cellValue[boolStr];
           }
           // if custom has label and other props
@@ -378,7 +377,7 @@ export default {
       }
 
       // Surface any custom label classes
-      if (_.isObject(col.cellValue)) {
+      if (this.isObject(col.cellValue)) {
         // cast boolean to string to look through obj properties
         if (col.cellValue[boolStr] && col.cellValue[boolStr].class) {
           classes.push(col.cellValue[boolStr].class);
@@ -399,6 +398,7 @@ export default {
         return false;
       }
     },
+
     getCellStyles(name, index) {
       const styles = {};
       if (this.nested && index === 0 && this.colWidths && this.colWidths[name]) {
@@ -408,6 +408,12 @@ export default {
       }
 
       return styles;
+    },
+
+    // From lodash core
+    isObject(value) {
+      const type = typeof value;
+      return value != null && (type === 'object' || type === 'function');
     }
   }
 };
@@ -546,7 +552,7 @@ export default {
     align-self: center;
   }
 
-  .apos-tree__cell.is-published {
+  .apos-tree__cell.is-published /deep/ .apos-tree__cell__icon {
     color: var(--a-success);
   }
 

@@ -5,7 +5,6 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 // Vue 3 using the composition API. - AB
 
 import klona from 'klona';
-import _ from 'lodash';
 
 export default {
   data() {
@@ -155,7 +154,8 @@ export default {
           }
         });
 
-        _.uniq(temp).forEach(icon => {
+        // Include only unique in final object
+        Array.from(new Set(temp)).forEach(icon => {
           icons[icon] = `${icon.toLowerCase()}-icon`;
         });
 
