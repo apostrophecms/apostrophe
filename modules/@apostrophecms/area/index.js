@@ -105,21 +105,20 @@ module.exports = {
           self.missingWidgetTypes[name] = true;
         }
       },
-      prepForRender(area, doc, fieldName) {
+      prepForRender(area, context, fieldName) {
         if (fieldName.includes('.')) {
-          // If we're passing in a dot path, the doc field is the first part.
-          fieldName = fieldName.split('.')[0];
+          // If we're passing in a dot path, the area field is the last part.
+          fieldName = fieldName.split('.')[fieldName.split('.').length - 1];
         }
 
-        const manager = self.apos.util.getManagerOf(doc);
+        const manager = self.apos.util.getManagerOf(context);
         const field = manager.schema.find(field => field.name === fieldName);
         if (!field) {
-          throw new Error(`The doc of type ${doc.type} with the slug ${doc.slug} has no field named ${fieldName}.
-  In Apostrophe 3.x areas must be part of the schema for each page or piece type.`);
+          throw new Error(`The requested ${context.metaType} has no field named ${fieldName}. In Apostrophe 3.x, areas must be part of the schema for each page or piece type.`);
         }
         area._fieldId = field._id;
-        area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
-        area._edit = doc._edit;
+        area._docId = context._docId || ((context.metaType === 'doc') ? context._id : null);
+        area._edit = context._edit;
         return area;
       },
       // Render the given `area` object via `area.html`, with the given `context`
@@ -164,7 +163,7 @@ module.exports = {
         });
       },
       // Replace documents' area objects with rendered HTML for each area.
-      // This is used by GET requests including the `renderareas` query
+      // This is used by GET requests including the `render-areas` query
       // parameter. `within` is an array of Apostrophe documents.
       async renderDocsAreas(req, within) {
         within = Array.isArray(within) ? within : [];
@@ -176,7 +175,9 @@ module.exports = {
           const areasToRender = {};
           // Walk the document's areas and stash the areas for rendering later.
           self.walk(doc, async function (area, dotPath) {
-            if (rendered.findIndex(path => dotPath.startsWith(path)) > -1) {
+            // If this area is the child of another area, then we only want
+            // to render the parent area.
+            if (rendered.findIndex(path => dotPath.startsWith(`${path}.`)) > -1) {
               return;
             }
             // We're only rendering areas on the document, not ancestor or
@@ -185,10 +186,10 @@ module.exports = {
             if (dotPath.match(regex)) {
               return;
             }
-            const pathSplit = dotPath.split('.');
-            const parentDotPath = pathSplit.slice(0, pathSplit.length - 1).join('.');
-            const parent = deep(doc, parentDotPath) || doc;
-            // Only render areas whose parent has a metaType.
+
+            const parent = findParent(doc, dotPath);
+            // Only render areas whose parent has a metaType, which is required
+            // to find the area options.
             if (parent && parent.metaType) {
               rendered.push(dotPath);
               areasToRender[dotPath] = area;
@@ -196,21 +197,29 @@ module.exports = {
           });
           // Now go over the stashed areas and render their areas into HTML.
           for (const path of Object.keys(areasToRender)) {
-            await render(areasToRender[path], path, doc);
+            const parent = findParent(doc, path);
+
+            await render(areasToRender[path], path, parent);
           }
 
           within[index] = doc;
           index++;
         }
 
-        async function render(area, path, doc, opts) {
-          const preppedArea = self.prepForRender(area, doc, path);
+        async function render(area, path, context, opts) {
+          const preppedArea = self.prepForRender(area, context, path);
 
-          const areaRendered = await self.apos.area.renderArea(req, preppedArea, doc);
+          const areaRendered = await self.apos.area.renderArea(req, preppedArea, context);
 
-          deep(doc, `${path}._rendered`, areaRendered);
-          deep(doc, `${path}._fieldId`, undefined);
-          deep(doc, `${path}.items`, undefined);
+          deep(context, `${path}._rendered`, areaRendered);
+          deep(context, `${path}._fieldId`, undefined);
+          deep(context, `${path}.items`, undefined);
+        }
+
+        function findParent(doc, dotPath) {
+          const pathSplit = dotPath.split('.');
+          const parentDotPath = pathSplit.slice(0, pathSplit.length - 1).join('.');
+          return deep(doc, parentDotPath) || doc;
         }
       },
       // Sanitize an input array of items intended to become
