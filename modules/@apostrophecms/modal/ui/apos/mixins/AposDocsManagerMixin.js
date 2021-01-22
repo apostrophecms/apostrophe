@@ -5,6 +5,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 // Vue 3 using the composition API. - AB
 
 import klona from 'klona';
+import _ from 'lodash';
 
 export default {
   data() {
@@ -134,16 +135,30 @@ export default {
       this.generateIcons();
     },
     generateIcons () {
-      // fetch all icons used in table headers
+      // fetch all icons used in the table
       const icons = {};
+      const temp = [];
+      const customValues = [ 'true', 'false' ];
       this.headers.forEach(h => {
-        if (h.icon) {
-          icons[h.icon] = `${h.icon.toLowerCase()}-icon`;
+
+        if (h.cellValue.icon) {
+          temp.push(h.cellValue.icon);
         }
 
-        if (h.labelIcon && !icons[h.labelIcon]) {
-          icons[h.labelIcon] = `${h.labelIcon.toLowerCase()}-icon`;
+        if (h.columnHeaderIcon) {
+          temp.push(h.columnHeaderIcon);
         }
+
+        customValues.forEach(val => {
+          if (h.cellValue[val] && h.cellValue[val].icon) {
+            temp.push(h.cellValue[val].icon);
+          }
+        });
+
+        _.uniq(temp).forEach(icon => {
+          icons[icon] = `${icon.toLowerCase()}-icon`;
+        });
+
       });
       this.icons = icons;
       // prep item checkbox fields

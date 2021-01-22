@@ -47,7 +47,8 @@
         <template #bodyMain>
           <AposTree
             :items="items"
-            :headers="headers" :icons="icons"
+            :headers="headers"
+            :icons="icons"
             v-model="checked"
             :options="treeOptions"
             @update="update"
@@ -81,37 +82,51 @@ export default {
       options: {
         columns: [
           {
-            label: 'Page Title',
-            name: 'title'
+            columnHeader: 'Page Title',
+            property: 'title',
+            cellValue: 'title'
           },
           {
-            label: 'Published',
-            name: 'lastPublishedAt',
-            value: {
-              true: '',
-              false: 'Unpublished'
+            columnHeader: 'Published',
+            property: 'lastPublishedAt',
+            cellValue: {
+              true: {
+                icon: 'circle',
+                iconSize: 10,
+                label: 'Yes',
+                class: 'is-published'
+              },
+              false: {
+                icon: 'circle',
+                iconSize: 10,
+                label: 'No',
+                class: 'is-unpublished'
+              }
             }
           },
           {
-            label: 'Edit',
-            name: '_id',
-            icon: 'pencil',
-            iconOnly: true,
+            columnHeader: 'Edit',
+            property: '_id',
             type: 'button',
-            action: 'edit'
+            action: 'edit',
+            cellValue: {
+              icon: 'pencil'
+            }
           },
           {
-            label: 'Link',
-            name: '_url',
-            icon: 'link',
-            iconOnly: true,
-            type: 'link'
+            columnHeader: 'Link',
+            property: '_url',
+            type: 'link',
+            cellValue: {
+              icon: 'link'
+            }
           }
         ]
       },
       treeOptions: {
         bulkSelect: !!this.relationshipField,
-        draggable: true
+        draggable: true,
+        ghostUnpublished: true
       }
     };
   },
@@ -131,7 +146,7 @@ export default {
         const data = {};
 
         this.headers.forEach(column => {
-          data[column.name] = page[column.name];
+          data[column.property] = page[column.property];
           data._id = page._id;
           data.children = page.children;
           data.parked = page.parked;
@@ -174,6 +189,8 @@ export default {
           draft: true
         }
       ));
+
+      // console.log(pageTree);
 
       formatPage(pageTree);
 
