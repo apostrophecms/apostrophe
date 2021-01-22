@@ -215,7 +215,7 @@ module.exports = {
         if (!result) {
           throw self.apos.error('notfound');
         }
-        if (self.apos.launder.boolean(req.query.renderareas) === true) {
+        if (self.apos.launder.boolean(req.query['render-areas']) === true) {
           await self.apos.area.renderDocsAreas(req, [ result ]);
         }
         // Attach `_url` and `_urls` properties
