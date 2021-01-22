@@ -181,11 +181,11 @@ module.exports = async function(options) {
         return;
       }
       const module = require(path);
-      if (module.moogBundle) {
+      if (module.bundle) {
         self.options.bundles = (self.options.bundles || []).concat(name);
-        _.each(module.moogBundle.modules, function(name) {
+        _.each(module.bundle.modules, function(name) {
           if (!_.has(self.options.modules, name)) {
-            const bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
+            const bundledModule = require(require('path').dirname(path) + '/' + module.bundle.directory + '/' + name);
             if (bundledModule.improve) {
               self.options.modules[name] = {};
             }
@@ -375,7 +375,7 @@ module.exports = async function(options) {
 
 const abstractClasses = [ '@apostrophecms/module', '@apostrophecms/widget-type', '@apostrophecms/page-type', '@apostrophecms/piece-type', '@apostrophecms/piece-page-type', '@apostrophecms/doc-type' ];
 
-module.exports.moogBundle = {
+module.exports.bundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'modules'
 };
