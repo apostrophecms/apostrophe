@@ -99,8 +99,7 @@ export default {
               false: {
                 icon: 'circle',
                 iconSize: 10,
-                label: 'No',
-                class: 'is-unpublished'
+                label: 'No'
               }
             }
           },
@@ -189,8 +188,6 @@ export default {
           draft: true
         }
       ));
-
-      // console.log(pageTree);
 
       formatPage(pageTree);
 

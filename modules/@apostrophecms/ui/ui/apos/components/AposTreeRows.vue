@@ -79,8 +79,8 @@
               class="apos-tree__cell__icon"
               :icon-size="getEffectiveIconSize(col, row)"
             />
-            <span class="apos-tree__cell__label">
-              {{ getEffectiveCellValue(col, row) }}
+            <span class="apos-tree__cell__label" v-if="getEffectiveCellLabel(col, row)">
+              {{ getEffectiveCellLabel(col, row) }}
             </span>
           </span>
         </component>
@@ -308,14 +308,16 @@ export default {
       }
     },
     getEffectiveIcon(col, row) {
+      const boolStr = (!!row[col.property]).toString();
+
       if (row.type === '@apostrophecms/trash') {
         return false;
       }
+
       if (col.cellValue && col.cellValue.icon) {
         return this.icons[col.cellValue.icon];
       }
 
-      const boolStr = (!!row[col.property]).toString();
       if (col.cellValue[boolStr] && col.cellValue[boolStr].icon) {
         return this.icons[col.cellValue[boolStr].icon];
       }
@@ -324,6 +326,7 @@ export default {
     },
     getEffectiveIconSize(col, row) {
       const boolStr = (!!row[col.property]).toString();
+
       if (col.cellValue && col.cellValue.iconSize) {
         return col.cellValue.iconSize;
       }
@@ -334,14 +337,15 @@ export default {
 
       return 15;
     },
-    getEffectiveCellValue(col, row) {
+    getEffectiveCellLabel(col, row) {
       const excludedTypes = [ '@apostrophecms/trash' ];
       const boolStr = (!!row[col.property]).toString();
+
       // Opportunity to display a custom true/false label for cell value
       if (_.isObject(col.cellValue)) {
 
         if (excludedTypes.includes(row.type)) {
-          return;
+          return false;
         }
 
         // if we have a custom label
@@ -355,11 +359,14 @@ export default {
             return col.cellValue[boolStr].label;
           }
         }
+      }
 
       // Original default of just printing the row property value
-      } else {
+      if (row[col.cellValue]) {
         return row[col.cellValue];
       }
+
+      return false;
     },
     getCellClasses(col, row) {
       const classes = [ 'apos-tree__cell' ];
@@ -537,10 +544,6 @@ export default {
   .apos-tree__cell__value {
     display: flex;
     align-self: center;
-  }
-
-  .apos-tree__cell.is-unpublished {
-    color: var(--a-black);
   }
 
   .apos-tree__cell.is-published {
