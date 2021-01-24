@@ -649,6 +649,10 @@ module.exports = {
           return self.apos.doc.getManager(object.type);
         } else if (object.metaType === 'widget') {
           return self.apos.area.getWidgetManager(object.type);
+        } else if (object.metaType === 'arrayItem') {
+          return self.apos.schema.getArrayManager(object.scopedArrayName);
+        } else if (object.metaType === 'object') {
+          return self.apos.schema.getArrayManager(object.scopedObjectName);
         } else {
           throw new Error('Unsupported metaType in getManagerOf:', object);
         }

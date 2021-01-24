@@ -94,8 +94,8 @@ module.exports = {
   handlers(self, options) {
     return {
       beforeSave: {
-        prepareRelationshipsForStorage(req, doc) {
-          self.apos.schema.prepareRelationshipsForStorage(req, doc);
+        prepareForStorage(req, doc) {
+          self.apos.schema.prepareForStorage(req, doc);
         },
         slugPrefix(req, doc) {
           if (self.options.slugPrefix) {
@@ -1454,6 +1454,7 @@ module.exports = {
                   }
                 }
               }
+              console.log('>>>>>', areasInfo);
             }
 
             if (req.deferWidgetLoading && (!req.loadingDeferredWidgets)) {

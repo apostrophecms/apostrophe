@@ -91,7 +91,9 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
       }
       area._fieldId = field._id;
       area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
-      area._edit = doc._edit;
+      // For existing areas this is propagated at load time, areas in
+      // array items will always be existing areas
+      area._edit = area._edit || doc._edit;
 
       const content = await self.apos.area.renderArea(req, area, context);
       return content;

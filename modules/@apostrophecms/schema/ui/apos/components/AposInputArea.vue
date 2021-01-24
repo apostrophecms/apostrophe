@@ -48,6 +48,7 @@ export default {
     },
     choices() {
       const result = [];
+      console.log(Object.entries(this.field.options.widgets));
       for (const [ name, options ] of Object.entries(this.field.options.widgets)) {
         result.push({
           name,
