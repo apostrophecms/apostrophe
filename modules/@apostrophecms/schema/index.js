@@ -239,29 +239,6 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'range',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], field.def);
-
-        if (field.required && (_.isUndefined(object[field.name]) || !object[field.name].toString().length)) {
-          throw self.apos.error('required');
-        }
-
-      },
-      validate: function (field, options, warn, fail) {
-        if (!field.min) {
-          fail(`Error: Range field "${field.name}" has no min value set.`);
-        }
-        if (!field.max) {
-          fail(`Error: Range field "${field.name}" has no max value set.`);
-        }
-      },
-      isEmpty: function (field, value) {
-        return !value.length;
-      }
-    });
-
-    self.addFieldType({
       name: 'checkboxes',
       convert: async function (req, field, data, object) {
         if (typeof data[field.name] === 'string') {
@@ -609,6 +586,45 @@ module.exports = {
 
     self.addFieldType({
       name: 'group' // visual grouping only
+    });
+
+    self.addFieldType({
+      name: 'range',
+      vueComponent: 'AposInputRange',
+      convert: async function (req, field, data, object) {
+        object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
+        if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+          throw self.apos.error('required');
+        }
+        if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
+          throw self.apos.error('invalid');
+        }
+        // Allow for ranges to go unset
+        // `min` here does not imply requirement, it is the minimum value the range UI will represent
+        if (!data[field.name] || data[field.name] < parseFloat(field.min)) {
+          object[field.name] = null;
+        }
+      },
+      validate: function (field, options, warn, fail) {
+        if (!field.min) {
+          fail('Property "min" must be set.');
+        }
+        if (!field.max) {
+          fail('Property "max" must be set.');
+        }
+        if (isNaN(parseFloat(field.max))) {
+          fail('Property "max" must be an integer.');
+        }
+        if (isNaN(parseFloat(field.min))) {
+          fail('Property "min" must be an integer.');
+        }
+        if (field.step && isNaN(parseFloat(field.step))) {
+          fail('Property "step" must be an integer.');
+        }
+        if (field.unit && (typeof field.unit) !== 'string') {
+          fail('Property "unit" must be a string.');
+        }
+      }
     });
 
     self.addFieldType({

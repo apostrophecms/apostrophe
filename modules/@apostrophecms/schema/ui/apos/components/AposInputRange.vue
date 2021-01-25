@@ -24,8 +24,14 @@
             </span>
           </div>
         </div>
-        <div class="apos-range-value">
+        <div class="apos-range-value" :class="{'is-unset': !isSet}">
           {{ valueLabel }}
+          <AposButton
+            type="quiet" label="Clear"
+            class="apos-range-value__clear"
+            :modifiers="['no-motion']"
+            @click="unset"
+          />
         </div>
       </div>
     </template>
@@ -52,9 +58,31 @@ export default {
     },
     valueLabel() {
       return this.next + this.unit;
+    },
+    isSet() {
+      // Detect whether or not a range is currently unset
+      // Use this flag to hide/show UI elements
+      if (this.next >= this.field.min) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  },
+  mounted() {
+    // The range spec defaults to a value of midway between the min and max
+    // Example: a range with an unset value and a min of 0 and max of 100 will become 50
+    // This does not allow ranges to go unset :(
+    if (!this.next) {
+      this.unset();
     }
   },
   methods: {
+    // Default to a value outside the range, to be used as a flag.
+    // The value will be set to null later in validation
+    unset() {
+      this.next = this.field.min - 1;
+    },
     validate(value) {
       if (this.field.required) {
         if (!value) {
@@ -76,7 +104,14 @@ export default {
 
   .apos-range-value {
     padding-top: 7px;
-    min-width: 40px;
+    min-width: 100px;
+    &.is-unset {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .apos-range-value__clear {
+      margin-left: 5px;
+    }
   }
 
   .apos-range-input {
