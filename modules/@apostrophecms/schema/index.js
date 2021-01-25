@@ -592,7 +592,7 @@ module.exports = {
       name: 'range',
       vueComponent: 'AposInputRange',
       convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
+        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
