@@ -145,6 +145,7 @@ module.exports = {
           if (flat) {
             const result = [];
             flatten(result, data[0]);
+
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
@@ -157,6 +158,7 @@ module.exports = {
           if (!result) {
             throw self.apos.error('notfound');
           }
+
           // Attach `_url` and `_urls` properties to the home page
           self.apos.attachment.all(result, { annotate: true });
           return result;
@@ -212,6 +214,9 @@ module.exports = {
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
           throw self.apos.error('notfound');
+        }
+        if (self.apos.launder.boolean(req.query['render-areas']) === true) {
+          await self.apos.area.renderDocsAreas(req, [ result ]);
         }
         // Attach `_url` and `_urls` properties
         self.apos.attachment.all(result, { annotate: true });
