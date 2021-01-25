@@ -59,14 +59,16 @@ export default {
       options: {
         columns: [
           {
-            label: 'Edited on',
-            name: 'editedAt',
-            labelIcon: 'calendar'
+            columnHeader: 'Edited on',
+            property: 'editedAt',
+            cellValue: 'editedAt',
+            columnHeaderIcon: 'calendar'
           },
           {
-            label: 'Edited by',
-            name: 'author',
-            labelIcon: 'account-box'
+            columnHeader: 'Edited by',
+            property: 'author',
+            cellValue: 'author',
+            columnHeaderIcon: 'account-box'
           }
         ]
       },
@@ -88,7 +90,7 @@ export default {
         const data = {};
 
         this.headers.forEach(column => {
-          data[column.name] = page[column.name];
+          data[column.property] = page[column.property];
           data._id = page._id;
           data.children = page.children;
         });
