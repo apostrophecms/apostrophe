@@ -23,7 +23,13 @@
             </h4>
           {%- endblock -%}
           <img
-            alt="{% block imgAlt %}{{ image.alt or image.title }}{% endblock %}"
+            alt="{% block imgAlt %}
+              {%- if data.widget.enableAltField -%}
+                {{ image.alt }}
+              {% else %}
+                {{ image.title }}
+              {% endif %}
+            {% endblock %}"
             data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}"
           />
           {%- block credit -%}
