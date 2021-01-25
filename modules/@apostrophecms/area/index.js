@@ -106,11 +106,6 @@ module.exports = {
         }
       },
       prepForRender(area, context, fieldName) {
-        if (fieldName.includes('.')) {
-          // If we're passing in a dot path, the area field is the last part.
-          fieldName = fieldName.split('.')[fieldName.split('.').length - 1];
-        }
-
         const manager = self.apos.util.getManagerOf(context);
         const field = manager.schema.find(field => field.name === fieldName);
         if (!field) {
