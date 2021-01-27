@@ -105,6 +105,17 @@ module.exports = {
           self.missingWidgetTypes[name] = true;
         }
       },
+      prepForRender(area, context, fieldName) {
+        const manager = self.apos.util.getManagerOf(context);
+        const field = manager.schema.find(field => field.name === fieldName);
+        if (!field) {
+          throw new Error(`The requested ${context.metaType} has no field named ${fieldName}. In Apostrophe 3.x, areas must be part of the schema for each page or piece type.`);
+        }
+        area._fieldId = field._id;
+        area._docId = context._docId || ((context.metaType === 'doc') ? context._id : null);
+        area._edit = context._edit;
+        return area;
+      },
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %}` and `{% singleton %}`
       // custom tags.
@@ -113,7 +124,9 @@ module.exports = {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }
         const choices = [];
+
         const field = self.apos.schema.getFieldById(area._fieldId);
+
         const options = field.options;
         _.each(options.widgets, function (options, name) {
           const manager = self.widgetManagers[name];
@@ -143,6 +156,66 @@ module.exports = {
           context,
           canEdit
         });
+      },
+      // Replace documents' area objects with rendered HTML for each area.
+      // This is used by GET requests including the `render-areas` query
+      // parameter. `within` is an array of Apostrophe documents.
+      async renderDocsAreas(req, within) {
+        within = Array.isArray(within) ? within : [];
+        let index = 0;
+        // Loop over the docs in the array passed in.
+        for (const doc of within) {
+          const rendered = [];
+
+          const areasToRender = {};
+          // Walk the document's areas and stash the areas for rendering later.
+          self.walk(doc, async function (area, dotPath) {
+            // If this area is the child of another area, then we only want
+            // to render the parent area.
+            if (rendered.findIndex(path => dotPath.startsWith(`${path}.`)) > -1) {
+              return;
+            }
+            // We're only rendering areas on the document, not ancestor or
+            // child page documents.
+            const regex = /^_(ancestors|children)|\._(ancestors|children)/;
+            if (dotPath.match(regex)) {
+              return;
+            }
+
+            const parent = findParent(doc, dotPath);
+            // Only render areas whose parent has a metaType, which is required
+            // to find the area options.
+            if (parent && parent.metaType) {
+              rendered.push(dotPath);
+              areasToRender[dotPath] = area;
+            }
+          });
+          // Now go over the stashed areas and render their areas into HTML.
+          for (const path of Object.keys(areasToRender)) {
+            const parent = findParent(doc, path);
+
+            await render(areasToRender[path], path, parent);
+          }
+
+          within[index] = doc;
+          index++;
+        }
+
+        async function render(area, path, context, opts) {
+          const preppedArea = self.prepForRender(area, context, path);
+
+          const areaRendered = await self.apos.area.renderArea(req, preppedArea, context);
+
+          deep(context, `${path}._rendered`, areaRendered);
+          deep(context, `${path}._fieldId`, undefined);
+          deep(context, `${path}.items`, undefined);
+        }
+
+        function findParent(doc, dotPath) {
+          const pathSplit = dotPath.split('.');
+          const parentDotPath = pathSplit.slice(0, pathSplit.length - 1).join('.');
+          return deep(doc, parentDotPath) || doc;
+        }
       },
       // Sanitize an input array of items intended to become
       // the `items` property of an area. Invokes the
@@ -280,6 +353,7 @@ module.exports = {
       // modifications are made. This happens in memory only;
       // the database is not modified.
       walk(doc, iterator) {
+        // o = object/doc, k = key, v = value
         return self.apos.doc.walk(doc, function (o, k, v, dotPath) {
           if (v && v.metaType === 'area') {
             return iterator(v, dotPath);
