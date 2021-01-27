@@ -2,6 +2,7 @@
   <AposInputWrapper
     :field="field" :error="effectiveError"
     :uid="uid" :items="next"
+    :display-options="displayOptions"
   >
     <template #additional>
       <AposMinMaxCount

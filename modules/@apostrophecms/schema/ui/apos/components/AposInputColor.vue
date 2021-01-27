@@ -2,6 +2,7 @@
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
     :error="effectiveError" :uid="uid"
+    :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-color">
@@ -68,14 +69,14 @@ export default {
       return {
         label: this.field.label,
         type: 'color',
-        color: this.value.data || '',
+        color: this.value.data || ''
       };
     },
     valueLabel() {
       if (this.next) {
         return this.next;
       } else {
-        return 'No color selected';
+        return 'None Selected';
       }
     },
     classList() {

@@ -1,22 +1,37 @@
 <template>
   <div class="apos-field__outer">
     <component :is="wrapEl" :class="classList">
-      <!-- TODO i18n -->
-      <component
-        v-if="field.label" :class="{'apos-sr-only': field.hideLabel }"
-        class="apos-field-label"
-        :is="labelEl" :for="uid"
-      >
-        {{ field.label }}
-        <span v-if="field.required" class="apos-field-required">
-          *
-        </span>
-      </component>
-      <!-- TODO i18n -->
-      <p v-if="field.help" class="apos-field-help">
-        {{ field.help }}
-      </p>
-      <slot name="additional" />
+      <div class="apos-field-info">
+        <!-- TODO i18n -->
+        <component
+          v-if="field.label" :class="{'apos-sr-only': field.hideLabel }"
+          class="apos-field-label"
+          :is="labelEl" :for="uid"
+        >
+          {{ field.label }}
+          <span v-if="field.required" class="apos-field-required">
+            *
+          </span>
+          <span
+            v-if="field.help && displayOptions.helpTooltip"
+            class="apos-field-help-tooltip"
+          >
+            <AposIndicator
+              icon="help-circle-icon"
+              class="apos-field-help-icon"
+              :tooltip="field.help"
+              :icon-size="11"
+              icon-color="var(--a-base-4)"
+            />
+          </span>
+        </component>
+        <!-- TODO i18n -->
+        <p v-if="field.help && !displayOptions.helpTooltip" class="apos-field-help">
+          {{ field.help }}
+        </p>
+        <slot name="additional" />
+      </div>
+
       <slot name="body" />
       <!-- TODO i18n -->
       <div v-if="errorMessage" class="apos-field-error">
@@ -57,6 +72,12 @@ export default {
       default() {
         return [];
       }
+    },
+    displayOptions: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   data () {
@@ -82,6 +103,9 @@ export default {
         this.modifiers.forEach((m) => {
           classes.push(`apos-field--${m}`);
         });
+      }
+      if (this.displayOptions && this.displayOptions.helpTooltip) {
+        classes.push('apos-field--help-tooltip');
       }
       return classes;
     },
@@ -124,43 +148,5 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-field {
-    border-width: 0;
-    padding: 0;
-    [disable]:hover, [disabled] ~ .apos-choice-label-text:hover {
-      cursor: not-allowed;
-    }
-  }
 
-  .apos-field-text {
-    @include type-base;
-  }
-
-  .apos-field-label {
-    @include type-base;
-    display: block;
-    margin: 0 0 $spacing-base;
-    padding: 0;
-    color: var(--a-text-primary);
-  }
-
-  .apos-field-help {
-    margin: 0 0 $spacing-base;
-  }
-
-  .apos-field-help {
-    @include type-base;
-    line-height: var(--a-line-tall);
-    color: var(--a-base-3);
-  }
-
-  .apos-field-error {
-    @include type-help;
-    margin: $spacing-base 0;
-    color: var(--a-danger);
-  }
-
-  .apos-field-required {
-    color: var(--a-danger);
-  }
 </style>
