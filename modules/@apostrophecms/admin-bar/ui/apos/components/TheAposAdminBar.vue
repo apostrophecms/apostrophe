@@ -408,6 +408,7 @@ export default {
     }
   },
   mounted() {
+    window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
     // Listen for bus events coming from notification UI
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('unpublish', this.onUnpublish);
