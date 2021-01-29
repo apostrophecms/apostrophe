@@ -15,6 +15,7 @@
             menu-offset="5, 20"
           >
             <Picker
+              v-if="next"
               v-bind="fieldOptions"
               :value="next"
               @input="update"
@@ -61,7 +62,8 @@ export default {
   data() {
     return {
       active: false,
-      tinyColorObj: null
+      tinyColorObj: null,
+      startsNull: false
     };
   },
   computed: {
@@ -87,11 +89,18 @@ export default {
     }
   },
   mounted() {
-    this.tinyColorObj = tinycolor(this.next);
+    if (!this.next) {
+      this.next = '#00000000';
+      this.startsNull = true;
+    }
   },
   methods: {
     open() {
       this.active = true;
+      if (this.startsNull) {
+        this.next = tinycolor(this.next).setAlpha(1).toString(this.fieldOptions.format);
+        this.startsNull = false;
+      }
     },
     close() {
       this.active = false;

@@ -122,14 +122,12 @@ export default {
         // if color exists, use it
         if (this.color) {
           return {
-            backgroundColor: this.color,
-            border: `2px solid ${tinycolor(this.color).lighten(20).toString()}`
+            backgroundColor: this.color
           };
         // if not provide a default placeholder
         } else {
           return {
-            backgroundColor: 'transparent',
-            border: `2px solid ${tinycolor('white').darken(20).toString()}`
+            backgroundColor: 'transparent'
           };
         }
       } else {
@@ -267,8 +265,8 @@ export default {
   }
 
   .apos-button__color-preview {
-    width: calc(100% - 4px);
-    height: calc(100% - 4px);
+    width: 100%;
+    height: 100%;
   }
   .apos-button__color-preview,
   .apos-button__color-preview__swatch,
