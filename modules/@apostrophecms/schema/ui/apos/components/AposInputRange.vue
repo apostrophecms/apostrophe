@@ -16,8 +16,18 @@
             :id="uid"
           >
           <div class="apos-range__scale">
-            <span>{{ minLabel }}</span>
-            <span>{{ maxLabel }}</span>
+            <span>
+              <span class="apos-sr-only">
+                Min:
+              </span>
+              {{ minLabel }}
+            </span>
+            <span>
+              <span class="apos-sr-only">
+                Max:
+              </span>
+              {{ maxLabel }}
+            </span>
           </div>
         </div>
         <div
