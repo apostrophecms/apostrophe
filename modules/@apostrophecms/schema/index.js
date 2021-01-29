@@ -601,7 +601,11 @@ module.exports = {
         }
         // Allow for ranges to go unset
         // `min` here does not imply requirement, it is the minimum value the range UI will represent
-        if (!data[field.name] || data[field.name] < parseFloat(field.min)) {
+        if (
+          !data[field.name] ||
+          data[field.name] < parseFloat(field.min) ||
+          data[field.name] > parseFloat(field.max)
+        ) {
           object[field.name] = null;
         }
       },
@@ -613,13 +617,13 @@ module.exports = {
           fail('Property "max" must be set.');
         }
         if (isNaN(parseFloat(field.max))) {
-          fail('Property "max" must be an integer.');
+          fail('Property "max" must parse to a float');
         }
         if (isNaN(parseFloat(field.min))) {
-          fail('Property "min" must be an integer.');
+          fail('Property "min" must parse to a float.');
         }
         if (field.step && isNaN(parseFloat(field.step))) {
-          fail('Property "step" must be an integer.');
+          fail('Property "step" must parse to a float.');
         }
         if (field.unit && (typeof field.unit) !== 'string') {
           fail('Property "unit" must be a string.');
