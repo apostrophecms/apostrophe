@@ -1,7 +1,8 @@
 <template>
   <div class="apos-tree" :class="{ 'apos-tree--nested': nested }">
     <AposTreeHeader
-      :headers="spacingRow" :icons="icons"
+      :headers="spacingRow"
+      :icons="icons"
       :spacer-only="true"
       @calculated="setWidths"
     />
@@ -98,7 +99,7 @@ export default {
       const headers = {};
       if (this.headers) {
         this.headers.forEach(header => {
-          headers[header.name] = header.label;
+          headers[header.property] = header.label;
         });
       }
 
@@ -123,7 +124,7 @@ export default {
         }
 
         this.headers.forEach(col => {
-          const key = col.name;
+          const key = col.property;
           if (
             (!spacingRow[key]) ||
             (spacingRow[key] &&
@@ -139,18 +140,18 @@ export default {
       this.headers.forEach(col => {
         let obj;
         const foundIndex = this.headers.findIndex(o => {
-          return o.name === col.name;
+          return o.property === col.property;
         });
         const spacerInfo = {
-          name: col.name,
-          label: spacingRow[col.name]
+          name: col.property,
+          label: spacingRow[col.property]
         };
 
         if (foundIndex > -1) {
           // Deep copy the original header column to capture all options.
           const foundObj = JSON.parse(JSON.stringify(this.headers[foundIndex]));
 
-          if (foundObj.iconOnly) {
+          if (foundObj.icon) {
             // If the "column" will only show icons, let the "column header"
             // set the width.
             delete spacerInfo.label;
