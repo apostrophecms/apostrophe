@@ -49,6 +49,7 @@ module.exports = {
   'phone-icon': 'Phone',
   'redo-icon': 'RedoVariant',
   'refresh-icon': 'Refresh',
+  'tune-icon': 'Tune',
   'undo-icon': 'UndoVariant',
   'unfold-more-horizontal-icon': 'UnfoldMoreHorizontal',
   'video-icon': 'Video',

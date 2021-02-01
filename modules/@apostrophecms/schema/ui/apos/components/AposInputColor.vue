@@ -90,6 +90,8 @@ export default {
   },
   mounted() {
     if (!this.next) {
+      // vue-color does not support null values
+      // If a color begins null, set it to a transparent black and flag it
       this.next = '#00000000';
       this.startsNull = true;
     }
@@ -97,10 +99,6 @@ export default {
   methods: {
     open() {
       this.active = true;
-      if (this.startsNull) {
-        this.next = tinycolor(this.next).setAlpha(1).toString(this.fieldOptions.format);
-        this.startsNull = false;
-      }
     },
     close() {
       this.active = false;
@@ -108,6 +106,13 @@ export default {
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
       this.next = this.tinyColorObj.toString(this.fieldOptions.format);
+
+      if (this.startsNull) {
+        // As a basic UX courtesey make sure to reset the alpha value of an orginally null value back to 1
+        // as it was previously set to 0 by us, not the user.
+        this.next = this.tinyColorObj.setAlpha(1).toString(this.fieldOptions.format);
+        this.startsNull = false;
+      }
     },
     validate(value) {
       if (this.field.required) {

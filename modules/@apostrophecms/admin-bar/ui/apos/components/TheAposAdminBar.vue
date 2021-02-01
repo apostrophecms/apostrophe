@@ -136,6 +136,12 @@
           class="apos-admin-bar__control-set apos-admin-bar__control-set--mode-and-settings"
           name="flip"
         >
+          <!--
+            TODO: Each div at this level serves as a discrete context menu state
+            Modules should be able to provide their own menus here to complete tasks specific to them.
+            It might also be worth breaking up the core menus into their own vue components to
+            further illustrate this concept.
+          -->
           <div
             v-if="!editMode" :key="'switchToEditMode'"
             class="apos-admin-bar__control-set__group"
