@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.115.0 (2021-02-02)
+* When `enableAltField` option is set to `true`, add an `alt` field to `apostrophe-images` schema. And use it in `apostrophe-images-widget`, in `<img>` alt attributes.
+
 ## 2.114.0 (2021-01-13)
 * Fixes image manager double-scroll bar bug.
 * When a `styles` config with a single object is passed to an `apostrophe-rich-text` widget, use that as the default style. Thanks to [Fredrik Ekelund](https://github.com/fredrikekelund) for the contribution.
