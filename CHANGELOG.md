@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.114.1 (2021-02-02)
+## 2.115.0 (2021-02-02)
 * When `enableAltField` option is set to `true`, add an `alt` field to `apostrophe-images` schema. And use it in `apostrophe-images-widget`, in `<img>` alt attributes.
 
 ## 2.114.0 (2021-01-13)
