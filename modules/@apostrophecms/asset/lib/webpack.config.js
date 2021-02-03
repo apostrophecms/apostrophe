@@ -2,6 +2,7 @@ const path = require('path');
 const merge = require('webpack-merge');
 const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
+
 let BundleAnalyzerPlugin;
 
 if (process.env.APOS_BUNDLE_ANALYZER) {
