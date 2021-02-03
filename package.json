@@ -80,7 +80,6 @@
     "node-fetch": "^2.6.1",
     "node-sass": "^4.14.1",
     "nodemailer": "^4.6.7",
-    "normalize.css": "^8.0.1",
     "nunjucks": "^3.2.1",
     "oembetter": "^0.1.23",
     "passport": "^0.3.2",
