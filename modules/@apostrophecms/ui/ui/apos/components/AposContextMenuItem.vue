@@ -45,8 +45,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-context-menu__item {
+    display: flex;
+  }
+
   .apos-context-menu__button {
     @include type-base;
+    flex-grow: 1;
     display: inline-block;
     width: 100%;
     padding: 10px 20px;

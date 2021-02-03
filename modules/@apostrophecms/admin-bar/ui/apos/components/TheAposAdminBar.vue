@@ -941,8 +941,8 @@ function depth(el) {
   margin-left: 10px;
 
   /deep/ .apos-context-menu__btn {
-    width: 23px;
-    height: 23px;
+    width: 21px;
+    height: 21px;
     padding: 0;
   }
 
