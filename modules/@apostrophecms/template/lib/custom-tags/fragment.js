@@ -55,10 +55,16 @@ module.exports = function(self, options) {
       try {
         const body = rest.pop();
         const name = rest.pop();
-        context.setVariable(name, {
-          body,
-          args: rest
+        context.setVariable(name, (...args) => {
+          return {
+            body,
+            args,
+            params: rest
+          };
         });
+        if (name.charAt(0) !== '_') {
+          context.addExport(name);
+        }
         return '';
       } catch (e) {
         console.error(e);

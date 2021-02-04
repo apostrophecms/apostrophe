@@ -4,14 +4,14 @@ module.exports = (self, options) => {
       try {
         // get the tag token
         const token = parser.nextToken();
+        const args = new nodes.NodeList(token.lineno, token.colno);
         // TODO this only allows a simple name, we need
         // to permit at least a dotted expression to
         // accommodate imports. We can't parse it as an
         // expression because that would invoke it
         // as a function with the args
-        const name = parser.parsePrimary(true);
-        const args = parser.parseSignature();
-        args.addChild(new nodes.Literal(name.lineno, name.colno, name.value));
+        const invocation = parser.parsePrimary();
+        args.addChild(invocation);
         parser.advanceAfterBlockEnd(token.value);
         return { args };
       } catch (e) {
@@ -19,25 +19,19 @@ module.exports = (self, options) => {
         throw e;
       }
     },
-    async run(context, ...args) {
+    async run(context, info) {
       try {
-        // const args = invocation.args;
         const req = context.env.opts.req;
-        const name = args.pop();
-        const fragment = context.getVariables()[name];
-        if ((!fragment) || (!fragment.body)) {
-          throw new Error(`Invoked undefined template fragment ${name}`);
-        }
         const input = {};
         let i = 0;
-        for (const arg of fragment.args) {
-          if (i === args.length) {
+        for (const param of info.params) {
+          if (i === info.args.length) {
             break;
           }
-          input[arg] = args[i];
+          input[param] = info.args[i];
           i++;
         }
-        const body = fragment.body();
+        const body = info.body();
 
         const env = self.getEnv(req, context.env.opts.module);
 
