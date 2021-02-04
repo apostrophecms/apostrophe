@@ -36,7 +36,7 @@ module.exports = {
     return {
       component: require('./lib/custom-tags/component')(self, options),
       fragment: require('./lib/custom-tags/fragment')(self, options),
-      run: require('./lib/custom-tags/run')(self, options)
+      render: require('./lib/custom-tags/render')(self, options)
     };
   },
   components(self, options) {
