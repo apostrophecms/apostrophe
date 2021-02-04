@@ -34,7 +34,9 @@ module.exports = {
   options: { alias: 'template' },
   customTags(self, options) {
     return {
-      component: require('./lib/custom-tags/component')(self, options)
+      component: require('./lib/custom-tags/component')(self, options),
+      program: require('./lib/custom-tags/program')(self, options),
+      run: require('./lib/custom-tags/run')(self, options)
     };
   },
   components(self, options) {
@@ -342,7 +344,8 @@ module.exports = {
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
-          req
+          req,
+          module: self.apos.modules[moduleName]
         });
 
         env.addGlobal('apos', self.templateApos);
@@ -394,10 +397,10 @@ module.exports = {
               // as the second arg is required if there are no parentheses
               const args = parser.parseSignature(null, true);
               parser.advanceAfterBlockEnd(token.value);
-              return args;
+              return { args };
             };
-            const args = parse(parser, nodes, lexer);
-            return new nodes.CallExtensionAsync(extension, 'run', args, []);
+            const parsed = parse(parser, nodes, lexer);
+            return new nodes.CallExtensionAsync(extension, 'run', parsed.args, parsed.blocks || []);
           };
           extension.run = async function (context) {
             const callback = arguments[arguments.length - 1];
@@ -405,7 +408,7 @@ module.exports = {
               // Pass req, followed by other args that are not "context" (first)
               // or "callback" (last)
               const args = [
-                context.env.opts.req,
+                context,
                 ...[].slice.call(arguments, 1, arguments.length - 1)
               ];
               const result = await config.run.apply(config, args);

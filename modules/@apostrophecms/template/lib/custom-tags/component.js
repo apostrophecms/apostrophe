@@ -19,10 +19,11 @@ module.exports = function(self, options) {
         args.addChild(data);
       }
       parser.advanceAfterBlockEnd(token.value);
-      return args;
+      return { args };
     },
     // Do the actual work
-    async run(req, name, data) {
+    async run(context, name, data) {
+      const req = context.env.opts.req;
       if (!data) {
         data = {};
       }
