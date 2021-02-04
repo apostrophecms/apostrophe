@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-admin-bar-wrapper">
+  <div class="apos-admin-bar-wrapper apos-theme--primary-purple">
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
