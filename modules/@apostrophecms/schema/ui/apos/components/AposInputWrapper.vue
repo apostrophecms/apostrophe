@@ -16,6 +16,10 @@
       <p v-if="field.help" class="apos-field-help">
         {{ field.help }}
       </p>
+      <p
+        v-else-if="field.htmlHelp" class="apos-field-help"
+        v-html="field.htmlHelp"
+      />
       <slot name="additional" />
       <slot name="body" />
       <!-- TODO i18n -->
