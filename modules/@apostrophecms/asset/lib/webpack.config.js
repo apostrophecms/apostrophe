@@ -1,5 +1,5 @@
 const path = require('path');
-const merge = require('webpack-merge');
+const merge = require('webpack-merge').merge;
 const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
 
@@ -53,5 +53,5 @@ module.exports = ({ importFile, modulesDir }, apos) => {
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
   };
 
-  return merge.smart(config, ...tasks);
+  return merge(config, ...tasks);
 };

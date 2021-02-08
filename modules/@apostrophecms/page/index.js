@@ -890,7 +890,15 @@ database.`);
           self.apos.util.warn('No allowed Page types are specified.');
           return null;
         }
-        const page = self.apos.doc.getManager(pageType).newInstance();
+        const manager = self.apos.doc.getManager(pageType);
+        if (!manager) {
+          if (self.apos.modules[pageType]) {
+            throw self.apos.error('error', `The module ${pageType} does not extend @apostrophecms/page-type.`);
+          } else {
+            throw self.apos.error('error', `The page type module ${pageType} does not exist in the project.`);
+          }
+        }
+        const page = manager.newInstance();
         _.extend(page, {
           title: 'New Page',
           slug: self.apos.util.addSlashIfNeeded(parentPage.slug) + 'new-page',
