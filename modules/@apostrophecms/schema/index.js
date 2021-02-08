@@ -1946,7 +1946,7 @@ module.exports = {
       // ### `convert`
       //
       // Required. An `async` function which takes `(req, field, data, object)`. The value
-      // of the field is drawn from the untrusted input object `input` and sanitized
+      // of the field is drawn from the untrusted input object `data` and sanitized
       // if possible, then copied to the appropriate property (or properties) of `object`.
       //
       // `field` contains the schema field definition, useful to access
