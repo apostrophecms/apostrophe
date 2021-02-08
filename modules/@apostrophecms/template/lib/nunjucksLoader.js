@@ -107,6 +107,7 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
           if (fs.existsSync(fullpath)) {
             self.pathsToNames[fullpath] = name;
             src = fs.readFileSync(fullpath, 'utf-8');
+            lint(fullpath, src);
             return {
               src: src,
               path: name
@@ -123,6 +124,7 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
         if (fs.existsSync(fullpath)) {
           self.pathsToNames[fullpath] = name;
           src = fs.readFileSync(fullpath, 'utf-8');
+          lint(fullpath, src);
           return {
             src: src,
             path: name
@@ -131,6 +133,23 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
       }
     }
     return null;
+    function lint(fullpath, src) {
+      if (process.env.NODE_ENV !== 'production') {
+        // If we do this naively with a single regexp we'll inadvertently
+        // span two macros to get at an innocent area in between them.
+        // Check all the macro definitions individually
+        const matcher = /{%\s*macro[\s\S]+{%\s*endmacro\s*%}/g;
+        let matches;
+        while ((matches = matcher.exec(src)) !== null) {
+          const macro = matches[0];
+          if (macro.match(/{%\s*area|{%\s*component/)) {
+            self.templates.apos.util.warnDevOnce('async-in-macros',
+              `The Nunjucks template:\n\n${fullpath}\n\nAttempts to use {% area %} or {% component %} inside {% macro %}.\nThis will not work. Replace {% macro %}...{% endmacro %} with\n{% fragment %}...{% endfragment %}.`
+            );
+          }
+        }
+      }
+    }
   };
 
   self.on = function(name, func) {
