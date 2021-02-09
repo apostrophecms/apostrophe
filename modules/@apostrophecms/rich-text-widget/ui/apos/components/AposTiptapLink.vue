@@ -238,8 +238,8 @@ export default {
   }
 
   // special schema style for this use
-  .apos-link-control /deep/ .apos-field-target {
-    .apos-field-label {
+  .apos-link-control /deep/ .apos-field--target {
+    .apos-field__label {
       display: none;
     }
   }

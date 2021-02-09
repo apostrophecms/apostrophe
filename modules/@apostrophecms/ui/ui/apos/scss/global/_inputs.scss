@@ -1,8 +1,8 @@
 .apos-input,
 .apos-input-wrapper,
 .apos-choice-label {
-  .apos-field-label + &,
-  .apos-field-help + & {
+  .apos-field__label + &,
+  .apos-field__help + & {
     margin-top: $spacing-base;
   }
 }
@@ -95,26 +95,6 @@
   }
 }
 
-.apos-field-help-tooltip {
-  position: relative;
-  top: 2px;
-}
-
-.apos-field--inline {
-  display: flex;
-  align-items: center;
-  .apos-field-label {
-    margin-bottom: 0;
-  }
-  .apos-field-info,
-  .apos-input-wrapper {
-    width: 48%;
-  }
-  .apos-field-info {
-    margin-right: 4%;
-  }
-}
-
 .apos-field.apos-field--micro {
   .apos-input {
     padding: 10px;
@@ -123,11 +103,11 @@
   .apos-input-icon {
     right: 5px;
   }
-  .apos-field-label {
+  .apos-field__label {
     font-size: var(--a-type-small);
     font-weight: 500;
   }
-  &.apos-field-color {
+  &.apos-field--color {
     .apos-button.apos-button--color {
       width: 25px;
       height: 25px;
@@ -143,10 +123,6 @@
 
 .apos-input-wrapper {
   position: relative;
-  max-width: $input-max-width;
-}
-
-.apos-field-area {
   max-width: $input-max-width;
 }
 
@@ -269,45 +245,4 @@
       display: inline-flex;
     }
   }
-}
-
-.apos-field {
-  border-width: 0;
-  padding: 0;
-  [disable]:hover, [disabled] ~ .apos-choice-label-text:hover {
-    cursor: not-allowed;
-  }
-}
-
-.apos-field-text {
-  @include type-base;
-}
-
-.apos-field-label {
-  @include type-base;
-  display: block;
-  margin: 0 0 $spacing-base;
-  padding: 0;
-  color: var(--a-text-primary);
-}
-
-.apos-field-help {
-  margin: 0 0 $spacing-base;
-  @include type-base;
-  line-height: var(--a-line-tall);
-  color: var(--a-base-3);
-}
-
-.apos-field-help-icon {
-  position: relative;
-}
-
-.apos-field-error {
-  @include type-help;
-  margin: $spacing-base 0;
-  color: var(--a-danger);
-}
-
-.apos-field-required {
-  color: var(--a-danger);
 }

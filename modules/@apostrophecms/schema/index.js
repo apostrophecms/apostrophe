@@ -481,13 +481,6 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'range',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
-      }
-    });
-
-    self.addFieldType({
       name: 'url',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
@@ -593,6 +586,49 @@ module.exports = {
 
     self.addFieldType({
       name: 'group' // visual grouping only
+    });
+
+    self.addFieldType({
+      name: 'range',
+      vueComponent: 'AposInputRange',
+      convert: async function (req, field, data, object) {
+        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+        if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+          throw self.apos.error('required');
+        }
+        if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
+          throw self.apos.error('invalid');
+        }
+        // Allow for ranges to go unset
+        // `min` here does not imply requirement, it is the minimum value the range UI will represent
+        if (
+          !data[field.name] ||
+          data[field.name] < field.min ||
+          data[field.name] > field.max
+        ) {
+          object[field.name] = null;
+        }
+      },
+      validate: function (field, options, warn, fail) {
+        if (!field.min) {
+          fail('Property "min" must be set.');
+        }
+        if (!field.max) {
+          fail('Property "max" must be set.');
+        }
+        if (typeof field.max !== 'number') {
+          fail('Property "max" must be a number');
+        }
+        if (typeof field.min !== 'number') {
+          fail('Property "min" must be a number');
+        }
+        if (field.step && typeof field.step !== 'number') {
+          fail('Property "step" must be a number.');
+        }
+        if (field.unit && typeof field.unit !== 'string') {
+          fail('Property "unit" must be a string.');
+        }
+      }
     });
 
     self.addFieldType({
@@ -1910,7 +1946,7 @@ module.exports = {
       // ### `convert`
       //
       // Required. An `async` function which takes `(req, field, data, object)`. The value
-      // of the field is drawn from the untrusted input object `input` and sanitized
+      // of the field is drawn from the untrusted input object `data` and sanitized
       // if possible, then copied to the appropriate property (or properties) of `object`.
       //
       // `field` contains the schema field definition, useful to access

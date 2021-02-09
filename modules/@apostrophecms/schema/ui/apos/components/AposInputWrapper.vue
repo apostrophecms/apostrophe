@@ -1,40 +1,41 @@
 <template>
-  <div class="apos-field__outer">
+  <div class="apos-field__wrapper">
     <component :is="wrapEl" :class="classList">
-      <div class="apos-field-info">
+      <div class="apos-field__info">
         <!-- TODO i18n -->
         <component
           v-if="field.label" :class="{'apos-sr-only': field.hideLabel }"
-          class="apos-field-label"
+          class="apos-field__label"
           :is="labelEl" :for="uid"
         >
           {{ field.label }}
-          <span v-if="field.required" class="apos-field-required">
+          <span v-if="field.required" class="apos-field__required">
             *
           </span>
           <span
-            v-if="field.help && displayOptions.helpTooltip"
-            class="apos-field-help-tooltip"
+            v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
+            class="apos-field__help-tooltip"
           >
             <AposIndicator
               icon="help-circle-icon"
-              class="apos-field-help-icon"
-              :tooltip="field.help"
+              class="apos-field__help-tooltip__icon"
+              :tooltip="(field.help || field.htmlHelp)"
               :icon-size="11"
               icon-color="var(--a-base-4)"
             />
           </span>
         </component>
         <!-- TODO i18n -->
-        <p v-if="field.help && !displayOptions.helpTooltip" class="apos-field-help">
-          {{ field.help }}
-        </p>
+        <p
+          v-if="(field.help || field.htmlHelp) && !displayOptions.helpTooltip"
+          class="apos-field__help"
+          v-html="(field.help || field.htmlHelp)"
+        />
         <slot name="additional" />
       </div>
-
       <slot name="body" />
       <!-- TODO i18n -->
-      <div v-if="errorMessage" class="apos-field-error">
+      <div v-if="errorMessage" class="apos-field__error">
         {{ errorMessage }}
       </div>
     </component>
@@ -90,8 +91,8 @@ export default {
     classList: function () {
       const classes = [
         'apos-field',
-        `apos-field-${this.field.type}`,
-        `apos-field-${this.field.name}`
+        `apos-field--${this.field.type}`,
+        `apos-field--${this.field.name}`
       ];
       if (this.field.classes) {
         classes.push(this.field.classes);
@@ -103,9 +104,6 @@ export default {
         this.modifiers.forEach((m) => {
           classes.push(`apos-field--${m}`);
         });
-      }
-      if (this.displayOptions && this.displayOptions.helpTooltip) {
-        classes.push('apos-field--help-tooltip');
       }
       return classes;
     },
@@ -148,5 +146,69 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.apos-field {
+  border-width: 0;
+  padding: 0;
+  [disable]:hover, [disabled] ~ .apos-choice-label-text:hover {
+    cursor: not-allowed;
+  }
+}
+
+.apos-field--text {
+  @include type-base;
+}
+
+.apos-field__label {
+  @include type-base;
+  display: block;
+  margin: 0 0 $spacing-base;
+  padding: 0;
+  color: var(--a-text-primary);
+}
+
+.apos-field__help {
+  margin: 0 0 $spacing-base;
+  @include type-base;
+  line-height: var(--a-line-tall);
+  color: var(--a-base-3);
+}
+
+.apos-field__help-tooltip__icon {
+  position: relative;
+}
+
+.apos-field__error {
+  @include type-help;
+  margin: $spacing-base 0;
+  color: var(--a-danger);
+}
+
+.apos-field__required {
+  color: var(--a-danger);
+}
+
+.apos-field__help-tooltip {
+  position: relative;
+  top: 2px;
+}
+
+.apos-field--inline {
+  display: flex;
+  align-items: center;
+  .apos-field__label {
+    margin-bottom: 0;
+  }
+  .apos-field__info,
+  .apos-input-wrapper {
+    width: 48%;
+  }
+  .apos-field__info {
+    margin-right: 4%;
+  }
+}
+
+.apos-field--area {
+  max-width: $input-max-width;
+}
 
 </style>
