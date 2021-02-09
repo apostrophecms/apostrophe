@@ -4,6 +4,7 @@
     :error="effectiveError"
     :uid="uid"
     :modifiers="modifiers"
+    :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-input-wrapper">
@@ -19,9 +20,10 @@
             {{ choice.label }}
           </option>
         </select>
-        <component
-          :is="icon" :size="24"
+        <AposIndicator
+          icon="menu-down-icon"
           class="apos-input-icon"
+          :icon-size="20"
         />
       </div>
     </template>

@@ -138,7 +138,7 @@ export default {
     }
   }
 
-  .apos-filters-menu /deep/ .apos-field-label {
+  .apos-filters-menu /deep/ .apos-field__label {
     display: block;
     width: 100%;
     padding-bottom: 10px;

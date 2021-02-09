@@ -7,7 +7,7 @@
       :is="icon"
       :size="iconSize"
       class="apos-indicator__icon"
-      fill-color="currentColor"
+      :fill-color="iconColor"
     />
   </span>
 </template>
@@ -28,13 +28,17 @@ export default {
     tooltip: {
       type: [ String, Object, Boolean ],
       default: false
+    },
+    iconColor: {
+      type: String,
+      default: 'currentColor'
     }
   }
 };
 </script>
 <style lang="scss" scoped>
   .apos-indicator {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }

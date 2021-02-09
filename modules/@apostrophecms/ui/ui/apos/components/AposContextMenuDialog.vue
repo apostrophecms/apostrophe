@@ -139,7 +139,7 @@ export default {
 
 .apos-context-menu__dialog /deep/ .apos-schema .apos-field {
   margin-bottom: 20px;
-  .apos-field-help {
+  .apos-field__help {
     margin-top: 5px;
   }
 }

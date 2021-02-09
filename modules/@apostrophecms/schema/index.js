@@ -91,7 +91,7 @@ module.exports = {
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
-          throw self.apos.error('required');
+          throw self.apos.error(`required: ${field.name}`);
         }
       },
       index: function (value, field, texts) {
