@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-notifications">
+  <div class="apos-notifications apos-theme--primary-purple">
     <AposNotification
       v-for="notification in notifications"
       :key="notification._id"

@@ -1,5 +1,7 @@
 <template>
-  <div class="apos-admin-bar-wrapper">
+  <!-- TODO: Replace this and other hard-coded `apos-theme--primary-purple`
+  with implementation via JS based on user selection or default. -->
+  <div class="apos-admin-bar-wrapper apos-theme--primary-purple">
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
@@ -948,8 +950,8 @@ function depth(el) {
   margin-left: 10px;
 
   /deep/ .apos-context-menu__btn {
-    width: 23px;
-    height: 23px;
+    width: 21px;
+    height: 21px;
     padding: 0;
   }
 

@@ -2,7 +2,7 @@
 @import '../mixins/import-all.scss';
 
 // One-time imports used project wide, like utility classes, login styles, etc.
-@import '~normalize.css/normalize.css';
+@import './_normalize';
 @import './_admin';
 @import './_theme';
 @import './_inputs';

@@ -1,5 +1,5 @@
 <template>
-  <div id="apos-modals">
+  <div id="apos-modals" class="apos-theme--primary-purple">
     <component
       v-for="modal in stack" :key="modal.id"
       :is="modal.componentName"
