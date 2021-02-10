@@ -4,7 +4,8 @@
 module.exports = function(self, options) {
 
   return {
-    async run(req, item, options) {
+    async run(context, item, options) {
+      const req = context.env.opts.req;
       if (!item) {
         self.apos.util.warn('a null widget was encountered.');
         return '';

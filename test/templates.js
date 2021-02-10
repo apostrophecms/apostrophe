@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const cheerio = require('cheerio');
+const Promise = require('bluebird');
 
 let apos;
 
@@ -23,6 +24,18 @@ describe('Templates', function() {
         'inject-test': {},
         'with-layout-page': {
           extend: '@apostrophecms/page-type'
+        },
+        'fragment-page': {
+          components(self, options) {
+            return {
+              async test(req, input) {
+                // Be very async
+                await Promise.delay(100);
+                input.afterDelay = true;
+                return input;
+              }
+            };
+          }
         }
       }
     });
@@ -116,6 +129,34 @@ describe('Templates', function() {
     assert(beforeTestIndex < titleIndex);
     assert(afterTestIndex > titleIndex);
     assert(afterTestIndex < bodyIndex);
+  });
+
+  it('should render fragments containing async components correctly', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-page'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const aboveFragment = result.indexOf('Above Fragment');
+    const beforeComponent = result.indexOf('Before Component');
+    const componentText = result.indexOf('Component Text');
+    const afterDelay = result.indexOf('After Delay');
+    const afterComponent = result.indexOf('After Component');
+    const belowFragment = result.indexOf('Below Fragment');
+
+    assert(aboveFragment !== -1);
+    assert(beforeComponent !== -1);
+    assert(componentText !== -1);
+    assert(afterDelay !== -1);
+    assert(afterComponent !== -1);
+    assert(belowFragment !== -1);
+
+    assert(aboveFragment < beforeComponent);
+    assert(beforeComponent < componentText);
+    assert(componentText < afterDelay);
+    assert(afterDelay < afterComponent);
+    assert(afterComponent < belowFragment);
   });
 
 });
