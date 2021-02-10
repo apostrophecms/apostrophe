@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.116.0 (2021-10-02)
+* Fixes an error when saving an edited Tag in the Tag Manager.
+
 ## 2.115.0 (2021-02-02)
 * When `enableAltField` option is set to `true`, add an `alt` field to `apostrophe-images` schema. And use it in `apostrophe-images-widget`, in `<img>` alt attributes.
 
