@@ -6,18 +6,6 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 
-// Wrap webpack to report its errors readably, in
-// preparation to promisify it
-
-function webpack(config, cb) {
-  return webpackModule(config, function (err, stats) {
-    if (err || stats.hasErrors()) {
-      return cb(err || stats.toJson().errors.join('\n'));
-    }
-    return cb(null);
-  });
-}
-
 module.exports = {
 
   options: {
@@ -160,9 +148,9 @@ module.exports = {
     ${iconImports.registerCode}
     ${componentImports.registerCode}
     ${tiptapExtensionImports.registerCode}
-    setImmediate(() => {
+    setTimeout(() => {
     ${appImports.invokeCode}
-    });
+    }, 0);
             `);
 
             fs.writeFileSync(`${buildDir}/imports.json`, JSON.stringify({
@@ -172,7 +160,7 @@ module.exports = {
               apps: appImports
             }));
 
-            await Promise.promisify(webpack)(require('./lib/webpack.config')(
+            await Promise.promisify(webpackModule)(require('./lib/webpack.config')(
               {
                 importFile,
                 modulesDir

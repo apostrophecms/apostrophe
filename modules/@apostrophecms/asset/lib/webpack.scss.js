@@ -6,17 +6,39 @@ module.exports = (options, apos) => {
       rules: [
         {
           test: /\.css$/,
-          use: [ 'vue-style-loader', 'css-loader' ]
+          use: [
+            'vue-style-loader',
+            // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
+            {
+              loader: 'css-loader',
+              options: {
+                esModule: false
+              }
+            }
+          ]
         },
+        // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
         {
           test: /\.s[ac]ss$/,
           use: [
             'vue-style-loader',
-            'css-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                esModule: false
+              }
+            },
             {
               loader: 'postcss-loader',
               options: {
-                plugins: () => [ require('autoprefixer') ]
+                postcssOptions: {
+                  plugins: [
+                    [
+                      'autoprefixer',
+                      {}
+                    ]
+                  ]
+                }
               }
             },
             {
