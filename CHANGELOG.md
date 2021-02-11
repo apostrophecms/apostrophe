@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.115.1 (2021-02-24)
+* Fixes a user interface bug in the chooser modals where the footer pagination was hidden behind the left column.
+
 ## 2.115.0 (2021-02-02)
 * When `enableAltField` option is set to `true`, add an `alt` field to `apostrophe-images` schema. And use it in `apostrophe-images-widget`, in `<img>` alt attributes.
 
