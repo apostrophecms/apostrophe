@@ -515,32 +515,35 @@ module.exports = {
       }
     });
 
+    const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
+
     self.addFieldType({
       name: 'date',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
-        if (!data[field.name] && object[field.name]) {
+        const newDateVal = data[field.name];
+        if (!newDateVal && object[field.name]) {
           // Allow date fields to be unset.
           object[field.name] = null;
           return;
         }
-        if (field.min && dayjs(data[field.name]).isBefore(field.min)) {
+        if (field.min && newDateVal && (newDateVal < field.min)) {
           // If the min requirement isn't met, leave as-is.
           return;
         }
-        if (field.max && dayjs(data[field.name]).isAfter(field.max)) {
+        if (field.max && newDateVal && (newDateVal > field.max)) {
           // If the max requirement isn't met, leave as-is.
           return;
         }
 
-        object[field.name] = self.apos.launder.date(data[field.name], field.def);
+        object[field.name] = self.apos.launder.date(newDateVal, field.def);
       },
       validate: function (field, options, warn, fail) {
-        if (field.max && !dayjs(field.max).isValid()) {
-          fail('Property "max" must be in a date format (YYYY-MM-DD)');
+        if (field.max && !field.max.match(dateRegex)) {
+          fail('Property "max" must be in the date format, YYYY-MM-DD');
         }
-        if (field.min && !dayjs(field.min).isValid()) {
-          fail('Property "min" must be in a date format (YYYY-MM-DD)');
+        if (field.min && !field.min.match(dateRegex)) {
+          fail('Property "min" must be in the date format, YYYY-MM-DD');
         }
       },
       addQueryBuilder(field, query) {
