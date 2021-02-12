@@ -610,10 +610,10 @@ module.exports = {
         }
       },
       validate: function (field, options, warn, fail) {
-        if (!field.min) {
+        if (!field.min && field.min !== 0) {
           fail('Property "min" must be set.');
         }
-        if (!field.max) {
+        if (!field.max && field.max !== 0) {
           fail('Property "max" must be set.');
         }
         if (typeof field.max !== 'number') {

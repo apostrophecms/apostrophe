@@ -66,6 +66,11 @@ module.exports = {
           label: 'Italic',
           icon: 'format-italic-icon'
         },
+        underline: {
+          component: 'AposTiptapButton',
+          label: 'Underline',
+          icon: 'format-underline-icon'
+        },
         horizontal_rule: {
           component: 'AposTiptapButton',
           label: 'Horizontal Rule',
