@@ -20,6 +20,7 @@
         v-bind="button"
         :state="buttonState"
         ref="button"
+        :disabled="disabled"
       />
       <template #popover class="apos-popover__slot">
         <AposContextMenuDialog
@@ -74,6 +75,10 @@ export default {
     menuOffset: {
       type: [ Number, String ],
       default: 15
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'open', 'close', 'item-clicked' ],

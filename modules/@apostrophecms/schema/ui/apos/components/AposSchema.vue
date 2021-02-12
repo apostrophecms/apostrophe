@@ -111,17 +111,11 @@ export default {
         this.updateNextAndEmit();
       }
     },
+    // Two-way binding is supported on a basic level: if you provide
+    // an entirely new data object, the schema editor will repopulate.
     value: {
-      deep: true,
       handler(newVal, oldVal) {
-        // The doc might be swapped out completely in cases such as the media
-        // library editor. Repopulate the fields if that happens.
-        if (
-          // If the fieldState had been cleared and there's new populated data
-          (!this.fieldState._id && newVal.data._id) ||
-          // or if there *is* active fieldState, but the new data is a new doc
-          (this.fieldState._id && newVal.data._id !== this.fieldState._id.data)
-        ) {
+        if (newVal !== oldVal) {
           // repopulate the schema.
           this.populateDocData();
         }

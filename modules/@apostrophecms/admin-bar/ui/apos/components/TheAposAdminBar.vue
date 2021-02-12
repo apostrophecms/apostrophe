@@ -54,6 +54,7 @@
         </ul>
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
+      <!-- Context-dependent row -->
       <div class="apos-admin-bar__row apos-admin-bar__row--utils">
         <transition-group
           tag="div"
@@ -127,6 +128,7 @@
               class="apos-admin-bar__title__document"
               :button="draftButton"
               :menu="draftMenu"
+              :disabled="contextStack.length > 0"
               @item-clicked="switchDraftMode"
               menu-offset="13, 10"
               menu-placement="bottom-end"
@@ -157,6 +159,7 @@
                 placement: 'bottom'
               }"
               @click="switchEditMode(true)"
+              :disabled="contextStack.length > 0"
             />
           </div>
           <div
@@ -164,6 +167,15 @@
             :key="'switchToPreviewMode'"
             class="apos-admin-bar__control-set__group"
           >
+            <AposButton
+              v-for="item in trayItems"
+              :key="item.name"
+              type="subtle" :modifiers="['small', 'no-motion']"
+              label="trayItemLabel(item)" class="apos-admin-bar__context-button"
+              :icon="item.options.icon" :icon-only="true"
+              :state="trayItemState[item.name] ? [ 'active' ] : []"
+              @click="emitEvent(item.action)"
+            />
             <AposButton
               v-if="context._id"
               class="apos-admin-bar__context-button"
@@ -179,13 +191,18 @@
                   docId: context._id
                 }
               })"
+              :disabled="contextStack.length > 0"
             />
-            <!-- TODO later the v-if will go away because options like duplicate and share
-              do not require that the draft be modified, but right now we just have
-              Discard Draft which requires a modified draft -->
+            <!-- TODO later the :disabled will go away for most cases because options
+              like duplicate and share do not require that the draft be modified, but
+              right now we just have Discard Draft which requires a modified draft.
+
+              Use disabled, not v-if, to avoid jumpy repositioning of the icons when
+              toggling between context documents. -->
+
             <AposDocMoreMenu
               :doc-id="context._id"
-              v-if="context.modified"
+              :disabled="!context.modified"
               :is-modified="context.modified"
               :can-discard-draft="context.modified"
               :is-modified-from-published="context.modified"
@@ -201,6 +218,7 @@
               }"
               type="subtle" :modifiers="['small', 'no-motion']"
               @click="switchEditMode(false)"
+              :disabled="contextStack.length > 0"
             />
             <AposButton
               v-if="editMode"
@@ -233,10 +251,11 @@ export default {
       }
     }
   },
-  emits: [ 'admin-menu-click' ],
   data() {
     return {
       menuItems: [],
+      trayItems: [],
+      trayItemState: {},
       createMenu: [],
       patchesSinceLoaded: [],
       undone: [],
@@ -253,6 +272,7 @@ export default {
       context: window.apos.adminBar.context ? {
         ...window.apos.adminBar.context
       } : {},
+      contextStack: [],
       savingStatus: {
         transitioning: false,
         messages: {
@@ -399,6 +419,13 @@ export default {
       } else {
         return 'Publish';
       }
+    },
+    action() {
+      if (this.contextStack.length) {
+        return apos.modules[this.context.type].action;
+      } else {
+        return this.moduleOptions.contextAction;
+      }
     }
   },
   watch: {
@@ -421,10 +448,14 @@ export default {
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('unpublish', this.onUnpublish);
     apos.bus.$on('set-context', this.onSetContext);
+    apos.bus.$on('push-context', this.onPushContext);
+    apos.bus.$on('pop-context', this.onPopContext);
+    apos.bus.$on('admin-menu-click', this.onAdminMenuClick);
+
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
 
-    this.menuItems = itemsSet.map(item => {
+    this.menuItems = itemsSet.filter(item => !(item.options && item.options.tray)).map(item => {
       if (item.items) {
         item.items.forEach(subitem => {
           // The context menu needs an `action` property to emit.
@@ -433,6 +464,7 @@ export default {
       }
       return item;
     });
+    this.trayItems = itemsSet.filter(item => item.options && item.options.tray);
 
     Object.values(apos.modules).forEach(module => {
       if (module.quickCreate) {
@@ -495,7 +527,7 @@ export default {
   },
   methods: {
     async onPublish(e) {
-      const published = await this.publish(this.moduleOptions.contextAction, this.context._id, !!this.context.lastPublishedAt);
+      const published = await this.publish(this.action, this.context._id, !!this.context.lastPublishedAt);
       if (published) {
         this.context = {
           ...this.context,
@@ -526,7 +558,7 @@ export default {
         this.patchesSinceSave = [];
         try {
           this.saved = false;
-          const doc = await apos.http.patch(`${this.moduleOptions.contextAction}/${this.context._id}`, {
+          const doc = await apos.http.patch(`${this.action}/${this.context._id}`, {
             body: {
               _patches: patchesSinceSave
             }
@@ -575,6 +607,10 @@ export default {
     // If `locale` or `mode` are not passed, those parameters remain unchanged.
     // If `doc` is not passed the current context doc is assumed.
     //
+    // See also `onPushContext` and `onPopContext` for a way to set a temporary
+    // context document, such as global or palette, while it is being edited
+    // "on the page."
+    //
     // TODO: locales are not fully implemented in the UI yet. They are considered
     // in this API to reduce bc breaks in forthcoming betas.
     async onSetContext({
@@ -582,13 +618,60 @@ export default {
       locale,
       doc
     }) {
+      await this.setContext({
+        mode,
+        locale,
+        doc,
+        navigate: true
+      });
+      apos.bus.$emit('context-changed', {
+        mode,
+        locale,
+        doc
+      });
+    },
+    async onPushContext({
+      doc
+    }) {
+      if (!this.editMode) {
+        await this.switchEditMode(true);
+      }
+      this.contextStack.push({
+        doc: this.context,
+        original: this.original
+      });
+      this.original = klona(doc);
+      await this.setContext({
+        doc,
+        navigate: false
+      });
+      // So that on-page areas react like foreign areas while
+      // palette or another nested context is up
+      await this.refresh();
+    },
+    async onPopContext() {
+      const layer = this.contextStack.pop();
+      this.original = layer.original;
+      await this.setContext({
+        doc: layer.doc
+      });
+      // So that areas revert to being editable
+      await this.refresh();
+    },
+    // Implementation detail of onSetContext and onPushContext.
+    async setContext({
+      mode,
+      locale,
+      doc,
+      navigate = false
+    }) {
       mode = mode || this.draftMode;
       locale = locale || apos.locale;
       doc = doc || this.context;
       if ((mode === this.draftMode) && (locale === apos.locale)) {
-        if (!this.urlDiffers(doc._url)) {
+        if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
           return;
-        } else {
+        } else if (navigate && this.urlDiffers(doc._url)) {
           window.location.assign(doc._url);
         }
       }
@@ -614,7 +697,9 @@ export default {
         window.apos.adminBar.context = modeDoc;
         window.apos.adminBar.contextId = modeDoc._id;
         this.context = modeDoc;
-        this.refreshOrReload(modeDoc._url);
+        if (navigate) {
+          await this.refreshOrReload(modeDoc._url);
+        }
       } catch (e) {
         if (e.status === 404) {
           // TODO don't get this far, check this in advance and disable it in the UI
@@ -631,7 +716,7 @@ export default {
         }
       }
     },
-    switchEditMode(editing) {
+    async switchEditMode(editing) {
       window.sessionStorage.setItem('aposEditMode', JSON.stringify(editing));
       this.editMode = editing;
       if (this.draftMode !== 'draft') {
@@ -639,7 +724,7 @@ export default {
         // Also takes care of refresh
         this.switchDraftMode('draft');
       } else {
-        this.refresh();
+        await this.refresh();
       }
     },
     async refresh() {
@@ -690,7 +775,7 @@ export default {
       apos.bus.$emit('refreshed');
     },
     async onDiscardDraft(e) {
-      const result = await this.discardDraft(this.moduleOptions.contextAction, this.context._id, !!this.context.lastPublishedAt);
+      const result = await this.discardDraft(this.action, this.context._id, !!this.context.lastPublishedAt);
       if (!result) {
         return;
       }
@@ -698,11 +783,15 @@ export default {
         ...this.context,
         modified: false
       };
-      if (result.doc) {
-        this.refreshOrReload(result.doc._url);
+      if (!this.contextStack.length) {
+        if (result.doc) {
+          this.refreshOrReload(result.doc._url);
+        } else {
+          // With the current page gone, we need to move to safe ground
+          location.assign('/');
+        }
       } else {
-        // With the current page gone, we need to move to safe ground
-        location.assign('/');
+        apos.bus.$emit('context-history-changed', result && result.doc);
       }
     },
     async onRevertPublishedToPrevious(data) {
@@ -779,7 +868,7 @@ export default {
     async refreshAfterHistoryChange(errorMessage) {
       this.saving = true;
       try {
-        await apos.http.patch(`${this.moduleOptions.contextAction}/${this.context._id}`, {
+        const updated = await apos.http.patch(`${this.action}/${this.context._id}`, {
           body: {
             _patches: [
               this.original,
@@ -788,7 +877,7 @@ export default {
           },
           busy: true
         });
-        await this.refresh();
+        apos.bus.$emit('context-history-changed', updated);
       } catch (e) {
         console.error(e);
         apos.notify(errorMessage, { type: 'error' });
@@ -802,7 +891,7 @@ export default {
         window.location.assign(url);
       } else {
         // No URL change means we can refresh just the content area
-        this.refresh();
+        await this.refresh();
       }
     },
     urlDiffers(url) {
@@ -812,6 +901,28 @@ export default {
         return false;
       } else {
         return true;
+      }
+    },
+    trayItemLabel(item) {
+      if (item.options.toggle) {
+        if (this.trayItemState[item.name] && item.options.closeLabel) {
+          return item.options.closeLabel;
+        } else {
+          return item.label;
+        }
+      } else {
+        return item.label;
+      }
+    },
+    // Maintain a knowledge of which tray item toggles are active
+    onAdminMenuClick(e) {
+      const name = e.itemName || e;
+      const trayItem = this.trayItems.find(item => item.name === name);
+      if (trayItem) {
+        this.trayItemState = {
+          ...this.trayItemState,
+          [name]: !this.trayItemState[name]
+        };
       }
     }
   }
