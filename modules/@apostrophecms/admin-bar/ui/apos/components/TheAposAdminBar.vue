@@ -171,7 +171,7 @@
               v-for="item in trayItems"
               :key="item.name"
               type="subtle" :modifiers="['small', 'no-motion']"
-              label="trayItemLabel(item)" class="apos-admin-bar__context-button"
+              :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
               :icon="item.options.icon" :icon-only="true"
               :state="trayItemState[item.name] ? [ 'active' ] : []"
               @click="emitEvent(item.action)"
@@ -903,12 +903,18 @@ export default {
         return true;
       }
     },
-    trayItemLabel(item) {
+    trayItemTooltip(item) {
       if (item.options.toggle) {
         if (this.trayItemState[item.name] && item.options.closeLabel) {
-          return item.options.closeLabel;
+          return {
+            content: item.options.closeLabel,
+            placement: 'bottom'
+          };
         } else {
-          return item.label;
+          return {
+            content: item.label,
+            placement: 'bottom'
+          };
         }
       } else {
         return item.label;
