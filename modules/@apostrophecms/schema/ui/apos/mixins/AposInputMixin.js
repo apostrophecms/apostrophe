@@ -26,6 +26,12 @@ export default {
       type: Boolean,
       default: false
     },
+    displayOptions: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     // Because some field types, like AposInputSlug, must check for
     // uniqueness without regarding the document itself as a conflict
     docId: {

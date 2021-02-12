@@ -2,6 +2,7 @@
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
     :error="effectiveError" :uid="uid"
+    :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-input-wrapper">
@@ -121,7 +122,7 @@ export default {
         }
       }
       if (this.field.min) {
-        if (this.type === 'number') {
+        if (this.type === 'number' || this.type === 'date') {
           if (value && (value < this.field.min)) {
             return 'min';
           }
@@ -130,7 +131,7 @@ export default {
         }
       }
       if (this.field.max) {
-        if (this.type === 'number') {
+        if (this.type === 'number' || this.type === 'date') {
           if (value && (value > this.field.max)) {
             return 'max';
           }

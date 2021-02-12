@@ -1,5 +1,7 @@
 <template>
-  <div class="apos-admin-bar-wrapper">
+  <!-- TODO: Replace this and other hard-coded `apos-theme--primary-purple`
+  with implementation via JS based on user selection or default. -->
+  <div class="apos-admin-bar-wrapper apos-theme--primary-purple">
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
@@ -136,6 +138,12 @@
           class="apos-admin-bar__control-set apos-admin-bar__control-set--mode-and-settings"
           name="flip"
         >
+          <!--
+            TODO: Each div at this level serves as a discrete context menu state
+            Modules should be able to provide their own menus here to complete tasks specific to them.
+            It might also be worth breaking up the core menus into their own vue components to
+            further illustrate this concept.
+          -->
           <div
             v-if="!editMode" :key="'switchToEditMode'"
             class="apos-admin-bar__control-set__group"
@@ -408,6 +416,7 @@ export default {
     }
   },
   mounted() {
+    window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
     // Listen for bus events coming from notification UI
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('unpublish', this.onUnpublish);
@@ -941,8 +950,8 @@ function depth(el) {
   margin-left: 10px;
 
   /deep/ .apos-context-menu__btn {
-    width: 23px;
-    height: 23px;
+    width: 21px;
+    height: 21px;
     padding: 0;
   }
 

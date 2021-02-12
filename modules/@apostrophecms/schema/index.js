@@ -91,7 +91,7 @@ module.exports = {
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
-          throw self.apos.error('required');
+          throw self.apos.error(`required: ${field.name}`);
         }
       },
       index: function (value, field, texts) {
@@ -515,11 +515,36 @@ module.exports = {
       }
     });
 
+    const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
+
     self.addFieldType({
       name: 'date',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.date(data[field.name], field.def);
+        const newDateVal = data[field.name];
+        if (!newDateVal && object[field.name]) {
+          // Allow date fields to be unset.
+          object[field.name] = null;
+          return;
+        }
+        if (field.min && newDateVal && (newDateVal < field.min)) {
+          // If the min requirement isn't met, leave as-is.
+          return;
+        }
+        if (field.max && newDateVal && (newDateVal > field.max)) {
+          // If the max requirement isn't met, leave as-is.
+          return;
+        }
+
+        object[field.name] = self.apos.launder.date(newDateVal, field.def);
+      },
+      validate: function (field, options, warn, fail) {
+        if (field.max && !field.max.match(dateRegex)) {
+          fail('Property "max" must be in the date format, YYYY-MM-DD');
+        }
+        if (field.min && !field.min.match(dateRegex)) {
+          fail('Property "min" must be in the date format, YYYY-MM-DD');
+        }
       },
       addQueryBuilder(field, query) {
         return query.addBuilder(field.name, {

@@ -1,8 +1,8 @@
 .apos-input,
 .apos-input-wrapper,
 .apos-choice-label {
-  .apos-field-label + &,
-  .apos-field-help + & {
+  .apos-field__label + &,
+  .apos-field__help + & {
     margin-top: $spacing-base;
   }
 }
@@ -95,12 +95,34 @@
   }
 }
 
-.apos-input-wrapper {
-  position: relative;
-  max-width: $input-max-width;
+.apos-field.apos-field--micro {
+  .apos-input {
+    padding: 10px;
+    font-size: var(--a-type-small);
+  }
+  .apos-input-icon {
+    right: 5px;
+  }
+  .apos-field__label {
+    font-size: var(--a-type-small);
+    font-weight: 500;
+  }
+  &.apos-field--color {
+    .apos-button.apos-button--color {
+      width: 25px;
+      height: 25px;
+      padding: 0;
+    }
+    .apos-color__info {
+      font-size: var(--a-type-small);
+      margin-left: 5px;
+      white-space: nowrap;
+    }
+  }
 }
 
-.apos-field-area {
+.apos-input-wrapper {
+  position: relative;
   max-width: $input-max-width;
 }
 

@@ -27,9 +27,10 @@ module.exports = function(self, options) {
         args.addChild(context);
       }
       parser.advanceAfterBlockEnd(token.value);
-      return args;
+      return { args };
     },
-    async run(req, doc, name, context) {
+    async run(context, doc, name, _with) {
+      const req = context.env.opts.req;
       let area;
       if ((!doc) || ((typeof doc) !== 'object')) {
         throw usage('You must pass an existing doc or widget as the first argument.');
@@ -86,7 +87,7 @@ module.exports = function(self, options) {
 
       self.apos.area.prepForRender(area, doc, name);
 
-      const content = await self.apos.area.renderArea(req, area, context);
+      const content = await self.apos.area.renderArea(req, area, _with);
       return content;
       function usage(message) {
         return new Error(`${message}

@@ -171,7 +171,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-manager-toolbar /deep/ .apos-field-search {
+  .apos-manager-toolbar /deep/ .apos-field--search {
     width: 250px;
   }
 </style>
