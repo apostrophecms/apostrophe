@@ -55,7 +55,7 @@ export default {
         if (this.field.type === 'float' || this.field.type === 'integer') {
           return 'number';
         }
-        if (this.field.type === 'string') {
+        if (this.field.type === 'string' || this.field.type === 'slug') {
           return 'text';
         }
         return this.field.type;
@@ -121,8 +121,21 @@ export default {
           return 'required';
         }
       }
-      if (this.field.min) {
-        if (this.type === 'number' || this.type === 'date') {
+
+      const minMaxNumFields = [
+        'date',
+        'integer',
+        'float',
+        'range'
+      ];
+
+      const minMaxFields = [
+        ...minMaxNumFields,
+        'string'
+      ];
+
+      if (this.field.min && minMaxFields.includes(this.field.type)) {
+        if (minMaxNumFields.includes(this.field.type)) {
           if (value && (value < this.field.min)) {
             return 'min';
           }
@@ -130,8 +143,8 @@ export default {
           return 'min';
         }
       }
-      if (this.field.max) {
-        if (this.type === 'number' || this.type === 'date') {
+      if (this.field.max && minMaxFields.includes(this.field.type)) {
+        if (minMaxNumFields.includes(this.field.type)) {
           if (value && (value > this.field.max)) {
             return 'max';
           }
