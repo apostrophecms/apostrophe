@@ -8,7 +8,7 @@
       <div class="apos-input-wrapper">
         <textarea
           :class="classes"
-          v-if="field.textarea" rows="5"
+          v-if="field.textarea && field.type === 'string'" rows="5"
           v-model="next" :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
           :disabled="field.disabled" :required="field.required"
