@@ -464,7 +464,7 @@ module.exports = {
       name: 'email',
       vueComponent: 'AposInputString',
       convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], undefined, field.min, field.max);
+        object[field.name] = self.apos.launder.string(data[field.name]);
         if (!data[field.name]) {
           if (field.required) {
             throw self.apos.error('required');
