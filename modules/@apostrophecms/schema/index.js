@@ -78,15 +78,8 @@ module.exports = {
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        if (object[field.name] && field.min && object[field.name].length < field.min) {
-          // Would be unpleasant, but shouldn't happen since the browser
-          // also implements this. We're just checking for naughty scripts
-          throw self.apos.error('min');
-        }
-        // If max is longer than allowed, trim the value down to the max length
-        if (object[field.name] && field.max && object[field.name].length > field.max) {
-          object[field.name] = object[field.name].substr(0, field.max);
-        }
+        checkStringLength(object[field.name], field.min, field.max);
+
         // If field is required but empty (and client side didn't catch that)
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
@@ -605,6 +598,8 @@ module.exports = {
         // there is actually a new value — a blank password is not cool. -Tom
         if (data[field.name]) {
           object[field.name] = self.apos.launder.string(data[field.name], field.def);
+
+          checkStringLength(object[field.name], field.min, field.max);
         }
       }
     });
@@ -2506,3 +2501,15 @@ module.exports = {
     };
   }
 };
+
+function checkStringLength (string, min, max) {
+  if (string && min && string.length < min) {
+    // Would be unpleasant, but shouldn't happen since the browser
+    // also implements this. We're just checking for naughty scripts
+    throw self.apos.error('min');
+  }
+  // If max is longer than allowed, trim the value down to the max length
+  if (string && max && string.length > max) {
+    string = string.substr(0, max);
+  }
+}
