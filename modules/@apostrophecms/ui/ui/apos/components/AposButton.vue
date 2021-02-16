@@ -382,6 +382,7 @@ export default {
   }
 
   .apos-button--block {
+    box-sizing: border-box;
     display: block;
     width: 100%;
     height: 47px;
