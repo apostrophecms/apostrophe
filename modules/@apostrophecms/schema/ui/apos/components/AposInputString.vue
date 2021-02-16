@@ -8,7 +8,7 @@
       <div class="apos-input-wrapper">
         <textarea
           :class="classes"
-          v-if="field.textarea" rows="5"
+          v-if="field.textarea && field.type === 'string'" rows="5"
           v-model="next" :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
           :disabled="field.disabled" :required="field.required"
@@ -55,7 +55,7 @@ export default {
         if (this.field.type === 'float' || this.field.type === 'integer') {
           return 'number';
         }
-        if (this.field.type === 'string') {
+        if (this.field.type === 'string' || this.field.type === 'slug') {
           return 'text';
         }
         return this.field.type;
@@ -121,8 +121,22 @@ export default {
           return 'required';
         }
       }
-      if (this.field.min) {
-        if (this.type === 'number' || this.type === 'date') {
+
+      const minMaxNumFields = [
+        'date',
+        'integer',
+        'float',
+        'range'
+      ];
+
+      const minMaxFields = [
+        ...minMaxNumFields,
+        'string',
+        'password'
+      ];
+
+      if (this.field.min && minMaxFields.includes(this.field.type)) {
+        if (minMaxNumFields.includes(this.field.type)) {
           if (value && (value < this.field.min)) {
             return 'min';
           }
@@ -130,8 +144,8 @@ export default {
           return 'min';
         }
       }
-      if (this.field.max) {
-        if (this.type === 'number' || this.type === 'date') {
+      if (this.field.max && minMaxFields.includes(this.field.type)) {
+        if (minMaxNumFields.includes(this.field.type)) {
           if (value && (value > this.field.max)) {
             return 'max';
           }

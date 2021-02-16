@@ -6,16 +6,8 @@
   >
     <template #body>
       <div class="apos-input-wrapper">
-        <textarea
-          :class="classes"
-          v-if="field.textarea" rows="5"
-          v-model="next" :placeholder="field.placeholder"
-          @keydown.enter="$emit('return')"
-          :disabled="field.disabled" :required="field.required"
-          :id="uid" :tabindex="tabindex"
-        />
         <input
-          v-else :class="classes"
+          :class="classes"
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="$emit('return')"

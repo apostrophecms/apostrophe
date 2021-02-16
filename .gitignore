@@ -8,6 +8,7 @@ npm-debug.log
 *.DS_Store
 *.npmignore
 .nyc_output
+.vscode
 .out
 coverage
 node_modules
