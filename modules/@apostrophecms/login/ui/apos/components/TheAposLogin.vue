@@ -142,6 +142,12 @@ export default {
 };
 </script>
 
+<style lang="scss">
+  .apos-login-page {
+    margin: 0;
+  }
+</style>
+
 <style lang="scss" scoped>
   $login-container: 330px;
 
