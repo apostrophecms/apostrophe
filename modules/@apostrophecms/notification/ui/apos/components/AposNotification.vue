@@ -156,12 +156,14 @@ export default {
     right: 0;
     display: flex;
     align-items: center;
+    box-sizing: border-box;
     height: 100%;
     padding: 20px 10px;
     border: none;
     background-color: transparent;
     color: var(--a-text-inverted);
     @include apos-transition(all);
+
     &:hover {
       cursor: pointer;
     }
