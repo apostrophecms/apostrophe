@@ -1454,7 +1454,6 @@ module.exports = {
                   }
                 }
               }
-              console.log('>>>>>', areasInfo);
             }
 
             if (req.deferWidgetLoading && (!req.loadingDeferredWidgets)) {

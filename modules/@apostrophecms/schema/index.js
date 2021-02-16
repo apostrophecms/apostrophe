@@ -675,6 +675,8 @@ module.exports = {
         for (const datum of data) {
           const result = {};
           result._id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
+          result.metaType = 'arrayItem';
+          result.scopedArrayName = field.scopedArrayName;
           try {
             await self.convert(req, schema, datum, result);
           } catch (e) {
@@ -2258,9 +2260,9 @@ module.exports = {
             field.def = self.fieldTypes[field.type].def;
           }
           self.fieldsById[field._id] = field;
-          const type = self.fieldTypes[field.type];
-          if (type.register) {
-            type.register(metaType, type, field);
+          const fieldType = self.fieldTypes[field.type];
+          if (fieldType.register) {
+            fieldType.register(metaType, type, field);
           }
         }
       },
