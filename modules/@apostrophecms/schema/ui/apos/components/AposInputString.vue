@@ -132,7 +132,8 @@ export default {
       const minMaxFields = [
         ...minMaxNumFields,
         'string',
-        'password'
+        'password',
+        'slug'
       ];
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {

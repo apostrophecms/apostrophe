@@ -153,6 +153,8 @@ module.exports = {
             object[field.name] = object[field.name].replace(/\/$/, '');
           }
         }
+
+        object[field.name] = checkStringLength(object[field.name], field.min, field.max);
       },
       addQueryBuilder(field, query) {
         query.addBuilder(field.name, {
