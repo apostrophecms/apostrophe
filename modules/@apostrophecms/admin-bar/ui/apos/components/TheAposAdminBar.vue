@@ -455,7 +455,7 @@ export default {
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
 
-    this.menuItems = itemsSet.filter(item => !(item.options && item.options.tray)).map(item => {
+    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility)).map(item => {
       if (item.items) {
         item.items.forEach(subitem => {
           // The context menu needs an `action` property to emit.
@@ -464,7 +464,7 @@ export default {
       }
       return item;
     });
-    this.trayItems = itemsSet.filter(item => item.options && item.options.tray);
+    this.trayItems = itemsSet.filter(item => item.options && item.options.contextUtility);
 
     Object.values(apos.modules).forEach(module => {
       if (module.quickCreate) {
