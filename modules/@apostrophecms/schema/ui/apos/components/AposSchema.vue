@@ -26,6 +26,7 @@
 
 <script>
 import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+
 export default {
   name: 'AposSchema',
   props: {
@@ -137,12 +138,15 @@ export default {
         hasErrors: false,
         data: {}
       };
+
       const fieldState = {};
+
       // Though not in the schema, keep track of the _id field.
       if (this.value.data._id) {
         next.data._id = this.value.data._id;
         fieldState._id = { data: this.value.data._id };
       }
+
       this.schema.forEach(field => {
         const value = this.value.data[field.name];
         fieldState[field.name] = {
@@ -153,6 +157,7 @@ export default {
       });
       this.next = next;
       this.fieldState = fieldState;
+
       // Wait until the next tick so the parent editor component is done
       // updating. This is only really a concern in editors that can swap
       // the active doc/object without unmounting AposSchema.
@@ -166,9 +171,11 @@ export default {
       if (!this.schemaReady) {
         return;
       }
+
       const oldHasErrors = this.next.hasErrors;
       this.next.hasErrors = false;
       let changeFound = false;
+
       this.schema.forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
@@ -187,6 +194,7 @@ export default {
         // Otherwise the save button may never unlock
         changeFound = true;
       }
+
       if (changeFound) {
         // ... removes need for deep watch at parent level
         this.$emit('input', { ...this.next });
@@ -213,6 +221,7 @@ export default {
         margin-bottom: $spacing-double;
       }
     }
+
     .apos-schema /deep/ .apos-toolbar & {
       margin-bottom: 0;
     }
