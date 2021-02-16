@@ -140,7 +140,7 @@ export default {
       const customValues = [ 'true', 'false' ];
       this.headers.forEach(h => {
 
-        if (h.cellValue.icon) {
+        if (h.cellValue && h.cellValue.icon) {
           temp.push(h.cellValue.icon);
         }
 
@@ -149,7 +149,7 @@ export default {
         }
 
         customValues.forEach(val => {
-          if (h.cellValue[val] && h.cellValue[val].icon) {
+          if (h.cellValue && h.cellValue[val] && h.cellValue[val].icon) {
             temp.push(h.cellValue[val].icon);
           }
         });

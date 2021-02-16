@@ -26,7 +26,6 @@
 
 <script>
 import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-
 export default {
   name: 'AposSchema',
   props: {
@@ -111,11 +110,17 @@ export default {
         this.updateNextAndEmit();
       }
     },
-    // Two-way binding is supported on a basic level: if you provide
-    // an entirely new data object, the schema editor will repopulate.
     value: {
+      deep: true,
       handler(newVal, oldVal) {
-        if (newVal !== oldVal) {
+        // The doc might be swapped out completely in cases such as the media
+        // library editor. Repopulate the fields if that happens.
+        if (
+          // If the fieldState had been cleared and there's new populated data
+          (!this.fieldState._id && newVal.data._id) ||
+          // or if there *is* active fieldState, but the new data is a new doc
+          (this.fieldState._id && newVal.data._id !== this.fieldState._id.data)
+        ) {
           // repopulate the schema.
           this.populateDocData();
         }
@@ -132,15 +137,12 @@ export default {
         hasErrors: false,
         data: {}
       };
-
       const fieldState = {};
-
       // Though not in the schema, keep track of the _id field.
       if (this.value.data._id) {
         next.data._id = this.value.data._id;
         fieldState._id = { data: this.value.data._id };
       }
-
       this.schema.forEach(field => {
         const value = this.value.data[field.name];
         fieldState[field.name] = {
@@ -151,7 +153,6 @@ export default {
       });
       this.next = next;
       this.fieldState = fieldState;
-
       // Wait until the next tick so the parent editor component is done
       // updating. This is only really a concern in editors that can swap
       // the active doc/object without unmounting AposSchema.
@@ -165,11 +166,9 @@ export default {
       if (!this.schemaReady) {
         return;
       }
-
       const oldHasErrors = this.next.hasErrors;
       this.next.hasErrors = false;
       let changeFound = false;
-
       this.schema.forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
@@ -188,7 +187,6 @@ export default {
         // Otherwise the save button may never unlock
         changeFound = true;
       }
-
       if (changeFound) {
         // ... removes need for deep watch at parent level
         this.$emit('input', { ...this.next });
@@ -215,7 +213,6 @@ export default {
         margin-bottom: $spacing-double;
       }
     }
-
     .apos-schema /deep/ .apos-toolbar & {
       margin-bottom: 0;
     }

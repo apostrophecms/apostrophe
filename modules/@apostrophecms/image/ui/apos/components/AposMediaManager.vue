@@ -107,7 +107,6 @@
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
-
 export default {
   mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
   props: {
@@ -153,7 +152,6 @@ export default {
       if (!this.options || !this.options.filters) {
         return null;
       }
-
       return this.options.filters.filter(filter => {
         // Removes _tags since that will be in the left sidebar.
         return filter.name !== '_tags';
@@ -217,7 +215,6 @@ export default {
           }
         });
       }
-
       // Avoid undefined properties.
       for (const prop in qs) {
         if (qs[prop] === undefined) {
@@ -231,7 +228,6 @@ export default {
           draft: true
         }
       ));
-
       if (options && options.tags) {
         if (filtered) {
           // We never filter the tag list because they are presented like folders,
@@ -251,7 +247,6 @@ export default {
           this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
         }
       }
-
       this.currentPage = apiResponse.currentPage;
       this.totalPages = apiResponse.pages;
       this.items = apiResponse.results;
@@ -263,7 +258,6 @@ export default {
     async filter(name, value) {
       this.filterValues[name] = value;
       this.currentPage = 1;
-
       await this.getMedia();
     },
     createPlaceholder(dimensions) {
@@ -276,10 +270,8 @@ export default {
     async completeUploading (imgIds) {
       this.uploading = false;
       await this.getMedia();
-
       if (Array.isArray(imgIds) && imgIds.length) {
         this.checked = this.checked.concat(imgIds);
-
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {
           this.updateEditing(imgIds[0]);
@@ -324,27 +316,22 @@ export default {
       } else {
         this.checked.push(id);
       }
-
       this.lastSelected = id;
       this.editing = undefined;
     },
-
     selectSeries(id) {
       if (!this.lastSelected) {
         this.select(id);
         return;
       }
-
       let beginIndex = this.items.findIndex(item => item._id === this.lastSelected);
       let endIndex = this.items.findIndex(item => item._id === id);
       const direction = beginIndex > endIndex ? -1 : 1;
-
       if (direction < 0) {
         [ beginIndex, endIndex ] = [ endIndex, beginIndex ];
       } else {
         endIndex++;
       }
-
       const sliced = this.items.slice(beginIndex, endIndex);
       // always want to check, never toggle
       sliced.forEach(item => {
@@ -352,11 +339,9 @@ export default {
           this.checked.push(item._id);
         }
       });
-
       this.lastSelected = sliced[sliced.length - 1]._id;
       this.editing = undefined;
     },
-
     // Toolbar handlers
     selectClick() {
       this.selectAll();
@@ -372,12 +357,10 @@ export default {
     trashClick() {
       this.$emit('trash', this.checked);
     },
-
     search(query) {
       // TODO stub
       this.$emit('search', query);
     },
-
     async onContentChanged() {
       await this.getMedia({ tags: true });
     }
@@ -390,7 +373,6 @@ export default {
   z-index: $z-index-manager-toolbar;
   position: relative;
 }
-
 .apos-media-manager__empty {
   display: flex;
   justify-content: center;
@@ -399,14 +381,11 @@ export default {
   height: 100%;
   margin-top: 130px;
 }
-
 .apos-media-manager__sidebar {
   position: relative;
   width: 100%;
 }
-
 .apos-media-manager__sidebar--empty {
   height: 100%;
 }
-
 </style>

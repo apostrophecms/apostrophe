@@ -173,6 +173,7 @@
               type="subtle" :modifiers="['small', 'no-motion']"
               :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
               :icon="item.options.icon" :icon-only="true"
+              :label="item.label"
               :state="trayItemState[item.name] ? [ 'active' ] : []"
               @click="emitEvent(item.action)"
             />
@@ -455,15 +456,16 @@ export default {
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
 
-    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility)).map(item => {
-      if (item.items) {
-        item.items.forEach(subitem => {
-          // The context menu needs an `action` property to emit.
-          subitem.action = subitem.action || subitem.name;
-        });
-      }
-      return item;
-    });
+    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility))
+      .map(item => {
+        if (item.items) {
+          item.items.forEach(subitem => {
+            // The context menu needs an `action` property to emit.
+            subitem.action = subitem.action || subitem.name;
+          });
+        }
+        return item;
+      });
     this.trayItems = itemsSet.filter(item => item.options && item.options.contextUtility);
 
     Object.values(apos.modules).forEach(module => {
@@ -877,7 +879,11 @@ export default {
           },
           busy: true
         });
-        apos.bus.$emit('context-history-changed', updated);
+        if (!this.contextStack.length) {
+          await this.refresh();
+        } else {
+          apos.bus.$emit('context-history-changed', updated);
+        }
       } catch (e) {
         console.error(e);
         apos.notify(errorMessage, { type: 'error' });
@@ -907,17 +913,17 @@ export default {
       if (item.options.toggle) {
         if (this.trayItemState[item.name] && item.options.closeLabel) {
           return {
-            content: item.options.closeLabel,
+            content: item.options.closeTooltip,
             placement: 'bottom'
           };
         } else {
           return {
-            content: item.label,
+            content: item.options.openTooltip,
             placement: 'bottom'
           };
         }
       } else {
-        return item.label;
+        return item.options.tooltip;
       }
     },
     // Maintain a knowledge of which tray item toggles are active

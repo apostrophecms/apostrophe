@@ -89,9 +89,7 @@ import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import cuid from 'cuid';
-
 dayjs.extend(advancedFormat);
-
 export default {
   mixins: [ AposEditorMixin ],
   props: {
@@ -144,9 +142,7 @@ export default {
       ) {
         return '';
       }
-
       const size = this.activeMedia.attachment.length.size;
-
       if (size >= 1000000) {
         return `${(size / 1000000).toFixed(2)}MB`;
       } else {
@@ -171,7 +167,6 @@ export default {
             this.$emit('modified', detectDocChange(this.schema, this.original, newData));
           }
         });
-
         if ((this.activeMedia.attachment && !newData.attachment)) {
           this.updateActiveAttachment({});
         } else if (
@@ -182,7 +177,6 @@ export default {
           this.updateActiveAttachment(newData.attachment);
         }
       }
-
     },
     media(newVal) {
       this.updateActiveDoc(newVal);
@@ -205,7 +199,6 @@ export default {
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       // Repopulate `attachment` since it was removed from the schema.
       this.docFields.data.attachment = this.activeMedia.attachment;
-
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
           await apos.notify('Resolve errors before saving.', {
@@ -215,7 +208,6 @@ export default {
           });
           return;
         }
-
         try {
           const doc = await apos.http.put(route, {
             busy: true,
@@ -259,7 +251,6 @@ export default {
     height: 100%;
     padding: 20px;
   }
-
   .apos-media-editor__thumb-wrapper {
     display: flex;
     justify-content: center;
@@ -272,39 +263,32 @@ export default {
     max-width: 100%;
     max-height: 100%;
   }
-
   .apos-media-editor /deep/ .apos-field {
     margin-bottom: $spacing-double;
   }
-
   .apos-media-editor__details {
     @include apos-list-reset();
     margin-bottom: $spacing-double;
   }
-
   .apos-media-editor__detail {
     @include type-base;
     line-height: var(--a-line-tallest);
     color: var(--a-base-4);
   }
-
   .apos-media-editor__links {
     @include apos-list-reset();
     display: flex;
     margin-bottom: $spacing-triple;
-
     /deep/ .apos-button--quiet {
       display: block;
     }
   }
-
   .apos-media-editor__link {
     display: inline-block;
     & + & {
       margin-left: 20px;
     }
   }
-
   /deep/ [data-apos-field='attachment'] {
     .apos-media-editor:not(.is-replacing) & {
       position: absolute;
@@ -312,11 +296,9 @@ export default {
       opacity: 0;
     }
   }
-
   .apos-media-editor__controls {
     margin-bottom: 20px;
   }
-
   .apos-media-editor__lip {
     display: flex;
     justify-content: space-between;
