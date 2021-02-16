@@ -2,6 +2,7 @@
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
     :error="effectiveError" :uid="uid"
+    :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-color">
@@ -14,6 +15,7 @@
             menu-offset="5, 20"
           >
             <Picker
+              v-if="next"
               v-bind="fieldOptions"
               :value="next"
               @input="update"
@@ -60,7 +62,8 @@ export default {
   data() {
     return {
       active: false,
-      tinyColorObj: null
+      tinyColorObj: null,
+      startsNull: false
     };
   },
   computed: {
@@ -68,14 +71,14 @@ export default {
       return {
         label: this.field.label,
         type: 'color',
-        color: this.value.data || '',
+        color: this.value.data || ''
       };
     },
     valueLabel() {
       if (this.next) {
         return this.next;
       } else {
-        return 'No color selected';
+        return 'None Selected';
       }
     },
     classList() {
@@ -86,7 +89,12 @@ export default {
     }
   },
   mounted() {
-    this.tinyColorObj = tinycolor(this.next);
+    if (!this.next) {
+      // vue-color does not support null values
+      // If a color begins null, set it to a transparent black and flag it
+      this.next = '#00000000';
+      this.startsNull = true;
+    }
   },
   methods: {
     open() {
@@ -98,6 +106,13 @@ export default {
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
       this.next = this.tinyColorObj.toString(this.fieldOptions.format);
+
+      if (this.startsNull) {
+        // As a basic UX courtesey make sure to reset the alpha value of an orginally null value back to 1
+        // as it was previously set to 0 by us, not the user.
+        this.next = this.tinyColorObj.setAlpha(1).toString(this.fieldOptions.format);
+        this.startsNull = false;
+      }
     },
     validate(value) {
       if (this.field.required) {

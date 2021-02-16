@@ -2,6 +2,7 @@
   <AposInputWrapper
     :field="field" :error="effectiveError"
     :uid="uid"
+    :display-options="displayOptions"
   >
     <template #body>
       <label

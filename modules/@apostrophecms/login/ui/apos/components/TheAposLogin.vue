@@ -1,6 +1,9 @@
 <template>
   <transition name="fade-stage">
-    <div class="apos-login apos-theme-dark" v-show="loaded">
+    <div
+      class="apos-login apos-theme-dark apos-theme--primary-purple"
+      v-show="loaded"
+    >
       <div class="apos-login__wrapper">
         <transition name="fade-body">
           <div class="apos-login__upper" v-show="loaded">
@@ -11,8 +14,12 @@
               >
                 {{ context.env }}
               </label>
-              <label class="apos-login__project apos-login__project-name">{{ context.name }}</label>
-              <label class="apos-login--error">{{ error }}</label>
+              <label class="apos-login__project apos-login__project-name">
+                {{ context.name }}
+              </label>
+              <label class="apos-login--error">
+                {{ error }}
+              </label>
             </div>
 
             <div class="apos-login__body" v-show="loaded">
@@ -28,7 +35,7 @@
                   :disabled="disabled"
                   type="primary"
                   label="Login"
-                  buttonType="submit"
+                  button-type="submit"
                   :modifiers="['gradient-on-hover', 'block']"
                   @click="submit"
                 />
@@ -39,8 +46,10 @@
       </div>
       <transition name="fade-footer">
         <div class="apos-login__footer" v-show="loaded">
-          <AposLogo class="apos-login__logo"/>
-          <label class="apos-login__project-version">Version {{ context.version }}</label>
+          <AposLogo class="apos-login__logo" />
+          <label class="apos-login__project-version">
+            Version {{ context.version }}
+          </label>
         </div>
       </transition>
     </div>

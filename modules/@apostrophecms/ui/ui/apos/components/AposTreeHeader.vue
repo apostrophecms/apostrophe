@@ -5,17 +5,17 @@
   >
     <span
       v-for="(col, index) in headers"
-      :key="`${index}-${col.name}`"
+      :key="`${index}-${col.property}`"
       class="apos-tree__cell"
-      :class="`apos-tree--column-${col.name}`"
-      :data-spacer="spacerOnly && col.name"
+      :class="`apos-tree--column-${col.property}`"
+      :data-spacer="spacerOnly && col.property"
       :style="getCellStyles(col)"
     >
       <component
-        v-if="col.labelIcon" :is="icons[col.labelIcon]"
+        v-if="col.columnHeaderIcon" :is="icons[col.columnHeaderIcon]"
         class="apos-tree__cell__icon"
       />
-      {{ col.label }}
+      {{ col.columnHeader }}
     </span>
   </div>
 </template>
@@ -82,25 +82,27 @@ export default {
   },
   methods: {
     calculateWidths() {
+      // TODO: widths should be calculated from a full-table perspective so that
+      // every cell's content has the opportunity to inform the overall column width.
       const colWidths = {};
 
       this.headers.forEach(col => {
-        const ref = this.$el.querySelector(`[data-spacer="${col.name}"]`);
+        const ref = this.$el.querySelector(`[data-spacer="${col.property}"]`);
 
         if (!ref) {
           return;
         }
 
-        // Set the column width to the spacer width plus 5 for extra wiggle
+        // Set the column width to the spacer width plus 15 for extra wiggle
         // room.
-        colWidths[col.name] = ref.clientWidth + 5;
+        colWidths[col.property] = ref.clientWidth + 15;
       });
       this.$emit('calculated', colWidths);
     },
     getCellStyles (cell) {
       const styles = {};
-      if (this.colWidths && this.colWidths[cell.name]) {
-        styles.width = `${this.colWidths[cell.name]}px`;
+      if (this.colWidths && this.colWidths[cell.property]) {
+        styles.width = `${this.colWidths[cell.property]}px`;
       }
       return styles;
     }

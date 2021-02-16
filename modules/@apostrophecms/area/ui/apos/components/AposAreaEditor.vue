@@ -1,5 +1,5 @@
 <template>
-  <div :data-apos-area="areaId" class="apos-area">
+  <div :data-apos-area="areaId" class="apos-area apos-theme--primary-purple">
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"

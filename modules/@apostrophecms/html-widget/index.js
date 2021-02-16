@@ -8,7 +8,8 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'Raw HTML',
-    className: false
+    className: false,
+    icon: 'code-tags-icon'
   },
   fields: {
     add: {

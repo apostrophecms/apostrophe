@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.0-alpha.4
+
+* Like `.js` files, `.css` files placed in the `ui/public` subdirectory of any module will automatically be bundled together and served to the user. As with `.js` files, no preprocessing is done. To avoid extra browser requests, both project and reusable module developers should output the styles of their own webpack build to such a location rather than introducing another link tag. The `a3-demo` project has been updated to demonstrate this technique when building assets for production.
+
 ## 3.0.0-alpha.3
 
 Third alpha release of 3.x. Introduced draft mode and the "Publish Changes" button.

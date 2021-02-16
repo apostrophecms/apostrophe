@@ -34,7 +34,9 @@ module.exports = {
   options: { alias: 'template' },
   customTags(self, options) {
     return {
-      component: require('./lib/custom-tags/component')(self, options)
+      component: require('./lib/custom-tags/component')(self, options),
+      fragment: require('./lib/custom-tags/fragment')(self, options),
+      render: require('./lib/custom-tags/render')(self, options)
     };
   },
   components(self, options) {
@@ -255,17 +257,6 @@ module.exports = {
         const args = {};
 
         args.data = merged;
-        args.module = self.templateApos.modules[module.__meta.name];
-        args.getOption = function(key, def) {
-          const colonAt = key.indexOf(':');
-          let optionModule = module;
-          if (colonAt !== -1) {
-            const name = key.substring(0, colonAt);
-            key = key.substring(colonAt + 1);
-            optionModule = self.apos.modules[name];
-          }
-          return optionModule.getOption(req, key, def);
-        };
 
         // // Allows templates to render other templates in an independent
         // // nunjucks environment, rather than including them
@@ -353,8 +344,21 @@ module.exports = {
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
-          apos: self.apos,
-          req
+          req,
+          module: self.apos.modules[moduleName]
+        });
+
+        env.addGlobal('apos', self.templateApos);
+        env.addGlobal('module', self.templateApos.modules[moduleName]);
+        env.addGlobal('getOption', function(key, def) {
+          const colonAt = key.indexOf(':');
+          let optionModule = self.apos.modules[moduleName];
+          if (colonAt !== -1) {
+            const name = key.substring(0, colonAt);
+            key = key.substring(colonAt + 1);
+            optionModule = self.apos.modules[name];
+          }
+          return optionModule.getOption(req, key, def);
         });
 
         self.addStandardFilters(env);
@@ -393,10 +397,10 @@ module.exports = {
               // as the second arg is required if there are no parentheses
               const args = parser.parseSignature(null, true);
               parser.advanceAfterBlockEnd(token.value);
-              return args;
+              return { args };
             };
-            const args = parse(parser, nodes, lexer);
-            return new nodes.CallExtensionAsync(extension, 'run', args, []);
+            const parsed = parse(parser, nodes, lexer);
+            return new nodes.CallExtensionAsync(extension, 'run', parsed.args, parsed.blocks || []);
           };
           extension.run = async function (context) {
             const callback = arguments[arguments.length - 1];
@@ -404,7 +408,7 @@ module.exports = {
               // Pass req, followed by other args that are not "context" (first)
               // or "callback" (last)
               const args = [
-                context.env.opts.req,
+                context,
                 ...[].slice.call(arguments, 1, arguments.length - 1)
               ];
               const result = await config.run.apply(config, args);

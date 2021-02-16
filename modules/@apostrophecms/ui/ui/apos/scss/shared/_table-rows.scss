@@ -18,11 +18,8 @@ span.apos-tree__cell:first-of-type {
   width: 100%;
 }
 
-.apos-tree__cell__icon {
-  display: inline-flex;
-  align-items: flex-start;
-  margin-right: 10px;
-  padding-top: 0.2em;
+.apos-tree__cell__icon + .apos-tree__cell__label {
+  margin-left: 5px;
 }
 
 .apos-tree__cell[disabled] {

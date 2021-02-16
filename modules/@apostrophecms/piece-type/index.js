@@ -171,6 +171,9 @@ module.exports = {
       result.pages = query.get('totalPages');
       result.currentPage = query.get('page') || 1;
       result.results = await query.toArray();
+      if (self.apos.launder.boolean(req.query['render-areas']) === true) {
+        await self.apos.area.renderDocsAreas(req, result.results);
+      }
       self.apos.attachment.all(result.results, { annotate: true });
       if (query.get('choicesResults')) {
         result.choices = query.get('choicesResults');
@@ -186,6 +189,9 @@ module.exports = {
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
+      }
+      if (self.apos.launder.boolean(req.query['render-areas']) === true) {
+        await self.apos.area.renderDocsAreas(req, [ doc ]);
       }
       self.apos.attachment.all(doc, { annotate: true });
       return doc;

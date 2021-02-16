@@ -6,18 +6,6 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 
-// Wrap webpack to report its errors readably, in
-// preparation to promisify it
-
-function webpack(config, cb) {
-  return webpackModule(config, function (err, stats) {
-    if (err || stats.hasErrors()) {
-      return cb(err || stats.toJson().errors.join('\n'));
-    }
-    return cb(null);
-  });
-}
-
 module.exports = {
 
   options: {
@@ -51,7 +39,8 @@ module.exports = {
           await fs.remove(bundleDir);
           await fs.mkdir(bundleDir);
           await moduleOverrides();
-          buildPublicBundle();
+          buildPublicCssBundle();
+          buildPublicJsBundle();
           await buildAposBundle();
           merge();
           await deploy();
@@ -95,7 +84,16 @@ module.exports = {
             }
           }
 
-          function buildPublicBundle() {
+          function buildPublicCssBundle() {
+            const publicImports = getImports('public', '*.css', { });
+            fs.writeFileSync(`${self.apos.rootDir}/public/apos-frontend/public-bundle.css`,
+              publicImports.paths.map(path => {
+                return fs.readFileSync(path);
+              }).join('\n')
+            ); // TODO: use webpack just to minify at the end.
+          }
+
+          function buildPublicJsBundle() {
             // We do not use an import file here because import is not
             // an ES5 feature and it is contrary to the spirit of ES5 code
             // to force-fit that type of code. We do not mandate ES6 in
@@ -150,9 +148,9 @@ module.exports = {
     ${iconImports.registerCode}
     ${componentImports.registerCode}
     ${tiptapExtensionImports.registerCode}
-    setImmediate(() => {
+    setTimeout(() => {
     ${appImports.invokeCode}
-    });
+    }, 0);
             `);
 
             fs.writeFileSync(`${buildDir}/imports.json`, JSON.stringify({
@@ -162,7 +160,7 @@ module.exports = {
               apps: appImports
             }));
 
-            await Promise.promisify(webpack)(require('./lib/webpack.config')(
+            await Promise.promisify(webpackModule)(require('./lib/webpack.config')(
               {
                 importFile,
                 modulesDir
@@ -223,6 +221,7 @@ module.exports = {
             const uploadfsFolder = `/assets/${releaseId}`;
             await copyIn(`${localFolder}/apos-bundle.js`, `${uploadfsFolder}/apos-bundle.js`);
             await copyIn(`${localFolder}/public-bundle.js`, `${uploadfsFolder}/public-bundle.js`);
+            await copyIn(`${localFolder}/public-bundle.css`, `${uploadfsFolder}/public-bundle.css`);
           }
 
           function getImports(folder, pattern, options) {
@@ -285,6 +284,20 @@ module.exports = {
   },
   methods(self, options) {
     return {
+      stylesheetsHelper(when) {
+        let base;
+        if (process.env.NODE_ENV === 'production') {
+          const releaseId = self.getReleaseId();
+          const uploadfsFolder = `/assets/${releaseId}`;
+          base = `${self.apos.attachment.uploadfs.getUrl()}${uploadfsFolder}`;
+        } else {
+          base = '/apos-frontend';
+        }
+        // The styles for apostrophe admin UI are baked into the JS bundle. But
+        // for public styles we break them out separately to avoid a FOUC.
+        const bundle = `<link href="${base}/public-bundle.css" rel="stylesheet" />`;
+        return self.apos.template.safe(bundle);
+      },
       scriptsHelper(when) {
         let base;
         let bundle;
@@ -348,7 +361,7 @@ if your deployment is a git checkout.`);
   helpers(self, options) {
     return {
       stylesheets: function (when) {
-        // Stylesheets are part of the js bundle
+        return self.stylesheetsHelper(when);
       },
       scripts: function (when) {
         return self.scriptsHelper(when);

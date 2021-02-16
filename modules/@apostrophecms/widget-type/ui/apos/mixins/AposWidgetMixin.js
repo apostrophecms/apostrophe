@@ -59,9 +59,9 @@ export default {
         }
         // Wait for reactivity to populate v-html so the
         // AposAreas manager can spot any new area divs
-        setImmediate(function() {
+        setTimeout(function() {
           apos.bus.$emit('widget-rendered');
-        });
+        }, 0);
       } catch (e) {
         this.rendered = '<p>Unable to render this widget.</p>';
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);

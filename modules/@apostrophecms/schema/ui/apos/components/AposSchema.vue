@@ -14,6 +14,7 @@
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
+        :display-options="displayOptions"
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
@@ -67,6 +68,12 @@ export default {
       type: Object,
       default() {
         return null;
+      }
+    },
+    displayOptions: {
+      type: Object,
+      default() {
+        return {};
       }
     }
   },
@@ -210,6 +217,9 @@ export default {
   .apos-field {
     .apos-schema /deep/ & {
       margin-bottom: $spacing-triple;
+      &.apos-field--micro {
+        margin-bottom: $spacing-double;
+      }
     }
 
     .apos-schema /deep/ .apos-toolbar & {

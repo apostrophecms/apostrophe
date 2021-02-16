@@ -32,14 +32,14 @@
         </button>
         <component
           v-for="(col, index) in headers"
-          :key="`${col.name}-${index}`"
+          :key="`${col.property}-${index}`"
           :is="getEffectiveType(col, row)"
-          :href="(getEffectiveType(col, row) === 'a') ? row[col.name] : false"
+          :href="(getEffectiveType(col, row) === 'a') ? row[col.property] : false"
           :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :disabled="getCellDisabled(col, row)"
-          :data-col="col.name"
-          :style="getCellStyles(col.name, index)"
+          :data-col="col.property"
+          :style="getCellStyles(col.property, index)"
           @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
         >
           <AposIndicator
@@ -72,14 +72,16 @@
             :choice="{ value: row._id }"
             v-model="checkedProxy"
           />
-          <AposIndicator
-            v-if="getEffectiveIcon(col, row)"
-            :icon="getEffectiveIcon(col, row)"
-            class="apos-tree__cell__icon"
-            :icon-size="15"
-          />
-          <span class="apos-tree__cell__label" v-show="!col.iconOnly">
-            {{ row[col.name] }}
+          <span class="apos-tree__cell__value">
+            <AposIndicator
+              v-if="getEffectiveIcon(col, row)"
+              :icon="getEffectiveIcon(col, row)"
+              class="apos-tree__cell__icon"
+              :icon-size="getEffectiveIconSize(col, row)"
+            />
+            <span class="apos-tree__cell__label" v-if="getEffectiveCellLabel(col, row)">
+              {{ getEffectiveCellLabel(col, row) }}
+            </span>
           </span>
         </component>
       </div>
@@ -275,7 +277,7 @@ export default {
       }
     },
     getRowClasses(row) {
-      return [
+      const classes = [
         'apos-tree__row',
         {
           'is-parked': !!row.parked,
@@ -284,6 +286,14 @@ export default {
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
         }
       ];
+
+      if (this.options.ghostUnpublished) {
+        classes.push({
+          'is-unpublished': !row.lastPublishedAt
+        });
+      }
+
+      return classes;
     },
     getEffectiveType(col, row) {
       if (row.type === '@apostrophecms/trash') {
@@ -297,26 +307,90 @@ export default {
       }
     },
     getEffectiveIcon(col, row) {
+      const boolStr = (!!row[col.property]).toString();
+
       if (row.type === '@apostrophecms/trash') {
         return false;
-      } else {
-        return this.icons[col.icon];
       }
+
+      if (col.cellValue && col.cellValue.icon) {
+        return this.icons[col.cellValue.icon];
+      }
+
+      if (col.cellValue[boolStr] && col.cellValue[boolStr].icon) {
+        return this.icons[col.cellValue[boolStr].icon];
+      }
+
+      return false;
+    },
+    getEffectiveIconSize(col, row) {
+      const boolStr = (!!row[col.property]).toString();
+
+      if (col.cellValue && col.cellValue.iconSize) {
+        return col.cellValue.iconSize;
+      }
+
+      if (col.cellValue[boolStr] && col.cellValue[boolStr].iconSize) {
+        return col.cellValue[boolStr].iconSize;
+      }
+
+      return 15;
+    },
+    getEffectiveCellLabel(col, row) {
+      const excludedTypes = [ '@apostrophecms/trash' ];
+      const boolStr = (!!row[col.property]).toString();
+
+      // Opportunity to display a custom true/false label for cell value
+      if (this.isObject(col.cellValue)) {
+
+        if (excludedTypes.includes(row.type)) {
+          return false;
+        }
+
+        // if we have a custom label
+        if (col.cellValue[boolStr]) {
+          // if custom is just a string
+          if (typeof col.cellValue[boolStr] === 'string') {
+            return col.cellValue[boolStr];
+          }
+          // if custom has label and other props
+          if (col.cellValue[boolStr].label) {
+            return col.cellValue[boolStr].label;
+          }
+        }
+      }
+
+      // Original default of just printing the row property value
+      if (row[col.cellValue]) {
+        return row[col.cellValue];
+      }
+
+      return false;
     },
     getCellClasses(col, row) {
       const classes = [ 'apos-tree__cell' ];
-      classes.push(`apos-tree__cell--${col.name}`);
+      const boolStr = (!!row[col.property]).toString();
+      classes.push(`apos-tree__cell--${col.property}`);
 
-      if (col.iconOnly) {
+      if (col.cellValue && col.cellValue.icon) {
         classes.push('apos-tree__cell--icon');
+      }
+
+      // Surface any custom label classes
+      if (this.isObject(col.cellValue)) {
+        // cast boolean to string to look through obj properties
+        if (col.cellValue[boolStr] && col.cellValue[boolStr].class) {
+          classes.push(col.cellValue[boolStr].class);
+        }
       }
       return classes;
     },
+
     getCellDisabled(col, row) {
       if (this.getEffectiveType(col, row) === 'span') {
         return false;
       }
-      if ((col.type === 'link') && (!row[col.name])) {
+      if ((col.type === 'link') && (!row[col.property])) {
         return true;
       } else if (row.trash && (col.type === 'button')) {
         return true;
@@ -324,6 +398,7 @@ export default {
         return false;
       }
     },
+
     getCellStyles(name, index) {
       const styles = {};
       if (this.nested && index === 0 && this.colWidths && this.colWidths[name]) {
@@ -333,6 +408,12 @@ export default {
       }
 
       return styles;
+    },
+
+    // From lodash core
+    isObject(value) {
+      const type = typeof value;
+      return value != null && (type === 'object' || type === 'function');
     }
   }
 };
@@ -352,6 +433,9 @@ export default {
 
   .apos-tree__row {
     &.is-dragging {
+      opacity: 0.5;
+    }
+    &.is-unpublished > .apos-tree__row-data {
       opacity: 0.5;
     }
   }
@@ -463,9 +547,13 @@ export default {
     }
   }
 
-  .apos-tree__cell__label {
+  .apos-tree__cell__value {
     display: flex;
     align-self: center;
+  }
+
+  .apos-tree__cell.is-published /deep/ .apos-tree__cell__icon {
+    color: var(--a-success);
   }
 
   button.apos-tree__cell {

@@ -94,7 +94,7 @@ module.exports = {
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
-          throw self.apos.error('required');
+          throw self.apos.error(`required: ${field.name}`);
         }
       },
       index: function (value, field, texts) {
@@ -484,13 +484,6 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'range',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
-      }
-    });
-
-    self.addFieldType({
       name: 'url',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
@@ -525,11 +518,36 @@ module.exports = {
       }
     });
 
+    const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
+
     self.addFieldType({
       name: 'date',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.date(data[field.name], field.def);
+        const newDateVal = data[field.name];
+        if (!newDateVal && object[field.name]) {
+          // Allow date fields to be unset.
+          object[field.name] = null;
+          return;
+        }
+        if (field.min && newDateVal && (newDateVal < field.min)) {
+          // If the min requirement isn't met, leave as-is.
+          return;
+        }
+        if (field.max && newDateVal && (newDateVal > field.max)) {
+          // If the max requirement isn't met, leave as-is.
+          return;
+        }
+
+        object[field.name] = self.apos.launder.date(newDateVal, field.def);
+      },
+      validate: function (field, options, warn, fail) {
+        if (field.max && !field.max.match(dateRegex)) {
+          fail('Property "max" must be in the date format, YYYY-MM-DD');
+        }
+        if (field.min && !field.min.match(dateRegex)) {
+          fail('Property "min" must be in the date format, YYYY-MM-DD');
+        }
       },
       addQueryBuilder(field, query) {
         return query.addBuilder(field.name, {
@@ -596,6 +614,49 @@ module.exports = {
 
     self.addFieldType({
       name: 'group' // visual grouping only
+    });
+
+    self.addFieldType({
+      name: 'range',
+      vueComponent: 'AposInputRange',
+      convert: async function (req, field, data, object) {
+        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+        if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+          throw self.apos.error('required');
+        }
+        if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
+          throw self.apos.error('invalid');
+        }
+        // Allow for ranges to go unset
+        // `min` here does not imply requirement, it is the minimum value the range UI will represent
+        if (
+          !data[field.name] ||
+          data[field.name] < field.min ||
+          data[field.name] > field.max
+        ) {
+          object[field.name] = null;
+        }
+      },
+      validate: function (field, options, warn, fail) {
+        if (!field.min && field.min !== 0) {
+          fail('Property "min" must be set.');
+        }
+        if (!field.max && field.max !== 0) {
+          fail('Property "max" must be set.');
+        }
+        if (typeof field.max !== 'number') {
+          fail('Property "max" must be a number');
+        }
+        if (typeof field.min !== 'number') {
+          fail('Property "min" must be a number');
+        }
+        if (field.step && typeof field.step !== 'number') {
+          fail('Property "step" must be a number.');
+        }
+        if (field.unit && typeof field.unit !== 'string') {
+          fail('Property "unit" must be a string.');
+        }
+      }
     });
 
     self.addFieldType({
@@ -1932,7 +1993,7 @@ module.exports = {
       // ### `convert`
       //
       // Required. An `async` function which takes `(req, field, data, object)`. The value
-      // of the field is drawn from the untrusted input object `input` and sanitized
+      // of the field is drawn from the untrusted input object `data` and sanitized
       // if possible, then copied to the appropriate property (or properties) of `object`.
       //
       // `field` contains the schema field definition, useful to access
