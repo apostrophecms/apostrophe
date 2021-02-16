@@ -73,25 +73,31 @@ module.exports = {
       }
     });
 
+    function checkStringLength (string, min, max) {
+      if (string && min && string.length < min) {
+        // Would be unpleasant, but shouldn't happen since the browser
+        // also implements this. We're just checking for naughty scripts
+        throw self.apos.error('min');
+      }
+      // If max is longer than allowed, trim the value down to the max length
+      if (string && max && string.length > max) {
+        return string.substr(0, max);
+      }
+
+      return string;
+    }
+
     self.addFieldType({
       name: 'string',
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        if (object[field.name] && field.min && object[field.name].length < field.min) {
-          // Would be unpleasant, but shouldn't happen since the browser
-          // also implements this. We're just checking for naughty scripts
-          throw self.apos.error('min');
-        }
-        // If max is longer than allowed, trim the value down to the max length
-        if (object[field.name] && field.max && object[field.name].length > field.max) {
-          object[field.name] = object[field.name].substr(0, field.max);
-        }
+        object[field.name] = checkStringLength(object[field.name], field.min, field.max);
         // If field is required but empty (and client side didn't catch that)
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
-          throw self.apos.error(`required: ${field.name}`);
+          throw self.apos.error('required');
         }
       },
       index: function (value, field, texts) {
@@ -464,7 +470,7 @@ module.exports = {
       name: 'email',
       vueComponent: 'AposInputString',
       convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], undefined, field.min, field.max);
+        object[field.name] = self.apos.launder.string(data[field.name]);
         if (!data[field.name]) {
           if (field.required) {
             throw self.apos.error('required');
@@ -605,6 +611,8 @@ module.exports = {
         // there is actually a new value — a blank password is not cool. -Tom
         if (data[field.name]) {
           object[field.name] = self.apos.launder.string(data[field.name], field.def);
+
+          object[field.name] = checkStringLength(object[field.name], field.min, field.max);
         }
       }
     });
@@ -635,10 +643,10 @@ module.exports = {
         }
       },
       validate: function (field, options, warn, fail) {
-        if (!field.min) {
+        if (!field.min && field.min !== 0) {
           fail('Property "min" must be set.');
         }
-        if (!field.max) {
+        if (!field.max && field.max !== 0) {
           fail('Property "max" must be set.');
         }
         if (typeof field.max !== 'number') {
