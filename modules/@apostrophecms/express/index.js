@@ -438,6 +438,7 @@ module.exports = {
           if (!name || name.match(/^connect-mongo/)) {
             if (!sessionOptions.store.options.client) {
               sessionOptions.store.options.client = self.apos.dbClient;
+              sessionOptions.store.options.dbName = sessionOptions.store.options.dbName || self.apos.db.databaseName;
             }
           }
           if (!sessionOptions.store.name) {
