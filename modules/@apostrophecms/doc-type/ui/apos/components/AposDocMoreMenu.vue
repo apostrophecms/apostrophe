@@ -2,6 +2,7 @@
   <AposContextMenu
     class="apos-admin-bar__context-button"
     :menu="menu"
+    :disabled="disabled"
     menu-placement="bottom-end"
     @item-clicked="menuHandler"
     :button="{
@@ -53,6 +54,10 @@ export default {
       // when isModified is currently true. This does
       // not make sense in the onpage contextual editor,
       // because it continuously saves drafts.
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   data() {

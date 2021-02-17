@@ -70,6 +70,16 @@ module.exports = {
       // these events and respond. You can use this mechanism if you
       // wish to implement a custom admin bar item not powered by
       // the `AposModals` app.
+      //
+      // If `options.contextUtility` is true, then `options.icon` is required, and
+      // the item will be displayed in a tray of icons just to the left
+      // of the page settings gear. If `options.toggle` is also true,
+      // then the button will have the `active` state until toggled
+      // off again. `options.openTooltip` and `options.closeTooltip` may be
+      // provided to offer a different tooltip during the active state. Otherwise
+      // `options.tooltip` is used. The regular label is also present for
+      // screenreaders only. The contextUtility functionality is typically used for
+      // experiences that temporarily change the current editing context.
 
       add(name, label, permission, options) {
         let index;
