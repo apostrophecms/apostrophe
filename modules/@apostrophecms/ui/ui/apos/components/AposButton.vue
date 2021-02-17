@@ -259,6 +259,7 @@ export default {
   .apos-button.apos-button--color {
     width: 50px;
     height: 50px;
+    padding: 0;
     border: 0;
     border-radius: 50%;
     box-shadow: var(--a-box-shadow);
