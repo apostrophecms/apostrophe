@@ -911,14 +911,14 @@ export default {
     },
     trayItemTooltip(item) {
       if (item.options.toggle) {
-        if (this.trayItemState[item.name] && item.options.closeTooltip) {
+        if (this.trayItemState[item.name] && item.options.tooltip && item.options.tooltip.deactivate) {
           return {
-            content: item.options.closeTooltip,
+            content: item.options.tooltip.deactivate,
             placement: 'bottom'
           };
-        } else if (item.options.openTooltip) {
+        } else if (item.options.tooltip && item.options.tooltip.activate) {
           return {
-            content: item.options.openTooltip,
+            content: item.options.tooltip.activate,
             placement: 'bottom'
           };
         } else {
