@@ -911,16 +911,18 @@ export default {
     },
     trayItemTooltip(item) {
       if (item.options.toggle) {
-        if (this.trayItemState[item.name] && item.options.closeLabel) {
+        if (this.trayItemState[item.name] && item.options.closeTooltip) {
           return {
             content: item.options.closeTooltip,
             placement: 'bottom'
           };
-        } else {
+        } else if (item.options.openTooltip) {
           return {
             content: item.options.openTooltip,
             placement: 'bottom'
           };
+        } else {
+          return false;
         }
       } else {
         return item.options.tooltip;
