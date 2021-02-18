@@ -34,6 +34,7 @@
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "bluebird": "^3.7.2",
     "body-parser": "^1.18.2",
+    "boring": "^1.0.0",
     "broadband": "^1.1.0",
     "cheerio": "^0.22.0",
     "child-process-promise": "^2.2.1",
@@ -119,8 +120,7 @@
     "vuedraggable": "^2.24.3",
     "webpack": "^5.16.0",
     "webpack-merge": "^5.7.3",
-    "xregexp": "^2.0.0",
-    "yargs": "^3.32.0"
+    "xregexp": "^2.0.0"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",

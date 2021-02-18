@@ -1,6 +1,6 @@
 const path = require('path');
 const _ = require('lodash');
-const argv = require('yargs').argv;
+const argv = require('boring')({ end: '--' });
 const fs = require('fs');
 const npmResolve = require('resolve');
 let defaults = require('./defaults.js');
