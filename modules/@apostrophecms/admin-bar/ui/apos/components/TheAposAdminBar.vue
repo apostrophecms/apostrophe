@@ -7,7 +7,7 @@
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <ul class="apos-admin-bar__items">
-          <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
+          <li class="apos-admin-bar__item" v-if="pageTree">
             <AposButton
               type="subtle" label="Page Tree"
               icon="file-tree-icon" class="apos-admin-bar__btn"
@@ -55,7 +55,7 @@
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
       <!-- Context-dependent row -->
-      <div class="apos-admin-bar__row apos-admin-bar__row--utils">
+      <div v-if="contextBar" class="apos-admin-bar__row apos-admin-bar__row--utils">
         <transition-group
           tag="div"
           class="apos-admin-bar__control-set apos-admin-bar__control-set--context-controls"
@@ -270,6 +270,8 @@ export default {
       retrying: false,
       saved: false,
       savingTimeout: null,
+      contextBar: window.apos.adminBar.contextBar,
+      pageTree: window.apos.adminBar.pageTree,
       context: window.apos.adminBar.context ? {
         ...window.apos.adminBar.context
       } : {},

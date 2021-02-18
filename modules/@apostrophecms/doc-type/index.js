@@ -3,7 +3,8 @@ const klona = require('klona');
 
 module.exports = {
   options: {
-    localized: true
+    localized: true,
+    contextBar: true
   },
   cascades: [ 'fields' ],
   fields(self, options) {
