@@ -187,12 +187,14 @@
       const playerEls = (el || document).querySelectorAll(playerOpts.selector);
 
       playerEls.forEach(function (el) {
-        if (el.getAttribute('data-apos-played')) {
+        if (el.aposWidgetPlayed) {
           return;
         }
-
-        el.setAttribute('data-apos-played', true);
-
+        // Use an actual property, not a DOM attribute or
+        // "data" prefix property, to avoid the problem of
+        // elements cloned from innerHTML appearing to have
+        // been played too
+        el.aposWidgetPlayed = true;
         playerOpts.player(el);
       });
     }
@@ -204,6 +206,20 @@
   apos.util.onReadyAndRefresh(function() {
     apos.util.runPlayers();
   });
+
+  // Also run widget players when an individual widget is
+  // rendered by the editor. A refresh event is not emitted
+  // in this situation.
+
+  setTimeout(function() {
+    if (apos.bus) {
+      apos.bus.$on('widget-rendered', function() {
+        setTimeout(function() {
+          apos.util.runPlayers();
+        }, 0);
+      });
+    }
+  }, 0);
 
   // Given an attachment field value,
   // return the file URL. If options.size is set, return the URL for
