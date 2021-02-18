@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.116.1 (2021-18-02)
+* Stop processing `updateDocReferences` method when the document schema does not allow attachments.
+
 ## 2.116.0 (2021-10-02)
 * Fixes an error when saving an edited Tag in the Tag Manager.
 
