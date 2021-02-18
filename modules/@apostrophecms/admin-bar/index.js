@@ -24,7 +24,11 @@ const _ = require('lodash');
 const cuid = require('cuid');
 
 module.exports = {
-  options: { alias: 'adminBar' },
+  options: {
+    alias: 'adminBar',
+    // Do include a page tree button in the admin bar
+    pageTree: true
+  },
   init(self, options) {
     self.items = [];
     self.groups = [];
@@ -290,10 +294,12 @@ module.exports = {
           },
           // Base API URL appropriate to the context document
           contextAction,
+          contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           // Simplifies frontend logic
           contextId: context && context._id,
           htmlPageId: cuid(),
-          contextEditorName
+          contextEditorName,
+          pageTree: self.options.pageTree
         };
       }
     };
