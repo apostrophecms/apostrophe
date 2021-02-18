@@ -987,6 +987,7 @@ function depth(el) {
   &__document-title,
   &__separator {
     display: inline-flex;
+    color: var(--a-text-primary);
   }
 
   &__document-title {
@@ -1010,6 +1011,7 @@ function depth(el) {
 
 .apos-admin-bar__title__indicator {
   margin-right: 5px;
+  color: var(--a-text-primary);
 }
 
 .apos-admin-bar__items {

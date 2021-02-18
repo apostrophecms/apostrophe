@@ -331,7 +331,7 @@ export default {
     &:hover,
     &:focus,
     &:active {
-      color: inherit;
+      color: var(--a-text-primary);
       text-decoration: none;
       background-color: var(--a-base-10);
     }
