@@ -111,6 +111,9 @@ export default {
         this.updateNextAndEmit();
       }
     },
+    schema() {
+      this.populateDocData();
+    },
     value: {
       deep: true,
       handler(newVal, oldVal) {
