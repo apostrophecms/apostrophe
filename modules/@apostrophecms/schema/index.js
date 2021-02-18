@@ -17,7 +17,7 @@ const joinr = require('./lib/joinr');
 const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
-const klona = require('klona');
+const { klona } = require('klona');
 
 module.exports = {
   options: {
