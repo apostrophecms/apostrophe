@@ -258,7 +258,8 @@ function computeEditorOptions(type, explicitOptions) {
 
   .apos-rich-text-toolbar__inner {
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    height: 35px;
     background-color: var(--a-background-primary);
     color: var(--a-text-primary);
     border-radius: var(--a-border-radius);
@@ -272,8 +273,10 @@ function computeEditorOptions(type, explicitOptions) {
     outline: none;
   }
 
-  .apos-rich-text-toolbar__inner /deep/ > * {
-    height: 35px;
+  .apos-rich-text-toolbar__inner /deep/ > .apos-rich-text-editor__control {
+    /* Addresses a Safari-only situation where it inherits the
+      `::-webkit-scrollbar-button` 2px margin. */
+    margin: 0;
   }
 
 </style>
