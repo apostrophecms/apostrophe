@@ -85,7 +85,7 @@
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import cuid from 'cuid';
-import klona from 'klona';
+import { klona } from 'klona';
 import { get } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 

@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import klona from 'klona';
+import { klona } from 'klona';
 import cuid from 'cuid';
 
 export default {

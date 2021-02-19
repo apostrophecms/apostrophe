@@ -84,7 +84,7 @@
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import klona from 'klona';
+import { klona } from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
