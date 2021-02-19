@@ -33,6 +33,7 @@ module.exports = {
     await self.createIndexes();
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
+    self.addLastPublishedToAllDraftsMigration();
   },
   restApiRoutes(self, options) {
     return {
@@ -172,7 +173,8 @@ module.exports = {
           const draft = {
             ...doc,
             _id: draftId,
-            aposLocale: draftLocale
+            aposLocale: draftLocale,
+            lastPublishedAt: doc.createdAt || new Date()
           };
           return manager.insertDraftOf(req, doc, draft);
         }
@@ -917,6 +919,27 @@ module.exports = {
             await self.apos.doc.db.removeOne({
               _id: doc._id
             });
+          });
+        });
+      },
+      addLastPublishedToAllDraftsMigration() {
+        return self.apos.migration.add('add lastPublishedAt to all published drafts without it', async () => {
+          return self.apos.migration.eachDoc({
+            _id: /:draft$/,
+            lastPublishedAt: null
+          }, async (doc) => {
+            const published = await self.db.findOne({
+              _id: doc._id.replace(':draft', ':published')
+            });
+            if (published) {
+              return self.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: {
+                  lastPublishedAt: published.updatedAt
+                }
+              });
+            }
           });
         });
       },
