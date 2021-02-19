@@ -2,13 +2,23 @@ import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
 
-  createAreaApps();
-  window.apos.bus.$on('widget-rendered', function() {
-    createAreaApps();
+  prepareAreas();
+  apos.bus.$on('widget-rendered', function() {
+    prepareAreas();
   });
-  window.apos.bus.$on('refreshed', function() {
-    createAreaApps();
+  apos.bus.$on('refreshed', function() {
+    prepareAreas();
   });
+
+  function prepareAreas() {
+    // Doing this first allows markup to be captured for the editor
+    // before players alter it
+    createAreaApps();
+    // Even though we invoke the player directly from
+    // the widget mixin used for editable widgets, we still have to
+    // call runPlayers eventually to account for any foreign area widgets
+    apos.util.runPlayers();
+  }
 
   function createAreaApps() {
     // Sort the areas by DOM depth to ensure parents light up before children
