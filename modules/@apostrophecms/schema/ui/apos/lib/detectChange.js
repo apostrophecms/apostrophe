@@ -32,8 +32,15 @@ export function detectFieldChange(field, v1, v2) {
           newObject._id = o._id;
         } else if (key.substring(0, 1) === '_') {
           // Different results for temporary properties
-          // don't matter
-          continue;
+          // don't matter, except for relationships
+          if (Array.isArray(o[key])) {
+            newObject[key] = o[key].map(item => ({
+              _id: item._id,
+              _fields: relevant(item.fields)
+            }));
+          } else {
+            continue;
+          }
         } else {
           newObject[key] = relevant(val);
         }
