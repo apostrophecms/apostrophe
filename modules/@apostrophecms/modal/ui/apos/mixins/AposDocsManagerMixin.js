@@ -4,7 +4,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 // managers. Does it need to be a mixin? This may be resolved when switching to
 // Vue 3 using the composition API. - AB
 
-import klona from 'klona';
+import { klona } from 'klona';
 
 export default {
   data() {

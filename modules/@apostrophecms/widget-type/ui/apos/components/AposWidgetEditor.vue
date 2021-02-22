@@ -43,7 +43,7 @@
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
-import klona from 'klona';
+import { klona } from 'klona';
 
 export default {
   name: 'AposWidgetEditor',

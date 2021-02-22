@@ -63,7 +63,7 @@
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import klona from 'klona';
+import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',

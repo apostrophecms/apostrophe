@@ -94,7 +94,7 @@ import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import klona from 'klona';
+import { klona } from 'klona';
 
 export default {
   name: 'AposDocEditor',

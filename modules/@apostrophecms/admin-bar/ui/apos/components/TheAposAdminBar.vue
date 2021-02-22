@@ -237,7 +237,7 @@
 </template>
 
 <script>
-import klona from 'klona';
+import { klona } from 'klona';
 import dayjs from 'dayjs';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 

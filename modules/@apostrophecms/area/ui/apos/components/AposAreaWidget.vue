@@ -128,7 +128,7 @@
 
 <script>
 
-import klona from 'klona';
+import { klona } from 'klona';
 import AposIndicator from '../../../../ui/ui/apos/components/AposIndicator.vue';
 
 export default {

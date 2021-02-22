@@ -53,7 +53,7 @@
 
 <script>
 import cuid from 'cuid';
-import klona from 'klona';
+import { klona } from 'klona';
 
 export default {
   name: 'AposAreaEditor',

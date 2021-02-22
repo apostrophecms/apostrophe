@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const klona = require('klona');
+const { klona } = require('klona');
 
 module.exports = {
   options: {
