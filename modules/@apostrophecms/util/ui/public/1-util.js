@@ -131,11 +131,10 @@
   apos.util.widgetPlayers = {};
 
   // Run the given function whenever the DOM has new changes that
-  // may require attention. For instance, we use this function to
-  // schedule apos.util.runPlayers to run widget player code for
-  // widgets that are new in the DOM. The passed function will be
+  // may require attention. The passed function will be
   // called when the DOM is ready on initial page load, and also
   // when the main content area has been refreshed by the editor.
+  // Note that you don't need this for widgets; see widget players.
 
   apos.util.onReadyAndRefresh = function(fn) {
     onReady(fn);
@@ -203,23 +202,11 @@
   // Schedule runPlayers to run as soon as the document is ready, and also
   // when the page is partially refreshed by the editor.
 
-  apos.util.onReadyAndRefresh(function() {
-    apos.util.runPlayers();
-  });
-
-  // Also run widget players when an individual widget is
-  // rendered by the editor. A refresh event is not emitted
-  // in this situation.
-
-  setTimeout(function() {
-    if (apos.bus) {
-      apos.bus.$on('widget-rendered', function() {
-        setTimeout(function() {
-          apos.util.runPlayers();
-        }, 0);
-      });
-    }
-  }, 0);
+  if (!apos.bus) {
+    apos.util.onReadyAndRefresh(function() {
+      apos.util.runPlayers();
+    });
+  }
 
   // Given an attachment field value,
   // return the file URL. If options.size is set, return the URL for

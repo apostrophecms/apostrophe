@@ -26,10 +26,9 @@ export default {
       playerOpts: null
     };
   },
-  mounted: function() {
+  mounted() {
     this.renderContent();
     this.playerOpts = apos.util.widgetPlayers[this.type] || null;
-    this.runPlayer();
   },
   updated () {
     this.runPlayer();
@@ -50,6 +49,7 @@ export default {
       try {
         if (this.rendering && (isEqual(this.rendering.parameters, parameters))) {
           this.rendered = this.rendering.html;
+          this.runPlayer();
         } else {
           this.rendered = '...';
           this.rendered = await apos.http.post(`${apos.area.action}/render-widget?apos-edit=1`, {
@@ -58,7 +58,8 @@ export default {
           });
         }
         // Wait for reactivity to populate v-html so the
-        // AposAreas manager can spot any new area divs
+        // AposAreas manager can spot any new area divs.
+        // This will also run the player
         setTimeout(function() {
           apos.bus.$emit('widget-rendered');
         }, 0);
