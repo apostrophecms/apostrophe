@@ -2,7 +2,19 @@
 
 ## 3.0.0-alpha.4
 
-* Like `.js` files, `.css` files placed in the `ui/public` subdirectory of any module will automatically be bundled together and served to the user. As with `.js` files, no preprocessing is done. To avoid extra browser requests, both project and reusable module developers should output the styles of their own webpack build to such a location rather than introducing another link tag. The `a3-demo` project has been updated to demonstrate this technique when building assets for production.
+### Breaking changes
+
+* **A3 now uses webpack 5.** For now, **due to a known issue with vue-loader, your own project must also be updated to use webpack 5.** The a3-boilerplate project has been updated accordingly, so you may refer to [the a3-boilerplate project](https://github.com/apostrophecms/a3-boilerplate) for an example of the changes to be made, notably in `webpack.config.js` and `package.json`. We are in communication with upstream developers to resolve the issue so that projects and apostrophe core can use different major versions of webpack.
+
+### Other Changes
+
+* **"Fragments" have been added to the Apostrophe template API, as an alternative to Nunjucks' macros, to fully support areas and async components.** [See the A3 alpha documentation](https://a3.docs.apos.dev/guide/widgets-and-templates/fragments.html) for instructions on how to use this feature.
+* **CSS files in the `ui/public` subdirectory of any module are now bundled and pushed to the browser.** This allows you to efficiently deliver your CSS assets, just as you can deliver JS assets in `ui/public`. Note that these assets must be browser-ready JS and CSS, so it is customary to use your own webpack build to generate them. See [the a3-boilerplate project](https://github.com/apostrophecms/a3-boilerplate) for an example, especially `webpack.config.js`.
+* **More support for rendering HTML in REST API requests.** See the `render-areas` query parameter in [piece and page REST API documentation](https://a3.docs.apos.dev/reference/api/pieces.html#get-api-v1-piece-name).
+* **Context bar takeover capability,** for situations where a secondary document should temporarily own the undo/redo/publish UI.
+* **Unpublished pages in the tree** are easier to identify
+* **Range fields** have been added.
+* **Support for npm bundles is back.** It works just like in 2.x, but the property is `bundle`, not `moogBundle`. Thanks to Miro Yovchev.
 
 ## 3.0.0-alpha.3
 
