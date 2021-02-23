@@ -126,7 +126,6 @@
     "babel-eslint": "^10.1.0",
     "babel-preset-vue": "^2.0.2",
     "eslint": "^7.16.0",
-    "vue-eslint-parser": "^7.1.1",
     "eslint-config-apostrophe": "^3.4.0",
     "eslint-loader": "^4.0.2",
     "eslint-plugin-node": "^11.1.0",
@@ -134,6 +133,7 @@
     "mocha": "^7.1.2",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
+    "vue-eslint-parser": "^7.1.1",
     "webpack-bundle-analyzer": "^3.9.0"
   },
   "browserslist": [
