@@ -435,7 +435,7 @@ module.exports = {
 
       addStandardFilters(env) {
 
-        // Format the given date with the given momentjs
+        // Format the given date with the given moment.js
         // format string.
 
         env.addFilter('date', function (date, format) {

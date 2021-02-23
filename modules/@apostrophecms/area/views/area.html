@@ -8,7 +8,7 @@
     {%- if data.canEdit -%}
       <div data-apos-widget="{{ item._id }}">
     {%- endif -%}
-    {% widget item, widgetOptions %}
+    {% widget item, widgetOptions with data._with %}
     {%- if data.canEdit -%}
       </div>
     {%- endif -%}

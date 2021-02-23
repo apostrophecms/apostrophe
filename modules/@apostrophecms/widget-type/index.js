@@ -184,12 +184,12 @@ module.exports = {
       //
       // async, as are all functions that invoke a nunjucks render in
       // Apostrophe 3.x.
-
-      async output(req, widget, options) {
+      async output(req, widget, options, _with) {
         return self.render(req, self.template, {
           widget: widget,
           options: options,
-          manager: self
+          manager: self,
+          contextOptions: _with
         });
       },
 
