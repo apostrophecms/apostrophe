@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.116.0 (2021-10-02)
+## 2.115.1 (2021-02-24)
 * Fixes an error when saving an edited Tag in the Tag Manager.
 
 ## 2.115.0 (2021-02-02)
