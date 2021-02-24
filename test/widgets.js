@@ -101,10 +101,10 @@ describe('Widgets', function() {
   it('should be able to render page template with well constructed area tag', async function() {
     const req = apos.task.getAnonReq();
 
-    const goodPage = await apos.page.find(req, { slug: '/good-page' }).toObject();
-    goodPage.metaType = 'doc';
+    const goodPageDoc = await apos.page.find(req, { slug: '/good-page' }).toObject();
+    goodPageDoc.metaType = 'doc';
 
-    const result = await apos.modules['args-good-page'].renderPage(req, 'page', { page: goodPage });
+    const result = await apos.modules['args-good-page'].renderPage(req, 'page', { page: goodPageDoc });
 
     assert(result.indexOf('<h2>Good args page</h2>') !== -1);
     assert(result.indexOf('<p>You can control what happens when the text reaches the edges of its content area using its attributes.</p>') !== -1);
@@ -114,11 +114,11 @@ describe('Widgets', function() {
   it('should error while trying to render page template with poorly constructed area tag', async function() {
     const req = apos.task.getAnonReq();
 
-    const goodPage = await apos.page.find(req, { slug: '/bad-page' }).toObject();
-    goodPage.metaType = 'doc';
+    const badPageDoc = await apos.page.find(req, { slug: '/bad-page' }).toObject();
+    badPageDoc.metaType = 'doc';
 
     try {
-      await apos.modules['args-bad-page'].renderPage(req, 'page', { page: goodPage });
+      await apos.modules['args-bad-page'].renderPage(req, 'page', { page: badPageDoc });
       assert(false);
     } catch (error) {
       assert(error);
