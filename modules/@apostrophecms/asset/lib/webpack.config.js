@@ -9,7 +9,7 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
   BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 }
 
-module.exports = ({ importFile, modulesDir }, apos) => {
+module.exports = ({ importFile, modulesDir, outputPath, outputFilename }, apos) => {
   const tasks = [ scss, vue ].map(task =>
     task(
       {
@@ -26,8 +26,8 @@ module.exports = ({ importFile, modulesDir }, apos) => {
     optimization: { minimize: false },
     devtool: 'eval-source-map',
     output: {
-      path: `${apos.rootDir}/public/apos-frontend`,
-      filename: 'apos-only-bundle.js'
+      path: outputPath,
+      filename: outputFilename
     },
     // we could extend this with aliases for other apostrophe modules
     // at a later date if needed
