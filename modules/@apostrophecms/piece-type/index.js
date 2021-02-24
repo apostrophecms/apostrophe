@@ -739,6 +739,7 @@ module.exports = {
           {
             type: 'major',
             label: 'New ' + self.options.label,
+            // TODO: fully deprecate `insertViaUpload`
             action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
             uploadable: self.options.insertViaUpload
           },
