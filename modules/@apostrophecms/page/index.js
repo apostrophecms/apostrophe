@@ -13,36 +13,6 @@ module.exports = {
         label: 'Home'
       }
     ],
-    contextMenu: [
-      {
-        action: 'insert-page',
-        label: 'New Page'
-      },
-      {
-        action: 'copy-page',
-        label: 'Copy Page'
-      },
-      {
-        action: 'update-page',
-        label: 'Page Settings'
-      },
-      {
-        action: 'versions-page',
-        label: 'Page Versions'
-      },
-      {
-        action: 'trash-page',
-        label: 'Move to Trash'
-      },
-      {
-        action: 'reorganize-page',
-        label: 'Reorganize'
-      }
-    ],
-    publishMenu: [ {
-      action: 'publish-page',
-      label: 'Publish Page'
-    } ],
     quickCreate: true
   },
   batchOperations: {
@@ -1494,46 +1464,9 @@ database.`);
         const args = {
           edit: providePage ? req.data.bestPage._edit : null,
           slug: providePage ? req.data.bestPage.slug : null,
-          page: providePage ? req.data.bestPage : null,
-          contextMenu: req.contextMenu,
-          publishMenu: req.publishMenu
+          page: providePage ? req.data.bestPage : null
         };
-        if (args.page && args.edit) {
-          if (!args.contextMenu) {
-            // Standard context menu for a regular page
-            args.contextMenu = self.options.contextMenu;
-          }
-          if (!args.publishMenu) {
-            // Standard publish menu for a regular page
-            args.publishMenu = self.options.publishMenu;
-          }
-        }
-        if (args.page) {
-          if (args.page.level === 0) {
-            // Snip out copy page if we are on the homepage
-            args.contextMenu = _.filter(args.contextMenu, function (item) {
-              return item.action !== 'copy-page';
-            });
-          }
-          if (!self.allowedChildTypes(args.page).length) {
-            // Snip out add page if no
-            // child page types are allowed
-            args.contextMenu = _.filter(args.contextMenu, function (item) {
-              return item.action !== 'insert-page';
-            });
-          }
-        }
-        if (args.contextMenu) {
-          // Allow context menu items to require a particular permission
-          args.contextMenu = _.filter(args.contextMenu, function (item) {
-            if (!item.permission) {
-              return true;
-            }
-            if (self.apos.permission.can(req, item.permission.action, item.permission.type)) {
-              return true;
-            }
-          });
-        }
+
         // Merge data that other modules has asked us to
         // make available to the template
         _.extend(args, req.data);

@@ -36,14 +36,12 @@ module.exports = {
         },
         visibility: {
           label: 'Visibility'
-        },
+        }
         // TODO: Update this to identify if there's a piece page for the type.
-        ...(self.options.contextual ? {
-          _url: {
-            label: 'Link',
-            component: 'AposCellLink'
-          }
-        } : {})
+        // _url: {
+        //   label: 'Link',
+        //   component: 'AposCellLink'
+        // }
       }
     };
   },
@@ -132,8 +130,6 @@ module.exports = {
     }
   },
   init(self, options) {
-    self.contextual = options.contextual;
-
     if (!options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
@@ -837,7 +833,6 @@ module.exports = {
         // Options specific to pieces and their manage modal
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
-        browserOptions.contextual = self.contextual;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = self.options.quickCreate;
