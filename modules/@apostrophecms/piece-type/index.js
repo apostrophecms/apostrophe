@@ -4,7 +4,6 @@ module.exports = {
   extend: '@apostrophecms/doc-type',
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
-    manageViews: [ 'list' ],
     perPage: 10,
     quickCreate: true
     // By default there is no public REST API, but you can configure a
@@ -147,7 +146,6 @@ module.exports = {
     self.name = options.name;
     self.label = options.label;
     self.pluralLabel = options.pluralLabel;
-    self.manageViews = options.manageViews;
 
     self.composeFilters();
     self.composeColumns();
