@@ -443,9 +443,6 @@ module.exports = {
       // you must explicitly opt in.
 
       getBrowserData(req) {
-        if (self.options.browser) {
-          console.info('🐯', self.__meta.name, self.options.browser);
-        }
         self.options.browser = self.options.browser || {};
         return self.options.browser;
       },
