@@ -3,7 +3,6 @@
 
 module.exports = {
   options: {
-    components: {},
     alias: 'modal'
   },
   init(self, options) {
@@ -26,8 +25,8 @@ module.exports = {
         return {
           modals: self.modals,
           components: {
-            the: options.components.the || 'TheAposModals',
-            confirm: options.components.confirm || 'AposModalConfirm'
+            the: 'TheAposModals',
+            confirm: 'AposModalConfirm'
           }
         };
       }

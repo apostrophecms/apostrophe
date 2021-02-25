@@ -554,17 +554,6 @@ module.exports = {
         return self.apos.modules['@apostrophecms/email'].emailForModule(req, templateName, data, options, self);
       },
 
-      // Given a Vue component name, such as AposPiecesManager,
-      // return that name unless `options.components[name]` has been set to
-      // an alternate name. Overriding keys in the `components` option
-      // allows modules to provide alternative functionality for standard
-      // components while maintaining readabile Vue code via the
-      // <component :is="..."> syntax.
-
-      getVueComponentName(name) {
-        return (self.options.components && self.options.components[name]) || name;
-      },
-
       // When a CMS page is rendered, it will render the
       // template name passed on the last call to this
       // method during the processing of the request.

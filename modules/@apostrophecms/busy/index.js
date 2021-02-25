@@ -1,6 +1,5 @@
 module.exports = {
   options: {
-    components: {},
     alias: 'busy'
   },
   init(self, options) {
@@ -12,7 +11,7 @@ module.exports = {
       getBrowserData(req) {
         return {
           busy: self.busy,
-          components: { the: options.components.the || 'TheAposBusy' }
+          components: { the: 'TheAposBusy' }
         };
       }
     };
