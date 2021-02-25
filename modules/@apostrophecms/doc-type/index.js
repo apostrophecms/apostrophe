@@ -796,10 +796,16 @@ module.exports = {
     return {
       getBrowserData(_super, req) {
         const initialBrowserOptions = _super(req);
-        const docTypeOptions = _.pick(options, 'name', 'label', 'pluralLabel');
+
+        const {
+          name, label, pluralLabel
+        } = options;
+
         const browserOptions = {
           ...initialBrowserOptions,
-          ...docTypeOptions
+          name,
+          label,
+          pluralLabel
         };
         browserOptions.action = self.action;
         browserOptions.schema = self.allowedSchema(req);
