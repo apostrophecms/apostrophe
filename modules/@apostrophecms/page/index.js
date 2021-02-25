@@ -685,7 +685,7 @@ database.`);
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
-      // dtermine this parameter instead).
+      // determine this parameter instead).
       //
       // The `options` argument may be omitted completely. If
       // `options.permissions` is explicitly set to false, permissions checks
