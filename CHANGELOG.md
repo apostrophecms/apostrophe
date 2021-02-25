@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.0.0-alpha.5
+* The `label` option is no longer required for widget type modules. This was already true for piece type and page type modules.
+
 ## 3.0.0-alpha.4
 
 ### Breaking changes
@@ -149,7 +152,7 @@ Regression tests passing.
 * “Promise events” have arrived. This is a major feature. Promise events will completely
 replace `callAll` in Apostrophe 3.x. For 2.x, all existing invocations of `callAll` in the
 core Apostrophe module now also emit a promise event. For instance, when the `docBeforeInsert`
-callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the 
+callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the
 apostrophe-docs` module.
 
 Other modules may listen for this event by writing code like this:
@@ -399,7 +402,7 @@ Functional tests passing.
 
 * Displaying and saving schema-driven forms is much, much faster.
 This becomes very noticeable with 100 or more fields. With about
-250 fields, this formerly took about 4.5 seconds to load or to 
+250 fields, this formerly took about 4.5 seconds to load or to
 save such a form on a fast Mac. It now takes about 250 milliseconds.
 * Users may re-order the items they have selected via drag and drop
 when using "Browse" to select pieces, images, etc.
@@ -423,7 +426,7 @@ Unit tests passing.
 Functional tests passing.
 
 * **Security:** numerous issues formerly flagged by the new `npm audit` command have been addressed. We are now using a [maintained branch of lodash 3.x](https://github.com/sailshq/lodash) to keep bc while addressing security (many thanks to the Sails team). We are also using LESS 3.x, which has caused no issues in our testing and corrects security concerns with LESS 2.x. Numerous `npm audit` security reports regarding `imagemin` modules were addressed by removing `imagemin` from `uploadfs` itself, however you may opt into it via the new [`postprocessors` option of `uploadfs`](https://github.com/punkave/uploadfs). As of this writing, one `npm audit` complaint remains: the `azure-storage` module needs to update a dependency to address a possible vulnerability. You may mitigate this issue by not using the `azure` backend of `uploadfs` with Apostrophe until it is resolved upstream.
-* Many UI enhancements when choosing, browsing and managing items which reduce user confusion. For instance: moving items up and down in a selection no longer refreshes the entire list and forces the user to scroll down again. Trashed pages are easier to distinguish in "reorganize." "More" dropdown for pieces is again fully visible when clicked. Placeholder helpers make the search field for joins easier to understand. Chevrons added to various select elements which were difficult to identify as dropdowns before. 
+* Many UI enhancements when choosing, browsing and managing items which reduce user confusion. For instance: moving items up and down in a selection no longer refreshes the entire list and forces the user to scroll down again. Trashed pages are easier to distinguish in "reorganize." "More" dropdown for pieces is again fully visible when clicked. Placeholder helpers make the search field for joins easier to understand. Chevrons added to various select elements which were difficult to identify as dropdowns before.
 * Deeply nested areas now save properly. Formerly in certain situations the same widget might be duplicated.
 * `apos.tasks.getReq` now supplies an empty `req.data` object for easier use with code expecting an Express request, Apostrophe-style.
 * Bedeviled by case-sensitive sorting? The `sortify: true` property for `string` schema fields is now documented and automatically creates a database migration to ensure it is available for your existing data as well. When used, this flag ensures that any `sort('fieldname')` call for that field in Apostrophe is case-insensitive, ignores punctuation and otherwise behaves as end users expect.
@@ -468,7 +471,7 @@ As always, be sure to run the `apostrophe-migrations:migrate` task. This will ma
 
 * Overrideable block in the outerLayout for the context menu.
 
-* The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer. 
+* The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer.
 
 ## 2.54.3
 
@@ -520,7 +523,7 @@ Regression tests passing.
 * The named anchor `main` can now be overridden via the `mainAnchor` nunjucks block.
 * The `npmRootDir` option can be used to cause Apostrophe's module loading mechanism to seek npm modules in a location other than that specified by `rootDir` (or the project root). The new `localesDir` option of `apostrophe-i18n` does the same for localization. This makes it possible to use `rootDir` to specify an alternate location for everything else, i.e. the parent of `public`, `data`, `modules`, etc. A necessary accommodation for the evolving `apostrophe-multisite` module.
 * Raw HTML widgets now offer help text out of the box.
-* The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware. 
+* The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware.
 * Your own module-level `expressMiddleware` object can specify `{ when: 'beforeRequired', middleware: function(req, res, next) { ... })` to run before the required middleware as well. Note that this means no sessions, no users and no body parser. Most of the time you'll want those things.
 * CSS adjustment to tabs in modals so they don't scroll in Firefox.
 * Dropzones for empty areas are easier to drop onto.
@@ -795,7 +798,7 @@ Regression tests passing.
 overrides of this that pay attention to `req`.
 * Report `pageBeforeSend` errors and failures to load the global doc properly, don't silently tolerate them.
 * Documentation corrections. Thanks to Frederik Ekelund.
- 
+
 
 ## 2.39.0
 
@@ -923,7 +926,7 @@ Regression tests passing.
 }}
 ```
 
-The `position` suboption may be set to `top-left`, `top-right`, `bottom-left` or `bottom-right`. 
+The `position` suboption may be set to `top-left`, `top-right`, `bottom-left` or `bottom-right`.
 
 The `removable` and `movable` suboptions are primarily intended for singletons.
 
