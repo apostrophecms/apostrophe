@@ -5,7 +5,7 @@
 
 ### Breaking changes
 
-* Removes the `browser` module option, which was only used by the rich text widget in core. Also removed the `getComponentName` method from modules, given it was only referencing `browser`. All browser data should now be added by extending or overriding `getBrowserData` in a module.
+* Removes the `browser` module option, which was only used by the rich text widget in core. All browser data should now be added by extending or overriding `getBrowserData` in a module. Also updates `getComponentName` to reference `options.components` instead of `options.browser.components`.
 
 ## 3.0.0-alpha.4
 
