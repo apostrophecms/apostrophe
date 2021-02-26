@@ -1,7 +1,12 @@
 # Changelog
 
 ## 3.0.0-alpha.5
+
 * The `label` option is no longer required for widget type modules. This was already true for piece type and page type modules.
+
+## 3.0.0-alpha.4.1
+
+* Hotfix: the asset module now looks for a `./release-id` file (relative to the project), not a `./data/release-id` file, because `data` is not a deployed folder and the intent of `release-id` is to share a common release identifier between the asset build step and the deployed instances.
 
 ## 3.0.0-alpha.4
 
