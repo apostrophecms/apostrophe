@@ -1,8 +1,9 @@
 # Changelog
 
-## 3.0.0-alpha.5
+## 3.0.0-alpha.4.2
 
 * The `label` option is no longer required for widget type modules. This was already true for piece type and page type modules.
+* Ability to namespace asset builds. Do not push asset builds to uploadfs unless specified.
 
 ## 3.0.0-alpha.4.1
 
