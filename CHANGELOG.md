@@ -3,13 +3,11 @@
 ## 3.0.0-alpha.5
 * The `label` option is no longer required for widget type modules. This was already true for piece type and page type modules.
 
-## 3.0.0-alpha.4
-
 ### Breaking changes
 
-* **A3 now uses webpack 5.** For now, **due to a known issue with vue-loader, your own project must also be updated to use webpack 5.** The a3-boilerplate project has been updated accordingly, so you may refer to [the a3-boilerplate project](https://github.com/apostrophecms/a3-boilerplate) for an example of the changes to be made, notably in `webpack.config.js` and `package.json`. We are in communication with upstream developers to resolve the issue so that projects and apostrophe core can use different major versions of webpack.
+* Removes the `browser` module option, which was only used by the rich text widget in core. Also removed the `getComponentName` method from modules, given it was only referencing `browser`. All browser data should now be added by extending or overriding `getBrowserData` in a module.
 
-### Other Changes
+## 3.0.0-alpha.4
 
 * **"Fragments" have been added to the Apostrophe template API, as an alternative to Nunjucks' macros, to fully support areas and async components.** [See the A3 alpha documentation](https://a3.docs.apos.dev/guide/widgets-and-templates/fragments.html) for instructions on how to use this feature.
 * **CSS files in the `ui/public` subdirectory of any module are now bundled and pushed to the browser.** This allows you to efficiently deliver your CSS assets, just as you can deliver JS assets in `ui/public`. Note that these assets must be browser-ready JS and CSS, so it is customary to use your own webpack build to generate them. See [the a3-boilerplate project](https://github.com/apostrophecms/a3-boilerplate) for an example, especially `webpack.config.js`.
@@ -18,6 +16,10 @@
 * **Unpublished pages in the tree** are easier to identify
 * **Range fields** have been added.
 * **Support for npm bundles is back.** It works just like in 2.x, but the property is `bundle`, not `moogBundle`. Thanks to Miro Yovchev.
+
+### Breaking changes
+
+* **A3 now uses webpack 5.** For now, **due to a known issue with vue-loader, your own project must also be updated to use webpack 5.** The a3-boilerplate project has been updated accordingly, so you may refer to [the a3-boilerplate project](https://github.com/apostrophecms/a3-boilerplate) for an example of the changes to be made, notably in `webpack.config.js` and `package.json`. We are in communication with upstream developers to resolve the issue so that projects and apostrophe core can use different major versions of webpack.
 
 ## 3.0.0-alpha.3
 
