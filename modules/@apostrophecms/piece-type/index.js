@@ -500,14 +500,14 @@ module.exports = {
       addManagerModal() {
         self.apos.modal.add(
           `${self.__meta.name}:manager`,
-          self.getComponentName('managerModal', 'AposPiecesManager'),
+          'AposPiecesManager',
           { moduleName: self.__meta.name }
         );
       },
       addEditorModal() {
         self.apos.modal.add(
           `${self.__meta.name}:editor`,
-          self.getComponentName('insertModal', 'AposDocEditor'),
+          'AposDocEditor',
           { moduleName: self.__meta.name }
         );
       },

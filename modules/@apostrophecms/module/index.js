@@ -507,14 +507,6 @@ module.exports = {
         return _.get(self.options, dotPathOrArray, def);
       },
 
-      // If `name` is `manager` and `options.browser.components.manager` is set,
-      // return that string, otherwise return `def`. This is used to decide what
-      // Vue component to instantiate on the browser side.
-
-      getComponentName(name, def) {
-        return _.get(self.options, `browser.components.${name}`, def);
-      },
-
       // Send email. Renders an HTML email message using the template
       // specified in `templateName`, which receives `data` as its
       // `data` object (literally called `data` in your templates,
