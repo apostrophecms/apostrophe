@@ -657,7 +657,6 @@ module.exports = {
         try {
           content = await module.render(req, template, args);
         } catch (e) {
-          console.info('🍅');
           // The page template threw an exception. Log where it
           // occurred for easier debugging
           return error(e, 'template');

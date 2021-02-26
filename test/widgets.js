@@ -149,7 +149,7 @@ describe('Widgets', function() {
 
       assert(false);
     } catch (error) {
-      assert(error.toString().indexOf('Too many arguments were passed'));
+      assert(error.toString().indexOf('Too many arguments were passed') !== -1);
     }
   });
 });
