@@ -1976,14 +1976,14 @@ database.`);
       addManagerModal() {
         self.apos.modal.add(
           `${self.__meta.name}:manager`,
-          'AposPagesManager',
+          self.getComponentName('managerModal', 'AposPagesManager'),
           { moduleName: self.__meta.name }
         );
       },
       addEditorModal() {
         self.apos.modal.add(
           `${self.__meta.name}:editor`,
-          'AposDocEditor',
+          self.getComponentName('insertModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },

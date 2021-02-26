@@ -217,7 +217,7 @@ module.exports = {
       addManagerModal() {
         self.apos.modal.add(
           `${self.__meta.name}:manager`,
-          'AposMediaManager',
+          self.getComponentName('managerModal', 'AposMediaManager'),
           { moduleName: self.__meta.name }
         );
       }
