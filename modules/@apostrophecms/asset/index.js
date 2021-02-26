@@ -319,13 +319,15 @@ module.exports = {
         return options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
       },
       // Returns a unique identifier for the current version of the
-      // codebase (the current release). Checks for APOS_RELEASE_ID (for custom cases),
+      // codebase (the current release). Checks for a release-id file
+      // (ideal for webpack which can create such a file in a build step),
       // HEROKU_RELEASE_VERSION (for Heroku), PLATFORM_TREE_ID (for platform.sh),
       // a directory component containing at least YYYY-MM-DD (for stagecoach),
       // and finally the git hash, if the project root is a git checkout (useful when
       // debugging production builds locally, and some people do deploy this way).
       //
-      // If none of these are found, throws an error demanding that APOS_RELEASE_ID be set.
+      // If none of these are found, throws an error demanding that APOS_RELEASE_ID
+      // or release-id be set up.
       //
       // TODO: auto-detect more cases, such as Azure app service. In the meantime
       // you can set APOS_RELEASE_ID from whatever you have before running Apostrophe.
@@ -336,6 +338,11 @@ module.exports = {
         const viaEnv = process.env.APOS_RELEASE_ID || process.env.HEROKU_RELEASE_VERSION || process.env.PLATFORM_TREE_ID;
         if (viaEnv) {
           return viaEnv;
+        }
+        try {
+          return fs.readFileSync(`${self.apos.rootDir}/release-id`, 'utf8').trim();
+        } catch (e) {
+          // OK, consider fallbacks instead
         }
         const realPath = fs.realpathSync(self.apos.rootDir);
         // Stagecoach and similar: find a release timestamp in the path and use that
@@ -351,8 +358,8 @@ module.exports = {
         } catch (e) {
           throw new Error(`When running in production you must set the APOS_RELEASE_ID
 environment variable to a short, unique string identifying this particular
-release of the application. Apostrophe will also autodetect
-HEROKU_RELEASE_VERSION, PLATFORM_TREE_ID or the current git commit
+release of the application, or write it to the file release-id. Apostrophe will
+also autodetect HEROKU_RELEASE_VERSION, PLATFORM_TREE_ID or the current git commit
 if your deployment is a git checkout.`);
         }
       }
