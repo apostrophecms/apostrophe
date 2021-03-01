@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.116.1 (2021-03-01)
+* Fixes page slug updated twice when committing a page move.
+
 ## 2.116.0 (2021-02-25)
 * Eliminated 75% of database operations required to track attachments referenced in a document when inserted or updated. This yields a significant performance boost in very large databases.
 * `skipAttachments` option added for `insert` and `update` operations in those situations where this is not enough and you are absolutely certain there can never be an attachment in the schema or in a widget schema present in the document, not even via an area that is only defined in a template.
