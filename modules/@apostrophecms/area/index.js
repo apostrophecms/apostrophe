@@ -119,7 +119,7 @@ module.exports = {
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %}` and `{% singleton %}`
       // custom tags.
-      async renderArea(req, area, context) {
+      async renderArea(req, area, _with) {
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }
@@ -153,7 +153,7 @@ module.exports = {
           field,
           options,
           choices,
-          context,
+          _with,
           canEdit
         });
       },
@@ -219,7 +219,7 @@ module.exports = {
       },
       // Sanitize an input array of items intended to become
       // the `items` property of an area. Invokes the
-      // sanitize method for each widget's manager. Widgets
+      // sanitize method for each widget manager. Widgets
       // with no manager are discarded. Invoked for you by
       // the routes that save areas and by the implementation
       // of the `area` schema field type.

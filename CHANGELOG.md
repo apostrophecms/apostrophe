@@ -1,7 +1,18 @@
 # Changelog
 
-## 3.0.0-alpha.5
+## 3.0.0-alpha.5 - Unreleased
+
+* Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
+* Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
+
+## 3.0.0-alpha.4.2 - 2021-01-27
+
 * The `label` option is no longer required for widget type modules. This was already true for piece type and page type modules.
+* Ability to namespace asset builds. Do not push asset builds to uploadfs unless specified.
+
+## 3.0.0-alpha.4.1
+
+* Hotfix: the asset module now looks for a `./release-id` file (relative to the project), not a `./data/release-id` file, because `data` is not a deployed folder and the intent of `release-id` is to share a common release identifier between the asset build step and the deployed instances.
 
 ### Breaking changes
 

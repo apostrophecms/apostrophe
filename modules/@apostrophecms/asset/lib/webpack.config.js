@@ -9,7 +9,9 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
   BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 }
 
-module.exports = ({ importFile, modulesDir, outputPath, outputFilename }, apos) => {
+module.exports = ({
+  importFile, modulesDir, outputPath, outputFilename
+}, apos) => {
   const tasks = [ scss, vue ].map(task =>
     task(
       {

@@ -520,15 +520,6 @@ module.exports = {
         }
         return self.apos.migration.addSortify(self.__meta.name, { type: self.name }, field);
       },
-      getBrowserData(req) {
-        const data = _.pick(options, 'name', 'label', 'pluralLabel');
-        data.action = self.action;
-        data.schema = self.allowedSchema(req);
-        data.localized = self.isLocalized();
-        data.autopublish = self.options.autopublish;
-        return data;
-      },
-
       // Convert the untrusted data supplied in `input` via the schema and
       // update the doc object accordingly.
       //
@@ -798,6 +789,30 @@ module.exports = {
             to[field.name] = from[field.name];
           }
         }
+      }
+    };
+  },
+  extendMethods(self, options) {
+    return {
+      getBrowserData(_super, req) {
+        const initialBrowserOptions = _super(req);
+
+        const {
+          name, label, pluralLabel
+        } = options;
+
+        const browserOptions = {
+          ...initialBrowserOptions,
+          name,
+          label,
+          pluralLabel
+        };
+        browserOptions.action = self.action;
+        browserOptions.schema = self.allowedSchema(req);
+        browserOptions.localized = self.isLocalized();
+        browserOptions.autopublish = self.options.autopublish;
+
+        return browserOptions;
       }
     };
   },
