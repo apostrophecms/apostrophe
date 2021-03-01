@@ -44,7 +44,78 @@ module.exports = {
         }
       ]
     },
-    defaultOptions: {}
+    defaultOptions: {},
+    components: {
+      widgetEditor: 'AposRichTextWidgetEditor',
+      widget: 'AposRichTextWidget'
+    },
+    editorTools: {
+      styles: {
+        component: 'AposTiptapStyles',
+        label: 'Styles'
+      },
+      '|': { component: 'AposTiptapDivider' },
+      bold: {
+        component: 'AposTiptapButton',
+        label: 'Bold',
+        icon: 'format-bold-icon'
+      },
+      italic: {
+        component: 'AposTiptapButton',
+        label: 'Italic',
+        icon: 'format-italic-icon'
+      },
+      underline: {
+        component: 'AposTiptapButton',
+        label: 'Underline',
+        icon: 'format-underline-icon'
+      },
+      horizontal_rule: {
+        component: 'AposTiptapButton',
+        label: 'Horizontal Rule',
+        icon: 'minus-icon'
+      },
+      link: {
+        component: 'AposTiptapLink',
+        label: 'Link',
+        icon: 'link-icon'
+      },
+      bullet_list: {
+        component: 'AposTiptapButton',
+        label: 'Bulleted List',
+        icon: 'format-list-bulleted-icon'
+      },
+      ordered_list: {
+        component: 'AposTiptapButton',
+        label: 'Ordered List',
+        icon: 'format-list-numbered-icon'
+      },
+      strike: {
+        component: 'AposTiptapButton',
+        label: 'Strike',
+        icon: 'format-strikethrough-variant-icon'
+      },
+      blockquote: {
+        component: 'AposTiptapButton',
+        label: 'Blockquote',
+        icon: 'format-quote-close-icon'
+      },
+      code_block: {
+        component: 'AposTiptapButton',
+        label: 'Code Block',
+        icon: 'code-tags-icon'
+      },
+      undo: {
+        component: 'AposTiptapButton',
+        label: 'Undo',
+        icon: 'undo-icon'
+      },
+      redo: {
+        component: 'AposTiptapButton',
+        label: 'Redo',
+        icon: 'redo-icon'
+      }
+    }
   },
   beforeSuperClass(self, options) {
     options.defaultOptions = {
@@ -252,83 +323,10 @@ module.exports = {
       getBrowserData(_super, req) {
         const initialData = _super(req);
 
-        const rteData = {
-          components: {
-            widgetEditor: 'AposRichTextWidgetEditor',
-            widget: 'AposRichTextWidget'
-          },
-          tools: {
-            styles: {
-              component: 'AposTiptapStyles',
-              label: 'Styles'
-            },
-            '|': { component: 'AposTiptapDivider' },
-            bold: {
-              component: 'AposTiptapButton',
-              label: 'Bold',
-              icon: 'format-bold-icon'
-            },
-            italic: {
-              component: 'AposTiptapButton',
-              label: 'Italic',
-              icon: 'format-italic-icon'
-            },
-            underline: {
-              component: 'AposTiptapButton',
-              label: 'Underline',
-              icon: 'format-underline-icon'
-            },
-            horizontal_rule: {
-              component: 'AposTiptapButton',
-              label: 'Horizontal Rule',
-              icon: 'minus-icon'
-            },
-            link: {
-              component: 'AposTiptapLink',
-              label: 'Link',
-              icon: 'link-icon'
-            },
-            bullet_list: {
-              component: 'AposTiptapButton',
-              label: 'Bulleted List',
-              icon: 'format-list-bulleted-icon'
-            },
-            ordered_list: {
-              component: 'AposTiptapButton',
-              label: 'Ordered List',
-              icon: 'format-list-numbered-icon'
-            },
-            strike: {
-              component: 'AposTiptapButton',
-              label: 'Strike',
-              icon: 'format-strikethrough-variant-icon'
-            },
-            blockquote: {
-              component: 'AposTiptapButton',
-              label: 'Blockquote',
-              icon: 'format-quote-close-icon'
-            },
-            code_block: {
-              component: 'AposTiptapButton',
-              label: 'Code Block',
-              icon: 'code-tags-icon'
-            },
-            undo: {
-              component: 'AposTiptapButton',
-              label: 'Undo',
-              icon: 'undo-icon'
-            },
-            redo: {
-              component: 'AposTiptapButton',
-              label: 'Redo',
-              icon: 'redo-icon'
-            }
-          }
-        };
-
         const finalData = {
           ...initialData,
-          ...rteData,
+          components: options.components,
+          tools: options.editorTools,
           defaultOptions: options.defaultOptions
         };
         return finalData;
