@@ -426,8 +426,7 @@ module.exports = {
 
       // Extend this method to return the appropriate browser data for
       // your module. If you want browser data for the given req, return
-      // an object. That object is merged with the `browser` option passed
-      // to your module, then assigned to `apos.modules['your-module-name']`
+      // an object. That object is assigned to `apos.modules['your-module-name']`
       // in the browser. Do not return huge data structures, as this will impact
       // page load time and performance.
       //
@@ -443,8 +442,7 @@ module.exports = {
       // you must explicitly opt in.
 
       getBrowserData(req) {
-        self.options.browser = self.options.browser || {};
-        return self.options.browser;
+        return {};
       },
 
       // Transform a route name into a route URL. If the name begins with `/` it is understood to
@@ -509,12 +507,11 @@ module.exports = {
         return _.get(self.options, dotPathOrArray, def);
       },
 
-      // If `name` is `manager` and `options.browser.components.manager` is set,
+      // If `name` is `manager` and `options.components.manager` is set,
       // return that string, otherwise return `def`. This is used to decide what
       // Vue component to instantiate on the browser side.
-
       getComponentName(name, def) {
-        return _.get(self.options, `browser.components.${name}`, def);
+        return _.get(self.options, `components.${name}`, def);
       },
 
       // Send email. Renders an HTML email message using the template

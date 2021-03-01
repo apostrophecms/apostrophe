@@ -538,16 +538,20 @@ module.exports = {
         const widgetManagers = {};
         const widgetIsContextual = {};
         const contextualWidgetDefaultData = {};
+
         _.each(self.widgetManagers, function (manager, name) {
-          widgets[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widget) || 'AposWidget';
-          widgetEditors[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widgetEditor) || 'AposWidgetEditor';
+          const browserData = manager.getBrowserData(req);
+
+          widgets[name] = (browserData && browserData.components && browserData.components.widget) || 'AposWidget';
+          widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
           contextualWidgetDefaultData[name] = manager.options.defaultData;
         });
+
         return {
           components: {
-            editor: 'AposAreaEditor' || (options.browser && options.browser.components && options.browser.components.editor),
+            editor: 'AposAreaEditor',
             widgets,
             widgetEditors
           },
