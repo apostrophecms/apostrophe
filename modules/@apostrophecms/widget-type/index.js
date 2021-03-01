@@ -135,12 +135,13 @@ module.exports = {
 
     self.template = options.template || 'widget';
 
+    self.name = self.options.name || self.__meta.name.replace(/-widget$/, '');
+
     if (!self.options.label) {
-      throw new Error('You must specify the label option when subclassing @apostrophecms/widget-type in ' + self.__meta.name);
+      self.options.label = _.startCase(self.name);
     }
 
     self.label = self.options.label;
-    self.name = self.options.name || self.__meta.name.replace(/-widget$/, '');
 
     self.composeSchema();
 
