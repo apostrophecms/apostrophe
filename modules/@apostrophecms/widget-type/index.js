@@ -261,7 +261,9 @@ module.exports = {
         // Shut off relationships because we already did them and the query would try to do them
         // again based on `type`, which isn't really a doc type.
         const query = self.apos.doc.find(req).relationships(false);
-        // Call .after with our own results
+        // Do everything we'd do if the query had fetched the widgets
+        // as docs
+        await query.finalize();
         await query.after(widgets);
       },
 

@@ -256,54 +256,6 @@ module.exports = {
         });
       },
 
-      compare(old, current) {
-        let oldContent = old.content;
-        if (oldContent === undefined) {
-          oldContent = '';
-        }
-        let currentContent = current.content;
-        if (currentContent === undefined) {
-          currentContent = '';
-        }
-        const diff = jsDiff.diffSentences(self.apos.util.htmlToPlaintext(oldContent).replace(/\s+/g, ' '), self.apos.util.htmlToPlaintext(currentContent).replace(/\s+/g, ' '), { ignoreWhitespace: true });
-
-        const changes = _.map(_.filter(diff, function (diffChange) {
-          return diffChange.added || diffChange.removed;
-        }), function (diffChange) {
-          // Convert a jsDiff change object to an
-          // apos versions change object
-          if (diffChange.removed) {
-            return {
-              action: 'remove',
-              text: diffChange.value,
-              field: {
-                type: 'string',
-                label: 'Content'
-              }
-            };
-          } else {
-            return {
-              action: 'add',
-              text: diffChange.value,
-              field: {
-                type: 'string',
-                label: 'Content'
-              }
-            };
-          }
-        });
-
-        if (!changes.length) {
-          // Well, something changed! Presumably the formatting.
-          return [ {
-            action: 'change',
-            field: { label: 'Formatting' }
-          } ];
-        }
-
-        return changes;
-      },
-
       isEmpty(widget) {
         const text = self.apos.util.htmlToPlaintext(widget.content || '');
         return !text.trim().length;
