@@ -435,7 +435,7 @@ module.exports = {
 
       addStandardFilters(env) {
 
-        // Format the given date with the given momentjs
+        // Format the given date with the given moment.js
         // format string.
 
         env.addFilter('date', function (date, format) {
@@ -657,8 +657,7 @@ module.exports = {
         try {
           content = await module.render(req, template, args);
         } catch (e) {
-          // The page template
-          // threw an exception. Log where it
+          // The page template threw an exception. Log where it
           // occurred for easier debugging
           return error(e, 'template');
         }
