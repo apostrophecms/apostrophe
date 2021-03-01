@@ -10,13 +10,13 @@
 * The `label` option is no longer required for widget type modules. This was already true for piece type and page type modules.
 * Ability to namespace asset builds. Do not push asset builds to uploadfs unless specified.
 
-## 3.0.0-alpha.4.1
-
-* Hotfix: the asset module now looks for a `./release-id` file (relative to the project), not a `./data/release-id` file, because `data` is not a deployed folder and the intent of `release-id` is to share a common release identifier between the asset build step and the deployed instances.
-
 ### Breaking changes
 
 * Removes the `browser` module option, which was only used by the rich text widget in core. All browser data should now be added by extending or overriding `getBrowserData` in a module. Also updates `getComponentName` to reference `options.components` instead of `options.browser.components`.
+
+## 3.0.0-alpha.4.1
+
+* Hotfix: the asset module now looks for a `./release-id` file (relative to the project), not a `./data/release-id` file, because `data` is not a deployed folder and the intent of `release-id` is to share a common release identifier between the asset build step and the deployed instances.
 
 ## 3.0.0-alpha.4
 
