@@ -4,6 +4,7 @@
 
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
 * Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
+* Removes the `createControls`, `editControls`, and `name` options.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
 
@@ -1062,7 +1063,7 @@ Thanks to Michelin for their support of this work.
 All tests passing.
 
 * Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
-* The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
+* The `createControls` option of the `apostrophe-pages` module is now respected properly.
 
 ## 2.29.1
 
