@@ -3,22 +3,6 @@
 // module. Buttons can also be grouped into dropdown menus and restricted to those with
 // particular permissions. [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html) automatically
 // takes advantage of this module.
-//
-// The admin bar slides out on all pages by default. It's possible to modify this behavior
-// by adding one of the following options in app.js:
-// ```
-// modules: {
-//   '@apostrophecms/admin-bar': {
-//     openOnLoad: false,
-//     openOnHomepageLoad: true,
-//     closeDelay: 5000
-//   },
-//   .... more modules ...
-// }
-// ```
-// In the above example, the admin bar stays closed on all sub pages of the site, but opens on the
-// homepage and stays open for 5 seconds (default is 3 seconds).
-// `closeDelay` is a global configuration and changes both the homepage and all subpages.
 
 const _ = require('lodash');
 const cuid = require('cuid');
@@ -257,7 +241,6 @@ module.exports = {
         if (!items.length) {
           return false;
         }
-        const closeDelay = self.options.closeDelay;
         const context = req.data.piece || req.data.page;
         // Page caching is never desirable when possibly
         // editing that page
@@ -278,9 +261,6 @@ module.exports = {
         return {
           items: items,
           components: { the: 'TheAposAdminBar' },
-          openOnLoad: !!(typeof self.options.openOnLoad === 'undefined' || self.options.openOnLoad),
-          openOnHomepageLoad: !!(typeof self.options.openOnHomepageLoad === 'undefined' || self.options.openOnHomepageLoad),
-          closeDelay: typeof closeDelay === 'number' ? closeDelay : 3000,
           context: context && {
             _id: context._id,
             title: context.title,

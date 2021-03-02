@@ -37,37 +37,6 @@ module.exports = {
 
     self.piecesFilters = self.options.piecesFilters || [];
 
-    self.contextMenu = options.contextMenu || [
-      {
-        action: 'create-' + self.piecesCssName,
-        label: 'Create ' + self.pieces.label
-      },
-      {
-        action: 'edit-' + self.piecesCssName,
-        label: 'Update ' + self.pieces.label,
-        value: true
-      },
-      {
-        action: 'manage-' + self.piecesCssName,
-        label: 'Manage ' + self.pieces.pluralLabel
-      },
-      {
-        action: 'versions-' + self.piecesCssName,
-        label: self.pieces.label + ' Versions',
-        value: true
-      },
-      {
-        action: 'trash-' + self.piecesCssName,
-        label: 'Trash ' + self.pieces.label,
-        value: true
-      }
-    ];
-
-    self.publishMenu = options.publishMenu || [ {
-      action: 'publish-' + self.piecesCssName,
-      label: 'Publish ' + self.pieces.label,
-      value: true
-    } ];
     self.enableAddUrlsToPieces();
   },
   methods(self, options) {
@@ -86,20 +55,6 @@ module.exports = {
       // the pieces, with support for pagination.
 
       async indexPage(req) {
-
-        if (self.pieces.contextual) {
-          req.contextMenu = _.filter(self.contextMenu, function (item) {
-            // Items specific to a particular piece don't make sense
-            // on the index page
-            return !item.value; // Add the standard items, they have to be available sometime
-            // when working with an index page
-          }).concat(self.apos.page.options.contextMenu);
-          req.publishMenu = _.filter(self.publishMenu, function (item) {
-            // Items specific to a particular piece don't make sense
-            // on the index page
-            return !item.value;
-          });
-        }
 
         const query = self.indexQuery(req);
 
@@ -151,15 +106,10 @@ module.exports = {
 
       // Invoked to display a piece by itself, a "show page." Renders
       // the `show.html` template after setting `data.piece`.
-      //
-      // If the pieces module is set `contextual: true`, the context menu
-      // (the gear at lower left) is updated appropriately if the user has
-      // editing permissions.
 
       async showPage(req) {
 
-        // We'll try to find the piece as an ordinary reader and, if the piece type
-        // is contextual, we'll also try it as an editor if needed
+        // We'll try to find the piece as an ordinary reader
 
         let doc;
         let previous;
@@ -173,26 +123,7 @@ module.exports = {
           req.notFound = true;
           return;
         }
-        if (self.pieces.contextual) {
-          req.contextMenu = _.map(self.contextMenu, function (item) {
-            if (item.value) {
-              // Don't modify a shared item, race conditions
-              // could give us the wrong ids
-              item = _.clone(item);
-              item.value = doc._id;
-            }
-            return item;
-          });
-          req.publishMenu = _.map(self.publishMenu, function (item) {
-            if (item.value) {
-              // Don't modify a shared item, race conditions
-              // could give us the wrong ids
-              item = _.clone(item);
-              item.value = doc._id;
-            }
-            return item;
-          });
-        }
+
         self.setTemplate(req, 'show');
         req.data.piece = doc;
         req.data.previous = previous;
@@ -205,6 +136,7 @@ module.exports = {
         }
 
         async function findAsEditor() {
+          // TODO: Is `contextual` still relevant?
           if (doc || !req.user || !self.pieces.contextual) {
             return;
           }
@@ -364,6 +296,7 @@ module.exports = {
     return {
       getBrowserData(_super, req) {
         const data = _super(req);
+        // TODO: Is `contextual` still relevant?
         if (self.pieces.options.contextual && req.data.piece) {
           return {
             ...data,

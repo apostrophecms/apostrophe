@@ -529,6 +529,8 @@ export default {
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
+        // TODO: Add a check if we should redirect on creation based on the doc
+        // type.
         if (doc._url && (!this.docId)) {
           apos.bus.$emit('set-context', {
             mode: savingDraft ? 'draft' : null,

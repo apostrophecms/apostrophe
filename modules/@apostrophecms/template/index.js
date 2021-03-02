@@ -435,7 +435,7 @@ module.exports = {
 
       addStandardFilters(env) {
 
-        // Format the given date with the given momentjs
+        // Format the given date with the given moment.js
         // format string.
 
         env.addFilter('date', function (date, format) {
@@ -657,8 +657,7 @@ module.exports = {
         try {
           content = await module.render(req, template, args);
         } catch (e) {
-          // The page template
-          // threw an exception. Log where it
+          // The page template threw an exception. Log where it
           // occurred for easier debugging
           return error(e, 'template');
         }
@@ -717,7 +716,7 @@ module.exports = {
 
       // Use this method to provide an async component name that will be invoked at the point
       // in the page layout identified by the string `location`. Standard locations
-      // are `head`, `body`, `main` and `contextMenu`.
+      // are `head`, `body`, and `main`.
       //
       //  The page layout, template or outerLayout must contain a corresponding
       // `{% component '@apostrophecms/template:inject', 'location', 'prepend' %}` call, with the same location,
@@ -740,7 +739,7 @@ module.exports = {
 
       // Use this method to provide an async component name that will be invoked at the point
       // in the page layout identified by the string `location`. Standard locations
-      // are `head`, `body`, `main` and `contextMenu`.
+      // are `head`, `body`, and `main`.
       //
       //  The page layout, template or outerLayout must contain a corresponding
       // `apos.template.prepended('location')` call, with the same location, to

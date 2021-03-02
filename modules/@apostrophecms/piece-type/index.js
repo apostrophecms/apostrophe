@@ -4,7 +4,6 @@ module.exports = {
   extend: '@apostrophecms/doc-type',
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
-    manageViews: [ 'list' ],
     perPage: 10,
     quickCreate: true
     // By default there is no public REST API, but you can configure a
@@ -37,14 +36,12 @@ module.exports = {
         },
         visibility: {
           label: 'Visibility'
-        },
+        }
         // TODO: Update this to identify if there's a piece page for the type.
-        ...(self.options.contextual ? {
-          _url: {
-            label: 'Link',
-            component: 'AposCellLink'
-          }
-        } : {})
+        // _url: {
+        //   label: 'Link',
+        //   component: 'AposCellLink'
+        // }
       }
     };
   },
@@ -133,8 +130,6 @@ module.exports = {
     }
   },
   init(self, options) {
-    self.contextual = options.contextual;
-
     if (!options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
@@ -147,7 +142,6 @@ module.exports = {
     self.name = options.name;
     self.label = options.label;
     self.pluralLabel = options.pluralLabel;
-    self.manageViews = options.manageViews;
 
     self.composeFilters();
     self.composeColumns();
@@ -745,6 +739,7 @@ module.exports = {
           {
             type: 'major',
             label: 'New ' + self.options.label,
+            // TODO: fully deprecate `insertViaUpload`
             action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
             uploadable: self.options.insertViaUpload
           },
@@ -839,7 +834,6 @@ module.exports = {
         // Options specific to pieces and their manage modal
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
-        browserOptions.contextual = self.contextual;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = self.options.quickCreate;
