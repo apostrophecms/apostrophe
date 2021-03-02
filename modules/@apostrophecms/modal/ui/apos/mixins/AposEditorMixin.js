@@ -80,7 +80,7 @@ export default {
             }
             // Let pane switching effects settle first
             this.$nextTick(() => {
-              this.getAposSchema(field).scrollFieldIntoView(field.name);
+              // this.getAposSchema(field).scrollFieldIntoView(field.name);
             });
           }
         }

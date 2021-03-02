@@ -83,7 +83,8 @@ export default {
       schemaReady: false,
       next: {
         hasErrors: false,
-        data: {}
+        data: {},
+        fieldErrors: {}
       },
       fieldState: {},
       fieldComponentMap: window.apos.schema.components.fields || {}
@@ -105,6 +106,12 @@ export default {
     }
   },
   watch: {
+    // triggerValidation(newVal) {
+    //   if (newVal) {
+    //     console.log('how many run');
+    //     this.updateNextAndEmit();
+    //   }
+    // },
     fieldState: {
       deep: true,
       handler() {
@@ -139,7 +146,8 @@ export default {
       this.schemaReady = false;
       const next = {
         hasErrors: false,
-        data: {}
+        data: {},
+        fieldErrors: {}
       };
 
       const fieldState = {};
@@ -177,6 +185,13 @@ export default {
 
       const oldHasErrors = this.next.hasErrors;
       this.next.hasErrors = false;
+
+      console.log(this.fieldState);
+
+      this.next.fieldErrors = this.filterObject(this.fieldState, (item) => {
+        return item.error;
+      });
+      // console.log(this.next.fieldErrors);
       let changeFound = false;
 
       this.schema.forEach(field => {
@@ -211,6 +226,18 @@ export default {
       // in a v-for. We know there is only one in this case
       // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
       this.$refs[fieldName][0].$el.scrollIntoView();
+    },
+    filterObject(obj, predicate) {
+      const result = {};
+      let key;
+
+      for (key in obj) {
+        if (obj[key] && predicate(obj[key])) {
+          result[key] = obj[key];
+        }
+      }
+
+      return result;
     }
   }
 };

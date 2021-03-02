@@ -37,6 +37,7 @@
         <AposModalTabs
           v-if="tabs.length > 0"
           :current="currentTab" :tabs="tabs"
+          :errors="docOtherFields.fieldErrors"
           @select-tab="switchPane"
         />
       </AposModalRail>
@@ -44,23 +45,23 @@
     <template #main>
       <AposModalBody>
         <template #bodyMain>
-          <AposModalTabsBody>
-            <div class="apos-doc-editor__body">
-              <AposSchema
-                v-if="docReady"
-                :schema="schemaOtherFields"
-                :current-fields="currentFields"
-                :trigger-validation="triggerValidation"
-                :utility-rail="false"
-                :following-values="followingValues('other')"
-                :doc-id="docId"
-                :value="docOtherFields"
-                @input="updateDocOtherFields"
-                :server-errors="serverErrors"
-                ref="otherSchema"
-              />
-            </div>
-          </AposModalTabsBody>
+          <div v-if="docReady" class="apos-doc-editor__body">
+            <!-- v-show="tab.name === currentTab" -->
+            <AposSchema
+              v-for="(tab, index) in tabs"
+              :key="index"
+              :schema="tab.schema"
+              :current-fields="tab.fields"
+              :trigger-validation="triggerValidation"
+              :utility-rail="false"
+              :following-values="followingValues('other')"
+              :doc-id="docId"
+              :value="docOtherFields"
+              @input="updateDocOtherFields"
+              :server-errors="serverErrors"
+              ref="otherSchema"
+            />
+          </div>
         </template>
       </AposModalBody>
     </template>
@@ -131,8 +132,10 @@ export default {
         hasErrors: false
       },
       docOtherFields: {
+        tabs: {},
         data: {},
-        hasErrors: false
+        hasErrors: false,
+        fieldErrors: {}
       },
       docReady: false,
       modal: {
@@ -170,7 +173,8 @@ export default {
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
-            fields: [ field.name ]
+            fields: [ field.name ],
+            errors: {}
           };
         } else if (field.group) {
           groupSet[field.group.name].fields.push(field.name);
@@ -191,6 +195,16 @@ export default {
         if (key !== 'utility') {
           const temp = { ...this.groups[key] };
           temp.name = key;
+          temp.schema = [];
+          temp.errors = [];
+          temp.fields.forEach(field => {
+            temp.schema.push(this.schema.filter((schemaElement) => {
+              return schemaElement.name === field;
+            })[0]);
+            if (this.docOtherFields.fieldErrors[field]) {
+              temp.errors.push(field);
+            }
+          });
           tabs.push(temp);
         }
       };
@@ -263,6 +277,7 @@ export default {
         }
       }
     },
+
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
         this.currentTab = this.tabs[0].name;
@@ -600,7 +615,24 @@ export default {
       this.docUtilityFields = value;
     },
     updateDocOtherFields(value) {
-      this.docOtherFields = value;
+      // console.log('fire');
+      // clear out old errors from this schema
+      // any new/existing ones will be re populated
+      for (const key in value.data) {
+        if (this.docOtherFields.fieldErrors[key]) {
+          delete this.docOtherFields.fieldErrors[key];
+        }
+      }
+      // console.log(value);
+      this.docOtherFields.data = {
+        ...this.docOtherFields.data,
+        ...value.data
+      };
+      this.docOtherFields.fieldErrors = {
+        ...this.docOtherFields.fieldErrors,
+        ...value.fieldErrors
+      };
+      this.docOtherFields.hasErrors = !(Object.keys(this.docOtherFields.fieldErrors).length === 0);
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {

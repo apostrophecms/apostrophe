@@ -11,6 +11,15 @@
           @click="selectTab"
         >
           {{ tab.label }}
+          <span v-if="tab.errors.length">
+            {{ tab.errors.length }}
+            <span v-if="tab.errors.length > 1">
+              Errors
+            </span>
+            <span v-else>
+              Error
+            </span>
+          </span>
         </button>
       </li>
     </ul>
