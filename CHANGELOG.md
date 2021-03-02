@@ -4,6 +4,8 @@
 
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
 * Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
+* Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
+* Removes admin bar module options related to 2.x slide-out UI: `openOnLoad`, `openOnHomepageLoad`, `closeDelay`.
 * Removes the `createControls`, `editControls`, and `name` options.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
