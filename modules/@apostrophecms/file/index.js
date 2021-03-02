@@ -10,7 +10,6 @@ const _ = require('lodash');
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
-    name: '@apostrophecms/file',
     label: 'File',
     alias: 'file',
     quickCreate: false,

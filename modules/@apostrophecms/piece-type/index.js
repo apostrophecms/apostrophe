@@ -130,6 +130,7 @@ module.exports = {
     }
   },
   init(self, options) {
+    // console.info('🧿', self.name, options.name, self.__meta.name);
     if (!options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
@@ -669,7 +670,7 @@ module.exports = {
             type: 'major',
             label: 'New ' + self.options.label,
             // TODO: fully deprecate `insertViaUpload`
-            action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
+            action: self.options.insertViaUpload ? 'upload-' + self.name : 'create-' + self.name,
             uploadable: self.options.insertViaUpload
           },
           {
@@ -690,7 +691,7 @@ module.exports = {
           {
             type: 'major',
             label: 'Add ' + self.options.label,
-            action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
+            action: self.options.insertViaUpload ? 'upload-' + self.name : 'create-' + self.name,
             uploadable: self.options.insertViaUpload
           }
         ];

@@ -38,7 +38,6 @@ const _ = require('lodash');
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
-    name: '@apostrophecms/global',
     alias: 'global',
     label: 'Global',
     pluralLabel: 'Global',

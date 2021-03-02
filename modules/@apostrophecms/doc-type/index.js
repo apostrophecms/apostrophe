@@ -75,6 +75,7 @@ module.exports = {
     if (!self.options.name) {
       self.options.name = self.__meta.name;
     }
+    console.info('🧫', self.__meta.name, options.name);
     self.name = options.name;
     // Each doc-type has an array of fields which will be updated
     // if the document is moved to the trash. In most cases 'slug'
@@ -330,7 +331,7 @@ module.exports = {
           criteria,
           options
         });
-        query.type(self.options.name);
+        query.type(self.name);
         return query;
       },
       // Returns a new instance of the doc type, with the appropriate default

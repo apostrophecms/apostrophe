@@ -37,7 +37,6 @@ module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
     alias: 'user',
-    name: '@apostrophecms/user',
     label: 'User',
     pluralLabel: 'Users',
     quickCreate: false,
