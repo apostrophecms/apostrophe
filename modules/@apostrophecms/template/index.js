@@ -716,7 +716,7 @@ module.exports = {
 
       // Use this method to provide an async component name that will be invoked at the point
       // in the page layout identified by the string `location`. Standard locations
-      // are `head`, `body`, `main` and `contextMenu`.
+      // are `head`, `body`, and `main`.
       //
       //  The page layout, template or outerLayout must contain a corresponding
       // `{% component '@apostrophecms/template:inject', 'location', 'prepend' %}` call, with the same location,
@@ -739,7 +739,7 @@ module.exports = {
 
       // Use this method to provide an async component name that will be invoked at the point
       // in the page layout identified by the string `location`. Standard locations
-      // are `head`, `body`, `main` and `contextMenu`.
+      // are `head`, `body`, and `main`.
       //
       //  The page layout, template or outerLayout must contain a corresponding
       // `apos.template.prepended('location')` call, with the same location, to

@@ -555,7 +555,7 @@ module.exports = {
       // return that name unless `options.components[name]` has been set to
       // an alternate name. Overriding keys in the `components` option
       // allows modules to provide alternative functionality for standard
-      // components while maintaining readabile Vue code via the
+      // components while maintaining readable Vue code via the
       // <component :is="..."> syntax.
 
       getVueComponentName(name) {

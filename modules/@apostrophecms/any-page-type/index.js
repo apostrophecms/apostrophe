@@ -65,7 +65,7 @@ module.exports = {
           }
         },
 
-        // `.ancestors(true)` retrieves the ancestors of each returned page and assign sthem
+        // `.ancestors(true)` retrieves the ancestors of each returned page and assigns them
         // to the `._ancestors` property. The home page is `._ancestors[0]`. The
         // page itself is not included in its own `._ancestors` array.
         //
