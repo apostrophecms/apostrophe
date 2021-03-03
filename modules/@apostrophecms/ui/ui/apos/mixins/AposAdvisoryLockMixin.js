@@ -132,6 +132,10 @@ export default {
 
     // Await this method when you are ready to release the lock. If the lock was never
     // obtained, this method does nothing.
+    //
+    // This method is automatically called when your component is destroyed. Calling it
+    // manually is only necessary if you lock and unlock various documents over the
+    // lifetime of the component.
     async unlock() {
       if (this.locked) {
         clearTimeout(this.lockTimeout);
