@@ -92,6 +92,7 @@ import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModa
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
@@ -102,7 +103,8 @@ export default {
     AposModalTabsMixin,
     AposModalModifiedMixin,
     AposEditorMixin,
-    AposPublishMixin
+    AposPublishMixin,
+    AposAdvisoryLockMixin
   ],
   props: {
     moduleName: {
@@ -145,10 +147,7 @@ export default {
       schemaOtherFields: [],
       triggerValidation: false,
       original: null,
-      published: null,
-      locked: false,
-      lockTimeout: null,
-      lockRefreshing: null
+      published: null
     };
   },
   computed: {
@@ -277,55 +276,7 @@ export default {
       let docData;
       const getOnePath = `${this.moduleAction}/${this.docId}`;
       try {
-        try {
-          await apos.http.patch(getOnePath, {
-            body: {
-              _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
-                lock: true
-              }
-            },
-            draft: true
-          });
-          this.markLockedAndScheduleRefresh();
-        } catch (e) {
-          if (e.body && e.body && e.body.name === 'locked') {
-            // We do not ask before busting our own advisory lock.
-            // We used to do this in A2 but end users told us they hated it and
-            // were constantly confused by it. This is because there is no
-            // way to guarantee a lock is dropped when leaving the page
-            // in edit mode. However, in the rare case where the "other tab"
-            // getting its lock busted really is another tab, we do notify
-            // the user there.
-            if (e.body.data.me ||
-              await apos.confirm({
-                heading: 'Another User Is Editing',
-                description: `${e.body.data.title} is editing that document. Do you want to take control?`
-              })
-            ) {
-              try {
-                await apos.http.patch(getOnePath, {
-                  body: {
-                    _advisoryLock: {
-                      htmlPageId: apos.adminBar.htmlPageId,
-                      lock: true,
-                      force: true
-                    }
-                  },
-                  draft: true
-                });
-                this.markLockedAndScheduleRefresh();
-              } catch (e) {
-                await apos.notify(e.message, {
-                  type: 'error'
-                });
-                this.modal.showModal = false;
-              }
-            } else {
-              this.modal.showModal = false;
-            }
-          }
-        }
+        await this.lock(getOnePath, this.docId);
         docData = await apos.http.get(getOnePath, {
           busy: true,
           qs: this.filterValues,
@@ -340,13 +291,15 @@ export default {
         });
         await this.confirmAndCancel();
       } finally {
-        if (docData.type !== this.docType) {
-          this.docType = docData.type;
+        if (docData) {
+          if (docData.type !== this.docType) {
+            this.docType = docData.type;
+          }
+          this.original = klona(docData);
+          this.docFields.data = docData;
+          this.docReady = true;
+          this.splitDoc();
         }
-        this.original = klona(docData);
-        this.docFields.data = docData;
-        this.docReady = true;
-        this.splitDoc();
       }
       try {
         if (this.manuallyPublished) {
@@ -375,74 +328,10 @@ export default {
       });
     }
   },
-  async destroyed () {
-    if (this.locked) {
-      clearTimeout(this.lockTimeout);
-      if (this.lockRefreshing) {
-        // First await the promise we held onto to make sure there is
-        // no race condition that leaves the lock in place
-        await this.lockRefreshing;
-      }
-      try {
-        await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
-          body: {
-            _advisoryLock: {
-              htmlPageId: apos.adminBar.htmlPageId,
-              lock: false
-            }
-          },
-          draft: true
-        });
-      } catch (e) {
-        // Not our concern, just being polite
-      }
-    }
-  },
   methods: {
-    markLockedAndScheduleRefresh() {
-      this.locked = true;
-      this.lockTimeout = setTimeout(this.refreshLock, 10000);
-    },
-    refreshLock() {
-      this.lockRefreshing = (async () => {
-        try {
-          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
-            body: {
-              _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
-                lock: true
-              }
-            },
-            draft: true
-          });
-          // Reset this each time to avoid various race conditions
-          this.lockTimeout = setTimeout(this.refreshLock, 10000);
-        } catch (e) {
-          if (e.body && e.body.name && (e.body.name === 'locked')) {
-            await this.showLockedError(e);
-            this.modal.showModal = false;
-          }
-          // Other errors on this are not critical
-        }
-        this.lockRefreshing = null;
-      })();
-    },
-    async showLockedError(e) {
-      if (e.body.data.me) {
-        // We use an alert because it is a clear interruption of their
-        // work, and because a notification would appear in both windows
-        // if control was taken by the same user in another window,
-        // which would be confusing.
-        await apos.alert({
-          heading: 'You Took Control in Another Window',
-          description: 'You took control of this document in another tab or window.'
-        });
-      } else {
-        await apos.alert({
-          heading: 'Another User Took Control',
-          description: 'Another user took control of the document.'
-        });
-      }
+    // Implementing a method expected by the advisory lock mixin
+    lockNotAvailable() {
+      this.modal.showModal = false;
     },
     submit() {
       this.save({
@@ -474,11 +363,7 @@ export default {
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
           requestMethod = apos.http.put;
-          // Make sure we fail if someone else took the advisory lock
-          body._advisoryLock = {
-            htmlPageId: apos.adminBar.htmlPageId,
-            lock: true
-          };
+          this.addLockToRequest(body);
         } else {
           route = this.moduleAction;
           requestMethod = apos.http.post;
