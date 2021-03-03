@@ -44,7 +44,7 @@ export default {
         this.markLockedAndScheduleRefresh();
         return true;
       } catch (e) {
-        if (this.isLockError(e)) {
+        if (this.isLockedError(e)) {
           // We do not ask before busting our own advisory lock.
           // We used to do this in A2 but end users told us they hated it and
           // were constantly confused by it. This is because there is no
@@ -90,7 +90,7 @@ export default {
     // same person (in another tab) or by someone else.
     //
     // When using `addLockToRequest` with your own API call, it is your responsibility to
-    // detect lock errors with `isLockError` and call this method. The rest of the time,
+    // detect lock errors with `isLockedError` and call this method. The rest of the time,
     // it is called for you.
     async showLockedError(e) {
       if (e.body.data.me) {
@@ -112,14 +112,14 @@ export default {
 
     // Convenience function to determine if an error is a lock error.
     // See `addLockToRequest` for more information.
-    isLockError(e) {
+    isLockedError(e) {
       return e && e.body && e.body.name === 'locked';
     },
 
     // Call this method on a request body you are about to send with a PUT or PATCH
     // request in order to ensure it is detected if someone else has taken the lock
     // since the last time we refreshed it. If an error occurs on the request
-    // call `this.isLockError(e)` to determine if it is a lock error. If so,
+    // call `this.isLockedError(e)` to determine if it is a lock error. If so,
     // call `this.showLockedError(e)` and then take appropriate steps to close
     // your document, which can be as simple as calling the `this.lockNotAvailable()`
     // method you already wrote.
@@ -179,7 +179,7 @@ export default {
           // Reset this each time to avoid various race conditions
           this.lockTimeout = setTimeout(this.refreshLock, 10000);
         } catch (e) {
-          if (this.isLockError(e)) {
+          if (this.isLockedError(e)) {
             await this.showLockedError(e);
             clearTimeout(this.lockTimeout);
             this.lockTimeout = null;

@@ -585,7 +585,7 @@ export default {
           };
           this.retrying = false;
         } catch (e) {
-          if (this.isLockError(e)) {
+          if (this.isLockedError(e)) {
             await this.showLockedError(e);
             return this.lockNotAvailable();
           }
