@@ -69,6 +69,7 @@
 
 	.apos-modal-filters-search
 	{
+		position: relative;
 		width: 100%;
 		max-width: 314px;
 		input
@@ -82,6 +83,24 @@
 			{
 				font-size: 14px;
 				line-height: 14px;
+			}
+		}
+		ul.ui-autocomplete {
+			position: absolute;
+			top: 41px;
+			left: 0;
+			width: 100%;
+			background-color: @apos-light;
+			z-index: 99;
+
+			li {
+				padding: .3rem;
+				cursor: pointer;
+
+				&:hover {
+					color: @apos-white;
+					background-color: @apos-green;
+				}
 			}
 		}
 	}
