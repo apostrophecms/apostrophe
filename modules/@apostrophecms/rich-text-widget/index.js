@@ -3,7 +3,6 @@
 
 const _ = require('lodash');
 const sanitizeHtml = require('sanitize-html');
-const jsDiff = require('diff');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
