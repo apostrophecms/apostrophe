@@ -35,9 +35,11 @@
     <template #leftRail>
       <AposModalRail>
         <AposModalTabs
+          :key="tabKey"
           v-if="tabs.length > 0"
-          :current="currentTab" :tabs="tabs"
-          :errors="docOtherFields.fieldErrors"
+          :current="currentTab"
+          :tabs="tabs"
+          :errors="fieldErrors"
           @select-tab="switchPane"
         />
       </AposModalRail>
@@ -46,9 +48,9 @@
       <AposModalBody>
         <template #bodyMain>
           <div v-if="docReady" class="apos-doc-editor__body">
-            <!-- v-show="tab.name === currentTab" -->
             <AposSchema
               v-for="(tab, index) in tabs"
+              v-show="tab.name === currentTab"
               :key="index"
               :schema="tab.schema"
               :current-fields="tab.fields"
@@ -58,6 +60,7 @@
               :doc-id="docId"
               :value="docOtherFields"
               @input="updateDocOtherFields"
+              @fieldStateChange="updateFieldState"
               :server-errors="serverErrors"
               ref="otherSchema"
             />
@@ -96,6 +99,8 @@ import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin'
 import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
+import cuid from 'cuid';
+
 
 export default {
   name: 'AposDocEditor',
@@ -126,18 +131,18 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
+      tabKey: cuid(),
       docType: this.moduleName,
       docUtilityFields: {
         data: {},
         hasErrors: false
       },
       docOtherFields: {
-        tabs: {},
         data: {},
-        hasErrors: false,
-        fieldErrors: {}
+        hasErrors: false
       },
       docReady: false,
+      fieldErrors: {},
       modal: {
         active: false,
         type: 'overlay',
@@ -196,14 +201,10 @@ export default {
           const temp = { ...this.groups[key] };
           temp.name = key;
           temp.schema = [];
-          temp.errors = [];
           temp.fields.forEach(field => {
             temp.schema.push(this.schema.filter((schemaElement) => {
               return schemaElement.name === field;
             })[0]);
-            if (this.docOtherFields.fieldErrors[field]) {
-              temp.errors.push(field);
-            }
           });
           tabs.push(temp);
         }
@@ -288,6 +289,9 @@ export default {
     this.modal.active = true;
     // After computed properties become available
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
+    this.tabs.forEach(tab => {
+      this.fieldErrors[tab.name] = {};
+    });
     if (this.docId) {
       let docData;
       const getOnePath = `${this.moduleAction}/${this.docId}`;
@@ -414,6 +418,16 @@ export default {
     }
   },
   methods: {
+    updateFieldState(fieldState) {
+      this.tabKey = cuid();
+      this.tabs.forEach(tab => {
+        tab.fields.forEach(field => {
+          if (fieldState[field]) {
+            this.fieldErrors[tab.name][field] = fieldState[field].error;
+          }
+        });
+      });
+    },
     markLockedAndScheduleRefresh() {
       this.locked = true;
       this.lockTimeout = setTimeout(this.refreshLock, 10000);
@@ -616,25 +630,27 @@ export default {
     updateDocUtilityFields(value) {
       this.docUtilityFields = value;
     },
+    // TODO revert this fn back as much as possible before commit
     updateDocOtherFields(value) {
+      this.docOtherFields = value;
       // console.log('fire');
       // clear out old errors from this schema
       // any new/existing ones will be re populated
-      for (const key in value.data) {
-        if (this.docOtherFields.fieldErrors[key]) {
-          delete this.docOtherFields.fieldErrors[key];
-        }
-      }
+      // for (const key in value.data) {
+      //   if (this.docOtherFields.fieldErrors[key]) {
+      //     delete this.docOtherFields.fieldErrors[key];
+      //   }
+      // }
       // console.log(value);
-      this.docOtherFields.data = {
-        ...this.docOtherFields.data,
-        ...value.data
-      };
-      this.docOtherFields.fieldErrors = {
-        ...this.docOtherFields.fieldErrors,
-        ...value.fieldErrors
-      };
-      this.docOtherFields.hasErrors = !(Object.keys(this.docOtherFields.fieldErrors).length === 0);
+      // this.docOtherFields.data = {
+      //   ...this.docOtherFields.data,
+      //   ...value.data
+      // };
+      // this.docOtherFields.fieldErrors = {
+      //   ...this.docOtherFields.fieldErrors,
+      //   ...value.fieldErrors
+      // };
+      // this.docOtherFields.hasErrors = !(Object.keys(this.docOtherFields.fieldErrors).length === 0);
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {

@@ -77,7 +77,7 @@ export default {
       }
     }
   },
-  emits: [ 'input', 'reset' ],
+  emits: [ 'input', 'reset', 'fieldStateChange' ],
   data() {
     return {
       schemaReady: false,
@@ -106,16 +106,11 @@ export default {
     }
   },
   watch: {
-    // triggerValidation(newVal) {
-    //   if (newVal) {
-    //     console.log('how many run');
-    //     this.updateNextAndEmit();
-    //   }
-    // },
     fieldState: {
       deep: true,
       handler() {
         this.updateNextAndEmit();
+        this.$emit('fieldStateChange', this.fieldState);
       }
     },
     schema() {
@@ -182,16 +177,14 @@ export default {
       if (!this.schemaReady) {
         return;
       }
-
       const oldHasErrors = this.next.hasErrors;
       this.next.hasErrors = false;
-
-      console.log(this.fieldState);
-
-      this.next.fieldErrors = this.filterObject(this.fieldState, (item) => {
-        return item.error;
-      });
-      // console.log(this.next.fieldErrors);
+      this.next.fieldErrors = {};
+      for (const key in this.fieldState) {
+        if (this.fieldState[key].error) {
+          this.next.fieldErrors[key] = this.fieldState[key].error;
+        }
+      }
       let changeFound = false;
 
       this.schema.forEach(field => {

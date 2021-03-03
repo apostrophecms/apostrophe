@@ -11,9 +11,9 @@
           @click="selectTab"
         >
           {{ tab.label }}
-          <span v-if="tab.errors.length">
-            {{ tab.errors.length }}
-            <span v-if="tab.errors.length > 1">
+          <span v-if="tabErrors[tab.name].length">
+            {{ tabErrors[tab.name].length }}
+            <span v-if="tabErrors[tab.name].length > 1">
               Errors
             </span>
             <span v-else>
@@ -37,12 +37,30 @@ export default {
     current: {
       type: String,
       default: ''
+    },
+    errors: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'select-tab' ],
   computed: {
     currentTab() {
       return this.current || this.tabs[0].name;
+    },
+    tabErrors() {
+      const errors = {};
+      for (const key in this.errors) {
+        errors[key] = [];
+        for (const errorKey in this.errors[key]) {
+          if (this.errors[key][errorKey]) {
+            errors[key].push(key);
+          }
+        }
+      }
+      return errors;
     }
   },
   methods: {
