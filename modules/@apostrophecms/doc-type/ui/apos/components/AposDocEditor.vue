@@ -178,8 +178,7 @@ export default {
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
-            fields: [ field.name ],
-            errors: {}
+            fields: [ field.name ]
           };
         } else if (field.group) {
           groupSet[field.group.name].fields.push(field.name);
@@ -630,27 +629,8 @@ export default {
     updateDocUtilityFields(value) {
       this.docUtilityFields = value;
     },
-    // TODO revert this fn back as much as possible before commit
     updateDocOtherFields(value) {
       this.docOtherFields = value;
-      // console.log('fire');
-      // clear out old errors from this schema
-      // any new/existing ones will be re populated
-      // for (const key in value.data) {
-      //   if (this.docOtherFields.fieldErrors[key]) {
-      //     delete this.docOtherFields.fieldErrors[key];
-      //   }
-      // }
-      // console.log(value);
-      // this.docOtherFields.data = {
-      //   ...this.docOtherFields.data,
-      //   ...value.data
-      // };
-      // this.docOtherFields.fieldErrors = {
-      //   ...this.docOtherFields.fieldErrors,
-      //   ...value.fieldErrors
-      // };
-      // this.docOtherFields.hasErrors = !(Object.keys(this.docOtherFields.fieldErrors).length === 0);
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
