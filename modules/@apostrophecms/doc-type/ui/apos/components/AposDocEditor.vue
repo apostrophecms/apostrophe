@@ -28,7 +28,7 @@
       />
       <AposButton
         type="primary" :label="saveLabel"
-        :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
+        :modifiers="buttonModifiers"
         @click="submit"
         :tooltip="tooltip"
       />
@@ -63,7 +63,7 @@
               @input="updateDocOtherFields"
               @fieldStateChange="updateFieldState"
               :server-errors="serverErrors"
-              ref="otherSchema"
+              :ref="tab.name"
             />
           </div>
         </template>
@@ -168,6 +168,13 @@ export default {
         msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
       }
       return msg;
+    },
+    buttonModifiers() {
+      if (this.errorCount) {
+        return [ 'disabled' ];
+      } else {
+        return [];
+      }
     },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
@@ -447,6 +454,20 @@ export default {
         }
       }
     },
+    focusNextError() {
+      let field;
+      for (const key in this.fieldErrors) {
+        for (const tabKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][tabKey] && !field) {
+            field = this.schema.filter(item => {
+              return item.name === tabKey;
+            })[0];
+            this.switchPane(field.group.name);
+            this.getAposSchema(field).scrollFieldIntoView(field.name);
+          }
+        }
+      }
+    },
     markLockedAndScheduleRefresh() {
       this.locked = true;
       this.lockTimeout = setTimeout(this.refreshLock, 10000);
@@ -507,12 +528,13 @@ export default {
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
+        if (this.errorCount) {
           await apos.notify('Resolve errors before saving.', {
             type: 'warning',
             icon: 'alert-circle-icon',
             dismiss: true
           });
+          this.focusNextError();
           return;
         }
 
@@ -656,7 +678,7 @@ export default {
       if (field.group.name === 'utility') {
         return this.$refs.utilitySchema;
       } else {
-        return this.$refs.otherSchema;
+        return this.$refs[field.group.name][0];
       }
     },
     async onDiscardDraft(e) {

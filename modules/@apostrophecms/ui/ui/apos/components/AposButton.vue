@@ -223,7 +223,8 @@ export default {
     &:focus:not([disabled]) {
       transform: translateY(-1px);
     }
-    &[disabled] {
+    &[disabled],
+    &.apos-button--disabled {
       background-color: var(--a-base-9);
       border: 1px solid var(--a-base-8);
       color: var(--a-base-5);
@@ -437,7 +438,8 @@ export default {
       box-shadow: 0 0 0 1px var(--a-base-7),
         0 0 0 3px var(--a-primary-button-disabled);
     }
-    &[disabled] {
+    &[disabled],
+    &.apos-button--disabled {
       border: 1px solid var(--a-primary-button-disabled);
       color: var(--a-white);
       background-color: var(--a-primary-button-disabled);
