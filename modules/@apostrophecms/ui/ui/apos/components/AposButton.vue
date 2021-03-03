@@ -1,41 +1,42 @@
 <template>
-  <component
-    :is="href ? 'a' : 'button'"
-    v-on="href ? {} : {click: click}"
-    :href="href.length ? href : false"
-    class="apos-button"
-    :class="modifierClass"
-    :tabindex="tabindex"
-    :disabled="isDisabled"
-    :type="buttonType"
-    :role="role"
-    v-tooltip="tooltip"
-    :id="attrs.id ? attrs.id : id"
-    v-bind="attrs"
-  >
-    <transition name="fade">
-      <AposSpinner :color="spinnerColor" v-if="busy" />
-    </transition>
-    <span
-      v-if="colorStyle"
-      class="apos-button__color-preview"
+  <span v-tooltip="tooltip">
+    <component
+      :is="href ? 'a' : 'button'"
+      v-on="href ? {} : {click: click}"
+      :href="href.length ? href : false"
+      class="apos-button"
+      :class="modifierClass"
+      :tabindex="tabindex"
+      :disabled="isDisabled"
+      :type="buttonType"
+      :role="role"
+      :id="attrs.id ? attrs.id : id"
+      v-bind="attrs"
     >
-      <span :style="colorStyle" class="apos-button__color-preview__swatch" />
-      <span class="apos-button__color-preview__checkerboard" />
-    </span>
-    <div class="apos-button__content">
-      <AposIndicator
-        v-if="icon"
-        :icon="icon"
-        :icon-size="iconSize"
-        class="apos-button__icon"
-        fill-color="currentColor"
-      />
-      <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
-        {{ label }}
+      <transition name="fade">
+        <AposSpinner :color="spinnerColor" v-if="busy" />
+      </transition>
+      <span
+        v-if="colorStyle"
+        class="apos-button__color-preview"
+      >
+        <span :style="colorStyle" class="apos-button__color-preview__swatch" />
+        <span class="apos-button__color-preview__checkerboard" />
       </span>
-    </div>
-  </component>
+      <div class="apos-button__content">
+        <AposIndicator
+          v-if="icon"
+          :icon="icon"
+          :icon-size="iconSize"
+          class="apos-button__icon"
+          fill-color="currentColor"
+        />
+        <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
+          {{ label }}
+        </span>
+      </div>
+    </component>
+  </span>
 </template>
 
 <script>

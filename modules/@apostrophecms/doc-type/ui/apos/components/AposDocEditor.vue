@@ -30,6 +30,7 @@
         type="primary" :label="saveLabel"
         :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
         @click="submit"
+        :tooltip="tooltip"
       />
     </template>
     <template #leftRail>
@@ -81,6 +82,7 @@
             :doc-id="docId"
             :value="docUtilityFields"
             @input="updateDocUtilityFields"
+            @fieldStateChange="updateFieldState"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
             :server-errors="serverErrors"
@@ -100,7 +102,6 @@ import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import cuid from 'cuid';
-
 
 export default {
   name: 'AposDocEditor',
@@ -156,10 +157,18 @@ export default {
       published: null,
       locked: false,
       lockTimeout: null,
-      lockRefreshing: null
+      lockRefreshing: null,
+      errorCount: 0
     };
   },
   computed: {
+    tooltip() {
+      let msg;
+      if (this.docOtherFields.hasErrors || this.docUtilityFields.hasErrors) {
+        msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
+      }
+      return msg;
+    },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
     },
@@ -288,8 +297,8 @@ export default {
     this.modal.active = true;
     // After computed properties become available
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
-    this.tabs.forEach(tab => {
-      this.fieldErrors[tab.name] = {};
+    Object.keys(this.groups).forEach(name => {
+      this.fieldErrors[name] = {};
     });
     if (this.docId) {
       let docData;
@@ -419,13 +428,24 @@ export default {
   methods: {
     updateFieldState(fieldState) {
       this.tabKey = cuid();
-      this.tabs.forEach(tab => {
-        tab.fields.forEach(field => {
+      for (const key in this.groups) {
+        this.groups[key].fields.forEach(field => {
           if (fieldState[field]) {
-            this.fieldErrors[tab.name][field] = fieldState[field].error;
+            this.fieldErrors[key][field] = fieldState[field].error;
           }
         });
-      });
+      }
+      this.updateErrorCount();
+    },
+    updateErrorCount() {
+      this.errorCount = 0;
+      for (const key in this.fieldErrors) {
+        for (const tabKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][tabKey]) {
+            this.errorCount++;
+          }
+        }
+      }
     },
     markLockedAndScheduleRefresh() {
       this.locked = true;

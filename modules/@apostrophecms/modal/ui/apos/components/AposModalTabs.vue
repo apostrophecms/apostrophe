@@ -11,7 +11,7 @@
           @click="selectTab"
         >
           {{ tab.label }}
-          <span v-if="tabErrors[tab.name].length">
+          <span v-if="tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
             {{ tabErrors[tab.name].length }}
             <span v-if="tabErrors[tab.name].length > 1">
               Errors
@@ -92,17 +92,37 @@ export default {
   display: block;
 }
 
+.apos-modal-tabs__label {
+  display: inline-block;
+  padding: 3px;
+  border: 1px solid var(--a-base-0);
+  font-size: var(--a-type-tiny);
+  border-radius: 4px 3px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+.apos-modal-tabs__label--error {
+  border: 1px solid var(--a-danger);
+}
+
 .apos-modal-tabs__btn {
   @include apos-button-reset();
   @include type-base;
   position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
+  height: 60px;
   padding: 25px 20px;
   border-bottom: 1px solid var(--a-base-7);
   color: var(--a-text-primary);
   background-color: var(--a-base-9);
   text-align: left;
   cursor: pointer;
+  box-sizing: border-box;
 
   &::before {
     content: '';
