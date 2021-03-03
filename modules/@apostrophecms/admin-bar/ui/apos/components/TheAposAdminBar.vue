@@ -642,9 +642,13 @@ export default {
       }
       this.contextStack.push({
         doc: this.context,
-        original: this.original
+        original: this.original,
+        patchesSinceLoaded: this.patchesSinceLoaded,
+        undone: this.undone
       });
       this.original = klona(doc);
+      this.patchesSinceLoaded = [];
+      this.undone = [];
       await this.setContext({
         doc,
         navigate: false
@@ -656,6 +660,8 @@ export default {
     async onPopContext() {
       const layer = this.contextStack.pop();
       this.original = layer.original;
+      this.patchesSinceLoaded = layer.patchesSinceLoaded;
+      this.undone = layer.undone;
       await this.setContext({
         doc: layer.doc
       });
