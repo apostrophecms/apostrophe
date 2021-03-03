@@ -276,7 +276,10 @@ export default {
       let docData;
       const getOnePath = `${this.moduleAction}/${this.docId}`;
       try {
-        await this.lock(getOnePath, this.docId);
+        if (!await this.lock(getOnePath, this.docId)) {
+          await this.lockNotAvailable();
+          return;
+        }
         docData = await apos.http.get(getOnePath, {
           busy: true,
           qs: this.filterValues,

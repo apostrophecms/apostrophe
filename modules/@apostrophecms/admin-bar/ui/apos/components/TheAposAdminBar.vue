@@ -526,6 +526,7 @@ export default {
       // Watch out for legacy situations where edit mode is active
       // but we are not in draft
       if (!await this.lock(`${this.action}/${this.context._id}`)) {
+        this.lockNotAvailable();
         return;
       }
       if (this.draftMode !== 'draft') {
@@ -571,10 +572,12 @@ export default {
         this.patchesSinceSave = [];
         try {
           this.saved = false;
+          const body = {
+            _patches: patchesSinceSave
+          };
+          this.addLockToRequest(body);
           const doc = await apos.http.patch(`${this.action}/${this.context._id}`, {
-            body: {
-              _patches: patchesSinceSave
-            }
+            body
           });
           this.context = {
             ...this.context,
@@ -582,6 +585,10 @@ export default {
           };
           this.retrying = false;
         } catch (e) {
+          if (e.body && (e.body.name === 'locked')) {
+            await this.showLockedError(e);
+            return this.lockNotAvailable();
+          }
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
           // Wait 5 seconds between attempts if errors occur
           await new Promise((resolve, reject) => {
@@ -716,12 +723,16 @@ export default {
         if (navigate) {
           if (!await this.refreshOrReload(modeDoc._url)) {
             if (this.editMode) {
-              await this.lock(`${this.action}/${this.context._id}`);
+              if (!await this.lock(`${this.action}/${this.context._id}`)) {
+                this.lockNotAvailable();
+              }
             }
           }
         } else {
           if (this.editMode) {
-            await this.lock(`${this.action}/${this.context._id}`);
+            if (!await this.lock(`${this.action}/${this.context._id}`)) {
+              this.lockNotAvailable();
+            }
           }
         }
       } catch (e) {
@@ -745,6 +756,7 @@ export default {
       this.editMode = editing;
       if (editing) {
         if (!await this.lock(`${this.action}/${this.context._id}`)) {
+          this.lockNotAvailable();
           return;
         }
       }

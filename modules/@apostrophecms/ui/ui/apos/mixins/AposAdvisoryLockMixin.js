@@ -1,3 +1,8 @@
+// Provides reusable UI methods relating to obtaining an advisory lock on a document.
+// In addition to using the methods documented here, the component must implement the
+// `lockNotAvailable` method, which should take appropriate steps if a lock is lost,
+// such as closing a modal.
+
 export default {
   data() {
     return {
@@ -11,6 +16,18 @@ export default {
     await this.unlock();
   },
   methods: {
+    // lockApiUrl must be the REST API URL of the document, for instance this might be
+    // `${this.action}/${this.doc._id}`. Returns true if the lock was obtained, false
+    // if it was not. Also schedules regular refreshes of the lock, which may lead to
+    // a call to `lockNotAvailable`, a method that your component must supply. That method
+    // should close the modal or take other appropriate action when the document cannot
+    // be edited. The user has already been notified at that point.
+    //
+    // `lockNotAvailable` is only called if the lock is lost *after* this method succeeds.
+    // To detect a failure to initially lock, look for a `false` return from this method.
+    // If you wish you may call your `lockNotAvailable` method yourself in that situation
+    // after taking other appropriate actions to prevent the opening of the document.
+
     async lock(lockApiUrl) {
       this.lockApiUrl = lockApiUrl;
       try {
@@ -27,7 +44,7 @@ export default {
         this.markLockedAndScheduleRefresh();
         return true;
       } catch (e) {
-        if (e.body && e.body && e.body.name === 'locked') {
+        if (this.isLockError(e)) {
           // We do not ask before busting our own advisory lock.
           // We used to do this in A2 but end users told us they hated it and
           // were constantly confused by it. This is because there is no
@@ -59,46 +76,13 @@ export default {
               await apos.notify(e.message, {
                 type: 'error'
               });
-              this.lockNotAvailable();
               return false;
             }
           } else {
-            this.lockNotAvailable();
-            return true;
+            return false;
           }
         }
       }
-    },
-    markLockedAndScheduleRefresh() {
-      this.locked = true;
-      this.lockTimeout = setTimeout(this.refreshLock, 10000);
-    },
-    refreshLock() {
-      this.lockRefreshing = (async () => {
-        try {
-          await apos.http.patch(this.lockApiUrl, {
-            body: {
-              _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
-                lock: true
-              }
-            },
-            draft: true
-          });
-          // Reset this each time to avoid various race conditions
-          this.lockTimeout = setTimeout(this.refreshLock, 10000);
-        } catch (e) {
-          if (e.body && e.body.name && (e.body.name === 'locked')) {
-            await this.showLockedError(e);
-            clearTimeout(this.lockTimeout);
-            this.lockTimeout = null;
-            this.locked = false;
-            return this.lockNotAvailable();
-          }
-          // Other errors on this are not critical
-        }
-        this.lockRefreshing = null;
-      })();
     },
     async showLockedError(e) {
       if (e.body.data.me) {
@@ -117,14 +101,28 @@ export default {
         });
       }
     },
-    // Add an appropriate `_advisoryLock` property to the given request body,
-    // such that a PUT request will fail if someone else has taken the lock
+
+    // Convenience function to determine if an error is a lock error.
+    // See `addLockToRequest` for more information.
+    isLockError(e) {
+      return e && e.body && e.body.name === 'locked';
+    },
+
+    // Call this method on a request body you are about to send with a PUT or PATCH
+    // request in order to ensure it is detected if someone else has taken the lock
+    // since the last time we refreshed it. If an error occurs on the request
+    // call `this.isLockError(e)` to determine if it is a lock error. If so,
+    // call `this.showLockedError(e)` and then take appropriate steps to close
+    // your document, which can be as simple as calling the `this.lockNotAvailable()`
+    // method you already wrote.
     addLockToRequest(body) {
       body._advisoryLock = {
         htmlPageId: apos.adminBar.htmlPageId,
         lock: true
       };
     },
+    // Await this method when you are ready to release the lock. If the lock was never
+    // obtained, this method does nothing.
     async unlock() {
       if (this.locked) {
         clearTimeout(this.lockTimeout);
@@ -148,6 +146,41 @@ export default {
           // Not our concern, just being polite
         }
       }
+    },
+
+    // Implementation detail, do not call.
+    markLockedAndScheduleRefresh() {
+      this.locked = true;
+      this.lockTimeout = setTimeout(this.refreshLock, 10000);
+    },
+
+    // Implementation detail, do not call.
+    refreshLock() {
+      this.lockRefreshing = (async () => {
+        try {
+          await apos.http.patch(this.lockApiUrl, {
+            body: {
+              _advisoryLock: {
+                htmlPageId: apos.adminBar.htmlPageId,
+                lock: true
+              }
+            },
+            draft: true
+          });
+          // Reset this each time to avoid various race conditions
+          this.lockTimeout = setTimeout(this.refreshLock, 10000);
+        } catch (e) {
+          if (this.isLockError(e)) {
+            await this.showLockedError(e);
+            clearTimeout(this.lockTimeout);
+            this.lockTimeout = null;
+            this.locked = false;
+            return this.lockNotAvailable();
+          }
+          // Other errors on this are not critical
+        }
+        this.lockRefreshing = null;
+      })();
     }
   }
 };
