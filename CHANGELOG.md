@@ -6,6 +6,9 @@
 * Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
 * Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
 * Removes admin bar module options related to 2.x slide-out UI: `openOnLoad`, `openOnHomepageLoad`, `closeDelay`.
+* Advisory locking has been implemented for in-context editing, including nested contexts like the palette module. At this stage the only place we don't have advisory locking yet is the image editor.
+* Fixed a bug that allowed users to appear to be in edit mode while looking at published content in certain edge cases.
+* The PATCH API for pages can now infer the correct _id in cases where the locale is specified in the query string as an override, just like other methods.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
 
