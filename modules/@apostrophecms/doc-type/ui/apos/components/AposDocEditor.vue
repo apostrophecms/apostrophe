@@ -386,7 +386,7 @@ export default {
           });
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
-          if (e.body && (e.body.name === 'locked')) {
+          if (this.isLockError(e)) {
             await this.showLockedError(e);
             this.modal.showModal = false;
             return;

@@ -84,6 +84,14 @@ export default {
         }
       }
     },
+
+    // Displays the locked error message appropriately. Overriding this method
+    // is permitted. Note the detection of whether the lock was taken by the
+    // same person (in another tab) or by someone else.
+    //
+    // When using `addLockToRequest` with your own API call, it is your responsibility to
+    // detect lock errors with `isLockError` and call this method. The rest of the time,
+    // it is called for you.
     async showLockedError(e) {
       if (e.body.data.me) {
         // We use an alert because it is a clear interruption of their
@@ -121,6 +129,7 @@ export default {
         lock: true
       };
     },
+
     // Await this method when you are ready to release the lock. If the lock was never
     // obtained, this method does nothing.
     async unlock() {
