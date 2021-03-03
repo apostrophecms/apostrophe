@@ -83,6 +83,7 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import dayjs from 'dayjs';
@@ -93,7 +94,7 @@ import cuid from 'cuid';
 dayjs.extend(advancedFormat);
 
 export default {
-  mixins: [ AposEditorMixin ],
+  mixins: [ AposEditorMixin, AposAdvisoryLockMixin ],
   props: {
     media: {
       type: Object,

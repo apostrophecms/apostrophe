@@ -106,10 +106,11 @@
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import cuid from 'cuid';
 
 export default {
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposAdvisoryLockMixin ],
   props: {
     moduleName: {
       type: String,
@@ -306,6 +307,12 @@ export default {
         }
       }
       this.editing = this.items.find(item => item._id === id);
+      if (!await this.lock(getOnePath, this.docId)) {
+        await this.lockNotAvailable();
+        this.editing = null;
+      }
+      // true because we should not revert to what we were previously editing,
+      // if anything, as we already gave up a lock on it
       return true;
     },
     // select setters
