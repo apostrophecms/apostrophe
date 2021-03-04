@@ -6,7 +6,8 @@
 * Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
 * Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
 * Removes admin bar module options related to 2.x slide-out UI: `openOnLoad`, `openOnHomepageLoad`, `closeDelay`.
-* Removes the `createControls`, and `editControls` options.
+* Removes the `createControls`, and `editControls` options from piece type module and the page module.
+* Removes the `typeChoices` option from the page module.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
 
