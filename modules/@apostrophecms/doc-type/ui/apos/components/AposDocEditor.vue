@@ -135,12 +135,10 @@ export default {
       tabKey: cuid(),
       docType: this.moduleName,
       docUtilityFields: {
-        data: {},
-        hasErrors: false
+        data: {}
       },
       docOtherFields: {
-        data: {},
-        hasErrors: false
+        data: {}
       },
       docReady: false,
       fieldErrors: {},
@@ -164,7 +162,7 @@ export default {
   computed: {
     tooltip() {
       let msg;
-      if (this.docOtherFields.hasErrors || this.docUtilityFields.hasErrors) {
+      if (this.errorCount) {
         msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
       }
       return msg;
@@ -445,14 +443,15 @@ export default {
       this.updateErrorCount();
     },
     updateErrorCount() {
-      this.errorCount = 0;
+      let count = 0;
       for (const key in this.fieldErrors) {
         for (const tabKey in this.fieldErrors[key]) {
           if (this.fieldErrors[key][tabKey]) {
-            this.errorCount++;
+            count++;
           }
         }
       }
+      this.errorCount = count;
     },
     focusNextError() {
       let field;
@@ -537,7 +536,6 @@ export default {
           this.focusNextError();
           return;
         }
-
         const body = this.unsplitDoc();
         let route;
         let requestMethod;
@@ -672,7 +670,10 @@ export default {
       this.docUtilityFields = value;
     },
     updateDocOtherFields(value) {
-      this.docOtherFields = value;
+      this.docOtherFields.data = {
+        ...this.docOtherFields.data,
+        ...value.data
+      };
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
