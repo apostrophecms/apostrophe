@@ -182,7 +182,7 @@ export default {
       return null;
     },
     isDisabled() {
-      return (this.disabled || this.busy);
+      return this.disabled || this.busy;
     }
   },
   methods: {

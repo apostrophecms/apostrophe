@@ -148,7 +148,6 @@ module.exports = {
     self.addToAdminBar();
     self.addManagerModal();
     self.addEditorModal();
-    self.finalizeControls();
   },
   restApiRoutes: (self, options) => ({
     async getAll(req) {
@@ -352,68 +351,6 @@ module.exports = {
           ...req,
           mode: 'published'
         }, published);
-      },
-      finalizeControls() {
-        self.createControls = self.options.createControls || [
-          {
-            type: 'dropdown',
-            label: 'More',
-            items: [
-              {
-                label: 'Copy',
-                action: 'copy'
-              },
-              {
-                label: 'Trash',
-                action: 'trash'
-              }
-            ],
-            dropdownOptions: { direction: 'down' }
-          },
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save ' + self.label
-          }
-        ];
-        self.editControls = self.options.editControls || [
-          {
-            type: 'dropdown',
-            label: 'More',
-            // For reliable test automation
-            name: 'more',
-            items: [
-              {
-                label: 'Versions',
-                action: 'versions'
-              },
-              {
-                label: 'Copy',
-                action: 'copy'
-              },
-              {
-                label: 'Trash',
-                action: 'trash'
-              }
-            ],
-            dropdownOptions: { direction: 'down' }
-          },
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save ' + self.label
-          }
-        ];
       },
       // Returns one editable piece matching the criteria, throws `notfound`
       // if none match
@@ -719,14 +656,6 @@ module.exports = {
         const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
         await self.apos.schema.convert(req, schema, input, piece);
         await self.emit('afterConvert', req, input, piece);
-      },
-      getCreateControls(req) {
-        const controls = _.cloneDeep(self.createControls);
-        return controls;
-      },
-      getEditControls(req) {
-        const controls = _.cloneDeep(self.editControls);
-        return controls;
       },
       // TODO: Remove this if deprecated. - ab
       getChooserControls(req) {
