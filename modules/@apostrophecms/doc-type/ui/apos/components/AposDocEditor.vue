@@ -78,7 +78,7 @@
             :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
-            :following-values="followingValues('utility')"
+            :following-values="followingUtils"
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
@@ -157,6 +157,9 @@ export default {
         msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
       }
       return msg;
+    },
+    followingUtils() {
+      return this.followingValues('utility');
     },
     buttonModifiers() {
       if (this.errorCount) {
@@ -268,7 +271,6 @@ export default {
 
   },
   async mounted() {
-    console.log('mounted');
     this.modal.active = true;
     // After computed properties become available
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;

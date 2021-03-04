@@ -80,9 +80,6 @@ export default {
       // one or more other fields
       deep: true,
       handler(newValue, oldValue) {
-        console.log(newValue);
-        console.log(oldValue);
-        console.log('=====');
         oldValue = Object.values(oldValue).join(' ');
         newValue = Object.values(newValue).join(' ');
         if (this.compatible(oldValue, this.next)) {
@@ -99,7 +96,6 @@ export default {
     }
   },
   mounted() {
-    console.log('hiii');
     this.debouncedCheckConflict = debounce(() => this.checkConflict(), 250);
   },
   methods: {
@@ -190,7 +186,6 @@ export default {
       return s;
     },
     async checkConflict() {
-      console.log('check conflict?');
       let slug;
       try {
         slug = this.next;
