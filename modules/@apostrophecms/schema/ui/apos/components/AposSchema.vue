@@ -41,7 +41,7 @@ export default {
     currentFields: {
       type: Array,
       default() {
-        return [];
+        return null;
       }
     },
     followingValues: {
@@ -204,7 +204,28 @@ export default {
       }
     },
     displayComponent(fieldName) {
-      return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
+      if (this.currentFields) {
+        if (!this.currentFields.includes(fieldName)) {
+          return false;
+        }
+      }
+      const field = this.schema.find(field => field.name === fieldName);
+      if (!field.if) {
+        return true;
+      }
+      for (const [ key, testVal ] of Object.values(field.if)) {
+        let val;
+        if (this.fields.find(field => field.key === key)) {
+          val = this.next.data[key].value;
+        } else {
+          val = this.followingValues[fieldName][key];
+        }
+        // Just strict comparison for now
+        if (val !== testVal) {
+          return false;
+        }
+      }
+      return true;
     },
     scrollFieldIntoView(fieldName) {
       // The refs for a name are an array if that ref was assigned
