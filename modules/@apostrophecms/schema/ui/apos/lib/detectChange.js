@@ -11,8 +11,16 @@ export function detectDocChange(schema, v1, v2) {
 }
 
 export function detectFieldChange(field, v1, v2) {
-  v1 = relevant(v1);
-  v2 = relevant(v2);
+  if (field.type === 'relationshipReverse') {
+    return false;
+  }
+  if (field.type === 'relationship') {
+    v1 = relevantRelationship(v1);
+    v2 = relevantRelationship(v2);
+  } else {
+    v1 = relevant(v1);
+    v2 = relevant(v2);
+  }
   if (isEqual(v1, v2)) {
     return false;
   } else if (!v1 && !v2) {
@@ -29,15 +37,13 @@ export function detectFieldChange(field, v1, v2) {
         if (key === '_docId') {
           newObject._docId = o._docId.replace(/:.*$/, '');
         } else if (key === '_id') {
-          newObject._id = o._id;
+          // So draft and published can be compared
+          newObject._id = o._id.replace(/:[\w-]+:[\w]+$/, '');
         } else if (key.substring(0, 1) === '_') {
           // Different results for temporary properties
           // don't matter, except for relationships
           if (Array.isArray(o[key])) {
-            newObject[key] = o[key].map(item => ({
-              _id: item._id,
-              _fields: relevant(item.fields)
-            }));
+            newObject[key] = relevantRelationship(o[key]);
           } else {
             continue;
           }
@@ -48,5 +54,12 @@ export function detectFieldChange(field, v1, v2) {
       return newObject;
     }
     return o;
+  }
+  function relevantRelationship(a) {
+    return a.map(item => ({
+      // So draft and published can be compared
+      _id: item._id.replace(/:[\w-]+:[\w]+$/, ''),
+      _fields: relevant(item._fields)
+    }));
   }
 }

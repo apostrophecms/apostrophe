@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const { klona } = require('klona');
 
 module.exports = {
   options: {
@@ -635,7 +634,10 @@ module.exports = {
           });
           published = await self.insertPublishedOf(req, draft, published, options);
         } else {
-          previousPublished = klona(published);
+          // As found in db, not with relationships etc.
+          previousPublished = await self.apos.doc.db.findOne({
+            _id: published._id
+          });
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
             draft,
@@ -688,15 +690,23 @@ module.exports = {
       // returning, which receives `req, { draft }` and may
       // replace the `draft` property to alter the returned value.
       async revertDraftToPublished(req, draft) {
+        if (!draft.modified) {
+          return false;
+        }
         const published = await self.apos.doc.db.findOne({
           _id: draft._id.replace(':draft', ':published')
         });
         if (!published) {
           return false;
         }
-        if (!draft.modified) {
-          return false;
-        }
+
+        // We must load relationships as if we had done a regular find
+        // because relationships are read/write in A3,
+        // but we don't have to call widget loaders
+        const query = self.find(req).areas(false);
+        await query.finalize();
+        await query.after([ published ]);
+
         // Draft and published roles intentionally reversed
         self.copyForPublication(req, published, draft);
         draft.modified = false;
@@ -725,6 +735,14 @@ module.exports = {
           // Feature has already been used
           throw self.apos.error('invalid');
         }
+
+        // We must load relationships as if we had done a regular find
+        // because relationships are read/write in A3,
+        // but we don't have to call widget loaders
+        const query = self.find(req).areas(false);
+        await query.finalize();
+        await query.after([ previous ]);
+
         self.copyForPublication(req, previous, published);
         published.lastPublishedAt = previous.lastPublishedAt;
         published = await self.update({
