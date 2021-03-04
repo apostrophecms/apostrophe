@@ -11,7 +11,7 @@
           @click="selectTab"
         >
           {{ tab.label }}
-          <span v-if="tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
+          <span v-if="tabErrors[tab.name] && tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
             {{ tabErrors[tab.name].length }}
             <span v-if="tabErrors[tab.name].length > 1">
               Errors

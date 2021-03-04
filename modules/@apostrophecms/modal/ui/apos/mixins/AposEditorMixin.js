@@ -16,8 +16,7 @@ export default {
   data() {
     return {
       docFields: {
-        data: {},
-        hasErrors: false
+        data: {}
       },
       serverErrors: null
     };
@@ -28,6 +27,7 @@ export default {
     // properties named for each field that follows other fields. For instance if followedBy is "utility"
     // then in our default configuration `followingValues` will be `{ slug: { title: 'latest title here' } }`
     followingValues(followedBy) {
+      console.log('run following');
       let fields;
 
       if (followedBy) {

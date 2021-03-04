@@ -50,17 +50,17 @@
         <template #bodyMain>
           <div v-if="docReady" class="apos-doc-editor__body">
             <AposSchema
-              v-for="(tab, index) in tabs"
+              v-for="tab in tabs"
               v-show="tab.name === currentTab"
-              :key="index"
-              :schema="tab.schema"
-              :current-fields="tab.fields"
+              :key="tab.name"
+              :schema="groups[tab.name].schema"
+              :current-fields="groups[tab.name].fields"
               :trigger-validation="triggerValidation"
               :utility-rail="false"
               :following-values="followingValues('other')"
               :doc-id="docId"
-              :value="docOtherFields"
-              @input="updateDocOtherFields"
+              :value="docFields"
+              @input="updateDocFields"
               @fieldStateChange="updateFieldState"
               :server-errors="serverErrors"
               :ref="tab.name"
@@ -74,14 +74,14 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
-            :schema="schemaUtilityFields"
-            :current-fields="utilityFields"
+            :schema="groups['utility'].schema"
+            :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following-values="followingValues('utility')"
             :doc-id="docId"
-            :value="docUtilityFields"
-            @input="updateDocUtilityFields"
+            :value="docFields"
+            @input="updateDocFields"
             @fieldStateChange="updateFieldState"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
@@ -98,7 +98,6 @@ import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModa
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
-import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import cuid from 'cuid';
@@ -134,12 +133,6 @@ export default {
     return {
       tabKey: cuid(),
       docType: this.moduleName,
-      docUtilityFields: {
-        data: {}
-      },
-      docOtherFields: {
-        data: {}
-      },
       docReady: false,
       fieldErrors: {},
       modal: {
@@ -147,9 +140,6 @@ export default {
         type: 'overlay',
         showModal: false
       },
-      splittingDoc: false,
-      schemaUtilityFields: [],
-      schemaOtherFields: [],
       triggerValidation: false,
       original: null,
       published: null,
@@ -161,6 +151,7 @@ export default {
   },
   computed: {
     tooltip() {
+      // TODO I18N
       let msg;
       if (this.errorCount) {
         msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
@@ -192,10 +183,12 @@ export default {
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
-            fields: [ field.name ]
+            fields: [ field.name ],
+            schema: [ field ]
           };
         } else if (field.group) {
           groupSet[field.group.name].fields.push(field.name);
+          groupSet[field.group.name].schema.push(field);
         }
       });
 
@@ -211,32 +204,16 @@ export default {
       const tabs = [];
       for (const key in this.groups) {
         if (key !== 'utility') {
-          const temp = { ...this.groups[key] };
-          temp.name = key;
-          temp.schema = [];
-          temp.fields.forEach(field => {
-            temp.schema.push(this.schema.filter((schemaElement) => {
-              return schemaElement.name === field;
-            })[0]);
+          tabs.push({
+            name: key,
+            label: this.groups[key].label
           });
-          tabs.push(temp);
         }
       };
       return tabs;
     },
     modalTitle() {
       return `Edit ${this.moduleOptions.label || ''}`;
-    },
-    currentFields() {
-      if (this.currentTab) {
-        const tabFields = this.tabs.find((item) => {
-          return item.name === this.currentTab;
-        });
-
-        return tabFields.fields;
-      } else {
-        return [];
-      }
     },
     manuallyPublished() {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
@@ -256,20 +233,20 @@ export default {
       if (!this.original) {
         return false;
       }
-      return detectDocChange(this.schema, this.original, this.unsplitDoc());
+      return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     isModifiedFromPublished() {
       if (!this.published) {
         return false;
       }
-      return detectDocChange(this.schema, this.published, this.unsplitDoc());
+      return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canDiscardDraft() {
       return (this.docId && (!this.published)) || this.isModifiedFromPublished;
     }
   },
   watch: {
-    'docUtilityFields.data': {
+    'docFields.data': {
       deep: true,
       handler(newVal, oldVal) {
         if (this.moduleName !== '@apostrophecms/page' || this.splittingDoc) {
@@ -277,17 +254,8 @@ export default {
         }
 
         if (this.docType !== newVal.type) {
-          // Return the split data into `docFields.data` before splitting again.
-          this.docFields.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.docFields.data);
-
           this.docType = newVal.type;
-          this.docReady = false;
-
-          // Let the schema update before splitting up the doc again.
-          this.$nextTick(() => {
-            this.splitDoc();
-            this.docReady = true;
-          });
+          this.prepErrors();
         }
       }
     },
@@ -297,14 +265,13 @@ export default {
         this.currentTab = this.tabs[0].name;
       }
     }
+
   },
   async mounted() {
+    console.log('mounted');
     this.modal.active = true;
     // After computed properties become available
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
-    Object.keys(this.groups).forEach(name => {
-      this.fieldErrors[name] = {};
-    });
     if (this.docId) {
       let docData;
       const getOnePath = `${this.moduleAction}/${this.docId}`;
@@ -377,8 +344,8 @@ export default {
         }
         this.original = klona(docData);
         this.docFields.data = docData;
+        this.prepErrors();
         this.docReady = true;
-        this.splitDoc();
       }
       try {
         if (this.manuallyPublished) {
@@ -467,6 +434,11 @@ export default {
         }
       }
     },
+    prepErrors() {
+      for (const name in this.groups) {
+        this.fieldErrors[name] = {};
+      }
+    },
     markLockedAndScheduleRefresh() {
       this.locked = true;
       this.lockTimeout = setTimeout(this.refreshLock, 10000);
@@ -536,7 +508,7 @@ export default {
           this.focusNextError();
           return;
         }
-        const body = this.unsplitDoc();
+        const body = this.docFields.data;
         let route;
         let requestMethod;
         if (this.docId) {
@@ -628,50 +600,12 @@ export default {
         this.docType = newInstance.type;
       }
       this.docFields.data = newInstance;
-      this.splitDoc();
+      this.prepErrors();
       this.docReady = true;
     },
-    splitDoc() {
-      this.splittingDoc = true;
-
-      this.docUtilityFields.data = {};
-      this.docOtherFields.data = {};
-      this.schemaUtilityFields = [];
-      this.schemaOtherFields = [];
-
-      this.schema.forEach(field => {
-        if (field.group.name === 'utility') {
-          this.docUtilityFields.data[field.name] = this.docFields.data[field.name];
-          this.schemaUtilityFields.push(field);
-        } else {
-          this.docOtherFields.data[field.name] = this.docFields.data[field.name];
-          this.schemaOtherFields.push(field);
-        }
-      });
-      this.splittingDoc = false;
-    },
-    unsplitDoc() {
-      return {
+    updateDocFields(value) {
+      this.docFields.data = {
         ...this.docFields.data,
-        ...this.docUtilityFields.data,
-        ...this.docOtherFields.data
-      };
-    },
-    // Override of a mixin method to accommodate the tabs/utility rail split
-    getFieldValue(name) {
-      if (this.docUtilityFields.data[name] !== undefined) {
-        return this.docUtilityFields.data[name];
-      }
-      if (this.docOtherFields.data[name] !== undefined) {
-        return this.docOtherFields.data[name];
-      }
-    },
-    updateDocUtilityFields(value) {
-      this.docUtilityFields = value;
-    },
-    updateDocOtherFields(value) {
-      this.docOtherFields.data = {
-        ...this.docOtherFields.data,
         ...value.data
       };
     },

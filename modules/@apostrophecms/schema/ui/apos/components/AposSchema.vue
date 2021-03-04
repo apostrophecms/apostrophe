@@ -136,6 +136,9 @@ export default {
   created() {
     this.populateDocData();
   },
+  mounted() {
+    console.log('mounted- schema');
+  },
   methods: {
     populateDocData() {
       this.schemaReady = false;
