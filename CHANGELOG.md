@@ -7,6 +7,7 @@
 * Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
 * Removes admin bar module options related to 2.x slide-out UI: `openOnLoad`, `openOnHomepageLoad`, `closeDelay`.
 * Check permissions for the delete and publish operations.
+* Removes the `createControls` and `editControls` options.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
 
@@ -1065,7 +1066,7 @@ Thanks to Michelin for their support of this work.
 All tests passing.
 
 * Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
-* The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
+* The `createControls` option of the `apostrophe-pages` module is now respected properly.
 
 ## 2.29.1
 
