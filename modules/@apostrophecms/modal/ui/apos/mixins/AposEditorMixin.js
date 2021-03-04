@@ -61,34 +61,60 @@ export default {
       }
     },
 
-    // If truthy, followedByCategory must be either "other" or "utility". The returned
-    // object contains properties named for each field that is conditional on other fields.
-    // This works similarly to `followingValues`.
+    // The returned object contains a property for each field that is conditional on other fields,
+    // `true` if that field's conditions are satisfied and `false` if they are not. There will
+    // be no properties for fields that are not conditional.
     //
-    // In a likely scenario where "roomPreference" should appear only when
-    // "needHousing" is true, the returned data structure would look like:
-    // `{ roomPreference: { needHousing: { value: true, available: true } } }`
+    // Any condition on a field that is itself conditional fails if the second field's conditions fail.
     //
-    // `available` will be false if `needHousing` is itself conditional and its
-    // condition has failed. In all other cases it will be true.
-    followingConditionalFields(followedByCategory) {
-      const fields = this.getFieldsByCategory(followedByCategory);
+    // If present, followedByCategory must be either "other" or "utility", and the
+    // returned object will contain properties only for conditional fields in that
+    // category, although they may be conditional upon fields in either category.
 
-      const followingConditionalFields = {};
+    getConditionalFieldsByCategory(followedByCategory) {
 
-      for (const field of fields) {
+      const conditionalFields = {};
+
+      for (const field of this.schema) {
         if (field.if) {
-          const ifKeys = Object.keys(field.if);
-          followingConditionalFields[field.name] = {};
-          for (const name of ifKeys) {
-            followingConditionalFields[field.name][name] = {
-              value: this.getFieldValue(name)
-            };
+          let result = true;
+          for (const [ key, val ] of Object.values(field.if)) {
+            if (val !== this.getFieldValue(key)) {
+              result = false;
+              break;
+            }
           }
+          conditionalFields[field.name] = result;
         }
       }
-      return followingConditionalFields;
+      while (true) {
+        let change = false;
+        for (const field of this.schema) {
+          if (field.if) {
+            for (const [ key, val ] of Object.entries(field.if)) {
+              if ((conditionalFields[key] === false) && (conditionalFields[field.name] === true)) {
+                conditionalFields[field.name] = false;
+                change = true;
+                break;
+              }
+            }
+          }
+        }
+        if (!change) {
+          break;
+        }
+      }
+
+      const fields = this.getFieldsByCategory(followedByCategory);
+      const result = {};
+      for (const field of fields) {
+        if (field.if) {
+          result[field.name] = conditionalFields[field.name];
+        }
+      }
+      return result;
     },
+
     // Overridden by components that split the fields into several AposSchemas
     getFieldValue(name) {
       return this.docFields.data[name];
