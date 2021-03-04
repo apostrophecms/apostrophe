@@ -62,6 +62,9 @@ const joinr = module.exports = {
     let otherIds = [];
     const othersById = {};
     for (const item of items) {
+      if (!item[objectsField]) {
+        item[objectsField] = [];
+      }
       if (joinr._has(item, idsStorage)) {
         otherIds = otherIds.concat(joinr._get(item, idsStorage).map(idMapper));
       }
@@ -76,9 +79,6 @@ const joinr = module.exports = {
       for (const item of items) {
         for (const id of (joinr._get(item, idsStorage) || []).map(idMapper)) {
           if (othersById[id]) {
-            if (!item[objectsField]) {
-              item[objectsField] = [];
-            }
             if (fieldsStorage) {
               const fieldsById = joinr._get(item, fieldsStorage) || {};
               item[objectsField].push({
@@ -108,7 +108,7 @@ const joinr = module.exports = {
   // groupIds).
   //
   // The optional third argument is the name of an object property in each of
-  // thoe related documents that describes the relationship between the related
+  // those related documents that describes the relationship between the related
   // document and each of your documents. This object is expected to be structured
   // like this:
   //
@@ -154,6 +154,11 @@ const joinr = module.exports = {
 
   byArrayReverse: async function(items, idsStorage, fieldsStorage, objectsField, getter, idMapper) {
     const itemIds = items.map(item => idMapper(item._id));
+    for (const item of items) {
+      if (!item[objectsField]) {
+        item[objectsField] = [];
+      }
+    }
     if (itemIds.length) {
       const others = await getter(itemIds);
       const itemsById = {};
@@ -165,9 +170,6 @@ const joinr = module.exports = {
         for (const id of (joinr._get(other, idsStorage) || []).map(idMapper)) {
           if (itemsById[id]) {
             const item = itemsById[id];
-            if (!item[objectsField]) {
-              item[objectsField] = [];
-            }
             if (fieldsStorage) {
               const fieldsById = joinr._get(other, fieldsStorage) || {};
               item[objectsField].push({

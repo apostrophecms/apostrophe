@@ -33,8 +33,6 @@
 //
 // `_id`: the MongoDB ID of the global doc. Available after `modulesReady`.
 
-const _ = require('lodash');
-
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
@@ -141,19 +139,6 @@ module.exports = {
         browserOptions._id = req.data.global && req.data.global._id;
         browserOptions.quickCreate = false;
         return browserOptions;
-      },
-      getEditControls(_super, req) {
-        const controls = _super(req);
-        const more = _.find(controls, { name: 'more' });
-        if (more) {
-          more.items = _.reject(more.items, function (item) {
-            return _.includes([
-              'trash',
-              'copy'
-            ], item.action);
-          });
-        }
-        return controls;
       }
     };
   }
