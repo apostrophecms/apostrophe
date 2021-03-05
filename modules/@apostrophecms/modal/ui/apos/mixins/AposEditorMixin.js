@@ -93,7 +93,6 @@ export default {
           if (field.if) {
             for (const key of Object.keys(field.if)) {
               if ((conditionalFields[key] === false) && (conditionalFields[field.name] === true)) {
-                console.log(`${field.name} is blocked by ${key}`);
                 conditionalFields[field.name] = false;
                 change = true;
                 break;
@@ -105,7 +104,6 @@ export default {
           break;
         }
       }
-      console.log(JSON.stringify(conditionalFields, null, '  '));
 
       const fields = this.getFieldsByCategory(followedByCategory);
       const result = {};
