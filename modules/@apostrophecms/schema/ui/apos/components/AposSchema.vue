@@ -77,7 +77,7 @@ export default {
       }
     }
   },
-  emits: [ 'input', 'reset', 'fieldStateChange' ],
+  emits: [ 'input', 'reset' ],
   data() {
     return {
       schemaReady: false,
@@ -110,7 +110,6 @@ export default {
       deep: true,
       handler() {
         this.updateNextAndEmit();
-        this.$emit('fieldStateChange', this.fieldState);
       }
     },
     schema() {
@@ -179,6 +178,7 @@ export default {
       const oldHasErrors = this.next.hasErrors;
       this.next.hasErrors = false;
       let changeFound = false;
+      this.next.fieldState = this.fieldState;
 
       this.schema.forEach(field => {
         if (this.fieldState[field.name].error) {

@@ -61,7 +61,6 @@
               :doc-id="docId"
               :value="docFields"
               @input="updateDocFields"
-              @fieldStateChange="updateFieldState"
               :server-errors="serverErrors"
               :ref="tab.name"
             />
@@ -82,7 +81,6 @@
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
-            @fieldStateChange="updateFieldState"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
             :server-errors="serverErrors"
@@ -539,6 +537,7 @@ export default {
       this.docReady = true;
     },
     updateDocFields(value) {
+      this.updateFieldState(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
