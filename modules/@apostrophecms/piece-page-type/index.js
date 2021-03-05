@@ -165,7 +165,7 @@ module.exports = {
             return;
           }
           const query = self.indexQuery(req);
-          next = await query.next(doc).applyBuidlers(typeof self.options.next === 'object' ? self.options.next : {}).toObject();
+          next = await query.next(doc).applyBuilders(typeof self.options.next === 'object' ? self.options.next : {}).toObject();
         }
       },
 

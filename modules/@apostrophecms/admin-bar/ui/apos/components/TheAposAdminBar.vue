@@ -240,10 +240,11 @@
 import { klona } from 'klona';
 import dayjs from 'dayjs';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 
 export default {
   name: 'TheAposAdminBar',
-  mixins: [ AposPublishMixin ],
+  mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
   props: {
     items: {
       type: Array,
@@ -253,6 +254,11 @@ export default {
     }
   },
   data() {
+    // Since cookie-bsed login sessions and sessionStorage are not precisely the same
+    // thing, correct any forbidden combination at page load time
+    if (window.apos.mode === 'published') {
+      window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
+    }
     return {
       menuItems: [],
       trayItems: [],
@@ -445,7 +451,7 @@ export default {
       }
     }
   },
-  mounted() {
+  async mounted() {
     window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
     // Listen for bus events coming from notification UI
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
@@ -519,6 +525,10 @@ export default {
     if (this.editMode) {
       // Watch out for legacy situations where edit mode is active
       // but we are not in draft
+      if (!await this.lock(`${this.action}/${this.context._id}`)) {
+        this.lockNotAvailable();
+        return;
+      }
       if (this.draftMode !== 'draft') {
         // Also refreshes
         this.switchDraftMode('draft');
@@ -562,10 +572,12 @@ export default {
         this.patchesSinceSave = [];
         try {
           this.saved = false;
+          const body = {
+            _patches: patchesSinceSave
+          };
+          this.addLockToRequest(body);
           const doc = await apos.http.patch(`${this.action}/${this.context._id}`, {
-            body: {
-              _patches: patchesSinceSave
-            }
+            body
           });
           this.context = {
             ...this.context,
@@ -573,6 +585,10 @@ export default {
           };
           this.retrying = false;
         } catch (e) {
+          if (this.isLockedError(e)) {
+            await this.showLockedError(e);
+            return this.lockNotAvailable();
+          }
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
           // Wait 5 seconds between attempts if errors occur
           await new Promise((resolve, reject) => {
@@ -682,7 +698,10 @@ export default {
         if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
           return;
         } else if (navigate && this.urlDiffers(doc._url)) {
-          window.location.assign(doc._url);
+          await this.unlock();
+          return window.location.assign(doc._url);
+        } else {
+          await this.unlock();
         }
       }
       try {
@@ -708,7 +727,19 @@ export default {
         window.apos.adminBar.contextId = modeDoc._id;
         this.context = modeDoc;
         if (navigate) {
-          await this.refreshOrReload(modeDoc._url);
+          if (!await this.refreshOrReload(modeDoc._url)) {
+            if (this.editMode) {
+              if (!await this.lock(`${this.action}/${this.context._id}`)) {
+                this.lockNotAvailable();
+              }
+            }
+          }
+        } else {
+          if (this.editMode) {
+            if (!await this.lock(`${this.action}/${this.context._id}`)) {
+              this.lockNotAvailable();
+            }
+          }
         }
       } catch (e) {
         if (e.status === 404) {
@@ -729,6 +760,12 @@ export default {
     async switchEditMode(editing) {
       window.sessionStorage.setItem('aposEditMode', JSON.stringify(editing));
       this.editMode = editing;
+      if (editing) {
+        if (!await this.lock(`${this.action}/${this.context._id}`)) {
+          this.lockNotAvailable();
+          return;
+        }
+      }
       if (this.draftMode !== 'draft') {
         // Entering edit mode implies entering draft mode.
         // Also takes care of refresh
@@ -899,13 +936,16 @@ export default {
         this.saving = false;
       }
     },
+    // returns true if the browser is about to navigate away
     async refreshOrReload(url) {
       if (this.urlDiffers(url)) {
         // Slug changed, must navigate
         window.location.assign(url);
+        return true;
       } else {
         // No URL change means we can refresh just the content area
         await this.refresh();
+        return false;
       }
     },
     urlDiffers(url) {
@@ -945,6 +985,17 @@ export default {
           ...this.trayItemState,
           [name]: !this.trayItemState[name]
         };
+      }
+    },
+    lockNotAvailable() {
+      if (this.contextStack.length) {
+        // If we try to edit palette and someone else has it locked,
+        // we should just revert to the page context. Ask the palette
+        // (or similar tool) to close itself, including popping the context
+        apos.bus.$emit('context-close', this.context);
+      } else {
+        // If the context is the page, we should stay, but in preview mode
+        this.switchEditMode(false);
       }
     }
   }

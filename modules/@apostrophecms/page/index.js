@@ -29,7 +29,7 @@ module.exports = {
     }
   },
   async init(self, options) {
-    self.typeChoices = options.types || [];
+    self.typeChoices = self.options.types || [];
     self.parked = (self.options.minimumPark || [ {
       slug: '/',
       parkedId: 'home',
@@ -343,6 +343,7 @@ module.exports = {
       // `trash` to `true` or `false`.
       patch(req, _id) {
         self.publicApiCheck(req);
+        _id = self.inferIdLocaleAndMode(req, _id);
         return self.patch(req, _id);
       }
     };
@@ -482,16 +483,7 @@ module.exports = {
       'apostrophe:modulesReady': {
         async manageOrphans() {
           const managed = self.apos.doc.getManaged();
-          const types = (self.options.typeChoices || []).map(type => type.name);
-          for (const [ type, i ] of Object.entries(types)) {
-            if (!_.includes(managed, type)) {
-              self.apos.util.warnDev(`The typeChoices option of the @apostrophecms/page module contains type
-${type} but there is no module that manages that type. You must
-implement a module of that name that extends @apostrophecms/piece-type
-or @apostrophecms/page-type, or remove the entry from typeChoices.`);
-              types.splice(i, 1);
-            }
-          }
+
           const parkedTypes = self.getParkedTypes();
           for (const type of parkedTypes) {
             if (!_.includes(managed, type)) {
@@ -897,7 +889,7 @@ database.`);
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
-      // dtermine this parameter instead).
+      // determine this parameter instead).
       //
       // As a shorthand, `targetId` may be `_trash` to refer to the trash can,
       // or `_home` to refer to the home page.
