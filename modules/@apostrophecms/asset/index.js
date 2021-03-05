@@ -16,13 +16,13 @@ module.exports = {
     refreshOnRestart: false
   },
 
-  init(self, options) {
+  init(self) {
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       build: {
         usage: 'Build Apostrophe frontend javascript master import files',
@@ -183,7 +183,7 @@ module.exports = {
               for (const [ name, layer ] of Object.entries(metadata.icons)) {
                 if ((typeof layer) === 'function') {
                   // We should not support invoking a function to define the icons
-                  // because the developer would expect `(self, options)` to behave
+                  // because the developer would expect `(self)` to behave
                   // normally, and they won't during an asset build. So we only
                   // accept a simple object with the icon mappings
                   throw new Error(`Error in ${name} module: the "icons" property may not be a function.`);
@@ -290,7 +290,7 @@ module.exports = {
       }
     };
   },
-  middleware(self, options) {
+  middleware(self) {
     return {
       serveStaticAssets: {
         before: '@apostrophecms/express',
@@ -298,7 +298,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       stylesheetsHelper(when) {
         const base = self.getAssetBaseUrl();
@@ -318,7 +318,7 @@ module.exports = {
         return self.apos.template.safe(bundle);
       },
       shouldRefreshOnRestart() {
-        return options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
+        return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
       },
       // Returns a unique identifier for the current version of the
       // codebase (the current release). Checks for a release-id file
@@ -389,7 +389,7 @@ if your deployment is a git checkout.`);
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
       stylesheets: function (when) {
         return self.stylesheetsHelper(when);
@@ -406,7 +406,7 @@ if your deployment is a git checkout.`);
       }
     };
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     if (!self.shouldRefreshOnRestart()) {
       return;
     }

@@ -26,7 +26,7 @@ module.exports = {
     alias: 'doc',
     advisoryLockTimeout: 15
   },
-  async init(self, options) {
+  async init(self) {
     self.managers = {};
     self.enableBrowserData();
     await self.enableCollection();
@@ -35,7 +35,7 @@ module.exports = {
     self.addDraftPublishedMigration();
     self.addLastPublishedToAllDraftsMigration();
   },
-  restApiRoutes(self, options) {
+  restApiRoutes(self) {
     return {
       // GET /api/v1/@apostrophecms/doc/_id supports only the universal query
       // features, but works for any document type, Simplifies browser-side
@@ -46,7 +46,7 @@ module.exports = {
       }
     };
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         async slugTaken(req) {
@@ -71,7 +71,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       '@apostrophecms/doc-type:beforeInsert': {
         setLocale(req, doc, options) {
@@ -247,7 +247,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposDocs');

@@ -21,7 +21,7 @@ module.exports = {
 
   cascades: [ 'csrfExceptions' ],
 
-  init(self, options) {
+  init(self) {
     self.apos = self.options.apos;
     // all apostrophe modules are properties of self.apos.modules.
     // Those with an alias are also properties of self.apos
@@ -51,13 +51,13 @@ module.exports = {
     self.enableAction();
   },
 
-  async afterAllSections(self, options) {
+  async afterAllSections(self) {
     self.addHelpers(self.helpers || {});
     self.addHandlers(self.handlers || {});
     await self.executeAfterModuleInitTask();
   },
 
-  methods(self, options) {
+  methods(self) {
     return {
       addSectionRoutes(section) {
         _.each(self[section] || {}, function(routes, method) {
@@ -602,11 +602,11 @@ module.exports = {
       },
 
       // Merge in the event emitter / responder capabilities
-      ...require('./lib/events.js')(self, options)
+      ...require('./lib/events.js')(self)
     };
   },
 
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         addHelpers() {
@@ -655,7 +655,7 @@ module.exports = {
               return;
             }
             data.modules[self.__meta.name] = myData;
-            if (options.alias) {
+            if (self.options.alias) {
               data.modules[self.__meta.name].alias = self.options.alias;
             }
           }

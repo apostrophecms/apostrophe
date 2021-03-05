@@ -26,12 +26,12 @@ module.exports = {
     alias: 'oembed',
     cacheLifetime: 60 * 60
   },
-  init(self, options) {
+  init(self) {
     self.createOembetter();
     self.enhanceOembetter();
     self.enableBrowserData();
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Creates an instance of the `oembetter` module and adds the standard whitelist.
@@ -259,7 +259,7 @@ module.exports = {
       }
     };
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       // Simple API to self.query, with caching. Accepts url and
       // alwaysIframe parameters; alwaysIframe is assumed false

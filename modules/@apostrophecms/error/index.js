@@ -1,9 +1,9 @@
 module.exports = {
-  init(self, options) {
+  init(self) {
     // Actual error method is aliased for brevity, encouraging use of the mechanism
     self.apos.error = self.error;
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Construct an Error object suitable to throw. The `name` property will
       // be the given `name`.

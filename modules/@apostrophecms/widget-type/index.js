@@ -129,11 +129,11 @@ module.exports = {
     playerData: false,
     neverLoadSelf: true
   },
-  init(self, options) {
+  init(self) {
 
     self.enableBrowserData();
 
-    self.template = options.template || 'widget';
+    self.template = self.options.template || 'widget';
 
     self.name = self.options.name || self.__meta.name.replace(/-widget$/, '');
 
@@ -159,7 +159,7 @@ module.exports = {
       self.neverLoad = [ ...new Set(self.neverLoad) ];
     }
   },
-  methods(self, options) {
+  methods(self) {
     return {
       composeSchema() {
         self.schema = self.apos.schema.compose({
@@ -329,7 +329,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       // Set the options to be passed to the browser-side singleton corresponding
       // to this module. By default they do not depend on `req`, but the availability
@@ -357,7 +357,7 @@ module.exports = {
     };
   },
 
-  tasks(self, options) {
+  tasks(self) {
     return {
       list: {
         usage: 'Run this task to list all widgets of this type in the project.\nUseful for testing.',

@@ -3,11 +3,11 @@
 // Apostrophe to sanitize user input.
 
 module.exports = {
-  init(self, options) {
+  init(self) {
     self.apos.launder = require('launder')({
       // A3 _ids may contain :-separated components
       idRegExp: /^[A-Za-z0-9_-]+(:[A-Za-z0-9_-]+)*$/,
-      ...options
+      ...self.options
     });
   }
 };

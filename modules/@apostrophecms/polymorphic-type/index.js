@@ -3,7 +3,7 @@ const _ = require('lodash');
 module.exports = {
   extend: '@apostrophecms/doc-type',
   options: { name: '@apostrophecms/polymorphic' },
-  routes(self, options) {
+  routes(self) {
     return {
       post: {
         polymorphicChooserModal(req, res) {
