@@ -16,7 +16,7 @@ const _ = require('lodash');
 // being edited so that another user, or another tab for the same user,
 // does not inadvertently interfere. These locks are refreshed frequently
 // by the browser while they are held. By default, if the browser
-// is not heard from for 30 seconds, the lock expires. Note that
+// is not heard from for 15 seconds, the lock expires. Note that
 // the browser refreshes the lock every 5 seconds. This timeout should
 // be quite short as there is no longer any reliable way to force a browser
 // to unlock the document when leaving the page.
@@ -24,7 +24,7 @@ const _ = require('lodash');
 module.exports = {
   options: {
     alias: 'doc',
-    advisoryLockTimeout: 30
+    advisoryLockTimeout: 15
   },
   async init(self, options) {
     self.managers = {};

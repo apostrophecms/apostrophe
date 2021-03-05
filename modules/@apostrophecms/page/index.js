@@ -343,6 +343,7 @@ module.exports = {
       // `trash` to `true` or `false`.
       patch(req, _id) {
         self.publicApiCheck(req);
+        _id = self.inferIdLocaleAndMode(req, _id);
         return self.patch(req, _id);
       }
     };
