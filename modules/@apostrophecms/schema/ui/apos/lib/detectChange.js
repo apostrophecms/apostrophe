@@ -56,6 +56,9 @@ export function detectFieldChange(field, v1, v2) {
     return o;
   }
   function relevantRelationship(a) {
+    if (!Array.isArray(a)) {
+      return [];
+    }
     return a.map(item => ({
       // So draft and published can be compared
       _id: item._id.replace(/:[\w-]+:[\w]+$/, ''),
