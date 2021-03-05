@@ -122,34 +122,22 @@ export default {
         }
       }
 
-      const minMaxNumFields = [
-        'date',
+      const minMaxFields = [
         'integer',
         'float',
-        'range'
-      ];
-
-      const minMaxFields = [
-        ...minMaxNumFields,
+        'range',
         'string',
+        'date',
         'password'
       ];
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {
-        if (minMaxNumFields.includes(this.field.type)) {
-          if (value && (value < this.field.min)) {
-            return 'min';
-          }
-        } else if (value.length && (value.length < this.field.min)) {
+        if (value.length && (this.convert(value) < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max && minMaxFields.includes(this.field.type)) {
-        if (minMaxNumFields.includes(this.field.type)) {
-          if (value && (value > this.field.max)) {
-            return 'max';
-          }
-        } else if (value.length && (value.length > this.field.max)) {
+        if (value.length && (this.convert(value) > this.field.max)) {
           return 'max';
         }
       }
@@ -165,6 +153,15 @@ export default {
     defineStep() {
       if (this.type === 'number') {
         this.step = this.field.type === 'float' ? 'any' : 1;
+      }
+    },
+    convert(s) {
+      if ([ 'integer', 'range' ].includes(this.field.type)) {
+        return parseInt(s);
+      } else if (this.field.type === 'float') {
+        return parseFloat(s);
+      } else {
+        return s;
       }
     }
   }

@@ -81,7 +81,6 @@ export default {
           for (const [ key, val ] of Object.entries(field.if)) {
             if (val !== this.getFieldValue(key)) {
               result = false;
-              console.log(`value does not match for ${field.name} ${key} ${val} ${this.getFieldValue(key)}`);
               break;
             }
           }
