@@ -50,6 +50,12 @@ export default {
         return {};
       }
     },
+    conditionalFields: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     modifiers: {
       type: Array,
       default() {
@@ -209,23 +215,12 @@ export default {
           return false;
         }
       }
-      const field = this.schema.find(field => field.name === fieldName);
-      if (!field.if) {
+      // Might not be a conditional field at all, so test explicitly for false
+      if (this.conditionalFields[fieldName] === false) {
+        return false;
+      } else {
         return true;
       }
-      for (const [ key, testVal ] of Object.values(field.if)) {
-        let val;
-        if (this.fields.find(field => field.key === key)) {
-          val = this.next.data[key].value;
-        } else {
-          val = this.followingValues[fieldName][key];
-        }
-        // Just strict comparison for now
-        if (val !== testVal) {
-          return false;
-        }
-      }
-      return true;
     },
     scrollFieldIntoView(fieldName) {
       // The refs for a name are an array if that ref was assigned

@@ -71,16 +71,17 @@ export default {
     // returned object will contain properties only for conditional fields in that
     // category, although they may be conditional upon fields in either category.
 
-    getConditionalFieldsByCategory(followedByCategory) {
+    conditionalFields(followedByCategory) {
 
       const conditionalFields = {};
 
       for (const field of this.schema) {
         if (field.if) {
           let result = true;
-          for (const [ key, val ] of Object.values(field.if)) {
+          for (const [ key, val ] of Object.entries(field.if)) {
             if (val !== this.getFieldValue(key)) {
               result = false;
+              console.log(`value does not match for ${field.name} ${key} ${val} ${this.getFieldValue(key)}`);
               break;
             }
           }
@@ -91,8 +92,9 @@ export default {
         let change = false;
         for (const field of this.schema) {
           if (field.if) {
-            for (const [ key, val ] of Object.entries(field.if)) {
+            for (const key of Object.keys(field.if)) {
               if ((conditionalFields[key] === false) && (conditionalFields[field.name] === true)) {
+                console.log(`${field.name} is blocked by ${key}`);
                 conditionalFields[field.name] = false;
                 change = true;
                 break;
@@ -104,6 +106,7 @@ export default {
           break;
         }
       }
+      console.log(JSON.stringify(conditionalFields, null, '  '));
 
       const fields = this.getFieldsByCategory(followedByCategory);
       const result = {};
