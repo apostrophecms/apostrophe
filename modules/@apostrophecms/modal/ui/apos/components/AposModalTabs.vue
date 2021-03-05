@@ -12,13 +12,7 @@
         >
           {{ tab.label }}
           <span v-if="tabErrors[tab.name] && tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
-            {{ tabErrors[tab.name].length }}
-            <span v-if="tabErrors[tab.name].length > 1">
-              Errors
-            </span>
-            <span v-else>
-              Error
-            </span>
+            {{ tabErrors[tab.name].length }} {{ generateErrorLabel(tabErrors[tab.name].length) }}
           </span>
         </button>
       </li>
@@ -64,6 +58,13 @@ export default {
     }
   },
   methods: {
+    generateErrorLabel(errorCount) {
+      let label = 'Error';
+      if (errorCount > 1) {
+        label += 's';
+      }
+      return label;
+    },
     selectTab: function (e) {
       const tab = e.target;
       const id = tab.id;
