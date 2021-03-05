@@ -83,6 +83,7 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import dayjs from 'dayjs';
@@ -93,7 +94,7 @@ import cuid from 'cuid';
 dayjs.extend(advancedFormat);
 
 export default {
-  mixins: [ AposEditorMixin ],
+  mixins: [ AposEditorMixin, AposAdvisoryLockMixin ],
   props: {
     media: {
       type: Object,
@@ -182,7 +183,6 @@ export default {
           this.updateActiveAttachment(newData.attachment);
         }
       }
-
     },
     media(newVal) {
       this.updateActiveDoc(newVal);
@@ -193,12 +193,16 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
-    updateActiveDoc(newMedia) {
+    async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
+      await this.unlock();
+      if (!await this.lock(`${this.moduleOptions.action}/${newMedia._id}`)) {
+        this.lockNotAvailable();
+      }
     },
     save() {
       this.triggerValidation = true;
@@ -216,20 +220,27 @@ export default {
           return;
         }
 
+        const body = this.docFields.data;
+        this.addLockToRequest(body);
         try {
           const doc = await apos.http.put(route, {
             busy: true,
-            body: this.docFields.data,
+            body,
             draft: true
           });
           apos.bus.$emit('content-changed', doc);
           this.original = klona(this.docFields.data);
           this.$emit('modified', false);
           this.$emit('saved');
-        } catch (err) {
-          await this.handleSaveError(err, {
-            fallback: `Error Saving ${this.moduleLabels.label}`
-          });
+        } catch (e) {
+          if (this.isLockedError(e)) {
+            await this.showLockedError(e);
+            this.lockNotAvailable();
+          } else {
+            await this.handleSaveError(e, {
+              fallback: `Error Saving ${this.moduleLabels.label}`
+            });
+          }
         } finally {
           this.showReplace = false;
         }
@@ -241,6 +252,10 @@ export default {
     cancel() {
       this.showReplace = false;
       this.$emit('back');
+    },
+    lockNotAvailable() {
+      this.isModified = false;
+      this.cancel();
     },
     updateActiveAttachment(attachment) {
       console.info('☄️', attachment);

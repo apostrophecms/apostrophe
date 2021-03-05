@@ -16,7 +16,7 @@ const _ = require('lodash');
 // being edited so that another user, or another tab for the same user,
 // does not inadvertently interfere. These locks are refreshed frequently
 // by the browser while they are held. By default, if the browser
-// is not heard from for 30 seconds, the lock expires. Note that
+// is not heard from for 15 seconds, the lock expires. Note that
 // the browser refreshes the lock every 5 seconds. This timeout should
 // be quite short as there is no longer any reliable way to force a browser
 // to unlock the document when leaving the page.
@@ -24,7 +24,7 @@ const _ = require('lodash');
 module.exports = {
   options: {
     alias: 'doc',
-    advisoryLockTimeout: 30
+    advisoryLockTimeout: 15
   },
   async init(self, options) {
     self.managers = {};
@@ -128,6 +128,22 @@ module.exports = {
               }
             }
           });
+        }
+      },
+      '@apostrophecms/doc-type:beforeDelete': {
+        testPermissions(req, doc, options) {
+          if (!(options.permissions === false)) {
+            if (!self.apos.permission.can(req, 'delete', doc)) {
+              throw self.apos.error('forbidden');
+            }
+          }
+        }
+      },
+      '@apostrophecms/doc-type:beforePublish': {
+        testPermissions(req, doc) {
+          if (!self.apos.permission.can(req, 'publish', doc)) {
+            throw self.apos.error('forbidden');
+          }
         }
       },
       '@apostrophecms/doc-type:beforeSave': {
@@ -538,10 +554,8 @@ module.exports = {
           }
         }
       },
-      // Called by `docBeforeInsert` to confirm that the user
-      // has the appropriate permissions for the doc's type
-      // and, in some extensions of Apostrophe, the new doc's
-      // content.
+      // Called by an `@apostrophecms/doc-type:insert` event handler to confirm that the user
+      // has the appropriate permissions for the doc's type and content.
       testInsertPermissions(req, doc, options) {
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'edit', doc)) {

@@ -1,7 +1,6 @@
 // Implements rich text editor widgets. Unlike most widget types, the rich text
 // editor does not use a modal; instead you edit in context on the page.
 
-const _ = require('lodash');
 const sanitizeHtml = require('sanitize-html');
 
 module.exports = {

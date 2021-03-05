@@ -31,8 +31,8 @@ module.exports = {
     self.label = self.options.label;
     self.perPage = options.perPage || 10;
 
-    self.piecesModuleName = self.options.piecesModuleName || self.__meta.name.replace(/-page$/, '');
-    self.pieces = self.apos.modules[self.piecesModuleName];
+    self.pieceModuleName = self.options.pieceModuleName || self.__meta.name.replace(/-page$/, '');
+    self.pieces = self.apos.modules[self.pieceModuleName];
     self.piecesCssName = self.apos.util.cssName(self.pieces.name);
 
     self.piecesFilters = self.options.piecesFilters || [];
@@ -165,7 +165,7 @@ module.exports = {
             return;
           }
           const query = self.indexQuery(req);
-          next = await query.next(doc).applyBuidlers(typeof self.options.next === 'object' ? self.options.next : {}).toObject();
+          next = await query.next(doc).applyBuilders(typeof self.options.next === 'object' ? self.options.next : {}).toObject();
         }
       },
 
