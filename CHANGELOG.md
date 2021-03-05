@@ -4,6 +4,7 @@
 
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
 * Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
+* If a select element has no default, but is required, it should default to the first option. The select elements appeared as if this were the case, but on save you would be told to make a choice, forcing you to change and change back. This has been fixed.
 * Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
 * Removes admin bar module options related to 2.x slide-out UI: `openOnLoad`, `openOnHomepageLoad`, `closeDelay`.
 * Check permissions for the delete and publish operations.
