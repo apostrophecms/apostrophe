@@ -3,12 +3,16 @@
 ## 3.0.0-alpha.5 - Unreleased
 
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
+* Advisory locking has been implemented for in-context editing, including nested contexts like the palette module. Advisory locking has also been
+implemented for the media manager, completing the advisory locking story.
 * Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
+* If a select element has no default, but is required, it should default to the first option. The select elements appeared as if this were the case, but on save you would be told to make a choice, forcing you to change and change back. This has been fixed.
 * Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
 * Removes admin bar module options related to 2.x slide-out UI: `openOnLoad`, `openOnHomepageLoad`, `closeDelay`.
-* Advisory locking has been implemented for in-context editing, including nested contexts like the palette module. At this stage the only place we don't have advisory locking yet is the image editor.
 * Fixed a bug that allowed users to appear to be in edit mode while looking at published content in certain edge cases.
 * The PATCH API for pages can now infer the correct _id in cases where the locale is specified in the query string as an override, just like other methods.
+* Check permissions for the delete and publish operations.
+* Removes the `createControls` and `editControls` options.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
 
@@ -1067,7 +1071,7 @@ Thanks to Michelin for their support of this work.
 All tests passing.
 
 * Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
-* The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
+* The `createControls` option of the `apostrophe-pages` module is now respected properly.
 
 ## 2.29.1
 

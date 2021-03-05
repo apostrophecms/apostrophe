@@ -1705,6 +1705,7 @@ module.exports = {
         }
 
         const objects = _.isArray(objectOrArray) ? objectOrArray : [ objectOrArray ];
+
         if (!objects.length) {
           // Don't waste effort
           return;

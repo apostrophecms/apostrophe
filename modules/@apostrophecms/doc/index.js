@@ -130,6 +130,22 @@ module.exports = {
           });
         }
       },
+      '@apostrophecms/doc-type:beforeDelete': {
+        testPermissions(req, doc, options) {
+          if (!(options.permissions === false)) {
+            if (!self.apos.permission.can(req, 'delete', doc)) {
+              throw self.apos.error('forbidden');
+            }
+          }
+        }
+      },
+      '@apostrophecms/doc-type:beforePublish': {
+        testPermissions(req, doc) {
+          if (!self.apos.permission.can(req, 'publish', doc)) {
+            throw self.apos.error('forbidden');
+          }
+        }
+      },
       '@apostrophecms/doc-type:beforeSave': {
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
           const manager = self.getManager(doc.type);
@@ -538,10 +554,8 @@ module.exports = {
           }
         }
       },
-      // Called by `docBeforeInsert` to confirm that the user
-      // has the appropriate permissions for the doc's type
-      // and, in some extensions of Apostrophe, the new doc's
-      // content.
+      // Called by an `@apostrophecms/doc-type:insert` event handler to confirm that the user
+      // has the appropriate permissions for the doc's type and content.
       testInsertPermissions(req, doc, options) {
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'edit', doc)) {

@@ -44,6 +44,8 @@ export default {
   },
   data() {
     return {
+      next: (this.value && this.value.data != null)
+        ? this.value.data : (this.field.required ? (this.field.choices[0] && this.field.choices[0].value) : ''),
       choices: []
     };
   },

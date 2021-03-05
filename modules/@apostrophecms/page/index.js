@@ -47,7 +47,6 @@ module.exports = {
       } ]
     } ]).concat(self.options.park || []);
     self.validateTypeChoices();
-    self.finalizeControls();
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -470,7 +469,10 @@ module.exports = {
           // expressly shut off:
           //
           // home: { children: false }
-          const builders = self.getServePageBuilders().ancestors || { children: !(self.options.home && self.options.home.children === false) };
+          const builders = self.getServePageBuilders().ancestors ||
+            {
+              children: !(self.options.home && self.options.home.children === false)
+            };
           const query = self.find(req, { level: 0 }).ancestorPerformanceRestrictions();
           _.each(builders, function (val, key) {
             query[key](val);
@@ -1858,32 +1860,6 @@ database.`);
           }
         });
       },
-      finalizeControls() {
-        self.createControls = self.options.createControls || [
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save'
-          }
-        ];
-        self.editControls = self.options.editControls || [
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save'
-          }
-        ];
-      },
       removeParkedPropertiesFromSchema(page, schema) {
         return _.filter(schema, function (field) {
           return !_.includes(page.parked, field.name);
@@ -1898,14 +1874,6 @@ database.`);
           });
         }
         return schema;
-      },
-      getCreateControls(req) {
-        const controls = _.cloneDeep(self.createControls);
-        return controls;
-      },
-      getEditControls(req) {
-        const controls = _.cloneDeep(self.editControls);
-        return controls;
       },
       addManagerModal() {
         self.apos.modal.add(

@@ -1,6 +1,7 @@
 <template>
   <div class="apos-area-menu" :class="{'is-focused': groupIsFocused}">
     <AposContextMenu
+      :disabled="disabled"
       :button="buttonOptions"
       v-bind="extendedContextMenuOptions"
       @open="menuOpen"
@@ -122,8 +123,10 @@ export default {
         type: 'primary',
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],
         iconSize: this.empty ? 20 : 11,
-        disabled: this.maxReached
       };
+    },
+    disabled() {
+      return this.maxReached;
     },
     extendedContextMenuOptions() {
       const modifiers = [ 'unpadded' ];
