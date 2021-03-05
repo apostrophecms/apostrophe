@@ -12,7 +12,8 @@ implemented for the media manager, completing the advisory locking story.
 * Fixed a bug that allowed users to appear to be in edit mode while looking at published content in certain edge cases.
 * The PATCH API for pages can now infer the correct _id in cases where the locale is specified in the query string as an override, just like other methods.
 * Check permissions for the delete and publish operations.
-* Removes the `createControls` and `editControls` options.
+* Removes the `createControls`, and `editControls` options from piece type module and the page module.
+* Removes the `typeChoices` option from the page module.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
 
