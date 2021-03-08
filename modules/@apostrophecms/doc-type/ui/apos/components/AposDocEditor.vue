@@ -372,51 +372,6 @@ export default {
         this.fieldErrors[name] = {};
       }
     },
-    markLockedAndScheduleRefresh() {
-      this.locked = true;
-      this.lockTimeout = setTimeout(this.refreshLock, 10000);
-    },
-    refreshLock() {
-      this.lockRefreshing = (async () => {
-        try {
-          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
-            body: {
-              _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
-                lock: true
-              }
-            },
-            draft: true
-          });
-          // Reset this each time to avoid various race conditions
-          this.lockTimeout = setTimeout(this.refreshLock, 10000);
-        } catch (e) {
-          if (e.body && e.body.name && (e.body.name === 'locked')) {
-            await this.showLockedError(e);
-            this.modal.showModal = false;
-          }
-          // Other errors on this are not critical
-        }
-        this.lockRefreshing = null;
-      })();
-    },
-    async showLockedError(e) {
-      if (e.body.data.me) {
-        // We use an alert because it is a clear interruption of their
-        // work, and because a notification would appear in both windows
-        // if control was taken by the same user in another window,
-        // which would be confusing.
-        await apos.alert({
-          heading: 'You Took Control in Another Window',
-          description: 'You took control of this document in another tab or window.'
-        });
-      } else {
-        await apos.alert({
-          heading: 'Another User Took Control',
-          description: 'Another user took control of the document.'
-        });
-      }
-    },
     // Implementing a method expected by the advisory lock mixin
     lockNotAvailable() {
       this.modal.showModal = false;
