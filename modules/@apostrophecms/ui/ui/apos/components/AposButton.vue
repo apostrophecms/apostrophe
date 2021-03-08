@@ -1,5 +1,5 @@
 <template>
-  <span v-tooltip="tooltip">
+  <span v-tooltip="tooltip" class="apos-button__wrapper">
     <component
       :is="href ? 'a' : 'button'"
       v-on="href ? {} : {click: click}"
@@ -589,6 +589,10 @@ export default {
       box-shadow: none;
       outline: none;
     }
+  }
+
+  .apos-button__wrapper {
+    display: inline-block;
   }
 
   @keyframes animateGradient {

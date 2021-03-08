@@ -370,7 +370,7 @@ export default {
   }
 
   .apos-modal__main--with-rails {
-    grid-template-columns: 18% 1fr minmax(250px, $modal-rail-right-w);
+    grid-template-columns: 20% 1fr minmax(250px, $modal-rail-right-w);
   }
 
   .apos-modal__main--with-left-rail {

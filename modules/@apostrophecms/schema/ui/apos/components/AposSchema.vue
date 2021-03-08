@@ -176,9 +176,14 @@ export default {
         return;
       }
       const oldHasErrors = this.next.hasErrors;
-      this.next.hasErrors = false;
+      // destructure these for non-linked comparison
+      const oldFieldState = { ...this.next.fieldState };
+      const newFieldState = { ...this.fieldState };
+
       let changeFound = false;
-      this.next.fieldState = this.fieldState;
+
+      this.next.hasErrors = false;
+      this.next.fieldState = { ...this.fieldState };
 
       this.schema.forEach(field => {
         if (this.fieldState[field.name].error) {
@@ -194,7 +199,10 @@ export default {
           this.next.data[field.name] = this.value.data[field.name];
         }
       });
-      if (oldHasErrors !== this.next.hasErrors) {
+      if (
+        oldHasErrors !== this.next.hasErrors ||
+        oldFieldState !== newFieldState
+      ) {
         // Otherwise the save button may never unlock
         changeFound = true;
       }

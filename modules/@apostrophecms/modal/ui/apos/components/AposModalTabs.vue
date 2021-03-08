@@ -117,7 +117,7 @@ export default {
   align-items: center;
   width: 100%;
   height: 60px;
-  padding: 25px 20px;
+  padding: 25px 10px 25px 20px;
   border-bottom: 1px solid var(--a-base-7);
   color: var(--a-text-primary);
   background-color: var(--a-base-9);

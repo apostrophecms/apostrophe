@@ -1138,7 +1138,14 @@ function depth(el) {
   /deep/ .apos-context-menu__btn {
     width: 21px;
     height: 21px;
+  }
+
+  /deep/ .apos-context-menu__btn .apos-button {
+    width: 100%;
+    height: 100%;
+    margin: 0;
     padding: 0;
+    border: 0;
   }
 
   /deep/ .apos-context-menu__popup {
