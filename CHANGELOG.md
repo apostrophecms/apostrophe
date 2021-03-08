@@ -2,6 +2,7 @@
 
 ## 2.116.1 (2021-03-01)
 * Fixes page slug updated twice when committing a page move.
+* Eliminated potential race condition while inserting groups if Apostrophe is starting up for the very first time in two processes simultaneously.
 
 ## 2.116.0 (2021-02-25)
 * Eliminated 75% of database operations required to track attachments referenced in a document when inserted or updated. This yields a significant performance boost in very large databases.
