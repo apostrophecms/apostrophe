@@ -591,13 +591,10 @@ module.exports = {
       // If `builders` is an object its properties are invoked as
       // query builders, for instance `{ attachments: true }`.
       async findOneForEditing(req, criteria, builders) {
-        const query = await self.findForEditing(req, criteria, builders);
-        const doc = query.toObject();
-        if (self.options.annotate) {
-          self.apos.attachment.all(doc, { annotate: true });
-        }
-        return doc;
+        return self.findForEditing(req, criteria, builders).toObject();
       },
+      // Identical to findOneForEditing by default, but could be
+      // overridden usefully in subclasses.
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
