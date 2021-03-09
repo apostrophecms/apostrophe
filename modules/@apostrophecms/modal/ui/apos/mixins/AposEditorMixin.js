@@ -8,7 +8,7 @@
  * 3. A scaffold for handling `following` in field definitions, via
  *   the `followingValues` method
  * 4. A scaffold for handling conditional fields, via the
- *   `followingConditionalFields` method
+ *   `conditionalFields` method
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.

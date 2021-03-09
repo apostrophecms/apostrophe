@@ -125,7 +125,6 @@ export default {
       const minMaxFields = [
         'integer',
         'float',
-        'range',
         'string',
         'date',
         'password'
@@ -156,7 +155,7 @@ export default {
       }
     },
     convert(s) {
-      if ([ 'integer', 'range' ].includes(this.field.type)) {
+      if (this.field.type === 'integer') {
         return parseInt(s);
       } else if (this.field.type === 'float') {
         return parseFloat(s);

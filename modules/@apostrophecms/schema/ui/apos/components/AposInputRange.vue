@@ -99,6 +99,10 @@ export default {
           return 'required';
         }
       }
+      return false;
+    },
+    convert(value) {
+      return parseFloat(value);
     }
   }
 };
