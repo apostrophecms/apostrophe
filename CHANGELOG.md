@@ -1,9 +1,7 @@
 # Changelog
 
-## 2.116.2 (2021-03-10)
+## 2.116.1 (2021-03-10)
 * Fixes a user interface bug in the chooser modals where the footer pagination was hidden behind the left column.
-
-## 2.116.1 (2021-03-01)
 * Fixes page slug updated twice when committing a page move.
 * Eliminated potential race condition while inserting groups if Apostrophe is starting up for the very first time in two processes simultaneously.
 
