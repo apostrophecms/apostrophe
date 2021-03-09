@@ -41,10 +41,16 @@ export default {
     currentFields: {
       type: Array,
       default() {
-        return [];
+        return null;
       }
     },
     followingValues: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    conditionalFields: {
       type: Object,
       default() {
         return {};
@@ -204,7 +210,17 @@ export default {
       }
     },
     displayComponent(fieldName) {
-      return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
+      if (this.currentFields) {
+        if (!this.currentFields.includes(fieldName)) {
+          return false;
+        }
+      }
+      // Might not be a conditional field at all, so test explicitly for false
+      if (this.conditionalFields[fieldName] === false) {
+        return false;
+      } else {
+        return true;
+      }
     },
     scrollFieldIntoView(fieldName) {
       // The refs for a name are an array if that ref was assigned
