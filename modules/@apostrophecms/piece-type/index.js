@@ -23,7 +23,7 @@ module.exports = {
       }
     }
   },
-  columns(self, options) {
+  columns(self) {
     return {
       add: {
         title: {
@@ -129,19 +129,19 @@ module.exports = {
       }
     }
   },
-  init(self, options) {
-    if (!options.name) {
+  init(self) {
+    if (!self.options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
-    if (!options.label) {
+    if (!self.options.label) {
       // Englishify it
-      options.label = _.startCase(options.name);
+      self.options.label = _.startCase(self.options.name);
     }
-    options.pluralLabel = options.pluralLabel || options.label + 's';
+    self.options.pluralLabel = self.options.pluralLabel || self.options.label + 's';
 
-    self.name = options.name;
-    self.label = options.label;
-    self.pluralLabel = options.pluralLabel;
+    self.name = self.options.name;
+    self.label = self.options.label;
+    self.pluralLabel = self.options.pluralLabel;
 
     self.composeFilters();
     self.composeColumns();
@@ -149,7 +149,7 @@ module.exports = {
     self.addManagerModal();
     self.addEditorModal();
   },
-  restApiRoutes: (self, options) => ({
+  restApiRoutes: (self) => ({
     async getAll(req) {
       self.publicApiCheck(req);
       const query = self.getRestQuery(req);
@@ -215,7 +215,7 @@ module.exports = {
       return self.patch(req, _id);
     }
   }),
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         ':_id/publish': async (req) => {
@@ -302,7 +302,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeInsert: {
         ensureType(req, piece, options) {
@@ -329,7 +329,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Accepts a doc, a preliminary draft, and the options
       // originally passed to insert(). Default implementation
@@ -756,7 +756,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
@@ -780,7 +780,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return self.isAdminOnly() ? {} : {
       generate: {
         usage: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',

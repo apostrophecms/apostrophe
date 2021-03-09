@@ -15,7 +15,7 @@ describe('Global', function() {
       root: module,
       modules: {
         'global-tests': {
-          apiRoutes(self, options) {
+          apiRoutes(self) {
             return {
               get: {
                 test(req) {

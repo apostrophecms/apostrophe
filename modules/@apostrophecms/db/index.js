@@ -46,7 +46,7 @@
 const mongo = require('mongodb');
 
 module.exports = {
-  async init(self, options) {
+  async init(self) {
     await self.connectToMongo();
     // TODO: Remove this conditional and `self.trace` if not necessary or add
     // documentation explaining utility and usage.
@@ -54,7 +54,7 @@ module.exports = {
       self.trace();
     }
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:destroy': {
         async closeDb() {
@@ -73,7 +73,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Open the database connection. Always use MongoClient with its
       // sensible defaults. Build a URI if we need to, so we can call it
@@ -86,7 +86,7 @@ module.exports = {
         if (self.options.client) {
           // Reuse a single client connection http://mongodb.github.io/node-mongodb-native/2.2/api/Db.html#db
           self.apos.dbClient = self.options.client;
-          self.apos.db = self.options.client.db(options.name || self.apos.shortName);
+          self.apos.db = self.options.client.db(self.options.name || self.apos.shortName);
           self.connectionReused = true;
           return;
         }
@@ -99,22 +99,22 @@ module.exports = {
         let uri = 'mongodb://';
         if (process.env.APOS_MONGODB_URI) {
           uri = process.env.APOS_MONGODB_URI;
-        } else if (options.uri) {
-          uri = options.uri;
+        } else if (self.options.uri) {
+          uri = self.options.uri;
         } else {
-          if (options.user) {
-            uri += options.user + ':' + options.password + '@';
+          if (self.options.user) {
+            uri += self.options.user + ':' + self.options.password + '@';
           }
-          if (!options.host) {
-            options.host = 'localhost';
+          if (!self.options.host) {
+            self.options.host = 'localhost';
           }
-          if (!options.port) {
-            options.port = 27017;
+          if (!self.options.port) {
+            self.options.port = 27017;
           }
-          if (!options.name) {
-            options.name = self.apos.shortName;
+          if (!self.options.name) {
+            self.options.name = self.apos.shortName;
           }
-          uri += options.host + ':' + options.port + '/' + options.name;
+          uri += self.options.host + ':' + self.options.port + '/' + self.options.name;
         }
 
         const connectOptions = {
@@ -178,7 +178,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       // Reset the database. Drops ALL collections. If you have
       // collections in the same database unrelated to Apostrophe they WILL

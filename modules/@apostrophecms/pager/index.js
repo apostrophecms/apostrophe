@@ -3,7 +3,7 @@
 
 module.exports = {
   options: { alias: 'pager' },
-  helpers(self, options) {
+  helpers(self) {
     return {
       // Generate the right range of page numbers to display in the pager.
       // Just a little too much math to be comfortable in pure Nunjucks

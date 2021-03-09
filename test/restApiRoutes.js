@@ -17,7 +17,7 @@ describe('REST API routing', function() {
       root: module,
       modules: {
         'rest-test': {
-          restApiRoutes(self, options) {
+          restApiRoutes(self) {
             return {
               getAll(req) {
                 return {

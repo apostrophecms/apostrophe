@@ -15,7 +15,7 @@ module.exports = {
     pluralLabel: 'Pages'
   },
 
-  methods(self, options) {
+  methods(self) {
     return {
       // Returns a string to represent the given `doc` in an
       // autocomplete menu. `doc` will contain only the fields returned
@@ -30,7 +30,7 @@ module.exports = {
     };
   },
 
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       find(_super, req, criteria, projection) {
         return _super(req, criteria, projection).type(false).isPage(true);

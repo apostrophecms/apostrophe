@@ -15,7 +15,7 @@ const _ = require('lodash');
 // documentation.
 
 module.exports = {
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Implements the `email` method available in all modules.

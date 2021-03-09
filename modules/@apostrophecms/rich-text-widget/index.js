@@ -115,16 +115,16 @@ module.exports = {
       }
     }
   },
-  beforeSuperClass(self, options) {
-    options.defaultOptions = {
-      ...options.minimumDefaultOptions,
-      ...options.defaultOptions
+  beforeSuperClass(self) {
+    self.options.defaultOptions = {
+      ...self.options.minimumDefaultOptions,
+      ...self.options.defaultOptions
     };
   },
   icons: {
     'format-text-icon': 'FormatText'
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Return just the rich text of the widget, which may be undefined or null if it has not yet been edited
 
@@ -257,11 +257,11 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       async sanitize(_super, req, input, saniOptions) {
         const rteOptions = {
-          ...options.defaultOptions,
+          ...self.options.defaultOptions,
           ...saniOptions
         };
 
@@ -275,9 +275,9 @@ module.exports = {
 
         const finalData = {
           ...initialData,
-          components: options.components,
-          tools: options.editorTools,
-          defaultOptions: options.defaultOptions
+          components: self.options.components,
+          tools: self.options.editorTools,
+          defaultOptions: self.options.defaultOptions
         };
         return finalData;
       }

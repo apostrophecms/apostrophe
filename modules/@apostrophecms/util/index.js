@@ -37,7 +37,7 @@ module.exports = {
     // * async components
     stackLimit: 50
   },
-  init(self, options) {
+  init(self) {
     // An id for this particular Apostrophe instance that should be
     // unique even in a multiple server environment.
     self.apos.pid = self.generateId();
@@ -45,7 +45,7 @@ module.exports = {
     self.warnedDev = {};
     return self.enableLogger();
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // generate a unique identifier for a new page or other object.
       // IDs are generated with the cuid module which prevents
@@ -750,7 +750,7 @@ module.exports = {
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
 
       // Turn the provided string into a string suitable for use as a slug.

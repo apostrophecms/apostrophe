@@ -38,7 +38,7 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('myObject', {
-        methods(self, options) {
+        methods(self) {
           return {};
         }
       });
@@ -51,8 +51,8 @@ describe('moog', function() {
         options: {
           color: 'blue'
         },
-        init(self, options) {
-          self.color = options.color;
+        init(self) {
+          self.color = self.options.color;
         }
       });
 
@@ -150,14 +150,14 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({ defaultBaseClass: 'baseClass' });
 
       moog.define('baseClass', {
-        init(self, options) {
+        init(self) {
           assert(self.__meta);
           assert(self.__meta.chain);
           assert(self.__meta.chain[0]);
           assert(self.__meta.chain[0].name === 'baseClass');
           assert(self.__meta.chain[1].name === 'subClass');
           assert(self.__meta.name === 'subClass');
-          self.color = options.color;
+          self.color = self.options.color;
         }
       });
 
@@ -177,7 +177,7 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({ defaultBaseClass: 'baseClass' });
 
       moog.define('baseClass', {
-        construct: function(self, options) {
+        construct: function(self) {
           self.based = true;
         }
       });
@@ -198,7 +198,7 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('myObject', {
-        methods(self, options) {
+        methods(self) {
           return {
             basic() {
               return true;
@@ -214,14 +214,14 @@ describe('moog', function() {
       });
 
       moog.define('myObject', {
-        methods(self, options) {
+        methods(self) {
           return {
             overridden() {
               return true;
             }
           };
         },
-        extendMethods(self, options) {
+        extendMethods(self) {
           return {
             extended(_super, times) {
               return _super(times) * 2;
@@ -245,7 +245,7 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('myObject', {
-        methods(self, options) {
+        methods(self) {
           return {
             oldMethod() {}
           };
@@ -253,7 +253,7 @@ describe('moog', function() {
       });
 
       moog.redefine('myObject', {
-        methods(self, options) {
+        methods(self) {
           return {
             newMethod() {}
           };
@@ -287,13 +287,13 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('myObject', {
-        init(self, options) {
+        init(self) {
           self.order = (self.order || []).concat('first');
         }
       });
 
       moog.define('myObject', {
-        init(self, options) {
+        init(self) {
           self.order = (self.order || []).concat('second');
         }
       });
@@ -315,21 +315,21 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('baseClass', {
-        init(self, options) {
+        init(self) {
           self.order = (self.order || []).concat('first');
         }
       });
 
       moog.define('subClassOne', {
         extend: 'baseClass',
-        init(self, options) {
+        init(self) {
           self.order = (self.order || []).concat('second');
         }
       });
 
       moog.define('subClassTwo', {
         extend: 'subClassOne',
-        init(self, options) {
+        init(self) {
           self.order = (self.order || []).concat('third');
         }
       });
@@ -344,22 +344,22 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('baseClass', {
-        beforeSuperClass(self, options) {
-          options.order = (options.order || []).concat('third');
+        beforeSuperClass(self) {
+          self.options.order = (self.options.order || []).concat('third');
         }
       });
 
       moog.define('subClassOne', {
         extend: 'baseClass',
-        beforeSuperClass(self, options) {
-          options.order = (options.order || []).concat('second');
+        beforeSuperClass(self) {
+          self.options.order = (self.options.order || []).concat('second');
         }
       });
 
       moog.define('subClassTwo', {
         extend: 'subClassOne',
-        beforeSuperClass(self, options) {
-          options.order = (options.order || []).concat('first');
+        beforeSuperClass(self) {
+          self.options.order = (self.options.order || []).concat('first');
         }
       });
 
@@ -439,14 +439,14 @@ describe('moog', function() {
     it('sanity check of await behavior', async function() {
       const moog = require('../lib/moog.js')({});
       moog.define('classOne', {
-        async init(self, options) {
+        async init(self) {
           await delay(100);
           self.size = 1;
         }
       });
       moog.define('classTwo', {
         extend: 'classOne',
-        async init(self, options) {
+        async init(self) {
           await delay(1);
           self.size = 2;
         }
@@ -483,7 +483,7 @@ describe('moog', function() {
     it('routes should work, including extending routes', async function() {
       const moog = require('../lib/moog.js')({ sections: [ 'routes' ] });
       moog.define('baseclass', {
-        routes(self, options) {
+        routes(self) {
           return {
             post: {
               async insert(req) {
@@ -498,7 +498,7 @@ describe('moog', function() {
       });
       moog.define('subclass', {
         extend: 'baseclass',
-        routes(self, options) {
+        routes(self) {
           return {
             post: {
               async remove(req) {
@@ -514,7 +514,7 @@ describe('moog', function() {
             }
           };
         },
-        extendRoutes(self, options) {
+        extendRoutes(self) {
           return {
             post: {
               async list(_super, req) {
