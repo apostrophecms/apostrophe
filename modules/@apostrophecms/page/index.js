@@ -46,7 +46,6 @@ module.exports = {
         _defaults: { title: 'Trash' }
       } ]
     } ]).concat(self.options.park || []);
-    self.validateTypeChoices();
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -310,6 +309,7 @@ module.exports = {
               force
             });
           }
+          self.enforceParkedProperties(req, page, input);
           await manager.convert(req, input, page);
           await self.update(req, page);
           if (input._targetId) {
@@ -481,6 +481,23 @@ module.exports = {
         }
       },
       'apostrophe:modulesReady': {
+        validateTypeChoices() {
+          for (const choice of self.typeChoices) {
+            if (!choice.name) {
+              throw new Error('One of the page types specified for your types option has no name property.');
+            }
+            if (!choice.label) {
+              throw new Error('One of the page types specified for your types option has no label property.');
+            }
+            if (!self.apos.modules[choice.name]) {
+              let error = `There is no module named ${choice.name}, but it is configured as a page type\nin your types option.`;
+              if (choice.name === 'home-page') {
+                error += '\n\nYou probably meant @apostrophecms/home-page.';
+              }
+              throw new Error(error);
+            }
+          }
+        },
         async manageOrphans() {
           const managed = self.apos.doc.getManaged();
 
@@ -600,6 +617,7 @@ database.`);
                 force
               });
             }
+            self.enforceParkedProperties(req, page, input);
             await self.applyPatch(req, page, input);
             if (i === (patches.length - 1)) {
               await self.update(req, page);
@@ -1841,16 +1859,6 @@ database.`);
           return _.uniq(types);
         }
       },
-      validateTypeChoices() {
-        _.each(self.typeChoices, function (choice) {
-          if (!choice.name) {
-            throw new Error('One of the page types specified for your \'types\' option has no \'name\' property.');
-          }
-          if (!choice.label) {
-            throw new Error('One of the page types specified for your \'types\' option has no \'label\' property.');
-          }
-        });
-      },
       removeParkedPropertiesFromSchema(page, schema) {
         return _.filter(schema, function (field) {
           return !_.includes(page.parked, field.name);
@@ -2148,6 +2156,13 @@ database.`);
         // For pages we currently always do this. For pieces it's conditional
         // on whether the type is localized.
         return self.apos.i18n.inferIdLocaleAndMode(req, _id);
+      },
+      // Copy any parked properties of `page` back into `input` to
+      // prevent any attempt to alter them via the PUT or PATCH APIs
+      enforceParkedProperties(req, page, input) {
+        for (const parked of (page.parked || [])) {
+          input[parked] = page[parked];
+        }
       }
     };
   },

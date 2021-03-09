@@ -611,7 +611,9 @@ module.exports = {
         const publishedLocale = draft.aposLocale.replace(':draft', ':published');
         const publishedId = `${draft.aposDocId}:${publishedLocale}`;
         let previousPublished;
-        let published = await self.findOneForEditing(req, {
+        // pages can change type, so don't use a doc-type-specific find method
+        const find = self.apos.page.isPage(draft) ? self.apos.page.findOneForEditing : self.findOneForEditing;
+        let published = await find(req, {
           _id: publishedId
         }, {
           locale: publishedLocale

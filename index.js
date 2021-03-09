@@ -106,7 +106,7 @@ module.exports = async function(options) {
     defineModules();
 
     await instantiateModules();
-    lintOrphanModules();
+    lintModules();
     await self.emit('modulesReady');
     await self.emit('afterInit');
     if (self.taskRan) {
@@ -329,7 +329,7 @@ module.exports = async function(options) {
     });
   }
 
-  function lintOrphanModules() {
+  function lintModules() {
     const validSteps = [];
     for (const module of Object.values(self.modules)) {
       for (const step of module.__meta.chain) {
@@ -368,6 +368,64 @@ module.exports = async function(options) {
           console.warn(message);
         }
       }
+    }
+
+    for (const [ name, module ] of Object.entries(self.modules)) {
+      if (module.options.extends && ((typeof module.options.extends) === 'string')) {
+        lint('The module ' + name + ' contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.');
+      }
+      if (module.options.singletonWarningIfNot && (name !== module.options.singletonWarningIfNot)) {
+        lint('The module ' + name + ' extends ' + module.options.singletonWarningIfNot + ', which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use lib/modules/' + module.options.singletonWarningIfNot + '/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.');
+      }
+      if (name.match(/-widget$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+        lint('The module ' + name + ' does not extend anything.\n\nA -widget module usually extends @apostrophecms/widget or another widget type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.');
+      } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+        lint('The module ' + name + ' does not extend anything.\n\nA -page module usually extends @apostrophecms/page-type or\n@apostrophecms/piece-page-type or another page type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.');
+      } else if ((!extending(module)) && (!hasCode(name)) && (!isBundle(name)) && (!module.options.ignoreNoCodeWarning)) {
+        lint('The module ' + name + ' does not extend anything and does not have any code. This usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven\'t written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.');
+      }
+    }
+    function hasCode(name) {
+      let d = self.synth.definitions[name];
+      if (doesWork(d)) {
+        return true;
+      }
+      if (self.synth.isMy(d.__meta.name)) {
+        // None at project level, but maybe at npm level, look there
+        d = d.extend;
+      }
+      // If we got to the base class of all modules, the module
+      // has no construct of its own
+      if (self.synth.myToOriginal(d.__meta.name) === '@apostrophecms/module') {
+        return false;
+      }
+      return doesWork(d);
+    }
+    function doesWork(d) {
+      const code = d.routes || d.apiRoutes || d.renderRoutes || d.init || d.methods || d.beforeSuperClass || d.handlers || d.helpers || d.restApiRoutes || d.middleware || d.customTags || d.components || d.tasks;
+      if (code) {
+        return true;
+      }
+      if (d.__meta.dirname && (fs.existsSync(`${d.__meta.dirname}/ui/apos`) || fs.existsSync(`${d.__meta.dirname}/ui/public`))) {
+        // Assets that will be bundled, instead of server code
+        return true;
+      }
+      return false;
+    }
+    function isBundle(name) {
+      const d = self.synth.definitions[name];
+      return d.bundle || (d.extend && d.extend.bundle);
+    }
+    function extending(module) {
+      // If the module extends no other module, then it will
+      // have up to four entries in its inheritance chain:
+      // project level self, npm level self, `apostrophe-modules`
+      // project-level and `apostrophe-modules` npm level.
+      return module.__meta.chain.length > 4;
+    }
+
+    function lint(s) {
+      self.util.warnDev('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
     }
   }
 

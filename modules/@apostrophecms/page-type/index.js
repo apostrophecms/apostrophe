@@ -342,7 +342,7 @@ module.exports = {
           return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition, published, options);
         } else if (!doc.level) {
           // Insert the home page
-          return self.apos.doc.db.insert(_req, published, options);
+          return self.apos.doc.db.insertOne(_req, published, options);
         } else {
           throw new Error('insertPublishedOf called on a page that was never inserted via the standard page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent published page');
         }

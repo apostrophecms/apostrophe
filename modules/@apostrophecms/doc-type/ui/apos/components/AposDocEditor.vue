@@ -179,10 +179,11 @@ export default {
       return groupSet;
     },
     utilityFields() {
+      let fields = [];
       if (this.groups.utility && this.groups.utility.fields) {
-        return this.groups.utility.fields;
+        fields = this.groups.utility.fields;
       }
-      return [];
+      return this.filterOutParkedFields(fields);
     },
     tabs() {
       const tabs = [];
@@ -203,8 +204,7 @@ export default {
         const tabFields = this.tabs.find((item) => {
           return item.name === this.currentTab;
         });
-
-        return tabFields.fields;
+        return this.filterOutParkedFields(tabFields.fields);
       } else {
         return [];
       }
@@ -508,6 +508,11 @@ export default {
       this.save({
         andPublish: false,
         savingDraft: true
+      });
+    },
+    filterOutParkedFields(fields) {
+      return fields.filter(fieldName => {
+        return !((this.original && this.original.parked) || []).includes(fieldName);
       });
     }
   }
