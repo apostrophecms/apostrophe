@@ -1,7 +1,20 @@
 # Changelog
 
-## 2.115.1 (2021-02-24)
+## 2.116.2 (2021-03-10)
 * Fixes a user interface bug in the chooser modals where the footer pagination was hidden behind the left column.
+
+## 2.116.1 (2021-03-01)
+* Fixes page slug updated twice when committing a page move.
+* Eliminated potential race condition while inserting groups if Apostrophe is starting up for the very first time in two processes simultaneously.
+
+## 2.116.0 (2021-02-25)
+* Eliminated 75% of database operations required to track attachments referenced in a document when inserted or updated. This yields a significant performance boost in very large databases.
+* `skipAttachments` option added for `insert` and `update` operations in those situations where this is not enough and you are absolutely certain there can never be an attachment in the schema or in a widget schema present in the document, not even via an area that is only defined in a template.
+
+Thanks to Michelin for their support of this work.
+
+## 2.115.1 (2021-02-24)
+* Fixes an error when saving an edited Tag in the Tag Manager.
 
 ## 2.115.0 (2021-02-02)
 * When `enableAltField` option is set to `true`, add an `alt` field to `apostrophe-images` schema. And use it in `apostrophe-images-widget`, in `<img>` alt attributes.
