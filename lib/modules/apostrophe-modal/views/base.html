@@ -28,7 +28,7 @@
     {# apos-modal-slideable class. -Tom #}
     <div data-modal-content class="apos-modal-content apos-modal-slide-current">
 
-      <div class="apos-modal-body">
+      <div class="apos-modal-body {% block modalBodyClass %}{% endblock %}">
         {% block body %}{{ __ns('apostrophe', "I am a Modal!") }}{% endblock %}
 
       </div>
