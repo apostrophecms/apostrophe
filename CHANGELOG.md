@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0-alpha.6 - Unreleased
+
+### Adds
+* Adds note to remove deprecated `allowedInChooser` option on piece type filters.
+
+### Fixes
+* Fixes error from missing `select` method in `AposPiecesManager` component.
+
 ## 3.0.0-alpha.5 - Unreleased
 
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
