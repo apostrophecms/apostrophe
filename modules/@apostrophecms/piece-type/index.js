@@ -64,6 +64,7 @@ module.exports = {
             label: 'Any'
           }
         ],
+        // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
         def: true
       },
@@ -80,6 +81,7 @@ module.exports = {
             label: 'Trash'
           }
         ],
+        // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
         def: false,
         required: true
