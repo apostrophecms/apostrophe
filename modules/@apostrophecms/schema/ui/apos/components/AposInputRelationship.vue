@@ -171,8 +171,8 @@ export default {
 
     .apos-input-relationship__button {
       position: absolute;
-      top: 6.5px;
-      right: 5px;
+      top: 0;
+      right: 0;
       padding: ($input-padding - 5px) $input-padding;
 
       &:hover:not([disabled]),

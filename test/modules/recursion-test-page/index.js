@@ -1,5 +1,5 @@
 module.exports = {
-  components(self, options) {
+  components(self) {
     return {
       test(req, data) {
         return data;

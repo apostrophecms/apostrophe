@@ -79,21 +79,29 @@ export default function() {
 
     const component = window.apos.area.components.editor;
 
-    return new Vue({
-      el: el,
-      data: function() {
-        return {
-          options,
-          id: data._id,
-          items: data.items,
-          choices,
-          docId: _docId,
-          fieldId,
-          renderings
-        };
-      },
-      template: `<${component} :options="options" :items="items" :choices="choices" :id="$data.id" :docId="$data.docId" :fieldId="fieldId" :renderings="renderings" />`
-    });
-
+    if (apos.area.activeEditor && (apos.area.activeEditor.id === data._id)) {
+      // Editing a piece causes a refresh of the main content area,
+      // but this may contain the area we originally intended to add
+      // a widget to when we created a piece for that purpose. Preserve
+      // the editing experience by restoring that widget's editor to the DOM
+      // rather than creating a new one.
+      el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
+    } else {
+      return new Vue({
+        el,
+        data: function() {
+          return {
+            options,
+            id: data._id,
+            items: data.items,
+            choices,
+            docId: _docId,
+            fieldId,
+            renderings
+          };
+        },
+        template: `<${component} :options="options" :items="items" :choices="choices" :id="$data.id" :docId="$data.docId" :fieldId="fieldId" :renderings="renderings" />`
+      });
+    }
   }
 };

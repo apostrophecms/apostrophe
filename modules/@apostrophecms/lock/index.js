@@ -3,10 +3,10 @@ const Promise = require('bluebird');
 
 module.exports = {
   options: { alias: 'lock' },
-  async init(self, options) {
+  async init(self) {
     await self.ensureCollection();
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Obtain a lock with the given name. The lock remains exclusive until

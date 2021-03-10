@@ -13,13 +13,13 @@ module.exports = {
     // Do include a page tree button in the admin bar
     pageTree: true
   },
-  init(self, options) {
+  init(self) {
     self.items = [];
     self.groups = [];
     self.groupLabels = {};
     self.enableBrowserData();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         orderAndGroupItems() {
@@ -29,7 +29,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Add an item to the admin bar.
       //

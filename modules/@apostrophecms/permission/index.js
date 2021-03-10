@@ -12,7 +12,7 @@
 
 module.exports = {
   options: { alias: 'permission' },
-  init(self, options) {
+  init(self) {
     self.permissionPattern = /^([^-]+)-(.*)$/;
     self.apos.migration.add('retire-published-field', async () => {
       await self.apos.migration.eachDoc({}, 5, async (doc) => {
@@ -28,7 +28,7 @@ module.exports = {
       });
     });
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Determines whether the active user can carry out the
       // action specified by `action` on the doc or type name

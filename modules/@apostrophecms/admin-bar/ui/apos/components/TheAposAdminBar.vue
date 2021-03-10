@@ -833,6 +833,23 @@ export default {
         ...this.context,
         modified: false
       };
+      if (this.contextStack.length) {
+        // Pushed contexts might edit any property of the doc
+        this.original = klona(result.doc);
+      } else {
+        // On-page we only edit areas
+        this.original = Object.fromEntries(
+          Object.entries(
+            result.doc
+          ).filter(
+            ([ key, value ]) => value && value.metaType === 'area'
+          ).map(
+            ([ key, value ]) => [ key, klona(value) ]
+          )
+        );
+      }
+      this.patchesSinceLoaded = [];
+      this.undone = [];
       if (!this.contextStack.length) {
         if (result.doc) {
           this.refreshOrReload(result.doc._url);
@@ -1141,7 +1158,14 @@ function depth(el) {
   /deep/ .apos-context-menu__btn {
     width: 21px;
     height: 21px;
+  }
+
+  /deep/ .apos-context-menu__btn .apos-button {
+    width: 100%;
+    height: 100%;
+    margin: 0;
     padding: 0;
+    border: 0;
   }
 
   /deep/ .apos-context-menu__popup {

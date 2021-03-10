@@ -41,7 +41,7 @@ module.exports = async function(options) {
     // promise event emitter code
     self.apos = self;
 
-    Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self, options));
+    Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
 
     // Determine root module and root directory
     self.root = options.root || getRoot();

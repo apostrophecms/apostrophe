@@ -1,5 +1,5 @@
 module.exports = {
-  init(self, options) {
+  init(self) {
     // Set property
     self.color = 'red';
 

@@ -8,7 +8,7 @@ const deep = require('deep-get-set');
 
 module.exports = {
   options: { alias: 'area' },
-  init(self, options) {
+  init(self) {
     // These properties have special meaning in Apostrophe docs and are not
     // acceptable for use as top-level area names
     self.forbiddenAreas = [
@@ -27,7 +27,7 @@ module.exports = {
     self.widgetManagers = {};
     self.enableBrowserData();
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         async renderWidget(req) {
@@ -69,7 +69,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         getRichTextWidgetTypes() {
@@ -82,7 +82,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Set the manager object for the given widget type name. The manager is
       // expected to provide `sanitize`, `output` and `load` methods. Normally
@@ -563,7 +563,7 @@ module.exports = {
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
       // Returns the rich text markup of all `@apostrophecms/rich-text` widgets
       // within the provided doc or area, concatenated as a single string. In future this method
@@ -623,11 +623,11 @@ module.exports = {
       }
     };
   },
-  customTags(self, options) {
+  customTags(self) {
     return {
       // 'singleton': require('./lib/custom-tags/singleton.js'),
-      area: require('./lib/custom-tags/area.js')(self, options),
-      widget: require('./lib/custom-tags/widget.js')(self, options)
+      area: require('./lib/custom-tags/area.js')(self),
+      widget: require('./lib/custom-tags/widget.js')(self)
     };
   }
 };

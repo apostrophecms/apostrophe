@@ -2,7 +2,7 @@ module.exports = {
   options: {
     spiffiness: 'nifty'
   },
-  init(self, options) {
+  init(self) {
     self.addHelpers({
       test(a) {
         return a * 2;

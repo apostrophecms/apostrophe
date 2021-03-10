@@ -66,6 +66,7 @@
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
                     :following-values="followingValues()"
+                    :conditional-fields="conditionalFields()"
                     :value="currentDoc"
                     @input="currentDocUpdate"
                     :server-errors="currentDocServerErrors"
@@ -211,9 +212,9 @@ export default {
       if (await this.validate(true, false)) {
         // Force the array editor to totally reset to avoid in-schema
         // animations when switching (e.g., the relationship input).
+        this.currentDocToCurrentItem();
         this.currentId = null;
         await this.nextTick();
-        this.currentDocToCurrentItem();
         this.currentId = _id;
         this.currentDoc = {
           hasErrors: false,

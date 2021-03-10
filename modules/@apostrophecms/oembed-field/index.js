@@ -15,13 +15,13 @@ module.exports = {
     name: 'oembed',
     alias: 'oembedFields'
   },
-  init(self, options) {
-    self.name = options.name;
-    self.oembedType = options.oembedType;
+  init(self) {
+    self.name = self.options.name;
+    self.oembedType = self.options.oembedType;
     self.addFieldType();
     self.enableBrowserData();
   },
-  methods(self, options) {
+  methods(self) {
     return {
       addFieldType() {
         self.apos.schema.addFieldType({

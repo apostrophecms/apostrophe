@@ -4,7 +4,7 @@ const pathToRegexp = require('path-to-regexp');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  fields(self, options) {
+  fields(self) {
     return {
       add: {
         slug: {
@@ -18,7 +18,7 @@ module.exports = {
           type: 'select',
           label: 'Type',
           required: true,
-          choices: options.apos.page.typeChoices.map(function (type) {
+          choices: self.options.apos.page.typeChoices.map(function (type) {
             return {
               value: type.name,
               label: type.label
@@ -43,7 +43,7 @@ module.exports = {
       }
     };
   },
-  init(self, options) {
+  init(self) {
     self.removeTrashPrefixFields([ 'slug' ]);
     self.addTrashSuffixFields([
       'slug'
@@ -51,7 +51,7 @@ module.exports = {
     self.rules = {};
     self.dispatchAll();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       '@apostrophecms/page:serve': {
         async dispatchPage(req) {
@@ -235,7 +235,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       dispatchAll() {
         self.dispatch('/', req => self.setTemplate(req, 'page'));
@@ -374,7 +374,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);

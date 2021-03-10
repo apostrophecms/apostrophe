@@ -53,22 +53,22 @@ module.exports = {
     name: '@apostrophecms/search',
     perPage: 10
   },
-  init(self, options) {
+  init(self) {
 
-    self.perPage = options.perPage;
+    self.perPage = self.options.perPage;
 
-    if (options.suggestions === undefined) {
+    if (self.options.suggestions === undefined) {
       // bc fallback, not great
-      options.suggestions = { url: '/search' };
+      self.options.suggestions = { url: '/search' };
     } else {
       // will catch the new, better standard route URL
-      options.suggestions = {};
+      self.options.suggestions = {};
     }
-    options.suggestions.url = options.suggestions.url || self.action + '/suggest';
+    self.options.suggestions.url = self.options.suggestions.url || self.action + '/suggest';
     self.dispatchAll();
     self.enableFilters();
   },
-  routes(self, options) {
+  routes(self) {
     return {
       get: {
         async suggest(req, res) {
@@ -83,7 +83,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         determineTypes() {
@@ -133,7 +133,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       enableFilters() {
@@ -345,7 +345,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       index: {
         usage: 'Rebuild the search index. Normally this happens automatically.\nThis should only be needed if you have changed the\n"searchable" property for various fields or types.',

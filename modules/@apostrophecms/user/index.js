@@ -46,7 +46,7 @@ module.exports = {
     slugPrefix: 'user-',
     localized: false
   },
-  fields(self, options) {
+  fields(self) {
     return {
       add: {
         firstName: {
@@ -127,13 +127,13 @@ module.exports = {
     remove: [ 'visibility' ]
   },
 
-  async init(self, options) {
+  async init(self) {
     self.initializeCredential();
     self.addOurTrashPrefixFields();
     self.enableSecrets();
     await self.ensureSafe();
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         async uniqueUsername(req) {
@@ -149,7 +149,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeInsert: {
         async insertSafe(req, doc, options) {
@@ -175,7 +175,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Add `username` and `email` to the list of fields that automatically get uniquely prefixed
@@ -451,7 +451,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       add: {
         usage: 'Usage: node app @apostrophecms/user:add username groupname\n\nThis adds a new user and assigns them to a group.\nYou will be prompted for a password.',

@@ -17,7 +17,7 @@ const _ = require('lodash');
 
 module.exports = {
   options: { alias: 'task' },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:run': {
         async runTask(isTask) {
@@ -74,7 +74,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // For use when you wish to execute an Apostrophe command line task from your code and continue,
