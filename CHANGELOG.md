@@ -1,9 +1,7 @@
 # Changelog
 
-<<<<<<< HEAD
 ## Unreleased
 * Fixes `options.arrangeFields` for `apostrophe-html-widgets`
-=======
 ## 2.116.1 (2021-03-10)
 * Fixes a user interface bug in the chooser modals where the footer pagination was hidden behind the left column.
 * Fixes page slug updated twice when committing a page move.
@@ -312,7 +310,6 @@ By default, users from the "admin" group are whitelisted and the inactivity peri
 * Uploads with a capitalized file extension are now accepted where appropriate. Thanks to Fernando Figaroli for this contribution.
 
 * When editing a join with pages, a nonfunctional edit pencil icon is no longer displayed. Actual inline editing of page settings from another page may be a 3.0 feature.
->>>>>>> 0cbceb9e77c976133abe613d3f349ea1cf1ff876
 
 ## 2.101.1 (2020-01-08)
 
