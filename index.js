@@ -372,17 +372,17 @@ module.exports = async function(options) {
 
     for (const [ name, module ] of Object.entries(self.modules)) {
       if (module.options.extends && ((typeof module.options.extends) === 'string')) {
-        lint('The module ' + name + ' contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.');
+        lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
       }
       if (module.options.singletonWarningIfNot && (name !== module.options.singletonWarningIfNot)) {
-        lint('The module ' + name + ' extends ' + module.options.singletonWarningIfNot + ', which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use lib/modules/' + module.options.singletonWarningIfNot + '/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.');
+        lint(`The module ${name} extends ${module.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use lib/modules/${module.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
       }
       if (name.match(/-widget$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
-        lint('The module ' + name + ' does not extend anything.\n\nA -widget module usually extends @apostrophecms/widget or another widget type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.');
+        lint(`The module ${name} does not extend anything.\n\nA -widget module usually extends @apostrophecms/widget-type or another widget type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
       } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
-        lint('The module ' + name + ' does not extend anything.\n\nA -page module usually extends @apostrophecms/page-type or\n@apostrophecms/piece-page-type or another page type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.');
+        lint(`The module ${name} does not extend anything.\n\nA -page module usually extends @apostrophecms/page-type or\n@apostrophecms/piece-page-type or another page type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
       } else if ((!extending(module)) && (!hasCode(name)) && (!isBundle(name)) && (!module.options.ignoreNoCodeWarning)) {
-        lint('The module ' + name + ' does not extend anything and does not have any code. This usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven\'t written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.');
+        lint(`The module ${name} does not extend anything and does not have any code.\n\nThis usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven\'t written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.`);
       }
     }
     function hasCode(name) {
@@ -402,7 +402,8 @@ module.exports = async function(options) {
       return doesWork(d);
     }
     function doesWork(d) {
-      const code = d.routes || d.apiRoutes || d.renderRoutes || d.init || d.methods || d.beforeSuperClass || d.handlers || d.helpers || d.restApiRoutes || d.middleware || d.customTags || d.components || d.tasks;
+      const countsAsWork = [ 'routes', 'apiRoutes', 'renderRoutes', 'renderRoutes', 'init', 'methods', 'beforeSuperClass', 'handlers', 'helpers', 'restApiRoutes', 'middleware', 'customTags', 'components', 'tasks' ];
+      const code = countsAsWork.find(property => d[property]);
       if (code) {
         return true;
       }

@@ -2160,8 +2160,8 @@ database.`);
       // Copy any parked properties of `page` back into `input` to
       // prevent any attempt to alter them via the PUT or PATCH APIs
       enforceParkedProperties(req, page, input) {
-        for (const parked of (page.parked || [])) {
-          input[parked] = page[parked];
+        for (const field of (page.parked || [])) {
+          input[field] = page[field];
         }
       }
     };
