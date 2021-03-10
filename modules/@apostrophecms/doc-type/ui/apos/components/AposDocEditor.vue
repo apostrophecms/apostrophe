@@ -193,7 +193,13 @@ export default {
           groupSet[field.group.name].schema.push(field);
         }
       });
-
+      if (!groupSet.utility) {
+        groupSet.utility = {
+          label: 'Utility',
+          fields: [],
+          schema: []
+        };
+      }
       return groupSet;
     },
     utilityFields() {
