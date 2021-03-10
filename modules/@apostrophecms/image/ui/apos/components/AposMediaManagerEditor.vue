@@ -200,8 +200,11 @@ export default {
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
       await this.unlock();
-      if (!await this.lock(`${this.moduleOptions.action}/${newMedia._id}`)) {
-        this.lockNotAvailable();
+      // Distinguish between an actual doc and an empty placeholder
+      if (newMedia._id) {
+        if (!await this.lock(`${this.moduleOptions.action}/${newMedia._id}`)) {
+          this.lockNotAvailable();
+        }
       }
     },
     save() {
