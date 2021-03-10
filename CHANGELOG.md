@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+* Fixes `options.arrangeFields` for `apostrophe-html-widgets`
+
 ## 2.101.1 (2020-01-08)
 
 * Dependency on `emulate-mongo-2-driver` is now explicitly set to require at least version 1.0.3 to bring in various fixes.
@@ -58,7 +61,7 @@
 
 * Bug fix: the `sendPage` method now emits the `apostrophe-pages:beforeSend` promise event no matter which module is calling `self.sendPage`. This was always the intention, as shown by the fact that the legacy `pageBeforeSend` method is called. The purpose of `sendPage` has always been to allow a custom route to render a page exactly as Apostrophe normally does, and that includes calling all `apostrophe-pages:beforeSend` handlers.
 * Bug fix: the `title` field is now required in the `apostrophe-users` module. Thanks to Jose Garcia of swiss4ward.
-* The `apostrophe-templates` module now has an internal `i18n` method intended to be overridden by those who want to monitor and/or alter static internationalization results. This will be used by the forthcoming `apostrophe-i18n-debugger` module. You don't need to call this method, you can use the standard [i18n](https://www.npmjs.com/package/i18n) helpers. 
+* The `apostrophe-templates` module now has an internal `i18n` method intended to be overridden by those who want to monitor and/or alter static internationalization results. This will be used by the forthcoming `apostrophe-i18n-debugger` module. You don't need to call this method, you can use the standard [i18n](https://www.npmjs.com/package/i18n) helpers.
 
 ## 2.97.2 (2019-10-03)
 
@@ -69,7 +72,7 @@
 ## 2.97.1 (2019-09-26)
 
 * Hotfix for a potential Denial Of Service issue reported by NPM. A user with login privileges could eventually exhaust available memory by submitting thousands of batch job requests.
- 
+
 ## 2.97.0 (2019-09-25)
 
 * The simplified `APOS_BUNDLE=1` feature for asset deployment in the cloud now uses the actual `tar` utility when extracting assets locally, rather than the `tar` npm module, as a blocking bug was encountered and the actual utility is faster.
@@ -125,7 +128,7 @@ Thanks to Michelin for making much of this work possible via [Apostrophe Enterpr
 ## 2.94.0 (2019-08-09)
 
 * Bug fix for the new simplified static asset bundling: URLs beginning with `/` in CSS files are correctly rewritten to point to the bundle in the cloud when using the simple bundle feature (`APOS_BUNDLE=1`). This was already done for the old method.
-* In the browser, the lean methods `apos.utils.post` and `apos.utils.get` now accept non-JSON responses from APIs. To maximize bc, if the response has the `application/json` content type, it is always parsed for you; if not, it is still parsed for you if it is valid JSON, but otherwise it is delivered to you as-is (as a string). 
+* In the browser, the lean methods `apos.utils.post` and `apos.utils.get` now accept non-JSON responses from APIs. To maximize bc, if the response has the `application/json` content type, it is always parsed for you; if not, it is still parsed for you if it is valid JSON, but otherwise it is delivered to you as-is (as a string).
 * When you edit the slug of a piece or page manually and a slug conflict with another piece or page is created, you can now optionally click a button in order to edit the conflicting piece or page, and change its slug to eliminate the conflict.
 
 ## 2.93.0 (2019-07-25)
