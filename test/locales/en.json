@@ -9,5 +9,10 @@
 	"An error has occurred": "An error has occurred",
 	"An error has occurred. We're working on it. We apologize for the inconvenience.": "An error has occurred. We're working on it. We apologize for the inconvenience.",
 	"That document may be being edited by %s (%s).\nIf you take control, they could lose unsaved work.\nDo you want to take control?": "That document may be being edited by %s (%s).\nIf you take control, they could lose unsaved work.\nDo you want to take control?",
-	"Use the Add Content button to get started.": "Use the Add Content button to get started."
+	"Use the Add Content button to get started.": "Use the Add Content button to get started.",
+	"Login": "Login",
+	"Account disabled due to inactivity. Please, refer to the administrator of the site for assistance.": "Account disabled due to inactivity. Please, refer to the administrator of the site for assistance.",
+	"Username or Email": "Username or Email",
+	"Password": "Password",
+	"Log In": "Log In"
 }

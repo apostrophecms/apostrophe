@@ -12,14 +12,16 @@
 {% endblock %}
 
 {% block label %}
-{{ __('Choose Pages') }}
+{{ __ns('apostrophe', 'Choose Pages') }}
 {% endblock %}
 
 {% block instructions %}
   <p>
-    {{ __('Choose the pages you want.') }}
+    {{ __ns('apostrophe', 'Choose the pages you want.') }}
   </p>
 {% endblock %}
+
+{% block modalBodyClass %}apos-modal-body--reorganize-tree{% endblock %}
 
 {% block body %}
   <div class="apos-chooser" data-chooser></div>

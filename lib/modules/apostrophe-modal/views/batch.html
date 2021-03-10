@@ -8,7 +8,7 @@
       <select name="batch-operation" class="apos-field-input apos-field-input--small apos-field-input-select apos-manage-batch-operations-select">
         {% for operation in operations %}
           <option value="{{ operation.name }}">
-            {{ __('%s Selected', operation.label) }} (0)
+            {{ __ns('apostrophe', '%s Selected', operation.label) }} (0)
           </option>
         {% endfor %}
       </select>
@@ -30,7 +30,7 @@
     {% endif %}
     <div class="apos-manage-batch-operations-buttons">
       {% for operation in operations %}
-        {{ buttons.danger(__('Batch %s', operation.buttonLabel or operation.label), { action: 'batch-operation', value: operation.name }) }}
+        {{ buttons.danger(__ns('apostrophe', 'Batch %s', operation.buttonLabel or operation.label), { action: 'batch-operation', value: operation.name }) }}
       {% endfor %}
     </div>
   </div>

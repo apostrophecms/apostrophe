@@ -1,6 +1,6 @@
 {# Internationalize the date format string #}
 {%- if data.value -%}
-  {{ __('Published') }}
+  {{ __ns('apostrophe', 'Published') }}
 {%- else -%}
-  {{ __('Draft') }}
+  {{ __ns('apostrophe', 'Draft') }}
 {%- endif -%}

@@ -1,52 +1,111 @@
-# [<img src="./ApostropheCMS_logo.png" height="140" title="ApostropheCMS" />](http://apostrophecms.org/)
 
-ApostropheCMS is a content management system (CMS) for Node.js. It supports in-context editing, schema-driven content types, flexible widgets and a great deal more. This module contains everything necessary to build a website with ApostropheCMS.
-
-Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS.
-
-[![TravisCI Status](https://travis-ci.org/apostrophecms/apostrophe.svg?branch=master)](https://travis-ci.org/apostrophecms/apostrophe)
+[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/master.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/master)
 [<img src="./badges/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit)
-[![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](http://chat.apostrophecms.org)
+[![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.org)
+
+<p align="center">
+  <a href="https://github.com/github_username/repo_name">
+    <img src="logo.svg" alt="Logo" width="80" height="80">
+  </a>
+
+  <h3 align="center">ApostropheCMS</h3>
+
+  <p align="center">
+    ApostropheCMS is a full-featured, open source CMS built with Node.js that seeks to empower organizations by combining in-context editing and headless architecture in a full-stack JS environment.
+    <br />
+    <a href="https://docs.apostrophecms.org/"><strong>Documentation »</strong></a>
+    <br />
+    <br />
+    <a href="http://dashboard.apostrophecmsdemo.org/">Demo</a>
+    ·
+    <a href="https://portal.productboard.com/apostrophecms/1-product-roadmap">Roadmap</a>
+    ·
+    <a href="https://github.com/apostrophecms/apostrophe/issues/new?assignees=&labels=bug&template=bug_report.md&title=">Report Bug</a>
+  </p>
+</p>
+
+
+## Table of Contents
+
+1. [About ApostropheCMS](#about-apostrophecms)
+2. [Getting Started](#getting-started)
+3. [Extensions and Integrations](#extensions-and-integrations)
+4. [Community](#community)
+5. [Contributing](#contributing)
+6. [License](#license)
+
+## About ApostropheCMS
+
+ApostropheCMS is content software for everyone in an organization. It helps teams of all sizes create dynamic digital experiences with elegance and efficiency by blending powerful features, developer happiness, and a low learning curve for content creators. Apostrophe has powered websites and web apps for organizations large and small for over a decade.
+
+#### Built With
+
+* [Node](https://nodejs.org/en/)
+* [MongoDB](https://www.mongodb.com/)
+* [Nunjucks](https://mozilla.github.io/nunjucks/)
 
 ## Getting Started
 
-The [ApostropheCMS documentation](https://docs.apostrophecms.org/apostrophe/) will walk you through some simple steps to get your [local environment set up](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/setting-up-your-environment) with the technology stack that runs ApostropheCMS (Node.js, MongoDB, ImageMagick) along with installing ApostropheCMS itself.
+To get started with ApostropheCMS, follow these steps to set up a local development environment. For more detail, refer to the [Getting Started tutorial](https://docs.apostrophecms.org/getting-started/creating-your-first-project.html) in the documentation.
 
-Then [create a new project](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/creating-your-first-project) on your computer and work on building your beautiful website.
+#### Prerequisites
 
-The ApostropheCMS documentation will walk you through [editing page templates](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/editing-page-templates), [global content](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/global), [creating custom widgets](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/custom-widgets) and [navigation](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/building-navigation), along with [configuring reusable "pieces"](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/reusable-content-with-pieces) and [global settings](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/settings). Plus, a whole lot more!
+We recommend installing the following with [Homebrew](https://brew.sh/) on macOS. If you're on Linux, you should use your package manager (apt or yum). If you're on Windows, we recommend the Windows Subsystem for Linux.
 
-## Taking it Further
+| Software | Minimum Version | Notes
+| ------------- | ------------- | -----
+| Node.js | 8.x | Or better
+| npm  | 6.x  | Or better
+| MongoDB  | 3.6  | Or better
+| Imagemagick  | Any | Faster image uploads, GIF support (optional)
 
-Our documentation also covers advanced topics such as [managing permissions](https://docs.apostrophecms.org/apostrophe/tutorials/intermediate/permissions), [working with ApostropheCMS data](https://docs.apostrophecms.org/apostrophe/tutorials/intermediate/model-layer), [building forms](https://docs.apostrophecms.org/apostrophe/tutorials/intermediate/forms), and [hosting an ApostropheCMS site in production](https://docs.apostrophecms.org/apostrophe/tutorials/intermediate/deployment).
 
-Moreover, there's tons of great info in the ["How To"](https://docs.apostrophecms.org/apostrophe/tutorials/howtos) section of the docs, and it's always growing!
+#### Installation
+Our recomended way to start a new project with ApostropheCMS is to use the [Apostrophe CLI](https://github.com/apostrophecms/apostrophe-cli).
 
-## Extending the Core with Modules
+##### Install the Apostrophe CLI
+ ```sh
+  npm install -g apostrophe-cli
+ ```
+##### Create a project
+```sh
+apos create-project wonderful-project --setup
+```
+You'll be prompted to create a password for the `admin` user.
+##### Run
+```sh
+cd wonderful-project && node app.js
+```
 
-ApostropheCMS is Node.js all the way through, which means it can be [extended](http://apostrophecms.org/extend) in all sorts of interesting ways. Here's a list of some of our favorite modules:
+Navigate to [localhost:3000/login](http://localhost:3000/login) to login with the admin credentials you created.
+#### Next Steps
+Check out our [Getting Started tutorial](https://docs.apostrophecms.org/getting-started/creating-your-first-project.html#working-with-areas) in the documentation to start adding content. Be sure to reference our [glossary of terms](https://docs.apostrophecms.org/reference/glossary.html) to get acquainted with the reference materials.
 
-* [apostrophe-headless](https://github.com/apostrophecms/apostrophe-headless) - Add REST APIs and power your React / Vue / Native / etc. apps with a headless CMS.
-* [apostrophe-blog](https://github.com/apostrophecms/apostrophe-blog) - Everything you need to put a blog on your site.
-* [apostrophe-events](https://github.com/apostrophecms/apostrophe-events) - Manage upcoming events.
-* [apostrophe-workflow](https://github.com/apostrophecms/apostrophe-workflow) - Add powerful localization capabilities to your project.
-* [apostrophe-passport](https://github.com/apostrophecms/apostrophe-passport) - Authenticate via Twitter, Facebook, Github and more.
-* [apostrophe-saml](https://github.com/apostrophecms/apostrophe-saml) - Authenticate via Shibboleth, as well as corporate SAML environments like Salesforce.
-* [apostrophe-places](https://github.com/apostrophecms/apostrophe-places) - Manage geotagged content and display it on a map.
-* [apostrophe-redirects](https://github.com/apostrophecms/apostrophe-redirects) - An easy redirects module.
+## Extensions and Integrations
 
-## Additional Resources
-We've got some great [open-source tools and how-to articles](https://docs.apostrophecms.org/apostrophe/tutorials/intermediate/deployment) that can help you out deploying, managing and maintaining ApostropheCMS sites.
+You can find a  list of ApostropheCMS [extensions](https://apostrophecms.com/extensions) on our website, but here are a few highlights:
+
+#### Extend ApostropheCMS
+
+- [apostrophe-headless](https://github.com/apostrophecms/apostrophe-headless) - Add REST APIs and power your React / Vue Native / etc. apps with a headless CMS.
+- [apostrophe-blog](https://github.com/apostrophecms/apostrophe-blog) - Everything you need to put a blog on your site.
+- [apostrophe-events](https://github.com/apostrophecms/apostrophe-events) - Manage one-time and recurring events.
+- [apostrophe-workflow](https://github.com/apostrophecms/apostrophe-workflow) - Add powerful localization capabilities to your project.
+- [apostrophe-passport](https://github.com/apostrophecms/apostrophe-passport) - Authenticate via Twitter, Facebook, Github and more.
+- [apostrophe-saml](https://github.com/apostrophecms/apostrophe-saml) - Authenticate via Shibboleth, as well as corporate SAML environments like Salesforce.
+- [apostrophe-redirects](https://github.com/apostrophecms/apostrophe-redirects) - An easy redirects module.
+
+#### Editor Extensions
+- [Atom Snippets](https://github.com/apostrophecms/apostrophe-atom)
+- [VS Snippets](https://marketplace.visualstudio.com/items?itemName=punkave.apostrophecms-vs-snippets)
 
 ## Community
 
-**Report bugs and submit pull requests** via [github](https://github.com/apostrophecms/apostrophe/issues).
+[Discord](https://discord.com/invite/XkbRNq7) - [Twitter](https://twitter.com/apostrophecms) - [Discussions](https://github.com/apostrophecms/apostrophe/discussions)
+## Contributing
 
-**Ask how-to questions** via [StackOverflow](https://stackoverflow.com/questions/tagged/apostrophe-cms). Be sure to tag them `apostrophe-cms`.
-
-**Stay up to date with announcements** on our [forum](https://forum.apostrophecms.org).
-
-**Chat with the community** on our [Discord server](http://chat.apostrophecms.org).
+We eagerly welcome open source contributions. Before submitting a PR, please read through our [Contribution Guide](https://github.com/apostrophecms/apostrophe/blob/main/CONTRIBUTING.md)
 
 ## License
-ApostropheCMS is released under the [MIT License](https://github.com/apostrophecms/apostrophe/blob/master/LICENSE.md).
+
+ApostropheCMS is released under the [ MIT License](https://github.com/apostrophecms/apostrophe/blob/main/LICENSE.md).

@@ -11,15 +11,15 @@
 {%- endblock -%}
 
 {%- block label -%}
-  {{ __('Manage Tags') }}
+  {{ __ns('apostrophe', 'Manage Tags') }}
 {%- endblock -%}
 
 {% block instructions %}
 {#  <p>
-    {{ __('Create, edit, and remove tags.') }}
+    {{ __ns('apostrophe', 'Create, edit, and remove tags.') }}
   </p>#}
   <div class="apos-manage-tag-add-wrapper">
-    <input data-apos-tag-add-field type="text" class="apos-field-input apos-field-input-text" placeholder="{{ __('Find or add a tag...') }}"/>
+    <input data-apos-tag-add-field type="text" class="apos-field-input apos-field-input-text" placeholder="{{ __ns('apostrophe', 'Find or add a tag...') }}"/>
     <a href="#" data-apos-tag-add class="apos-manage-tag-add fa fa-plus"></a>
   </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends data.outerLayout %}
-{% block title %}{{ __("Login") }}{% endblock %}
+{% block title %}{{ __ns('apostrophe', "Login") }}{% endblock %}
 
 {% block bodyClass %}apos-login-page{% endblock %}
 
@@ -8,33 +8,33 @@
     <div class="apos-login-content">
       <div class="apos-login-logo">{% block logo %}{% include "apostrophe-admin-bar:logo.html" %}{% endblock %}</div>
       <div class="apos-ui apos-login">
-        <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __('Login') }}{% endblock %}</div>
+        <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __ns('apostrophe', 'Login') }}{% endblock %}</div>
         {% block form %}
-          <form action="{% block action %}{{ apos.prefix }}/login{% endblock %}" method="post">
+          <form data-apos-login-form action="{% block action %}{{ apos.prefix }}/login{% endblock %}" method="post">
             {% if data.errors and data.errors[0] %}
               <div class="apos-login-warning">
                 {{ data.errors | join(' ') }}
               </div>
             {% else %}
-              {% if data.message %}<div class="apos-login-warning">{{ __(data.message) }}</div>{% endif %}
+              {% if data.message %}<div class="apos-login-warning">{{ __ns('apostrophe', data.message) }}</div>{% endif %}
             {% endif %}
             {% block fields %}
               <div class="apos-field apos-login-username">
-                <label class="apos-field-label" for="username">{{ __('Username or Email') }} {% block usernameHint %}{% endblock %}</label>
+                <label class="apos-field-label" for="username">{{ __ns('apostrophe', 'Username or Email') }} {% block usernameHint %}{% endblock %}</label>
                 <input class="apos-field-input apos-field-input-text" type="text" name="username" id="username" autofocus />
               </div>
               <div class="apos-field apos-login-password">
-                <label class="apos-field-label" for="password">{{ __('Password') }} {% block passwordHint %}{% endblock %}</label>
+                <label class="apos-field-label" for="password">{{ __ns('apostrophe', 'Password') }} {% block passwordHint %}{% endblock %}</label>
                 <input class="apos-field-input apos-field-input-text" type="password" name="password" id="password" />
               </div>
             {% endblock %}
             <div class="apos-login-submit">
-              <input type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __('Log In') }}{% endblock %}" />
+              <input data-apos-login-submit-button type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __ns('apostrophe', 'Log In') }}{% endblock %}" />
             </div>
             {% block passwordReset %}
               {% if data.passwordReset %}
                 <div class="apos-login-reset">
-                  <a href="{{ apos.prefix }}/password-reset-request">{{ __('Reset My Password') }}</a>
+                  <a href="{{ apos.prefix }}/password-reset-request">{{ __ns('apostrophe', 'Reset My Password') }}</a>
                 </div>
               {% endif %}
             {% endblock %}

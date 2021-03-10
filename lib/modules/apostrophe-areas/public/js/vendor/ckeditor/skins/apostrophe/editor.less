@@ -856,7 +856,36 @@ a.cke_button
   }
 }
 
-.cke_button_icon {display: none; background-image: none !important;}
+.cke_button__bold,
+.cke_button__italic,
+.cke_button__link,
+.cke_button__anchor,
+.cke_button__unlink,
+.cke_button__bulletedlist,
+.cke_button__numberedlist,
+.cke_button__indent,
+.cke_button__outdent,
+.cke_button__blockquote,
+.cke_button__table,
+.cke_button__underline,
+.cke_button__strike,
+.cke_button__subscript,
+.cke_button__superscript,
+.cke_button__removeformat,
+.cke_button__split,
+// Those in lib/modules/apostrophe-rich-text-widgets/public/css/components/ckeditor-controls.less
+.cke_button__undo,
+.cke_button__redo,
+.cke_button__justifyleft,
+.cke_button__justifyright,
+.cke_button__justifycenter,
+.cke_button__justifyblock {
+  .cke_button_icon {
+    display: none;
+    background-image: none !important;
+  }
+}
+
 .cke_button:hover,
 a.cke_combo_button:hover,
 a.cke_combo_button:focus,

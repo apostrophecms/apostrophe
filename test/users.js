@@ -2,7 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('@sailshq/lodash');
 
-var apos;
+var apos, apos2, apos3;
 
 describe('Users', function() {
 
@@ -10,7 +10,11 @@ describe('Users', function() {
   this.timeout(20000);
 
   after(function(done) {
-    return t.destroy(apos, done);
+    return t.destroy(apos, function() {
+      return t.destroy(apos2, function() {
+        return t.destroy(apos3, done);
+      });
+    });
   });
 
   // EXISTENCE
@@ -287,6 +291,68 @@ describe('Users', function() {
             });
         });
       });
+  });
+
+  it('should not have the "disableInactiveAccounts" option enabled by default', function(done) {
+    assert(apos.users.options.disableInactiveAccounts === undefined);
+    done();
+  });
+
+  it('should have default values if the "disableInactiveAccounts" option is enabled', function(done) {
+    apos2 = require('../index.js')({
+      root: module,
+      shortName: 'test',
+
+      modules: {
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7902
+        },
+        'apostrophe-users': {
+          disableInactiveAccounts: true
+        }
+      },
+      afterInit: function(callback) {
+        apos2.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        assert(apos2.users.options.disableInactiveAccounts.neverDisabledGroups);
+        assert(apos2.users.options.disableInactiveAccounts.inactivityDuration);
+        assert(apos2.users.options.disableInactiveAccounts, { neverDisabledGroups: ['admin'], inactivityDuration: 90 });
+        done();
+      }
+    });
+  });
+
+  it('should use "disableInactiveAccounts" project values', function(done) {
+    apos3 = require('../index.js')({
+      root: module,
+      shortName: 'test',
+
+      modules: {
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7903
+        },
+        'apostrophe-users': {
+          disableInactiveAccounts: {
+            neverDisabledGroups: ['test'],
+            inactivityDuration: 45
+          }
+        }
+      },
+      afterInit: function(callback) {
+        apos3.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        assert(apos3.users.options.disableInactiveAccounts, { neverDisabledGroups: ['test'], inactivityDuration: 45 });
+        done();
+      }
+    });
   });
 
 });

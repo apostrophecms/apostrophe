@@ -3,12 +3,17 @@
 {
   position: relative;
 
+
   height: 100%;
-  overflow: auto;
   width: 100%;
   padding-left: 1em;
   padding-right: 1em;
   z-index: 0;
+
+  @supports(display: grid) {
+    // The grid styles create an overflow issue causing superfluous scroll bars
+    overflow: initial;
+  }
 
   .apos-manage-grid-page
   {
