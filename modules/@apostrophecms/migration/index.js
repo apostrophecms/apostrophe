@@ -13,11 +13,11 @@ const _ = require('lodash');
 
 module.exports = {
   options: { alias: 'migration' },
-  async init(self, options) {
+  async init(self) {
     self.migrations = [];
     await self.enableCollection();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         addSortifyMigrations() {
@@ -48,7 +48,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Add a migration function to be invoked when the @apostrophecms/migration:migrate task is invoked.
       // Each migration is only invoked once, however they will all be invoked on a brand-new site, so
@@ -259,7 +259,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       migrate: {
         usage: 'Apply any necessary migrations to the database.',

@@ -8,7 +8,7 @@ const qs = require('qs');
 
 module.exports = {
   options: { alias: 'url' },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Build filter URLs. `data` is an object whose properties

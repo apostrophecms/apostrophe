@@ -23,7 +23,7 @@ module.exports = {
   options: {
     alias: 'schema'
   },
-  init(self, options) {
+  init(self) {
 
     self.fieldTypes = {};
     self.fieldsById = {};
@@ -1060,7 +1060,7 @@ module.exports = {
 
     self.validatedSchemas = {};
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         validateAllSchemas() {
@@ -1088,7 +1088,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     const defaultGroup = self.options.defaultGroup || {
       name: 'ungrouped',
       label: 'Ungrouped'
@@ -2474,7 +2474,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
@@ -2494,7 +2494,7 @@ module.exports = {
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
       toGroups: function (fields) {
         return self.toGroups(fields);

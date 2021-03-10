@@ -1,7 +1,7 @@
 // Implements {% widget item, { options ...} %}
 // Usually not called directly, see {% singleton %} and {% area %}
 
-module.exports = function(self, options) {
+module.exports = function(self) {
 
   return {
     // We need a custom parser because of the "with" syntax

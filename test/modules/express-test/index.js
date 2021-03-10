@@ -1,5 +1,5 @@
 module.exports = {
-  routes(self, options) {
+  routes(self) {
     return {
       get: {
         '/tests/welcome': (req, res) => {

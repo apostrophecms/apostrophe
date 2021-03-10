@@ -93,21 +93,10 @@ export default {
     // detect lock errors with `isLockedError` and call this method. The rest of the time,
     // it is called for you.
     async showLockedError(e) {
-      if (e.body.data.me) {
-        // We use an alert because it is a clear interruption of their
-        // work, and because a notification would appear in both windows
-        // if control was taken by the same user in another window,
-        // which would be confusing.
-        await apos.alert({
-          heading: 'You Took Control in Another Window',
-          description: 'You took control of this document in another tab or window.'
-        });
-      } else {
-        await apos.alert({
-          heading: 'Another User Took Control',
-          description: 'Another user took control of the document.'
-        });
-      }
+      await apos.alert({
+        heading: 'Multiple Editors',
+        description: `${e.body.data.me ? 'You' : e.body.data.title} took control of this document in another tab or window. A document can only be edited in one place at a time.`
+      });
     },
 
     // Convenience function to determine if an error is a lock error.

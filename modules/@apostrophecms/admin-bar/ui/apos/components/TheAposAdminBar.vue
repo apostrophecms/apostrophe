@@ -446,7 +446,10 @@ export default {
           clearTimeout(this.savingTimeout);
         }
         this.savingTimeout = setTimeout(() => {
-          apos.util.addClass(self.$refs.statusLabel, 'is-hidden');
+          // Mind race conditions
+          if (self.$refs.statusLabel) {
+            apos.util.addClass(self.$refs.statusLabel, 'is-hidden');
+          }
         }, 5000);
       }
     }

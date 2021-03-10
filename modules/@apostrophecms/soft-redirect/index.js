@@ -22,8 +22,8 @@
 // ```
 
 module.exports = {
-  async init(self, options) {
-    options.statusCode = options.statusCode || 302;
+  async init(self) {
+    self.options.statusCode = self.options.statusCode || 302;
 
     if (self.options.enable === false) {
       return;
@@ -33,7 +33,7 @@ module.exports = {
     }
     await self.createIndexes();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       '@apostrophecms/page:notFound': {
         async notFoundRedirect(req) {
@@ -42,7 +42,7 @@ module.exports = {
             return;
           }
           if (self.local(doc._url) !== req.url) {
-            req.statusCode = options.statusCode;
+            req.statusCode = self.options.statusCode;
             req.redirect = self.local(doc._url);
           }
         }
@@ -70,7 +70,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       async createIndexes() {

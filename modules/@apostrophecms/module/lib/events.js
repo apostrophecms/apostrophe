@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-module.exports = function(self, options) {
+module.exports = function(self) {
 
   return {
 

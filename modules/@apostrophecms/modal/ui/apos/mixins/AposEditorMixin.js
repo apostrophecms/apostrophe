@@ -5,8 +5,10 @@
  *   in the form of the docFields data attribute
  * 2. A scaffold for managing server side errors, in the form of the
  *   serverErrors data attribute and the handleSaveError method
- * 3. A scaffold for handling `following` in field definitios, via
+ * 3. A scaffold for handling `following` in field definitions, via
  *   the `followingValues` method
+ * 4. A scaffold for handling conditional fields, via the
+ *   `conditionalFields` method
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.
@@ -23,18 +25,14 @@ export default {
   },
 
   methods: {
-    // followedBy is either "other" or "utility". The returned object contains
-    // properties named for each field that follows other fields. For instance if followedBy is "utility"
-    // then in our default configuration `followingValues` will be `{ slug: { title: 'latest title here' } }`
-    followingValues(followedBy) {
-      let fields;
-
-      if (followedBy) {
-        fields = (followedBy === 'other')
-          ? this.schema.filter(field => !this.utilityFields.includes(field.name)) : this.schema.filter(field => this.utilityFields.includes(field.name));
-      } else {
-        fields = this.schema;
-      }
+    // followedByCategory may be falsy (all fields), "other" or "utility". The returned
+    // object contains properties named for each field in that category that
+    // follows other fields. For instance if followedBy is "utility" then in our
+    // default configuration `followingValues` will be:
+    //
+    // `{ slug: { title: 'latest title here' } }`
+    followingValues(followedByCategory) {
+      const fields = this.getFieldsByCategory(followedByCategory);
 
       const followingValues = {};
 
@@ -49,6 +47,73 @@ export default {
       }
       return followingValues;
     },
+
+    // Fetch the subset of the schema in the given category, either
+    // 'utility' or 'other', or the entire schema if followedByCategory
+    // is falsy
+    getFieldsByCategory(followedByCategory) {
+      if (followedByCategory) {
+        return (followedByCategory === 'other')
+          ? this.schema.filter(field => !this.utilityFields.includes(field.name)) : this.schema.filter(field => this.utilityFields.includes(field.name));
+      } else {
+        return this.schema;
+      }
+    },
+
+    // The returned object contains a property for each field that is conditional on other fields,
+    // `true` if that field's conditions are satisfied and `false` if they are not. There will
+    // be no properties for fields that are not conditional.
+    //
+    // Any condition on a field that is itself conditional fails if the second field's conditions fail.
+    //
+    // If present, followedByCategory must be either "other" or "utility", and the
+    // returned object will contain properties only for conditional fields in that
+    // category, although they may be conditional upon fields in either category.
+
+    conditionalFields(followedByCategory) {
+
+      const conditionalFields = {};
+
+      for (const field of this.schema) {
+        if (field.if) {
+          let result = true;
+          for (const [ key, val ] of Object.entries(field.if)) {
+            if (val !== this.getFieldValue(key)) {
+              result = false;
+              break;
+            }
+          }
+          conditionalFields[field.name] = result;
+        }
+      }
+      while (true) {
+        let change = false;
+        for (const field of this.schema) {
+          if (field.if) {
+            for (const key of Object.keys(field.if)) {
+              if ((conditionalFields[key] === false) && (conditionalFields[field.name] === true)) {
+                conditionalFields[field.name] = false;
+                change = true;
+                break;
+              }
+            }
+          }
+        }
+        if (!change) {
+          break;
+        }
+      }
+
+      const fields = this.getFieldsByCategory(followedByCategory);
+      const result = {};
+      for (const field of fields) {
+        if (field.if) {
+          result[field.name] = conditionalFields[field.name];
+        }
+      }
+      return result;
+    },
+
     // Overridden by components that split the fields into several AposSchemas
     getFieldValue(name) {
       return this.docFields.data[name];

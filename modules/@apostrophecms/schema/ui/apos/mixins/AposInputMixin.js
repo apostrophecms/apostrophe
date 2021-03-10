@@ -107,9 +107,12 @@ export default {
     }
   },
   methods: {
+    // You must supply the validate method. It receives the
+    // internal representation used for editing (a string, for instance)
     validateAndEmit () {
+      const error = this.validate(this.next);
       this.$emit('input', {
-        data: this.next,
+        data: error ? this.next : this.convert(this.next),
         error: this.validate(this.next)
       });
     },
@@ -125,6 +128,17 @@ export default {
     },
     focusOutListener() {
       this.focus = false;
+    },
+    // Convert from the representation used for editing
+    // (for instance, a string) to the final representation
+    // required by the field type (for instance, a number).
+    // Called just before the input event is emitted. Not
+    // called if validation, which is done on the editing
+    // representation, is unsuccessful. Instead the editing
+    // representation is emitted to preserve the editing
+    // experience.
+    convert() {
+      return this.next;
     }
   }
 };

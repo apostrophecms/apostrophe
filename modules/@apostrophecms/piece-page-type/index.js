@@ -27,9 +27,9 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/page-type',
-  init(self, options) {
+  init(self) {
     self.label = self.options.label;
-    self.perPage = options.perPage || 10;
+    self.perPage = self.options.perPage || 10;
 
     self.pieceModuleName = self.options.pieceModuleName || self.__meta.name.replace(/-page$/, '');
     self.pieces = self.apos.modules[self.pieceModuleName];
@@ -39,7 +39,7 @@ module.exports = {
 
     self.enableAddUrlsToPieces();
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Extend this method for your piece type to call additional
@@ -292,7 +292,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const data = _super(req);

@@ -37,10 +37,10 @@ module.exports = {
     }
   },
 
-  async init(self, options) {
+  async init(self) {
     self.name = 'attachment';
 
-    self.fileGroups = options.fileGroups || [
+    self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
         label: 'Images',
@@ -48,7 +48,7 @@ module.exports = {
           'gif',
           'jpg',
           'png'
-        ].concat(options.svgImages ? [ 'svg' ] : []),
+        ].concat(self.options.svgImages ? [ 'svg' ] : []),
         extensionMaps: { jpeg: 'jpg' },
         // uploadfs should treat this as an image and create scaled versions
         image: true
@@ -93,7 +93,7 @@ module.exports = {
       png: true
     };
 
-    self.sizeAvailableInTrash = options.sizeAvailableInTrash || 'one-sixth';
+    self.sizeAvailableInTrash = self.options.sizeAvailableInTrash || 'one-sixth';
 
     // uploadfs expects an array
     self.imageSizes = Object.keys(self.imageSizes).map(name => ({
@@ -112,7 +112,7 @@ module.exports = {
     self.uploadfsSettings = {};
     _.merge(self.uploadfsSettings, uploadfsDefaultSettings);
 
-    _.merge(self.uploadfsSettings, options.uploadfs || {});
+    _.merge(self.uploadfsSettings, self.options.uploadfs || {});
 
     if (process.env.APOS_S3_BUCKET) {
       _.merge(self.uploadfsSettings, {
@@ -131,7 +131,7 @@ module.exports = {
     self.enableBrowserData();
   },
 
-  tasks(self, options) {
+  tasks(self) {
     return {
       rescale: {
         usage: 'Usage: node app @apostrophecms/attachment:rescale\n\nRegenerate all sizes of all image attachments. Useful after a new size\nis added to the configuration. Takes a long time!',
@@ -149,7 +149,7 @@ module.exports = {
   },
 
   // TODO RESTify where possible
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     // TODO this must be updated to employ the new useMiddleware format and that
     // section has to be implemented
     return {
@@ -210,7 +210,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         // Delay setting up the collection until other modules
@@ -254,7 +254,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       async initUploadfs() {
         safeMkdirp(self.uploadfsSettings.uploadsPath);

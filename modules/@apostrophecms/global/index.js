@@ -50,10 +50,10 @@ module.exports = {
       'visibility'
     ]
   },
-  init(self, options) {
-    self.slug = options.slug || 'global';
+  init(self) {
+    self.slug = self.options.slug || 'global';
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         async initGlobal() {
@@ -73,7 +73,7 @@ module.exports = {
       }
     };
   },
-  middleware(self, options) {
+  middleware(self) {
     return {
       async addGlobal(req, res, next) {
         try {
@@ -91,7 +91,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Fetch and return the `global` doc object. You probably don't need to call this,
       // because middleware has already populated `req.data.global` for you.
@@ -131,7 +131,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);

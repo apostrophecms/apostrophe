@@ -12,10 +12,10 @@
 
 module.exports = {
   options: { alias: 'cache' },
-  async init(self, options) {
+  async init(self) {
     await self.enableCollection();
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Get the cached value associated with the specified key from the specified
@@ -94,7 +94,7 @@ module.exports = {
     };
   },
 
-  tasks(self, options) {
+  tasks(self) {
     return {
       'clear-cache': {
         help: 'Usage: node app @apostrophecms/cache:clear namespace1 namespace2...\n\nClears all values stored in a given namespace or namespaces. If you are using apos.cache in your own code you will\nknow the namespace name. Standard caches include "@apostrophecms/oembed". Normally it is not necessary to clear them.',

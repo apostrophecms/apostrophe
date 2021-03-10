@@ -6,7 +6,7 @@ module.exports = {
     contextBar: true
   },
   cascades: [ 'fields' ],
-  fields(self, options) {
+  fields(self) {
     return {
       add: {
         title: {
@@ -70,11 +70,11 @@ module.exports = {
       }
     };
   },
-  init(self, options) {
+  init(self) {
     if (!self.options.name) {
       self.options.name = self.__meta.name;
     }
-    self.name = options.name;
+    self.name = self.options.name;
     // Each doc-type has an array of fields which will be updated
     // if the document is moved to the trash. In most cases 'slug'
     // might suffice. For users, for instance, the email field should
@@ -91,7 +91,7 @@ module.exports = {
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeSave: {
         prepareRelationshipsForStorage(req, doc) {
@@ -268,7 +268,7 @@ module.exports = {
     };
   },
 
-  methods(self, options) {
+  methods(self) {
     return {
       sanitizeFieldList(choices) {
         if ((typeof choices) === 'string') {
@@ -591,13 +591,10 @@ module.exports = {
       // If `builders` is an object its properties are invoked as
       // query builders, for instance `{ attachments: true }`.
       async findOneForEditing(req, criteria, builders) {
-        const query = await self.findForEditing(req, criteria, builders);
-        const doc = query.toObject();
-        if (options.annotate) {
-          self.apos.attachment.all(doc, { annotate: true });
-        }
-        return doc;
+        return self.findForEditing(req, criteria, builders).toObject();
       },
+      // Identical to findOneForEditing by default, but could be
+      // overridden usefully in subclasses.
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
@@ -810,14 +807,14 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const initialBrowserOptions = _super(req);
 
         const {
           name, label, pluralLabel
-        } = options;
+        } = self.options;
 
         const browserOptions = {
           ...initialBrowserOptions,

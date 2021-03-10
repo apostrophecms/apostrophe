@@ -28,7 +28,7 @@ module.exports = {
       }
     }
   },
-  async init(self, options) {
+  async init(self) {
     self.typeChoices = self.options.types || [];
     self.parked = (self.options.minimumPark || [ {
       slug: '/',
@@ -55,7 +55,7 @@ module.exports = {
     self.addMissingLastTargetIdAndPositionMigration();
     await self.createIndexes();
   },
-  restApiRoutes(self, options) {
+  restApiRoutes(self) {
     return {
       // Trees are arranged in a tree, not a list. So this API returns the home page,
       // with _children populated if ?_children=1 is in the query string. An editor can
@@ -348,7 +348,7 @@ module.exports = {
       }
     };
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         ':_id/publish': async (req) => {
@@ -437,7 +437,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeSend: {
         async addLevelAttributeToBody(req) {
@@ -531,7 +531,7 @@ database.`);
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       find(req, criteria = {}, options = {}) {
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
@@ -906,11 +906,6 @@ database.`);
         const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
         targetId = normalized.targetId;
         position = normalized.position;
-        if (!options) {
-          options = {};
-        } else {
-          options = _.clone(options);
-        }
         return self.withLock(req, body);
         async function body() {
           let parent;
@@ -922,7 +917,7 @@ database.`);
           const oldParent = moved._ancestors[0];
           const target = await self.getTarget(req, targetId, position);
           const manager = self.apos.doc.getManager(moved.type);
-          await manager.emit('beforeMove', req, moved, target, position, options);
+          await manager.emit('beforeMove', req, moved, target, position);
           determineRankAndNewParent();
           if (!moved._edit) {
             throw self.apos.error('forbidden');
@@ -943,12 +938,10 @@ database.`);
             originalPath,
             changed,
             target,
-            position,
-            options
+            position
           });
           return {
-            changed,
-            options
+            changed
           };
           async function getMoved() {
             const moved = await self.findForEditing(req, { _id: movedId }).permission(false).ancestors({
@@ -957,7 +950,7 @@ database.`);
               trash: null,
               areas: false,
               permission: false
-            }).applyBuilders(options.builders || {}).toObject();
+            }).toObject();
             if (!moved) {
               throw self.apos.error('invalid', 'No such page');
             }
@@ -992,7 +985,7 @@ database.`);
                 if (trash) {
                   // Trash has to be last child of the home page, but don't be punitive,
                   // just put this page before it
-                  return self.move(req, moved._id, trash._id, 'before', options);
+                  return self.move(req, moved._id, trash._id, 'before');
                 }
               }
               if (target._children && target._children.length) {
@@ -1089,19 +1082,19 @@ database.`);
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
-        const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
+        const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors({
           depth: 1,
           trash: null,
           orphan: null,
           areas: false,
           permission: false
-        }, options.builders || {})).children({
+        }).children({
           depth: 1,
           trash: null,
           orphan: null,
           areas: false,
           permission: false
-        }).applyBuilders(options.builders || {}).toObject();
+        }).toObject();
         if (!target) {
           throw self.apos.error('notfound');
         }
@@ -1164,12 +1157,9 @@ database.`);
       // Based on `req`, `moved`, `data.moved`, `data.oldParent` and `data.parent`, decide whether
       // this move should be permitted. If it should not be, throw an error.
       //
-      // `options` is the same options object that was passed to `self.move`, or an empty object
-      // if none was passed.
-      //
       // This method is async because overrides, for instance in @apostrophecms/workflow,
       // may require asynchronous work to perform it.
-      async movePermissions(req, moved, data, options) {
+      async movePermissions(req, moved, data) {
       },
       async deduplicatePages(req, pages, toTrash) {
         for (const page of pages) {
@@ -2151,14 +2141,14 @@ database.`);
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
       isAncestorOf: function (possibleAncestorPage, ofPage) {
         return self.isAncestorOf(possibleAncestorPage, ofPage);
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       unpark: {
         usage: 'Usage: node app @apostrophecms/page:unpark /page/slug\n\nThis unparks a page that was formerly locked in a specific\nposition in the page tree.',
