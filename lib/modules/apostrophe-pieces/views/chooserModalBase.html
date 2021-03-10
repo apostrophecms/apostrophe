@@ -2,9 +2,9 @@
 
 {%- block instructions -%}
   {%- if data.limit == 1 -%}
-    {{ __('Choose ' + data.options.label + ' to associate with this item.') }}
+    {{ __ns('apostrophe', 'Choose ' + data.options.label + ' to associate with this item.') }}
   {%- else -%}
-    {{ __('Choose ' + data.options.pluralLabel + ' to associate with this item.') }}
+    {{ __ns('apostrophe', 'Choose ' + data.options.pluralLabel + ' to associate with this item.') }}
   {%- endif -%}
 {%- endblock -%}
 
@@ -18,9 +18,9 @@
 
 {%- block label -%}
   {%- if data.limit == 1 -%}
-    {{ __('Choose ' + data.options.label) }}
+    {{ __ns('apostrophe', 'Choose ' + data.options.label) }}
   {%- else -%}
-    {{ __('Choose ' + data.options.pluralLabel) }}
+    {{ __ns('apostrophe', 'Choose ' + data.options.pluralLabel) }}
   {%- endif -%}
 {% endblock %}
 
@@ -30,6 +30,8 @@
     <li data-modal-breadcrumb-item></li>
   </ul>
 {%- endblock -%}
+
+{% block modalBodyClass %}apos-modal-body--chooser{% endblock %}
 
 {%- block body -%}
   <div class="apos-chooser" data-chooser></div>

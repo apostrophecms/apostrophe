@@ -17,8 +17,15 @@
               ; width: 100%; padding-bottom: {{ 100 * data.options.aspectRatio[1] / data.options.aspectRatio[0] }}%; background-size: contain
             {%- endif -%}
           ">
-          {%- block title -%}<h4 class="apos-image-widget-image-title">{{ image.title }}</h4>{%- endblock -%}
-          <img alt="{% block imgAlt %}{{ image.title }}{% endblock %}" data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}" />
+          {%- block title -%}
+            <h4 class="apos-image-widget-image-title">
+              {{ image.title }}
+            </h4>
+          {%- endblock -%}
+          <img
+            alt="{% block imgAlt %}{{ apos.images.getImageAlt(image) }}{% endblock %}"
+            data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}"
+          />
           {%- block credit -%}
             {%- if image.credit -%}
               {%- if image.creditUrl -%}

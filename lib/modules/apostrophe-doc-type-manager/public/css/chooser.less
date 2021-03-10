@@ -1,16 +1,25 @@
 .apos-ui
 {
+
+  .apos-modal-body--chooser {
+    display: flex;
+    flex-direction: row;
+    overflow-y: hidden;
+  }
+
   .apos-chooser-manage-view-wrapper
   {
     .apos-inline-block;
-    float: right;
     width: 80%;
     .apos-table { padding-left: @apos-padding-2; }
   }
 
+  .apos-chooser-manage-view-wrapper {
+    overflow-y: auto;
+  }
+
   .apos-chooser
   {
-    position: fixed;
     .apos-inline-block;
     height: 100%;
     overflow: auto;

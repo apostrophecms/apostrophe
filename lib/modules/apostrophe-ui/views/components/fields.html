@@ -1,14 +1,14 @@
 {% macro string(name, placeholder, value, readOnly, options) -%}
-  <input id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-text{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="text" value="{{__(value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
+  <input id="{{ options.id }}" name="{{ name }}" placeholder="{{__ns('apostrophe', placeholder | d(''))}}" class="apos-field-input apos-field-input-text{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="text" value="{{__ns('apostrophe', value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
 {%- endmacro %}
 
 {% macro textarea(name, placeholder, readOnly, options) -%}
-  <textarea id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}></textarea>
+  <textarea id="{{ options.id }}" name="{{ name }}" placeholder="{{__ns('apostrophe', placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}></textarea>
 {%- endmacro %}
 
 {% macro checkbox(name, placeholder, readOnly) -%}
   <label>
-    <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-checkbox{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="checkbox"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
+    <input name="{{ name }}" placeholder="{{__ns('apostrophe', placeholder | d(''))}}" class="apos-field-input apos-field-input-checkbox{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="checkbox"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
     <span class="apos-field-input-checkbox-indicator"></span>
   </label>
 {%- endmacro %}
@@ -22,7 +22,7 @@
   <div class="apos-field-input-select-wrapper">
     <select name="{{ name }}" class="apos-field-input apos-field-input-select{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
       {%- for option in options -%}
-        <option {{ "selected" if option.value == selected }} value="{{ option.value }}">{{ __(option.label | d('')) }}</option>
+        <option {{ "selected" if option.value == selected }} value="{{ option.value }}">{{ __ns('apostrophe', option.label | d('')) }}</option>
       {%- endfor -%}
     </select>
   </div>
@@ -31,13 +31,14 @@
 {% macro color(name, placeholder, value, readOnly, options) -%}
   <label>
     <div class="apos-field-input-color-preview" data-apos-color-preview></div>
-    <input id="{{ options.id }}" name="{{ name }}" data-apos-color-empty-label="{{ __("None selected") }}" class="apos-field-input apos-field-input-color{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" data-apos-color type="text" value="{{__(value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
+    <input id="{{ options.id }}" name="{{ name }}" data-apos-color-empty-label="{{ __ns('apostrophe', "None selected") }}" class="apos-field-input apos-field-input-color{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" data-apos-color type="text" value="{{__ns('apostrophe', value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
+    <span class="apos-field-input-colorpicker-value" data-apos-color-value></span>
   </label>
 {%- endmacro %}
 
 {% macro range(name, min, max, step, placeholder, value, readOnly, options) -%}
   <label>
     <span class="apos-field-input-range-value" data-apos-range-value></span>
-    <input id="{{ options.id }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step or 'any' }}" class="apos-field-input apos-field-input-range{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="range" value="{{__(value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
+    <input id="{{ options.id }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step or 'any' }}" class="apos-field-input apos-field-input-range{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="range" value="{{__ns('apostrophe', value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
   </label>
 {%- endmacro %}

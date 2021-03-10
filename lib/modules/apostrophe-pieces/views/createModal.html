@@ -10,9 +10,9 @@
 {%- endblock -%}
 
 {%- block label -%}
-  {{ __('Create %s', data.options.label) }}
+  {{ __ns('apostrophe', 'Create %s', data.options.label) }}
 {%- endblock -%}
 
 {%- block instructions -%}
-  {{ __('Fill out the fields to add a new %s.', data.options.label | d(''))}}
+  {{ __ns('apostrophe', 'Fill out the fields to add a new %s.', data.options.label | d(''))}}
 {%- endblock -%}

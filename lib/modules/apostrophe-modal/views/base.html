@@ -3,7 +3,7 @@
 <div data-modal class="apos-ui apos-modal {% block modalClass %}{% endblock %}" {% block dataAttrs %}{% endblock %}>
   <div class="apos-modal-header">{#
     #}<span class="apos-modal-title" data-modal-title>
-      {% block label %}{{ __("Give Me a Label!") }}{% endblock %}
+      {% block label %}{{ __ns('apostrophe', "Give Me a Label!") }}{% endblock %}
     </span>{#
     #}<div class="apos-modal-instructions" data-modal-instructions>
       {% block instructions %}{% endblock %}
@@ -28,8 +28,8 @@
     {# apos-modal-slideable class. -Tom #}
     <div data-modal-content class="apos-modal-content apos-modal-slide-current">
 
-      <div class="apos-modal-body">
-        {% block body %}{{ __("I am a Modal!") }}{% endblock %}
+      <div class="apos-modal-body {% block modalBodyClass %}{% endblock %}">
+        {% block body %}{{ __ns('apostrophe', "I am a Modal!") }}{% endblock %}
 
       </div>
       {% block footerContainer %}
