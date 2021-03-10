@@ -52,7 +52,7 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @insert="$emit('insert', $event);"
+          @add="$emit('add', $event);"
           @menu-open="toggleMenuFocus($event, 'top', true)"
           @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
@@ -114,7 +114,7 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @insert="$emit('insert', $event)"
+          @add="$emit('add', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
@@ -188,7 +188,7 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'add', 'changed' ],
   data() {
     const initialState = {
       controls: {
