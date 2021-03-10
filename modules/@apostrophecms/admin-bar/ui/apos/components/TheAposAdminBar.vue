@@ -833,6 +833,23 @@ export default {
         ...this.context,
         modified: false
       };
+      if (this.contextStack.length) {
+        // Pushed contexts might edit any property of the doc
+        this.original = klona(result.doc);
+      } else {
+        // On-page we only edit areas
+        this.original = Object.fromEntries(
+          Object.entries(
+            result.doc
+          ).filter(
+            ([ key, value ]) => value && value.metaType === 'area'
+          ).map(
+            ([ key, value ]) => [ key, klona(value) ]
+          )
+        );
+      }
+      this.patchesSinceLoaded = [];
+      this.undone = [];
       if (!this.contextStack.length) {
         if (result.doc) {
           this.refreshOrReload(result.doc._url);
