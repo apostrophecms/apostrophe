@@ -1287,24 +1287,6 @@ module.exports = {
             }
           }
 
-          // Extra validation for select fields, TODO move this into the field type definition
-
-          if (field.type === 'select' || field.type === 'checkboxes') {
-            _.each(field.choices, function (choice) {
-              if (choice.showFields) {
-                if (!_.isArray(choice.showFields)) {
-                  throw new Error('The \'showFields\' property in the choices of a select field needs to be an array.');
-                }
-                _.each(choice.showFields, function (showFieldName) {
-                  if (!_.find(schema, function (schemaField) {
-                    return schemaField.name === showFieldName;
-                  })) {
-                    self.apos.util.error('WARNING: The field \'' + showFieldName + '\' does not exist in your schema, but you tried to toggle its display with a select field using showFields. STAAAHHHHPP!');
-                  }
-                });
-              }
-            });
-          }
         });
 
         // Shallowly clone the fields. This allows modules
@@ -1585,7 +1567,7 @@ module.exports = {
         errors = errors.filter(error => {
           if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
             // It is not reasonable to enforce required for
-            // fields hidden via showFields
+            // fields hidden via conditional fields
             return false;
           }
           return true;

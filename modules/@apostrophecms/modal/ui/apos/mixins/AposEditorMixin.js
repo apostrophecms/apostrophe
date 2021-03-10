@@ -72,31 +72,19 @@ export default {
 
     conditionalFields(followedByCategory) {
 
+      const self = this;
       const conditionalFields = {};
 
-      for (const field of this.schema) {
-        if (field.if) {
-          let result = true;
-          for (const [ key, val ] of Object.entries(field.if)) {
-            if (val !== this.getFieldValue(key)) {
-              result = false;
-              break;
-            }
-          }
-          conditionalFields[field.name] = result;
-        }
-      }
       while (true) {
         let change = false;
         for (const field of this.schema) {
           if (field.if) {
-            for (const key of Object.keys(field.if)) {
-              if ((conditionalFields[key] === false) && (conditionalFields[field.name] === true)) {
-                conditionalFields[field.name] = false;
-                change = true;
-                break;
-              }
+            const result = evaluate(field.if);
+            const previous = conditionalFields[field.name];
+            if (previous !== result) {
+              change = true;
             }
+            conditionalFields[field.name] = result;
           }
         }
         if (!change) {
@@ -112,6 +100,25 @@ export default {
         }
       }
       return result;
+
+      function evaluate(clause) {
+        let result = true;
+        for (const [ key, val ] of Object.entries(clause)) {
+          if (key === '$or') {
+            return val.some(clause => evaluate(clause));
+          }
+          if (conditionalFields[key] === false) {
+            result = false;
+            break;
+          }
+          if (val !== self.getFieldValue(key)) {
+            result = false;
+            break;
+          }
+        }
+        return result;
+      }
+
     },
 
     // Overridden by components that split the fields into several AposSchemas
