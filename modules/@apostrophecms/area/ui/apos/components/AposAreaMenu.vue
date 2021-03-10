@@ -177,15 +177,6 @@ export default {
         name
       });
     },
-    widgetEditorComponent(type) {
-      return this.moduleOptions.components.widgetEditors[type];
-    },
-    widgetIsContextual(type) {
-      return this.moduleOptions.widgetIsContextual[type];
-    },
-    contextualWidgetDefaultData(type) {
-      return this.moduleOptions.contextualWidgetDefaultData[type];
-    },
     groupFocused() {
       this.groupIsFocused = true;
     },
