@@ -18,8 +18,7 @@ export default {
   data() {
     return {
       docFields: {
-        data: {},
-        hasErrors: false
+        data: {}
       },
       serverErrors: null
     };

@@ -28,15 +28,19 @@
       />
       <AposButton
         type="primary" :label="saveLabel"
-        :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
+        :modifiers="buttonModifiers"
         @click="submit"
+        :tooltip="tooltip"
       />
     </template>
     <template #leftRail>
       <AposModalRail>
         <AposModalTabs
+          :key="tabKey"
           v-if="tabs.length > 0"
-          :current="currentTab" :tabs="tabs"
+          :current="currentTab"
+          :tabs="tabs"
+          :errors="fieldErrors"
           @select-tab="switchPane"
         />
       </AposModalRail>
@@ -44,24 +48,24 @@
     <template #main>
       <AposModalBody>
         <template #bodyMain>
-          <AposModalTabsBody>
-            <div class="apos-doc-editor__body">
-              <AposSchema
-                v-if="docReady"
-                :schema="schemaOtherFields"
-                :current-fields="currentFields"
-                :trigger-validation="triggerValidation"
-                :utility-rail="false"
-                :following-values="followingValues('other')"
-                :conditional-fields="conditionalFields('other')"
-                :doc-id="docId"
-                :value="docOtherFields"
-                @input="updateDocOtherFields"
-                :server-errors="serverErrors"
-                ref="otherSchema"
-              />
-            </div>
-          </AposModalTabsBody>
+          <div v-if="docReady" class="apos-doc-editor__body">
+            <AposSchema
+              v-for="tab in tabs"
+              v-show="tab.name === currentTab"
+              :key="tab.name"
+              :schema="groups[tab.name].schema"
+              :current-fields="groups[tab.name].fields"
+              :trigger-validation="triggerValidation"
+              :utility-rail="false"
+              :following-values="followingValues('other')"
+              :conditional-fields="conditionalFields('other')"
+              :doc-id="docId"
+              :value="docFields"
+              @input="updateDocFields"
+              :server-errors="serverErrors"
+              :ref="tab.name"
+            />
+          </div>
         </template>
       </AposModalBody>
     </template>
@@ -70,15 +74,15 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
-            :schema="schemaUtilityFields"
-            :current-fields="utilityFields"
+            :schema="groups['utility'].schema"
+            :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
-            :following-values="followingValues('utility')"
+            :following-values="followingUtils"
             :conditional-fields="conditionalFields('utility')"
             :doc-id="docId"
-            :value="docUtilityFields"
-            @input="updateDocUtilityFields"
+            :value="docFields"
+            @input="updateDocFields"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
             :server-errors="serverErrors"
@@ -95,9 +99,9 @@ import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTab
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
-import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
+import cuid from 'cuid';
 
 export default {
   name: 'AposDocEditor',
@@ -129,30 +133,40 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
+      tabKey: cuid(),
       docType: this.moduleName,
-      docUtilityFields: {
-        data: {},
-        hasErrors: false
-      },
-      docOtherFields: {
-        data: {},
-        hasErrors: false
-      },
       docReady: false,
+      fieldErrors: {},
       modal: {
         active: false,
         type: 'overlay',
         showModal: false
       },
-      splittingDoc: false,
-      schemaUtilityFields: [],
-      schemaOtherFields: [],
       triggerValidation: false,
       original: null,
-      published: null
+      published: null,
+      errorCount: 0
     };
   },
   computed: {
+    tooltip() {
+      // TODO I18N
+      let msg;
+      if (this.errorCount) {
+        msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
+      }
+      return msg;
+    },
+    followingUtils() {
+      return this.followingValues('utility');
+    },
+    buttonModifiers() {
+      if (this.errorCount) {
+        return [ 'disabled' ];
+      } else {
+        return [];
+      }
+    },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
     },
@@ -171,10 +185,12 @@ export default {
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
-            fields: [ field.name ]
+            fields: [ field.name ],
+            schema: [ field ]
           };
         } else if (field.group) {
           groupSet[field.group.name].fields.push(field.name);
+          groupSet[field.group.name].schema.push(field);
         }
       });
 
@@ -190,26 +206,16 @@ export default {
       const tabs = [];
       for (const key in this.groups) {
         if (key !== 'utility') {
-          const temp = { ...this.groups[key] };
-          temp.name = key;
-          tabs.push(temp);
+          tabs.push({
+            name: key,
+            label: this.groups[key].label
+          });
         }
       };
       return tabs;
     },
     modalTitle() {
       return `Edit ${this.moduleOptions.label || ''}`;
-    },
-    currentFields() {
-      if (this.currentTab) {
-        const tabFields = this.tabs.find((item) => {
-          return item.name === this.currentTab;
-        });
-
-        return tabFields.fields;
-      } else {
-        return [];
-      }
     },
     manuallyPublished() {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
@@ -229,20 +235,20 @@ export default {
       if (!this.original) {
         return false;
       }
-      return detectDocChange(this.schema, this.original, this.unsplitDoc());
+      return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     isModifiedFromPublished() {
       if (!this.published) {
         return false;
       }
-      return detectDocChange(this.schema, this.published, this.unsplitDoc());
+      return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canDiscardDraft() {
       return (this.docId && (!this.published)) || this.isModifiedFromPublished;
     }
   },
   watch: {
-    'docUtilityFields.data': {
+    'docFields.data': {
       deep: true,
       handler(newVal, oldVal) {
         if (this.moduleName !== '@apostrophecms/page' || this.splittingDoc) {
@@ -250,25 +256,18 @@ export default {
         }
 
         if (this.docType !== newVal.type) {
-          // Return the split data into `docFields.data` before splitting again.
-          this.docFields.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.docFields.data);
-
           this.docType = newVal.type;
-          this.docReady = false;
-
-          // Let the schema update before splitting up the doc again.
-          this.$nextTick(() => {
-            this.splitDoc();
-            this.docReady = true;
-          });
+          this.prepErrors();
         }
       }
     },
+
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
         this.currentTab = this.tabs[0].name;
       }
     }
+
   },
   async mounted() {
     this.modal.active = true;
@@ -303,7 +302,7 @@ export default {
           this.original = klona(docData);
           this.docFields.data = docData;
           this.docReady = true;
-          this.splitDoc();
+          this.prepErrors();
         }
       }
       try {
@@ -334,6 +333,47 @@ export default {
     }
   },
   methods: {
+    updateFieldState(fieldState) {
+      this.tabKey = cuid();
+      for (const key in this.groups) {
+        this.groups[key].fields.forEach(field => {
+          if (fieldState[field]) {
+            this.fieldErrors[key][field] = fieldState[field].error;
+          }
+        });
+      }
+      this.updateErrorCount();
+    },
+    updateErrorCount() {
+      let count = 0;
+      for (const key in this.fieldErrors) {
+        for (const tabKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][tabKey]) {
+            count++;
+          }
+        }
+      }
+      this.errorCount = count;
+    },
+    focusNextError() {
+      let field;
+      for (const key in this.fieldErrors) {
+        for (const tabKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][tabKey] && !field) {
+            field = this.schema.filter(item => {
+              return item.name === tabKey;
+            })[0];
+            this.switchPane(field.group.name);
+            this.getAposSchema(field).scrollFieldIntoView(field.name);
+          }
+        }
+      }
+    },
+    prepErrors() {
+      for (const name in this.groups) {
+        this.fieldErrors[name] = {};
+      }
+    },
     // Implementing a method expected by the advisory lock mixin
     lockNotAvailable() {
       this.modal.showModal = false;
@@ -353,16 +393,16 @@ export default {
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
+        if (this.errorCount) {
           await apos.notify('Resolve errors before saving.', {
             type: 'warning',
             icon: 'alert-circle-icon',
             dismiss: true
           });
+          this.focusNextError();
           return;
         }
-
-        const body = this.unsplitDoc();
+        const body = this.docFields.data;
         let route;
         let requestMethod;
         if (this.docId) {
@@ -450,55 +490,21 @@ export default {
         this.docType = newInstance.type;
       }
       this.docFields.data = newInstance;
-      this.splitDoc();
+      this.prepErrors();
       this.docReady = true;
     },
-    splitDoc() {
-      this.splittingDoc = true;
-
-      this.docUtilityFields.data = {};
-      this.docOtherFields.data = {};
-      this.schemaUtilityFields = [];
-      this.schemaOtherFields = [];
-
-      this.schema.forEach(field => {
-        if (field.group.name === 'utility') {
-          this.docUtilityFields.data[field.name] = this.docFields.data[field.name];
-          this.schemaUtilityFields.push(field);
-        } else {
-          this.docOtherFields.data[field.name] = this.docFields.data[field.name];
-          this.schemaOtherFields.push(field);
-        }
-      });
-      this.splittingDoc = false;
-    },
-    unsplitDoc() {
-      return {
+    updateDocFields(value) {
+      this.updateFieldState(value.fieldState);
+      this.docFields.data = {
         ...this.docFields.data,
-        ...this.docUtilityFields.data,
-        ...this.docOtherFields.data
+        ...value.data
       };
-    },
-    // Override of a mixin method to accommodate the tabs/utility rail split
-    getFieldValue(name) {
-      if (this.docUtilityFields.data[name] !== undefined) {
-        return this.docUtilityFields.data[name];
-      }
-      if (this.docOtherFields.data[name] !== undefined) {
-        return this.docOtherFields.data[name];
-      }
-    },
-    updateDocUtilityFields(value) {
-      this.docUtilityFields = value;
-    },
-    updateDocOtherFields(value) {
-      this.docOtherFields = value;
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
         return this.$refs.utilitySchema;
       } else {
-        return this.$refs.otherSchema;
+        return this.$refs[field.group.name][0];
       }
     },
     async onDiscardDraft(e) {
