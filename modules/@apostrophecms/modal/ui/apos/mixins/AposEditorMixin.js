@@ -60,43 +60,34 @@ export default {
       }
     },
 
-    // The returned object contains a property for each field that is conditional on other fields,
-    // `true` if that field's conditions are satisfied and `false` if they are not. There will
-    // be no properties for fields that are not conditional.
+    // The returned object contains a property for each field that is
+    // conditional on other fields, `true` if that field's conditions are
+    // satisfied and `false` if they are not. There will be no properties for
+    // fields that are not conditional.
     //
-    // Any condition on a field that is itself conditional fails if the second field's conditions fail.
+    // Any condition on a field that is itself conditional fails if the second
+    // field's conditions fail.
     //
-    // If present, followedByCategory must be either "other" or "utility", and the
-    // returned object will contain properties only for conditional fields in that
-    // category, although they may be conditional upon fields in either category.
+    // If present, followedByCategory must be either "other" or "utility", and
+    // the returned object will contain properties only for conditional fields
+    // in that category, although they may be conditional upon fields in either
+    // category.
 
     conditionalFields(followedByCategory) {
 
+      const self = this;
       const conditionalFields = {};
 
-      for (const field of this.schema) {
-        if (field.if) {
-          let result = true;
-          for (const [ key, val ] of Object.entries(field.if)) {
-            if (val !== this.getFieldValue(key)) {
-              result = false;
-              break;
-            }
-          }
-          conditionalFields[field.name] = result;
-        }
-      }
       while (true) {
         let change = false;
         for (const field of this.schema) {
           if (field.if) {
-            for (const key of Object.keys(field.if)) {
-              if ((conditionalFields[key] === false) && (conditionalFields[field.name] === true)) {
-                conditionalFields[field.name] = false;
-                change = true;
-                break;
-              }
+            const result = evaluate(field.if);
+            const previous = conditionalFields[field.name];
+            if (previous !== result) {
+              change = true;
             }
+            conditionalFields[field.name] = result;
           }
         }
         if (!change) {
@@ -112,6 +103,25 @@ export default {
         }
       }
       return result;
+
+      function evaluate(clause) {
+        let result = true;
+        for (const [ key, val ] of Object.entries(clause)) {
+          if (key === '$or') {
+            return val.some(clause => evaluate(clause));
+          }
+          if (conditionalFields[key] === false) {
+            result = false;
+            break;
+          }
+          if (val !== self.getFieldValue(key)) {
+            result = false;
+            break;
+          }
+        }
+        return result;
+      }
+
     },
 
     // Overridden by components that split the fields into several AposSchemas

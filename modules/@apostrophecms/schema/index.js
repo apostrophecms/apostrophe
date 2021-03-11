@@ -383,7 +383,7 @@ module.exports = {
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
-        if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+        if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
         if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
@@ -1287,24 +1287,6 @@ module.exports = {
             }
           }
 
-          // Extra validation for select fields, TODO move this into the field type definition
-
-          if (field.type === 'select' || field.type === 'checkboxes') {
-            _.each(field.choices, function (choice) {
-              if (choice.showFields) {
-                if (!_.isArray(choice.showFields)) {
-                  throw new Error('The \'showFields\' property in the choices of a select field needs to be an array.');
-                }
-                _.each(choice.showFields, function (showFieldName) {
-                  if (!_.find(schema, function (schemaField) {
-                    return schemaField.name === showFieldName;
-                  })) {
-                    self.apos.util.error('WARNING: The field \'' + showFieldName + '\' does not exist in your schema, but you tried to toggle its display with a select field using showFields. STAAAHHHHPP!');
-                  }
-                });
-              }
-            });
-          }
         });
 
         // Shallowly clone the fields. This allows modules
@@ -1585,7 +1567,7 @@ module.exports = {
         errors = errors.filter(error => {
           if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
             // It is not reasonable to enforce required for
-            // fields hidden via showFields
+            // fields hidden via conditional fields
             return false;
           }
           return true;
@@ -1596,39 +1578,47 @@ module.exports = {
       },
 
       // Determine whether the given field is visible
-      // based on showFields options of all fields
+      // based on `if` conditions of all fields
 
       isVisible(schema, object, name) {
-        const hidden = {};
-        _.each(schema, function (field) {
-          if (!_.find(field.choices || [], function (choice) {
-            return choice.showFields;
-          })) {
-            return;
-          }
-          _.each(field.choices, function (choice) {
-            if (choice.showFields) {
-              if (field.type === 'checkboxes') {
-                if (!object[field.name].includes(choice.value)) {
-                  _.each(choice.showFields, hide);
-                }
-              } else if (object[field.name] !== choice.value) {
-                _.each(choice.showFields, hide);
+        const conditionalFields = {};
+        while (true) {
+          let change = false;
+          for (const field of schema) {
+            if (field.if) {
+              const result = evaluate(field.if);
+              const previous = conditionalFields[field.name];
+              if (previous !== result) {
+                change = true;
               }
+              conditionalFields[field.name] = result;
             }
-          });
-        });
-        return !hidden[name];
-
-        function hide(name) {
-          hidden[name] = true;
-          // Cope with nested showFields
-          const field = _.find(schema, { name: name });
-          _.each(field.choices || [], function (choice) {
-            _.each(choice.showFields || [], function (name) {
-              hide(name);
-            });
-          });
+          }
+          if (!change) {
+            break;
+          }
+        }
+        if (_.has(conditionalFields, name)) {
+          return conditionalFields[name];
+        } else {
+          return true;
+        }
+        function evaluate(clause) {
+          let result = true;
+          for (const [ key, val ] of Object.entries(clause)) {
+            if (key === '$or') {
+              return val.some(clause => evaluate(clause));
+            }
+            if (conditionalFields[key] === false) {
+              result = false;
+              break;
+            }
+            if (val !== object[key]) {
+              result = false;
+              break;
+            }
+          }
+          return result;
         }
       },
 
