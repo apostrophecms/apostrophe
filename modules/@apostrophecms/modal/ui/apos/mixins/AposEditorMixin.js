@@ -60,15 +60,18 @@ export default {
       }
     },
 
-    // The returned object contains a property for each field that is conditional on other fields,
-    // `true` if that field's conditions are satisfied and `false` if they are not. There will
-    // be no properties for fields that are not conditional.
+    // The returned object contains a property for each field that is
+    // conditional on other fields, `true` if that field's conditions are
+    // satisfied and `false` if they are not. There will be no properties for
+    // fields that are not conditional.
     //
-    // Any condition on a field that is itself conditional fails if the second field's conditions fail.
+    // Any condition on a field that is itself conditional fails if the second
+    // field's conditions fail.
     //
-    // If present, followedByCategory must be either "other" or "utility", and the
-    // returned object will contain properties only for conditional fields in that
-    // category, although they may be conditional upon fields in either category.
+    // If present, followedByCategory must be either "other" or "utility", and
+    // the returned object will contain properties only for conditional fields
+    // in that category, although they may be conditional upon fields in either
+    // category.
 
     conditionalFields(followedByCategory) {
 
