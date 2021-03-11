@@ -2,52 +2,7 @@
 
 ## 3.0.0-alpha.5 - Unreleased
 
-* Conditional fields are now supported. The old 2.x `showFields` feature has been replaced with `if: { ... }`. The new feature works like this:
-
-```javascript
-fields: {
-  add: {
-    housing: {
-      type: 'boolean'
-    },
-    roomNumberPreference: {
-      type: 'integer',
-      if: {
-        housing: true
-      }
-    }
-  }
-}
-```
-
-The `if` feature supports exact matches with one or more properties. If you list more than one property inside `if`, they *all* must match the values you give for the field to appear. However, `if` also supports an `$or` operator:
-
-```javascript
-fields: {
-  add: {
-    camping: {
-      type: 'boolean'
-    },
-    housing: {
-      type: 'boolean'
-    },
-    meal: {
-      type: 'boolean',
-      if: {
-        $or: [
-          {
-            camping: true
-          },
-          {
-            housing: true
-          }
-        ]
-      }
-    }
-  }
-}
-```
-
+* Conditional fields are now supported via the new `if` syntax. The old 2.x `showFields` feature has been replaced with `if: { ... }`.
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
 * Advisory locking has been implemented for in-context editing, including nested contexts like the palette module. Advisory locking has also been implemented for the media manager, completing the advisory locking story.
 * Detects many common configuration errors at startup.
