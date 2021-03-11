@@ -1,8 +1,11 @@
 # Changelog
 
-## 2.117.0 (2021-03-09)
-* Adds suggestions list for media library search bar, it uses autocomplete cursor and displays matching titles and tags.
-## 2.116.1 (2021-03-01)
+## 2.117.0
+* Fixes `options.arrangeFields` for `apostrophe-html-widgets`
+* Adds suggestions list for pieces search bar, it uses autocomplete cursor and displays matching words from highSearchWords.
+
+## 2.116.1 (2021-03-10)
+* Fixes a user interface bug in the chooser modals where the footer pagination was hidden behind the left column.
 * Fixes page slug updated twice when committing a page move.
 * Eliminated potential race condition while inserting groups if Apostrophe is starting up for the very first time in two processes simultaneously.
 
