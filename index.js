@@ -382,7 +382,7 @@ module.exports = async function(options) {
       } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -page module usually extends @apostrophecms/page-type or\n@apostrophecms/piece-page-type or another page type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
       } else if ((!extending(module)) && (!hasCode(name)) && (!isBundle(name)) && (!module.options.ignoreNoCodeWarning)) {
-        lint(`The module ${name} does not extend anything and does not have any code.\n\nThis usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven\'t written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.`);
+        lint(`The module ${name} does not extend anything and does not have any code.\n\nThis usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven't written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.`);
       }
     }
     function hasCode(name) {
