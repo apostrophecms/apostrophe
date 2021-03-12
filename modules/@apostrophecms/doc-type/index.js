@@ -1521,18 +1521,26 @@ module.exports = {
           launder(choices) {
             return self.sanitizeFieldList(choices);
           },
+          prefinalize() {
+            // Capture the query to be cloned before it is finalized so we can
+            // still turn filters on and off, if we wait too long
+            // those will already have been and()'ed into the criteria
+            query.set('choices-query-prefinalize', query.clone());
+          },
           async after(results) {
             const filters = query.get('choices');
             if (!filters) {
               return;
             }
             const choices = {};
+            const baseQuery = query.get('choices-query-prefinalize');
+            baseQuery.set('choices-query-prefinalize', null);
             for (const filter of filters) {
               // The choices for each filter should reflect the effect of all filters
               // except this one (filtering by topic pares down the list of categories and
               // vice versa)
-              const _query = query.clone();
-              _query[filter](undefined);
+              const _query = baseQuery.clone();
+              _query[filter](null);
               choices[filter] = await _query.toChoices(filter, { counts: query.get('counts') });
             }
             if (query.get('counts')) {
