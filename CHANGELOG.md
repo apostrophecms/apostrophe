@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.0.0-alpha.5 - Unreleased
+## 3.0.0-alpha.5
 
 * Conditional fields are now supported via the new `if` syntax. The old 2.x `showFields` feature has been replaced with `if: { ... }`.
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
