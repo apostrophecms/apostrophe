@@ -52,7 +52,7 @@ export default {
           this.runPlayer();
         } else {
           this.rendered = '...';
-          this.rendered = await apos.http.post(`${apos.area.action}/render-widget?apos-edit=1`, {
+          this.rendered = await apos.http.post(`${apos.area.action}/render-widget?apos-edit=1&apos-mode=draft`, {
             busy: true,
             body: parameters
           });
