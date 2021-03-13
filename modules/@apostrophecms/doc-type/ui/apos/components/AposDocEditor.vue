@@ -17,14 +17,16 @@
         menu in many cases because all of the operations
         depend on modification from published -->
       <AposDocMoreMenu
-        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished || canDiscardDraft)"
+        v-if="hasMoreMenu"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
+        :can-copy="true"
         :is-published="!!published"
         :options="{ saveDraft: true }"
         @saveDraft="saveDraft"
         @discardDraft="onDiscardDraft"
+        @copy="onCopy"
       />
       <AposButton
         type="primary" :label="saveLabel"
@@ -119,6 +121,10 @@ export default {
     },
     docId: {
       type: String,
+      default: null
+    },
+    copyOf: {
+      type: Object,
       default: null
     },
     filterValues: {
@@ -222,7 +228,7 @@ export default {
       return tabs;
     },
     modalTitle() {
-      return `Edit ${this.moduleOptions.label || ''}`;
+      return this.copyOf ? `Copy ${this.moduleOptions.label || ''}` : `Edit ${this.moduleOptions.label || ''}`;
     },
     currentFields() {
       if (this.currentTab) {
@@ -262,6 +268,17 @@ export default {
     },
     canDiscardDraft() {
       return (this.docId && (!this.published)) || this.isModifiedFromPublished;
+    },
+    hasMoreMenu() {
+      if (this.docId) {
+        // Copy is allowed
+        return true;
+        // All other scenarios apply only when the user needs publishing-related UI
+      } else if (this.moduleOptions.localized && !this.moduleOptions.autopublish) {
+        return (this.isModified || this.isModifiedFromPublished || this.canDiscardDraft);
+      } else {
+        return false;
+      }
     }
   },
   watch: {
@@ -343,6 +360,16 @@ export default {
           });
         }
       }
+    } else if (this.copyOf) {
+      const newInstance = klona(this.copyOf);
+      delete newInstance._id;
+      this.original = newInstance;
+      if (newInstance && newInstance.type !== this.docType) {
+        this.docType = newInstance.type;
+      }
+      this.docFields.data = newInstance;
+      this.prepErrors();
+      this.docReady = true;
     } else {
       this.$nextTick(() => {
         this.loadNewInstance();
@@ -434,6 +461,9 @@ export default {
             // New pages are always born as drafts
             body._targetId = apos.page.page._id.replace(':published', ':draft');
             body._position = 'lastChild';
+          }
+          if (this.copyOf) {
+            body._copyingId = this.copyOf._id;
           }
         }
         let doc;
@@ -529,8 +559,25 @@ export default {
         this.modal.showModal = false;
       }
     },
+    async onCopy(e) {
+      if (this.isModified) {
+        await this.saveDraft();
+      } else {
+        this.$emit('modal-result', false);
+        this.modal.showModal = false;
+      }
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.moduleName}:editor`,
+        props: {
+          copyOf: {
+            ...this.docFields.data,
+            _id: this.docId
+          }
+        }
+      });
+    },
     saveDraft() {
-      this.save({
+      return this.save({
         andPublish: false,
         savingDraft: true
       });

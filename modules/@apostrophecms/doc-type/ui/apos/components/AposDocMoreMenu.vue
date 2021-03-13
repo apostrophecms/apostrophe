@@ -45,6 +45,12 @@ export default {
         return false;
       }
     },
+    canCopy: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     options: {
       type: Object,
       required: true
@@ -106,6 +112,12 @@ export default {
           {
             label: 'Save Draft',
             action: 'saveDraft'
+          }
+        ] : []),
+        ...(this.canCopy ? [
+          {
+            label: 'Copy',
+            action: 'copy'
           }
         ] : [])
       ];

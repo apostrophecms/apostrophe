@@ -532,16 +532,20 @@ module.exports = {
       // If `options.copyingId` is present, the doc with the given id is
       // fetched and used as defaults for any schema fields not defined
       // in `input`. This overrides `presentFieldsOnly` as long as the fields
-      // in question exist in the doc being copied.
+      // in question exist in the doc being copied. Also, the _id of the copied
+      // doc is copied to the `copyOfId` property of doc.
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
         copyingId: false
       }) {
-        let schema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        const fullSchema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        let schema;
         let copyOf;
         if (options.presentFieldsOnly) {
-          schema = self.apos.schema.subset(schema, self.fieldsPresent(input));
+          schema = self.apos.schema.subset(fullSchema, self.fieldsPresent(input));
+        } else {
+          schema = fullSchema;
         }
         if (options.copyingId) {
           copyOf = await self.findOneForCopying(req, { _id: options.copyingId });
@@ -550,12 +554,13 @@ module.exports = {
           }
           input = {
             ...copyOf,
-            ...input
+            ...input,
+            copyOfId: copyOf._id
           };
         }
         await self.apos.schema.convert(req, schema, input, doc);
         if (copyOf) {
-          await self.emit('copyExtras', req, copyOf, input, doc);
+          self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
       },
 
