@@ -144,7 +144,7 @@ export default {
       return {
         ...this.buttonDefaults,
         label: 'Copy',
-        icon: 'content-copy-icon'
+        icon: 'clipboard-plus-icon'
       };
     }
   }

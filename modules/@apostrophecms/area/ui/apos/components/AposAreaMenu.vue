@@ -150,7 +150,7 @@ export default {
       return flag;
     },
     myMenu() {
-      const clipboard = localStorage.getItem('aposWidgetCipboard');
+      const clipboard = localStorage.getItem('aposWidgetClipboard');
       if (clipboard) {
         const widget = JSON.parse(clipboard);
         const matchingChoice = this.contextMenuOptions.menu.find(option => option.name === widget.type);
@@ -158,7 +158,6 @@ export default {
           return this.composeGroups(widget, matchingChoice);
         }
       }
-      
       if (this.groupedMenus) {
         return this.composeGroups();
       } else {
@@ -181,7 +180,10 @@ export default {
       // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
       // as it is often the logical experience (not always, see tag menus and filters)
       this.$refs.contextMenu.isOpen = false;
-      this.$emit('add', item);
+      this.$emit('add', {
+        ...item,
+        index: this.index
+      });
     },
     groupFocused() {
       this.groupIsFocused = true;

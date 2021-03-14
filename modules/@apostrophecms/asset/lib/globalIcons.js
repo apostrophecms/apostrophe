@@ -20,6 +20,7 @@ module.exports = {
   'cog-icon': 'Cog',
   'cursor-default-click-icon': 'CursorDefaultClick',
   'content-copy-icon': 'ContentCopy',
+  'clipboard-plus-icon': 'ClipboardPlus',
   'delete-icon': 'Delete',
   'scissors-cutting-icon': 'ScissorsCutting',
   'dots-vertical-icon': 'DotsVertical',
