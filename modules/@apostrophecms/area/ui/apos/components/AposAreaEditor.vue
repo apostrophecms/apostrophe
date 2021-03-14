@@ -42,6 +42,8 @@
         @up="up"
         @down="down"
         @remove="remove"
+        @cut="cut"
+        @copy="copy"
         @edit="edit"
         @clone="clone"
         @update="update"
@@ -54,6 +56,7 @@
 <script>
 import cuid from 'cuid';
 import { klona } from 'klona';
+import regenerateIds from '../../../../schema/lib/regenerateIds';
 
 export default {
   name: 'AposAreaEditor',
@@ -258,6 +261,13 @@ export default {
         ...this.next.slice(i + 1)
       ];
     },
+    async cut(i) {
+      localStorage.setItem('aposWidgetClipboard', JSON.stringify(this.next[i]));
+      await this.remove(i);
+    },
+    async copy(i) {
+      localStorage.setItem('aposWidgetClipboard', JSON.stringify(regenerateIds(this.next[i])));
+    },
     async edit(i) {
       if (this.foreign) {
         try {
@@ -334,8 +344,17 @@ export default {
       this.edited[widget._id] = true;
     },
     // Add a widget into an area.
-    async add({ index, name }) {
-      if (this.widgetIsContextual(name)) {
+    async add({
+      index,
+      name,
+      clipboard
+    }) {
+      if (clipboard) {
+        await this.insert({
+          widget: clipboard,
+          index
+        });
+      } else if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
             _id: cuid(),

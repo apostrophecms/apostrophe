@@ -21,6 +21,7 @@ module.exports = {
   'cursor-default-click-icon': 'CursorDefaultClick',
   'content-copy-icon': 'ContentCopy',
   'delete-icon': 'Delete',
+  'scissors-cutting-icon': 'ScissorsCutting',
   'dots-vertical-icon': 'DotsVertical',
   'drag-icon': 'Apps',
   'eye-icon': 'Eye',

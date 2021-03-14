@@ -55,7 +55,7 @@
                   :ref="`child-${index}-${childIndex}`"
                 >
                   <AposAreaMenuItem
-                    @click="add(child.name)"
+                    @click="add(child)"
                     :item="child"
                     :tabbable="itemIndex === active"
                     @up="switchItem(`child-${itemIndex}-${childIndex - 1}`, -1)"
@@ -67,7 +67,7 @@
           </dl>
           <AposAreaMenuItem
             v-else
-            @click="add(item.name)"
+            @click="add(item)"
             :item="item"
             @up="switchItem(`item-${itemIndex - 1}`, -1)"
             @down="switchItem(`item-${itemIndex + 1}`, 1)"
@@ -150,6 +150,15 @@ export default {
       return flag;
     },
     myMenu() {
+      const clipboard = localStorage.getItem('aposWidgetCipboard');
+      if (clipboard) {
+        const widget = JSON.parse(clipboard);
+        const matchingChoice = this.contextMenuOptions.menu.find(option => option.name === widget.type);
+        if (matchingChoice) {
+          return this.composeGroups(widget, matchingChoice);
+        }
+      }
+      
       if (this.groupedMenus) {
         return this.composeGroups();
       } else {
@@ -167,15 +176,12 @@ export default {
     menuOpen(e) {
       this.$emit('menu-open', e);
     },
-    async add(name) {
+    async add(item) {
       // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
       // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
       // as it is often the logical experience (not always, see tag menus and filters)
       this.$refs.contextMenu.isOpen = false;
-      this.$emit('add', {
-        index: this.index,
-        name
-      });
+      this.$emit('add', item);
     },
     groupFocused() {
       this.groupIsFocused = true;
@@ -183,12 +189,23 @@ export default {
     groupBlurred() {
       this.groupIsFocused = false;
     },
-    composeGroups() {
+    composeGroups(clipboard, matchingChoice) {
       const ungrouped = {
         label: 'Ungrouped Widgets',
         items: []
       };
       const myMenu = [];
+      if (clipboard) {
+        myMenu.push({
+          label: 'Clipboard Widget',
+          items: [
+            {
+              ...matchingChoice,
+              clipboard
+            }
+          ]
+        });
+      }
 
       this.contextMenuOptions.menu.forEach((item) => {
         if (!item.items) {

@@ -17,6 +17,16 @@
         @click="$emit('edit')"
       />
       <AposButton
+        v-bind="cutButton"
+        v-if="!foreign"
+        @click="$emit('cut')"
+      />
+      <AposButton
+        v-bind="copyButton"
+        v-if="!foreign"
+        @click="$emit('copy')"
+      />
+      <AposButton
         v-if="!foreign"
         v-bind="cloneButton"
         @click="$emit('clone')"
@@ -59,7 +69,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'remove', 'edit', 'clone', 'up', 'down' ],
+  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
   data() {
     return {
       buttonDefaults: {
@@ -121,6 +131,20 @@ export default {
         ...this.buttonDefaults,
         label: 'Edit',
         icon: 'pencil-icon'
+      };
+    },
+    cutButton() {
+      return {
+        ...this.buttonDefaults,
+        label: 'Cut',
+        icon: 'scissors-cutting-icon'
+      };
+    },
+    copyButton() {
+      return {
+        ...this.buttonDefaults,
+        label: 'Copy',
+        icon: 'content-copy-icon'
       };
     }
   }
