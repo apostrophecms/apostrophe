@@ -10,7 +10,7 @@
   <h3 align="center">ApostropheCMS 3</h3>
 
   <p align="center">
-    ApostropheCMS is a full-featured, open source CMS built with Node.js that seeks to empower organizations by combining in-context editing and headless architecture in a full-stack JS environment.
+    ApostropheCMS is full-featured, open source CMS built with Node.js that seeks to empower organizations by combining in-context editing and headless architecture in a full-stack JS environment.
     <br />
     <a href="https://a3.docs.apos.dev/"><strong>Alpha Documentation »</strong></a>
     <br />
