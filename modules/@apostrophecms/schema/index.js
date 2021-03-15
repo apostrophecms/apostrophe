@@ -1534,7 +1534,7 @@ module.exports = {
         let errors = [];
 
         for (const field of schema) {
-          if (field.readOnly) {
+          if (field.disabled) {
             continue;
           }
           // Fields that are contextual are left alone, not blanked out, if
@@ -2484,26 +2484,6 @@ module.exports = {
 
         browserOptions.components = { fields: fields };
         return browserOptions;
-      }
-    };
-  },
-  helpers(self) {
-    return {
-      toGroups: function (fields) {
-        return self.toGroups(fields);
-      },
-      field: function (field, readOnly) {
-        if (readOnly) {
-          field.readOnly = true;
-        }
-        // Allow custom partials for types and for individual fields
-        const partial = field.partial || self.fieldTypes[field.type].partial;
-        if (!partial) {
-          // Look for a standard partial template in the views folder
-          // of this module
-          return self.partialer(field.type)(field);
-        }
-        return partial(field);
       }
     };
   }

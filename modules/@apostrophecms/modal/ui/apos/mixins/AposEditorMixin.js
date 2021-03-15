@@ -14,14 +14,30 @@
  *   AposDocEditor that split the UI into several AposSchemas.
  */
 
+import { klona } from 'klona';
+
 export default {
   data() {
     return {
       docFields: {
         data: {}
       },
-      serverErrors: null
+      serverErrors: null,
+      wasInTrash: false
     };
+  },
+
+  computed: {
+    schema() {
+      let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      if (this.wasInTrash) {
+        schema = klona(schema);
+        for (const field of schema) {
+          field.disabled = true;
+        }
+      }
+      return schema;
+    }
   },
 
   methods: {
@@ -166,5 +182,6 @@ export default {
         });
       }
     }
+
   }
 };
