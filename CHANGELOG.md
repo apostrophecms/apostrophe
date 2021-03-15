@@ -8,11 +8,12 @@
 ### Fixes
 * Fixes error from missing `select` method in `AposPiecesManager` component.
 
-## 3.0.0-alpha.5 - Unreleased
+## 3.0.0-alpha.5 - 2021-02-11
 
+* Conditional fields are now supported via the new `if` syntax. The old 2.x `showFields` feature has been replaced with `if: { ... }`.
 * Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
-* Advisory locking has been implemented for in-context editing, including nested contexts like the palette module. Advisory locking has also been
-implemented for the media manager, completing the advisory locking story.
+* Advisory locking has been implemented for in-context editing, including nested contexts like the palette module. Advisory locking has also been implemented for the media manager, completing the advisory locking story.
+* Detects many common configuration errors at startup.
 * Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
 * If a select element has no default, but is required, it should default to the first option. The select elements appeared as if this were the case, but on save you would be told to make a choice, forcing you to change and change back. This has been fixed.
 * Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
@@ -20,11 +21,10 @@ implemented for the media manager, completing the advisory locking story.
 * Fixed a bug that allowed users to appear to be in edit mode while looking at published content in certain edge cases.
 * The PATCH API for pages can now infer the correct _id in cases where the locale is specified in the query string as an override, just like other methods.
 * Check permissions for the delete and publish operations.
+* Many bug fixes.
 
 ### Breaks
-* Changes the `piecesModuleName` option to `pieceModuleName` (no "s") in the `@apostrophecms/piece-page-type` module.
-* Removes the `createControls`, and `editControls` options from piece type module and the page module.
-* Removes the `typeChoices` option from the page module.
+* Changes the `piecesModuleName` option to `pieceModuleName` (no "s") in the `@apostrophecms/piece-page-type` module. This feature is used only when you have two or more piece page types for the same piece type.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27
 

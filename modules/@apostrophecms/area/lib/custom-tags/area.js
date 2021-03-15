@@ -88,7 +88,7 @@ module.exports = function(self) {
             _id: docId,
             // Prevent race condition
             [areaDotPath]: {
-              $exists: 0
+              $eq: null
             }
           }, {
             $set: {

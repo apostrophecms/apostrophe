@@ -19,6 +19,8 @@
               :schema="schema"
               :value="docFields"
               @input="updateDocFields"
+              :following-values="followingValues()"
+              :conditional-fields="conditionalFields()"
               ref="schema"
             />
           </div>
@@ -41,13 +43,14 @@
 
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
 import { klona } from 'klona';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [ AposModalModifiedMixin ],
+  mixins: [ AposModalModifiedMixin, AposEditorMixin ],
   props: {
     type: {
       required: true,

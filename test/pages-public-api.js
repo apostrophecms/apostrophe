@@ -33,6 +33,9 @@ describe('Pages Public API', function() {
               }
             ]
           }
+        },
+        'test-page': {
+          extend: '@apostrophecms/page-type'
         }
       }
     });

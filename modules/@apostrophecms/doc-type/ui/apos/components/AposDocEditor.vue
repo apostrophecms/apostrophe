@@ -193,14 +193,21 @@ export default {
           groupSet[field.group.name].schema.push(field);
         }
       });
-
+      if (!groupSet.utility) {
+        groupSet.utility = {
+          label: 'Utility',
+          fields: [],
+          schema: []
+        };
+      }
       return groupSet;
     },
     utilityFields() {
+      let fields = [];
       if (this.groups.utility && this.groups.utility.fields) {
-        return this.groups.utility.fields;
+        fields = this.groups.utility.fields;
       }
-      return [];
+      return this.filterOutParkedFields(fields);
     },
     tabs() {
       const tabs = [];
@@ -216,6 +223,16 @@ export default {
     },
     modalTitle() {
       return `Edit ${this.moduleOptions.label || ''}`;
+    },
+    currentFields() {
+      if (this.currentTab) {
+        const tabFields = this.tabs.find((item) => {
+          return item.name === this.currentTab;
+        });
+        return this.filterOutParkedFields(tabFields.fields);
+      } else {
+        return [];
+      }
     },
     manuallyPublished() {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
@@ -516,6 +533,11 @@ export default {
       this.save({
         andPublish: false,
         savingDraft: true
+      });
+    },
+    filterOutParkedFields(fields) {
+      return fields.filter(fieldName => {
+        return !((this.original && this.original.parked) || []).includes(fieldName);
       });
     }
   }

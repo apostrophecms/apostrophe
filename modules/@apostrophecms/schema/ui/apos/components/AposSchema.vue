@@ -242,6 +242,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-schema /deep/ .apos-field__wrapper {
+    max-width: $input-max-width;
+  }
   .apos-field {
     .apos-schema /deep/ & {
       margin-bottom: $spacing-triple;
