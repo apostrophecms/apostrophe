@@ -265,7 +265,7 @@ export default {
       await this.remove(i);
     },
     async copy(i) {
-      localStorage.setItem('aposWidgetClipboard', JSON.stringify(this.next[i]));
+      apos.area.widgetClipboard.set(this.next[i]);
     },
     async edit(i) {
       if (this.foreign) {
@@ -350,7 +350,7 @@ export default {
     }) {
       if (clipboard) {
         this.regenerateIds(apos.modules[apos.area.widgetManagers[clipboard.type]].schema, clipboard);
-        await this.insert({
+        return this.insert({
           widget: clipboard,
           index
         });

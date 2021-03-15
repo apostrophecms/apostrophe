@@ -1,6 +1,9 @@
 import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+import { klona } from 'klona';
 
 export default function() {
+
+  createWidgetClipboardApp();
 
   prepareAreas();
   apos.bus.$on('widget-rendered', function() {
@@ -104,4 +107,39 @@ export default function() {
       });
     }
   }
+
+  function createWidgetClipboardApp() {
+    // Headless app to provide simple reactivity for the clipboard state
+    apos.area.widgetClipboard = new Vue({
+      el: null,
+      data: () => {
+        const existing = window.localStorage.getItem('aposWidgetClipboard');
+        return {
+          widgetClipboard: existing ? JSON.parse(existing) : null
+        };
+      },
+      mounted() {
+        window.addEventListener('storage', this.onStorage);
+      },
+      methods: {
+        set(widget) {
+          this.widgetClipboard = widget;
+          localStorage.setItem('aposWidgetClipboard', JSON.stringify(this.widgetClipboard));
+        },
+        get() {
+          // If we don't clone, the second paste will be a duplicate key error
+          return klona(this.widgetClipboard);
+        },
+        onStorage() {
+          // When local storage changes, dump the list to
+          // the console.
+          const contents = window.localStorage.getItem('aposWidgetClipboard');
+          if (contents) {
+            this.widgetClipboard = JSON.parse(contents);
+          }
+        }
+      }
+    });
+  }
+
 };

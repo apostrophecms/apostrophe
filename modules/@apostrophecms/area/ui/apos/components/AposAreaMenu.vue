@@ -150,9 +150,9 @@ export default {
       return flag;
     },
     myMenu() {
-      const clipboard = localStorage.getItem('aposWidgetClipboard');
+      const clipboard = apos.area.widgetClipboard.get();
       if (clipboard) {
-        const widget = JSON.parse(clipboard);
+        const widget = clipboard;
         const matchingChoice = this.contextMenuOptions.menu.find(option => option.name === widget.type);
         if (matchingChoice) {
           return this.composeGroups(widget, matchingChoice);
