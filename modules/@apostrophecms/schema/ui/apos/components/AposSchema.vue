@@ -191,7 +191,7 @@ export default {
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
 
-      this.schema.forEach(field => {
+      this.schema.filter(field => this.displayComponent(field.name)).forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
