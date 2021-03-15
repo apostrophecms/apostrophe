@@ -50,7 +50,6 @@
           class="apos-pieces-manager__relationship__items"
           @input="updateChecked"
           :value="checkedDocs"
-          @select="select"
         />
       </div>
     </template>
