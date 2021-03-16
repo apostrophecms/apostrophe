@@ -29,7 +29,9 @@ module.exports = {
   methods(self) {
     return {
       // Add another friendly error name to http status code mapping so you
-      // can throw `apos.error('name')` and get the status code `code`
+      // can throw `apos.error('name')` and get the status code `code`.
+      // Not used in core at the time of writing, but available as part of the
+      // API.
       addError(name, code) {
         self.errors[name] = code;
       },
