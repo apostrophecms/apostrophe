@@ -65,8 +65,7 @@ export default {
     return {
       active: false,
       tinyColorObj: null,
-      startsNull: false,
-      tooltip: this.field.disabled ? 'Field is disabled' : false
+      startsNull: false
     };
   },
   computed: {

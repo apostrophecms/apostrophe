@@ -61,13 +61,6 @@ export default {
     };
   },
   computed: {
-    tooltip() {
-      let msg = false;
-      if (this.field.disabled) {
-        msg = 'This field is disabled';
-      }
-      return msg;
-    },
     minLabel() {
       return this.field.min + this.unit;
     },

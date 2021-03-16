@@ -21,6 +21,8 @@
           <AposButton
             :label="editLabel"
             @click="edit"
+            :disabled="field.disabled"
+            :tooltip="tooltip"
           />
         </label>
       </div>
