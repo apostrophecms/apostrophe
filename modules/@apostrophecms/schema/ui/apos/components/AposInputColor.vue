@@ -13,6 +13,8 @@
             @close="close"
             menu-placement="bottom-start"
             menu-offset="5, 20"
+            :disabled="field.disabled"
+            :tooltip="tooltip"
           >
             <Picker
               v-if="next"
@@ -63,7 +65,8 @@ export default {
     return {
       active: false,
       tinyColorObj: null,
-      startsNull: false
+      startsNull: false,
+      tooltip: this.field.disabled ? 'Field is disabled' : false
     };
   },
   computed: {
