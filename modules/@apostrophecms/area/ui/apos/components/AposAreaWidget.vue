@@ -583,7 +583,7 @@ export default {
     transform: translate(-50%, 0);
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn {
+  .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn .apos-button {
     background-color: var(--a-secondary);
     border-color: var(--a-secondary);
   }
