@@ -566,7 +566,7 @@ export default {
 
   .apos-button--inline {
     padding: 0;
-    &, &:hover, &:active, &:focus {
+    &, &[disabled], &:hover, &:active, &:focus {
       border: 0;
       background-color: transparent;
       box-shadow: none;

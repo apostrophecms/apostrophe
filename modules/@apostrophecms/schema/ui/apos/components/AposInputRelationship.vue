@@ -17,7 +17,7 @@
             class="apos-input apos-input--text apos-input--relationship"
             v-model="searchTerm" type="text"
             :placeholder="placeholder"
-            :disabled="disabled" :required="field.required"
+            :disabled="field.disabled" :required="field.required"
             :id="uid"
             @input="input"
             @focusout="handleFocusOut"
@@ -25,6 +25,7 @@
           >
           <AposButton
             class="apos-input-relationship__button"
+            :disabled="field.disabled"
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
@@ -37,6 +38,7 @@
           @input="updateSelected"
           @item-clicked="editRelationship"
           :value="next"
+          :disabled="field.disabled"
         />
         <AposSearchList
           :list="searchList"

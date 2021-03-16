@@ -1828,6 +1828,7 @@ module.exports = {
               await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
                 // Allow options to the getter to be specified in the schema,
                 // notably editable: true
+                // TODO editable going away in favor of disabled for consistency
                 return self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
               });
               _.each(_objects, function (object) {
@@ -1875,6 +1876,7 @@ module.exports = {
 
           // Allow options to the getter to be specified in the schema,
           // notably editable: true
+          // TODO editable going away in favor of disabled for consistency
           await self.apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
             return self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
           });
