@@ -10,7 +10,7 @@
         <img
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
-          :src="activeMedia.attachment._urls[wasInTrash ? 'one-sixth' : 'one-third']" :alt="activeMedia.description"
+          :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']" :alt="activeMedia.description"
         >
       </div>
       <ul class="apos-media-editor__details">
@@ -74,7 +74,7 @@
         <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          :label="wasInTrash ? 'Rescue from Trash' : 'Save'" type="primary"
+          :label="restoreOnly ? 'Restore from Trash' : 'Save'" type="primary"
         />
       </div>
     </AposModalLip>
@@ -123,7 +123,7 @@ export default {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
-      wasInTrash: this.media && this.media.trash,
+      restoreOnly: this.media && this.media.trash,
       // Unlike `activeMedia` this changes ONLY when a new doc is swapped in.
       // For overall change detection.
       original: klona(this.media),
@@ -194,7 +194,7 @@ export default {
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
-      this.wasInTrash = this.activeMedia.trash;
+      this.restoreOnly = this.activeMedia.trash;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
@@ -225,8 +225,8 @@ export default {
         let body = this.docFields.data;
         this.addLockToRequest(body);
         try {
-          const requestMethod = this.wasInTrash ? apos.http.patch : apos.http.put;
-          if (this.wasInTrash) {
+          const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
+          if (this.restoreOnly) {
             body = {
               trash: false
             };
@@ -246,7 +246,7 @@ export default {
             this.lockNotAvailable();
           } else {
             await this.handleSaveError(e, {
-              fallback: `Error ${this.wasInTrash ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
+              fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
             });
           }
         } finally {

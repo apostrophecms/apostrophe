@@ -146,7 +146,7 @@ export default {
       original: null,
       published: null,
       errorCount: 0,
-      wasInTrash: false
+      restoreOnly: false
     };
   },
   computed: {
@@ -236,7 +236,7 @@ export default {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     },
     saveLabel() {
-      if (this.wasInTrash) {
+      if (this.restoreOnly) {
         return 'Restore from Trash';
       } else if (this.manuallyPublished) {
         if (this.original && this.original.lastPublishedAt) {
@@ -306,7 +306,7 @@ export default {
         // Pages don't use the restore from trash mechanism because they
         // treat the trash as a place in the tree you can drag from
         if (docData.trash && (!(this.moduleName === '@apostrophecms/page'))) {
-          this.wasInTrash = true;
+          this.restoreOnly = true;
         }
       } catch {
         // TODO a nicer message here, but moduleLabels is undefined here
@@ -402,7 +402,7 @@ export default {
     },
     async submit() {
       await this.save({
-        restoreOnly: this.wasInTrash,
+        restoreOnly: this.restoreOnly,
         andPublish: this.manuallyPublished,
         savingDraft: false
       });

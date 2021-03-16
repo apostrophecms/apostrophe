@@ -87,7 +87,7 @@ export default {
     }
   },
   async mounted () {
-    this.disabled = this.field.disabled || !!(this.value.data && this.value.data._id);
+    this.disabled = this.field.readOnly || !!(this.value.data && this.value.data._id);
 
     const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
     const groupInfo = groups.find(group => {

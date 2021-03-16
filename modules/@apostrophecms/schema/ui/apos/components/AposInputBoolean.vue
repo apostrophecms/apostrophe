@@ -11,7 +11,7 @@
           type="radio" :id="`${uid}-true`"
           :value="true" @change="setValue(true)"
           :checked="value.data === true"
-          :disabled="field.disabled"
+          :disabled="field.readOnly"
           ref="true"
         >
         <label :for="`${uid}-true`" class="apos-boolean__label apos-input">
@@ -26,7 +26,7 @@
           type="radio" :id="`${uid}-false`"
           :value="false" @change="setValue(false)"
           :checked="value.data === false"
-          :disabled="field.disabled"
+          :disabled="field.readOnly"
           ref="false"
         >
         <label :for="`${uid}-false`" class="apos-boolean__label apos-input">

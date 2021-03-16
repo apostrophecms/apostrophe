@@ -23,17 +23,17 @@ export default {
         data: {}
       },
       serverErrors: null,
-      wasInTrash: false
+      restoreOnly: false
     };
   },
 
   computed: {
     schema() {
       let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
-      if (this.wasInTrash) {
+      if (this.restoreOnly) {
         schema = klona(schema);
         for (const field of schema) {
-          field.disabled = true;
+          field.readOnly = true;
         }
       }
       return schema;

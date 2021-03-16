@@ -1534,7 +1534,7 @@ module.exports = {
         let errors = [];
 
         for (const field of schema) {
-          if (field.disabled) {
+          if (field.readOnly) {
             continue;
           }
           // Fields that are contextual are left alone, not blanked out, if

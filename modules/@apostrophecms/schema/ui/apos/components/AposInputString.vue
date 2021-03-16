@@ -11,7 +11,7 @@
           v-if="field.textarea && field.type === 'string'" rows="5"
           v-model="next" :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         />
         <input
@@ -19,7 +19,7 @@
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
           :step="step"
         >
