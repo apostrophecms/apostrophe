@@ -228,6 +228,11 @@ export default {
     cursor: pointer;
   }
 
+  .apos-range__input[disabled]::moz-range-thumb {
+    background: var(--a-primary-button-disabled);
+    cursor: not-allowed;
+  }
+
   .apos-range__input::-ms-track {
     width: 100%;
     height: 5px;
@@ -258,6 +263,11 @@ export default {
     background: var(--a-primary);
     cursor: pointer;
     margin-top: 0;
+  }
+
+  .apos-range__input[disabled]::-ms-thumb {
+    background: var(--a-primary-button-disabled);
+    cursor: not-allowed;
   }
 
   .apos-range__input:focus::-ms-fill-lower {
