@@ -130,9 +130,12 @@
   display: flex;
   color: var(--a-base-2);
   align-items: center;
-  &:hover {
+  &:hover:not(.apos-choice-label--disabled) {
     color: var(--a-primary-text);
     cursor: pointer;
+  }
+  &:hover.apos-choice-label--disabled {
+    cursor: not-allowed;
   }
   & + &,
   .apos-legend + & {
