@@ -10,7 +10,7 @@
         <img
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
-          :src="activeMedia.attachment._urls['one-third']" :alt="activeMedia.description"
+          :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']" :alt="activeMedia.description"
         >
       </div>
       <ul class="apos-media-editor__details">
@@ -74,7 +74,7 @@
         <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          label="Save" type="primary"
+          :label="restoreOnly ? 'Restore from Trash' : 'Save'" type="primary"
         />
       </div>
     </AposModalLip>
@@ -123,6 +123,7 @@ export default {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
+      restoreOnly: this.media && this.media.trash,
       // Unlike `activeMedia` this changes ONLY when a new doc is swapped in.
       // For overall change detection.
       original: klona(this.media),
@@ -134,9 +135,6 @@ export default {
   computed: {
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
-    },
-    schema() {
-      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
     },
     fileSize() {
       if (
@@ -196,6 +194,7 @@ export default {
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
+      this.restoreOnly = this.activeMedia.trash;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
@@ -223,10 +222,16 @@ export default {
           return;
         }
 
-        const body = this.docFields.data;
+        let body = this.docFields.data;
         this.addLockToRequest(body);
         try {
-          const doc = await apos.http.put(route, {
+          const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
+          if (this.restoreOnly) {
+            body = {
+              trash: false
+            };
+          }
+          const doc = await requestMethod(route, {
             busy: true,
             body,
             draft: true
@@ -241,7 +246,7 @@ export default {
             this.lockNotAvailable();
           } else {
             await this.handleSaveError(e, {
-              fallback: `Error Saving ${this.moduleLabels.label}`
+              fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
             });
           }
         } finally {

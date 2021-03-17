@@ -11,7 +11,7 @@
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="$emit('return')"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >
         <component
