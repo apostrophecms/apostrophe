@@ -3,8 +3,9 @@
     :class="dropzoneClasses"
     :disabled="disabled"
     @drop.prevent="uploadMedia"
-    @dragover.prevent="dragover = true"
-    @dragleave="dragover = false"
+    @dragover.prevent=""
+    @dragenter="incrementDragover"
+    @dragleave="decrementDragover"
   >
     <div class="apos-media-uploader__inner">
       <AposCloudUploadIcon
@@ -58,7 +59,8 @@ export default {
   ],
   data() {
     return {
-      dragover: false
+      dragover: false,
+      dragoverCount: 0
     };
   },
   computed: {
@@ -73,6 +75,14 @@ export default {
     }
   },
   methods: {
+    incrementDragover() {
+      this.dragoverCount++;
+      this.dragover = this.dragoverCount > 0;
+    },
+    decrementDragover() {
+      this.dragoverCount--;
+      this.dragover = this.dragoverCount > 0;
+    },
     dragHandler (event) {
       if (this.disabled) {
         return;
