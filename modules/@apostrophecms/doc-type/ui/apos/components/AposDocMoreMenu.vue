@@ -39,6 +39,12 @@ export default {
         return false;
       }
     },
+    canMoveToTrash: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canDiscardDraft: {
       type: Boolean,
       default() {
@@ -73,6 +79,9 @@ export default {
     },
     isModifiedFromPublished() {
       this.menu = this.recomputeMenu();
+    },
+    isPublished() {
+      this.menu = this.recomputeMenu();
     }
   },
   methods: {
@@ -95,6 +104,13 @@ export default {
         //   label: 'Duplicate Document',
         //   action: 'duplicate'
         // },
+        ...(this.canMoveToTrash ? [
+          {
+            label: 'Move to Trash',
+            action: 'moveToTrash',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
         ...(this.canDiscardDraft ? [
           {
             label: this.isPublished ? 'Discard Changes' : 'Discard Draft',

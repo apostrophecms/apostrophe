@@ -211,10 +211,10 @@ module.exports = {
       });
       return self.delete(req, piece);
     },
-    patch(req, _id) {
+    async patch(req, _id) {
       self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
-      return self.patch(req, _id);
+      return self.convertPatchAndRefresh(req, req.body, _id);
     }
   }),
   apiRoutes(self) {
@@ -577,13 +577,6 @@ module.exports = {
         });
       },
 
-      // Implementation of the PATCH route. Factored as a method to allow
-      // it to also be called by the universal @apostrophecms/doc
-      // PATCH route.
-      patch(req, _id) {
-        return self.convertPatchAndRefresh(req, req.body, _id);
-      },
-
       // Similar to `convertUpdateAndRefresh`. Patch the piece with the given _id, based on the
       // `input` object (which may be untrusted input such as req.body). Fetch the updated piece to
       // populate all relationships and return it. Employs a lock to avoid overwriting the work of
@@ -607,6 +600,9 @@ module.exports = {
       // within a single lock and without redundant network operations. This greatly
       // improves the performance of saving all changes to a document at once after
       // accumulating a number of changes in patch form on the front end.
+      //
+      // If `input._publish` launders to a boolean and the type is subject to draft/publish
+      // workflow, it is automatically published at the end of the patch operation.
 
       async convertPatchAndRefresh(req, input, _id) {
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
@@ -647,6 +643,13 @@ module.exports = {
             // Edge case: empty `_patches` array. Don't be a pain,
             // return the document as-is
             return self.findOneForEditing(req, { _id }, { attachments: true });
+          }
+          if (self.apos.launder.boolean(input._publish)) {
+            if (self.options.localized && (!self.options.autopublish)) {
+              if (piece.aposLocale.includes(':draft')) {
+                await self.publish(req, piece, {});
+              }
+            }
           }
           return result;
         });
