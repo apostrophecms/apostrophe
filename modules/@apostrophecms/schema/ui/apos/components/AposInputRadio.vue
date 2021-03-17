@@ -8,6 +8,7 @@
       <label
         class="apos-choice-label" :for="getChoiceId(uid, choice.value)"
         v-for="choice in field.choices" :key="choice.value"
+        :class="{'apos-choice-label--disabled': field.readOnly}"
       >
         <input
           type="radio" class="apos-sr-only apos-input--choice apos-input--radio"
@@ -15,6 +16,7 @@
           :id="getChoiceId(uid, choice.value)"
           :checked="next === choice.value"
           tabindex="1"
+          :disabled="field.readOnly"
           @change="change($event.target.value)"
         >
         <span class="apos-input-indicator" aria-hidden="true">

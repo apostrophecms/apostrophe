@@ -14,7 +14,7 @@
             class="apos-range__input"
             v-model="next"
             :id="uid"
-            :disabled="field.disabled"
+            :disabled="field.readOnly"
           >
           <div class="apos-range__scale">
             <span>

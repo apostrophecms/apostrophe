@@ -13,7 +13,7 @@
             @close="close"
             menu-placement="bottom-start"
             menu-offset="5, 20"
-            :disabled="field.disabled"
+            :disabled="field.readOnly"
             :tooltip="tooltip"
           >
             <Picker

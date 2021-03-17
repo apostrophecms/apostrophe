@@ -12,7 +12,6 @@
             'apos-attachment-dropzone--dragover': dragging,
             'is-disabled': disabled || limitReached
           }"
-          :disabled="disabled || limitReached"
           @drop.prevent="uploadMedia"
           @dragover="dragHandler"
           @dragleave="dragging = false"
@@ -42,7 +41,7 @@
           <AposSlatList
             :value="next ? [ next ] : []"
             @input="updated"
-            :disabled="disabled"
+            :disabled="field.readOnly"
           />
         </div>
       </div>
@@ -94,7 +93,7 @@ export default {
     }
   },
   async mounted () {
-    this.disabled = this.field.disabled || this.field.readOnly;
+    this.disabled = this.field.readOnly;
 
     const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
     const groupInfo = groups.find(group => {
