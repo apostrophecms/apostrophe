@@ -15,7 +15,7 @@
         <label
           class="apos-input-wrapper"
           :class="{
-            'is-disabled': field.disabled
+            'is-disabled': field.readOnly
           }"
         >
           <AposButton

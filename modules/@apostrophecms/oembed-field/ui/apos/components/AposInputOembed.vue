@@ -10,7 +10,7 @@
           :class="classes"
           v-model="next.url" type="url"
           :placeholder="field.placeholder"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >
         <component
@@ -97,7 +97,7 @@ export default {
       this.validateAndEmit();
     },
     async loadOembed () {
-      this.field.disabled = true;
+      this.field.readOnly = true;
       this.oembedResult = {};
       this.oembedError = null;
       this.dynamicRatio = '';
@@ -125,7 +125,7 @@ export default {
         this.next.title = '';
         this.next.thumbnail = '';
       } finally {
-        this.field.disabled = false;
+        this.field.readOnly = false;
       }
     }
   }

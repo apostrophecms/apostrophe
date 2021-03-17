@@ -145,7 +145,8 @@ export default {
       triggerValidation: false,
       original: null,
       published: null,
-      errorCount: 0
+      errorCount: 0,
+      restoreOnly: false
     };
   },
   computed: {
@@ -174,9 +175,6 @@ export default {
       // Use moduleName for the action since all page types use the
       // `@apostrophecms/page` module action.
       return (window.apos.modules[this.moduleName] || {}).action;
-    },
-    schema() {
-      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
     },
     groups() {
       const groupSet = {};
@@ -238,7 +236,9 @@ export default {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     },
     saveLabel() {
-      if (this.manuallyPublished) {
+      if (this.restoreOnly) {
+        return 'Restore from Trash';
+      } else if (this.manuallyPublished) {
         if (this.original && this.original.lastPublishedAt) {
           return 'Publish Changes';
         } else {
@@ -303,6 +303,11 @@ export default {
           qs: this.filterValues,
           draft: true
         });
+        // Pages don't use the restore from trash mechanism because they
+        // treat the trash as a place in the tree you can drag from
+        if (docData.trash && (!(this.moduleName === '@apostrophecms/page'))) {
+          this.restoreOnly = true;
+        }
       } catch {
         // TODO a nicer message here, but moduleLabels is undefined here
         await apos.notify('The requested document was not found.', {
@@ -395,8 +400,9 @@ export default {
     lockNotAvailable() {
       this.modal.showModal = false;
     },
-    submit() {
-      this.save({
+    async submit() {
+      await this.save({
+        restoreOnly: this.restoreOnly,
         andPublish: this.manuallyPublished,
         savingDraft: false
       });
@@ -405,12 +411,13 @@ export default {
     // If savingDraft is true, make sure we're in draft
     // mode before redirecting to the _url of the draft.
     async save({
+      restoreOnly = true,
       andPublish = false,
       savingDraft = false
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        if (this.errorCount) {
+        if (this.errorCount && (!restoreOnly)) {
           await apos.notify('Resolve errors before saving.', {
             type: 'warning',
             icon: 'alert-circle-icon',
@@ -419,12 +426,19 @@ export default {
           this.focusNextError();
           return;
         }
-        const body = this.docFields.data;
+        let body = this.docFields.data;
         let route;
         let requestMethod;
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
+          if (restoreOnly) {
+            requestMethod = apos.http.patch;
+            body = {
+              trash: false
+            };
+          } else {
+            requestMethod = apos.http.put;
+          }
           this.addLockToRequest(body);
         } else {
           route = this.moduleAction;
@@ -451,7 +465,7 @@ export default {
             return;
           } else {
             await this.handleSaveError(e, {
-              fallback: 'An error occurred saving the document.'
+              fallback: `An error occurred ${restoreOnly ? 'restoring' : 'saving'} the document.`
             });
             return;
           }

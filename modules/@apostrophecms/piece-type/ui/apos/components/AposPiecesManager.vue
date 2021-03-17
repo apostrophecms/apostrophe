@@ -266,7 +266,8 @@ export default {
     async edit(pieceId) {
       const doc = await apos.modal.execute(this.options.components.insertModal, {
         moduleName: this.moduleName,
-        docId: pieceId
+        docId: pieceId,
+        filterValues: this.filterValues
       });
       if (!doc) {
         // Cancel clicked
