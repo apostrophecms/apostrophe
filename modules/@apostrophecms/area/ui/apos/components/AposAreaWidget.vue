@@ -623,6 +623,7 @@ export default {
     @include type-help;
     padding: 2px;
     color: var(--a-white);
+    white-space: nowrap;
     &:hover {
       cursor: pointer;
     }
