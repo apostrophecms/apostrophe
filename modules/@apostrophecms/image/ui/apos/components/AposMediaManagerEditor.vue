@@ -213,6 +213,12 @@ export default {
       }
     },
     async trash() {
+      if (!await apos.confirm({
+        heading: 'Are You Sure?',
+        description: 'This will move the image to the trash.'
+      })) {
+        return;
+      }
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       await apos.http.patch(route, {
         busy: true,
@@ -223,6 +229,7 @@ export default {
         // Autopublish will take care of the published side
       });
       apos.bus.$emit('content-changed');
+      await this.cancel();
     },
     save() {
       this.triggerValidation = true;
