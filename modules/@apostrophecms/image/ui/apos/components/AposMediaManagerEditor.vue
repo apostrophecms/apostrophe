@@ -74,13 +74,15 @@
         <AposButton
           v-if="activeMedia._id && !restoreOnly"
           @click="trash"
+          icon="trash-can-icon"
+          :icon-only="true"
           class="apos-media-editor__trash"
-          label="Move to Trash"
+          label="Trash"
         />
         <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          :label="restoreOnly ? 'Restore from Trash' : 'Save'" type="primary"
+          :label="restoreOnly ? 'Restore' : 'Save'" type="primary"
         />
       </div>
     </AposModalLip>

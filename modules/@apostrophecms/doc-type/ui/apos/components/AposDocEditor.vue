@@ -239,7 +239,7 @@ export default {
     },
     saveLabel() {
       if (this.restoreOnly) {
-        return 'Restore from Trash';
+        return 'Restore';
       } else if (this.manuallyPublished) {
         if (this.original && this.original.lastPublishedAt) {
           return 'Publish Changes';
@@ -263,10 +263,10 @@ export default {
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canMoveToTrash() {
-      return !!(this.docId && (this.published || !this.manuallyPublished));
+      return !!(this.docId && (!this.restoreOnly) && (this.published || !this.manuallyPublished));
     },
     canDiscardDraft() {
-      return (this.docId && (!this.published)) || this.isModifiedFromPublished;
+      return (this.docId && (!this.published) && this.manuallyPublished) || this.isModifiedFromPublished;
     },
     hasMoreMenu() {
       return this.canMoveToTrash || (
@@ -482,7 +482,7 @@ export default {
             return;
           }
         }
-        if (andPublish) {
+        if (andPublish && !restoreOnly) {
           await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
         }
         this.$emit('modal-result', doc);

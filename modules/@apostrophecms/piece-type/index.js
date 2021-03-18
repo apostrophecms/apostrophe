@@ -601,7 +601,7 @@ module.exports = {
       // improves the performance of saving all changes to a document at once after
       // accumulating a number of changes in patch form on the front end.
       //
-      // If `input._publish` launders to a boolean and the type is subject to draft/publish
+      // If `input._publish` launders to a truthy boolean and the type is subject to draft/publish
       // workflow, it is automatically published at the end of the patch operation.
 
       async convertPatchAndRefresh(req, input, _id) {
