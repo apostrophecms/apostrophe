@@ -314,17 +314,17 @@ module.exports = {
       // Called for you when a page is inserted directly in
       // the published locale, to ensure there is an equivalent
       // draft page. You don't need to invoke this.
-      async insertDraftOf(req, doc, draft) {
+      async insertDraftOf(req, doc, draft, options) {
         const _req = {
           ...req,
           mode: 'draft'
         };
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale
-          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft);
+          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft, options);
         } else if (!doc.level) {
           // Insert the home page
-          return self.apos.doc.insert(_req, draft);
+          return self.apos.doc.insert(_req, draft, options);
         } else {
           throw new Error('Page inserted without using the page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent draft');
         }
