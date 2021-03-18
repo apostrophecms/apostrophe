@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-busy apos-theme--primary-purple" :class="{'is-busy': busy}">
+  <div class="apos-busy" ref="busy" :class="{'is-busy': busy}">
     <AposSpinner class="apos-busy__spinner" />
   </div>
 </template>
@@ -14,6 +14,7 @@ export default {
     };
   },
   mounted() {
+    window.apos.util.addClass(this.$refs.busy, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     apos.bus.$on('busy', state => {
       // TODO: Possibly add a check for `state.name === 'busy'` again if other
       // busy contexts are added.

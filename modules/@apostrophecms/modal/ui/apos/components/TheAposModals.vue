@@ -1,5 +1,5 @@
 <template>
-  <div id="apos-modals" class="apos-theme--primary-purple">
+  <div id="apos-modals" ref="modals">
     <component
       v-for="modal in stack" :key="modal.id"
       :is="modal.componentName"
@@ -27,6 +27,7 @@ export default {
     };
   },
   mounted() {
+    window.apos.util.addClass(this.$refs.modals, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     // Open one of the server-side configured top level admin bar menus by name.
     // To allow for injecting additional props dynamically, if itemName is an
     // object, it must have an itemName property and a props property. The props

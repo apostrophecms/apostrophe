@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-notifications apos-theme--primary-purple">
+  <div class="apos-notifications" ref="notifications">
     <AposNotification
       v-for="notification in notifications"
       :key="notification._id"
@@ -23,6 +23,7 @@ export default {
     };
   },
   async mounted() {
+    window.apos.util.addClass(this.$refs.notifications, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     apos.notify = async function(message, options) {
       const strings = [];
       let i = 1;

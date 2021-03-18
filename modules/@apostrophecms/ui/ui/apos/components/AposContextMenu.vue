@@ -9,7 +9,7 @@
       :placement="menuPlacement"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
-      popover-class="apos-popover"
+      :popover-class="popoverClass"
       popover-wrapper-class="apos-popover__wrapper"
       popover-inner-class="apos-popover__inner"
     >
@@ -86,7 +86,8 @@ export default {
     return {
       isOpen: false,
       position: '',
-      event: null
+      event: null,
+      popoverClass: `apos-popover apos-theme--primary-${window.apos.ui.theme.primary}`
     };
   },
   computed: {
@@ -107,7 +108,6 @@ export default {
     buttonState() {
       return this.open ? [ 'active' ] : null;
     }
-
   },
   watch: {
     isOpen(newVal, oldVal) {

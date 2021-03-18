@@ -1,7 +1,5 @@
 <template>
-  <!-- TODO: Replace this and other hard-coded `apos-theme--primary-purple`
-  with implementation via JS based on user selection or default. -->
-  <div class="apos-admin-bar-wrapper apos-theme--primary-purple">
+  <div class="apos-admin-bar-wrapper" ref="adminBarOuter">
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
@@ -456,6 +454,7 @@ export default {
   },
   async mounted() {
     window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
+    window.apos.util.addClass(this.$refs.adminBarOuter, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     // Listen for bus events coming from notification UI
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('unpublish', this.onUnpublish);

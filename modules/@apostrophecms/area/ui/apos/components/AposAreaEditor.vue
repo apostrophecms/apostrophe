@@ -1,5 +1,8 @@
 <template>
-  <div :data-apos-area="areaId" class="apos-area apos-theme--primary-purple">
+  <div
+    :data-apos-area="areaId" class="apos-area"
+    ref="areaEditor"
+  >
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -172,6 +175,7 @@ export default {
     }
   },
   mounted() {
+    window.apos.util.addClass(this.$refs.areaEditor, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     apos.bus.$on('area-updated', this.areaUpdatedHandler);
     apos.bus.$on('widget-hover', this.updateWidgetHovered);
     apos.bus.$on('widget-focus', this.updateWidgetFocused);
