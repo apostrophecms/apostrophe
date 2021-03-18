@@ -29,6 +29,8 @@ export default {
 
   computed: {
     schema() {
+      console.log(this.docType);
+      console.log('>>', JSON.stringify(this.moduleOptions, null, '  '));
       let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
       if (this.restoreOnly) {
         schema = klona(schema);
