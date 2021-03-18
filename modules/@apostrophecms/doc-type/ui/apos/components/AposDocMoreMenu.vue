@@ -39,21 +39,23 @@ export default {
         return false;
       }
     },
+    canSaveDraft: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canDiscardDraft: {
       type: Boolean,
       default() {
         return false;
       }
     },
-    options: {
-      type: Object,
-      required: true
-      // subproperties:
-      // saveDraft: Boolean
-      // If true, the save draft option is offered
-      // when isModified is currently true. This does
-      // not make sense in the onpage contextual editor,
-      // because it continuously saves drafts.
+    canCopy: {
+      type: Boolean,
+      default() {
+        return false;
+      }
     },
     disabled: {
       type: Boolean,
@@ -102,10 +104,16 @@ export default {
             modifiers: [ 'danger' ]
           }
         ] : []),
-        ...((this.isModified && this.options.saveDraft) ? [
+        ...(this.canSaveDraft ? [
           {
             label: 'Save Draft',
             action: 'saveDraft'
+          }
+        ] : []),
+        ...(this.canCopy ? [
+          {
+            label: 'Copy',
+            action: 'copy'
           }
         ] : [])
       ];

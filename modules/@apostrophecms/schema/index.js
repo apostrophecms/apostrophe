@@ -2464,6 +2464,29 @@ module.exports = {
           result.push(field);
         }
         return result;
+      },
+      // Regenerate all array item, area and widget ids so they are considered
+      // new. Useful when copying an entire doc.
+      regenerateIds(req, schema, doc) {
+        for (const field of schema) {
+          if (field.type === 'array') {
+            for (const item of (doc[field.name] || [])) {
+              item._id = self.apos.util.generateId();
+              self.regenerateIds(req, field.schema, item);
+            }
+          } else if (field.type === 'area') {
+            if (doc[field.name]) {
+              doc[field.name]._id = self.apos.util.generateId();
+              for (const item of (doc[field.name].items || [])) {
+                item._id = self.apos.util.generateId();
+                const schema = self.apos.area.getWidgetManager(item.type).schema;
+                self.regenerateIds(req, schema, item);
+              }
+            }
+          }
+          // We don't want to regenerate attachment ids. They correspond to
+          // actual files, and the reference count will update automatically
+        }
       }
     };
   },
