@@ -21,9 +21,9 @@
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
-        :can-copy="true"
+        :can-copy="!!docId"
         :is-published="!!published"
-        :options="{ saveDraft: true }"
+        :can-save-draft="true"
         @saveDraft="saveDraft"
         @discardDraft="onDiscardDraft"
         @copy="onCopy"
@@ -228,7 +228,11 @@ export default {
       return tabs;
     },
     modalTitle() {
-      return this.copyOf ? `Copy ${this.moduleOptions.label || ''}` : `Edit ${this.moduleOptions.label || ''}`;
+      if (this.docId) {
+        return `Edit ${this.moduleOptions.label || ''}`;
+      } else {
+        return `New ${this.moduleOptions.label || ''}`;
+      }
     },
     currentFields() {
       if (this.currentTab) {
@@ -275,7 +279,7 @@ export default {
         return true;
         // All other scenarios apply only when the user needs publishing-related UI
       } else if (this.moduleOptions.localized && !this.moduleOptions.autopublish) {
-        return (this.isModified || this.isModifiedFromPublished || this.canDiscardDraft);
+        return (this.copyOf || this.isModified || this.isModifiedFromPublished || this.canDiscardDraft);
       } else {
         return false;
       }
@@ -362,6 +366,8 @@ export default {
       }
     } else if (this.copyOf) {
       const newInstance = klona(this.copyOf);
+      newInstance.title = `Copy of ${this.copyOf.title}`;
+      newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
       delete newInstance._id;
       this.original = newInstance;
       if (newInstance && newInstance.type !== this.docType) {
@@ -560,11 +566,10 @@ export default {
       }
     },
     async onCopy(e) {
-      if (this.isModified) {
-        await this.saveDraft();
-      } else {
-        this.$emit('modal-result', false);
-        this.modal.showModal = false;
+      // If there are changes warn the user before discarding them before
+      // the copy operation
+      if (!await this.confirmAndCancel()) {
+        return;
       }
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`,

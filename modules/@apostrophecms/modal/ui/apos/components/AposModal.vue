@@ -163,7 +163,9 @@ export default {
     finishExit () {
       this.removeEventListeners();
       this.$emit('no-modal');
-      apos.modal.stack.pop();
+      // pop doesn't quite suffice because of race conditions when
+      // closing one and opening another
+      apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.esc);
