@@ -5,11 +5,6 @@ const Promise = require('bluebird');
 
 module.exports = {
   async init(self) {
-    // uploadfs expects an array
-    self.imageSizes = Object.keys(self.imageSizes).map(name => ({
-      name,
-      ...self.imageSizes[name]
-    }));
 
     const uploadfsDefaultSettings = {
       backend: 'local',
