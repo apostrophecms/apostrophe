@@ -4,35 +4,6 @@ const mkdirp = require('mkdirp');
 const Promise = require('bluebird');
 
 module.exports = {
-  cascades: [ 'imageSizes' ],
-  imageSizes: {
-    add: {
-      max: {
-        width: 1600,
-        height: 1600
-      },
-      full: {
-        width: 1140,
-        height: 1140
-      },
-      'two-thirds': {
-        width: 760,
-        height: 760
-      },
-      'one-half': {
-        width: 570,
-        height: 700
-      },
-      'one-third': {
-        width: 380,
-        height: 700
-      },
-      'one-sixth': {
-        width: 190,
-        height: 350
-      }
-    }
-  },
   async init(self) {
     // uploadfs expects an array
     self.imageSizes = Object.keys(self.imageSizes).map(name => ({

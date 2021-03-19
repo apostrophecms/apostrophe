@@ -5,10 +5,45 @@ const Promise = require('bluebird');
 
 module.exports = {
   options: { alias: 'attachment' },
+  cascades: [ 'imageSizes' ],
+  imageSizes: {
+    add: {
+      max: {
+        width: 1600,
+        height: 1600
+      },
+      full: {
+        width: 1140,
+        height: 1140
+      },
+      'two-thirds': {
+        width: 760,
+        height: 760
+      },
+      'one-half': {
+        width: 570,
+        height: 700
+      },
+      'one-third': {
+        width: 380,
+        height: 700
+      },
+      'one-sixth': {
+        width: 190,
+        height: 350
+      }
+    }
+  },
 
   async init(self) {
+    // For convenience and bc
+    self.uploadfs = self.apos.uploadfs;
+    // uploadfs expects an array
+    self.imageSizes = Object.keys(self.imageSizes).map(name => ({
+      name,
+      ...self.imageSizes[name]
+    }));
     self.name = 'attachment';
-    self.imageSizes = self.apos.uploadfs.options.imageSizes;
     self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
@@ -361,7 +396,7 @@ module.exports = {
         info.md5 = await self.apos.util.md5File(file.path);
         if (self.isSized(extension)) {
           // For images we correct automatically for common file extension mistakes
-          const result = await Promise.promisify(self.apos.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name);
+          const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name, { sizes: self.imageSizes });
           info.extension = result.extension;
           info.width = result.width;
           info.height = result.height;
@@ -374,7 +409,7 @@ module.exports = {
           // For non-image files we have to trust the file extension
           // (but we only serve it as that content type, so this should
           // be reasonably safe)
-          await Promise.promisify(self.apos.uploadfs.copyIn)(file.path, '/attachments/' + info._id + '-' + info.name + '.' + info.extension);
+          await Promise.promisify(self.uploadfs.copyIn)(file.path, '/attachments/' + info._id + '-' + info.name + '.' + info.extension);
         }
         if (options.permissions !== false) {
           info.ownerId = req.user && req.user._id;
@@ -408,10 +443,13 @@ module.exports = {
         // Pull the original out of cloud storage to a temporary folder where
         // it can be cropped and popped back into uploadfs
         const originalFile = '/attachments/' + info._id + '-' + info.name + '.' + info.extension;
-        const tempFile = self.apos.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + info.extension;
+        const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + info.extension;
         const croppedFile = '/attachments/' + info._id + '-' + info.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + info.extension;
-        await Promise.promisify(self.apos.uploadfs.copyOut)(originalFile, tempFile);
-        await Promise.promisify(self.apos.uploadfs.copyImageIn)(tempFile, croppedFile, { crop: crop });
+        await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
+        await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
+          crop: crop,
+          sizes: self.imageSizes
+        });
         crops.push(crop);
         await self.db.updateOne({
           _id: info._id
@@ -458,7 +496,7 @@ module.exports = {
         }
         let path = '/attachments/' + attachment._id + '-' + attachment.name;
         if (!options.uploadfsPath) {
-          path = self.apos.uploadfs.getUrl() + path;
+          path = self.uploadfs.getUrl() + path;
         }
         // Attachments can have "one true crop," or a crop can be passed with the options.
         // For convenience, be tolerant if options.crop is passed but doesn't
@@ -904,7 +942,7 @@ module.exports = {
       // (usually `one-sixth`) remains available except when removing. This operation is carried
       // out across all sizes and crops.
       async alterAttachment(attachment, action) {
-        let method = self.apos.uploadfs[action];
+        let method = self.uploadfs[action];
         method = Promise.promisify(method);
         await original();
         await crops();
@@ -974,17 +1012,17 @@ module.exports = {
         }
       },
       async migrateToDisabledFileKeyTask(argv) {
-        await Promise.promisify(self.apos.uploadfs.migrateToDisabledFileKey)();
+        await Promise.promisify(self.uploadfs.migrateToDisabledFileKey)();
       },
       async migrateFromDisabledFileKeyTask(argv) {
-        await Promise.promisify(self.apos.uploadfs.migrateFromDisabledFileKey)();
+        await Promise.promisify(self.uploadfs.migrateFromDisabledFileKey)();
       },
       getBrowserData(req) {
         return {
           action: self.action,
           fileGroups: self.fileGroups,
           name: self.name,
-          uploadsUrl: self.apos.uploadfs.getUrl(),
+          uploadsUrl: self.uploadfs.getUrl(),
           croppable: self.croppable,
           sized: self.sized
         };
