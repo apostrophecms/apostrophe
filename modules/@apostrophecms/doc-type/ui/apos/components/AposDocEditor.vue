@@ -169,7 +169,6 @@ export default {
       }
     },
     moduleOptions() {
-      console.log('in moduleOptions with ' + this.docType);
       return window.apos.modules[this.docType] || {};
     },
     moduleAction () {

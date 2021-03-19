@@ -92,7 +92,7 @@ export default {
               parts.pop();
             }
             parts.push(this.slugify(newValue, { componentOnly: true }));
-            this.next = '/' + parts.join('/');
+            this.next = `/${parts.join('/')}`;
           } else {
             this.next = this.slugify(newValue);
           }
@@ -156,7 +156,7 @@ export default {
     // want to allow slashes (when editing a page) or set a prefix.
     slugify(s, { componentOnly = false } = {}) {
       const options = {};
-      if (this.field.page && (!componentOnly)) {
+      if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
       let preserveSlash = false;
@@ -170,7 +170,7 @@ export default {
       if (preserveSlash) {
         s += '-';
       }
-      if (this.field.page && (!componentOnly)) {
+      if (this.field.page && !componentOnly) {
         if (!s.charAt(0) !== '/') {
           s = `/${s}`;
         }
