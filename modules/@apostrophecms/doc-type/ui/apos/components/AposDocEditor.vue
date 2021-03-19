@@ -293,15 +293,13 @@ export default {
     }
   },
   watch: {
-    'docFields.data': {
-      deep: true,
+    'docFields.data.type': {
       handler(newVal, oldVal) {
-        if (this.moduleName !== '@apostrophecms/page' || this.splittingDoc) {
+        if (this.moduleName !== '@apostrophecms/page') {
           return;
         }
-
-        if (this.docType !== newVal.type) {
-          this.docType = newVal.type;
+        if (this.docType !== newVal) {
+          this.docType = newVal;
           this.prepErrors();
         }
       }
@@ -309,7 +307,7 @@ export default {
 
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
-        this.currentTab = this.tabs[0].name;
+        this.currentTab = this.tabs[0] && this.tabs[0].name;
       }
     }
 
