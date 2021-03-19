@@ -5,7 +5,7 @@
   >
     <template #body>
       <div class="apos-input-wrapper">
-        <div class="apos-range">
+        <div class="apos-range" v-tooltip="tooltip">
           <input
             type="range"
             :min="field.min"
@@ -14,6 +14,7 @@
             class="apos-range__input"
             v-model="next"
             :id="uid"
+            :disabled="field.readOnly"
           >
           <div class="apos-range__scale">
             <span>
@@ -161,6 +162,10 @@ export default {
     }
   }
 
+  .apos-range__input[disabled] {
+    cursor: not-allowed;
+  }
+
   .apos-range__input::-webkit-slider-runnable-track {
     width: 100%;
     height: 5px;
@@ -174,6 +179,10 @@ export default {
     background: var(--a-primary);
   }
 
+  .apos-range__input[disabled]::-webkit-progress-value {
+    background: var(--a-primary-button-disabled);
+  }
+
   .apos-range__input::-webkit-slider-thumb {
     margin-top: -6px;
     width: 15px;
@@ -184,6 +193,9 @@ export default {
     cursor: pointer;
     /* stylelint-disable-next-line property-no-vendor-prefix */
     -webkit-appearance: none;
+  }
+  .apos-range__input[disabled]::-webkit-slider-thumb {
+    background: var(--a-primary-button-disabled);
   }
 
   .apos-range__input:focus::-webkit-slider-runnable-track {
@@ -207,6 +219,11 @@ export default {
     background: var(--a-primary);
     border-radius: 50%;
     cursor: pointer;
+  }
+
+  .apos-range__input[disabled]::moz-range-thumb {
+    background: var(--a-primary-button-disabled);
+    cursor: not-allowed;
   }
 
   .apos-range__input::-ms-track {
@@ -239,6 +256,11 @@ export default {
     background: var(--a-primary);
     cursor: pointer;
     margin-top: 0;
+  }
+
+  .apos-range__input[disabled]::-ms-thumb {
+    background: var(--a-primary-button-disabled);
+    cursor: not-allowed;
   }
 
   .apos-range__input:focus::-ms-fill-lower {

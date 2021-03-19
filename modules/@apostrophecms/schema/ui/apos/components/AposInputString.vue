@@ -19,7 +19,8 @@
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
-          :disabled="field.readOnly" :required="field.required"
+          :disabled="field.readOnly || field.disabled"
+          :required="field.required"
           :id="uid" :tabindex="tabindex"
           :step="step"
         >

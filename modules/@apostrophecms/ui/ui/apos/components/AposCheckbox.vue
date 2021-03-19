@@ -1,6 +1,7 @@
 <template>
   <label
     class="apos-choice-label" :for="id"
+    :class="{'apos-choice-label--disabled': field.readOnly}"
     :tabindex="{'-1' : field.hideLabel}"
   >
     <input

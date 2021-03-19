@@ -12,15 +12,12 @@
     </template>
     <template #body>
       <div class="apos-input-array">
-        <label
-          class="apos-input-wrapper"
-          :class="{
-            'is-disabled': field.readOnly
-          }"
-        >
+        <label class="apos-input-wrapper">
           <AposButton
             :label="editLabel"
             @click="edit"
+            :disabled="field.readOnly"
+            :tooltip="tooltip"
           />
         </label>
       </div>

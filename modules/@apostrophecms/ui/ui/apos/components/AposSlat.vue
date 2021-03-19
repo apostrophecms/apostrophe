@@ -65,10 +65,12 @@
         <AposButton
           v-if="removable"
           @click="remove"
+          class="apos-slat__control apos-slat__control--remove"
           icon="close-icon"
           :icon-only="true"
           :modifiers="['inline']"
           label="Remove Item"
+          :disabled="disabled"
         />
       </div>
     </li>
@@ -102,6 +104,10 @@ export default {
       default: true
     },
     selected: {
+      type: Boolean,
+      default: false
+    },
+    disabled: {
       type: Boolean,
       default: false
     }
@@ -253,6 +259,7 @@ export default {
     display: flex;
     align-content: center;
     margin-right: 5px;
+    line-height: 0;
   }
 
   .apos-slat__control--remove:hover {
