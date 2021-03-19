@@ -24,7 +24,7 @@ export default {
       if (this.busy) {
         classes.push('is-busy');
       }
-      return [].concat(classes, this.themeClass);
+      return classes.concat(this.themeClass);
     }
   },
   mounted() {
