@@ -1,8 +1,9 @@
 <template>
   <transition name="fade-stage">
     <div
-      class="apos-login apos-theme-dark apos-theme--primary-purple"
+      class="apos-login apos-theme-dark"
       v-show="loaded"
+      :class="themeClass"
     >
       <div class="apos-login__wrapper">
         <transition name="fade-body">
@@ -57,8 +58,10 @@
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposLogin',
+  mixins: [ AposThemeMixin ],
   data() {
     return {
       loaded: false,

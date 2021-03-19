@@ -9,7 +9,7 @@
       :placement="menuPlacement"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
-      popover-class="apos-popover"
+      :popover-class="popoverClass"
       popover-wrapper-class="apos-popover__wrapper"
       popover-inner-class="apos-popover__inner"
     >
@@ -41,12 +41,14 @@
 import {
   VPopover
 } from 'v-tooltip';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposContextMenu',
   components: {
     'v-popover': VPopover
   },
+  mixins: [ AposThemeMixin ],
   props: {
     menu: {
       type: Array,
@@ -95,6 +97,9 @@ export default {
     };
   },
   computed: {
+    popoverClass() {
+      return [ 'apos-popover' ].concat(this.themeClass);
+    },
     classList() {
       const classes = [];
       const baseClass = 'apos-context-menu__popup';
@@ -112,7 +117,6 @@ export default {
     buttonState() {
       return this.open ? [ 'active' ] : null;
     }
-
   },
   watch: {
     isOpen(newVal, oldVal) {

@@ -1,5 +1,5 @@
 <template>
-  <div id="apos-modals" class="apos-theme--primary-purple">
+  <div id="apos-modals" :class="themeClass">
     <component
       v-for="modal in stack" :key="modal.id"
       :is="modal.componentName"
@@ -12,9 +12,10 @@
 
 <script>
 import cuid from 'cuid';
-
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposModals',
+  mixins: [ AposThemeMixin ],
   props: {
     modals: {
       type: Array,

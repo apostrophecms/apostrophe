@@ -1,17 +1,31 @@
 <template>
-  <div class="apos-busy apos-theme--primary-purple" :class="{'is-busy': busy}">
+  <div
+    class="apos-busy"
+    :class="classes"
+  >
     <AposSpinner class="apos-busy__spinner" />
   </div>
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposBusy',
+  mixins: [ AposThemeMixin ],
   data() {
     return {
       busy: false,
       busyCount: 0
     };
+  },
+  computed: {
+    classes() {
+      const classes = [];
+      if (this.busy) {
+        classes.push('is-busy');
+      }
+      return classes.concat(this.themeClass);
+    }
   },
   mounted() {
     apos.bus.$on('busy', state => {

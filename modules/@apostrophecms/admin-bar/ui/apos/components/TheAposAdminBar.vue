@@ -1,7 +1,5 @@
 <template>
-  <!-- TODO: Replace this and other hard-coded `apos-theme--primary-purple`
-  with implementation via JS based on user selection or default. -->
-  <div class="apos-admin-bar-wrapper apos-theme--primary-purple">
+  <div class="apos-admin-bar-wrapper" :class="themeClass">
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
@@ -241,10 +239,11 @@ import { klona } from 'klona';
 import dayjs from 'dayjs';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'TheAposAdminBar',
-  mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
+  mixins: [ AposPublishMixin, AposAdvisoryLockMixin, AposThemeMixin ],
   props: {
     items: {
       type: Array,
