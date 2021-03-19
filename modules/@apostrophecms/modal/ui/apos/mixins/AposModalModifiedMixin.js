@@ -18,6 +18,7 @@ export default {
     };
   },
   methods: {
+    // Returns true if the cancellation does occur
     async confirmAndCancel() {
       let dismiss;
       if (this.isModified) {
@@ -41,6 +42,7 @@ export default {
       if (dismiss) {
         this.modal.showModal = false;
       }
+      return dismiss;
     }
   }
 };

@@ -191,7 +191,7 @@ export default {
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
 
-      this.schema.forEach(field => {
+      this.schema.filter(field => this.displayComponent(field.name)).forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
@@ -245,6 +245,11 @@ export default {
   .apos-schema /deep/ .apos-field__wrapper {
     max-width: $input-max-width;
   }
+
+  .apos-schema /deep/ img {
+    max-width: 100%;
+  }
+
   .apos-field {
     .apos-schema /deep/ & {
       margin-bottom: $spacing-triple;

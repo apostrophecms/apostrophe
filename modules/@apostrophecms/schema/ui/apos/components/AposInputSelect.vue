@@ -44,8 +44,7 @@ export default {
   },
   data() {
     return {
-      next: (this.value && this.value.data != null)
-        ? this.value.data : (this.field.required ? (this.field.choices[0] && this.field.choices[0].value) : ''),
+      next: (this.value.data == null) ? null : this.value.data,
       choices: []
     };
   },
@@ -60,6 +59,13 @@ export default {
       });
     }
     this.choices = this.choices.concat(this.field.choices);
+    this.$nextTick(() => {
+      // this has to happen on nextTick to avoid emitting before schemaReady is
+      // set in AposSchema
+      if (this.field.required && (this.next == null) && (this.field.choices[0] != null)) {
+        this.next = this.field.choices[0].value;
+      }
+    });
   },
   methods: {
     validate(value) {
