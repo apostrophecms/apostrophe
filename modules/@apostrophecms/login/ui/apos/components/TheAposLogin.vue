@@ -1,67 +1,67 @@
 <template>
-  <div ref="login">
-    <transition name="fade-stage">
-      <div
-        class="apos-login apos-theme-dark"
-        v-show="loaded"
-      >
-        <div class="apos-login__wrapper">
-          <transition name="fade-body">
-            <div class="apos-login__upper" v-show="loaded">
-              <div class="apos-login__header">
-                <label
-                  class="apos-login__project apos-login__project-env"
-                  :class="[`apos-login__project-env--${context.env}`]"
-                >
-                  {{ context.env }}
-                </label>
-                <label class="apos-login__project apos-login__project-name">
-                  {{ context.name }}
-                </label>
-                <label class="apos-login--error">
-                  {{ error }}
-                </label>
-              </div>
-
-              <div class="apos-login__body" v-show="loaded">
-                <form @submit.prevent="submit">
-                  <AposSchema
-                    :schema="schema"
-                    v-model="doc"
-                  />
-                  <!-- TODO -->
-                  <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
-                  <AposButton
-                    :busy="busy"
-                    :disabled="disabled"
-                    type="primary"
-                    label="Login"
-                    button-type="submit"
-                    :modifiers="['gradient-on-hover', 'block']"
-                    @click="submit"
-                  />
-                </form>
-              </div>
+  <transition name="fade-stage">
+    <div
+      class="apos-login apos-theme-dark"
+      v-show="loaded"
+      :class="themeClass"
+    >
+      <div class="apos-login__wrapper">
+        <transition name="fade-body">
+          <div class="apos-login__upper" v-show="loaded">
+            <div class="apos-login__header">
+              <label
+                class="apos-login__project apos-login__project-env"
+                :class="[`apos-login__project-env--${context.env}`]"
+              >
+                {{ context.env }}
+              </label>
+              <label class="apos-login__project apos-login__project-name">
+                {{ context.name }}
+              </label>
+              <label class="apos-login--error">
+                {{ error }}
+              </label>
             </div>
-          </transition>
-        </div>
-        <transition name="fade-footer">
-          <div class="apos-login__footer" v-show="loaded">
-            <AposLogo class="apos-login__logo" />
-            <label class="apos-login__project-version">
-              Version {{ context.version }}
-            </label>
+
+            <div class="apos-login__body" v-show="loaded">
+              <form @submit.prevent="submit">
+                <AposSchema
+                  :schema="schema"
+                  v-model="doc"
+                />
+                <!-- TODO -->
+                <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
+                <AposButton
+                  :busy="busy"
+                  :disabled="disabled"
+                  type="primary"
+                  label="Login"
+                  button-type="submit"
+                  :modifiers="['gradient-on-hover', 'block']"
+                  @click="submit"
+                />
+              </form>
+            </div>
           </div>
         </transition>
       </div>
-    </transition>
-  </div>
-
+      <transition name="fade-footer">
+        <div class="apos-login__footer" v-show="loaded">
+          <AposLogo class="apos-login__logo" />
+          <label class="apos-login__project-version">
+            Version {{ context.version }}
+          </label>
+        </div>
+      </transition>
+    </div>
+  </transition>
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposLogin',
+  mixins: [ AposThemeMixin ],
   data() {
     return {
       loaded: false,
@@ -117,7 +117,6 @@ export default {
   },
   mounted() {
     this.loaded = true;
-    window.apos.util.addClass(this.$refs.login, `apos-theme--primary-${window.apos.ui.theme.primary}`);
   },
   methods: {
     async submit() {

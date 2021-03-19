@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-admin-bar-wrapper" ref="adminBarOuter">
+  <div class="apos-admin-bar-wrapper" :class="themeClass">
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
@@ -239,10 +239,11 @@ import { klona } from 'klona';
 import dayjs from 'dayjs';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'TheAposAdminBar',
-  mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
+  mixins: [ AposPublishMixin, AposAdvisoryLockMixin, AposThemeMixin ],
   props: {
     items: {
       type: Array,
@@ -454,7 +455,6 @@ export default {
   },
   async mounted() {
     window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
-    window.apos.util.addClass(this.$refs.adminBarOuter, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     // Listen for bus events coming from notification UI
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('unpublish', this.onUnpublish);

@@ -1,20 +1,33 @@
 <template>
-  <div class="apos-busy" ref="busy" :class="{'is-busy': busy}">
+  <div
+    class="apos-busy"
+    :class="classes"
+  >
     <AposSpinner class="apos-busy__spinner" />
   </div>
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposBusy',
+  mixins: [ AposThemeMixin ],
   data() {
     return {
       busy: false,
       busyCount: 0
     };
   },
+  computed: {
+    classes() {
+      const classes = [];
+      if (this.busy) {
+        classes.push('is-busy');
+      }
+      return [].concat(classes, this.themeClass);
+    }
+  },
   mounted() {
-    window.apos.util.addClass(this.$refs.busy, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     apos.bus.$on('busy', state => {
       // TODO: Possibly add a check for `state.name === 'busy'` again if other
       // busy contexts are added.

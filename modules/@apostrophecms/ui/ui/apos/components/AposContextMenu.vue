@@ -40,12 +40,14 @@
 import {
   VPopover
 } from 'v-tooltip';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposContextMenu',
   components: {
     'v-popover': VPopover
   },
+  mixins: [ AposThemeMixin ],
   props: {
     menu: {
       type: Array,
@@ -86,11 +88,13 @@ export default {
     return {
       isOpen: false,
       position: '',
-      event: null,
-      popoverClass: `apos-popover apos-theme--primary-${window.apos.ui.theme.primary}`
+      event: null
     };
   },
   computed: {
+    popoverClass() {
+      return [ 'apos-popover' ].concat(this.themeClass);
+    },
     classList() {
       const classes = [];
       const baseClass = 'apos-context-menu__popup';

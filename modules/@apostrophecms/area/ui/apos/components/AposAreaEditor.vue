@@ -1,7 +1,8 @@
 <template>
   <div
-    :data-apos-area="areaId" class="apos-area"
-    ref="areaEditor"
+    :data-apos-area="areaId"
+    class="apos-area"
+    :class="themeClass"
   >
     <div
       v-if="next.length === 0 && !foreign"
@@ -57,9 +58,11 @@
 <script>
 import cuid from 'cuid';
 import { klona } from 'klona';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposAreaEditor',
+  mixins: [ AposThemeMixin ],
   props: {
     docId: {
       type: String,
@@ -175,7 +178,6 @@ export default {
     }
   },
   mounted() {
-    window.apos.util.addClass(this.$refs.areaEditor, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     apos.bus.$on('area-updated', this.areaUpdatedHandler);
     apos.bus.$on('widget-hover', this.updateWidgetHovered);
     apos.bus.$on('widget-focus', this.updateWidgetFocused);

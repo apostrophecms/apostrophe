@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-notifications" ref="notifications">
+  <div class="apos-notifications" :class="themeClass">
     <AposNotification
       v-for="notification in notifications"
       :key="notification._id"
@@ -14,8 +14,10 @@
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposNotifications',
+  mixins: [ AposThemeMixin ],
   data () {
     return {
       notifications: [],
@@ -23,7 +25,6 @@ export default {
     };
   },
   async mounted() {
-    window.apos.util.addClass(this.$refs.notifications, `apos-theme--primary-${window.apos.ui.theme.primary}`);
     apos.notify = async function(message, options) {
       const strings = [];
       let i = 1;
