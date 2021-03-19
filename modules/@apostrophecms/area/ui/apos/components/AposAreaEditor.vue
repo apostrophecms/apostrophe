@@ -11,6 +11,7 @@
       <template v-if="isEmptySingleton">
         <AposButton
           :label="'Add ' + contextMenuOptions.menu[0].label"
+          :disabled="field && field.readOnly"
           type="primary"
           :icon="icon"
           @click="add({ index: 0, name: contextMenuOptions.menu[0].name })"
@@ -24,6 +25,7 @@
           :index="0"
           :widget-options="options.widgets"
           :max-reached="maxReached"
+          :disabled="field && field.readOnly"
         />
       </template>
     </div>
@@ -75,6 +77,12 @@ export default {
     id: {
       type: String,
       required: true
+    },
+    field: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     fieldId: {
       type: String,
@@ -131,8 +139,8 @@ export default {
       return this.next.length === 0 &&
         this.options.widgets &&
         Object.keys(this.options.widgets).length === 1 &&
-        this.options.max &&
-        this.options.max === 1;
+        (this.options.max || this.field.max) &&
+        (this.options.max === 1 || this.field.max === 1);
     },
     icon() {
       let icon = null;

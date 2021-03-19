@@ -25,7 +25,8 @@
           :key="item._id"
           :item="item"
           :selected="selected === item._id"
-          :class="{'apos-slat-list__item--disabled' : !editable}"
+          :class="{'apos-slat-list__item--disabled' : disabled}"
+          :disabled="disabled"
           :engaged="engaged === item._id"
           :parent="listId"
           :slat-count="next.length"
@@ -53,9 +54,9 @@ export default {
       type: Array,
       required: true
     },
-    editable: {
+    disabled: {
       type: Boolean,
-      default: true
+      default: false
     },
     removable: {
       type: Boolean,
@@ -89,7 +90,7 @@ export default {
     dragOptions() {
       return {
         animation: 0,
-        disabled: !this.editable || this.next.length <= 1,
+        disabled: this.disabled || this.next.length <= 1,
         ghostClass: 'is-dragging'
       };
     }

@@ -13,6 +13,8 @@
             @close="close"
             menu-placement="bottom-start"
             menu-offset="5, 20"
+            :disabled="field.readOnly"
+            :tooltip="tooltip"
           >
             <Picker
               v-if="next"

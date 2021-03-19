@@ -76,6 +76,13 @@ export default {
         return 20;
       }
     },
+    tooltip () {
+      let msg = false;
+      if (this.field.readOnly) {
+        msg = 'This field is disabled';
+      }
+      return msg;
+    },
     effectiveError () {
       return this.error || this.serverError;
     }

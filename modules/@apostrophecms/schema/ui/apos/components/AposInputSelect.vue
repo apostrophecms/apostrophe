@@ -11,6 +11,7 @@
         <select
           class="apos-input apos-input--select" :id="uid"
           @change="change($event.target.value)"
+          :disabled="field.readOnly"
         >
           <option
             v-for="choice in choices" :key="JSON.stringify(choice.value)"

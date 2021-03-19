@@ -21,6 +21,7 @@
         :state="buttonState"
         ref="button"
         :disabled="disabled"
+        :tooltip="tooltip"
       />
       <template #popover class="apos-popover__slot">
         <AposContextMenuDialog
@@ -80,6 +81,10 @@ export default {
     },
     disabled: {
       type: Boolean,
+      default: false
+    },
+    tooltip: {
+      type: [ String, Boolean ],
       default: false
     }
   },
