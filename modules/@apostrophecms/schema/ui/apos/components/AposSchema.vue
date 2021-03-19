@@ -245,6 +245,11 @@ export default {
   .apos-schema /deep/ .apos-field__wrapper {
     max-width: $input-max-width;
   }
+
+  .apos-schema /deep/ img {
+    max-width: 100%;
+  }
+
   .apos-field {
     .apos-schema /deep/ & {
       margin-bottom: $spacing-triple;

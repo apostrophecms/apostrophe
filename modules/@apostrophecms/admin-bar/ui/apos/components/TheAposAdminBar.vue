@@ -206,7 +206,7 @@
               :can-discard-draft="context.modified"
               :is-modified-from-published="context.modified"
               :is-published="!!context.lastPublishedAt"
-              :options="{ saveDraft: false }"
+              :can-save-draft="false"
               @discardDraft="onDiscardDraft"
             />
             <AposButton
