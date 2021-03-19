@@ -72,9 +72,17 @@
           label="Cancel"
         />
         <AposButton
+          v-if="activeMedia._id && !restoreOnly"
+          @click="trash"
+          icon="trash-can-icon"
+          :icon-only="true"
+          class="apos-media-editor__trash"
+          label="Trash"
+        />
+        <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          :label="restoreOnly ? 'Restore from Trash' : 'Save'" type="primary"
+          :label="restoreOnly ? 'Restore' : 'Save'" type="primary"
         />
       </div>
     </AposModalLip>
@@ -205,6 +213,25 @@ export default {
           this.lockNotAvailable();
         }
       }
+    },
+    async trash() {
+      if (!await apos.confirm({
+        heading: 'Are You Sure?',
+        description: 'This will move the image to the trash.'
+      })) {
+        return;
+      }
+      const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
+      await apos.http.patch(route, {
+        busy: true,
+        body: {
+          trash: true
+        },
+        draft: true
+        // Autopublish will take care of the published side
+      });
+      apos.bus.$emit('content-changed');
+      await this.cancel();
     },
     save() {
       this.triggerValidation = true;

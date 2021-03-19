@@ -36,6 +36,8 @@ export default {
           field.readOnly = true;
         }
       }
+      // Trash UI is handled via action buttons
+      schema = schema.filter(field => field.name !== 'trash');
       return schema;
     }
   },

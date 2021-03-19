@@ -21,11 +21,13 @@
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
+        :can-move-to-trash="canMoveToTrash"
         :can-copy="!!docId"
         :is-published="!!published"
         :can-save-draft="true"
         @saveDraft="saveDraft"
         @discardDraft="onDiscardDraft"
+        @moveToTrash="onMoveToTrash"
         @copy="onCopy"
       />
       <AposButton
@@ -247,7 +249,7 @@ export default {
     },
     saveLabel() {
       if (this.restoreOnly) {
-        return 'Restore from Trash';
+        return 'Restore';
       } else if (this.manuallyPublished) {
         if (this.original && this.original.lastPublishedAt) {
           return 'Publish Changes';
@@ -270,11 +272,16 @@ export default {
       }
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
+    canMoveToTrash() {
+      return !!(this.docId && (!this.restoreOnly) && (this.published || !this.manuallyPublished));
+    },
     canDiscardDraft() {
-      return (this.docId && (!this.published)) || this.isModifiedFromPublished;
+      return (this.docId && (!this.published) && this.manuallyPublished) || this.isModifiedFromPublished;
     },
     hasMoreMenu() {
-      if (this.docId) {
+      if (this.canMoveToTrash) {
+        return true;
+      } else if (this.docId) {
         // Copy is allowed
         return true;
         // All other scenarios apply only when the user needs publishing-related UI
@@ -506,7 +513,7 @@ export default {
             return;
           }
         }
-        if (andPublish) {
+        if (andPublish && !restoreOnly) {
           await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
         }
         this.$emit('modal-result', doc);
@@ -574,8 +581,35 @@ export default {
         return this.$refs[field.group.name][0];
       }
     },
+    async onMoveToTrash(e) {
+      try {
+        if (await apos.confirm({
+          heading: 'Are You Sure?',
+          description: this.published
+            ? 'This will move the document to the trash and un-publish it.'
+            : 'This will move the document to the trash.'
+        })) {
+          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+            body: {
+              trash: true,
+              _publish: true
+            },
+            busy: true,
+            draft: true
+          });
+          apos.bus.$emit('content-changed');
+          this.modal.showModal = false;
+        }
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred',
+          description: e.message || 'An error occurred while moving the document to the trash.'
+        });
+      }
+    },
     async onDiscardDraft(e) {
       if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+        apos.bus.$emit('content-changed');
         this.modal.showModal = false;
       }
     },
