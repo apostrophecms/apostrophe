@@ -79,7 +79,6 @@ export default {
     tooltip () {
       let msg = false;
       if (this.field.readOnly) {
-        // TODO For editor-facing tooltips is this the correct language?
         msg = 'This field is disabled';
       }
       return msg;
