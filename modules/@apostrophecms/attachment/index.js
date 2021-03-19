@@ -8,7 +8,7 @@ module.exports = {
 
   async init(self) {
     self.name = 'attachment';
-    self.imageSizes = self.apos.modules['@apostrophecms/uploadfs'].imageSizes;
+    self.imageSizes = self.apos.uploadfs.options.imageSizes;
     self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
@@ -155,11 +155,6 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:destroy': {
-        async destroyUploadfs() {
-          await Promise.promisify(self.apos.uploadfs.destroy)();
-        }
-      },
       '@apostrophecms/doc-type:afterSave': {
         async updateDocReferencesAfterSave(req, doc, options) {
           return self.updateDocReferences(doc);

@@ -87,5 +87,15 @@ module.exports = {
         }
       }
     };
+  },
+
+  handlers(self) {
+    return {
+      'apostrophe:destroy': {
+        async destroyUploadfs() {
+          await Promise.promisify(self.apos.uploadfs.destroy)();
+        }
+      }
+    };
   }
 };
