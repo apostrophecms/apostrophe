@@ -10,8 +10,7 @@ module.exports = {
       backend: 'local',
       uploadsPath: self.apos.rootDir + '/public/uploads',
       uploadsUrl: (self.apos.baseUrl || '') + self.apos.prefix + '/uploads',
-      tempPath: self.apos.rootDir + '/data/temp/uploadfs',
-      imageSizes: self.imageSizes
+      tempPath: self.apos.rootDir + '/data/temp/uploadfs'
     };
 
     self.uploadfsSettings = {};
