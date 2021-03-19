@@ -92,6 +92,14 @@ describe('Docs Advisory Lock Timeout', function() {
     });
   });
 
+  it('should not be able to lock a document without an account', function(done) {
+    var req = apos.tasks.getAnonReq();
+    apos.docs.lock(req, 'lori', 'abc', function(err) {
+      assert(err);
+      done();
+    });
+  });
+
   it('should be able to lock a document', function(done) {
     var req = apos.tasks.getReq();
     apos.docs.lock(req, 'lori', 'abc', function(err) {

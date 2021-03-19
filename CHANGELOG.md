@@ -2,8 +2,8 @@
 
 ## Unreleased
 * The browser-pushed versions of jQuery and lodash have been updated to address security scanner reports. jQuery is now on its latest release, 3.6.0. lodash is now on version 3.10.4 as found in the [maintained branch of lodash 3.x](https://github.com/sailshq/lodash) provided by the [sailsjs](https://sailsjs.com) team. Note that in "lean mode," we do not push these libraries at all except when a user is logged in. If you do not want the overhead we encourage you to learn about lean mode.
-
 * Fixes `options.arrangeFields` for `apostrophe-html-widgets`
+* Address low-risk denial-of-service vulnerability. It was possible to cause a restart by attempting to get an advisory lock on a document for which a lock already existed, without logging in. This could occur only if an editor happened to be working with that document or had worked with it within the advisory lock timeout time.
 
 * Adds suggestions list for pieces search bar, it uses autocomplete cursor and displays matching words from highSearchWords.
 
