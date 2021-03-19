@@ -502,7 +502,8 @@ module.exports = {
       //
       // If `input._copyingId` is present, fetches that
       // piece and, if we have permission to view it, copies any schema properties
-      // not defined in `input`. Also emits `copyExtras` with (req, copyOf, input, piece).
+      // not defined in `input`. `_copyingId` becomes the `copyOfId` property of
+      // the doc, which may be watched for in event handlers to detect copies.
       //
       // Only fields that are not undefined in `input` are
       // considered. The rest respect their defaults. To intentionally
@@ -511,8 +512,6 @@ module.exports = {
       //
       // The module emits the `afterConvert` async event with `(req, input, piece)`
       // before inserting the piece.
-      //
-      // If copying, the module also emits `copyExtras` with `(req, copyOf, input, piece)`.
 
       async convertInsertAndRefresh(req, input, options) {
         const piece = self.newInstance();

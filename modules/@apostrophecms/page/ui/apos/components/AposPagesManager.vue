@@ -17,10 +17,16 @@
       />
     </template>
     <template #primaryControls>
+      <AposContextMenu
+        v-if="relationshipField"
+        :menu="moreMenu"
+        menu-placement="bottom-end"
+        @item-clicked="moreMenuHandler"
+        :button="moreMenuButton"
+      />
       <AposButton
-        :type="relationshipField ? 'secondary' : 'primary'"
-        label="New Page"
-        @click="openEditor(null)"
+        v-else type="primary"
+        label="New Page" @click="openEditor(null)"
       />
       <AposButton
         v-if="relationshipField"
@@ -126,6 +132,23 @@ export default {
         bulkSelect: !!this.relationshipField,
         draggable: true,
         ghostUnpublished: true
+      },
+      moreMenu: [
+        {
+          label: 'New Page',
+          action: 'new'
+        }
+      ],
+      moreMenuButton: {
+        tooltip: {
+          content: 'More Options',
+          placement: 'bottom'
+        },
+        label: 'More Options',
+        icon: 'dots-vertical-icon',
+        iconOnly: true,
+        type: 'subtle',
+        modifiers: [ 'small', 'no-motion' ]
       }
     };
   },
@@ -173,6 +196,11 @@ export default {
     await this.getPages();
   },
   methods: {
+    moreMenuHandler(action) {
+      if (action === 'new') {
+        this.openEditor(null);
+      }
+    },
     async getPages () {
       this.pages = [];
       this.pagesFlat = [];
