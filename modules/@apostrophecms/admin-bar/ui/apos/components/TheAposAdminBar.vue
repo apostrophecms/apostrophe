@@ -525,7 +525,7 @@ export default {
       this.refresh();
     });
 
-    // sessionStorage because it is deliberately tab-specific
+    // sessionStorage because it is deliberately browser-tab specific
     let tabId = sessionStorage.getItem('aposTabId');
     if (!tabId) {
       tabId = cuid();
