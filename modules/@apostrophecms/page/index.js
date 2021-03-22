@@ -74,6 +74,7 @@ module.exports = {
       async getAll(req) {
         self.publicApiCheck(req);
         const all = self.apos.launder.boolean(req.query.all);
+        const trash = self.apos.launder.booleanOrNull(req.query.trash);
         const flat = self.apos.launder.boolean(req.query.flat);
         const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
@@ -94,7 +95,7 @@ module.exports = {
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
-            trash: null,
+            trash: trash,
             orphan: null,
             relationships: false,
             areas: false,
