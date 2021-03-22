@@ -210,8 +210,8 @@ export default {
         '/api/v1/@apostrophecms/page', {
           busy: true,
           qs: {
-            all: 1,
-            trash: null
+            all: '1',
+            trash: this.relationshipField ? '0' : 'any'
           },
           draft: true
         }
