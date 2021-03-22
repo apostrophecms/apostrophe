@@ -595,6 +595,11 @@ export default {
             busy: true,
             draft: true
           });
+          if (this.docId === window.apos.adminBar.contextId) {
+            // With the current context doc gone, we need to move to safe ground
+            location.assign(`${window.apos.prefix}/`);
+            return;
+          }
           apos.bus.$emit('content-changed');
           this.modal.showModal = false;
         }
