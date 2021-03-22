@@ -273,10 +273,17 @@ export default {
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canMoveToTrash() {
-      return !!(this.docId && !(this.moduleName === '@apostrophecms/page') && !this.restoreOnly && (this.published || !this.manuallyPublished));
+      return this.docId &&
+        !(this.moduleName === '@apostrophecms/page') &&
+        !this.restoreOnly &&
+        (this.published || !this.manuallyPublished);
     },
     canDiscardDraft() {
-      return (this.docId && (!this.published) && this.manuallyPublished) || this.isModifiedFromPublished;
+      return (
+        this.docId &&
+        (!this.published) &&
+        this.manuallyPublished
+      ) || this.isModifiedFromPublished;
     },
     hasMoreMenu() {
       if (this.restoreOnly) {
