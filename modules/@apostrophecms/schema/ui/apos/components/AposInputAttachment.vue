@@ -106,7 +106,6 @@ export default {
   methods: {
     watchNext () {
       this.validateAndEmit();
-      this.limitReached = !!this.next;
     },
     updated (items) {
       // NOTE: This is limited to a single item.

@@ -28,8 +28,8 @@
       <AposButton
         v-if="relationshipField"
         type="primary"
-        :label="`Select ${moduleLabels.pluralLabel || ''}`"
-        :disabled="relationshipErrors === 'min'"
+        :label="saveRelationshipLabel"
+        :disabled="(relationshipErrors === 'min') || (relationshipErrors === 'max')"
         @click="saveRelationship"
       />
       <AposButton
@@ -48,7 +48,7 @@
         </div>
         <AposSlatList
           class="apos-pieces-manager__relationship__items"
-          @input="updateChecked"
+          @input="setCheckedDocs"
           :value="checkedDocs"
         />
       </div>
@@ -146,6 +146,13 @@ export default {
         plural: this.options.pluralLabel
       };
     },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return `Select ${this.moduleLabels.label || ''}`;
+      } else {
+        return `Select ${this.moduleLabels.pluralLabel || ''}`;
+      }
+    },
     modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
@@ -211,7 +218,7 @@ export default {
         this.new();
       }
     },
-    updateChecked(checked) {
+    setCheckedDocs(checked) {
       this.checkedDocs = checked;
       this.checked = this.checkedDocs.map(item => {
         return item._id;

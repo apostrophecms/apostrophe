@@ -31,10 +31,25 @@
       <AposButton
         v-if="relationshipField"
         type="primary"
-        label="Select Pages"
-        :disabled="relationshipErrors === 'min'"
+        :label="saveRelationshipLabel"
+        :disabled="(relationshipErrors === 'min') || (relationshipErrors === 'max')"
         @click="saveRelationship"
       />
+    </template>
+    <template v-if="relationshipField" #leftRail>
+      <div class="apos-pages-manager__relationship__rail">
+        <div class="apos-pages-manager__relationship__counts">
+          <AposMinMaxCount
+            :field="relationshipField"
+            :value="checkedDocs"
+          />
+        </div>
+        <AposSlatList
+          class="apos-pages-manager__relationship__items"
+          @input="setCheckedDocs"
+          :value="checkedDocs"
+        />
+      </div>
     </template>
     <template #main>
       <AposModalBody>
@@ -187,6 +202,13 @@ export default {
       } : {
         value: 'checked'
       };
+    },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return 'Select Page';
+      } else {
+        return 'Select Pages';
+      }
     }
   },
   async mounted() {
@@ -298,6 +320,9 @@ export default {
         this.checked.push(doc._id);
       }
     },
+    setCheckedDocs(checkedDocs) {
+      this.checked = checkedDocs.map(doc => doc._id);
+    },
     updateCheckedDocs() {
       this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
     }
@@ -306,4 +331,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-pages-manager__relationship__rail {
+    height: 100%;
+    padding: 20px;
+    background-color: var(--a-base-9);
+  }
+
+  .apos-pages-manager__relationship__counts {
+    margin-bottom: 20px;
+  }
 </style>

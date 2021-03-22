@@ -14,7 +14,7 @@ export default {
       // as initially checked.
       checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
         : [],
-      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : false
+      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : []
     };
   },
   props: {
@@ -88,9 +88,6 @@ export default {
       }
     },
     checked () {
-      if (!this.checkedDocs) {
-        return;
-      }
       this.updateCheckedDocs();
     }
   },
