@@ -260,7 +260,7 @@ module.exports = {
           await migration.fn();
           await self.db.insertOne({
             _id: migration.name,
-            at: new Date(),
+            at: new Date()
           });
         } catch (err) {
           if (err) {
