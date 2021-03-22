@@ -339,20 +339,21 @@ module.exports = {
       // called only when a draft is being created on the fly
       // for a published document that does not yet have a draft.
       // Apostrophe only has one corresponding draft at a time
-      // per published document.
-      async insertDraftOf(req, doc, draft) {
+      // per published document. `options` is passed on to the
+      // insert operation.
+      async insertDraftOf(req, doc, draft, options) {
         const inserted = await self.insert({
           ...req,
           mode: 'draft'
-        }, draft);
+        }, draft, options);
         return inserted;
       },
       // Similar to insertDraftOf, invoked on first publication.
-      insertPublishedOf(req, doc, published) {
+      insertPublishedOf(req, doc, published, options) {
         return self.insert({
           ...req,
           mode: 'published'
-        }, published);
+        }, published, options);
       },
       // Returns one editable piece matching the criteria, throws `notfound`
       // if none match

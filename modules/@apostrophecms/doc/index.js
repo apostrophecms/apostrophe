@@ -192,7 +192,7 @@ module.exports = {
             aposLocale: draftLocale,
             lastPublishedAt: doc.createdAt || new Date()
           };
-          return manager.insertDraftOf(req, doc, draft);
+          return manager.insertDraftOf(req, doc, draft, options);
         }
       },
       fixUniqueError: {

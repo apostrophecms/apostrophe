@@ -2,8 +2,6 @@ const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 const Promise = require('bluebird');
-const uploadfs = require('uploadfs');
-const mkdirp = require('mkdirp');
 
 module.exports = {
   options: { alias: 'attachment' },
@@ -38,8 +36,14 @@ module.exports = {
   },
 
   async init(self) {
+    // For convenience and bc
+    self.uploadfs = self.apos.uploadfs;
+    // uploadfs expects an array
+    self.imageSizes = Object.keys(self.imageSizes).map(name => ({
+      name,
+      ...self.imageSizes[name]
+    }));
     self.name = 'attachment';
-
     self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
@@ -95,40 +99,14 @@ module.exports = {
 
     self.sizeAvailableInTrash = self.options.sizeAvailableInTrash || 'one-sixth';
 
-    // uploadfs expects an array
-    self.imageSizes = Object.keys(self.imageSizes).map(name => ({
-      name,
-      ...self.imageSizes[name]
-    }));
-
-    const uploadfsDefaultSettings = {
-      backend: 'local',
-      uploadsPath: self.apos.rootDir + '/public/uploads',
-      uploadsUrl: (self.apos.baseUrl || '') + self.apos.prefix + '/uploads',
-      tempPath: self.apos.rootDir + '/data/temp/uploadfs',
-      imageSizes: self.imageSizes
-    };
-
-    self.uploadfsSettings = {};
-    _.merge(self.uploadfsSettings, uploadfsDefaultSettings);
-
-    _.merge(self.uploadfsSettings, self.options.uploadfs || {});
-
-    if (process.env.APOS_S3_BUCKET) {
-      _.merge(self.uploadfsSettings, {
-        backend: 's3',
-        endpoint: process.env.APOS_S3_ENDPOINT,
-        secret: process.env.APOS_S3_SECRET,
-        key: process.env.APOS_S3_KEY,
-        bucket: process.env.APOS_S3_BUCKET,
-        region: process.env.APOS_S3_REGION
-      });
-    }
-
     self.rescaleTask = require('./lib/tasks/rescale.js')(self);
-    await self.initUploadfs();
     self.addFieldType();
     self.enableBrowserData();
+
+    self.db = await self.apos.db.collection('aposAttachments');
+    await self.db.createIndex({ docIds: 1 });
+    await self.db.createIndex({ trashDocIds: 1 });
+    self.addFixLengthPropertyMigration();
   },
 
   tasks(self) {
@@ -212,24 +190,6 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
-        // Delay setting up the collection until other modules
-        // are ready in a normal startup. Necessary because uploadfs must
-        // be available during asset builds but the database must not be
-        async enableCollection() {
-          self.db = await self.apos.db.collection('aposAttachments');
-          await self.db.createIndex({ docIds: 1 });
-          await self.db.createIndex({ trashDocIds: 1 });
-        },
-        addFixLengthPropertyMigration() {
-          self.addFixLengthPropertyMigration();
-        }
-      },
-      'apostrophe:destroy': {
-        async destroyUploadfs() {
-          await Promise.promisify(self.uploadfs.destroy)();
-        }
-      },
       '@apostrophecms/doc-type:afterSave': {
         async updateDocReferencesAfterSave(req, doc, options) {
           return self.updateDocReferences(doc);
@@ -256,22 +216,6 @@ module.exports = {
   },
   methods(self) {
     return {
-      async initUploadfs() {
-        safeMkdirp(self.uploadfsSettings.uploadsPath);
-        safeMkdirp(self.uploadfsSettings.tempPath);
-        self.uploadfs = uploadfs();
-        await Promise.promisify(self.uploadfs.init)(self.uploadfsSettings);
-        function safeMkdirp(path) {
-          try {
-            mkdirp.sync(path);
-          } catch (e) {
-            if (!require('fs').existsSync(path)) {
-              throw e;
-            }
-          }
-        }
-      },
-
       addFieldType() {
         self.apos.schema.addFieldType({
           name: self.name,
@@ -452,7 +396,7 @@ module.exports = {
         info.md5 = await self.apos.util.md5File(file.path);
         if (self.isSized(extension)) {
           // For images we correct automatically for common file extension mistakes
-          const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name);
+          const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name, { sizes: self.imageSizes });
           info.extension = result.extension;
           info.width = result.width;
           info.height = result.height;
@@ -502,7 +446,10 @@ module.exports = {
         const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + info.extension;
         const croppedFile = '/attachments/' + info._id + '-' + info.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + info.extension;
         await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
-        await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, { crop: crop });
+        await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
+          crop: crop,
+          sizes: self.imageSizes
+        });
         crops.push(crop);
         await self.db.updateOne({
           _id: info._id

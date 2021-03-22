@@ -224,7 +224,7 @@ module.exports = {
             if (process.env.APOS_UPLOADFS_ASSETS) {
               // The right choice if uploadfs is mapped to S3, Azure, etc.,
               // not the local filesystem
-              copyIn = require('util').promisify(self.apos.attachment.uploadfs.copyIn);
+              copyIn = require('util').promisify(self.apos.uploadfs.copyIn);
               releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
             } else {
               // The right choice with Docker if uploadfs is just the local filesystem
@@ -379,7 +379,7 @@ if your deployment is a git checkout.`);
           const releaseId = self.getReleaseId();
           const releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
           if (process.env.APOS_UPLOADFS_ASSETS) {
-            return `${self.apos.attachment.uploadfs.getUrl()}${releaseDir}`;
+            return `${self.apos.uploadfs.getUrl()}${releaseDir}`;
           } else {
             return releaseDir;
           }
