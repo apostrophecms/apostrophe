@@ -34,7 +34,7 @@ export default {
         await apos.http.patch(lockApiUrl, {
           body: {
             _advisoryLock: {
-              htmlPageId: apos.adminBar.htmlPageId,
+              tabId: apos.adminBar.tabId,
               lock: true
             }
           },
@@ -52,17 +52,16 @@ export default {
           // in edit mode. However, in the rare case where the "other tab"
           // getting its lock busted really is another tab, we do notify
           // the user there.
-          if (e.body.data.me ||
-            await apos.confirm({
-              heading: 'Another User Is Editing',
-              description: `${e.body.data.title} is editing that document. Do you want to take control?`
-            })
-          ) {
+          if (await apos.confirm({
+            heading: e.body.data.me ? 'Editing in Another Tab or Window' : 'Another User Is Editing',
+            description: e.body.data.me ? 'You are editing that document in another tab or window. Do you want to take control in this tab?'
+              : `${e.body.data.title} is editing that document. Do you want to take control?`
+          })) {
             try {
               await apos.http.patch(this.lockApiUrl, {
                 body: {
                   _advisoryLock: {
-                    htmlPageId: apos.adminBar.htmlPageId,
+                    tabId: apos.adminBar.tabId,
                     lock: true,
                     force: true
                   }
@@ -114,7 +113,7 @@ export default {
     // method you already wrote.
     addLockToRequest(body) {
       body._advisoryLock = {
-        htmlPageId: apos.adminBar.htmlPageId,
+        tabId: apos.adminBar.tabId,
         lock: true
       };
     },
@@ -137,7 +136,7 @@ export default {
           await apos.http.patch(this.lockApiUrl, {
             body: {
               _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
+                tabId: apos.adminBar.tabId,
                 lock: false
               }
             },
@@ -163,7 +162,7 @@ export default {
           await apos.http.patch(this.lockApiUrl, {
             body: {
               _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
+                tabId: apos.adminBar.tabId,
                 lock: true
               }
             },

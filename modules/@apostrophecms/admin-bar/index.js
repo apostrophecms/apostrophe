@@ -277,7 +277,7 @@ module.exports = {
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           // Simplifies frontend logic
           contextId: context && context._id,
-          htmlPageId: cuid(),
+          tabId: cuid(),
           contextEditorName,
           pageTree: self.options.pageTree
         };

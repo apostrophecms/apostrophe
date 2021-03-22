@@ -604,7 +604,7 @@ module.exports = {
           locale: req.locale,
           mode: req.mode,
           csrfCookieName: self.apos.csrfCookieName,
-          htmlPageId: self.apos.util.generateId(),
+          tabId: self.apos.util.generateId(),
           scene
         };
         if (req.user) {
