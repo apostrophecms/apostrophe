@@ -679,9 +679,9 @@ module.exports = {
       getManager(type) {
         return self.managers[type];
       },
-      // Lock the given doc to a given `htmlPageId`, such
+      // Lock the given doc to a given `tabId`, such
       // that other calls to `apos.doc.lock` for that doc id will
-      // fail unless they have the same `htmlPageId`. If
+      // fail unless they have the same `tabId`. If
       // `options.force` is true, any existing lock is
       // overwritten. The `options` argument may be
       // omitted entirely.
@@ -696,7 +696,7 @@ module.exports = {
       // by someone else. Other errors are thrown as appropriate.
       //
       // If you need to refresh a lock in order to avoid
-      // expiration, just lock it again. As long as the htmlPageId
+      // expiration, just lock it again. As long as the tabId
       // is the same as the current lock holder you will receive
       // another successful response.
       //
@@ -705,7 +705,7 @@ module.exports = {
       // that you pass to it. This ensures it is present if you
       // follow this call up with an `update()` of the document.
 
-      async lock(req, doc, htmlPageId, options) {
+      async lock(req, doc, tabId, options) {
         if (!options) {
           options = {};
         }
@@ -718,8 +718,8 @@ module.exports = {
           throw self.apos.error('invalid', 'No doc was passed');
         }
         const _id = doc._id;
-        if (!htmlPageId) {
-          throw self.apos.error('invalid', 'no htmlPageId was passed');
+        if (!tabId) {
+          throw self.apos.error('invalid', 'no tabId was passed');
         }
         let criteria = { _id };
         if (!options.force) {
@@ -735,7 +735,7 @@ module.exports = {
               }
             },
             {
-              'advisoryLock._id': htmlPageId
+              'advisoryLock._id': tabId
             }
           ];
         }
@@ -750,7 +750,7 @@ module.exports = {
         doc.advisoryLock = {
           username: req.user && req.user.username,
           title: req.user && req.user.title,
-          _id: htmlPageId,
+          _id: tabId,
           updatedAt: new Date()
         };
         const result = await self.db.updateOne(criteria, {
@@ -795,14 +795,14 @@ module.exports = {
       getAdvisoryLockExpiration() {
         return new Date(Date.now() - 1000 * self.options.advisoryLockTimeout);
       },
-      // Release a document lock set via `lock` for a particular htmlPageId.
+      // Release a document lock set via `lock` for a particular tabId.
       // If the lock is already gone no error occurs.
       //
       // This method will unset the `advisoryLock` property of the
       // document both in the database and in the `doc` object
       // that you pass to it. This ensures it is present if you
       // follow this call up with an `update()` of the document.
-      async unlock(req, doc, htmlPageId) {
+      async unlock(req, doc, tabId) {
         if (!(req && req.res)) {
           // Use 'error' because this is always a code bug, not a bad
           // HTTP request, and the message should not be disclosed to the client
@@ -812,12 +812,12 @@ module.exports = {
         if (!id) {
           throw self.apos.error('invalid', 'no doc');
         }
-        if (!htmlPageId) {
-          throw self.apos.error('invalid', 'no htmlPageId');
+        if (!tabId) {
+          throw self.apos.error('invalid', 'no tabId');
         }
         await self.db.updateOne({
           _id: id,
-          'advisoryLock._id': htmlPageId
+          'advisoryLock._id': tabId
         }, {
           $unset: {
             advisoryLock: 1

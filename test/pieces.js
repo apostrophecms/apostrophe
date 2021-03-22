@@ -817,7 +817,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         },
         title: 'Advisory Test Patched'
@@ -832,7 +832,7 @@ describe('Pieces', function() {
         jar,
         body: {
           _advisoryLock: {
-            htmlPageId: 'pdq',
+            tabId: 'pdq',
             lock: true
           }
         }
@@ -850,7 +850,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true,
           force: true
         }
@@ -863,7 +863,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true
         }
       }
@@ -875,7 +875,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: false
         },
         title: 'Advisory Test Patched Again'
@@ -889,7 +889,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         }
       }
@@ -928,13 +928,13 @@ describe('Pieces', function() {
     assert(page.match(/logged in/));
   });
 
-  it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
+  it('second user with a distinct tabId gets an appropriate error specifying who has the lock', async () => {
     try {
       await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {
-            htmlPageId: 'nbc',
+            tabId: 'nbc',
             lock: true
           }
         }

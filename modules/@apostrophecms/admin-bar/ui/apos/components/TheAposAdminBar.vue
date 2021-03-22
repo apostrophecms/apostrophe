@@ -237,6 +237,7 @@
 <script>
 import { klona } from 'klona';
 import dayjs from 'dayjs';
+import cuid from 'cuid';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
@@ -523,6 +524,14 @@ export default {
     apos.bus.$on('content-changed', async () => {
       this.refresh();
     });
+
+    // sessionStorage because it is deliberately tab-specific
+    let tabId = sessionStorage.getItem('aposTabId');
+    if (!tabId) {
+      tabId = cuid();
+      sessionStorage.setItem('aposTabId', tabId);
+    }
+    window.apos.adminBar.tabId = tabId;
 
     if (this.editMode) {
       // Watch out for legacy situations where edit mode is active

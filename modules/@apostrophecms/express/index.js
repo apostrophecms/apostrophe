@@ -320,21 +320,6 @@ module.exports = {
       absoluteUrl(req, res, next) {
         self.addAbsoluteUrlsToReq(req);
         next();
-      },
-      // Makes the `@apostrophecms/Html-Page-Id` header available
-      // as `req.htmlPageId`. This header is passed by
-      // all jQuery AJAX requests made by Apostrophe. It
-      // contains a unique identifier just for the current
-      // webpage in the browser; that is, navigating to a new
-      // page always generates a *new* id, the same page in two tabs
-      // will have *different* ids, etc. This makes it easy to
-      // identify requests that come from the "same place"
-      // for purposes of conflict resolution and locking.
-      // (Note that conflicts can occur between two tabs
-      // belonging to the same user, so a session ID is not enough.)
-      htmlPageId(req, res, next) {
-        req.htmlPageId = req.header('@apostrophecms/Html-Page-Id');
-        next();
       }
     };
   },
