@@ -28,8 +28,8 @@
       <AposButton
         v-if="relationshipField"
         type="primary"
-        :label="`Select ${moduleLabels.pluralLabel || ''}`"
-        :disabled="relationshipErrors === 'min'"
+        :label="saveRelationshipLabel"
+        :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
       <AposButton
@@ -39,19 +39,21 @@
       />
     </template>
     <template v-if="relationshipField" #leftRail>
-      <div class="apos-pieces-manager__relationship__rail">
-        <div class="apos-pieces-manager__relationship__counts">
-          <AposMinMaxCount
-            :field="relationshipField"
+      <AposModalRail>
+        <div class="apos-pieces-manager__relationship__rail">
+          <div class="apos-pieces-manager__relationship__counts">
+            <AposMinMaxCount
+              :field="relationshipField"
+              :value="checkedDocs"
+            />
+          </div>
+          <AposSlatList
+            class="apos-pieces-manager__relationship__items"
+            @input="setCheckedDocs"
             :value="checkedDocs"
           />
         </div>
-        <AposSlatList
-          class="apos-pieces-manager__relationship__items"
-          @input="updateChecked"
-          :value="checkedDocs"
-        />
-      </div>
+      </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
@@ -146,6 +148,13 @@ export default {
         plural: this.options.pluralLabel
       };
     },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return `Select ${this.moduleLabels.label || ''}`;
+      } else {
+        return `Select ${this.moduleLabels.pluralLabel || ''}`;
+      }
+    },
     modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
@@ -211,7 +220,7 @@ export default {
         this.new();
       }
     },
-    updateChecked(checked) {
+    setCheckedDocs(checked) {
       this.checkedDocs = checked;
       this.checked = this.checkedDocs.map(item => {
         return item._id;
@@ -346,9 +355,7 @@ export default {
   }
 
   .apos-pieces-manager__relationship__rail {
-    height: 100%;
     padding: 20px;
-    background-color: var(--a-base-9);
   }
 
   .apos-pieces-manager__relationship__counts {
