@@ -30,7 +30,7 @@ module.exports = {
     self.managers = {};
     self.enableBrowserData();
     await self.enableCollection();
-    self.apos.isNew = self.detectNew();
+    self.apos.isNew = await self.detectNew();
     await self.createIndexes();
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
@@ -257,8 +257,8 @@ module.exports = {
       // This can't be done later because after this point init()
       // functions are permitted to insert documents
       async detectNew() {
-        const existing = await self.db.find({}).project({ _id: 1 }).limit(1).toArray();
-        self.apos.isNew = existing.length === 0;
+        const existing = await self.db.countDocuments();
+        return !existing;
       },
       async createSlugIndex() {
         const params = self.getSlugIndexParams();
