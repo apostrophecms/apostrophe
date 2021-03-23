@@ -554,11 +554,11 @@ module.exports = {
           }
           input = {
             ...copyOf,
-            ...input,
-            copyOfId: copyOf._id
+            ...input
           };
         }
         await self.apos.schema.convert(req, schema, input, doc);
+        doc.copyOfId = copyOf && copyOf._id;
         if (copyOf) {
           self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
