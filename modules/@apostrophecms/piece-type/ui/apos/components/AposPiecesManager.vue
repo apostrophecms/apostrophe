@@ -29,7 +29,7 @@
         v-if="relationshipField"
         type="primary"
         :label="saveRelationshipLabel"
-        :disabled="(relationshipErrors === 'min') || (relationshipErrors === 'max')"
+        :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
       <AposButton

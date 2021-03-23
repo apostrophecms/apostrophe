@@ -33,11 +33,13 @@ export default {
       if (!this.relationshipField) {
         return false;
       }
-
+      if (this.relationshipField.required && !this.checked.length) {
+        // Treated as min for consistency with AposMinMaxCount
+        return 'min';
+      }
       if (this.relationshipField.min && this.checked.length < this.relationshipField.min) {
         return 'min';
       }
-
       if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
         return 'max';
       }
