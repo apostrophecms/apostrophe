@@ -33,18 +33,21 @@
           <AposButton
             type="quiet" label="Replace"
             @click="showReplace = true"
+            :disabled="isTrashed"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="View"
             @click="viewMedia"
+            :disabled="isTrashed"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="Download"
-            :href="activeMedia.attachment._urls.original"
+            :href="!isTrashed ? activeMedia.attachment._urls.original : false"
+            :disabled="isTrashed"
             download
           />
         </li>
@@ -165,6 +168,9 @@ export default {
         return '';
       }
       return dayjs(this.activeMedia.attachment.createdAt).format('MMM Do, YYYY');
+    },
+    isTrashed() {
+      return this.media.trash;
     }
   },
   watch: {
@@ -344,7 +350,7 @@ export default {
     margin-bottom: $spacing-triple;
 
     /deep/ .apos-button--quiet {
-      display: block;
+      display: inline;
     }
   }
 

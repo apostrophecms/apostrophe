@@ -61,8 +61,8 @@ export default {
       default: null
     },
     href: {
-      type: String,
-      default: ''
+      type: [ String, Boolean ],
+      default: false
     },
     iconSize: {
       type: Number,
