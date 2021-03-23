@@ -6,6 +6,7 @@
 * Address low-risk denial-of-service vulnerability. It was possible to cause a restart by attempting to get an advisory lock on a document for which a lock already existed, without logging in. This could occur only if an editor happened to be working with that document or had worked with it within the advisory lock timeout time.
 
 * Adds suggestions list for pieces search bar, it uses autocomplete cursor and displays matching words from highSearchWords.
+* Deleted unnecesary assignation of choices in addFieldType joinByArray
 
 ## 2.116.1 (2021-03-10)
 * Fixes a user interface bug in the chooser modals where the footer pagination was hidden behind the left column.
