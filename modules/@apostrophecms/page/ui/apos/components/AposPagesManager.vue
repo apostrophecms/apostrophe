@@ -37,19 +37,21 @@
       />
     </template>
     <template v-if="relationshipField" #leftRail>
-      <div class="apos-pages-manager__relationship__rail">
-        <div class="apos-pages-manager__relationship__counts">
-          <AposMinMaxCount
-            :field="relationshipField"
+      <AposModalRail>
+        <div class="apos-pages-manager__relationship__rail">
+          <div class="apos-pages-manager__relationship__counts">
+            <AposMinMaxCount
+              :field="relationshipField"
+              :value="checkedDocs"
+            />
+          </div>
+          <AposSlatList
+            class="apos-pages-manager__relationship__items"
+            @input="setCheckedDocs"
             :value="checkedDocs"
           />
         </div>
-        <AposSlatList
-          class="apos-pages-manager__relationship__items"
-          @input="setCheckedDocs"
-          :value="checkedDocs"
-        />
-      </div>
+      </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
@@ -332,9 +334,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-pages-manager__relationship__rail {
-    height: 100%;
     padding: 20px;
-    background-color: var(--a-base-9);
   }
 
   .apos-pages-manager__relationship__counts {
