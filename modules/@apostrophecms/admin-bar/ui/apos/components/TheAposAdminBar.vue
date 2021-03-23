@@ -863,7 +863,7 @@ export default {
           this.refreshOrReload(result.doc._url);
         } else {
           // With the current page gone, we need to move to safe ground
-          location.assign('/');
+          location.assign(`${window.apos.prefix}/`);
         }
       } else {
         apos.bus.$emit('context-history-changed', result && result.doc);

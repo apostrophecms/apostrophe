@@ -1572,7 +1572,7 @@ database.`);
       // A limited subset of page properties are pushed to
       // browser-side JavaScript when editing privileges exist.
       pruneCurrentPageForBrowser(page) {
-        page = _.pick(page, 'title', 'slug', '_id', 'type', 'ancestors', '_url');
+        page = _.pick(page, 'title', 'slug', '_id', 'type', 'ancestors', '_url', 'aposDocId', 'aposLocale');
         // Limit information about ancestors to avoid
         // excessive amounts of data in the page
         page.ancestors = _.map(page.ancestors, function (ancestor) {
@@ -1581,7 +1581,9 @@ database.`);
             'slug',
             '_id',
             'type',
-            '_url'
+            '_url',
+            'aposDocId',
+            'aposLocale'
           ]);
         });
         return page;
@@ -2041,7 +2043,9 @@ database.`);
           visibility: 1,
           trash: 1,
           parked: 1,
-          lastPublishedAt: 1
+          lastPublishedAt: 1,
+          aposDocId: 1,
+          aposLocale: 1
         };
       },
       addDeduplicateRanksMigration() {

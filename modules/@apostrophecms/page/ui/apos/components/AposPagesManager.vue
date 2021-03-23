@@ -254,6 +254,12 @@ export default {
       }
 
       await this.getPages();
+      if (this.pagesFlat.find(page => {
+        return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.trash;
+      })) {
+        // With the current page gone, we need to move to safe ground
+        location.assign(`${window.apos.prefix}/`);
+      }
     },
     toggleRowCheck(id) {
       if (this.checked.includes(id)) {
