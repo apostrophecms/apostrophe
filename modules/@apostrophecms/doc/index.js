@@ -30,6 +30,7 @@ module.exports = {
     self.managers = {};
     self.enableBrowserData();
     await self.enableCollection();
+    self.apos.isNew = await self.detectNew();
     await self.createIndexes();
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
@@ -251,6 +252,13 @@ module.exports = {
     return {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposDocs');
+      },
+      // Detect whether the database is brand new (zero documents).
+      // This can't be done later because after this point init()
+      // functions are permitted to insert documents
+      async detectNew() {
+        const existing = await self.db.countDocuments();
+        return !existing;
       },
       async createSlugIndex() {
         const params = self.getSlugIndexParams();

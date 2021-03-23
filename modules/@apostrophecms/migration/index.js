@@ -230,8 +230,20 @@ module.exports = {
       async migrate(options) {
         await self.apos.lock.lock(self.__meta.name);
         try {
-          for (const migration of self.migrations) {
-            await self.runOne(migration);
+          if (self.apos.isNew) {
+            // Since the site is brand new (zero documents), we may assume
+            // it requires no migrations. Mark them all as "done" but note
+            // that they were skipped, just in case we decide that's an issue later
+            const at = new Date();
+            await self.db.insertMany(self.migrations.map(migration => ({
+              _id: migration.name,
+              at,
+              skipped: true
+            })));
+          } else {
+            for (const migration of self.migrations) {
+              await self.runOne(migration);
+            }
           }
         } finally {
           await self.apos.lock.unlock(self.__meta.name);
