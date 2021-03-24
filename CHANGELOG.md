@@ -1,12 +1,31 @@
 # Changelog
 
-## 3.0.0-alpha.6 - Unreleased
+## 3.0.0-alpha.6 - 2021-03-24
 
 ### Adds
+* You can "copy" a page or a piece via the ⠇ menu.
+* When moving the current page or piece to the trash, you are taken to the home page.
+* `permissions: false` is supported for piece and page insert operations.
 * Adds note to remove deprecated `allowedInChooser` option on piece type filters.
+* UX improvement: "Move to Trash" and "Restore" buttons added for pieces, replacing the boolean field. You can open a piece that is in the trash in a read-only way in order to review it and click "Restore."
+* Advisory lock support has been completed for all content types, including on-page, in-context editing. This prevents accidental conflicts between editors.
+* Image widgets now accept a `size` context option from the template, which can be used to avoid sending a full-width image for a very small placement.
+* Additional improvements.
 
 ### Fixes
 * Fixes error from missing `select` method in `AposPiecesManager` component.
+* No more migration messages at startup for brand-new sites.
+* `max` is now properly implemented for relationships when using the manager dialog box as a chooser.
+* "Trash" filter now displays its state properly in the piece manager dialog box.
+* Dragging an image to the media library works reliably.
+* Infinite loop warning when editing page titles has been fixed.
+* Users can locate the tab that still contains errors when blocked from saving a piece due to schema field errors.
+* Calling `insert` works properly in the `init` function of a module.
+* Additional fixes.
+
+### Breaks
+
+* Apostrophe's instance of `uploadfs` has moved from `apos.attachment.uploadfs` to `apos.uploadfs`. The `uploadfs` configuration option has similarly moved from the `@apostrophecms/attachment` module to the `@apostrophecms/uploadfs` module. `imageSizes` is still an option to `@apostrophecms/attachment`.
 
 ## 3.0.0-alpha.5 - 2021-02-11
 
