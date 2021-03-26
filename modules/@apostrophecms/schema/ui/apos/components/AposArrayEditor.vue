@@ -278,6 +278,9 @@ export default {
       const currentIndex = this.next.findIndex(item => item._id === this.currentId);
       this.next[currentIndex] = this.currentDoc.data;
     },
+    getFieldValue(name) {
+      return this.currentDoc.data[name];
+    },
     isModified() {
       if (this.currentId) {
         const currentIndex = this.next.findIndex(item => item._id === this.currentId);
