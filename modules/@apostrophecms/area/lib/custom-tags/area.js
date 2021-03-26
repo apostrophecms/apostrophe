@@ -113,7 +113,6 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
       area._edit = area._edit || doc._edit;
 
       self.apos.area.prepForRender(area, doc, name);
-
       const content = await self.apos.area.renderArea(req, area, _with);
       return content;
     }
