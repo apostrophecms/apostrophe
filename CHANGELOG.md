@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Conditional fields (`if`) and the "following values" mechanism now work properly in array item fields.
+
 ## 3.0.0-alpha.6 - 2021-03-24
 
 ### Adds
