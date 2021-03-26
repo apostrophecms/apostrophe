@@ -32,7 +32,7 @@
       />
       <AposButton
         type="primary" :label="saveLabel"
-        :modifiers="buttonModifiers"
+        :disabled="saveDisabled"
         @click="submit"
         :tooltip="tooltip"
       />
@@ -169,12 +169,8 @@ export default {
     followingUtils() {
       return this.followingValues('utility');
     },
-    buttonModifiers() {
-      if (this.errorCount) {
-        return [ 'disabled' ];
-      } else {
-        return [];
-      }
+    saveDisabled() {
+      return this.errorCount > 0;
     },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
