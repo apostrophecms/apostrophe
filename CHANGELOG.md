@@ -1,6 +1,6 @@
 # Changelog
-## UNDEPLOYED 
-* Deleted unnecesary assignation of choices in addFieldType joinByArray
+## Unreleased 
+* Deleted unnecesary assignment of choices in addFieldType joinByArray
 
 ## 2.117.0 (2021-03-24)
 * The browser-pushed versions of jQuery and lodash have been updated to address security scanner reports. jQuery is now on its latest release, 3.6.0. lodash is now on version 3.10.4 as found in the [maintained branch of lodash 3.x](https://github.com/sailshq/lodash) provided by the [Sails](https://sailsjs.com) team. Note that in "lean mode," we do not push these libraries at all except when a user is logged in. If you do not want the overhead we encourage you to learn about lean mode.
