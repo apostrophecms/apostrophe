@@ -1508,7 +1508,7 @@ module.exports = {
               // be edited in context
               for (const info of arrayItemsInfo) {
                 const arrayItem = info.arrayItem;
-                arrayItem._docId = doc._id;
+                arrayItem._docId = doc._docId || doc._id;
                 arrayItem._edit = doc._edit;
               }
             }
