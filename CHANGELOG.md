@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.0.0-alpha.6.1 - 2021-03-26
 
 ### Fixes
 
