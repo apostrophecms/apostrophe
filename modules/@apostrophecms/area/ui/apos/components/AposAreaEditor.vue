@@ -1,5 +1,9 @@
 <template>
-  <div :data-apos-area="areaId" class="apos-area apos-theme--primary-purple">
+  <div
+    :data-apos-area="areaId"
+    class="apos-area"
+    :class="themeClass"
+  >
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -7,19 +11,21 @@
       <template v-if="isEmptySingleton">
         <AposButton
           :label="'Add ' + contextMenuOptions.menu[0].label"
+          :disabled="field && field.readOnly"
           type="primary"
           :icon="icon"
-          @click="add(contextMenuOptions.menu[0].name)"
+          @click="add({ index: 0, name: contextMenuOptions.menu[0].name })"
         />
       </template>
       <template v-else>
         <AposAreaMenu
-          @insert="insert"
+          @add="add"
           :context-menu-options="contextMenuOptions"
           :empty="true"
           :index="0"
           :widget-options="options.widgets"
           :max-reached="maxReached"
+          :disabled="field && field.readOnly"
         />
       </template>
     </div>
@@ -45,7 +51,7 @@
         @edit="edit"
         @clone="clone"
         @update="update"
-        @insert="insert"
+        @add="add"
       />
     </div>
   </div>
@@ -53,10 +59,12 @@
 
 <script>
 import cuid from 'cuid';
-import klona from 'klona';
+import { klona } from 'klona';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposAreaEditor',
+  mixins: [ AposThemeMixin ],
   props: {
     docId: {
       type: String,
@@ -69,6 +77,12 @@ export default {
     id: {
       type: String,
       required: true
+    },
+    field: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     fieldId: {
       type: String,
@@ -125,8 +139,8 @@ export default {
       return this.next.length === 0 &&
         this.options.widgets &&
         Object.keys(this.options.widgets).length === 1 &&
-        this.options.max &&
-        this.options.max === 1;
+        (this.options.max || this.field.max) &&
+        (this.options.max === 1 || this.field.max === 1);
     },
     icon() {
       let icon = null;
@@ -298,12 +312,14 @@ export default {
 
       if (!this.widgetIsContextual(widget.type)) {
         const componentName = this.widgetEditorComponent(widget.type);
+        apos.area.activeEditor = this;
         const result = await apos.modal.execute(componentName, {
           value: widget,
           options: this.options.widgets[widget.type],
           type: widget.type,
           docId: this.docId
         });
+        apos.area.activeEditor = null;
         if (result) {
           return this.update(result);
         }
@@ -331,49 +347,47 @@ export default {
       ];
       this.edited[widget._id] = true;
     },
-    // Add a widget into a *singleton* area.
-    async add(name) {
+    // Add a widget into an area.
+    async add({ index, name }) {
       if (this.widgetIsContextual(name)) {
         return this.insert({
-          _id: cuid(),
-          type: name,
-          index: 0,
-          ...this.contextualWidgetDefaultData(name)
+          widget: {
+            _id: cuid(),
+            type: name,
+            ...this.contextualWidgetDefaultData(name)
+          },
+          index
         });
       } else {
         const componentName = this.widgetEditorComponent(name);
-        const result = await apos.modal.execute(componentName, {
+        apos.area.activeEditor = this;
+        const widget = await apos.modal.execute(componentName, {
           value: null,
           options: this.options.widgets[name],
           type: name,
           docId: this.docId
         });
-        if (result) {
-          result.index = 0;
-          await this.insert(result);
+        apos.area.activeEditor = null;
+        if (widget) {
+          await this.insert({
+            widget,
+            index
+          });
         }
       }
     },
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
     },
-    async insert(e) {
-      let widget;
-      if (e.widget) {
-        widget = e.widget;
-      }
-      if (e.type) {
-        // e IS a widget
-        widget = e;
-      }
+    async insert({ index, widget }) {
       if (!widget._id) {
         widget._id = cuid();
       }
       const push = {
         $each: [ widget ]
       };
-      if (e.index < this.next.length) {
-        push.$before = this.next[e.index]._id;
+      if (index < this.next.length) {
+        push.$before = this.next[index]._id;
       }
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
@@ -383,12 +397,12 @@ export default {
         });
       }
       this.next = [
-        ...this.next.slice(0, e.index),
+        ...this.next.slice(0, index),
         widget,
-        ...this.next.slice(e.index)
+        ...this.next.slice(index)
       ];
       if (this.widgetIsContextual(widget.type)) {
-        this.edit(e.index);
+        this.edit(index);
       }
     },
     widgetIsContextual(type) {

@@ -32,14 +32,14 @@ const Promise = require('bluebird');
 
 module.exports = {
   options: { alias: 'template' },
-  customTags(self, options) {
+  customTags(self) {
     return {
-      component: require('./lib/custom-tags/component')(self, options),
-      fragment: require('./lib/custom-tags/fragment')(self, options),
-      render: require('./lib/custom-tags/render')(self, options)
+      component: require('./lib/custom-tags/component')(self),
+      fragment: require('./lib/custom-tags/fragment')(self),
+      render: require('./lib/custom-tags/render')(self)
     };
   },
-  components(self, options) {
+  components(self) {
     return {
       async inject(req, data) {
         const key = `${data.end}-${data.where}`;
@@ -49,7 +49,7 @@ module.exports = {
       }
     };
   },
-  init(self, options) {
+  init(self) {
     self.templateApos = {
       modules: {},
       log: function (msg) {
@@ -61,13 +61,13 @@ module.exports = {
     self.helperShortcuts = {};
     self.filters = {};
 
-    self.nunjucks = options.language || require('nunjucks');
+    self.nunjucks = self.options.language || require('nunjucks');
 
     self.envs = {};
 
     self.insertions = {};
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         wrapHelpersForTemplateAposObject() {
@@ -112,7 +112,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Add helpers in the namespace for a particular module.
@@ -326,8 +326,8 @@ module.exports = {
         });
         // Final class should win
         dirs.reverse();
-        if (options.viewsFolderFallback) {
-          dirs.push(options.viewsFolderFallback);
+        if (self.options.viewsFolderFallback) {
+          dirs.push(self.options.viewsFolderFallback);
         }
         return dirs;
       },
@@ -435,7 +435,7 @@ module.exports = {
 
       addStandardFilters(env) {
 
-        // Format the given date with the given momentjs
+        // Format the given date with the given moment.js
         // format string.
 
         env.addFilter('date', function (date, format) {
@@ -604,7 +604,7 @@ module.exports = {
           locale: req.locale,
           mode: req.mode,
           csrfCookieName: self.apos.csrfCookieName,
-          htmlPageId: self.apos.util.generateId(),
+          tabId: self.apos.util.generateId(),
           scene
         };
         if (req.user) {
@@ -657,8 +657,7 @@ module.exports = {
         try {
           content = await module.render(req, template, args);
         } catch (e) {
-          // The page template
-          // threw an exception. Log where it
+          // The page template threw an exception. Log where it
           // occurred for easier debugging
           return error(e, 'template');
         }
@@ -717,7 +716,7 @@ module.exports = {
 
       // Use this method to provide an async component name that will be invoked at the point
       // in the page layout identified by the string `location`. Standard locations
-      // are `head`, `body`, `main` and `contextMenu`.
+      // are `head`, `body`, and `main`.
       //
       //  The page layout, template or outerLayout must contain a corresponding
       // `{% component '@apostrophecms/template:inject', 'location', 'prepend' %}` call, with the same location,
@@ -740,7 +739,7 @@ module.exports = {
 
       // Use this method to provide an async component name that will be invoked at the point
       // in the page layout identified by the string `location`. Standard locations
-      // are `head`, `body`, `main` and `contextMenu`.
+      // are `head`, `body`, and `main`.
       //
       //  The page layout, template or outerLayout must contain a corresponding
       // `apos.template.prepended('location')` call, with the same location, to

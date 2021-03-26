@@ -17,7 +17,8 @@
             class="apos-input apos-input--text apos-input--relationship"
             v-model="searchTerm" type="text"
             :placeholder="placeholder"
-            :disabled="disabled" :required="field.required"
+            :disabled="field.readOnly || limitReached"
+            :required="field.required"
             :id="uid"
             @input="input"
             @focusout="handleFocusOut"
@@ -25,6 +26,7 @@
           >
           <AposButton
             class="apos-input-relationship__button"
+            :disabled="field.readOnly || limitReached"
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
@@ -37,6 +39,7 @@
           @input="updateSelected"
           @item-clicked="editRelationship"
           :value="next"
+          :disabled="field.readOnly"
         />
         <AposSearchList
           :list="searchList"
@@ -68,6 +71,9 @@ export default {
     };
   },
   computed: {
+    limitReached() {
+      return this.field.max === this.next.length;
+    },
     pluralLabel() {
       return apos.modules[this.field.withType].pluralLabel;
     },
@@ -88,7 +94,7 @@ export default {
       if (this.field.required && !value.length) {
         return { message: 'required' };
       }
-      if (this.field.max && this.field.max <= value.length) {
+      if (this.limitReached) {
         this.searchTerm = 'Limit reached!';
         this.disabled = true;
       } else {
@@ -171,8 +177,8 @@ export default {
 
     .apos-input-relationship__button {
       position: absolute;
-      top: 6.5px;
-      right: 5px;
+      top: 0;
+      right: 0;
       padding: ($input-padding - 5px) $input-padding;
 
       &:hover:not([disabled]),

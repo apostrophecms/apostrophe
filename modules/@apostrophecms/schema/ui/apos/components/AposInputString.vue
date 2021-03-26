@@ -8,10 +8,10 @@
       <div class="apos-input-wrapper">
         <textarea
           :class="classes"
-          v-if="field.textarea" rows="5"
+          v-if="field.textarea && field.type === 'string'" rows="5"
           v-model="next" :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         />
         <input
@@ -19,7 +19,8 @@
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly || field.disabled"
+          :required="field.required"
           :id="uid" :tabindex="tabindex"
           :step="step"
         >
@@ -55,7 +56,7 @@ export default {
         if (this.field.type === 'float' || this.field.type === 'integer') {
           return 'number';
         }
-        if (this.field.type === 'string') {
+        if (this.field.type === 'string' || this.field.type === 'slug') {
           return 'text';
         }
         return this.field.type;
@@ -121,21 +122,22 @@ export default {
           return 'required';
         }
       }
-      if (this.field.min) {
-        if (this.type === 'number' || this.type === 'date') {
-          if (value && (value < this.field.min)) {
-            return 'min';
-          }
-        } else if (value.length && (value.length < this.field.min)) {
+
+      const minMaxFields = [
+        'integer',
+        'float',
+        'string',
+        'date',
+        'password'
+      ];
+
+      if (this.field.min && minMaxFields.includes(this.field.type)) {
+        if (value.length && (this.convert(value) < this.field.min)) {
           return 'min';
         }
       }
-      if (this.field.max) {
-        if (this.type === 'number' || this.type === 'date') {
-          if (value && (value > this.field.max)) {
-            return 'max';
-          }
-        } else if (value.length && (value.length > this.field.max)) {
+      if (this.field.max && minMaxFields.includes(this.field.type)) {
+        if (value.length && (this.convert(value) > this.field.max)) {
           return 'max';
         }
       }
@@ -151,6 +153,15 @@ export default {
     defineStep() {
       if (this.type === 'number') {
         this.step = this.field.type === 'float' ? 'any' : 1;
+      }
+    },
+    convert(s) {
+      if (this.field.type === 'integer') {
+        return parseInt(s);
+      } else if (this.field.type === 'float') {
+        return parseFloat(s);
+      } else {
+        return s;
       }
     }
   }

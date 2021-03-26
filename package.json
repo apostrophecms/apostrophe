@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "3.0.0-alpha.3",
+  "version": "3.0.0-alpha.6",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -34,6 +34,7 @@
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "bluebird": "^3.7.2",
     "body-parser": "^1.18.2",
+    "boring": "^1.1.0",
     "broadband": "^1.1.0",
     "cheerio": "^0.22.0",
     "child-process-promise": "^2.2.1",
@@ -47,7 +48,6 @@
     "dayjs": "^1.9.8",
     "debounce-async": "0.0.2",
     "deep-get-set": "^0.1.1",
-    "diff": "^2.2.3",
     "express": "^4.16.4",
     "express-bearer-token": "^2.4.0",
     "express-session": "^1.17.1",
@@ -59,7 +59,7 @@
     "i18n": "^0.8.6",
     "import-fresh": "^3.3.0",
     "js-cookie": "^2.2.1",
-    "klona": "^1.1.2",
+    "klona": "^2.0.4",
     "launder": "^1.4.0",
     "lodash": "^4.17.20",
     "lorem-ipsum": "^2.0.3",
@@ -119,21 +119,20 @@
     "vuedraggable": "^2.24.3",
     "webpack": "^5.16.0",
     "webpack-merge": "^5.7.3",
-    "xregexp": "^2.0.0",
-    "yargs": "^3.32.0"
+    "xregexp": "^2.0.0"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
     "babel-preset-vue": "^2.0.2",
     "eslint": "^7.16.0",
-    "vue-eslint-parser": "^7.1.1",
     "eslint-config-apostrophe": "^3.4.0",
-    "eslint-loader": "^4.0.2",
     "eslint-plugin-node": "^11.1.0",
+    "eslint-loader": "^4.0.2",
     "eslint-plugin-vue": "^7.4.0",
     "mocha": "^7.1.2",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
+    "vue-eslint-parser": "^7.1.1",
     "webpack-bundle-analyzer": "^3.9.0"
   },
   "browserslist": [

@@ -4,7 +4,6 @@ module.exports = {
   extend: '@apostrophecms/doc-type',
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
-    manageViews: [ 'list' ],
     perPage: 10,
     quickCreate: true
     // By default there is no public REST API, but you can configure a
@@ -24,7 +23,7 @@ module.exports = {
       }
     }
   },
-  columns(self, options) {
+  columns(self) {
     return {
       add: {
         title: {
@@ -37,14 +36,12 @@ module.exports = {
         },
         visibility: {
           label: 'Visibility'
-        },
+        }
         // TODO: Update this to identify if there's a piece page for the type.
-        ...(self.options.contextual ? {
-          _url: {
-            label: 'Link',
-            component: 'AposCellLink'
-          }
-        } : {})
+        // _url: {
+        //   label: 'Link',
+        //   component: 'AposCellLink'
+        // }
       }
     };
   },
@@ -67,6 +64,7 @@ module.exports = {
             label: 'Any'
           }
         ],
+        // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
         def: true
       },
@@ -83,6 +81,7 @@ module.exports = {
             label: 'Trash'
           }
         ],
+        // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
         def: false,
         required: true
@@ -132,31 +131,27 @@ module.exports = {
       }
     }
   },
-  init(self, options) {
-    self.contextual = options.contextual;
-
-    if (!options.name) {
+  init(self) {
+    if (!self.options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
-    if (!options.label) {
+    if (!self.options.label) {
       // Englishify it
-      options.label = _.startCase(options.name);
+      self.options.label = _.startCase(self.options.name);
     }
-    options.pluralLabel = options.pluralLabel || options.label + 's';
+    self.options.pluralLabel = self.options.pluralLabel || self.options.label + 's';
 
-    self.name = options.name;
-    self.label = options.label;
-    self.pluralLabel = options.pluralLabel;
-    self.manageViews = options.manageViews;
+    self.name = self.options.name;
+    self.label = self.options.label;
+    self.pluralLabel = self.options.pluralLabel;
 
     self.composeFilters();
     self.composeColumns();
     self.addToAdminBar();
     self.addManagerModal();
     self.addEditorModal();
-    self.finalizeControls();
   },
-  restApiRoutes: (self, options) => ({
+  restApiRoutes: (self) => ({
     async getAll(req) {
       self.publicApiCheck(req);
       const query = self.getRestQuery(req);
@@ -216,13 +211,13 @@ module.exports = {
       });
       return self.delete(req, piece);
     },
-    patch(req, _id) {
+    async patch(req, _id) {
       self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
-      return self.patch(req, _id);
+      return self.convertPatchAndRefresh(req, req.body, _id);
     }
   }),
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         ':_id/publish': async (req) => {
@@ -309,7 +304,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeInsert: {
         ensureType(req, piece, options) {
@@ -336,7 +331,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Accepts a doc, a preliminary draft, and the options
       // originally passed to insert(). Default implementation
@@ -344,82 +339,21 @@ module.exports = {
       // called only when a draft is being created on the fly
       // for a published document that does not yet have a draft.
       // Apostrophe only has one corresponding draft at a time
-      // per published document.
-      async insertDraftOf(req, doc, draft) {
+      // per published document. `options` is passed on to the
+      // insert operation.
+      async insertDraftOf(req, doc, draft, options) {
         const inserted = await self.insert({
           ...req,
           mode: 'draft'
-        }, draft);
+        }, draft, options);
         return inserted;
       },
       // Similar to insertDraftOf, invoked on first publication.
-      insertPublishedOf(req, doc, published) {
+      insertPublishedOf(req, doc, published, options) {
         return self.insert({
           ...req,
           mode: 'published'
-        }, published);
-      },
-      finalizeControls() {
-        self.createControls = self.options.createControls || [
-          {
-            type: 'dropdown',
-            label: 'More',
-            items: [
-              {
-                label: 'Copy',
-                action: 'copy'
-              },
-              {
-                label: 'Trash',
-                action: 'trash'
-              }
-            ],
-            dropdownOptions: { direction: 'down' }
-          },
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save ' + self.label
-          }
-        ];
-        self.editControls = self.options.editControls || [
-          {
-            type: 'dropdown',
-            label: 'More',
-            // For reliable test automation
-            name: 'more',
-            items: [
-              {
-                label: 'Versions',
-                action: 'versions'
-              },
-              {
-                label: 'Copy',
-                action: 'copy'
-              },
-              {
-                label: 'Trash',
-                action: 'trash'
-              }
-            ],
-            dropdownOptions: { direction: 'down' }
-          },
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save ' + self.label
-          }
-        ];
+        }, published, options);
       },
       // Returns one editable piece matching the criteria, throws `notfound`
       // if none match
@@ -569,7 +503,8 @@ module.exports = {
       //
       // If `input._copyingId` is present, fetches that
       // piece and, if we have permission to view it, copies any schema properties
-      // not defined in `input`. Also emits `copyExtras` with (req, copyOf, input, piece).
+      // not defined in `input`. `_copyingId` becomes the `copyOfId` property of
+      // the doc, which may be watched for in event handlers to detect copies.
       //
       // Only fields that are not undefined in `input` are
       // considered. The rest respect their defaults. To intentionally
@@ -578,8 +513,6 @@ module.exports = {
       //
       // The module emits the `afterConvert` async event with `(req, input, piece)`
       // before inserting the piece.
-      //
-      // If copying, the module also emits `copyExtras` with `(req, copyOf, input, piece)`.
 
       async convertInsertAndRefresh(req, input, options) {
         const piece = self.newInstance();
@@ -601,11 +534,11 @@ module.exports = {
       // For partial updates use convertPatchAndRefresh. Employs a lock to avoid overwriting the work of
       // concurrent PUT and PATCH calls or getting into race conditions with their side effects.
       //
-      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
       // lock on the document for the given context id, and no other items in the patch will be addressed
       // unless that succeeds. The client must then refresh the lock frequently (by default, at least
       // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
       // released *after* addressing other items in the same patch. If `force: true` is added to
       // the `_advisoryLock` object it will always remove any competing advisory lock.
       //
@@ -621,34 +554,27 @@ module.exports = {
           if (!piece._edit) {
             throw self.apos.error('forbidden');
           }
-          let htmlPageId = null;
+          let tabId = null;
           let lock = false;
           let force = false;
           if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
-            htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+            tabId = self.apos.launder.string(input._advisoryLock.tabId);
             lock = self.apos.launder.boolean(input._advisoryLock.lock);
             force = self.apos.launder.boolean(input._advisoryLock.force);
           }
-          if (htmlPageId && lock) {
-            await self.apos.doc.lock(req, piece, htmlPageId, {
+          if (tabId && lock) {
+            await self.apos.doc.lock(req, piece, tabId, {
               force
             });
           }
           await self.convert(req, input, piece);
           await self.emit('afterConvert', req, input, piece);
           await self.update(req, piece);
-          if (htmlPageId && !lock) {
-            await self.apos.doc.unlock(req, piece, htmlPageId);
+          if (tabId && !lock) {
+            await self.apos.doc.unlock(req, piece, tabId);
           }
           return self.findOneForEditing(req, { _id }, { attachments: true });
         });
-      },
-
-      // Implementation of the PATCH route. Factored as a method to allow
-      // it to also be called by the universal @apostrophecms/doc
-      // PATCH route.
-      patch(req, _id) {
-        return self.convertPatchAndRefresh(req, req.body, _id);
       },
 
       // Similar to `convertUpdateAndRefresh`. Patch the piece with the given _id, based on the
@@ -658,11 +584,11 @@ module.exports = {
       // However if you plan to submit many patches over a period of time while editing you may also
       // want to use the advisory lock mechanism.
       //
-      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
       // lock on the document for the given context id, and no other items in the patch will be addressed
       // unless that succeeds. The client must then refresh the lock frequently (by default, at least
       // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
       // released *after* addressing other items in the same patch. If `force: true` is added to
       // the `_advisoryLock` object it will always remove any competing advisory lock.
       //
@@ -674,6 +600,9 @@ module.exports = {
       // within a single lock and without redundant network operations. This greatly
       // improves the performance of saving all changes to a document at once after
       // accumulating a number of changes in patch form on the front end.
+      //
+      // If `input._publish` launders to a truthy boolean and the type is subject to draft/publish
+      // workflow, it is automatically published at the end of the patch operation.
 
       async convertPatchAndRefresh(req, input, _id) {
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
@@ -686,16 +615,16 @@ module.exports = {
           // Conventional for loop so we can handle the last one specially
           for (let i = 0; (i < patches.length); i++) {
             const input = patches[i];
-            let htmlPageId = null;
+            let tabId = null;
             let lock = false;
             let force = false;
             if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
-              htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+              tabId = self.apos.launder.string(input._advisoryLock.tabId);
               lock = self.apos.launder.boolean(input._advisoryLock.lock);
               force = self.apos.launder.boolean(input._advisoryLock.force);
             }
-            if (htmlPageId && lock) {
-              await self.apos.doc.lock(req, piece, htmlPageId, {
+            if (tabId && lock) {
+              await self.apos.doc.lock(req, piece, tabId, {
                 force
               });
             }
@@ -706,14 +635,21 @@ module.exports = {
               await self.update(req, piece);
               result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
-            if (htmlPageId && !lock) {
-              await self.apos.doc.unlock(req, piece, htmlPageId);
+            if (tabId && !lock) {
+              await self.apos.doc.unlock(req, piece, tabId);
             }
           }
           if (!result) {
             // Edge case: empty `_patches` array. Don't be a pain,
             // return the document as-is
             return self.findOneForEditing(req, { _id }, { attachments: true });
+          }
+          if (self.apos.launder.boolean(input._publish)) {
+            if (self.options.localized && (!self.options.autopublish)) {
+              if (piece.aposLocale.includes(':draft')) {
+                await self.publish(req, piece, {});
+              }
+            }
           }
           return result;
         });
@@ -726,14 +662,6 @@ module.exports = {
         await self.apos.schema.convert(req, schema, input, piece);
         await self.emit('afterConvert', req, input, piece);
       },
-      getCreateControls(req) {
-        const controls = _.cloneDeep(self.createControls);
-        return controls;
-      },
-      getEditControls(req) {
-        const controls = _.cloneDeep(self.editControls);
-        return controls;
-      },
       // TODO: Remove this if deprecated. - ab
       getChooserControls(req) {
         return [
@@ -745,6 +673,7 @@ module.exports = {
           {
             type: 'major',
             label: 'New ' + self.options.label,
+            // TODO: fully deprecate `insertViaUpload`
             action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
             uploadable: self.options.insertViaUpload
           },
@@ -832,14 +761,13 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
         // Options specific to pieces and their manage modal
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
-        browserOptions.contextual = self.contextual;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = self.options.quickCreate;
@@ -857,7 +785,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return self.isAdminOnly() ? {} : {
       generate: {
         usage: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',

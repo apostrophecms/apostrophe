@@ -3,35 +3,23 @@
 // module. Buttons can also be grouped into dropdown menus and restricted to those with
 // particular permissions. [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html) automatically
 // takes advantage of this module.
-//
-// The admin bar slides out on all pages by default. It's possible to modify this behavior
-// by adding one of the following options in app.js:
-// ```
-// modules: {
-//   '@apostrophecms/admin-bar': {
-//     openOnLoad: false,
-//     openOnHomepageLoad: true,
-//     closeDelay: 5000
-//   },
-//   .... more modules ...
-// }
-// ```
-// In the above example, the admin bar stays closed on all sub pages of the site, but opens on the
-// homepage and stays open for 5 seconds (default is 3 seconds).
-// `closeDelay` is a global configuration and changes both the homepage and all subpages.
 
 const _ = require('lodash');
 const cuid = require('cuid');
 
 module.exports = {
-  options: { alias: 'adminBar' },
-  init(self, options) {
+  options: {
+    alias: 'adminBar',
+    // Do include a page tree button in the admin bar
+    pageTree: true
+  },
+  init(self) {
     self.items = [];
     self.groups = [];
     self.groupLabels = {};
     self.enableBrowserData();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         orderAndGroupItems() {
@@ -41,7 +29,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Add an item to the admin bar.
       //
@@ -70,6 +58,16 @@ module.exports = {
       // these events and respond. You can use this mechanism if you
       // wish to implement a custom admin bar item not powered by
       // the `AposModals` app.
+      //
+      // If `options.contextUtility` is true, then `options.icon` is required, and
+      // the item will be displayed in a tray of icons just to the left
+      // of the page settings gear. If `options.toggle` is also true,
+      // then the button will have the `active` state until toggled
+      // off again. `options.openTooltip` and `options.closeTooltip` may be
+      // provided to offer a different tooltip during the active state. Otherwise
+      // `options.tooltip` is used. The regular label is also present for
+      // screenreaders only. The contextUtility functionality is typically used for
+      // experiences that temporarily change the current editing context.
 
       add(name, label, permission, options) {
         let index;
@@ -243,7 +241,6 @@ module.exports = {
         if (!items.length) {
           return false;
         }
-        const closeDelay = self.options.closeDelay;
         const context = req.data.piece || req.data.page;
         // Page caching is never desirable when possibly
         // editing that page
@@ -264,9 +261,6 @@ module.exports = {
         return {
           items: items,
           components: { the: 'TheAposAdminBar' },
-          openOnLoad: !!(typeof self.options.openOnLoad === 'undefined' || self.options.openOnLoad),
-          openOnHomepageLoad: !!(typeof self.options.openOnHomepageLoad === 'undefined' || self.options.openOnHomepageLoad),
-          closeDelay: typeof closeDelay === 'number' ? closeDelay : 3000,
           context: context && {
             _id: context._id,
             title: context.title,
@@ -280,10 +274,12 @@ module.exports = {
           },
           // Base API URL appropriate to the context document
           contextAction,
+          contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           // Simplifies frontend logic
           contextId: context && context._id,
-          htmlPageId: cuid(),
-          contextEditorName
+          tabId: cuid(),
+          contextEditorName,
+          pageTree: self.options.pageTree
         };
       }
     };

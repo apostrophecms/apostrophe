@@ -1,4 +1,4 @@
-module.exports = function(self, options) {
+module.exports = function(self) {
   return {
     parse(parser, nodes, lexer) {
       try {

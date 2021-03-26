@@ -13,11 +13,11 @@ const _ = require('lodash');
 
 module.exports = {
   options: { alias: 'migration' },
-  async init(self, options) {
+  async init(self) {
     self.migrations = [];
     await self.enableCollection();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         addSortifyMigrations() {
@@ -48,7 +48,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Add a migration function to be invoked when the @apostrophecms/migration:migrate task is invoked.
       // Each migration is only invoked once, however they will all be invoked on a brand-new site, so
@@ -230,8 +230,20 @@ module.exports = {
       async migrate(options) {
         await self.apos.lock.lock(self.__meta.name);
         try {
-          for (const migration of self.migrations) {
-            await self.runOne(migration);
+          if (self.apos.isNew) {
+            // Since the site is brand new (zero documents), we may assume
+            // it requires no migrations. Mark them all as "done" but note
+            // that they were skipped, just in case we decide that's an issue later
+            const at = new Date();
+            await self.db.insertMany(self.migrations.map(migration => ({
+              _id: migration.name,
+              at,
+              skipped: true
+            })));
+          } else {
+            for (const migration of self.migrations) {
+              await self.runOne(migration);
+            }
           }
         } finally {
           await self.apos.lock.unlock(self.__meta.name);
@@ -259,7 +271,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       migrate: {
         usage: 'Apply any necessary migrations to the database.',

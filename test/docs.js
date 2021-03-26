@@ -545,7 +545,7 @@ describe('Docs', function() {
     }
   });
 
-  it('should not be able to lock a document with a different htmlPageId', async function() {
+  it('should not be able to lock a document with a different tabId', async function() {
     const req = apos.task.getReq();
     const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
 
@@ -557,7 +557,7 @@ describe('Docs', function() {
     }
   });
 
-  it('should be able to refresh the lock with the same htmlPageId', async function() {
+  it('should be able to refresh the lock with the same tabId', async function() {
     const req = apos.task.getReq();
     const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
 

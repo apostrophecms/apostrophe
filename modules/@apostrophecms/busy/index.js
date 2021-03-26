@@ -3,16 +3,16 @@ module.exports = {
     components: {},
     alias: 'busy'
   },
-  init(self, options) {
+  init(self) {
     self.busy = false;
     self.enableBrowserData();
   },
-  methods(self, options) {
+  methods(self) {
     return {
       getBrowserData(req) {
         return {
           busy: self.busy,
-          components: { the: options.components.the || 'TheAposBusy' }
+          components: { the: self.options.components.the || 'TheAposBusy' }
         };
       }
     };

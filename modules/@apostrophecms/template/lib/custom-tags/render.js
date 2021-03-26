@@ -1,4 +1,4 @@
-module.exports = (self, options) => {
+module.exports = (self) => {
   return {
     parse(parser, nodes, lexer) {
       try {

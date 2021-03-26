@@ -1,8 +1,80 @@
 # Changelog
 
+## UNRELEASED
+
+* When editing "Page Settings" or a piece, the "publish" button should not be clickable if there are errors.
+
+## 3.0.0-alpha.6 - 2021-03-24
+
+### Adds
+* You can "copy" a page or a piece via the ⠇ menu.
+* When moving the current page or piece to the trash, you are taken to the home page.
+* `permissions: false` is supported for piece and page insert operations.
+* Adds note to remove deprecated `allowedInChooser` option on piece type filters.
+* UX improvement: "Move to Trash" and "Restore" buttons added for pieces, replacing the boolean field. You can open a piece that is in the trash in a read-only way in order to review it and click "Restore."
+* Advisory lock support has been completed for all content types, including on-page, in-context editing. This prevents accidental conflicts between editors.
+* Image widgets now accept a `size` context option from the template, which can be used to avoid sending a full-width image for a very small placement.
+* Additional improvements.
+
+### Fixes
+* Fixes error from missing `select` method in `AposPiecesManager` component.
+* No more migration messages at startup for brand-new sites.
+* `max` is now properly implemented for relationships when using the manager dialog box as a chooser.
+* "Trash" filter now displays its state properly in the piece manager dialog box.
+* Dragging an image to the media library works reliably.
+* Infinite loop warning when editing page titles has been fixed.
+* Users can locate the tab that still contains errors when blocked from saving a piece due to schema field errors.
+* Calling `insert` works properly in the `init` function of a module.
+* Additional fixes.
+
+### Breaks
+
+* Apostrophe's instance of `uploadfs` has moved from `apos.attachment.uploadfs` to `apos.uploadfs`. The `uploadfs` configuration option has similarly moved from the `@apostrophecms/attachment` module to the `@apostrophecms/uploadfs` module. `imageSizes` is still an option to `@apostrophecms/attachment`.
+
+## 3.0.0-alpha.5 - 2021-02-11
+
+* Conditional fields are now supported via the new `if` syntax. The old 2.x `showFields` feature has been replaced with `if: { ... }`.
+* Adds the option to pass context options to an area for its widgets following the `with` keyword. Context options for widgets not in that area (or that don't exist) are ignored. Syntax: `{% area data.page, 'areaName' with { '@apostrophecms/image: { size: 'full' } } %}`.
+* Advisory locking has been implemented for in-context editing, including nested contexts like the palette module. Advisory locking has also been implemented for the media manager, completing the advisory locking story.
+* Detects many common configuration errors at startup.
+* Extends `getBrowserData` in `@apostrophecms/doc-type` rather than overwriting the method.
+* If a select element has no default, but is required, it should default to the first option. The select elements appeared as if this were the case, but on save you would be told to make a choice, forcing you to change and change back. This has been fixed.
+* Removes 2.x piece module option code, including for `contextual`, `manageViews`, `publishMenu`, and `contextMenu`.
+* Removes admin bar module options related to 2.x slide-out UI: `openOnLoad`, `openOnHomepageLoad`, `closeDelay`.
+* Fixed a bug that allowed users to appear to be in edit mode while looking at published content in certain edge cases.
+* The PATCH API for pages can now infer the correct _id in cases where the locale is specified in the query string as an override, just like other methods.
+* Check permissions for the delete and publish operations.
+* Many bug fixes.
+
+### Breaks
+* Changes the `piecesModuleName` option to `pieceModuleName` (no "s") in the `@apostrophecms/piece-page-type` module. This feature is used only when you have two or more piece page types for the same piece type.
+
+## 3.0.0-alpha.4.2 - 2021-01-27
+
+* The `label` option is no longer required for widget type modules. This was already true for piece type and page type modules.
+* Ability to namespace asset builds. Do not push asset builds to uploadfs unless specified.
+
+### Breaking changes
+
+* Removes the `browser` module option, which was only used by the rich text widget in core. All browser data should now be added by extending or overriding `getBrowserData` in a module. Also updates `getComponentName` to reference `options.components` instead of `options.browser.components`.
+
+## 3.0.0-alpha.4.1
+
+* Hotfix: the asset module now looks for a `./release-id` file (relative to the project), not a `./data/release-id` file, because `data` is not a deployed folder and the intent of `release-id` is to share a common release identifier between the asset build step and the deployed instances.
+
 ## 3.0.0-alpha.4
 
-* Like `.js` files, `.css` files placed in the `ui/public` subdirectory of any module will automatically be bundled together and served to the user. As with `.js` files, no preprocessing is done. To avoid extra browser requests, both project and reusable module developers should output the styles of their own webpack build to such a location rather than introducing another link tag. The `a3-demo` project has been updated to demonstrate this technique when building assets for production.
+* **"Fragments" have been added to the Apostrophe template API, as an alternative to Nunjucks' macros, to fully support areas and async components.** [See the A3 alpha documentation](https://a3.docs.apos.dev/guide/widgets-and-templates/fragments.html) for instructions on how to use this feature.
+* **CSS files in the `ui/public` subdirectory of any module are now bundled and pushed to the browser.** This allows you to efficiently deliver your CSS assets, just as you can deliver JS assets in `ui/public`. Note that these assets must be browser-ready JS and CSS, so it is customary to use your own webpack build to generate them. See [the a3-boilerplate project](https://github.com/apostrophecms/a3-boilerplate) for an example, especially `webpack.config.js`.
+* **More support for rendering HTML in REST API requests.** See the `render-areas` query parameter in [piece and page REST API documentation](https://a3.docs.apos.dev/reference/api/pieces.html#get-api-v1-piece-name).
+* **Context bar takeover capability,** for situations where a secondary document should temporarily own the undo/redo/publish UI.
+* **Unpublished pages in the tree** are easier to identify
+* **Range fields** have been added.
+* **Support for npm bundles is back.** It works just like in 2.x, but the property is `bundle`, not `moogBundle`. Thanks to Miro Yovchev.
+
+### Breaking changes
+
+* **A3 now uses webpack 5.** For now, **due to a known issue with vue-loader, your own project must also be updated to use webpack 5.** The a3-boilerplate project has been updated accordingly, so you may refer to [the a3-boilerplate project](https://github.com/apostrophecms/a3-boilerplate) for an example of the changes to be made, notably in `webpack.config.js` and `package.json`. We are in communication with upstream developers to resolve the issue so that projects and apostrophe core can use different major versions of webpack.
 
 ## 3.0.0-alpha.3
 
@@ -137,7 +209,7 @@ Regression tests passing.
 * “Promise events” have arrived. This is a major feature. Promise events will completely
 replace `callAll` in Apostrophe 3.x. For 2.x, all existing invocations of `callAll` in the
 core Apostrophe module now also emit a promise event. For instance, when the `docBeforeInsert`
-callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the 
+callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the
 apostrophe-docs` module.
 
 Other modules may listen for this event by writing code like this:
@@ -387,7 +459,7 @@ Functional tests passing.
 
 * Displaying and saving schema-driven forms is much, much faster.
 This becomes very noticeable with 100 or more fields. With about
-250 fields, this formerly took about 4.5 seconds to load or to 
+250 fields, this formerly took about 4.5 seconds to load or to
 save such a form on a fast Mac. It now takes about 250 milliseconds.
 * Users may re-order the items they have selected via drag and drop
 when using "Browse" to select pieces, images, etc.
@@ -411,7 +483,7 @@ Unit tests passing.
 Functional tests passing.
 
 * **Security:** numerous issues formerly flagged by the new `npm audit` command have been addressed. We are now using a [maintained branch of lodash 3.x](https://github.com/sailshq/lodash) to keep bc while addressing security (many thanks to the Sails team). We are also using LESS 3.x, which has caused no issues in our testing and corrects security concerns with LESS 2.x. Numerous `npm audit` security reports regarding `imagemin` modules were addressed by removing `imagemin` from `uploadfs` itself, however you may opt into it via the new [`postprocessors` option of `uploadfs`](https://github.com/punkave/uploadfs). As of this writing, one `npm audit` complaint remains: the `azure-storage` module needs to update a dependency to address a possible vulnerability. You may mitigate this issue by not using the `azure` backend of `uploadfs` with Apostrophe until it is resolved upstream.
-* Many UI enhancements when choosing, browsing and managing items which reduce user confusion. For instance: moving items up and down in a selection no longer refreshes the entire list and forces the user to scroll down again. Trashed pages are easier to distinguish in "reorganize." "More" dropdown for pieces is again fully visible when clicked. Placeholder helpers make the search field for joins easier to understand. Chevrons added to various select elements which were difficult to identify as dropdowns before. 
+* Many UI enhancements when choosing, browsing and managing items which reduce user confusion. For instance: moving items up and down in a selection no longer refreshes the entire list and forces the user to scroll down again. Trashed pages are easier to distinguish in "reorganize." "More" dropdown for pieces is again fully visible when clicked. Placeholder helpers make the search field for joins easier to understand. Chevrons added to various select elements which were difficult to identify as dropdowns before.
 * Deeply nested areas now save properly. Formerly in certain situations the same widget might be duplicated.
 * `apos.tasks.getReq` now supplies an empty `req.data` object for easier use with code expecting an Express request, Apostrophe-style.
 * Bedeviled by case-sensitive sorting? The `sortify: true` property for `string` schema fields is now documented and automatically creates a database migration to ensure it is available for your existing data as well. When used, this flag ensures that any `sort('fieldname')` call for that field in Apostrophe is case-insensitive, ignores punctuation and otherwise behaves as end users expect.
@@ -456,7 +528,7 @@ As always, be sure to run the `apostrophe-migrations:migrate` task. This will ma
 
 * Overrideable block in the outerLayout for the context menu.
 
-* The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer. 
+* The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer.
 
 ## 2.54.3
 
@@ -508,7 +580,7 @@ Regression tests passing.
 * The named anchor `main` can now be overridden via the `mainAnchor` nunjucks block.
 * The `npmRootDir` option can be used to cause Apostrophe's module loading mechanism to seek npm modules in a location other than that specified by `rootDir` (or the project root). The new `localesDir` option of `apostrophe-i18n` does the same for localization. This makes it possible to use `rootDir` to specify an alternate location for everything else, i.e. the parent of `public`, `data`, `modules`, etc. A necessary accommodation for the evolving `apostrophe-multisite` module.
 * Raw HTML widgets now offer help text out of the box.
-* The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware. 
+* The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware.
 * Your own module-level `expressMiddleware` object can specify `{ when: 'beforeRequired', middleware: function(req, res, next) { ... })` to run before the required middleware as well. Note that this means no sessions, no users and no body parser. Most of the time you'll want those things.
 * CSS adjustment to tabs in modals so they don't scroll in Firefox.
 * Dropzones for empty areas are easier to drop onto.
@@ -783,7 +855,7 @@ Regression tests passing.
 overrides of this that pay attention to `req`.
 * Report `pageBeforeSend` errors and failures to load the global doc properly, don't silently tolerate them.
 * Documentation corrections. Thanks to Frederik Ekelund.
- 
+
 
 ## 2.39.0
 
@@ -911,7 +983,7 @@ Regression tests passing.
 }}
 ```
 
-The `position` suboption may be set to `top-left`, `top-right`, `bottom-left` or `bottom-right`. 
+The `position` suboption may be set to `top-left`, `top-right`, `bottom-left` or `bottom-right`.
 
 The `removable` and `movable` suboptions are primarily intended for singletons.
 
@@ -1034,7 +1106,7 @@ Thanks to Michelin for their support of this work.
 All tests passing.
 
 * Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
-* The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
+* The `createControls` option of the `apostrophe-pages` module is now respected properly.
 
 ## 2.29.1
 

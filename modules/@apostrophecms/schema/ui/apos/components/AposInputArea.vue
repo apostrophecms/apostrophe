@@ -15,6 +15,7 @@
           :choices="choices"
           :id="next._id"
           :field-id="field._id"
+          :field="field"
           @changed="changed"
         />
       </div>

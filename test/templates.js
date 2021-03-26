@@ -26,7 +26,7 @@ describe('Templates', function() {
           extend: '@apostrophecms/page-type'
         },
         'fragment-page': {
-          components(self, options) {
+          components(self) {
             return {
               async test(req, input) {
                 // Be very async

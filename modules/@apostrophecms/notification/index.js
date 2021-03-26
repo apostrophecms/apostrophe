@@ -23,12 +23,12 @@ module.exports = {
     alias: 'notification'
   },
   extend: '@apostrophecms/module',
-  async init(self, options) {
+  async init(self) {
     self.apos.notify = self.trigger;
     await self.ensureCollection();
     self.enableBrowserData();
   },
-  restApiRoutes: (self, options) => ({
+  restApiRoutes: (self) => ({
     getOne(req, _id) {
       return self.find(req, { displayingIds: [ _id ] });
     },
@@ -69,7 +69,7 @@ module.exports = {
       return self.db.deleteMany({ _id });
     }
   }),
-  methods(self, options) {
+  methods(self) {
     return {
       getBrowserData(req) {
         return {
@@ -218,7 +218,7 @@ module.exports = {
       }
     };
   },
-  middleware(self, options) {
+  middleware(self) {
     return {
       // This middleware is essentially a GET route at
       // `/api/v1/@apostrophecms/notification/poll`. It is implemented

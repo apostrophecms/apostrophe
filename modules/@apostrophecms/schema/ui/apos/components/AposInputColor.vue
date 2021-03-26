@@ -13,6 +13,8 @@
             @close="close"
             menu-placement="bottom-start"
             menu-offset="5, 20"
+            :disabled="field.readOnly"
+            :tooltip="tooltip"
           >
             <Picker
               v-if="next"
@@ -141,6 +143,7 @@ export default {
   .apos-color__info {
     @include type-base;
     margin-left: 15px;
+    color: var(--a-text-primary);
   }
 </style>
 

@@ -4,5 +4,8 @@
     srcset="{{ apos.image.srcset(attachment) }}"
     src="{{ apos.attachment.url(attachment, { size: data.options.size or 'full' }) }}"
     alt="{{ data.widget._image[0].alt or '' }}"
+    {% if data.contextOptions and data.contextOptions.sizes %}
+      sizes="{{ data.contextOptions.sizes }}"
+    {% endif %}
   />
 {% endif %}

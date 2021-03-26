@@ -10,7 +10,7 @@
         <img
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
-          :src="activeMedia.attachment._urls['one-third']" :alt="activeMedia.description"
+          :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']" :alt="activeMedia.description"
         >
       </div>
       <ul class="apos-media-editor__details">
@@ -33,18 +33,21 @@
           <AposButton
             type="quiet" label="Replace"
             @click="showReplace = true"
+            :disabled="isTrashed"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="View"
             @click="viewMedia"
+            :disabled="isTrashed"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="Download"
-            :href="activeMedia.attachment._urls.original"
+            :href="!isTrashed ? activeMedia.attachment._urls.original : false"
+            :disabled="isTrashed"
             download
           />
         </li>
@@ -72,9 +75,17 @@
           label="Cancel"
         />
         <AposButton
+          v-if="activeMedia._id && !restoreOnly"
+          @click="trash"
+          icon="trash-can-icon"
+          :icon-only="true"
+          class="apos-media-editor__trash"
+          label="Trash"
+        />
+        <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          label="Save" type="primary"
+          :label="restoreOnly ? 'Restore' : 'Save'" type="primary"
         />
       </div>
     </AposModalLip>
@@ -83,8 +94,9 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import klona from 'klona';
+import { klona } from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
@@ -93,7 +105,7 @@ import cuid from 'cuid';
 dayjs.extend(advancedFormat);
 
 export default {
-  mixins: [ AposEditorMixin ],
+  mixins: [ AposEditorMixin, AposAdvisoryLockMixin ],
   props: {
     media: {
       type: Object,
@@ -122,6 +134,7 @@ export default {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
+      restoreOnly: this.media && this.media.trash,
       // Unlike `activeMedia` this changes ONLY when a new doc is swapped in.
       // For overall change detection.
       original: klona(this.media),
@@ -133,9 +146,6 @@ export default {
   computed: {
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
-    },
-    schema() {
-      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
     },
     fileSize() {
       if (
@@ -158,6 +168,9 @@ export default {
         return '';
       }
       return dayjs(this.activeMedia.attachment.createdAt).format('MMM Do, YYYY');
+    },
+    isTrashed() {
+      return this.media.trash;
     }
   },
   watch: {
@@ -182,7 +195,6 @@ export default {
           this.updateActiveAttachment(newData.attachment);
         }
       }
-
     },
     media(newVal) {
       this.updateActiveDoc(newVal);
@@ -193,12 +205,39 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
-    updateActiveDoc(newMedia) {
+    async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
+      this.restoreOnly = this.activeMedia.trash;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
+      await this.unlock();
+      // Distinguish between an actual doc and an empty placeholder
+      if (newMedia._id) {
+        if (!await this.lock(`${this.moduleOptions.action}/${newMedia._id}`)) {
+          this.lockNotAvailable();
+        }
+      }
+    },
+    async trash() {
+      if (!await apos.confirm({
+        heading: 'Are You Sure?',
+        description: 'This will move the image to the trash.'
+      })) {
+        return;
+      }
+      const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
+      await apos.http.patch(route, {
+        busy: true,
+        body: {
+          trash: true
+        },
+        draft: true
+        // Autopublish will take care of the published side
+      });
+      apos.bus.$emit('content-changed');
+      await this.cancel();
     },
     save() {
       this.triggerValidation = true;
@@ -216,20 +255,33 @@ export default {
           return;
         }
 
+        let body = this.docFields.data;
+        this.addLockToRequest(body);
         try {
-          const doc = await apos.http.put(route, {
+          const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
+          if (this.restoreOnly) {
+            body = {
+              trash: false
+            };
+          }
+          const doc = await requestMethod(route, {
             busy: true,
-            body: this.docFields.data,
+            body,
             draft: true
           });
           apos.bus.$emit('content-changed', doc);
           this.original = klona(this.docFields.data);
           this.$emit('modified', false);
           this.$emit('saved');
-        } catch (err) {
-          await this.handleSaveError(err, {
-            fallback: `Error Saving ${this.moduleLabels.label}`
-          });
+        } catch (e) {
+          if (this.isLockedError(e)) {
+            await this.showLockedError(e);
+            this.lockNotAvailable();
+          } else {
+            await this.handleSaveError(e, {
+              fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
+            });
+          }
         } finally {
           this.showReplace = false;
         }
@@ -241,6 +293,10 @@ export default {
     cancel() {
       this.showReplace = false;
       this.$emit('back');
+    },
+    lockNotAvailable() {
+      this.isModified = false;
+      this.cancel();
     },
     updateActiveAttachment(attachment) {
       console.info('☄️', attachment);
@@ -294,7 +350,7 @@ export default {
     margin-bottom: $spacing-triple;
 
     /deep/ .apos-button--quiet {
-      display: block;
+      display: inline;
     }
   }
 

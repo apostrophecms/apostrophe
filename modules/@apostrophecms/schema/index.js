@@ -17,13 +17,13 @@ const joinr = require('./lib/joinr');
 const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
-const klona = require('klona');
+const { klona } = require('klona');
 
 module.exports = {
   options: {
     alias: 'schema'
   },
-  init(self, options) {
+  init(self) {
 
     self.fieldTypes = {};
     self.fieldsById = {};
@@ -76,25 +76,31 @@ module.exports = {
       }
     });
 
+    function checkStringLength (string, min, max) {
+      if (string && min && string.length < min) {
+        // Would be unpleasant, but shouldn't happen since the browser
+        // also implements this. We're just checking for naughty scripts
+        throw self.apos.error('min');
+      }
+      // If max is longer than allowed, trim the value down to the max length
+      if (string && max && string.length > max) {
+        return string.substr(0, max);
+      }
+
+      return string;
+    }
+
     self.addFieldType({
       name: 'string',
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        if (object[field.name] && field.min && object[field.name].length < field.min) {
-          // Would be unpleasant, but shouldn't happen since the browser
-          // also implements this. We're just checking for naughty scripts
-          throw self.apos.error('min');
-        }
-        // If max is longer than allowed, trim the value down to the max length
-        if (object[field.name] && field.max && object[field.name].length > field.max) {
-          object[field.name] = object[field.name].substr(0, field.max);
-        }
+        object[field.name] = checkStringLength(object[field.name], field.min, field.max);
         // If field is required but empty (and client side didn't catch that)
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
-          throw self.apos.error(`required: ${field.name}`);
+          throw self.apos.error('required');
         }
       },
       index: function (value, field, texts) {
@@ -380,7 +386,7 @@ module.exports = {
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
-        if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+        if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
         if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
@@ -467,7 +473,7 @@ module.exports = {
       name: 'email',
       vueComponent: 'AposInputString',
       convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], undefined, field.min, field.max);
+        object[field.name] = self.apos.launder.string(data[field.name]);
         if (!data[field.name]) {
           if (field.required) {
             throw self.apos.error('required');
@@ -608,6 +614,8 @@ module.exports = {
         // there is actually a new value — a blank password is not cool. -Tom
         if (data[field.name]) {
           object[field.name] = self.apos.launder.string(data[field.name], field.def);
+
+          object[field.name] = checkStringLength(object[field.name], field.min, field.max);
         }
       }
     });
@@ -1067,7 +1075,7 @@ module.exports = {
 
     self.validatedSchemas = {};
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         validateAllSchemas() {
@@ -1095,7 +1103,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     const defaultGroup = self.options.defaultGroup || {
       name: 'ungrouped',
       label: 'Ungrouped'
@@ -1294,24 +1302,6 @@ module.exports = {
             }
           }
 
-          // Extra validation for select fields, TODO move this into the field type definition
-
-          if (field.type === 'select' || field.type === 'checkboxes') {
-            _.each(field.choices, function (choice) {
-              if (choice.showFields) {
-                if (!_.isArray(choice.showFields)) {
-                  throw new Error('The \'showFields\' property in the choices of a select field needs to be an array.');
-                }
-                _.each(choice.showFields, function (showFieldName) {
-                  if (!_.find(schema, function (schemaField) {
-                    return schemaField.name === showFieldName;
-                  })) {
-                    self.apos.util.error('WARNING: The field \'' + showFieldName + '\' does not exist in your schema, but you tried to toggle its display with a select field using showFields. STAAAHHHHPP!');
-                  }
-                });
-              }
-            });
-          }
         });
 
         // Shallowly clone the fields. This allows modules
@@ -1437,6 +1427,9 @@ module.exports = {
         for (const field of schema) {
           if (field.def !== undefined) {
             instance[field.name] = klona(field.def);
+          } else {
+            // All fields should have an initial value in the database
+            instance[field.name] = null;
           }
         }
         return instance;
@@ -1589,7 +1582,7 @@ module.exports = {
         errors = errors.filter(error => {
           if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
             // It is not reasonable to enforce required for
-            // fields hidden via showFields
+            // fields hidden via conditional fields
             return false;
           }
           return true;
@@ -1600,39 +1593,47 @@ module.exports = {
       },
 
       // Determine whether the given field is visible
-      // based on showFields options of all fields
+      // based on `if` conditions of all fields
 
       isVisible(schema, object, name) {
-        const hidden = {};
-        _.each(schema, function (field) {
-          if (!_.find(field.choices || [], function (choice) {
-            return choice.showFields;
-          })) {
-            return;
-          }
-          _.each(field.choices, function (choice) {
-            if (choice.showFields) {
-              if (field.type === 'checkboxes') {
-                if (!object[field.name].includes(choice.value)) {
-                  _.each(choice.showFields, hide);
-                }
-              } else if (object[field.name] !== choice.value) {
-                _.each(choice.showFields, hide);
+        const conditionalFields = {};
+        while (true) {
+          let change = false;
+          for (const field of schema) {
+            if (field.if) {
+              const result = evaluate(field.if);
+              const previous = conditionalFields[field.name];
+              if (previous !== result) {
+                change = true;
               }
+              conditionalFields[field.name] = result;
             }
-          });
-        });
-        return !hidden[name];
-
-        function hide(name) {
-          hidden[name] = true;
-          // Cope with nested showFields
-          const field = _.find(schema, { name: name });
-          _.each(field.choices || [], function (choice) {
-            _.each(choice.showFields || [], function (name) {
-              hide(name);
-            });
-          });
+          }
+          if (!change) {
+            break;
+          }
+        }
+        if (_.has(conditionalFields, name)) {
+          return conditionalFields[name];
+        } else {
+          return true;
+        }
+        function evaluate(clause) {
+          let result = true;
+          for (const [ key, val ] of Object.entries(clause)) {
+            if (key === '$or') {
+              return val.some(clause => evaluate(clause));
+            }
+            if (conditionalFields[key] === false) {
+              result = false;
+              break;
+            }
+            if (val !== object[key]) {
+              result = false;
+              break;
+            }
+          }
+          return result;
         }
       },
 
@@ -1712,6 +1713,7 @@ module.exports = {
         }
 
         const objects = _.isArray(objectOrArray) ? objectOrArray : [ objectOrArray ];
+
         if (!objects.length) {
           // Don't waste effort
           return;
@@ -1840,7 +1842,6 @@ module.exports = {
               }
               await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
                 // Allow options to the getter to be specified in the schema,
-                // notably editable: true
                 return self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
               });
               _.each(_objects, function (object) {
@@ -1886,8 +1887,7 @@ module.exports = {
             _.extend(options.hints, relationship.hints);
           }
 
-          // Allow options to the getter to be specified in the schema,
-          // notably editable: true
+          // Allow options to the getter to be specified in the schema
           await self.apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
             return self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
           });
@@ -2499,10 +2499,33 @@ module.exports = {
       // to operate on objects of any of three types: doc, widget or array item.
       getArrayManager(name) {
         return self.arrayManagers[name];
+      },
+      // Regenerate all array item, area and widget ids so they are considered
+      // new. Useful when copying an entire doc.
+      regenerateIds(req, schema, doc) {
+        for (const field of schema) {
+          if (field.type === 'array') {
+            for (const item of (doc[field.name] || [])) {
+              item._id = self.apos.util.generateId();
+              self.regenerateIds(req, field.schema, item);
+            }
+          } else if (field.type === 'area') {
+            if (doc[field.name]) {
+              doc[field.name]._id = self.apos.util.generateId();
+              for (const item of (doc[field.name].items || [])) {
+                item._id = self.apos.util.generateId();
+                const schema = self.apos.area.getWidgetManager(item.type).schema;
+                self.regenerateIds(req, schema, item);
+              }
+            }
+          }
+          // We don't want to regenerate attachment ids. They correspond to
+          // actual files, and the reference count will update automatically
+        }
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
@@ -2519,26 +2542,6 @@ module.exports = {
 
         browserOptions.components = { fields: fields };
         return browserOptions;
-      }
-    };
-  },
-  helpers(self, options) {
-    return {
-      toGroups: function (fields) {
-        return self.toGroups(fields);
-      },
-      field: function (field, readOnly) {
-        if (readOnly) {
-          field.readOnly = true;
-        }
-        // Allow custom partials for types and for individual fields
-        const partial = field.partial || self.fieldTypes[field.type].partial;
-        if (!partial) {
-          // Look for a standard partial template in the views folder
-          // of this module
-          return self.partialer(field.type)(field);
-        }
-        return partial(field);
       }
     };
   }

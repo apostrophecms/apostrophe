@@ -27,11 +27,11 @@ const _ = require('lodash');
 
 module.exports = {
   options: { collectionName: 'aposJobs' },
-  async init(self, options) {
+  async init(self) {
     await self.ensureCollection();
   },
   // TODO RESTify these
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         async cancel(req) {
@@ -58,7 +58,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Starts and supervises a long-running job such as a
       // batch operation on pieces. Call it to implement an API route

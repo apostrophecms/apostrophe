@@ -22,7 +22,7 @@ module.exports = {
   options: {
     alias: 'i18n'
   },
-  init(self, options) {
+  init(self) {
     const i18nOptions = self.options || {};
     _.defaults(i18nOptions, {
       locales: [ 'en' ],
@@ -34,7 +34,7 @@ module.exports = {
     i18n.configure(i18nOptions);
     self.i18n = i18n;
   },
-  middleware(self, options) {
+  middleware(self) {
     return {
       init(req, res, next) {
         // Support for a single apos-locale query param that
@@ -74,7 +74,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       isValidLocale(locale) {
         return locale && self.locales.includes(locale);

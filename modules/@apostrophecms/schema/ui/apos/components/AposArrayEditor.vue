@@ -66,6 +66,7 @@
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
                     :following-values="followingValues()"
+                    :conditional-fields="conditionalFields()"
                     :value="currentDoc"
                     @input="currentDocUpdate"
                     :server-errors="currentDocServerErrors"
@@ -85,7 +86,7 @@
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import cuid from 'cuid';
-import klona from 'klona';
+import { klona } from 'klona';
 import { get } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
@@ -209,7 +210,11 @@ export default {
         return;
       }
       if (await this.validate(true, false)) {
+        // Force the array editor to totally reset to avoid in-schema
+        // animations when switching (e.g., the relationship input).
         this.currentDocToCurrentItem();
+        this.currentId = null;
+        await this.nextTick();
         this.currentId = _id;
         this.currentDoc = {
           hasErrors: false,

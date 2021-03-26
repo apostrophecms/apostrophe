@@ -8,7 +8,7 @@ const deep = require('deep-get-set');
 
 module.exports = {
   options: { alias: 'area' },
-  init(self, options) {
+  init(self) {
     // These properties have special meaning in Apostrophe docs and are not
     // acceptable for use as top-level area names
     self.forbiddenAreas = [
@@ -27,7 +27,7 @@ module.exports = {
     self.widgetManagers = {};
     self.enableBrowserData();
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         async renderWidget(req) {
@@ -69,7 +69,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         getRichTextWidgetTypes() {
@@ -82,7 +82,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Set the manager object for the given widget type name. The manager is
       // expected to provide `sanitize`, `output` and `load` methods. Normally
@@ -119,7 +119,7 @@ module.exports = {
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %}` and `{% singleton %}`
       // custom tags.
-      async renderArea(req, area, context) {
+      async renderArea(req, area, _with) {
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }
@@ -153,7 +153,7 @@ module.exports = {
           field,
           options,
           choices,
-          context,
+          _with,
           canEdit
         });
       },
@@ -219,7 +219,7 @@ module.exports = {
       },
       // Sanitize an input array of items intended to become
       // the `items` property of an area. Invokes the
-      // sanitize method for each widget's manager. Widgets
+      // sanitize method for each widget manager. Widgets
       // with no manager are discarded. Invoked for you by
       // the routes that save areas and by the implementation
       // of the `area` schema field type.
@@ -538,16 +538,20 @@ module.exports = {
         const widgetManagers = {};
         const widgetIsContextual = {};
         const contextualWidgetDefaultData = {};
+
         _.each(self.widgetManagers, function (manager, name) {
-          widgets[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widget) || 'AposWidget';
-          widgetEditors[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widgetEditor) || 'AposWidgetEditor';
+          const browserData = manager.getBrowserData(req);
+
+          widgets[name] = (browserData && browserData.components && browserData.components.widget) || 'AposWidget';
+          widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
           contextualWidgetDefaultData[name] = manager.options.defaultData;
         });
+
         return {
           components: {
-            editor: 'AposAreaEditor' || (options.browser && options.browser.components && options.browser.components.editor),
+            editor: 'AposAreaEditor',
             widgets,
             widgetEditors
           },
@@ -559,7 +563,7 @@ module.exports = {
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
       // Returns the rich text markup of all `@apostrophecms/rich-text` widgets
       // within the provided doc or area, concatenated as a single string. In future this method
@@ -619,11 +623,11 @@ module.exports = {
       }
     };
   },
-  customTags(self, options) {
+  customTags(self) {
     return {
       // 'singleton': require('./lib/custom-tags/singleton.js'),
-      area: require('./lib/custom-tags/area.js')(self, options),
-      widget: require('./lib/custom-tags/widget.js')(self, options)
+      area: require('./lib/custom-tags/area.js')(self),
+      widget: require('./lib/custom-tags/widget.js')(self)
     };
   }
 };

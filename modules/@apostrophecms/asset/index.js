@@ -16,28 +16,29 @@ module.exports = {
     refreshOnRestart: false
   },
 
-  init(self, options) {
+  init(self) {
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       build: {
         usage: 'Build Apostrophe frontend javascript master import files',
         afterModuleInit: true,
         async task(argv) {
-          const buildDir = `${self.apos.rootDir}/apos-build`;
+          const namespace = self.getNamespace();
+          const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const modulesDir = `${buildDir}/modules`;
-          const bundleDir = `${self.apos.rootDir}/public/apos-frontend`;
-
+          const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
-          await fs.mkdir(buildDir);
-          await fs.mkdir(modulesDir);
+          await fs.mkdirp(buildDir);
+          await fs.remove(modulesDir);
+          await fs.mkdirp(modulesDir);
           await fs.remove(bundleDir);
-          await fs.mkdir(bundleDir);
+          await fs.mkdirp(bundleDir);
           await moduleOverrides();
           buildPublicCssBundle();
           buildPublicJsBundle();
@@ -86,7 +87,7 @@ module.exports = {
 
           function buildPublicCssBundle() {
             const publicImports = getImports('public', '*.css', { });
-            fs.writeFileSync(`${self.apos.rootDir}/public/apos-frontend/public-bundle.css`,
+            fs.writeFileSync(`${bundleDir}/public-bundle.css`,
               publicImports.paths.map(path => {
                 return fs.readFileSync(path);
               }).join('\n')
@@ -103,7 +104,7 @@ module.exports = {
             // Of course, developers can push an "public" asset that is
             // the output of an ES6 pipeline.
             const publicImports = getImports('public', '*.js', { });
-            fs.writeFileSync(`${self.apos.rootDir}/public/apos-frontend/public-bundle.js`,
+            fs.writeFileSync(`${bundleDir}/public-bundle.js`,
               `
     (function() {
     window.apos = window.apos || {};
@@ -163,7 +164,9 @@ module.exports = {
             await Promise.promisify(webpackModule)(require('./lib/webpack.config')(
               {
                 importFile,
-                modulesDir
+                modulesDir,
+                outputPath: bundleDir,
+                outputFilename: 'apos-only-bundle.js'
               },
               self.apos
             ));
@@ -180,7 +183,7 @@ module.exports = {
               for (const [ name, layer ] of Object.entries(metadata.icons)) {
                 if ((typeof layer) === 'function') {
                   // We should not support invoking a function to define the icons
-                  // because the developer would expect `(self, options)` to behave
+                  // because the developer would expect `(self)` to behave
                   // normally, and they won't during an asset build. So we only
                   // accept a simple object with the icon mappings
                   throw new Error(`Error in ${name} module: the "icons" property may not be a function.`);
@@ -208,20 +211,33 @@ module.exports = {
           }
 
           function merge() {
-            fs.writeFileSync(`${self.apos.rootDir}/public/apos-frontend/apos-bundle.js`, fs.readFileSync(`${self.apos.rootDir}/public/apos-frontend/public-bundle.js`) + fs.readFileSync(`${self.apos.rootDir}/public/apos-frontend/apos-only-bundle.js`));
+            fs.writeFileSync(`${bundleDir}/apos-bundle.js`, fs.readFileSync(`${bundleDir}/public-bundle.js`) + fs.readFileSync(`${bundleDir}/apos-only-bundle.js`));
           }
 
           async function deploy() {
             if (process.env.NODE_ENV !== 'production') {
               return;
             }
-            const copyIn = require('util').promisify(self.apos.attachment.uploadfs.copyIn);
+            let copyIn;
+            let releaseDir;
             const releaseId = self.getReleaseId();
-            const localFolder = `${self.apos.rootDir}/public/apos-frontend`;
-            const uploadfsFolder = `/assets/${releaseId}`;
-            await copyIn(`${localFolder}/apos-bundle.js`, `${uploadfsFolder}/apos-bundle.js`);
-            await copyIn(`${localFolder}/public-bundle.js`, `${uploadfsFolder}/public-bundle.js`);
-            await copyIn(`${localFolder}/public-bundle.css`, `${uploadfsFolder}/public-bundle.css`);
+            if (process.env.APOS_UPLOADFS_ASSETS) {
+              // The right choice if uploadfs is mapped to S3, Azure, etc.,
+              // not the local filesystem
+              copyIn = require('util').promisify(self.apos.uploadfs.copyIn);
+              releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
+            } else {
+              // The right choice with Docker if uploadfs is just the local filesystem
+              // mapped to a volume (a Docker build step can't access that)
+              copyIn = fs.copyFile;
+              releaseDir = `${self.apos.rootDir}/public/apos-frontend/releases/${releaseId}/${namespace}`;
+              await fs.mkdirp(releaseDir);
+            }
+            for (const file of [ 'apos-bundle.js', 'public-bundle.js', 'public-bundle.css' ]) {
+              const src = `${bundleDir}/${file}`;
+              await copyIn(src, `${releaseDir}/${file}`);
+              await fs.remove(src);
+            }
           }
 
           function getImports(folder, pattern, options) {
@@ -274,7 +290,7 @@ module.exports = {
       }
     };
   },
-  middleware(self, options) {
+  middleware(self) {
     return {
       serveStaticAssets: {
         before: '@apostrophecms/express',
@@ -282,32 +298,18 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       stylesheetsHelper(when) {
-        let base;
-        if (process.env.NODE_ENV === 'production') {
-          const releaseId = self.getReleaseId();
-          const uploadfsFolder = `/assets/${releaseId}`;
-          base = `${self.apos.attachment.uploadfs.getUrl()}${uploadfsFolder}`;
-        } else {
-          base = '/apos-frontend';
-        }
+        const base = self.getAssetBaseUrl();
         // The styles for apostrophe admin UI are baked into the JS bundle. But
         // for public styles we break them out separately to avoid a FOUC.
         const bundle = `<link href="${base}/public-bundle.css" rel="stylesheet" />`;
         return self.apos.template.safe(bundle);
       },
       scriptsHelper(when) {
-        let base;
+        const base = self.getAssetBaseUrl();
         let bundle;
-        if (process.env.NODE_ENV === 'production') {
-          const releaseId = self.getReleaseId();
-          const uploadfsFolder = `/assets/${releaseId}`;
-          base = `${self.apos.attachment.uploadfs.getUrl()}${uploadfsFolder}`;
-        } else {
-          base = '/apos-frontend';
-        }
         if (when === 'apos') {
           bundle = `<script src="${base}/apos-bundle.js"></script>`;
         } else {
@@ -316,16 +318,19 @@ module.exports = {
         return self.apos.template.safe(bundle);
       },
       shouldRefreshOnRestart() {
-        return options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
+        return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
       },
       // Returns a unique identifier for the current version of the
-      // codebase (the current release). Checks for APOS_RELEASE_ID (for custom cases),
+      // codebase (the current release). Checks for a release-id file
+      // (ideal for webpack which can create such a file in a build step),
       // HEROKU_RELEASE_VERSION (for Heroku), PLATFORM_TREE_ID (for platform.sh),
-      // a directory component containing at least YYYY-MM-DD (for stagecoach),
-      // and finally the git hash, if the project root is a git checkout (useful when
-      // debugging production builds locally, and some people do deploy this way).
+      // APOS_RELEASE_ID (for custom cases), a directory component containing at
+      // least YYYY-MM-DD (for stagecoach), and finally the git hash, if the project
+      // root is a git checkout (useful when debugging production builds locally,
+      // and some people do deploy this way).
       //
-      // If none of these are found, throws an error demanding that APOS_RELEASE_ID be set.
+      // If none of these are found, throws an error demanding that APOS_RELEASE_ID
+      // or release-id be set up.
       //
       // TODO: auto-detect more cases, such as Azure app service. In the meantime
       // you can set APOS_RELEASE_ID from whatever you have before running Apostrophe.
@@ -336,6 +341,11 @@ module.exports = {
         const viaEnv = process.env.APOS_RELEASE_ID || process.env.HEROKU_RELEASE_VERSION || process.env.PLATFORM_TREE_ID;
         if (viaEnv) {
           return viaEnv;
+        }
+        try {
+          return fs.readFileSync(`${self.apos.rootDir}/release-id`, 'utf8').trim();
+        } catch (e) {
+          // OK, consider fallbacks instead
         }
         const realPath = fs.realpathSync(self.apos.rootDir);
         // Stagecoach and similar: find a release timestamp in the path and use that
@@ -351,14 +361,35 @@ module.exports = {
         } catch (e) {
           throw new Error(`When running in production you must set the APOS_RELEASE_ID
 environment variable to a short, unique string identifying this particular
-release of the application. Apostrophe will also autodetect
-HEROKU_RELEASE_VERSION, PLATFORM_TREE_ID or the current git commit
+release of the application, or write it to the file release-id. Apostrophe will
+also autodetect HEROKU_RELEASE_VERSION, PLATFORM_TREE_ID or the current git commit
 if your deployment is a git checkout.`);
+        }
+      },
+      // Can be overridden to namespace several asset bundles
+      // in a single codebase.
+      //
+      // Env var option is for unit testing only
+      getNamespace() {
+        return process.env.APOS_DEBUG_NAMESPACE || 'default';
+      },
+      getAssetBaseUrl() {
+        const namespace = self.getNamespace();
+        if (process.env.NODE_ENV === 'production') {
+          const releaseId = self.getReleaseId();
+          const releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
+          if (process.env.APOS_UPLOADFS_ASSETS) {
+            return `${self.apos.uploadfs.getUrl()}${releaseDir}`;
+          } else {
+            return releaseDir;
+          }
+        } else {
+          return `/apos-frontend/${namespace}`;
         }
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
       stylesheets: function (when) {
         return self.stylesheetsHelper(when);
@@ -375,7 +406,7 @@ if your deployment is a git checkout.`);
       }
     };
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     if (!self.shouldRefreshOnRestart()) {
       return;
     }

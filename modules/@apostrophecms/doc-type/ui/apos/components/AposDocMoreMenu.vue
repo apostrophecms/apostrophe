@@ -2,6 +2,7 @@
   <AposContextMenu
     class="apos-admin-bar__context-button"
     :menu="menu"
+    :disabled="disabled"
     menu-placement="bottom-end"
     @item-clicked="menuHandler"
     :button="{
@@ -38,21 +39,33 @@ export default {
         return false;
       }
     },
+    canMoveToTrash: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    canSaveDraft: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canDiscardDraft: {
       type: Boolean,
       default() {
         return false;
       }
     },
-    options: {
-      type: Object,
-      required: true
-      // subproperties:
-      // saveDraft: Boolean
-      // If true, the save draft option is offered
-      // when isModified is currently true. This does
-      // not make sense in the onpage contextual editor,
-      // because it continuously saves drafts.
+    canCopy: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -67,6 +80,9 @@ export default {
       this.menu = this.recomputeMenu();
     },
     isModifiedFromPublished() {
+      this.menu = this.recomputeMenu();
+    },
+    isPublished() {
       this.menu = this.recomputeMenu();
     }
   },
@@ -90,6 +106,13 @@ export default {
         //   label: 'Duplicate Document',
         //   action: 'duplicate'
         // },
+        ...(this.canMoveToTrash ? [
+          {
+            label: 'Move to Trash',
+            action: 'moveToTrash',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
         ...(this.canDiscardDraft ? [
           {
             label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
@@ -97,10 +120,16 @@ export default {
             modifiers: [ 'danger' ]
           }
         ] : []),
-        ...((this.isModified && this.options.saveDraft) ? [
+        ...(this.canSaveDraft ? [
           {
             label: 'Save Draft',
             action: 'saveDraft'
+          }
+        ] : []),
+        ...(this.canCopy ? [
+          {
+            label: 'Copy',
+            action: 'copy'
           }
         ] : [])
       ];

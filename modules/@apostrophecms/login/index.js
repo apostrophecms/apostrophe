@@ -60,7 +60,7 @@ module.exports = {
     ],
     bearerTokens: true
   },
-  async init(self, options) {
+  async init(self) {
     self.passport = new Passport();
     self.enableSerializeUsers();
     self.enableDeserializeUsers();
@@ -70,7 +70,7 @@ module.exports = {
     self.enableBrowserData();
     await self.enableBearerTokens();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         addSecret() {
@@ -84,8 +84,8 @@ module.exports = {
       }
     };
   },
-  routes(self, options) {
-    if (!options.localLogin) {
+  routes(self) {
+    if (!self.options.localLogin) {
       return {};
     }
     return {
@@ -101,8 +101,8 @@ module.exports = {
       }
     };
   },
-  apiRoutes(self, options) {
-    if (!options.localLogin) {
+  apiRoutes(self) {
+    if (!self.options.localLogin) {
       return {};
     }
     return {
@@ -188,7 +188,7 @@ module.exports = {
           req.session.mode = mode;
           return doc;
         },
-        ...(options.passwordReset ? {
+        ...(self.options.passwordReset ? {
           async resetRequest(req) {
             const site = (req.headers.host || '').replace(/:\d+$/, '');
             const username = self.apos.launder.string(req.body.username);
@@ -266,7 +266,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // return the loginUrl option
@@ -429,7 +429,7 @@ module.exports = {
     };
   },
 
-  middleware(self, options) {
+  middleware(self) {
     return {
       passportInitialize: {
         before: '@apostrophecms/i18n',

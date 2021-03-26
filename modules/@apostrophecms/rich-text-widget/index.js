@@ -1,9 +1,7 @@
 // Implements rich text editor widgets. Unlike most widget types, the rich text
 // editor does not use a modal; instead you edit in context on the page.
 
-const _ = require('lodash');
 const sanitizeHtml = require('sanitize-html');
-const jsDiff = require('diff');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
@@ -45,92 +43,89 @@ module.exports = {
       ]
     },
     defaultOptions: {},
-    browser: {
-      components: {
-        widgetEditor: 'AposRichTextWidgetEditor',
-        widget: 'AposRichTextWidget'
+    components: {
+      widgetEditor: 'AposRichTextWidgetEditor',
+      widget: 'AposRichTextWidget'
+    },
+    editorTools: {
+      styles: {
+        component: 'AposTiptapStyles',
+        label: 'Styles'
       },
-      tools: {
-        styles: {
-          component: 'AposTiptapStyles',
-          label: 'Styles'
-        },
-        '|': { component: 'AposTiptapDivider' },
-        bold: {
-          component: 'AposTiptapButton',
-          label: 'Bold',
-          icon: 'format-bold-icon'
-        },
-        italic: {
-          component: 'AposTiptapButton',
-          label: 'Italic',
-          icon: 'format-italic-icon'
-        },
-        underline: {
-          component: 'AposTiptapButton',
-          label: 'Underline',
-          icon: 'format-underline-icon'
-        },
-        horizontal_rule: {
-          component: 'AposTiptapButton',
-          label: 'Horizontal Rule',
-          icon: 'minus-icon'
-        },
-        link: {
-          component: 'AposTiptapLink',
-          label: 'Link',
-          icon: 'link-icon'
-        },
-        bullet_list: {
-          component: 'AposTiptapButton',
-          label: 'Bulleted List',
-          icon: 'format-list-bulleted-icon'
-        },
-        ordered_list: {
-          component: 'AposTiptapButton',
-          label: 'Ordered List',
-          icon: 'format-list-numbered-icon'
-        },
-        strike: {
-          component: 'AposTiptapButton',
-          label: 'Strike',
-          icon: 'format-strikethrough-variant-icon'
-        },
-        blockquote: {
-          component: 'AposTiptapButton',
-          label: 'Blockquote',
-          icon: 'format-quote-close-icon'
-        },
-        code_block: {
-          component: 'AposTiptapButton',
-          label: 'Code Block',
-          icon: 'code-tags-icon'
-        },
-        undo: {
-          component: 'AposTiptapButton',
-          label: 'Undo',
-          icon: 'undo-icon'
-        },
-        redo: {
-          component: 'AposTiptapButton',
-          label: 'Redo',
-          icon: 'redo-icon'
-        }
+      '|': { component: 'AposTiptapDivider' },
+      bold: {
+        component: 'AposTiptapButton',
+        label: 'Bold',
+        icon: 'format-bold-icon'
+      },
+      italic: {
+        component: 'AposTiptapButton',
+        label: 'Italic',
+        icon: 'format-italic-icon'
+      },
+      underline: {
+        component: 'AposTiptapButton',
+        label: 'Underline',
+        icon: 'format-underline-icon'
+      },
+      horizontal_rule: {
+        component: 'AposTiptapButton',
+        label: 'Horizontal Rule',
+        icon: 'minus-icon'
+      },
+      link: {
+        component: 'AposTiptapLink',
+        label: 'Link',
+        icon: 'link-icon'
+      },
+      bullet_list: {
+        component: 'AposTiptapButton',
+        label: 'Bulleted List',
+        icon: 'format-list-bulleted-icon'
+      },
+      ordered_list: {
+        component: 'AposTiptapButton',
+        label: 'Ordered List',
+        icon: 'format-list-numbered-icon'
+      },
+      strike: {
+        component: 'AposTiptapButton',
+        label: 'Strike',
+        icon: 'format-strikethrough-variant-icon'
+      },
+      blockquote: {
+        component: 'AposTiptapButton',
+        label: 'Blockquote',
+        icon: 'format-quote-close-icon'
+      },
+      code_block: {
+        component: 'AposTiptapButton',
+        label: 'Code Block',
+        icon: 'code-tags-icon'
+      },
+      undo: {
+        component: 'AposTiptapButton',
+        label: 'Undo',
+        icon: 'undo-icon'
+      },
+      redo: {
+        component: 'AposTiptapButton',
+        label: 'Redo',
+        icon: 'redo-icon'
       }
     }
   },
-  beforeSuperClass(self, options) {
-    options.defaultOptions = {
-      ...options.minimumDefaultOptions,
-      ...options.defaultOptions
+  beforeSuperClass(self) {
+    self.options.defaultOptions = {
+      ...self.options.minimumDefaultOptions,
+      ...self.options.defaultOptions
     };
   },
   icons: {
     'format-text-icon': 'FormatText'
   },
-  methods(self, options) {
+  methods(self) {
     return {
-
       // Return just the rich text of the widget, which may be undefined or null if it has not yet been edited
 
       getRichText(widget) {
@@ -256,65 +251,17 @@ module.exports = {
         });
       },
 
-      compare(old, current) {
-        let oldContent = old.content;
-        if (oldContent === undefined) {
-          oldContent = '';
-        }
-        let currentContent = current.content;
-        if (currentContent === undefined) {
-          currentContent = '';
-        }
-        const diff = jsDiff.diffSentences(self.apos.util.htmlToPlaintext(oldContent).replace(/\s+/g, ' '), self.apos.util.htmlToPlaintext(currentContent).replace(/\s+/g, ' '), { ignoreWhitespace: true });
-
-        const changes = _.map(_.filter(diff, function (diffChange) {
-          return diffChange.added || diffChange.removed;
-        }), function (diffChange) {
-          // Convert a jsDiff change object to an
-          // apos versions change object
-          if (diffChange.removed) {
-            return {
-              action: 'remove',
-              text: diffChange.value,
-              field: {
-                type: 'string',
-                label: 'Content'
-              }
-            };
-          } else {
-            return {
-              action: 'add',
-              text: diffChange.value,
-              field: {
-                type: 'string',
-                label: 'Content'
-              }
-            };
-          }
-        });
-
-        if (!changes.length) {
-          // Well, something changed! Presumably the formatting.
-          return [ {
-            action: 'change',
-            field: { label: 'Formatting' }
-          } ];
-        }
-
-        return changes;
-      },
-
       isEmpty(widget) {
         const text = self.apos.util.htmlToPlaintext(widget.content || '');
         return !text.trim().length;
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       async sanitize(_super, req, input, saniOptions) {
         const rteOptions = {
-          ...options.defaultOptions,
+          ...self.options.defaultOptions,
           ...saniOptions
         };
 
@@ -324,12 +271,15 @@ module.exports = {
       },
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
-        const result = _super(req);
+        const initialData = _super(req);
 
-        _.defaults(result, {
-          defaultOptions: options.defaultOptions
-        });
-        return result;
+        const finalData = {
+          ...initialData,
+          components: self.options.components,
+          tools: self.options.editorTools,
+          defaultOptions: self.options.defaultOptions
+        };
+        return finalData;
       }
     };
   }

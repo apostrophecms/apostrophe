@@ -13,36 +13,6 @@ module.exports = {
         label: 'Home'
       }
     ],
-    contextMenu: [
-      {
-        action: 'insert-page',
-        label: 'New Page'
-      },
-      {
-        action: 'copy-page',
-        label: 'Copy Page'
-      },
-      {
-        action: 'update-page',
-        label: 'Page Settings'
-      },
-      {
-        action: 'versions-page',
-        label: 'Page Versions'
-      },
-      {
-        action: 'trash-page',
-        label: 'Move to Trash'
-      },
-      {
-        action: 'reorganize-page',
-        label: 'Reorganize'
-      }
-    ],
-    publishMenu: [ {
-      action: 'publish-page',
-      label: 'Publish Page'
-    } ],
     quickCreate: true
   },
   batchOperations: {
@@ -58,8 +28,8 @@ module.exports = {
       }
     }
   },
-  async init(self, options) {
-    self.typeChoices = options.types || [];
+  async init(self) {
+    self.typeChoices = self.options.types || [];
     self.parked = (self.options.minimumPark || [ {
       slug: '/',
       parkedId: 'home',
@@ -76,8 +46,6 @@ module.exports = {
         _defaults: { title: 'Trash' }
       } ]
     } ]).concat(self.options.park || []);
-    self.validateTypeChoices();
-    self.finalizeControls();
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -86,7 +54,7 @@ module.exports = {
     self.addMissingLastTargetIdAndPositionMigration();
     await self.createIndexes();
   },
-  restApiRoutes(self, options) {
+  restApiRoutes(self) {
     return {
       // Trees are arranged in a tree, not a list. So this API returns the home page,
       // with _children populated if ?_children=1 is in the query string. An editor can
@@ -106,6 +74,7 @@ module.exports = {
       async getAll(req) {
         self.publicApiCheck(req);
         const all = self.apos.launder.boolean(req.query.all);
+        const trash = self.apos.launder.booleanOrNull(req.query.trash);
         const flat = self.apos.launder.boolean(req.query.flat);
         const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
@@ -126,7 +95,7 @@ module.exports = {
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
-            trash: null,
+            trash: trash,
             orphan: null,
             relationships: false,
             areas: false,
@@ -301,11 +270,11 @@ module.exports = {
       //
       // This call is atomic with respect to other REST write operations on pages.
       //
-      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
       // lock on the document for the given context id, and no other items in the patch will be addressed
       // unless that succeeds. The client must then refresh the lock frequently (by default, at least
       // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
       // released *after* addressing other items in the same patch. If `force: true` is added to
       // the `_advisoryLock` object it will always remove any competing advisory lock.
       //
@@ -328,19 +297,20 @@ module.exports = {
           if (!manager) {
             throw self.apos.error('invalid');
           }
-          let htmlPageId = null;
+          let tabId = null;
           let lock = false;
           let force = false;
           if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
-            htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+            tabId = self.apos.launder.string(input._advisoryLock.tabId);
             lock = self.apos.launder.boolean(input._advisoryLock.lock);
             force = self.apos.launder.boolean(input._advisoryLock.force);
           }
-          if (htmlPageId && lock) {
-            await self.apos.doc.lock(req, page, htmlPageId, {
+          if (tabId && lock) {
+            await self.apos.doc.lock(req, page, tabId, {
               force
             });
           }
+          self.enforceParkedProperties(req, page, input);
           await manager.convert(req, input, page);
           await self.update(req, page);
           if (input._targetId) {
@@ -348,8 +318,8 @@ module.exports = {
             const position = self.apos.launder.string(input._position);
             await self.move(req, page._id, targetId, position);
           }
-          if (htmlPageId && !lock) {
-            await self.apos.doc.unlock(req, page, htmlPageId);
+          if (tabId && !lock) {
+            await self.apos.doc.unlock(req, page, tabId);
           }
           return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
@@ -374,11 +344,12 @@ module.exports = {
       // `trash` to `true` or `false`.
       patch(req, _id) {
         self.publicApiCheck(req);
+        _id = self.inferIdLocaleAndMode(req, _id);
         return self.patch(req, _id);
       }
     };
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         ':_id/publish': async (req) => {
@@ -467,7 +438,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeSend: {
         async addLevelAttributeToBody(req) {
@@ -499,7 +470,10 @@ module.exports = {
           // expressly shut off:
           //
           // home: { children: false }
-          const builders = self.getServePageBuilders().ancestors || { children: !(self.options.home && self.options.home.children === false) };
+          const builders = self.getServePageBuilders().ancestors ||
+            {
+              children: !(self.options.home && self.options.home.children === false)
+            };
           const query = self.find(req, { level: 0 }).ancestorPerformanceRestrictions();
           _.each(builders, function (val, key) {
             query[key](val);
@@ -508,18 +482,26 @@ module.exports = {
         }
       },
       'apostrophe:modulesReady': {
-        async manageOrphans() {
-          const managed = self.apos.doc.getManaged();
-          const types = (self.options.typeChoices || []).map(type => type.name);
-          for (const [ type, i ] of Object.entries(types)) {
-            if (!_.includes(managed, type)) {
-              self.apos.util.warnDev(`The typeChoices option of the @apostrophecms/page module contains type
-${type} but there is no module that manages that type. You must
-implement a module of that name that extends @apostrophecms/piece-type
-or @apostrophecms/page-type, or remove the entry from typeChoices.`);
-              types.splice(i, 1);
+        validateTypeChoices() {
+          for (const choice of self.typeChoices) {
+            if (!choice.name) {
+              throw new Error('One of the page types specified for your types option has no name property.');
+            }
+            if (!choice.label) {
+              throw new Error('One of the page types specified for your types option has no label property.');
+            }
+            if (!self.apos.modules[choice.name]) {
+              let error = `There is no module named ${choice.name}, but it is configured as a page type\nin your types option.`;
+              if (choice.name === 'home-page') {
+                error += '\n\nYou probably meant @apostrophecms/home-page.';
+              }
+              throw new Error(error);
             }
           }
+        },
+        async manageOrphans() {
+          const managed = self.apos.doc.getManaged();
+
           const parkedTypes = self.getParkedTypes();
           for (const type of parkedTypes) {
             if (!_.includes(managed, type)) {
@@ -567,7 +549,7 @@ database.`);
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       find(req, criteria = {}, options = {}) {
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
@@ -589,11 +571,11 @@ database.`);
       // However if you plan to submit many patches over a period of time while editing you may also
       // want to use the advisory lock mechanism.
       //
-      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
       // lock on the document for the given context id, and no other items in the patch will be addressed
       // unless that succeeds. The client must then refresh the lock frequently (by default, at least
       // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
       // released *after* addressing other items in the same patch. If `force: true` is added to
       // the `_advisoryLock` object it will always remove any competing advisory lock.
       //
@@ -623,19 +605,20 @@ database.`);
           // Conventional for loop so we can handle the last one specially
           for (let i = 0; (i < patches.length); i++) {
             const input = patches[i];
-            let htmlPageId = null;
+            let tabId = null;
             let lock = false;
             let force;
             if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
-              htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+              tabId = self.apos.launder.string(input._advisoryLock.tabId);
               lock = self.apos.launder.boolean(input._advisoryLock.lock);
               force = self.apos.launder.boolean(input._advisoryLock.force);
             }
-            if (htmlPageId && lock) {
-              await self.apos.doc.lock(req, page, htmlPageId, {
+            if (tabId && lock) {
+              await self.apos.doc.lock(req, page, tabId, {
                 force
               });
             }
+            self.enforceParkedProperties(req, page, input);
             await self.applyPatch(req, page, input);
             if (i === (patches.length - 1)) {
               await self.update(req, page);
@@ -646,8 +629,8 @@ database.`);
               }
               result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
-            if (htmlPageId && !lock) {
-              await self.apos.doc.unlock(req, page, htmlPageId);
+            if (tabId && !lock) {
+              await self.apos.doc.unlock(req, page, tabId);
             }
           }
           if (!result) {
@@ -715,7 +698,7 @@ database.`);
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
-      // dtermine this parameter instead).
+      // determine this parameter instead).
       //
       // The `options` argument may be omitted completely. If
       // `options.permissions` is explicitly set to false, permissions checks
@@ -925,7 +908,7 @@ database.`);
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
-      // dtermine this parameter instead).
+      // determine this parameter instead).
       //
       // As a shorthand, `targetId` may be `_trash` to refer to the trash can,
       // or `_home` to refer to the home page.
@@ -942,11 +925,6 @@ database.`);
         const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
         targetId = normalized.targetId;
         position = normalized.position;
-        if (!options) {
-          options = {};
-        } else {
-          options = _.clone(options);
-        }
         return self.withLock(req, body);
         async function body() {
           let parent;
@@ -958,7 +936,7 @@ database.`);
           const oldParent = moved._ancestors[0];
           const target = await self.getTarget(req, targetId, position);
           const manager = self.apos.doc.getManager(moved.type);
-          await manager.emit('beforeMove', req, moved, target, position, options);
+          await manager.emit('beforeMove', req, moved, target, position);
           determineRankAndNewParent();
           if (!moved._edit) {
             throw self.apos.error('forbidden');
@@ -979,12 +957,10 @@ database.`);
             originalPath,
             changed,
             target,
-            position,
-            options
+            position
           });
           return {
-            changed,
-            options
+            changed
           };
           async function getMoved() {
             const moved = await self.findForEditing(req, { _id: movedId }).permission(false).ancestors({
@@ -993,7 +969,7 @@ database.`);
               trash: null,
               areas: false,
               permission: false
-            }).applyBuilders(options.builders || {}).toObject();
+            }).toObject();
             if (!moved) {
               throw self.apos.error('invalid', 'No such page');
             }
@@ -1028,7 +1004,7 @@ database.`);
                 if (trash) {
                   // Trash has to be last child of the home page, but don't be punitive,
                   // just put this page before it
-                  return self.move(req, moved._id, trash._id, 'before', options);
+                  return self.move(req, moved._id, trash._id, 'before');
                 }
               }
               if (target._children && target._children.length) {
@@ -1125,19 +1101,19 @@ database.`);
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
-        const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
+        const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors({
           depth: 1,
           trash: null,
           orphan: null,
           areas: false,
           permission: false
-        }, options.builders || {})).children({
+        }).children({
           depth: 1,
           trash: null,
           orphan: null,
           areas: false,
           permission: false
-        }).applyBuilders(options.builders || {}).toObject();
+        }).toObject();
         if (!target) {
           throw self.apos.error('notfound');
         }
@@ -1200,12 +1176,9 @@ database.`);
       // Based on `req`, `moved`, `data.moved`, `data.oldParent` and `data.parent`, decide whether
       // this move should be permitted. If it should not be, throw an error.
       //
-      // `options` is the same options object that was passed to `self.move`, or an empty object
-      // if none was passed.
-      //
       // This method is async because overrides, for instance in @apostrophecms/workflow,
       // may require asynchronous work to perform it.
-      async movePermissions(req, moved, data, options) {
+      async movePermissions(req, moved, data) {
       },
       async deduplicatePages(req, pages, toTrash) {
         for (const page of pages) {
@@ -1494,46 +1467,9 @@ database.`);
         const args = {
           edit: providePage ? req.data.bestPage._edit : null,
           slug: providePage ? req.data.bestPage.slug : null,
-          page: providePage ? req.data.bestPage : null,
-          contextMenu: req.contextMenu,
-          publishMenu: req.publishMenu
+          page: providePage ? req.data.bestPage : null
         };
-        if (args.page && args.edit) {
-          if (!args.contextMenu) {
-            // Standard context menu for a regular page
-            args.contextMenu = self.options.contextMenu;
-          }
-          if (!args.publishMenu) {
-            // Standard publish menu for a regular page
-            args.publishMenu = self.options.publishMenu;
-          }
-        }
-        if (args.page) {
-          if (args.page.level === 0) {
-            // Snip out copy page if we are on the homepage
-            args.contextMenu = _.filter(args.contextMenu, function (item) {
-              return item.action !== 'copy-page';
-            });
-          }
-          if (!self.allowedChildTypes(args.page).length) {
-            // Snip out add page if no
-            // child page types are allowed
-            args.contextMenu = _.filter(args.contextMenu, function (item) {
-              return item.action !== 'insert-page';
-            });
-          }
-        }
-        if (args.contextMenu) {
-          // Allow context menu items to require a particular permission
-          args.contextMenu = _.filter(args.contextMenu, function (item) {
-            if (!item.permission) {
-              return true;
-            }
-            if (self.apos.permission.can(req, item.permission.action, item.permission.type)) {
-              return true;
-            }
-          });
-        }
+
         // Merge data that other modules has asked us to
         // make available to the template
         _.extend(args, req.data);
@@ -1636,7 +1572,7 @@ database.`);
       // A limited subset of page properties are pushed to
       // browser-side JavaScript when editing privileges exist.
       pruneCurrentPageForBrowser(page) {
-        page = _.pick(page, 'title', 'slug', '_id', 'type', 'ancestors', '_url');
+        page = _.pick(page, 'title', 'slug', '_id', 'type', 'ancestors', '_url', 'aposDocId', 'aposLocale');
         // Limit information about ancestors to avoid
         // excessive amounts of data in the page
         page.ancestors = _.map(page.ancestors, function (ancestor) {
@@ -1645,7 +1581,9 @@ database.`);
             'slug',
             '_id',
             'type',
-            '_url'
+            '_url',
+            'aposDocId',
+            'aposLocale'
           ]);
         });
         return page;
@@ -1914,42 +1852,6 @@ database.`);
           return _.uniq(types);
         }
       },
-      validateTypeChoices() {
-        _.each(self.typeChoices, function (choice) {
-          if (!choice.name) {
-            throw new Error('One of the page types specified for your \'types\' option has no \'name\' property.');
-          }
-          if (!choice.label) {
-            throw new Error('One of the page types specified for your \'types\' option has no \'label\' property.');
-          }
-        });
-      },
-      finalizeControls() {
-        self.createControls = self.options.createControls || [
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save'
-          }
-        ];
-        self.editControls = self.options.editControls || [
-          {
-            type: 'minor',
-            action: 'cancel',
-            label: 'Cancel'
-          },
-          {
-            type: 'major',
-            action: 'save',
-            label: 'Save'
-          }
-        ];
-      },
       removeParkedPropertiesFromSchema(page, schema) {
         return _.filter(schema, function (field) {
           return !_.includes(page.parked, field.name);
@@ -1964,14 +1866,6 @@ database.`);
           });
         }
         return schema;
-      },
-      getCreateControls(req) {
-        const controls = _.cloneDeep(self.createControls);
-        return controls;
-      },
-      getEditControls(req) {
-        const controls = _.cloneDeep(self.editControls);
-        return controls;
       },
       addManagerModal() {
         self.apos.modal.add(
@@ -2149,7 +2043,9 @@ database.`);
           visibility: 1,
           trash: 1,
           parked: 1,
-          lastPublishedAt: 1
+          lastPublishedAt: 1,
+          aposDocId: 1,
+          aposLocale: 1
         };
       },
       addDeduplicateRanksMigration() {
@@ -2255,17 +2151,24 @@ database.`);
         // For pages we currently always do this. For pieces it's conditional
         // on whether the type is localized.
         return self.apos.i18n.inferIdLocaleAndMode(req, _id);
+      },
+      // Copy any parked properties of `page` back into `input` to
+      // prevent any attempt to alter them via the PUT or PATCH APIs
+      enforceParkedProperties(req, page, input) {
+        for (const field of (page.parked || [])) {
+          input[field] = page[field];
+        }
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
       isAncestorOf: function (possibleAncestorPage, ofPage) {
         return self.isAncestorOf(possibleAncestorPage, ofPage);
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       unpark: {
         usage: 'Usage: node app @apostrophecms/page:unpark /page/slug\n\nThis unparks a page that was formerly locked in a specific\nposition in the page tree.',

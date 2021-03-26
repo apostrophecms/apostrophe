@@ -7,7 +7,7 @@ module.exports = {
   options: {
     alias: 'http'
   },
-  init(self, options) {
+  init(self) {
     // Map friendly errors created via `apos.error` to status codes.
     //
     // Everything else comes through as a 500, you don't have to register that one, and
@@ -26,10 +26,12 @@ module.exports = {
     };
     _.merge(self.errors, self.options.addErrors);
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Add another friendly error name to http status code mapping so you
-      // can throw `apos.error('name')` and get the status code `code`
+      // can throw `apos.error('name')` and get the status code `code`.
+      // Not used in core at the time of writing, but available as part of the
+      // API.
       addError(name, code) {
         self.errors[name] = code;
       },

@@ -129,18 +129,19 @@ module.exports = {
     playerData: false,
     neverLoadSelf: true
   },
-  init(self, options) {
+  init(self) {
 
     self.enableBrowserData();
 
-    self.template = options.template || 'widget';
+    self.template = self.options.template || 'widget';
+
+    self.name = self.options.name || self.__meta.name.replace(/-widget$/, '');
 
     if (!self.options.label) {
-      throw new Error('You must specify the label option when subclassing @apostrophecms/widget-type in ' + self.__meta.name);
+      self.options.label = _.startCase(self.name);
     }
 
     self.label = self.options.label;
-    self.name = self.options.name || self.__meta.name.replace(/-widget$/, '');
 
     self.composeSchema();
 
@@ -158,7 +159,7 @@ module.exports = {
       self.neverLoad = [ ...new Set(self.neverLoad) ];
     }
   },
-  methods(self, options) {
+  methods(self) {
     return {
       composeSchema() {
         self.schema = self.apos.schema.compose({
@@ -184,12 +185,12 @@ module.exports = {
       //
       // async, as are all functions that invoke a nunjucks render in
       // Apostrophe 3.x.
-
-      async output(req, widget, options) {
+      async output(req, widget, options, _with) {
         return self.render(req, self.template, {
           widget: widget,
           options: options,
-          manager: self
+          manager: self,
+          contextOptions: _with
         });
       },
 
@@ -260,7 +261,9 @@ module.exports = {
         // Shut off relationships because we already did them and the query would try to do them
         // again based on `type`, which isn't really a doc type.
         const query = self.apos.doc.find(req).relationships(false);
-        // Call .after with our own results
+        // Do everything we'd do if the query had fetched the widgets
+        // as docs
+        await query.finalize();
         await query.after(widgets);
       },
 
@@ -326,7 +329,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       // Set the options to be passed to the browser-side singleton corresponding
       // to this module. By default they do not depend on `req`, but the availability
@@ -354,7 +357,7 @@ module.exports = {
     };
   },
 
-  tasks(self, options) {
+  tasks(self) {
     return {
       list: {
         usage: 'Run this task to list all widgets of this type in the project.\nUseful for testing.',

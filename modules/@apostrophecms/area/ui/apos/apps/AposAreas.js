@@ -2,13 +2,23 @@ import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
 
-  createAreaApps();
-  window.apos.bus.$on('widget-rendered', function() {
-    createAreaApps();
+  prepareAreas();
+  apos.bus.$on('widget-rendered', function() {
+    prepareAreas();
   });
-  window.apos.bus.$on('refreshed', function() {
-    createAreaApps();
+  apos.bus.$on('refreshed', function() {
+    prepareAreas();
   });
+
+  function prepareAreas() {
+    // Doing this first allows markup to be captured for the editor
+    // before players alter it
+    createAreaApps();
+    // Even though we invoke the player directly from
+    // the widget mixin used for editable widgets, we still have to
+    // call runPlayers eventually to account for any foreign area widgets
+    apos.util.runPlayers();
+  }
 
   function createAreaApps() {
     // Sort the areas by DOM depth to ensure parents light up before children
@@ -69,21 +79,29 @@ export default function() {
 
     const component = window.apos.area.components.editor;
 
-    return new Vue({
-      el: el,
-      data: function() {
-        return {
-          options,
-          id: data._id,
-          items: data.items,
-          choices,
-          docId: _docId,
-          fieldId,
-          renderings
-        };
-      },
-      template: `<${component} :options="options" :items="items" :choices="choices" :id="$data.id" :docId="$data.docId" :fieldId="fieldId" :renderings="renderings" />`
-    });
-
+    if (apos.area.activeEditor && (apos.area.activeEditor.id === data._id)) {
+      // Editing a piece causes a refresh of the main content area,
+      // but this may contain the area we originally intended to add
+      // a widget to when we created a piece for that purpose. Preserve
+      // the editing experience by restoring that widget's editor to the DOM
+      // rather than creating a new one.
+      el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
+    } else {
+      return new Vue({
+        el,
+        data: function() {
+          return {
+            options,
+            id: data._id,
+            items: data.items,
+            choices,
+            docId: _docId,
+            fieldId,
+            renderings
+          };
+        },
+        template: `<${component} :options="options" :items="items" :choices="choices" :id="$data.id" :docId="$data.docId" :fieldId="fieldId" :renderings="renderings" />`
+      });
+    }
   }
 };

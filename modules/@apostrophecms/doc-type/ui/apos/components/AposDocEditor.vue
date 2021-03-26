@@ -17,26 +17,34 @@
         menu in many cases because all of the operations
         depend on modification from published -->
       <AposDocMoreMenu
-        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished || canDiscardDraft)"
+        v-if="hasMoreMenu"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
+        :can-move-to-trash="canMoveToTrash"
+        :can-copy="!!docId"
         :is-published="!!published"
-        :options="{ saveDraft: true }"
+        :can-save-draft="true"
         @saveDraft="saveDraft"
         @discardDraft="onDiscardDraft"
+        @moveToTrash="onMoveToTrash"
+        @copy="onCopy"
       />
       <AposButton
         type="primary" :label="saveLabel"
-        :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
+        :disabled="saveDisabled"
         @click="submit"
+        :tooltip="tooltip"
       />
     </template>
     <template #leftRail>
       <AposModalRail>
         <AposModalTabs
+          :key="tabKey"
           v-if="tabs.length > 0"
-          :current="currentTab" :tabs="tabs"
+          :current="currentTab"
+          :tabs="tabs"
+          :errors="fieldErrors"
           @select-tab="switchPane"
         />
       </AposModalRail>
@@ -44,23 +52,24 @@
     <template #main>
       <AposModalBody>
         <template #bodyMain>
-          <AposModalTabsBody>
-            <div class="apos-doc-editor__body">
-              <AposSchema
-                v-if="docReady"
-                :schema="schemaOtherFields"
-                :current-fields="currentFields"
-                :trigger-validation="triggerValidation"
-                :utility-rail="false"
-                :following-values="followingValues('other')"
-                :doc-id="docId"
-                :value="docOtherFields"
-                @input="updateDocOtherFields"
-                :server-errors="serverErrors"
-                ref="otherSchema"
-              />
-            </div>
-          </AposModalTabsBody>
+          <div v-if="docReady" class="apos-doc-editor__body">
+            <AposSchema
+              v-for="tab in tabs"
+              v-show="tab.name === currentTab"
+              :key="tab.name"
+              :schema="groups[tab.name].schema"
+              :current-fields="groups[tab.name].fields"
+              :trigger-validation="triggerValidation"
+              :utility-rail="false"
+              :following-values="followingValues('other')"
+              :conditional-fields="conditionalFields('other')"
+              :doc-id="docId"
+              :value="docFields"
+              @input="updateDocFields"
+              :server-errors="serverErrors"
+              :ref="tab.name"
+            />
+          </div>
         </template>
       </AposModalBody>
     </template>
@@ -69,14 +78,15 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
-            :schema="schemaUtilityFields"
-            :current-fields="utilityFields"
+            :schema="groups['utility'].schema"
+            :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
-            :following-values="followingValues('utility')"
+            :following-values="followingUtils"
+            :conditional-fields="conditionalFields('utility')"
             :doc-id="docId"
-            :value="docUtilityFields"
-            @input="updateDocUtilityFields"
+            :value="docFields"
+            @input="updateDocFields"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
             :server-errors="serverErrors"
@@ -92,9 +102,10 @@ import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModa
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
-import { defaultsDeep } from 'lodash';
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import klona from 'klona';
+import { klona } from 'klona';
+import cuid from 'cuid';
 
 export default {
   name: 'AposDocEditor',
@@ -102,7 +113,8 @@ export default {
     AposModalTabsMixin,
     AposModalModifiedMixin,
     AposEditorMixin,
-    AposPublishMixin
+    AposPublishMixin,
+    AposAdvisoryLockMixin
   ],
   props: {
     moduleName: {
@@ -111,6 +123,10 @@ export default {
     },
     docId: {
       type: String,
+      default: null
+    },
+    copyOf: {
+      type: Object,
       default: null
     },
     filterValues: {
@@ -125,33 +141,37 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
+      tabKey: cuid(),
       docType: this.moduleName,
-      docUtilityFields: {
-        data: {},
-        hasErrors: false
-      },
-      docOtherFields: {
-        data: {},
-        hasErrors: false
-      },
       docReady: false,
+      fieldErrors: {},
       modal: {
         active: false,
         type: 'overlay',
         showModal: false
       },
-      splittingDoc: false,
-      schemaUtilityFields: [],
-      schemaOtherFields: [],
       triggerValidation: false,
       original: null,
       published: null,
-      locked: false,
-      lockTimeout: null,
-      lockRefreshing: null
+      errorCount: 0,
+      restoreOnly: false
     };
   },
   computed: {
+    tooltip() {
+      // TODO I18N
+      let msg;
+      if (this.errorCount) {
+        msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
+      }
+      return msg;
+    },
+    followingUtils() {
+      return this.followingValues('utility');
+    },
+    saveDisabled() {
+      return this.errorCount > 0;
+    },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
     },
@@ -160,9 +180,6 @@ export default {
       // `@apostrophecms/page` module action.
       return (window.apos.modules[this.moduleName] || {}).action;
     },
-    schema() {
-      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
-    },
     groups() {
       const groupSet = {};
 
@@ -170,42 +187,55 @@ export default {
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
-            fields: [ field.name ]
+            fields: [ field.name ],
+            schema: [ field ]
           };
         } else if (field.group) {
           groupSet[field.group.name].fields.push(field.name);
+          groupSet[field.group.name].schema.push(field);
         }
       });
-
+      if (!groupSet.utility) {
+        groupSet.utility = {
+          label: 'Utility',
+          fields: [],
+          schema: []
+        };
+      }
       return groupSet;
     },
     utilityFields() {
+      let fields = [];
       if (this.groups.utility && this.groups.utility.fields) {
-        return this.groups.utility.fields;
+        fields = this.groups.utility.fields;
       }
-      return [];
+      return this.filterOutParkedFields(fields);
     },
     tabs() {
       const tabs = [];
       for (const key in this.groups) {
         if (key !== 'utility') {
-          const temp = { ...this.groups[key] };
-          temp.name = key;
-          tabs.push(temp);
+          tabs.push({
+            name: key,
+            label: this.groups[key].label
+          });
         }
       };
       return tabs;
     },
     modalTitle() {
-      return `Edit ${this.moduleOptions.label || ''}`;
+      if (this.docId) {
+        return `Edit ${this.moduleOptions.label || ''}`;
+      } else {
+        return `New ${this.moduleOptions.label || ''}`;
+      }
     },
     currentFields() {
       if (this.currentTab) {
         const tabFields = this.tabs.find((item) => {
           return item.name === this.currentTab;
         });
-
-        return tabFields.fields;
+        return this.filterOutParkedFields(tabFields.fields);
       } else {
         return [];
       }
@@ -214,7 +244,9 @@ export default {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     },
     saveLabel() {
-      if (this.manuallyPublished) {
+      if (this.restoreOnly) {
+        return 'Restore';
+      } else if (this.manuallyPublished) {
         if (this.original && this.original.lastPublishedAt) {
           return 'Publish Changes';
         } else {
@@ -228,46 +260,62 @@ export default {
       if (!this.original) {
         return false;
       }
-      return detectDocChange(this.schema, this.original, this.unsplitDoc());
+      return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     isModifiedFromPublished() {
       if (!this.published) {
         return false;
       }
-      return detectDocChange(this.schema, this.published, this.unsplitDoc());
+      return detectDocChange(this.schema, this.published, this.docFields.data);
+    },
+    canMoveToTrash() {
+      return this.docId &&
+        !(this.moduleName === '@apostrophecms/page') &&
+        !this.restoreOnly &&
+        (this.published || !this.manuallyPublished);
     },
     canDiscardDraft() {
-      return (this.docId && (!this.published)) || this.isModifiedFromPublished;
+      return (
+        this.docId &&
+        (!this.published) &&
+        this.manuallyPublished
+      ) || this.isModifiedFromPublished;
+    },
+    hasMoreMenu() {
+      if (this.restoreOnly) {
+        return false;
+      } else if (this.canMoveToTrash) {
+        return true;
+      } else if (this.docId) {
+        // Copy is allowed
+        return true;
+        // All other scenarios apply only when the user needs publishing-related UI
+      } else if (this.moduleOptions.localized && !this.moduleOptions.autopublish) {
+        return (this.copyOf || this.isModified || this.isModifiedFromPublished || this.canDiscardDraft);
+      } else {
+        return false;
+      }
     }
   },
   watch: {
-    'docUtilityFields.data': {
-      deep: true,
+    'docFields.data.type': {
       handler(newVal, oldVal) {
-        if (this.moduleName !== '@apostrophecms/page' || this.splittingDoc) {
+        if (this.moduleName !== '@apostrophecms/page') {
           return;
         }
-
-        if (this.docType !== newVal.type) {
-          // Return the split data into `docFields.data` before splitting again.
-          this.docFields.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.docFields.data);
-
-          this.docType = newVal.type;
-          this.docReady = false;
-
-          // Let the schema update before splitting up the doc again.
-          this.$nextTick(() => {
-            this.splitDoc();
-            this.docReady = true;
-          });
+        if (this.docType !== newVal) {
+          this.docType = newVal;
+          this.prepErrors();
         }
       }
     },
+
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
-        this.currentTab = this.tabs[0].name;
+        this.currentTab = this.tabs[0] && this.tabs[0].name;
       }
     }
+
   },
   async mounted() {
     this.modal.active = true;
@@ -277,60 +325,20 @@ export default {
       let docData;
       const getOnePath = `${this.moduleAction}/${this.docId}`;
       try {
-        try {
-          await apos.http.patch(getOnePath, {
-            body: {
-              _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
-                lock: true
-              }
-            },
-            draft: true
-          });
-          this.markLockedAndScheduleRefresh();
-        } catch (e) {
-          if (e.body && e.body && e.body.name === 'locked') {
-            // We do not ask before busting our own advisory lock.
-            // We used to do this in A2 but end users told us they hated it and
-            // were constantly confused by it. This is because there is no
-            // way to guarantee a lock is dropped when leaving the page
-            // in edit mode. However, in the rare case where the "other tab"
-            // getting its lock busted really is another tab, we do notify
-            // the user there.
-            if (e.body.data.me ||
-              await apos.confirm({
-                heading: 'Another User Is Editing',
-                description: `${e.body.data.title} is editing that document. Do you want to take control?`
-              })
-            ) {
-              try {
-                await apos.http.patch(getOnePath, {
-                  body: {
-                    _advisoryLock: {
-                      htmlPageId: apos.adminBar.htmlPageId,
-                      lock: true,
-                      force: true
-                    }
-                  },
-                  draft: true
-                });
-                this.markLockedAndScheduleRefresh();
-              } catch (e) {
-                await apos.notify(e.message, {
-                  type: 'error'
-                });
-                this.modal.showModal = false;
-              }
-            } else {
-              this.modal.showModal = false;
-            }
-          }
+        if (!await this.lock(getOnePath, this.docId)) {
+          await this.lockNotAvailable();
+          return;
         }
         docData = await apos.http.get(getOnePath, {
           busy: true,
           qs: this.filterValues,
           draft: true
         });
+        // Pages don't use the restore from trash mechanism because they
+        // treat the trash as a place in the tree you can drag from
+        if (docData.trash && (!(this.moduleName === '@apostrophecms/page'))) {
+          this.restoreOnly = true;
+        }
       } catch {
         // TODO a nicer message here, but moduleLabels is undefined here
         await apos.notify('The requested document was not found.', {
@@ -340,13 +348,15 @@ export default {
         });
         await this.confirmAndCancel();
       } finally {
-        if (docData.type !== this.docType) {
-          this.docType = docData.type;
+        if (docData) {
+          if (docData.type !== this.docType) {
+            this.docType = docData.type;
+          }
+          this.original = klona(docData);
+          this.docFields.data = docData;
+          this.docReady = true;
+          this.prepErrors();
         }
-        this.original = klona(docData);
-        this.docFields.data = docData;
-        this.docReady = true;
-        this.splitDoc();
       }
       try {
         if (this.manuallyPublished) {
@@ -369,83 +379,73 @@ export default {
           });
         }
       }
+    } else if (this.copyOf) {
+      const newInstance = klona(this.copyOf);
+      newInstance.title = `Copy of ${this.copyOf.title}`;
+      newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+      delete newInstance._id;
+      this.original = newInstance;
+      if (newInstance && newInstance.type !== this.docType) {
+        this.docType = newInstance.type;
+      }
+      this.docFields.data = newInstance;
+      this.prepErrors();
+      this.docReady = true;
     } else {
       this.$nextTick(() => {
         this.loadNewInstance();
       });
     }
   },
-  async destroyed () {
-    if (this.locked) {
-      clearTimeout(this.lockTimeout);
-      if (this.lockRefreshing) {
-        // First await the promise we held onto to make sure there is
-        // no race condition that leaves the lock in place
-        await this.lockRefreshing;
-      }
-      try {
-        await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
-          body: {
-            _advisoryLock: {
-              htmlPageId: apos.adminBar.htmlPageId,
-              lock: false
-            }
-          },
-          draft: true
-        });
-      } catch (e) {
-        // Not our concern, just being polite
-      }
-    }
-  },
   methods: {
-    markLockedAndScheduleRefresh() {
-      this.locked = true;
-      this.lockTimeout = setTimeout(this.refreshLock, 10000);
-    },
-    refreshLock() {
-      this.lockRefreshing = (async () => {
-        try {
-          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
-            body: {
-              _advisoryLock: {
-                htmlPageId: apos.adminBar.htmlPageId,
-                lock: true
-              }
-            },
-            draft: true
-          });
-          // Reset this each time to avoid various race conditions
-          this.lockTimeout = setTimeout(this.refreshLock, 10000);
-        } catch (e) {
-          if (e.body && e.body.name && (e.body.name === 'locked')) {
-            await this.showLockedError(e);
-            this.modal.showModal = false;
+    updateFieldState(fieldState) {
+      this.tabKey = cuid();
+      for (const key in this.groups) {
+        this.groups[key].fields.forEach(field => {
+          if (fieldState[field]) {
+            this.fieldErrors[key][field] = fieldState[field].error;
           }
-          // Other errors on this are not critical
-        }
-        this.lockRefreshing = null;
-      })();
-    },
-    async showLockedError(e) {
-      if (e.body.data.me) {
-        // We use an alert because it is a clear interruption of their
-        // work, and because a notification would appear in both windows
-        // if control was taken by the same user in another window,
-        // which would be confusing.
-        await apos.alert({
-          heading: 'You Took Control in Another Window',
-          description: 'You took control of this document in another tab or window.'
-        });
-      } else {
-        await apos.alert({
-          heading: 'Another User Took Control',
-          description: 'Another user took control of the document.'
         });
       }
+      this.updateErrorCount();
     },
-    submit() {
-      this.save({
+    updateErrorCount() {
+      let count = 0;
+      for (const key in this.fieldErrors) {
+        for (const tabKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][tabKey]) {
+            count++;
+          }
+        }
+      }
+      this.errorCount = count;
+    },
+    focusNextError() {
+      let field;
+      for (const key in this.fieldErrors) {
+        for (const tabKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][tabKey] && !field) {
+            field = this.schema.filter(item => {
+              return item.name === tabKey;
+            })[0];
+            this.switchPane(field.group.name);
+            this.getAposSchema(field).scrollFieldIntoView(field.name);
+          }
+        }
+      }
+    },
+    prepErrors() {
+      for (const name in this.groups) {
+        this.fieldErrors[name] = {};
+      }
+    },
+    // Implementing a method expected by the advisory lock mixin
+    lockNotAvailable() {
+      this.modal.showModal = false;
+    },
+    async submit() {
+      await this.save({
+        restoreOnly: this.restoreOnly,
         andPublish: this.manuallyPublished,
         savingDraft: false
       });
@@ -454,31 +454,35 @@ export default {
     // If savingDraft is true, make sure we're in draft
     // mode before redirecting to the _url of the draft.
     async save({
+      restoreOnly = true,
       andPublish = false,
       savingDraft = false
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
+        if (this.errorCount && (!restoreOnly)) {
           await apos.notify('Resolve errors before saving.', {
             type: 'warning',
             icon: 'alert-circle-icon',
             dismiss: true
           });
+          this.focusNextError();
           return;
         }
-
-        const body = this.unsplitDoc();
+        let body = this.docFields.data;
         let route;
         let requestMethod;
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
-          // Make sure we fail if someone else took the advisory lock
-          body._advisoryLock = {
-            htmlPageId: apos.adminBar.htmlPageId,
-            lock: true
-          };
+          if (restoreOnly) {
+            requestMethod = apos.http.patch;
+            body = {
+              trash: false
+            };
+          } else {
+            requestMethod = apos.http.put;
+          }
+          this.addLockToRequest(body);
         } else {
           route = this.moduleAction;
           requestMethod = apos.http.post;
@@ -487,6 +491,9 @@ export default {
             // New pages are always born as drafts
             body._targetId = apos.page.page._id.replace(':published', ':draft');
             body._position = 'lastChild';
+          }
+          if (this.copyOf) {
+            body._copyingId = this.copyOf._id;
           }
         }
         let doc;
@@ -498,22 +505,24 @@ export default {
           });
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
-          if (e.body && (e.body.name === 'locked')) {
+          if (this.isLockedError(e)) {
             await this.showLockedError(e);
             this.modal.showModal = false;
             return;
           } else {
             await this.handleSaveError(e, {
-              fallback: 'An error occurred saving the document.'
+              fallback: `An error occurred ${restoreOnly ? 'restoring' : 'saving'} the document.`
             });
             return;
           }
         }
-        if (andPublish) {
+        if (andPublish && !restoreOnly) {
           await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
+        // TODO: Add a check if we should redirect on creation based on the doc
+        // type.
         if (doc._url && (!this.docId)) {
           apos.bus.$emit('set-context', {
             mode: savingDraft ? 'draft' : null,
@@ -558,66 +567,85 @@ export default {
         this.docType = newInstance.type;
       }
       this.docFields.data = newInstance;
-      this.splitDoc();
+      this.prepErrors();
       this.docReady = true;
     },
-    splitDoc() {
-      this.splittingDoc = true;
-
-      this.docUtilityFields.data = {};
-      this.docOtherFields.data = {};
-      this.schemaUtilityFields = [];
-      this.schemaOtherFields = [];
-
-      this.schema.forEach(field => {
-        if (field.group.name === 'utility') {
-          this.docUtilityFields.data[field.name] = this.docFields.data[field.name];
-          this.schemaUtilityFields.push(field);
-        } else {
-          this.docOtherFields.data[field.name] = this.docFields.data[field.name];
-          this.schemaOtherFields.push(field);
-        }
-      });
-      this.splittingDoc = false;
-    },
-    unsplitDoc() {
-      return {
+    updateDocFields(value) {
+      this.updateFieldState(value.fieldState);
+      this.docFields.data = {
         ...this.docFields.data,
-        ...this.docUtilityFields.data,
-        ...this.docOtherFields.data
+        ...value.data
       };
-    },
-    // Override of a mixin method to accommodate the tabs/utility rail split
-    getFieldValue(name) {
-      if (this.docUtilityFields.data[name] !== undefined) {
-        return this.docUtilityFields.data[name];
-      }
-      if (this.docOtherFields.data[name] !== undefined) {
-        return this.docOtherFields.data[name];
-      }
-    },
-    updateDocUtilityFields(value) {
-      this.docUtilityFields = value;
-    },
-    updateDocOtherFields(value) {
-      this.docOtherFields = value;
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
         return this.$refs.utilitySchema;
       } else {
-        return this.$refs.otherSchema;
+        return this.$refs[field.group.name][0];
+      }
+    },
+    async onMoveToTrash(e) {
+      try {
+        if (await apos.confirm({
+          heading: 'Are You Sure?',
+          description: this.published
+            ? 'This will move the document to the trash and un-publish it.'
+            : 'This will move the document to the trash.'
+        })) {
+          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+            body: {
+              trash: true,
+              _publish: true
+            },
+            busy: true,
+            draft: true
+          });
+          if (this.docId === window.apos.adminBar.contextId) {
+            // With the current context doc gone, we need to move to safe ground
+            location.assign(`${window.apos.prefix}/`);
+            return;
+          }
+          apos.bus.$emit('content-changed');
+          this.modal.showModal = false;
+        }
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred',
+          description: e.message || 'An error occurred while moving the document to the trash.'
+        });
       }
     },
     async onDiscardDraft(e) {
       if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+        apos.bus.$emit('content-changed');
         this.modal.showModal = false;
       }
     },
+    async onCopy(e) {
+      // If there are changes warn the user before discarding them before
+      // the copy operation
+      if (!await this.confirmAndCancel()) {
+        return;
+      }
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.moduleName}:editor`,
+        props: {
+          copyOf: {
+            ...this.docFields.data,
+            _id: this.docId
+          }
+        }
+      });
+    },
     saveDraft() {
-      this.save({
+      return this.save({
         andPublish: false,
         savingDraft: true
+      });
+    },
+    filterOutParkedFields(fields) {
+      return fields.filter(fieldName => {
+        return !((this.original && this.original.parked) || []).includes(fieldName);
       });
     }
   }

@@ -1,6 +1,7 @@
 <template>
   <div class="apos-area-menu" :class="{'is-focused': groupIsFocused}">
     <AposContextMenu
+      :disabled="isDisabled"
       :button="buttonOptions"
       v-bind="extendedContextMenuOptions"
       @open="menuOpen"
@@ -101,9 +102,13 @@ export default {
     },
     maxReached: {
       type: Boolean
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: [ 'menu-close', 'menu-open', 'insert' ],
+  emits: [ 'menu-close', 'menu-open', 'add' ],
   data() {
     return {
       active: 0,
@@ -121,9 +126,15 @@ export default {
         icon: 'plus-icon',
         type: 'primary',
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],
-        iconSize: this.empty ? 20 : 11,
-        disabled: this.maxReached
+        iconSize: this.empty ? 20 : 11
       };
+    },
+    isDisabled() {
+      let flag = this.disabled;
+      if (this.maxReached) {
+        flag = true;
+      }
+      return flag;
     },
     extendedContextMenuOptions() {
       const modifiers = [ 'unpadded' ];
@@ -169,36 +180,9 @@ export default {
       // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
       // as it is often the logical experience (not always, see tag menus and filters)
       this.$refs.contextMenu.isOpen = false;
-      if (this.widgetIsContextual(name)) {
-        this.insert({
-          _id: cuid(),
-          type: name,
-          ...this.contextualWidgetDefaultData(name)
-        });
-      } else {
-        const result = await apos.modal.execute(this.widgetEditorComponent(name), {
-          options: this.widgetOptions[name],
-          type: name,
-          value: null
-        });
-        if (result) {
-          this.insert(result);
-        }
-      }
-    },
-    widgetEditorComponent(type) {
-      return this.moduleOptions.components.widgetEditors[type];
-    },
-    widgetIsContextual(type) {
-      return this.moduleOptions.widgetIsContextual[type];
-    },
-    contextualWidgetDefaultData(type) {
-      return this.moduleOptions.contextualWidgetDefaultData[type];
-    },
-    insert(widget) {
-      this.$emit('insert', {
+      this.$emit('add', {
         index: this.index,
-        widget
+        name
       });
     },
     groupFocused() {

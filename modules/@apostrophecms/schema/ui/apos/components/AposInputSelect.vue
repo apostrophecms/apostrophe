@@ -11,6 +11,7 @@
         <select
           class="apos-input apos-input--select" :id="uid"
           @change="change($event.target.value)"
+          :disabled="field.readOnly"
         >
           <option
             v-for="choice in choices" :key="JSON.stringify(choice.value)"
@@ -44,6 +45,7 @@ export default {
   },
   data() {
     return {
+      next: (this.value.data == null) ? null : this.value.data,
       choices: []
     };
   },
@@ -58,6 +60,13 @@ export default {
       });
     }
     this.choices = this.choices.concat(this.field.choices);
+    this.$nextTick(() => {
+      // this has to happen on nextTick to avoid emitting before schemaReady is
+      // set in AposSchema
+      if (this.field.required && (this.next == null) && (this.field.choices[0] != null)) {
+        this.next = this.field.choices[0].value;
+      }
+    });
   },
   methods: {
     validate(value) {

@@ -1,12 +1,12 @@
 const _ = require('lodash');
-const klona = require('klona');
 
 module.exports = {
   options: {
-    localized: true
+    localized: true,
+    contextBar: true
   },
   cascades: [ 'fields' ],
-  fields(self, options) {
+  fields(self) {
     return {
       add: {
         title: {
@@ -70,11 +70,11 @@ module.exports = {
       }
     };
   },
-  init(self, options) {
+  init(self) {
     if (!self.options.name) {
       self.options.name = self.__meta.name;
     }
-    self.name = options.name;
+    self.name = self.options.name;
     // Each doc-type has an array of fields which will be updated
     // if the document is moved to the trash. In most cases 'slug'
     // might suffice. For users, for instance, the email field should
@@ -91,7 +91,7 @@ module.exports = {
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeSave: {
         prepareForStorage(req, doc) {
@@ -268,7 +268,7 @@ module.exports = {
     };
   },
 
-  methods(self, options) {
+  methods(self) {
     return {
       sanitizeFieldList(choices) {
         if ((typeof choices) === 'string') {
@@ -519,15 +519,6 @@ module.exports = {
         }
         return self.apos.migration.addSortify(self.__meta.name, { type: self.name }, field);
       },
-      getBrowserData(req) {
-        const data = _.pick(options, 'name', 'label', 'pluralLabel');
-        data.action = self.action;
-        data.schema = self.allowedSchema(req);
-        data.localized = self.isLocalized();
-        data.autopublish = self.options.autopublish;
-        return data;
-      },
-
       // Convert the untrusted data supplied in `input` via the schema and
       // update the doc object accordingly.
       //
@@ -541,16 +532,20 @@ module.exports = {
       // If `options.copyingId` is present, the doc with the given id is
       // fetched and used as defaults for any schema fields not defined
       // in `input`. This overrides `presentFieldsOnly` as long as the fields
-      // in question exist in the doc being copied.
+      // in question exist in the doc being copied. Also, the _id of the copied
+      // doc is copied to the `copyOfId` property of doc.
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
         copyingId: false
       }) {
-        let schema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        const fullSchema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        let schema;
         let copyOf;
         if (options.presentFieldsOnly) {
-          schema = self.apos.schema.subset(schema, self.fieldsPresent(input));
+          schema = self.apos.schema.subset(fullSchema, self.fieldsPresent(input));
+        } else {
+          schema = fullSchema;
         }
         if (options.copyingId) {
           copyOf = await self.findOneForCopying(req, { _id: options.copyingId });
@@ -563,8 +558,9 @@ module.exports = {
           };
         }
         await self.apos.schema.convert(req, schema, input, doc);
+        doc.copyOfId = copyOf && copyOf._id;
         if (copyOf) {
-          await self.emit('copyExtras', req, copyOf, input, doc);
+          self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
       },
 
@@ -600,13 +596,10 @@ module.exports = {
       // If `builders` is an object its properties are invoked as
       // query builders, for instance `{ attachments: true }`.
       async findOneForEditing(req, criteria, builders) {
-        const query = await self.findForEditing(req, criteria, builders);
-        const doc = query.toObject();
-        if (options.annotate) {
-          self.apos.attachment.all(doc, { annotate: true });
-        }
-        return doc;
+        return self.findForEditing(req, criteria, builders).toObject();
       },
+      // Identical to findOneForEditing by default, but could be
+      // overridden usefully in subclasses.
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
@@ -620,7 +613,9 @@ module.exports = {
         const publishedLocale = draft.aposLocale.replace(':draft', ':published');
         const publishedId = `${draft.aposDocId}:${publishedLocale}`;
         let previousPublished;
-        let published = await self.findOneForEditing(req, {
+        // pages can change type, so don't use a doc-type-specific find method
+        const find = self.apos.page.isPage(draft) ? self.apos.page.findOneForEditing : self.findOneForEditing;
+        let published = await find(req, {
           _id: publishedId
         }, {
           locale: publishedLocale
@@ -643,7 +638,10 @@ module.exports = {
           });
           published = await self.insertPublishedOf(req, draft, published, options);
         } else {
-          previousPublished = klona(published);
+          // As found in db, not with relationships etc.
+          previousPublished = await self.apos.doc.db.findOne({
+            _id: published._id
+          });
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
             draft,
@@ -696,15 +694,23 @@ module.exports = {
       // returning, which receives `req, { draft }` and may
       // replace the `draft` property to alter the returned value.
       async revertDraftToPublished(req, draft) {
+        if (!draft.modified) {
+          return false;
+        }
         const published = await self.apos.doc.db.findOne({
           _id: draft._id.replace(':draft', ':published')
         });
         if (!published) {
           return false;
         }
-        if (!draft.modified) {
-          return false;
-        }
+
+        // We must load relationships as if we had done a regular find
+        // because relationships are read/write in A3,
+        // but we don't have to call widget loaders
+        const query = self.find(req).areas(false);
+        await query.finalize();
+        await query.after([ published ]);
+
         // Draft and published roles intentionally reversed
         self.copyForPublication(req, published, draft);
         draft.modified = false;
@@ -733,6 +739,14 @@ module.exports = {
           // Feature has already been used
           throw self.apos.error('invalid');
         }
+
+        // We must load relationships as if we had done a regular find
+        // because relationships are read/write in A3,
+        // but we don't have to call widget loaders
+        const query = self.find(req).areas(false);
+        await query.finalize();
+        await query.after([ previous ]);
+
         self.copyForPublication(req, previous, published);
         published.lastPublishedAt = previous.lastPublishedAt;
         published = await self.update({
@@ -797,6 +811,30 @@ module.exports = {
             to[field.name] = from[field.name];
           }
         }
+      }
+    };
+  },
+  extendMethods(self) {
+    return {
+      getBrowserData(_super, req) {
+        const initialBrowserOptions = _super(req);
+
+        const {
+          name, label, pluralLabel
+        } = self.options;
+
+        const browserOptions = {
+          ...initialBrowserOptions,
+          name,
+          label,
+          pluralLabel
+        };
+        browserOptions.action = self.action;
+        browserOptions.schema = self.allowedSchema(req);
+        browserOptions.localized = self.isLocalized();
+        browserOptions.autopublish = self.options.autopublish;
+
+        return browserOptions;
       }
     };
   },
@@ -1488,18 +1526,26 @@ module.exports = {
           launder(choices) {
             return self.sanitizeFieldList(choices);
           },
+          prefinalize() {
+            // Capture the query to be cloned before it is finalized so we can
+            // still turn filters on and off, if we wait too long
+            // those will already have been and()'ed into the criteria
+            query.set('choices-query-prefinalize', query.clone());
+          },
           async after(results) {
             const filters = query.get('choices');
             if (!filters) {
               return;
             }
             const choices = {};
+            const baseQuery = query.get('choices-query-prefinalize');
+            baseQuery.set('choices-query-prefinalize', null);
             for (const filter of filters) {
               // The choices for each filter should reflect the effect of all filters
               // except this one (filtering by topic pares down the list of categories and
               // vice versa)
-              const _query = query.clone();
-              _query[filter](undefined);
+              const _query = baseQuery.clone();
+              _query[filter](null);
               choices[filter] = await _query.toChoices(filter, { counts: query.get('counts') });
             }
             if (query.get('counts')) {

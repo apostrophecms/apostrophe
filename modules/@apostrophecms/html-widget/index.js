@@ -21,7 +21,7 @@ module.exports = {
       }
     }
   },
-  components(self, options) {
+  components(self) {
     return {
       render(req, data) {
         // Be understanding of the panic that is probably going on in a user's mind as

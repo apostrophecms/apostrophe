@@ -4,7 +4,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 // managers. Does it need to be a mixin? This may be resolved when switching to
 // Vue 3 using the composition API. - AB
 
-import klona from 'klona';
+import { klona } from 'klona';
 
 export default {
   data() {
@@ -14,7 +14,7 @@ export default {
       // as initially checked.
       checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
         : [],
-      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : false
+      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : []
     };
   },
   props: {
@@ -33,11 +33,13 @@ export default {
       if (!this.relationshipField) {
         return false;
       }
-
+      if (this.relationshipField.required && !this.checked.length) {
+        // Treated as min for consistency with AposMinMaxCount
+        return 'min';
+      }
       if (this.relationshipField.min && this.checked.length < this.relationshipField.min) {
         return 'min';
       }
-
       if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
         return 'max';
       }
@@ -88,9 +90,6 @@ export default {
       }
     },
     checked () {
-      if (!this.checkedDocs) {
-        return;
-      }
       this.updateCheckedDocs();
     }
   },
@@ -140,7 +139,7 @@ export default {
       const customValues = [ 'true', 'false' ];
       this.headers.forEach(h => {
 
-        if (h.cellValue.icon) {
+        if (h.cellValue && h.cellValue.icon) {
           temp.push(h.cellValue.icon);
         }
 
@@ -149,7 +148,7 @@ export default {
         }
 
         customValues.forEach(val => {
-          if (h.cellValue[val] && h.cellValue[val].icon) {
+          if (h.cellValue && h.cellValue[val] && h.cellValue[val].icon) {
             temp.push(h.cellValue[val].icon);
           }
         });

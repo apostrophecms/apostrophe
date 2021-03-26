@@ -6,11 +6,11 @@ module.exports = {
     components: {},
     alias: 'modal'
   },
-  init(self, options) {
+  init(self) {
     self.modals = [];
     self.enableBrowserData();
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Add a modal that appears when an `admin-menu-click` event corresponding
       // to its `itemName` appears on the bus. `props` is merged with the props,
@@ -26,8 +26,8 @@ module.exports = {
         return {
           modals: self.modals,
           components: {
-            the: options.components.the || 'TheAposModals',
-            confirm: options.components.confirm || 'AposModalConfirm'
+            the: self.options.components.the || 'TheAposModals',
+            confirm: self.options.components.confirm || 'AposModalConfirm'
           }
         };
       }
