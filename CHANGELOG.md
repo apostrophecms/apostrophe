@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+* Links to each piece are available in the manage view when appropriate.
+
 ## 3.0.0-alpha.6.1 - 2021-03-26
 
 ### Fixes
