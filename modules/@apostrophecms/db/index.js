@@ -148,8 +148,7 @@ module.exports = {
         if (oldGlobal) {
           throw new Error(`There is a problem with the database: ${self.uri ? (self.uri + ' ') : ''}
 
-This database already contains an Apostrophe 2.x website. Exiting to avoid
-causing content loss. Content migration tools from 2.x to 3.x are planned.`);
+This database contains an Apostrophe 2.x website. Exiting to avoid content loss.`);
         }
       },
       // TODO: Remove this function if not necessary. Created for debugging during
