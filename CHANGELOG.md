@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 * When editing "Page Settings" or a piece, the "publish" button should not be clickable if there are errors.
+* You can always save a draft of a new document, wherever the concept is relevant.
 
 ## 3.0.0-alpha.6 - 2021-03-24
 
