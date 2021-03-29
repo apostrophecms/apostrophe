@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 * When editing "Page Settings" or a piece, the "publish" button should not be clickable if there are errors.
+* Areas nested in array schema fields can now be edited in context on the page.
 
 ## 3.0.0-alpha.6 - 2021-03-24
 
