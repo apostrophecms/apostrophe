@@ -36,12 +36,13 @@ module.exports = {
         },
         visibility: {
           label: 'Visibility'
+        },
+        // Automatically hidden if none of the pieces
+        // actually have a URL
+        _url: {
+          label: 'Link',
+          component: 'AposCellLink'
         }
-        // TODO: Update this to identify if there's a piece page for the type.
-        // _url: {
-        //   label: 'Link',
-        //   component: 'AposCellLink'
-        // }
       }
     };
   },
