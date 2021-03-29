@@ -1,5 +1,10 @@
 # Changelog
 
+## UNRELEASED
+
+* Bug fix: don't update the modification timestamp of a document simply because of an advisory lock, as the user
+might decide not to save any actual edits.
+
 ## 3.0.0-alpha.6.1 - 2021-03-26
 
 ### Fixes
