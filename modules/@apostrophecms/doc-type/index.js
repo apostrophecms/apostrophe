@@ -56,8 +56,7 @@ module.exports = {
         },
         utility: {
           fields: [
-            'slug',
-            'trash'
+            'slug'
           ]
         },
         permissions: {
