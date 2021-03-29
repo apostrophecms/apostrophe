@@ -24,6 +24,13 @@
 // connection instance is created that reuses the same sockets,
 // and `uri`, `host`, `connect`, etc. are ignored.
 //
+// ### `versionCheck`
+//
+// If `true`, check to make sure the database does not belong to an
+// older, incompatible major release release of Apostrophe and exit if it does.
+// Defaults to `true`. You can set this to `false` to avoid an extra query at startup
+// time.
+//
 // ## Command line tasks
 //
 // ### `@apostrophecms/db:reset`
@@ -46,8 +53,12 @@
 const mongo = require('mongodb');
 
 module.exports = {
+  options: {
+    versionCheck: true
+  },
   async init(self) {
     await self.connectToMongo();
+    await self.versionCheck();
     // TODO: Remove this conditional and `self.trace` if not necessary or add
     // documentation explaining utility and usage.
     if (process.env.APOS_TRACE_DB) {
@@ -124,9 +135,23 @@ module.exports = {
         };
         self.apos.dbClient = await mongo.MongoClient.connect(uri, connectOptions);
         const parsed = new URL(uri);
+        self.uri = uri;
         self.apos.db = self.apos.dbClient.db(parsed.pathname.substr(1));
       },
+      async versionCheck() {
+        if (!self.options.versionCheck) {
+          return;
+        }
+        const oldGlobal = await self.apos.db.collection('aposDocs').findOne({
+          type: 'apostrophe-global'
+        });
+        if (oldGlobal) {
+          throw new Error(`There is a problem with the database: ${self.uri ? (self.uri + ' ') : ''}
 
+This database already contains an Apostrophe 2.x website. Exiting to avoid
+causing content loss. Content migration tools from 2.x to 3.x are planned.`);
+        }
+      },
       // TODO: Remove this function if not necessary. Created for debugging during
       // test conversion. If no conditional in `afterConstruct` above using this,
       // it can be safely removed.
