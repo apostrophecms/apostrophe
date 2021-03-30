@@ -134,7 +134,7 @@ export default {
         window.sessionStorage.setItem('aposStateChangeSeen', '{}');
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
-        window.location.href = `${apos.prefix}/`;
+        location.assign(`${apos.prefix}/`);
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
       } finally {
