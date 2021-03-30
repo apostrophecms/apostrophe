@@ -2,6 +2,7 @@
 
 ## UNRELEASED
 
+* Links to each piece are available in the manage view when appropriate.
 * Bug fix: don't update the modification timestamp of a document simply because of an advisory lock, as the user
 might decide not to save any actual edits.
 * Prevent content loss by blocking attempts to connect Apostrophe 3.x to an Apostrophe 2.x database. Content migration tools are planned of course.
