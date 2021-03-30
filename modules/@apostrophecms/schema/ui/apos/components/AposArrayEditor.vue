@@ -267,6 +267,10 @@ export default {
     async submit() {
       if (await this.validate(true, true)) {
         this.currentDocToCurrentItem();
+        for (const item of this.next) {
+          item.metaType = 'arrayItem';
+          item.scopedArrayName = this.field.scopedArrayName;
+        }
         this.$emit('modal-result', this.next);
         this.modal.showModal = false;
       }
