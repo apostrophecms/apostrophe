@@ -282,7 +282,11 @@ export default {
       ) || this.isModifiedFromPublished;
     },
     hasMoreMenu() {
-      if (this.restoreOnly) {
+      const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
+      if (!this.docId && hasPublishUi) {
+        // You can always save a draft of a new thing
+        return true;
+      } else if (this.restoreOnly) {
         return false;
       } else if (this.canMoveToTrash) {
         return true;
@@ -290,7 +294,7 @@ export default {
         // Copy is allowed
         return true;
         // All other scenarios apply only when the user needs publishing-related UI
-      } else if (this.moduleOptions.localized && !this.moduleOptions.autopublish) {
+      } else if (hasPublishUi) {
         return (this.copyOf || this.isModified || this.isModifiedFromPublished || this.canDiscardDraft);
       } else {
         return false;
