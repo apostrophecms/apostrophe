@@ -113,6 +113,21 @@ module.exports = {
           }
         }
       },
+      afterTrash: {
+        async trashIsDraftOnly(req, doc) {
+          if (!doc._id.includes(':draft')) {
+            return;
+          }
+          return self.apos.doc.db.removeMany({
+            _id: {
+              $in: [
+                doc._id.replace(':draft', ':published'),
+                doc._id.replace(':draft', ':previous')
+              ]
+            }
+          });
+        }
+      },
       beforePublish: {
         async ancestorsMustBePublished(req, { draft, published }) {
           const ancestorAposDocIds = draft.path.split('/');
