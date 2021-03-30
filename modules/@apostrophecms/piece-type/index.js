@@ -36,12 +36,13 @@ module.exports = {
         },
         visibility: {
           label: 'Visibility'
+        },
+        // Automatically hidden if none of the pieces
+        // actually have a URL
+        _url: {
+          label: 'Link',
+          component: 'AposCellLink'
         }
-        // TODO: Update this to identify if there's a piece page for the type.
-        // _url: {
-        //   label: 'Link',
-        //   component: 'AposCellLink'
-        // }
       }
     };
   },
@@ -603,8 +604,21 @@ module.exports = {
       //
       // If `input._publish` launders to a truthy boolean and the type is subject to draft/publish
       // workflow, it is automatically published at the end of the patch operation.
+      //
+      // As an optimization, and to prevent unnecessary updates of `updatedAt`, no calls
+      // to `self.update()` are made when only `_advisoryLock` is present in `input` or
+      // it contains no properties at all.
 
       async convertPatchAndRefresh(req, input, _id) {
+        const keys = Object.keys(input);
+        let possiblePatchedFields;
+        if (input._advisoryLock && keys.length === 1) {
+          possiblePatchedFields = false;
+        } else if (keys.length === 0) {
+          possiblePatchedFields = false;
+        } else {
+          possiblePatchedFields = true;
+        }
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
           const piece = await self.findOneForEditing(req, { _id });
           let result;
@@ -628,11 +642,15 @@ module.exports = {
                 force
               });
             }
-            await self.applyPatch(req, piece, input, {
-              force: self.apos.launder.boolean(input._advisory)
-            });
+            if (possiblePatchedFields) {
+              await self.applyPatch(req, piece, input, {
+                force: self.apos.launder.boolean(input._advisory)
+              });
+            }
             if (i === (patches.length - 1)) {
-              await self.update(req, piece);
+              if (possiblePatchedFields) {
+                await self.update(req, piece);
+              }
               result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
             if (tabId && !lock) {

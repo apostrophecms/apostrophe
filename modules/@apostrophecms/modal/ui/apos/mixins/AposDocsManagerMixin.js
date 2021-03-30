@@ -50,7 +50,9 @@ export default {
       this.$emit('sort', action);
     },
     headers() {
-      return this.options.columns ? this.options.columns : [];
+      return (this.options.columns || []).filter(column => {
+        return (column.name !== '_url') || this.pieces.find(item => item._url);
+      });
     },
     selectAllValue() {
       return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };

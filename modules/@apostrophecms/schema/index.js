@@ -27,6 +27,9 @@ module.exports = {
 
     self.fieldTypes = {};
     self.fieldsById = {};
+    self.arrayManagers = {};
+    self.objectManagers = {};
+
     self.enableBrowserData();
 
     self.addFieldType({
@@ -680,6 +683,8 @@ module.exports = {
         for (const datum of data) {
           const result = {};
           result._id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
+          result.metaType = 'arrayItem';
+          result.scopedArrayName = field.scopedArrayName;
           try {
             await self.convert(req, schema, datum, result);
           } catch (e) {
@@ -721,8 +726,13 @@ module.exports = {
           self.validateField(subField, options);
         }
       },
-      register: function (field) {
-        self.register(field.schema);
+      register: function (metaType, type, field) {
+        const localArrayName = field.arrayName || field.name;
+        field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
+        self.arrayManagers[field.scopedArrayName] = {
+          schema: field.schema
+        };
+        self.register(metaType, type, field.schema);
       },
       isEqual(req, field, one, two) {
         if (!(one[field.name] && two[field.name])) {
@@ -767,8 +777,13 @@ module.exports = {
           throw errors;
         }
       },
-      register: function (field) {
-        self.register(field.schema);
+      register: function (metaType, type, field) {
+        const localObjectName = field.objectName || field.name;
+        field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
+        self.objectManagers[field.scopedObjectName] = {
+          schema: field.schema
+        };
+        self.register(metaType, type, field.schema);
       },
       isEqual(req, field, one, two) {
         if (one && (!two)) {
@@ -1079,10 +1094,10 @@ module.exports = {
         },
         registerAllSchemas() {
           _.each(self.apos.doc.managers, function (manager, type) {
-            self.register(manager.schema);
+            self.register('doc', type, manager.schema);
           });
           _.each(self.apos.area.widgetManagers, function (manager, type) {
-            self.register(manager.schema);
+            self.register('widget', type, manager.schema);
           });
         }
       }
@@ -1468,7 +1483,7 @@ module.exports = {
       // Note that for relationship fields this comparison is based on the idsStorage
       // and fieldsStorage, which are updated at the time a document is saved to the
       // database, so it will not work on a document not yet inserted or updated
-      // unless `prepareRelationshipsForStorage` is used.
+      // unless `prepareForStorage` is used.
       //
       // This method is invoked by the doc module to compare draft and published
       // documents and set the modified property of the draft, just before updating the
@@ -1894,26 +1909,28 @@ module.exports = {
         }
       },
 
-      // In the given document, for any relationships that are present in
-      // the data (such as `_products`), update the underlying
-      // idsStorage and fieldsStorage (if appropriate) so that
-      // storage to the database can take place. This method is
+      // In the given document or widget, update any underlying
+      // storage needs required for relationships, arrays, etc.,
+      // such as populating the idsStorage and fieldsStorage
+      // properties of relationship fields, or setting the
+      // arrayName property of array items. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
       // itself as needed for relationships nested in widgets,
       // array fields and object fields.
       //
-      // If the relationship field is present by name (such as `_products`)
+      // If a relationship field is present by name (such as `_products`)
       // in the document, that is taken as authoritative, and any
       // existing values in the `idsStorage` and `fieldsStorage`
       // are overwritten. If the relationship field is not present, the
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
-      // `.relationships(false)`, provided a projection was not also used.
+      // `.relationships(false)`, provided the projection included
+      // the ids.
       //
       // Currently `req` does not impact this, but that may change.
 
-      prepareRelationshipsForStorage(req, doc) {
+      prepareForStorage(req, doc) {
         if (doc.metaType === 'doc') {
           const manager = self.apos.doc.getManager(doc.type);
           if (!manager) {
@@ -1932,16 +1949,23 @@ module.exports = {
             if (field.type === 'area') {
               if (doc[field.name] && doc[field.name].items) {
                 for (const widget of doc[field.name].items) {
-                  self.prepareRelationshipsForStorage(req, widget);
+                  self.prepareForStorage(req, widget);
                 }
               }
             } else if (field.type === 'array') {
               if (doc[field.name]) {
-                doc[field.name].forEach(item => forSchema(field.schema, item));
+                doc[field.name].forEach(item => {
+                  item.metaType = 'arrayItem';
+                  item.scopedArrayName = field.scopedArrayName;
+                  forSchema(field.schema, item);
+                });
               }
             } else if (field.type === 'object') {
-              if (doc[field.name]) {
-                forSchema(field.schema, doc[field.name]);
+              const value = doc[field.name];
+              if (value) {
+                value.metaType = 'object';
+                value.scopedObjectName = field.scopedObjectName;
+                forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {
               if (Array.isArray(doc[field.name])) {
@@ -2219,7 +2243,14 @@ module.exports = {
 
       // Recursively register the given schema, giving each field an _id and making provision to be able to
       // fetch its definition via apos.schema.getFieldById().
-      register(schema) {
+      //
+      // metaType and type refer to the doc or widget that ultimately contains this schema,
+      // even if it is nested as an array schema. `metaType` will be "doc" or "widget"
+      // and `type` will be the type name. This is used to dynamically assign
+      // sufficiently unique `arrayName` properties to array fields and may be used
+      // for similar scoping tasks.
+
+      register(metaType, type, schema) {
         for (const field of schema) {
           // _id needs to be consistent across processes
           field._id = self.apos.util.md5(JSON.stringify(_.omit(field, '_id', 'group')));
@@ -2229,9 +2260,9 @@ module.exports = {
             field.def = self.fieldTypes[field.type].def;
           }
           self.fieldsById[field._id] = field;
-          const type = self.fieldTypes[field.type];
-          if (type.register) {
-            type.register(field);
+          const fieldType = self.fieldTypes[field.type];
+          if (fieldType.register) {
+            fieldType.register(metaType, type, field);
           }
         }
       },
@@ -2462,6 +2493,12 @@ module.exports = {
           result.push(field);
         }
         return result;
+      },
+      // Array "managers" currently offer just a schema property, for parallelism
+      // with doc type and widget managers. This allows the getManagerOf method
+      // to operate on objects of any of three types: doc, widget or array item.
+      getArrayManager(name) {
+        return self.arrayManagers[name];
       },
       // Regenerate all array item, area and widget ids so they are considered
       // new. Useful when copying an entire doc.

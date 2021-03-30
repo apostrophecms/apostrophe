@@ -56,8 +56,7 @@ module.exports = {
         },
         utility: {
           fields: [
-            'slug',
-            'trash'
+            'slug'
           ]
         },
         permissions: {
@@ -94,8 +93,8 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        prepareRelationshipsForStorage(req, doc) {
-          self.apos.schema.prepareRelationshipsForStorage(req, doc);
+        prepareForStorage(req, doc) {
+          self.apos.schema.prepareForStorage(req, doc);
         },
         slugPrefix(req, doc) {
           if (self.options.slugPrefix) {
@@ -1458,12 +1457,23 @@ module.exports = {
 
             for (const doc of results) {
               const areasInfo = [];
-              self.apos.area.walk(doc, function(area, dotPath) {
-                areasInfo.push({
-                  area: area,
-                  dotPath: dotPath
-                });
+              const arrayItemsInfo = [];
+              self.apos.doc.walk(doc, (o, k, v, dotPath) => {
+                if (v) {
+                  if (v.metaType === 'area') {
+                    areasInfo.push({
+                      area: v,
+                      dotPath
+                    });
+                  } else if (doc._edit && (v.metaType === 'arrayItem')) {
+                    arrayItemsInfo.push({
+                      arrayItem: v,
+                      dotPath
+                    });
+                  }
+                }
               });
+
               if (areasInfo.length) {
                 for (const info of areasInfo) {
                   const area = info.area;
@@ -1491,6 +1501,14 @@ module.exports = {
                     widgetsByType[item.type].push(item);
                   }
                 }
+              }
+              // We also need to track which array items are editable,
+              // for purposes of allowing areas nested in them to
+              // be edited in context
+              for (const info of arrayItemsInfo) {
+                const arrayItem = info.arrayItem;
+                arrayItem._docId = doc._docId || doc._id;
+                arrayItem._edit = doc._edit;
               }
             }
 

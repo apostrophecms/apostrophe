@@ -2,8 +2,19 @@
 
 ## UNRELEASED
 
-* When editing "Page Settings" or a piece, the "publish" button should not be clickable if there are errors.
+* Links to each piece are available in the manage view when appropriate.
+* Bug fix: don't update the modification timestamp of a document simply because of an advisory lock, as the user
+might decide not to save any actual edits.
+* Prevent content loss by blocking attempts to connect Apostrophe 3.x to an Apostrophe 2.x database. Content migration tools are planned of course.
 * You can always save a draft of a new document, wherever the concept is relevant.
+* Areas nested in array schema fields can now be edited in context on the page.
+
+## 3.0.0-alpha.6.1 - 2021-03-26
+
+### Fixes
+
+* Conditional fields (`if`) and the "following values" mechanism now work properly in array item fields.
+* When editing "Page Settings" or a piece, the "publish" button should not be clickable if there are errors.
 
 ## 3.0.0-alpha.6 - 2021-03-24
 
