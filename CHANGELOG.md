@@ -1,6 +1,6 @@
 # Changelog
-## Unreleased 
-* Deleted unnecesary assignment of choices in addFieldType joinByArray
+## Unreleased
+* Deleted unnecessary assignment of choices in the `joinByArray` field type definition. Thanks to [Eduardo Correal](https://github.com/ecb34) for the contribution.
 
 ## UNRELEASED
 * Bug fix: documents with locales and those without have always been considered to have different locales for purposes of the unique slug index, but the UI feature to detect slug conflicts and offer help regarded them as in the same namespace, preventing save operations in the UI.
