@@ -417,6 +417,11 @@ export default {
     patchSubobject(object, subObject) {
       let result;
       for (const [ key, val ] of Object.entries(object)) {
+        if (key.charAt(0) === '_') {
+          // Patch only the thing itself, not a relationship that also contains
+          // a copy
+          continue;
+        }
         if (val && typeof val === 'object') {
           if (val._id === subObject._id) {
             object[key] = subObject;

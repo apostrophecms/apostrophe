@@ -2412,7 +2412,7 @@ module.exports = {
             if (dot !== -1) {
               _id = _id.substring(0, dot);
             }
-            const result = self.apos.util.findNestedObjectAndDotPathById(existingPage, _id);
+            const result = self.apos.util.findNestedObjectAndDotPathById(existingPage, _id, { ignoreDynamicProperties: true });
             if (!result) {
               throw self.apos.error('invalid', {
                 '@path': key
