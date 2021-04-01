@@ -169,6 +169,9 @@ export default {
     async onPushContext({
       doc
     }) {
+      if (!this.draftMode !== 'draft') {
+        await this.switchDraftMode('draft');
+      }
       if (!this.editMode) {
         await this.switchEditMode(true);
       }

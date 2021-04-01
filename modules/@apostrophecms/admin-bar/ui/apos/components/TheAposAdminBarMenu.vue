@@ -44,7 +44,7 @@
         @item-clicked="emitEvent"
       />
     </li>
-    <div class="apos-admin-bar__tray-items">
+    <li class="apos-admin-bar__item apos-admin-bar__tray-items" v-if="trayItems.length > 0">
       <AposButton
         v-for="item in trayItems"
         :key="item.name"
@@ -55,7 +55,7 @@
         :state="trayItemState[item.name] ? [ 'active' ] : []"
         @click="emitEvent(item.action)"
       />
-    </div>
+    </li>
   </ul>
 </template>
 
@@ -155,6 +155,7 @@ export default {
 <style lang="scss" scoped>
 .apos-admin-bar__items {
   display: flex;
+  flex-grow: 1;
   margin: 0;
   padding: 0;
 }
@@ -194,6 +195,8 @@ export default {
 }
 
 .apos-admin-bar__tray-items {
+  margin-left: auto;
+  padding: 4px;
 }
 
 </style>
