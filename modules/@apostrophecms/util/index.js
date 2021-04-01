@@ -447,12 +447,12 @@ module.exports = {
       // Can be nested at any depth.
       //
       // Useful to locate a specific widget within a doc.
-      findNestedObjectById(object, _id, { ignoreTemporaryProperties = false } = {}) {
+      findNestedObjectById(object, _id, { ignoreDynamicProperties = false } = {}) {
         let key;
         let val;
         let result;
         for (key in object) {
-          if (ignoreTemporaryProperties && (key.charAt(0) === '_')) {
+          if (ignoreDynamicProperties && (key.charAt(0) === '_')) {
             continue;
           }
           val = object[key];
@@ -476,14 +476,14 @@ module.exports = {
       // Returns an object like this: `{ object: { ... }, dotPath: 'dot.path.of.object' }`
       //
       // Ignore the `_dotPath` argument to this method; it is used for recursion.
-      findNestedObjectAndDotPathById(object, id, { ignoreTemporaryProperties = false } = {}, _dotPath) {
+      findNestedObjectAndDotPathById(object, id, { ignoreDynamicProperties = false } = {}, _dotPath) {
         let key;
         let val;
         let result;
         let subPath;
         _dotPath = _dotPath || [];
         for (key in object) {
-          if (ignoreTemporaryProperties && (key.charAt(0) === '_')) {
+          if (ignoreDynamicProperties && (key.charAt(0) === '_')) {
             continue;
           }
           val = object[key];
@@ -495,7 +495,7 @@ module.exports = {
                 dotPath: subPath.join('.')
               };
             }
-            result = self.findNestedObjectAndDotPathById(val, id, { ignoreTemporaryProperties }, subPath);
+            result = self.findNestedObjectAndDotPathById(val, id, { ignoreDynamicProperties }, subPath);
             if (result) {
               return result;
             }
@@ -722,7 +722,7 @@ module.exports = {
           if (!matches) {
             throw new Error(`@ syntax used without an id: ${path}`);
           }
-          const found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1], { ignoreTemporaryProperties: true });
+          const found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1], { ignoreDynamicProperties: true });
           if (found) {
             if (matches[2].length) {
               o = found.object;
