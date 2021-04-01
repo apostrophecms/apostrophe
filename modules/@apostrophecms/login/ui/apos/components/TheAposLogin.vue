@@ -59,6 +59,7 @@
 
 <script>
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+
 export default {
   name: 'TheAposLogin',
   mixins: [ AposThemeMixin ],

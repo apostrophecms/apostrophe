@@ -269,10 +269,10 @@ export default {
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canMoveToTrash() {
-      return this.docId &&
+      return !!(this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
         !this.restoreOnly &&
-        (this.published || !this.manuallyPublished);
+        (this.published || !this.manuallyPublished));
     },
     canDiscardDraft() {
       return (
