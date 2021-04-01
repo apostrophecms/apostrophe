@@ -118,6 +118,11 @@ module.exports = {
           if (!doc._id.includes(':draft')) {
             return;
           }
+          if (doc.parkedId === 'trash') {
+            // The root trash can exists in both draft and published to
+            // avoid overcomplicating parked pages
+            return;
+          }
           return self.apos.doc.db.removeMany({
             _id: {
               $in: [
