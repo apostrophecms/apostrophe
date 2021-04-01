@@ -612,4 +612,8 @@ function depth(el) {
 }
 </script>
 <style lang="scss" scoped>
+.apos-admin-bar__row--utils {
+  display: flex;
+  align-items: center;
+}
 </style>

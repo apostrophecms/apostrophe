@@ -153,4 +153,47 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.apos-admin-bar__items {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.apos-admin-bar__item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.apos-admin-bar__sub /deep/ .apos-context-menu__btn {
+  border-radius: 0;
+}
+
+.apos-admin-bar__sub /deep/ .apos-context-menu__popup {
+  top: calc(100% + 5px);
+}
+
+.apos-admin-bar__create {
+  margin-left: 10px;
+
+  .apos-context-menu__btn {
+    width: 21px;
+    height: 21px;
+  }
+
+  .apos-context-menu__btn .apos-button {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .apos-context-menu__popup {
+    top: calc(100% + 13px);
+  }
+}
+
+.apos-admin-bar__tray-items {
+}
+
 </style>

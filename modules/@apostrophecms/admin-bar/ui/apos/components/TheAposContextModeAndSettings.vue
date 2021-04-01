@@ -136,3 +136,16 @@ export default {
   }
 };
 </script>
+<style lang="scss" scoped>
+.apos-admin-bar__control-set--mode-and-settings {
+  justify-content: flex-end;
+  & /deep/ .apos-button {
+    margin-left: 4px;
+  }
+}
+
+.apos-admin-bar__control-set__group {
+  display: flex;
+  align-items: center;
+}
+</style>

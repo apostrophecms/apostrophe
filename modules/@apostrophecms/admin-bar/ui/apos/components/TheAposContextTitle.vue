@@ -100,4 +100,41 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+.apos-admin-bar__control-set--title {
+  justify-content: center;
+  align-items: center;
+}
+.apos-admin-bar__title {
+  display: inline-flex;
+  align-items: center;
+
+  &__document-title,
+  &__separator {
+    display: inline-flex;
+    color: var(--a-text-primary);
+  }
+
+  &__document-title {
+    margin-top: 1px;
+  }
+
+  &__separator {
+    align-items: center;
+    padding: 0 7px;
+    margin-top: 1px;
+  }
+
+  &__document {
+    margin-top: 3.5px;
+  }
+
+  & /deep/ .apos-indicator {
+    margin-top: 1px;
+  }
+}
+
+.apos-admin-bar__title__indicator {
+  margin-right: 5px;
+  color: var(--a-text-primary);
+}
 </style>

@@ -116,3 +116,47 @@ export default {
 };
 
 </script>
+
+<style lang="scss" scoped>
+.apos-admin-bar__status {
+  @include type-help;
+  position: relative;
+  margin-left: 7.5px;
+  opacity: 1;
+  color: var(--a-base-2);
+  transition: opacity 150ms;
+  &.is-hidden {
+    opacity: 0;
+  }
+  .is-success {
+    color: var(--a-success);
+  }
+
+  .is-warning {
+    color: var(--a-warning);
+  }
+}
+
+.apos-admin-bar__status__inner {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  white-space: nowrap;
+}
+
+.apos-admin-bar__status__icon {
+  margin-right: 7.5px;
+  width: 18px;
+  height: 18px;
+}
+
+.apos-admin-bar__status__label {
+  opacity: 1;
+  transition: opacity 200ms ease;
+  &.is-hidden {
+    opacity: 0;
+  }
+}
+</style>
