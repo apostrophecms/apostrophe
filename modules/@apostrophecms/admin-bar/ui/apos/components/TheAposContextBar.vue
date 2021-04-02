@@ -13,6 +13,7 @@
     />
     <TheAposContextTitle
       v-if="!hasCustomUi"
+      :context="context"
       :draft-mode="draftMode"
       @switchDraftMode="switchDraftMode"
     />
