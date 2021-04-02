@@ -2,6 +2,7 @@ const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 const Promise = require('bluebird');
+const { klona } = require('klona');
 
 module.exports = {
   options: { alias: 'attachment' },
@@ -568,10 +569,12 @@ module.exports = {
       //
       // Returns an array of attachments, or an empty array if none are found.
       //
-      // When available, the `_description`, `_credit` and `_creditUrl` are
-      // also returned as part of the object.
+      // When available, the `description`, `credit`, `alt` and `creditUrl` properties
+      // of the containing piece are returned as `_description`, `_credit`, `_alt` and
+      // `_creditUrl`.
       //
-      // For ease of use, a null or undefined `within` argument is accepted.
+      // For ease of use, a null or undefined `within` argument is accepted, resulting
+      // in an empty array.
       //
       // Examples:
       //
@@ -630,36 +633,33 @@ module.exports = {
         }
         self.apos.doc.walk(within, function (o, key, value, dotPath, ancestors) {
           if (test(value)) {
+            value = klona(value);
+            if (o.credit) {
+              value._credit = o.credit;
+            }
+            if (o.creditUrl) {
+              value._creditUrl = o.creditUrl;
+            }
+            if (o.alt) {
+              value._alt = o.alt;
+            }
+            o[key] = value;
             // If one of our ancestors has a relationship to the piece that
             // immediately contains us, provide that as the crop. This ensures
             // that cropping coordinates stored in an @apostrophecms/image widget
             // are passed through when we make a simple call to
             // apos.attachment.url with the returned object
-            let i;
-            for (i = ancestors.length - 1; i >= 0; i--) {
+            for (let i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
               const fields = ancestor.imagesFields && ancestor.imagesFields[o._id];
               if (fields) {
-                // Clone it so that if two things have crops of the same image, we
-                // don't overwrite the value on subsequent calls
                 value = _.clone(value);
                 value._crop = _.pick(fields, 'top', 'left', 'width', 'height');
                 value._focalPoint = _.pick(fields, 'x', 'y');
-                if (o.credit) {
-                  value._credit = o.credit;
-                }
-                if (o.creditUrl) {
-                  value._creditUrl = o.creditUrl;
-                }
-                if (o.description) {
-                  value._description = o.description;
-                }
                 break;
               }
             }
             if (options.annotate) {
-              // Because it may have changed above due to cloning
-              o[key] = value;
               // Add URLs
               value._urls = {};
               if (value.group === 'images') {
