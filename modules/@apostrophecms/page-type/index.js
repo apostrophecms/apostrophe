@@ -377,7 +377,7 @@ module.exports = {
   extendMethods(self) {
     return {
       enableAction() {
-        self.action = '/api/v1/@apostrophecms/page';
+        self.action = self.apos.modules['@apostrophecms/page'].action;
       },
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);
