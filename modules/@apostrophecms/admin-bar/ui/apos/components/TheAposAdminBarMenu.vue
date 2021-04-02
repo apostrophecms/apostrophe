@@ -173,7 +173,7 @@ export default {
   top: calc(100% + 5px);
 }
 
-.apos-admin-bar__create {
+ /deep/ .apos-admin-bar__create {
   margin-left: 10px;
 
   .apos-context-menu__btn {
