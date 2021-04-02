@@ -40,7 +40,7 @@
           :disabled="getCellDisabled(col, row)"
           :data-col="col.property"
           :style="getCellStyles(col.property, index)"
-          @click="effectiveAction(col, row)"
+          @click="effectiveHandler(col, row)"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -295,7 +295,7 @@ export default {
 
       return classes;
     },
-    effectiveAction(col, row) {
+    effectiveHandler(col, row) {
       if (col.action) {
         let component = this;
         let action = col.action;

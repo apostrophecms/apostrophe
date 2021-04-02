@@ -95,6 +95,9 @@ export default {
       this.updateCheckedDocs();
     }
   },
+  mounted() {
+    apos.bus.$on('set-context-if-needed-and-redirect', this.setContextIfNeededAndRedirect);
+  },
   methods: {
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
@@ -104,8 +107,31 @@ export default {
       const result = this.relationshipField.max && this.checked.length >= this.relationshipField.max;
       return result;
     },
-    fungi() {
-      console.log('i am a fun gi');
+    // Looks ahead to see if a destination doc and the current editing mode
+    // will product a 404. If it does, switch the context to draft
+    // which we know to be safe. Then navigate to the doc
+    async setContextIfNeededAndRedirect(_id, type, url) {
+      const destId = _id.replace(':draft', `:${window.apos.mode}`);
+      try {
+        await apos.http.get(
+          `${apos.modules[type].action}/${destId}`,
+          { busy: true }
+        );
+      } catch (e) {
+        // The current situation would 404. Fetch the draft version of
+        // the doc and set the mode to 'draft'
+        const draftId = _id.replace(':published', ':draft');
+        const draftDoc = await apos.http.get(
+          `${apos.modules[type].action}/${draftId}`,
+          { busy: true }
+        );
+        await apos.bus.$emit('set-context', {
+          mode: 'draft',
+          navigate: false,
+          doc: draftDoc
+        });
+      }
+      window.location = url;
     },
     selectAll() {
       if (!this.checked.length) {
