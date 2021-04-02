@@ -48,16 +48,16 @@
             class="apos-tree__row__icon apos-tree__row__icon--handle"
           />
           <AposIndicator
-            v-if="index === 0 && row.parked && row.type !== '@apostrophecms/trash'"
+            v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
             tooltip="This page is parked and cannot be moved"
           />
           <AposIndicator
-            v-if="index === 0 && row.type === '@apostrophecms/trash'"
+            v-if="index === 0 && row.type === '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
-            tooltip="You cannot move the Trash"
+            tooltip="You cannot move the Archive"
           />
           <AposCheckbox
             v-if="options.bulkSelect && index === 0"
@@ -296,7 +296,7 @@ export default {
       return classes;
     },
     getEffectiveType(col, row) {
-      if (row.type === '@apostrophecms/trash') {
+      if (row.type === '@apostrophecms/archive-page') {
         return 'span';
       } else if (col.type === 'link') {
         return 'a';
@@ -309,7 +309,7 @@ export default {
     getEffectiveIcon(col, row) {
       const boolStr = (!!row[col.property]).toString();
 
-      if (row.type === '@apostrophecms/trash') {
+      if (row.type === '@apostrophecms/archive-page') {
         return false;
       }
 
@@ -337,7 +337,7 @@ export default {
       return 15;
     },
     getEffectiveCellLabel(col, row) {
-      const excludedTypes = [ '@apostrophecms/trash' ];
+      const excludedTypes = [ '@apostrophecms/archive-page' ];
       const boolStr = (!!row[col.property]).toString();
 
       // Opportunity to display a custom true/false label for cell value
@@ -392,7 +392,7 @@ export default {
       }
       if ((col.type === 'link') && (!row[col.property])) {
         return true;
-      } else if (row.trash && (col.type === 'button')) {
+      } else if (row.archived && (col.type === 'button')) {
         return true;
       } else {
         return false;

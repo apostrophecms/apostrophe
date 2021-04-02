@@ -51,7 +51,7 @@
             :options="{ hideSelectAll: !relationshipField }"
             @page-change="updatePage"
             @select-click="selectClick"
-            @trash-click="trashClick"
+            @archive-click="archiveClick"
             @search="search"
             @filter="filter"
           />
@@ -116,7 +116,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'safe-close', 'trash', 'save', 'search' ],
+  emits: [ 'safe-close', 'archive', 'save', 'search' ],
   data() {
     return {
       items: [],
@@ -368,9 +368,8 @@ export default {
         await this.getMedia();
       }
     },
-    // TODO stub
-    trashClick() {
-      this.$emit('trash', this.checked);
+    archiveClick() {
+      this.$emit('archive', this.checked);
     },
 
     search(query) {

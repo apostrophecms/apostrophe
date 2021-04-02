@@ -405,24 +405,24 @@ describe('Docs', function() {
   });
 
   /// ///
-  // TRASH
+  // ARCHIVE
   /// ///
 
-  it('should trash docs by updating them', async function() {
+  it('should archive docs by updating them', async function() {
     const req = apos.task.getReq();
     const doc = await apos.doc.find(req, {
       type: 'test-people',
       slug: 'carl'
     }).toObject();
-    const trashed = await apos.doc.update(req, {
+    const archived = await apos.doc.update(req, {
       ...doc,
-      trash: true
+      archived: true
     });
 
-    assert(trashed.trash === true);
+    assert(archived.archived === true);
   });
 
-  it('should not be able to find the trashed object', async function() {
+  it('should not be able to find the archiveed object', async function() {
     const req = apos.task.getReq();
     const doc = await apos.doc.find(req, {
       slug: 'carl'
@@ -431,9 +431,9 @@ describe('Docs', function() {
     assert(!doc);
   });
 
-  it('should not allow you to call the trash method if you are not an admin', async function() {
+  it('should not allow you to call the archive method if you are not an admin', async function() {
     try {
-      await apos.doc.trash(apos.task.getAnonReq(), {
+      await apos.doc.archived(apos.task.getAnonReq(), {
         slug: 'lori'
       });
       assert(false);
@@ -442,37 +442,37 @@ describe('Docs', function() {
     }
   });
 
-  it('should be able to find the trashed object when using the "trash" method on find()', async function() {
-    // Look for the trashed doc with the `deduplicate-` + its `_id` + its `name` properties.
+  it('should be able to find the archiveed object when using the "archived" method on find()', async function() {
+    // Look for the archiveed doc with the `deduplicate-` + its `_id` + its `name` properties.
     const doc = await apos.doc.find(apos.task.getReq(), {
       slug: 'deduplicate-carl-carl'
-    }).trash(true).toObject();
+    }).archived(true).toObject();
 
     assert(doc);
-    assert(doc.trash);
+    assert(doc.archived);
   });
 
   /// ///
   // RESCUE
   /// ///
 
-  it('should rescue a doc by updating the "trash" property from an object', async function() {
+  it('should rescue a doc by updating the "archived" property from an object', async function() {
     const req = apos.task.getReq();
 
     const doc = await apos.doc.find(req, {
       slug: 'deduplicate-carl-carl'
-    }).trash(null).toObject();
+    }).archived(null).toObject();
 
     await apos.doc.update(req, {
       ...doc,
-      trash: false
+      archived: false
     });
     const newDoc = await apos.doc.find(req, { slug: 'carl' }).toObject();
 
     // We should have a document.
     assert(newDoc);
     assert(newDoc.slug === 'carl');
-    assert(newDoc.trash === false);
+    assert(newDoc.archived === false);
   });
 
   it('should not allow you to call the rescue method if you are not an admin', async function() {

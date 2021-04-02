@@ -52,7 +52,7 @@ const rename = {
   storybook: 'storybook',
   tasks: 'task',
   templates: 'template',
-  trash: 'trash',
+  archive: 'archived',
   ui: 'ui',
   urls: 'url',
   users: 'user',

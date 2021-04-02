@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const path = require('path');
 
-// trash should be peer of home page!
 module.exports = {
   cascades: [ 'batchOperations' ],
   options: {
@@ -17,8 +16,8 @@ module.exports = {
   },
   batchOperations: {
     add: {
-      trash: {
-        label: 'Trash'
+      archive: {
+        label: 'Archive'
       },
       publish: {
         label: 'Publish'
@@ -38,12 +37,12 @@ module.exports = {
         type: '@apostrophecms/home-page'
       },
       _children: [ {
-        slug: '/trash',
-        parkedId: 'trash',
-        type: '@apostrophecms/trash',
-        trash: true,
+        slug: '/archive',
+        parkedId: 'archive',
+        type: '@apostrophecms/archive-page',
+        archived: true,
         orphan: true,
-        _defaults: { title: 'Trash' }
+        _defaults: { title: 'Archive' }
       } ]
     } ]).concat(self.options.park || []);
     self.addManagerModal();
@@ -52,6 +51,7 @@ module.exports = {
     self.addDeduplicateRanksMigration();
     self.addFixHomePagePathMigration();
     self.addMissingLastTargetIdAndPositionMigration();
+    self.addArchivedMigration();
     await self.createIndexes();
   },
   restApiRoutes(self) {
@@ -74,7 +74,7 @@ module.exports = {
       async getAll(req) {
         self.publicApiCheck(req);
         const all = self.apos.launder.boolean(req.query.all);
-        const trash = self.apos.launder.booleanOrNull(req.query.trash);
+        const archived = self.apos.launder.booleanOrNull(req.query.archived);
         const flat = self.apos.launder.boolean(req.query.flat);
         const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
@@ -95,7 +95,7 @@ module.exports = {
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
-            trash: trash,
+            archived,
             orphan: null,
             relationships: false,
             areas: false,
@@ -175,7 +175,7 @@ module.exports = {
         }
       },
       // _id may be a page _id, or the convenient shorthands
-      // `_home` or `_trash`
+      // `_home` or `_archive`
       async getOne(req, _id) {
         self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
@@ -325,10 +325,10 @@ module.exports = {
         });
       },
       // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
-      // To manipulate apostrophe's trash status for something, use a `PATCH` call to modify the `trash` property and set
+      // To manipulate apostrophe's archived status for something, use a `PATCH` call to modify the `archived` property and set
       // it to `true` or `false`. TODO: robust DELETE support as part of a recycle-bin-emptying UI with a big fat
       // confirmation on it. Future implementation must also consider whether attachments have zero remaining references not
-      // fully deleted, which isn't the same as having references still in the trash.
+      // fully deleted, which isn't the same as having references still in the archive.
       async delete(req, _id) {
         self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
@@ -340,8 +340,8 @@ module.exports = {
       // Patch some properties of the page.
       //
       // You may pass `_targetId` and `_position` to move the page within the tree. `_position`
-      // may be `before`, `after` or `inside`. To move a page into or out of the trash, set
-      // `trash` to `true` or `false`.
+      // may be `before`, `after` or `inside`. To move a page into or out of the archive, set
+      // `archived` to `true` or `false`.
       patch(req, _id) {
         self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
@@ -557,9 +557,9 @@ database.`);
       getIdCriteria(_id) {
         return (_id === '_home') ? {
           level: 0
-        } : (_id === '_trash') ? {
+        } : (_id === '_archive') ? {
           level: 1,
-          trash: true
+          archived: true
         } : {
           _id
         };
@@ -590,7 +590,6 @@ database.`);
       // _position are present only the last such values given in the array of patches
       // are applied.
       async patch(req, _id) {
-        // TODO watch out for _targetId and _position and trash and their implications
         return self.withLock(req, async () => {
           const input = req.body;
           const page = await self.findOneForEditing(req, { _id });
@@ -690,7 +689,7 @@ database.`);
       // is the MongoDB criteria object, and any properties of `options`
       // are invoked as methods on the query with their values.
       findForBatch(req, criteria = {}, options = {}) {
-        const query = self.find(req, criteria, options).permission('edit').trash(null);
+        const query = self.find(req, criteria, options).permission('edit').archived(null);
         return query;
       },
       // Insert a page. `targetId` must be an existing page id, and
@@ -727,7 +726,7 @@ database.`);
               path: self.getParentPath(target)
             }).children({
               depth: 1,
-              trash: null,
+              archived: null,
               orphan: null,
               areas: false,
               permission: false
@@ -750,12 +749,12 @@ database.`);
             page.rank = 0;
             pushed = peers.map(child => child._id);
           } else if (position === 'lastChild') {
-            if (!parent.level && (page.type !== '@apostrophecms/trash')) {
-              const trash = peers.find(peer => peer.type === '@apostrophecms/trash');
-              if (trash) {
-                // Trash has to be last child of the home page, but don't be punitive,
+            if (!parent.level && (page.type !== '@apostrophecms/archive-page')) {
+              const archive = peers.find(peer => peer.type === '@apostrophecms/archive-page');
+              if (archive) {
+                // Archive has to be last child of the home page, but don't be punitive,
                 // just put this page before it
-                return self.insert(req, trash._id, 'before', page, options);
+                return self.insert(req, archive._id, 'before', page, options);
               }
             }
             if (!peers.length) {
@@ -771,7 +770,7 @@ database.`);
             }
             pushed = peers.slice(index).map(peer => peer._id);
           } else if (position === 'after') {
-            if (target.type === '@apostrophecms/trash') {
+            if (target.type === '@apostrophecms/archive-page') {
               return self.insert(req, target._id, 'before', page, options);
             }
             page.rank = target.rank + 1;
@@ -910,7 +909,7 @@ database.`);
       // is not strictly ascending, so use an array index into `_children` to
       // determine this parameter instead).
       //
-      // As a shorthand, `targetId` may be `_trash` to refer to the trash can,
+      // As a shorthand, `targetId` may be `_archive` to refer to the main archive page,
       // or `_home` to refer to the home page.
       //
       // Returns an object with a `modified` property, containing an
@@ -945,13 +944,13 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
-          if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/trash') && (!parent._edit)) {
+          if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._edit)) {
             throw self.apos.error('forbidden');
           }
           await nudgeNewPeers();
           await moveSelf();
           await updateDescendants();
-          await trashDescendants();
+          await archiveDescendants();
           await manager.emit('afterMove', req, moved, {
             originalSlug,
             originalPath,
@@ -966,7 +965,7 @@ database.`);
             const moved = await self.findForEditing(req, { _id: movedId }).permission(false).ancestors({
               depth: 1,
               visibility: null,
-              trash: null,
+              archived: null,
               areas: false,
               permission: false
             }).toObject();
@@ -976,9 +975,9 @@ database.`);
             if (!moved.level) {
               throw self.apos.error('invalid', 'Cannot move the home page');
             }
-            // You can't move the trashcan itself
-            if (moved.type === '@apostrophecms/trash') {
-              throw self.apos.error('invalid', 'Cannot move the trash can');
+            // You can't move the archivecan itself
+            if (moved.type === '@apostrophecms/archive-page') {
+              throw self.apos.error('invalid', 'Cannot move the archive can');
             }
             if (moved.parked) {
               throw self.apos.error('invalid', 'Cannot move a parked page');
@@ -993,18 +992,18 @@ database.`);
             } else if (position === 'before') {
               rank = target.rank;
             } else if (position === 'after') {
-              if (target.type === '@apostrophecms/trash') {
-                throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
+              if (target.type === '@apostrophecms/archive-page') {
+                throw self.apos.error('invalid', 'Only the archive can can be the last child of the home page.');
               }
               rank = target.rank + 1;
             } else if (position === 'lastChild') {
               parent = target;
-              if (!parent.level && (moved.type !== '@apostrophecms/trash')) {
-                const trash = parent._children.find(peer => peer.type === '@apostrophecms/trash');
-                if (trash) {
-                  // Trash has to be last child of the home page, but don't be punitive,
+              if (!parent.level && (moved.type !== '@apostrophecms/archive-page')) {
+                const archive = parent._children.find(peer => peer.type === '@apostrophecms/archive-page');
+                if (archive) {
+                  // Archive has to be last child of the home page, but don't be punitive,
                   // just put this page before it
-                  return self.move(req, moved._id, trash._id, 'before');
+                  return self.move(req, moved._id, archive._id, 'before');
                 }
               }
               if (target._children && target._children.length) {
@@ -1037,7 +1036,7 @@ database.`);
             // the object so that moveDescendants can see what we did
             moved.path = newPath;
             // If the old slug wasn't customized, OR our new parent is
-            // in the trash, update the slug as well as the path
+            // in the archive, update the slug as well as the path
             if (parent._id !== oldParent._id) {
               const matchOldParentSlugPrefix = new RegExp('^' + self.apos.util.regExpQuote(self.apos.util.addSlashIfNeeded(oldParent.slug)));
               if (moved.slug.match(matchOldParentSlugPrefix)) {
@@ -1050,9 +1049,9 @@ database.`);
                   _id: moved._id,
                   slug: moved.slug
                 });
-              } else if (parent.trash && !moved.trash) {
+              } else if (parent.archived && !moved.archived) {
                 // #385: we don't follow the pattern of our old parent but we're
-                // moving to the trash, so the slug must change to avoid blocking
+                // moving to the archive, so the slug must change to avoid blocking
                 // reuse of the old URL by a new page
                 moved.slug = parent.slug + '/' + path.basename(moved.slug);
               }
@@ -1061,26 +1060,26 @@ database.`);
             moved.rank = rank;
             moved.aposLastTargetId = targetId;
             moved.aposLastPosition = position;
-            // Are we in the trashcan? Our new parent reveals that
-            if (parent.trash) {
-              moved.trash = true;
+            // Are we in the archivecan? Our new parent reveals that
+            if (parent.archived) {
+              moved.archived = true;
             } else {
-              delete moved.trash;
+              delete moved.archived;
             }
             await self.update(req, moved);
           }
           async function updateDescendants() {
             changed = changed.concat(await self.updateDescendantsAfterMove(req, moved, originalPath, originalSlug));
           }
-          async function trashDescendants() {
-            // Make sure our descendants have the same trash status
+          async function archiveDescendants() {
+            // Make sure our descendants have the same archived status
             const matchParentPathPrefix = self.matchDescendants(moved);
             const $set = {};
             const $unset = {};
-            if (moved.trash) {
-              $set.trash = true;
+            if (moved.archived) {
+              $set.archived = true;
             } else {
-              $unset.trash = true;
+              $unset.archived = true;
             }
             const action = {};
             if (!_.isEmpty($set)) {
@@ -1097,19 +1096,19 @@ database.`);
         }
       },
       // A method to return a target page object based on a passed `targetId`
-      // value. `position` is used to prevent attempts to move after the trash
+      // value. `position` is used to prevent attempts to move after the archive
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
-        const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors({
+        const target = await self.find(req, criteria).permission(false).archived(null).areas(false).ancestors({
           depth: 1,
-          trash: null,
+          archived: null,
           orphan: null,
           areas: false,
           permission: false
         }).children({
           depth: 1,
-          trash: null,
+          archived: null,
           orphan: null,
           areas: false,
           permission: false
@@ -1117,7 +1116,7 @@ database.`);
         if (!target) {
           throw self.apos.error('notfound');
         }
-        if (target.type === '@apostrophecms/trash' && target.level === 1 && position === 'after') {
+        if (target.type === '@apostrophecms/archive-page' && target.level === 1 && position === 'after') {
           throw self.apos.error('invalid');
         }
         return target;
@@ -1180,15 +1179,15 @@ database.`);
       // may require asynchronous work to perform it.
       async movePermissions(req, moved, data) {
       },
-      async deduplicatePages(req, pages, toTrash) {
+      async deduplicatePages(req, pages, toArchive) {
         for (const page of pages) {
           const match = self.matchDescendants(page);
           await deduplicate(page);
           await propagate(page, match);
         }
         async function deduplicate(page) {
-          if (toTrash) {
-            return self.apos.doc.getManager(page.type).deduplicateTrash(req, page);
+          if (toArchive) {
+            return self.apos.doc.getManager(page.type).deduplicateArchive(req, page);
           } else {
             return self.apos.doc.getManager(page.type).deduplicateRescue(req, page);
           }
@@ -1229,10 +1228,10 @@ database.`);
       // slug of the page's former parent, and `changed` is an array
       // of objects with _id and slug properties, including all subpages that
       // had to move too.
-      async moveToTrash(req, _id) {
-        const trash = await findTrash();
-        if (!trash) {
-          throw new Error('Site has no trashcan, contact administrator');
+      async moveToArchive(req, _id) {
+        const archive = await findArchive();
+        if (!archive) {
+          throw new Error('Site has no archive, contact administrator');
         }
         const page = await findPage();
         if (!page) {
@@ -1240,31 +1239,31 @@ database.`);
         }
         const parent = page._ancestors[0];
         if (!parent) {
-          throw self.apos.error('invalid', 'Cannot move the home page to the trash');
+          throw self.apos.error('invalid', 'Cannot move the home page to the archive');
         }
         const changed = await movePage();
         return {
           parentSlug: parent && parent.slug,
           changed
         };
-        async function findTrash() {
-          // Always only one trash page at level 1, so we don't have
+        async function findArchive() {
+          // Always only one archive page at level 1, so we don't have
           // to hardcode the slug
           return self.find(req, {
-            trash: true,
+            archived: true,
             level: 1
-          }).permission(false).trash(null).areas(false).toObject();
+          }).permission(false).archived(null).areas(false).toObject();
         }
         async function findPage() {
           // Also checks permissions
           return self.find(req, { _id: _id }).permission('edit').ancestors({
             depth: 1,
-            trash: null,
+            archived: null,
             areas: false
           }).toObject();
         }
         async function movePage() {
-          return self.move(req, page._id, trash._id, 'firstChild');
+          return self.move(req, page._id, archive._id, 'firstChild');
         }
       },
       // Update a page. The `options` argument may be omitted entirely.
@@ -1272,8 +1271,8 @@ database.`);
       // permissions are not checked.
       async update(req, page, options) {
         if (page.level === 0) {
-          // You cannot move the home page to the trash
-          page.trash = false;
+          // You cannot move the home page to the archive
+          page.archived = false;
         }
         if (!options) {
           options = {};
@@ -1632,10 +1631,10 @@ database.`);
             break;
           }
           let newSlug = desc.slug.replace(matchParentSlugPrefix, page.slug + '/');
-          if (page.trash && !desc.trash) {
-            // #385: we are moving this to the trash, force a new slug
+          if (page.archived && !desc.archived) {
+            // #385: we are moving this to the archive, force a new slug
             // even if it was formerly a customized one. Otherwise it is
-            // difficult to free up custom slugs by trashing pages
+            // difficult to free up custom slugs by archiving pages
             if (newSlug === desc.slug) {
               newSlug = page.slug + '/' + path.basename(desc.slug);
             }
@@ -1764,7 +1763,7 @@ database.`);
       docUnversionedFields(req, doc, fields) {
         // Moves in the tree have knock-on effects on other
         // pages, they are not suitable for rollback
-        fields.push('path', 'trash', 'rank', 'level');
+        fields.push('path', 'archived', 'rank', 'level');
       },
       // Returns true if the doc is a page in the tree
       // (it has a slug with a leading /).
@@ -2007,11 +2006,11 @@ database.`);
         return query;
       },
       // Returns a query that finds pages the current user can edit. Unlike
-      // find(), this query defaults to including docs in the trash, although
+      // find(), this query defaults to including docs in the archive, although
       // we apply filters in the UI.
       findForEditing(req, criteria, builders) {
         // Include ancestors to help with determining allowed types
-        const query = self.find(req, criteria).permission('edit').trash(null).ancestors(true);
+        const query = self.find(req, criteria).permission('edit').archived(null).ancestors(true);
         if (builders) {
           for (const [ key, value ] of Object.entries(builders)) {
             query[key](value);
@@ -2041,20 +2040,54 @@ database.`);
           rank: 1,
           level: 1,
           visibility: 1,
-          trash: 1,
+          archived: 1,
           parked: 1,
           lastPublishedAt: 1,
           aposDocId: 1,
           aposLocale: 1
         };
       },
+      addArchivedMigration() {
+        self.apos.migration.add('rename-archive-to-archived', async () => {
+          await self.apos.migration.updateMany({
+            archive: true
+          }, {
+            $set: {
+              archived: true
+            },
+            $unset: {
+              archive: 1
+            }
+          });
+          await self.apos.migration.updateMany({
+            archive: {
+              $ne: true
+            }
+          }, {
+            $set: {
+              archived: false
+            },
+            $unset: {
+              archive: 1
+            }
+          });
+          await self.apos.migration.updateMany({
+            parkedId: 'archive'
+          }, {
+            $set: {
+              parkedId: 'archive',
+              type: '@apostrophecms/archive-page'
+            }
+          });
+        });
+      },
       addDeduplicateRanksMigration() {
-        self.apos.migration.add('deduplicate-trash-rank', async () => {
+        self.apos.migration.add('deduplicate-archive-rank', async () => {
           const tabs = await self.apos.doc.db.find({
             slug: /^\//,
             level: 1
           }).sort({
-            trash: 1,
+            archived: 1,
             rank: 1
           }).toArray();
           for (let i = 0; (i < tabs.length); i++) {

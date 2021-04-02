@@ -106,7 +106,7 @@ module.exports = {
           throw self.apos.error('forbidden');
         }
         if (_id.charAt(0) === '_') {
-          // A shortcut such as _home or _trash,
+          // A shortcut such as _home or _archive,
           // will be interpreted later
           return _id;
         } else {

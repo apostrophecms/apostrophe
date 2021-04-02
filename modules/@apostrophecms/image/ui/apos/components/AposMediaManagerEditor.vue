@@ -33,21 +33,21 @@
           <AposButton
             type="quiet" label="Replace"
             @click="showReplace = true"
-            :disabled="isTrashed"
+            :disabled="isArchived"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="View"
             @click="viewMedia"
-            :disabled="isTrashed"
+            :disabled="isArchived"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="Download"
-            :href="!isTrashed ? activeMedia.attachment._urls.original : false"
-            :disabled="isTrashed"
+            :href="!isArchived ? activeMedia.attachment._urls.original : false"
+            :disabled="isArchived"
             download
           />
         </li>
@@ -76,11 +76,11 @@
         />
         <AposButton
           v-if="activeMedia._id && !restoreOnly"
-          @click="trash"
-          icon="trash-can-icon"
+          @click="archive"
+          icon="archive-can-icon"
           :icon-only="true"
-          class="apos-media-editor__trash"
-          label="Trash"
+          class="apos-media-editor__archive"
+          label="Archive"
         />
         <AposButton
           @click="save" class="apos-media-editor__save"
@@ -134,7 +134,7 @@ export default {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
-      restoreOnly: this.media && this.media.trash,
+      restoreOnly: this.media && this.media.archived,
       // Unlike `activeMedia` this changes ONLY when a new doc is swapped in.
       // For overall change detection.
       original: klona(this.media),
@@ -169,8 +169,8 @@ export default {
       }
       return dayjs(this.activeMedia.attachment.createdAt).format('MMM Do, YYYY');
     },
-    isTrashed() {
-      return this.media.trash;
+    isArchived() {
+      return this.media.archived;
     }
   },
   watch: {
@@ -208,7 +208,7 @@ export default {
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
-      this.restoreOnly = this.activeMedia.trash;
+      this.restoreOnly = this.activeMedia.archived;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
@@ -220,10 +220,10 @@ export default {
         }
       }
     },
-    async trash() {
+    async archive() {
       if (!await apos.confirm({
         heading: 'Are You Sure?',
-        description: 'This will move the image to the trash.'
+        description: 'This will move the image to the archive.'
       })) {
         return;
       }
@@ -231,7 +231,7 @@ export default {
       await apos.http.patch(route, {
         busy: true,
         body: {
-          trash: true
+          archived: true
         },
         draft: true
         // Autopublish will take care of the published side
@@ -261,7 +261,7 @@ export default {
           const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
           if (this.restoreOnly) {
             body = {
-              trash: false
+              archived: false
             };
           }
           const doc = await requestMethod(route, {

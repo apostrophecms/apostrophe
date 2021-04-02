@@ -36,8 +36,8 @@ export default {
           field.readOnly = true;
         }
       }
-      // Trash UI is handled via action buttons
-      schema = schema.filter(field => field.name !== 'trash');
+      // Archive UI is handled via action buttons
+      schema = schema.filter(field => field.name !== 'archived');
       return schema;
     }
   },

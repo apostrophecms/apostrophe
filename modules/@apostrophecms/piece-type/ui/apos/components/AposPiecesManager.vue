@@ -67,7 +67,7 @@
             :filter-values="filterValues"
             :labels="moduleLabels"
             @select-click="selectAll"
-            @trash-click="trashClick"
+            @archive-click="archiveClick"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
@@ -111,7 +111,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'trash', 'search', 'safe-close', 'updated' ],
+  emits: [ 'archive', 'search', 'safe-close', 'updated' ],
   data() {
     return {
       modal: {
@@ -292,9 +292,9 @@ export default {
       }
     },
     // Toolbar handlers
-    trashClick() {
+    archiveClick() {
       // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('trash', this.checked);
+      this.$emit('archive', this.checked);
     },
     async search(query) {
       if (query) {

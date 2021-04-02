@@ -34,7 +34,7 @@ module.exports = {
     '@apostrophecms/polymorphic-type': {},
     '@apostrophecms/page': {},
     '@apostrophecms/home-page': {},
-    '@apostrophecms/trash': {},
+    '@apostrophecms/archive-page': {},
     '@apostrophecms/search': {},
     '@apostrophecms/any-page-type': {},
     '@apostrophecms/area': {},

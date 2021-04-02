@@ -31,7 +31,7 @@ module.exports = {
           def: false
         }
       },
-      remove: [ 'trash' ],
+      remove: [ 'archived' ],
       group: {
         utility: {
           fields: [
@@ -44,8 +44,8 @@ module.exports = {
     };
   },
   init(self) {
-    self.removeTrashPrefixFields([ 'slug' ]);
-    self.addTrashSuffixFields([
+    self.removeArchivedPrefixFields([ 'slug' ]);
+    self.addArchivedSuffixFields([
       'slug'
     ]);
     self.rules = {};
