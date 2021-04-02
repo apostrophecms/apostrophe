@@ -123,6 +123,13 @@ module.exports = {
             // avoid overcomplicating parked pages
             return;
           }
+          await self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              lastPublishedAt: null
+            }
+          });
           return self.apos.doc.db.removeMany({
             _id: {
               $in: [
