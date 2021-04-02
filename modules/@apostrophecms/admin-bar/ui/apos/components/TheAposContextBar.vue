@@ -282,8 +282,6 @@ export default {
     // _url differs between draft and published. May do nothing if the mode
     // matches the existing one
     switchDraftMode(mode) {
-      // console.log('mode');
-      // console.log(mode);
       apos.bus.$emit('set-context', {
         mode
       });
@@ -300,21 +298,15 @@ export default {
       doc = doc || this.context;
       if ((mode === this.draftMode) && (locale === apos.locale)) {
         if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
-          console.log('thank you anyeway');
           return;
         } else if (navigate && this.urlDiffers(doc._url)) {
           await this.unlock();
-          console.log('how are you');
           return window.location.assign(doc._url);
         } else {
-          console.log('hi');
           await this.unlock();
         }
       }
       try {
-        console.log('trying to set the mode');
-        console.log(mode);
-        console.log(doc._id);
         // Returns the doc as represented in the new locale and mode
         const modeDoc = await apos.http.post(`${apos.login.action}/set-context`, {
           body: {
@@ -354,10 +346,10 @@ export default {
       } catch (e) {
         if (e.status === 404) {
           // TODO don't get this far, check this in advance and disable it in the UI
-          // await apos.alert({
-          //   heading: 'Does Not Exist Yet',
-          //   description: `That document is not yet available as ${mode} in the ${locale} locale.`
-          // });
+          await apos.alert({
+            heading: 'Does Not Exist Yet',
+            description: `That document is not yet available as ${mode} in the ${locale} locale.`
+          });
         } else {
           // Should not happen
           await apos.alert({
