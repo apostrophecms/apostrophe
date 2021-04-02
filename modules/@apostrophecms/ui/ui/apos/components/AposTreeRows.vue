@@ -40,7 +40,7 @@
           :disabled="getCellDisabled(col, row)"
           :data-col="col.property"
           :style="getCellStyles(col.property, index)"
-          @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
+          @click="effectiveAction(col, row)"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -294,6 +294,23 @@ export default {
       }
 
       return classes;
+    },
+    effectiveAction(col, row) {
+      if (col.action) {
+        let component = this;
+        let action = col.action;
+        const params = [];
+        if (this.isObject(col.action)) {
+          action = col.action.name;
+          if (col.action.params) {
+            col.action.params.forEach(param => params.push(row[param]));
+          }
+          if (col.action.component === 'bus') {
+            component = apos.bus;
+          }
+        }
+        component.$emit(action, ...params);
+      }
     },
     getEffectiveType(col, row) {
       if (row.type === '@apostrophecms/trash') {

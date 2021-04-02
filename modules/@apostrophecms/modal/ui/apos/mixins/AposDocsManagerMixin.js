@@ -104,6 +104,9 @@ export default {
       const result = this.relationshipField.max && this.checked.length >= this.relationshipField.max;
       return result;
     },
+    fungi() {
+      console.log('i am a fun gi');
+    },
     selectAll() {
       if (!this.checked.length) {
         this.items.forEach((item) => {

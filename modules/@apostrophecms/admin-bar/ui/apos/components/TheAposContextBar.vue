@@ -96,6 +96,7 @@ export default {
     apos.bus.$on('context-editing', this.onContextEditing);
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('set-context-if-needed-and-redirect', this.onSetContextIfNeededAndRedirect);
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
@@ -126,6 +127,32 @@ export default {
     }
   },
   methods: {
+    // Looks ahead to see if a destination doc and the current editing mode
+    // will product a 404. If it does, switch the context to draft
+    // which we know to be safe. Then navigate to the doc
+    async onSetContextIfNeededAndRedirect(_id, type, url) {
+      const destId = _id.replace(':draft', `:${window.apos.mode}`);
+      try {
+        await apos.http.get(
+          `${apos.modules[type].action}/${destId}`,
+          { busy: true }
+        );
+      } catch (e) {
+        // The current situation would 404. Fetch the draft version of
+        // the doc and set the mode to 'draft'
+        const draftId = _id.replace(':published', ':draft');
+        const draftDoc = await apos.http.get(
+          `${apos.modules[type].action}/${draftId}`,
+          { busy: true }
+        );
+        await this.setContext({
+          mode: 'draft',
+          navigate: false,
+          doc: draftDoc
+        });
+      }
+      window.location = url;
+    },
     // Implements the `set-context` Apostrophe event, which can change the mode
     // (`draft` or `published`), the locale (such as `en`), and the context
     // document (`doc`). Navigates to `doc._url` if it differs from the browser's
@@ -281,6 +308,8 @@ export default {
     // _url differs between draft and published. May do nothing if the mode
     // matches the existing one
     switchDraftMode(mode) {
+      // console.log('mode');
+      // console.log(mode);
       apos.bus.$emit('set-context', {
         mode
       });
@@ -297,15 +326,21 @@ export default {
       doc = doc || this.context;
       if ((mode === this.draftMode) && (locale === apos.locale)) {
         if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
+          console.log('thank you anyeway');
           return;
         } else if (navigate && this.urlDiffers(doc._url)) {
           await this.unlock();
+          console.log('how are you');
           return window.location.assign(doc._url);
         } else {
+          console.log('hi');
           await this.unlock();
         }
       }
       try {
+        console.log('trying to set the mode');
+        console.log(mode);
+        console.log(doc._id);
         // Returns the doc as represented in the new locale and mode
         const modeDoc = await apos.http.post(`${apos.login.action}/set-context`, {
           body: {
@@ -345,10 +380,10 @@ export default {
       } catch (e) {
         if (e.status === 404) {
           // TODO don't get this far, check this in advance and disable it in the UI
-          await apos.alert({
-            heading: 'Does Not Exist Yet',
-            description: `That document is not yet available as ${mode} in the ${locale} locale.`
-          });
+          // await apos.alert({
+          //   heading: 'Does Not Exist Yet',
+          //   description: `That document is not yet available as ${mode} in the ${locale} locale.`
+          // });
         } else {
           // Should not happen
           await apos.alert({

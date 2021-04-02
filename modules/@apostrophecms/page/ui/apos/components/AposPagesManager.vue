@@ -138,7 +138,12 @@ export default {
           {
             columnHeader: 'Link',
             property: '_url',
-            type: 'link',
+            action: {
+              name: 'set-context-if-needed-and-redirect',
+              component: 'bus',
+              params: [ '_id', 'type', '_url' ]
+            },
+            type: 'button',
             cellValue: {
               icon: 'link'
             }

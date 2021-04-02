@@ -376,6 +376,9 @@ module.exports = {
   },
   extendMethods(self) {
     return {
+      enableAction() {
+        self.action = '/api/v1/@apostrophecms/page';
+      },
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);
         const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';
