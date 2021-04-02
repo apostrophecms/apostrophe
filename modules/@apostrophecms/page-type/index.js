@@ -113,6 +113,33 @@ module.exports = {
           }
         }
       },
+      afterTrash: {
+        async trashIsDraftOnly(req, doc) {
+          if (!doc._id.includes(':draft')) {
+            return;
+          }
+          if (doc.parkedId === 'trash') {
+            // The root trash can exists in both draft and published to
+            // avoid overcomplicating parked pages
+            return;
+          }
+          await self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              lastPublishedAt: null
+            }
+          });
+          return self.apos.doc.db.removeMany({
+            _id: {
+              $in: [
+                doc._id.replace(':draft', ':published'),
+                doc._id.replace(':draft', ':previous')
+              ]
+            }
+          });
+        }
+      },
       beforePublish: {
         async ancestorsMustBePublished(req, { draft, published }) {
           const ancestorAposDocIds = draft.path.split('/');
