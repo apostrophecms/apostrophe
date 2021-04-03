@@ -2048,19 +2048,19 @@ database.`);
         };
       },
       addArchivedMigration() {
-        self.apos.migration.add('rename-archive-to-archived', async () => {
-          await self.apos.migration.updateMany({
-            archive: true
+        self.apos.migration.add('rename-trash-to-archived', async () => {
+          await self.apos.doc.db.updateMany({
+            trash: true
           }, {
             $set: {
               archived: true
             },
             $unset: {
-              archive: 1
+              trash: 1
             }
           });
-          await self.apos.migration.updateMany({
-            archive: {
+          await self.apos.doc.db.updateMany({
+            trash: {
               $ne: true
             }
           }, {
@@ -2068,11 +2068,11 @@ database.`);
               archived: false
             },
             $unset: {
-              archive: 1
+              trash: 1
             }
           });
-          await self.apos.migration.updateMany({
-            parkedId: 'archive'
+          await self.apos.doc.db.updateMany({
+            parkedId: 'trash'
           }, {
             $set: {
               parkedId: 'archive',
