@@ -2085,6 +2085,18 @@ database.`);
               type: '@apostrophecms/archive-page'
             }
           });
+          await self.apos.migration.eachDoc({
+            slug: /^\/trash(\/|$)/,
+            archive: true
+          }, async doc => {
+            return self.apos.doc.db.updateOne({
+              _id: doc._id
+            }, {
+              $set: {
+                slug: doc.slug.replace('/trash', '/archive')
+              }
+            });
+          });
         });
       },
       addDeduplicateRanksMigration() {
