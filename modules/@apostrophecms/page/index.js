@@ -42,7 +42,7 @@ module.exports = {
         type: '@apostrophecms/archive-page',
         archived: true,
         orphan: true,
-        _defaults: { title: 'Archive' }
+        title: 'Archive'
       } ]
     } ]).concat(self.options.park || []);
     self.addManagerModal();
@@ -2082,12 +2082,13 @@ database.`);
           }, {
             $set: {
               parkedId: 'archive',
-              type: '@apostrophecms/archive-page'
+              type: '@apostrophecms/archive-page',
+              title: 'Archive'
             }
           });
           await self.apos.migration.eachDoc({
             slug: /^\/trash(\/|$)/,
-            archive: true
+            archived: true
           }, async doc => {
             return self.apos.doc.db.updateOne({
               _id: doc._id
