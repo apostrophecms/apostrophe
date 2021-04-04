@@ -2050,22 +2050,28 @@ database.`);
       addArchivedMigration() {
         self.apos.migration.add('rename-trash-to-archived', async () => {
           await self.apos.doc.db.updateMany({
-            trash: true
+            trash: {
+              $ne: true
+            },
+            archived: {
+              $exists: 0
+            }
           }, {
             $set: {
-              archived: true
+              archived: false
             },
             $unset: {
               trash: 1
             }
           });
           await self.apos.doc.db.updateMany({
-            trash: {
-              $ne: true
+            trash: true,
+            archived: {
+              $exists: 0
             }
           }, {
             $set: {
-              archived: false
+              archived: true
             },
             $unset: {
               trash: 1
