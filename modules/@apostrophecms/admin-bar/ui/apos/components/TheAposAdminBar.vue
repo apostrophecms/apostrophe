@@ -7,7 +7,7 @@
         <TheAposAdminBarMenu :items="items" />
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
-      <TheAposContextBar v-if="contextBarActive" />
+      <TheAposContextBar />
     </nav>
   </div>
 </template>
@@ -24,11 +24,6 @@ export default {
       default: function () {
         return [];
       }
-    }
-  },
-  computed: {
-    contextBarActive() {
-      return window.apos.adminBar.contextBar;
     }
   },
   async mounted() {
