@@ -81,13 +81,33 @@ module.exports = {
         },
         email: {
           type: 'string',
-          name: 'email',
           label: 'Email'
         },
         password: {
           type: 'password',
-          name: 'password',
           label: 'Password'
+        },
+        role: {
+          type: 'select',
+          choices: [
+            {
+              label: 'Guest',
+              value: 'guest'
+            },
+            {
+              label: 'Contributor',
+              value: 'contributor'
+            },
+            {
+              label: 'Editor',
+              value: 'editor'
+            },
+            {
+              label: 'Admin',
+              value: 'admin'
+            }
+          ],
+          required: true
         }
       },
       remove: [ 'visibility' ],
@@ -112,7 +132,8 @@ module.exports = {
         permissions: {
           label: 'Permissions',
           fields: [
-            'disabled'
+            'disabled',
+            'role'
           ]
         }
       }
@@ -131,6 +152,7 @@ module.exports = {
     self.initializeCredential();
     self.addOurTrashPrefixFields();
     self.enableSecrets();
+    self.addRoleMigration();
     await self.ensureSafe();
   },
   apiRoutes(self) {
@@ -448,6 +470,21 @@ module.exports = {
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;
         return self.update(req, user);
+      },
+
+      addRoleMigration() {
+        self.apos.migration.add('add-role-to-user', async () => {
+          return self.apos.doc.db.updateMany({
+            type: '@apostrophecms/user',
+            role: {
+              $exists: 0
+            }
+          }, {
+            $set: {
+              role: 'admin'
+            }
+          });
+        });
       }
     };
   },

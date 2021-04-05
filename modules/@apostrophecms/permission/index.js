@@ -111,6 +111,38 @@ module.exports = {
             object[property] = true;
           }
         }
+      },
+
+      apiRoutes(self) {
+        return {
+          get: {
+            async grid(req) {
+              const types = [];
+              for (const module of Object.values(self.apos.modules)) {
+                if (self.apos.synth.instanceOf(module, '@apostrophecms/piece-type')) {
+                  types.push(describe(module));
+                }
+              }
+              types.push(describe(self.apos.modules['@apostrophecms/any-page-type']));
+              function describe(module) {
+                const typeInfo = {
+                  label: module.options.permissionsLabel || module.options.pluralLabel || module.options.label,
+                  name: module.name,
+                  autopublish: module.options.autopublish,
+                  adminOnly: module.options.adminOnly,
+                  singleton: module.options.singleton
+                };
+                for (const permission of [ 'view', 'edit', 'publish' ]) {
+                  typeInfo[permission] = self.can(req, permission, name);
+                }
+                return typeInfo;
+              }
+              return {
+                types
+              };
+            }
+          }
+        };
       }
     };
   }
