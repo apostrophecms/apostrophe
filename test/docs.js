@@ -422,7 +422,7 @@ describe('Docs', function() {
     assert(archived.archived === true);
   });
 
-  it('should not be able to find the archiveed object', async function() {
+  it('should not be able to find the archived object', async function() {
     const req = apos.task.getReq();
     const doc = await apos.doc.find(req, {
       slug: 'carl'
@@ -442,8 +442,8 @@ describe('Docs', function() {
     }
   });
 
-  it('should be able to find the archiveed object when using the "archived" method on find()', async function() {
-    // Look for the archiveed doc with the `deduplicate-` + its `_id` + its `name` properties.
+  it('should be able to find the archived object when using the "archived" method on find()', async function() {
+    // Look for the archived doc with the `deduplicate-` + its `_id` + its `name` properties.
     const doc = await apos.doc.find(apos.task.getReq(), {
       slug: 'deduplicate-carl-carl'
     }).archived(true).toObject();

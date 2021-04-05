@@ -784,7 +784,7 @@ Regression tests passing.
 
 * Filters for "select" fields now default to "no opinion," rather than the default choice. This is the normal behavior for other field types.
 
-* Even more promise support! `apos.attachments.insert`, `pieces.archived` and `pieces.rescue` all return promises if no callback is given.
+* Even more promise support! `apos.attachments.insert`, `pieces.trash` and `pieces.rescue` all return promises if no callback is given.
 
 * A YouTube embed unit test was removed to ensure consistent results in Travis CI, which is once again in routine use.
 
