@@ -111,7 +111,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'trash', 'search', 'safe-close', 'updated' ],
+  emits: [ 'trash', 'safe-close' ],
   data() {
     return {
       modal: {
