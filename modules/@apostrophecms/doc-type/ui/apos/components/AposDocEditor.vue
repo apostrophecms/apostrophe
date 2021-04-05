@@ -590,8 +590,7 @@ export default {
         })) {
           await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
             body: {
-              trash: true,
-              _publish: true
+              trash: true
             },
             busy: true,
             draft: true
