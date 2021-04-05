@@ -139,8 +139,8 @@ module.exports = {
         }
       },
       afterTrash: {
-        // Mark draft only after moving to trash, to reactivate UI associated with
-        // things never published before
+        // Mark draft only after moving to trash, to reactivate UI
+        // associated with things never published before
         async markNeverPublished(req, doc) {
           if (!self.options.localized) {
             return;
