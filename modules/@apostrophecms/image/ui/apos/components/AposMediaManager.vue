@@ -373,9 +373,9 @@ export default {
       this.$emit('trash', this.checked);
     },
 
-    search(query) {
-      // TODO stub
-      this.$emit('search', query);
+    async search(query) {
+      console.log(`query is ${query}`);
+      this.filter('autocomplete', query);
     },
 
     async onContentChanged() {
