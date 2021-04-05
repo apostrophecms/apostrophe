@@ -3,7 +3,6 @@
 {% elif data.manager.options.className %}
   {% set className = data.manager.options.className %}
 {% endif %}
-
 <div data-rich-text{% if className %} class="{{ className }}" {% endif %}>
   {{ data.widget.content | safe }}
 </div>
