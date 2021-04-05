@@ -374,7 +374,6 @@ export default {
     },
 
     async search(query) {
-      console.log(`query is ${query}`);
       this.filter('autocomplete', query);
     },
 
