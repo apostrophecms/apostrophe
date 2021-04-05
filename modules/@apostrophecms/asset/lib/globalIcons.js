@@ -52,7 +52,7 @@ module.exports = {
   'redo-icon': 'RedoVariant',
   'refresh-icon': 'Refresh',
   'sign-text-icon': 'SignText',
-  'archive-can-icon': 'TrashCan',
+  'trash-can-icon': 'TrashCan',
   'tune-icon': 'Tune',
   'undo-icon': 'UndoVariant',
   'unfold-more-horizontal-icon': 'UnfoldMoreHorizontal',

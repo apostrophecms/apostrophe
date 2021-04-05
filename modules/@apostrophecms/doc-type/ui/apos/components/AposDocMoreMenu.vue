@@ -39,7 +39,7 @@ export default {
         return false;
       }
     },
-    canMoveToArchived: {
+    canArchive: {
       type: Boolean,
       default() {
         return false;
