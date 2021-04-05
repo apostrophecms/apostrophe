@@ -1,3 +1,9 @@
-<div data-raw-html{% if data.manager.options.className %} class="{{ data.manager.options.className }}"{% endif %}>
+{% if data.options.className %}
+  {% set className = data.options.className %}
+{% elif data.manager.options.className %}
+  {% set className = data.manager.options.className %}
+{% endif %}
+
+<div data-raw-html{% if className %} class="{{ className }}"{% endif %}>
   {% component '@apostrophecms/html-widget:render' with data.widget %}
 </div>
