@@ -77,7 +77,7 @@
         <AposButton
           v-if="activeMedia._id && !restoreOnly"
           @click="archive"
-          icon="archive-can-icon"
+          icon="trash-can-icon"
           :icon-only="true"
           class="apos-media-editor__archive"
           label="Archive"
