@@ -1395,6 +1395,29 @@ database.`);
         if (self.isFound(req)) {
           return;
         }
+        if (req.user && (req.mode === 'published')) {
+          // Try again in published mode
+          try {
+            const testReq = self.apos.task.getReq({
+              user: req.user,
+              url: req.url,
+              params: req.params,
+              query: req.query,
+              mode: 'draft'
+            });
+            await self.serveGetPage(testReq);
+            await self.emit('serve', testReq);
+            if (self.isFound(testReq)) {
+              req.redirect = self.apos.url.build(req.url, {
+                'apos-mode': 'draft'
+              });
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+            // Nonfatal, we were just probing
+          }
+        }
         // Give all modules a chance to save the day
         await self.emit('notFound', req);
         // Are we happy now?
