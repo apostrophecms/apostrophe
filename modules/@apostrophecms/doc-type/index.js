@@ -139,6 +139,39 @@ module.exports = {
         }
       },
       afterTrash: {
+        // Mark draft only after moving to trash, to reactivate UI
+        // associated with things never published before
+        async markNeverPublished(req, doc) {
+          if (!self.options.localized) {
+            return;
+          }
+          if (!doc._id.includes(':draft')) {
+            return;
+          }
+          if (doc.parkedId === 'trash') {
+            // The root trash can exists in both draft and published to
+            // avoid overcomplicating parked pages
+            return;
+          }
+          if (self.options.autopublish) {
+            return;
+          }
+          await self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              lastPublishedAt: null
+            }
+          });
+          return self.apos.doc.db.removeMany({
+            _id: {
+              $in: [
+                doc._id.replace(':draft', ':published'),
+                doc._id.replace(':draft', ':previous')
+              ]
+            }
+          });
+        },
         deduplicateTrash(req, doc) {
           const deduplicateKey = doc.aposDocId;
           if (doc.parkedId === 'trash') {
