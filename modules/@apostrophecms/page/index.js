@@ -977,7 +977,7 @@ database.`);
             }
             // You can't move the archive itself
             if (moved.type === '@apostrophecms/archive-page') {
-              throw self.apos.error('invalid', 'Cannot move the archive can');
+              throw self.apos.error('invalid', 'Cannot move the archive');
             }
             if (moved.parked) {
               throw self.apos.error('invalid', 'Cannot move a parked page');
