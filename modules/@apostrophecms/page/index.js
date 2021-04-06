@@ -12,7 +12,27 @@ module.exports = {
         label: 'Home'
       }
     ],
-    quickCreate: true
+    quickCreate: true,
+    minimumPark: [
+      {
+        slug: '/',
+        parkedId: 'home',
+        _defaults: {
+          title: 'Home',
+          type: '@apostrophecms/home-page'
+        },
+        _children: [
+          {
+            slug: '/archive',
+            parkedId: 'archive',
+            type: '@apostrophecms/archive-page',
+            archived: true,
+            orphan: true,
+            title: 'Archive'
+          }
+        ]
+      }
+    ]
   },
   batchOperations: {
     add: {
@@ -29,22 +49,7 @@ module.exports = {
   },
   async init(self) {
     self.typeChoices = self.options.types || [];
-    self.parked = (self.options.minimumPark || [ {
-      slug: '/',
-      parkedId: 'home',
-      _defaults: {
-        title: 'Home',
-        type: '@apostrophecms/home-page'
-      },
-      _children: [ {
-        slug: '/archive',
-        parkedId: 'archive',
-        type: '@apostrophecms/archive-page',
-        archived: true,
-        orphan: true,
-        title: 'Archive'
-      } ]
-    } ]).concat(self.options.park || []);
+    self.parked = self.options.minimumPark.concat(self.options.park || []);
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -1675,24 +1680,6 @@ database.`);
       // Parks one page as found in the `park` option. Called by
       // `implementParkAll`.
       async implementParkOne(req, item) {
-        if (item.parkedId === 'trash') {
-          throw new Error(
-`Your project contains a custom minimumPark option containing
-a page with a parkedId of "trash". Since 3.0 alpha 7, this page
-must be configured as follows:
-
-{
-  slug: '/archive',
-  parkedId: 'archive',
-  type: '@apostrophecms/archive-page',
-  archived: true,
-  orphan: true,
-  title: 'Archive'
-}
-
-Please make this change and restart.`
-          );
-        }
         if (!item.parkedId) {
           throw new Error('Parked pages must have a unique parkedId property');
         }
