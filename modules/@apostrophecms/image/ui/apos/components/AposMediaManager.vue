@@ -372,9 +372,8 @@ export default {
       this.$emit('archive', this.checked);
     },
 
-    search(query) {
-      // TODO stub
-      this.$emit('search', query);
+    async search(query) {
+      this.filter('autocomplete', query);
     },
 
     async onContentChanged() {

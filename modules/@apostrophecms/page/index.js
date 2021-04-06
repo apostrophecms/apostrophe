@@ -1621,7 +1621,9 @@ database.`);
         const query = self.apos.doc.db.find({ path: matchParentPathPrefix }).project({
           slug: 1,
           path: 1,
-          level: 1
+          level: 1,
+          trash: 1,
+          lastPublishedAt: 1
         });
         while (!done) {
           const desc = await query.next();
@@ -1649,16 +1651,48 @@ database.`);
           desc.path = desc.path.replace(matchParentPathPrefix, page.path + '/');
           desc.slug = newSlug;
           desc.level = desc.level + (page.level - oldLevel);
+          desc.trash = page.trash;
+          if (desc.trash) {
+            desc.lastPublishedAt = null;
+          }
           await self.apos.doc.retryUntilUnique(req, desc, () => updateDescendant(desc));
         }
         return changed;
         async function updateDescendant(desc) {
-          await self.apos.doc.db.updateOne({ _id: desc._id }, { $set: _.pick(desc, 'path', 'slug', 'level') });
+          await self.apos.doc.db.updateOne({ _id: desc._id }, { $set: _.pick(desc, 'path', 'slug', 'level', 'lastPublishedAt', 'trash') });
+          if (desc.trash) {
+            await self.apos.doc.db.removeMany({
+              _id: {
+                $in: [
+                  desc._id.replace(':draft', ':published'),
+                  desc._id.replace(':draft', ':previous')
+                ]
+              }
+            });
+          }
         }
       },
       // Parks one page as found in the `park` option. Called by
       // `implementParkAll`.
       async implementParkOne(req, item) {
+        if (item.parkedId === 'trash') {
+          throw new Error(
+`Your project contains a custom minimumPark option containing
+a page with a parkedId of "trash". Since 3.0 alpha 7, this page
+must be configured as follows:
+
+{
+  slug: '/archive',
+  parkedId: 'archive',
+  type: '@apostrophecms/archive-page',
+  archived: true,
+  orphan: true,
+  title: 'Archive'
+}
+
+Please make this change and restart.`
+          );
+        }
         if (!item.parkedId) {
           throw new Error('Parked pages must have a unique parkedId property');
         }

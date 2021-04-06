@@ -27,7 +27,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'modal-result' ],
+  emits: [ 'modal-result', 'sort' ],
   computed: {
     relationshipErrors() {
       if (!this.relationshipField) {

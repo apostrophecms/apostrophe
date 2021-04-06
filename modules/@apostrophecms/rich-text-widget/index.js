@@ -135,9 +135,9 @@ module.exports = {
       async load(req, widgets) {
       },
 
-      // Convert template-level options (including defaults for this widget
-      // type) into a valid sanitize-html configuration, so that h4 can
-      // be legal in one area and illegal in another
+      // Convert area rich text options into a valid sanitize-html
+      // configuration, so that h4 can be legal in one area and illegal in
+      // another.
 
       optionsToSanitizeHtml(options) {
         return {

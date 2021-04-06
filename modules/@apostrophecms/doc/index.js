@@ -381,6 +381,7 @@ module.exports = {
       // `false`, permissions checks are bypassed.
       async insert(req, doc, options) {
         options = options || {};
+        console.log(doc.type);
         const m = self.getManager(doc.type);
         await m.emit('beforeInsert', req, doc, options);
         await m.emit('beforeSave', req, doc, options);

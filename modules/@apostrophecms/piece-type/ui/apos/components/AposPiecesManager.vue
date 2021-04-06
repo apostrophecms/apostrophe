@@ -111,7 +111,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'archive', 'search', 'safe-close', 'updated' ],
+  emits: [ 'archive', 'safe-close' ],
   data() {
     return {
       modal: {
