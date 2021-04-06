@@ -4,7 +4,7 @@
 
 ### Breaks
 
-* The `trash` property has been renamed `archived`, and throughout the UI we refer to "archiving" and the "archive" rather than "move to trash" and the "trash can." A database migration is included to address this for existing databases. However, **if you set the minimumPark option, or used a boilerplate in which it is set,** you will need to **change the settings for the `parkedId: 'trash'` page to match those [currently found in the `minimumPark` option setting in the `@apostrophecms/page` source code](https://github.com/apostrophecms/apostrophe/blob/3.0/modules/@apostrophecms/page/index.js).
+* The `trash` property has been renamed `archived`, and throughout the UI we refer to "archiving" and the "archive" rather than "move to trash" and the "trash can." A database migration is included to address this for existing databases. However, **if you set the minimumPark option, or used a boilerplate in which it is set,** you will need to **change the settings for the `parkedId: 'trash'` page to match those [currently found in the `minimumPark` option setting in the `@apostrophecms/page` source code](https://github.com/apostrophecms/apostrophe/blob/481252f9bd8f42b62648a0695105e6e9250810d3/modules/%40apostrophecms/page/index.js#L25-L32).
 
 ### Fixes
 
