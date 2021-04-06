@@ -975,7 +975,7 @@ database.`);
             if (!moved.level) {
               throw self.apos.error('invalid', 'Cannot move the home page');
             }
-            // You can't move the archivecan itself
+            // You can't move the archive itself
             if (moved.type === '@apostrophecms/archive-page') {
               throw self.apos.error('invalid', 'Cannot move the archive can');
             }
@@ -993,7 +993,7 @@ database.`);
               rank = target.rank;
             } else if (position === 'after') {
               if (target.type === '@apostrophecms/archive-page') {
-                throw self.apos.error('invalid', 'Only the archive can can be the last child of the home page.');
+                throw self.apos.error('invalid', 'Only the archive can be the last child of the home page.');
               }
               rank = target.rank + 1;
             } else if (position === 'lastChild') {
@@ -1060,7 +1060,7 @@ database.`);
             moved.rank = rank;
             moved.aposLastTargetId = targetId;
             moved.aposLastPosition = position;
-            // Are we in the archivecan? Our new parent reveals that
+            // Are we in the archive? Our new parent reveals that
             if (parent.archived) {
               moved.archived = true;
             } else {
