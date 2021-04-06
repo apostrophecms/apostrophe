@@ -458,7 +458,7 @@ export default {
     // If savingDraft is true, make sure we're in draft
     // mode before redirecting to the _url of the draft.
     async save({
-      restoreOnly = true,
+      restoreOnly = false,
       andPublish = false,
       savingDraft = false
     }) {
