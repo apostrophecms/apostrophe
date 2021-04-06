@@ -60,7 +60,7 @@ module.exports = {
           if (_id) {
             criteria._id = { $ne: _id };
           }
-          const doc = await self.find(req, criteria).permission(false).trash(null).project({ slug: 1 }).toObject();
+          const doc = await self.find(req, criteria).permission(false).archived(null).project({ slug: 1 }).toObject();
           if (doc) {
             throw self.apos.error('conflict');
           } else {
@@ -111,10 +111,10 @@ module.exports = {
           }
           doc.metaType = 'doc';
           doc.createdAt = new Date();
-          if (doc.trash == null) {
+          if (doc.archived == null) {
             // Not always in the schema, so ensure it's true or false
             // to simplify queries and indexing
-            doc.trash = false;
+            doc.archived = false;
           }
         },
         // Makes using our model APIs directly less tedious
@@ -381,6 +381,7 @@ module.exports = {
       // `false`, permissions checks are bypassed.
       async insert(req, doc, options) {
         options = options || {};
+        console.log(doc.type);
         const m = self.getManager(doc.type);
         await m.emit('beforeInsert', req, doc, options);
         await m.emit('beforeSave', req, doc, options);
@@ -426,9 +427,9 @@ module.exports = {
         return doc;
       },
 
-      // True delete. To place a document in the trash,
-      // update the trash property (for a piece) or move it
-      // to be a child of the trash (for a page). True delete
+      // True delete. To place a document in the archive,
+      // update the archived property (for a piece) or move it
+      // to be a child of the archive (for a page). True delete
       // cannot be undone
       async delete(req, doc, options = {}) {
         options = options || {};

@@ -21,13 +21,13 @@
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
-        :can-move-to-trash="canMoveToTrash"
+        :can-archive="canArchive"
         :can-copy="!!docId"
         :is-published="!!published"
         :can-save-draft="true"
         @saveDraft="saveDraft"
         @discardDraft="onDiscardDraft"
-        @moveToTrash="onMoveToTrash"
+        @moveToArchive="onMoveToArchive"
         @copy="onCopy"
       />
       <AposButton
@@ -133,7 +133,7 @@ export default {
       type: Object,
       default() {
         return {
-          trash: false
+          archived: false
         };
       }
     }
@@ -268,7 +268,7 @@ export default {
       }
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
-    canMoveToTrash() {
+    canArchive() {
       return !!(this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
         !this.restoreOnly &&
@@ -288,7 +288,7 @@ export default {
         return true;
       } else if (this.restoreOnly) {
         return false;
-      } else if (this.canMoveToTrash) {
+      } else if (this.canArchive) {
         return true;
       } else if (this.docId) {
         // Copy is allowed
@@ -338,9 +338,9 @@ export default {
           qs: this.filterValues,
           draft: true
         });
-        // Pages don't use the restore from trash mechanism because they
-        // treat the trash as a place in the tree you can drag from
-        if (docData.trash && (!(this.moduleName === '@apostrophecms/page'))) {
+        // Pages don't use the restore mechanism because they
+        // treat the archive as a place in the tree you can drag from
+        if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
           this.restoreOnly = true;
         }
       } catch {
@@ -481,7 +481,7 @@ export default {
           if (restoreOnly) {
             requestMethod = apos.http.patch;
             body = {
-              trash: false
+              archived: false
             };
           } else {
             requestMethod = apos.http.put;
@@ -580,17 +580,18 @@ export default {
         return this.$refs[field.group.name][0];
       }
     },
-    async onMoveToTrash(e) {
+    async onMoveToArchive(e) {
       try {
         if (await apos.confirm({
           heading: 'Are You Sure?',
           description: this.published
-            ? 'This will move the document to the trash and un-publish it.'
-            : 'This will move the document to the trash.'
+            ? 'This will move the document to the archive and un-publish it.'
+            : 'This will move the document to the archive.'
         })) {
           await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
             body: {
-              trash: true
+              archived: true,
+              _publish: true
             },
             busy: true,
             draft: true
@@ -606,7 +607,7 @@ export default {
       } catch (e) {
         await apos.alert({
           heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while moving the document to the trash.'
+          description: e.message || 'An error occurred while moving the document to the archive.'
         });
       }
     },

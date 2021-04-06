@@ -39,7 +39,7 @@ export default {
         return false;
       }
     },
-    canMoveToTrash: {
+    canArchive: {
       type: Boolean,
       default() {
         return false;
@@ -106,10 +106,10 @@ export default {
         //   label: 'Duplicate Document',
         //   action: 'duplicate'
         // },
-        ...(this.canMoveToTrash ? [
+        ...(this.canArchive ? [
           {
-            label: 'Move to Trash',
-            action: 'moveToTrash',
+            label: 'Move to Archive',
+            action: 'moveToArchive',
             modifiers: [ 'danger' ]
           }
         ] : []),
