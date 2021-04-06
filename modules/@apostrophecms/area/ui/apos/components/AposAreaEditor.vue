@@ -175,14 +175,14 @@ export default {
         this.$emit('changed', {
           items: this.next
         });
-        // For the benefit of all other area editors on-page
-        // which may have this one as a sub-area in some way, and
-        // mistakenly think they know its contents have not changed
-        apos.bus.$emit('area-updated', {
-          _id: this.id,
-          items: this.next
-        });
       }
+      // For the benefit of all other area editors on-page
+      // which may have this one as a sub-area in some way, and
+      // mistakenly think they know its contents have not changed
+      apos.bus.$emit('area-updated', {
+        _id: this.id,
+        items: this.next
+      });
     }
   },
   mounted() {
