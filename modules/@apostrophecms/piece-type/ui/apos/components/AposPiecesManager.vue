@@ -86,7 +86,8 @@
             @open="edit"
             :options="{
               disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField
+              hideCheckboxes: !relationshipField,
+              disableUnpublished: !!relationshipField
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -167,6 +168,9 @@ export default {
 
       this.pieces.forEach(piece => {
         const data = {};
+
+        // Extra data for internal use
+        data.lastPublishedAt = piece.lastPublishedAt;
 
         this.headers.forEach(column => {
           data[column.name] = piece[column.name];
