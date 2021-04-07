@@ -9,19 +9,22 @@
 ### Adds
 
 * General UX and UI improvements to the experience of moving documents to and from the archive, formerly known as the trash.
-* The `className` option can now be passed to the core widgets via page templates. If present this takes precedence over a `className` set at the module level.
 * Links to each piece are available in the manage view when appropriate.
+* Search is implemented in the media library.
+* You can now pass core widgets a `className` option when configuring them as part of an area.
+
+### Changes
+
+* Do not immediately redirect to new pages and pieces.
 
 ### Fixes
 
-* Bug fix: don't update the modification timestamp of a document simply because of an advisory lock, as the user might decide not to save any actual edits.
-* Prevent content loss by blocking attempts to connect Apostrophe 3.x to an Apostrophe 2.x database. Content migration tools are planned of course.
-* You can always save a draft of a new document, wherever the concept is relevant.
-* Areas nested in array schema fields can now be edited in context on the page.
+* Advisory lock no longer triggers an update to the modification timestamp of a document.
+* Attempts to connect Apostrophe 3.x to an Apostrophe 2.x database are blocked to prevent content loss
+* "Save as Draft" is now available as soon as a new document is created
+* Areas nested in array schema fields can now be edited in context.
 * When using `apos.image.first`, the alt attribute of the image piece is available on the returned attachment object as `._alt`. In addition, `_credit` and `_creditUrl` are available.
 * Fixes relating to the editing of widgets in nested areas, both on the page and in the modal.
-* You can now set core widget `className` options in area widget configuration, not only in widget module options.
-* Do not immediately redirect to new pages and pieces.
 
 ## 3.0.0-alpha.6.1 - 2021-03-26
 
