@@ -70,7 +70,7 @@ module.exports = {
           'creditUrl',
           'visibility',
           'slug',
-          'trash'
+          'archived'
         ]
       }
     }

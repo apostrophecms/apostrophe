@@ -140,6 +140,11 @@ module.exports = {
         });
         // Guarantee that `items` at least exists
         area.items = area.items || [];
+        if (area._docId) {
+          for (const item of area.items) {
+            item._docId = area._docId;
+          }
+        }
         const canEdit = area._edit && (options.edit !== false) && req.query['apos-edit'];
         if (canEdit) {
           // Ease of access to image URLs. When not editing we

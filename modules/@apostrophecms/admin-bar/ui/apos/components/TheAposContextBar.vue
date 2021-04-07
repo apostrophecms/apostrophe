@@ -1,32 +1,34 @@
 <template>
-  <div class="apos-admin-bar__row apos-admin-bar__row--utils">
-    <TheAposContextUndoRedo
-      :v-if="editMode"
-      :patches-since-loaded="patchesSinceLoaded"
-      :undone="undone"
-      @undo="undo"
-      @redo="redo"
-      :retrying="retrying"
-      :editing="editing"
-      :saving="saving"
-      :saved="saved"
-    />
-    <TheAposContextTitle
-      v-if="!hasCustomUi"
-      :context="context"
-      :draft-mode="draftMode"
-      @switchDraftMode="switchDraftMode"
-    />
-    <TheAposContextModeAndSettings
-      :context="context"
-      :edit-mode="editMode"
-      :has-custom-ui="hasCustomUi"
-      :ready-to-publish="readyToPublish"
-      :custom-publish-label="customPublishLabel"
-      @switchEditMode="switchEditMode"
-      @discardDraft="onDiscardDraft"
-      @publish="onPublish"
-    />
+  <div :class="classes">
+    <template v-if="contextBarActive">
+      <TheAposContextUndoRedo
+        :v-if="editMode"
+        :patches-since-loaded="patchesSinceLoaded"
+        :undone="undone"
+        @undo="undo"
+        @redo="redo"
+        :retrying="retrying"
+        :editing="editing"
+        :saving="saving"
+        :saved="saved"
+      />
+      <TheAposContextTitle
+        v-if="!hasCustomUi"
+        :context="context"
+        :draft-mode="draftMode"
+        @switchDraftMode="switchDraftMode"
+      />
+      <TheAposContextModeAndSettings
+        :context="context"
+        :edit-mode="editMode"
+        :has-custom-ui="hasCustomUi"
+        :ready-to-publish="readyToPublish"
+        :custom-publish-label="customPublishLabel"
+        @switchEditMode="switchEditMode"
+        @discardDraft="onDiscardDraft"
+        @publish="onPublish"
+      />
+    </template>
   </div>
 </template>
 
@@ -65,6 +67,19 @@ export default {
     };
   },
   computed: {
+    contextBarActive() {
+      return window.apos.adminBar.contextBar;
+    },
+    classes() {
+      if (!this.contextBarActive) {
+        return {};
+      } else {
+        return {
+          'apos-admin-bar__row': true,
+          'apos-admin-bar__row--utils': true
+        };
+      }
+    },
     needToAutosave() {
       return !!this.patchesSinceSave.length;
     },

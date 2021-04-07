@@ -69,8 +69,8 @@ module.exports = {
         allowedInChooser: false,
         def: true
       },
-      trash: {
-        label: 'Trash',
+      archived: {
+        label: 'Archived',
         inputType: 'radio',
         choices: [
           {
@@ -79,7 +79,7 @@ module.exports = {
           },
           {
             value: true,
-            label: 'Trash'
+            label: 'Archived'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
@@ -91,23 +91,20 @@ module.exports = {
   },
   batchOperations: {
     add: {
-      trash: {
-        name: 'trash',
-        label: 'Trash',
+      archive: {
+        label: 'Archive',
         inputType: 'radio',
         unlessFilter: {
-          trash: true
+          archived: true
         }
       },
       rescue: {
-        name: 'rescue',
         label: 'Rescue',
         unlessFilter: {
-          trash: false
+          archived: false
         }
       },
       visibility: {
-        name: 'visibility',
         label: 'Visibility',
         requiredField: 'visibility',
         fields: {
