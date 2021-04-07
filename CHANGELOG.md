@@ -20,6 +20,7 @@
 * Areas nested in array schema fields can now be edited in context on the page.
 * When using `apos.image.first`, the alt attribute of the image piece is available on the returned attachment object as `._alt`. In addition, `_credit` and `_creditUrl` are available.
 * You can now set core widget `className` options in area widget configuration, not only in widget module options.
+* Do not immediately redirect to new pages and pieces.
 
 ## 3.0.0-alpha.6.1 - 2021-03-26
 
