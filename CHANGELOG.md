@@ -16,15 +16,19 @@
 ### Changes
 
 * Do not immediately redirect to new pages and pieces.
+* Restored pieces now restore as unpublished drafts.
+* Refactored the admin bar component for maintainability.
 
 ### Fixes
 
 * Advisory lock no longer triggers an update to the modification timestamp of a document.
-* Attempts to connect Apostrophe 3.x to an Apostrophe 2.x database are blocked to prevent content loss
-* "Save as Draft" is now available as soon as a new document is created
+* Attempts to connect Apostrophe 3.x to an Apostrophe 2.x database are blocked to prevent content loss.
+* "Save as Draft" is now available as soon as a new document is created.
 * Areas nested in array schema fields can now be edited in context.
 * When using `apos.image.first`, the alt attribute of the image piece is available on the returned attachment object as `._alt`. In addition, `_credit` and `_creditUrl` are available.
 * Fixes relating to the editing of widgets in nested areas, both on the page and in the modal.
+* Removed published / draft switch for unpublished drafts.
+* "Publish Changes" appears only at appropriate times.
 
 ## 3.0.0-alpha.6.1 - 2021-03-26
 
