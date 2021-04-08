@@ -2,7 +2,6 @@ const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 const Promise = require('bluebird');
-const { klona } = require('klona');
 
 module.exports = {
   options: { alias: 'attachment' },
@@ -141,11 +140,14 @@ module.exports = {
               // The name attribute could be anything because of how fileupload
               // controls work; we don't really care.
               const file = _.values(req.files || [])[0];
+
               if (!file) {
                 throw self.apos.error('notfound');
               }
+
               const attachment = await self.insert(req, file);
               self.all({ attachment }, { annotate: true });
+
               return attachment;
             } finally {
               for (const file of (Object.values(req.files) || {})) {
@@ -563,18 +565,18 @@ module.exports = {
       // Find all attachments referenced within an object, whether they are
       // properties or sub-properties (via relationships, etc).
       //
-      // For best performance be reasonably specific; don't pass an entire page or piece
-      // object if you can pass piece.thumbnail to avoid an exhaustive search, especially
-      // if the piece has many relationships.
+      // For best performance be reasonably specific; don't pass an entire page
+      // or piece object if you can pass piece.thumbnail to avoid an exhaustive
+      // search, especially if the piece has many relationships.
       //
       // Returns an array of attachments, or an empty array if none are found.
       //
-      // When available, the `description`, `credit`, `alt` and `creditUrl` properties
-      // of the containing piece are returned as `_description`, `_credit`, `_alt` and
-      // `_creditUrl`.
+      // When available, the `description`, `credit`, `alt` and `creditUrl`
+      // properties of the containing piece are returned as `_description`,
+      // `_credit`, `_alt` and `_creditUrl`.
       //
-      // For ease of use, a null or undefined `within` argument is accepted, resulting
-      // in an empty array.
+      // For ease of use, a null or undefined `within` argument is accepted,
+      // resulting in an empty array.
       //
       // Examples:
       //
@@ -633,7 +635,6 @@ module.exports = {
         }
         self.apos.doc.walk(within, function (o, key, value, dotPath, ancestors) {
           if (test(value)) {
-            value = klona(value);
             if (o.credit) {
               value._credit = o.credit;
             }
@@ -644,6 +645,7 @@ module.exports = {
               value._alt = o.alt;
             }
             o[key] = value;
+
             // If one of our ancestors has a relationship to the piece that
             // immediately contains us, provide that as the crop. This ensures
             // that cropping coordinates stored in an @apostrophecms/image widget
@@ -659,6 +661,7 @@ module.exports = {
                 break;
               }
             }
+
             if (options.annotate) {
               // Add URLs
               value._urls = {};

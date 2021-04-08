@@ -54,6 +54,7 @@ describe('Attachment', function() {
       return wipeIt();
     });
   });
+  let imageOne;
 
   describe('insert', async function() {
 
@@ -78,8 +79,9 @@ describe('Attachment', function() {
       return insert('upload_apos_api.txt');
     });
 
-    it('should upload an image file using the attachments api when user', async function() {
-      return insert('upload_image.png');
+    it('should upload an image file using the attachments api when user', async function () {
+      imageOne = await insert('upload_image.png');
+      assert(imageOne && imageOne._id);
     });
 
     it('should not upload an exe file', async function() {
@@ -263,7 +265,17 @@ describe('Attachment', function() {
         assert(false);
       }
     });
+  });
 
+  describe('api', async function () {
+
+    it('should annotate images with URLs using .all method', async function () {
+      assert(!imageOne._urls);
+
+      apos.attachment.all({ imageOne }, { annotate: true });
+
+      assert(imageOne._urls);
+    });
   });
 
 });
