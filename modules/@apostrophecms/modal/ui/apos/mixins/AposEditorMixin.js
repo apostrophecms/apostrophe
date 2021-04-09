@@ -126,6 +126,10 @@ export default {
         let result = true;
         for (const [ key, val ] of Object.entries(clause)) {
           if (key === '$or') {
+            if (!Array.isArray(val)) {
+              console.error('$or conditional rules must be arrays. Current rule:', val);
+              return false;
+            }
             return val.some(clause => evaluate(clause));
           }
           if (conditionalFields[key] === false) {
