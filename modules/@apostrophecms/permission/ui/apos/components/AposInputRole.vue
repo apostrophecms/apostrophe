@@ -26,14 +26,32 @@
           class="apos-input-icon"
           :icon-size="20"
         />
-        <div class="apos-permission-grid">
-          <AposPermissionGridCell
-            v-for="type in types"
-            :key="type.name"
-            v-bind="type"
-          />
-        </div>
       </div>
+      <ul class="apos-input--permission-grid">
+        <li
+          v-for="type in types"
+          :key="type.name"
+        >
+          <h4>
+            {{ type.label }}
+            <AposIndicator
+              v-if="type.tooltip"
+              icon="help-circle-icon"
+              class="apos-field__help-tooltip__icon"
+              :tooltip="type.tooltip"
+              :icon-size="11"
+              icon-color="var(--a-base-4)"
+            />
+          </h4>
+          <ul>
+            <li v-for="permission in type.permissions" :key="permission.name">
+              <AposIndicator v-if="permission.value" icon="check-bold-icon" icon-color="var(--a-success)" />
+              <AposIndicator v-else icon="alpha-x-icon" icon-color="var(--a-danger)" />
+              &nbsp;{{ permission.label }}
+            </li>
+          </ul>
+        </li>
+      </ul>
     </template>
   </AposInputWrapper>
 </template>
@@ -75,18 +93,16 @@ export default {
         this.next = this.field.choices[0].value;
       }
     });
-    await this.getTypes();
+    this.types = await this.getTypes();
   },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
         return 'required';
       }
-
       if (value && !this.field.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
-
       return false;
     },
     change(value) {
@@ -94,7 +110,7 @@ export default {
       this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
     },
     async getTypes() {
-      this.types = await apos.http.get(`${apos.module.permission.action}/grid`).types;
+      return (await apos.http.get(`${apos.permission.action}/grid`, {})).types;
     }
   }
 };
@@ -103,5 +119,19 @@ export default {
 <style lang="scss" scoped>
 .apos-input-icon {
   @include apos-transition();
+}
+ul {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.apos-input--permission-grid > li {
+  h4 {
+    font-weight: bold;
+  }
+  li {
+    padding: 0.5em 1em 0.25em;
+    border-bottom: 1px solid var(--a-base-7);
+  }
 }
 </style>

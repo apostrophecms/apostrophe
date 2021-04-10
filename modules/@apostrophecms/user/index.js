@@ -88,7 +88,7 @@ module.exports = {
           label: 'Password'
         },
         role: {
-          type: 'select',
+          type: 'role',
           choices: [
             {
               label: 'Guest',
