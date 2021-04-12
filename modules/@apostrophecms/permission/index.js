@@ -41,7 +41,7 @@ module.exports = {
       // the action on that doc type generally.
       //
       // If a permission is not specific to particular documents,
-      // for instance `view-draft`, `docOrType` may be omitted.
+      // `docOrType` may be omitted.
       //
       // The doc passed need not already exist in the database.
       //
@@ -50,47 +50,122 @@ module.exports = {
       // can carry out the specified action.
       //
       can(req, action, docOrType) {
-        if (req.user) {
+        const role = req.user && req.user.role;
+        if (role === 'admin') {
           return true;
         }
-        const manager = docOrType && (self.apos.doc.getManager(docOrType.type || docOrType));
+        if (docOrType && ((typeof docOrType) === 'object') && !docOrType.type) {
+          console.log('>>', docOrType);
+        }
+        const type = docOrType.type || docOrType;
+        const manager = type && self.apos.doc.getManager(type);
+        if (type && !manager) {
+          self.apos.util.warn(`A permission.can() call was made with a type that has no manager: ${type}`);
+          return false;
+        }
         if (action === 'view') {
-          if (manager.isAdminOnly()) {
+          if (manager && manager.isAdminOnly()) {
             return false;
           } else if (((typeof docOrType) === 'object') && (docOrType.visibility !== 'public')) {
-            return false;
+            return (role === 'guest') || (role === 'contributor') || (role === 'editor');
           } else {
             return true;
           }
-        } else {
-          return false;
+        } else if (action === 'edit') {
+          if (manager && manager.isAdminOnly()) {
+            return false;
+          } else if (req.mode === 'draft') {
+            return (role === 'contributor') || (role === 'editor');
+          } else {
+            return role === 'editor';
+          }
+        } else if (action === 'publish') {
+          if (manager && manager.isAdminOnly()) {
+            return false;
+          } else {
+            return role === 'editor';
+          }
         }
       },
 
       // Returns a MongoDB criteria object that retrieves only documents
       // the user is allowed to perform `action` on.
-      //
-      // If a permission is not specific to particular documents,
-      // for instance `view-draft`, `docOrType` may be omitted.
 
       criteria(req, action) {
-        if (req.user) {
-          // For now, users can do anything
+        const role = req.user && req.user.role;
+        if (role === 'admin') {
           return {};
         }
-        if (action !== 'view') {
-          // Public can only view for now
+        const restrictedTypes = Object.keys(self.apos.doc.managers).filter(name => self.apos.doc.getManager(name).isAdminOnly());
+        if (action === 'view') {
+          if (role === 'guest') {
+            return {
+              aposMode: {
+                $in: [ null, 'published' ]
+              },
+              visibility: {
+                $in: [ 'public', 'loginRequired' ]
+              },
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else if ((role === 'contributor') || (role === 'editor')) {
+            return {
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else {
+            return {
+              aposMode: {
+                $in: [ null, 'published' ]
+              },
+              visibility: 'public',
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          }
+        } else if (action === 'edit') {
+          if (role === 'contributor') {
+            return {
+              aposMode: {
+                $in: [ null, 'draft' ]
+              },
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else if (role === 'editor') {
+            return {
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else {
+            return {
+              _id: 'thisIdWillNeverMatch'
+            };
+          }
+        } else if (action === 'publish') {
+          if (role === 'editor') {
+            return {
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else {
+            return {
+              _id: 'thisIdWillNeverMatch'
+            };
+          }
+        } else {
+          // If I don't understand it, I don't allow it
           return {
             _id: 'thisIdWillNeverMatch'
           };
         }
-        const restrictedTypes = Object.keys(self.apos.doc.managers).filter(name => self.apos.doc.getManager(name).isAdminOnly());
-        return {
-          visibility: 'public',
-          type: {
-            $nin: restrictedTypes
-          }
-        };
       },
 
       // For each object in the array, if the user is able to

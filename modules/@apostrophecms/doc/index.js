@@ -142,7 +142,7 @@ module.exports = {
       },
       '@apostrophecms/doc-type:beforePublish': {
         testPermissions(req, doc) {
-          if (!self.apos.permission.can(req, 'publish', doc)) {
+          if (!self.apos.permission.can(req, 'publish', doc.draft)) {
             throw self.apos.error('forbidden');
           }
         }

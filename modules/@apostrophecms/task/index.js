@@ -164,25 +164,28 @@ module.exports = {
         process.exit(1);
       },
 
-      // Return a `req` object with permission to do anything.
-      // Useful since most APIs require one and most tasks
-      // should run with administrative rights.
+      // Return a `req` object suitable for command line tasks
+      // and unit tests. The `req` object returned is a mockup of a true Express
+      // `req` object.
       //
-      // The `req` object returned is a mockup of a true Express `req` object
-      // with sufficient functionality to implement Apostrophe's
-      // unit tests, so it is suitable for command line
-      // task code that requires a `req` as well.
+      // An `options` object may be passed. If `options.role` is set,
+      // it may be `anon` (no role and no req.user), `guest`, `contributor`,
+      // `editor`, or `admin`. For bc reasons, it defaults to `admin`.
       //
-      // Optionally a `properties` object can be passed. If it is
-      // passed its properties are added to the req object before
-      // any initialization tasks such as computing `req.absoluteUrl`.
-      // This allows testing of that mechanism by setting `req.url`.
+      // Other properties of `options` are assigned as properties of the
+      // returned `req` object before any initialization tasks such as computing
+      // `req.absoluteUrl`. This facilitates unit testing.
 
-      getReq(properties) {
+      getReq(options) {
+        options = options || {};
+        options.role = options.role || 'admin';
         const req = {
-          user: {
-            title: 'System Task'
-          },
+          ...(options.role === 'anon' ? {} : {
+            user: {
+              title: 'System Task',
+              role: options.role
+            }
+          }),
           res: {
             __: function (s) {
               return s;
@@ -203,35 +206,56 @@ module.exports = {
           aposNeverLoad: {},
           aposStack: []
         };
-        if (properties && properties.mode && properties.mode.draft) {
-          req.mode = 'draft';
-        }
-        _.extend(req, properties || {});
+        const { role, ..._properties } = options || {};
+        Object.assign(req, _properties);
         self.apos.modules['@apostrophecms/express'].addAbsoluteUrlsToReq(req);
         return req;
       },
 
-      // Return a `req` object with privileges equivalent
-      // to an anonymous user visiting the website. Most
-      // often used for unit testing but sometimes useful
-      // in tasks as well.
-      //
-      // The `req` object returned is a mockup of a true Express `req` object
-      // with sufficient functionality to implement Apostrophe's
-      // unit tests, so it is suitable for command line
-      // task code that requires a `req` as well.
-      //
-      // Optionally a `properties` object can be passed. If it is
-      // passed its properties are added to the req object before
-      // any initialization tasks such as computing `req.absoluteUrl`.
-      // This allows testing of that mechanism by setting `req.url`.
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating an anonymous site visitor, with no role
+      // and no `req.user`.
+      getAnonReq(options) {
+        return self.getReq({
+          role: 'anon',
+          ...options
+        });
+      },
 
-      getAnonReq(properties) {
-        const req = self.getReq();
-        delete req.user;
-        _.extend(req, properties || {});
-        return req;
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the editor role.
+      getGuestReq(options) {
+        return self.getReq({
+          role: 'guest',
+          ...options
+        });
+      },
+
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the contributor role.
+      getContributorReq(options) {
+        return self.getReq({
+          role: 'contributor',
+          ...options
+        });
+      },
+
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the editor role.
+      getEditorReq(options) {
+        return self.getReq({
+          role: 'editor',
+          ...options
+        });
+      },
+
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the editor role.
+      getAdminReq(options) {
+        // For bc reasons this is the default behavior of getReq
+        return self.getReq(options);
       }
+
     };
   }
 };
