@@ -50,16 +50,12 @@ module.exports = {
         let locale;
         if (self.isValidLocale(req.query['apos-locale'])) {
           locale = req.query['apos-locale'];
-        } else if (self.isValidLocale(req.session && req.session.locale)) {
-          locale = req.session.locale;
         } else {
           locale = self.defaultLocale;
         }
         let mode;
         if (validModes.includes(req.query['apos-mode'])) {
           mode = req.query['apos-mode'];
-        } else if (validModes.includes(req.session && req.session.mode)) {
-          mode = req.session.mode;
         } else {
           mode = 'published';
         }
@@ -106,7 +102,7 @@ module.exports = {
           throw self.apos.error('forbidden');
         }
         if (_id.charAt(0) === '_') {
-          // A shortcut such as _home or _trash,
+          // A shortcut such as _home or _archive,
           // will be interpreted later
           return _id;
         } else {

@@ -67,7 +67,7 @@
             :filter-values="filterValues"
             :labels="moduleLabels"
             @select-click="selectAll"
-            @trash-click="trashClick"
+            @archive-click="archiveClick"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
@@ -86,7 +86,8 @@
             @open="edit"
             :options="{
               disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField
+              hideCheckboxes: !relationshipField,
+              disableUnpublished: !!relationshipField
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -111,7 +112,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'trash', 'search', 'safe-close', 'updated' ],
+  emits: [ 'archive', 'safe-close' ],
   data() {
     return {
       modal: {
@@ -167,6 +168,9 @@ export default {
 
       this.pieces.forEach(piece => {
         const data = {};
+
+        // Extra data for internal use
+        data.lastPublishedAt = piece.lastPublishedAt;
 
         this.headers.forEach(column => {
           data[column.name] = piece[column.name];
@@ -292,9 +296,9 @@ export default {
       }
     },
     // Toolbar handlers
-    trashClick() {
+    archiveClick() {
       // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('trash', this.checked);
+      this.$emit('archive', this.checked);
     },
     async search(query) {
       if (query) {

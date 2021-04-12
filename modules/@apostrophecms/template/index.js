@@ -602,7 +602,6 @@ module.exports = {
           modules: {},
           prefix: self.apos.prefix,
           locale: req.locale,
-          mode: req.mode,
           csrfCookieName: self.apos.csrfCookieName,
           tabId: self.apos.util.generateId(),
           scene

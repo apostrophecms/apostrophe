@@ -31,7 +31,7 @@ module.exports = {
           def: false
         }
       },
-      remove: [ 'trash' ],
+      remove: [ 'archived' ],
       group: {
         utility: {
           fields: [
@@ -44,8 +44,8 @@ module.exports = {
     };
   },
   init(self) {
-    self.removeTrashPrefixFields([ 'slug' ]);
-    self.addTrashSuffixFields([
+    self.removeArchivedPrefixFields([ 'slug' ]);
+    self.addArchivedSuffixFields([
       'slug'
     ]);
     self.rules = {};
@@ -111,33 +111,6 @@ module.exports = {
               mode: 'published'
             }, published._id, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition);
           }
-        }
-      },
-      afterTrash: {
-        async trashIsDraftOnly(req, doc) {
-          if (!doc._id.includes(':draft')) {
-            return;
-          }
-          if (doc.parkedId === 'trash') {
-            // The root trash can exists in both draft and published to
-            // avoid overcomplicating parked pages
-            return;
-          }
-          await self.apos.doc.db.updateOne({
-            _id: doc._id
-          }, {
-            $set: {
-              lastPublishedAt: null
-            }
-          });
-          return self.apos.doc.db.removeMany({
-            _id: {
-              $in: [
-                doc._id.replace(':draft', ':published'),
-                doc._id.replace(':draft', ':previous')
-              ]
-            }
-          });
         }
       },
       beforePublish: {

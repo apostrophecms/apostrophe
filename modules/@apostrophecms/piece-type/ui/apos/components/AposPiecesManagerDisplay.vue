@@ -40,8 +40,11 @@
               name: item._id,
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
-              disabled: options.disableUnchecked && !checkProxy.includes(item._id)
+              readOnly:
+                (options.disableUnchecked && !checkProxy.includes(item._id)) ||
+                (options.disableUnpublished && !item.lastPublishedAt)
             }"
+            v-tooltip="options.disableUnpublished && !item.lastPublishedAt ? 'Publish this content before using it in a relationship' : null"
             :choice="{ value: item._id }"
             v-model="checkProxy"
             @updated="emitUpdated(item._id)"

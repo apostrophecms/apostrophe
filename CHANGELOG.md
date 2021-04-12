@@ -1,14 +1,34 @@
 # Changelog
 
-## UNRELEASED
+## 3.0.0-alpha.7 - 2021-04-07
 
+### Breaks
+
+* The `trash` property has been renamed `archived`, and throughout the UI we refer to "archiving" and the "archive" rather than "move to trash" and the "trash can." A database migration is included to address this for existing databases. However, **if you set the minimumPark option, or used a boilerplate in which it is set,** you will need to **change the settings for the `parkedId: 'trash'` page to match those [currently found in the `minimumPark` option setting in the `@apostrophecms/page` source code](https://github.com/apostrophecms/apostrophe/blob/481252f9bd8f42b62648a0695105e6e9250810d3/modules/%40apostrophecms/page/index.js#L25-L32).
+
+### Adds
+
+* General UX and UI improvements to the experience of moving documents to and from the archive, formerly known as the trash.
 * Links to each piece are available in the manage view when appropriate.
-* Bug fix: don't update the modification timestamp of a document simply because of an advisory lock, as the user
-might decide not to save any actual edits.
-* Prevent content loss by blocking attempts to connect Apostrophe 3.x to an Apostrophe 2.x database. Content migration tools are planned of course.
-* You can always save a draft of a new document, wherever the concept is relevant.
-* Areas nested in array schema fields can now be edited in context on the page.
+* Search is implemented in the media library.
+* You can now pass core widgets a `className` option when configuring them as part of an area.
+
+### Changes
+
+* Do not immediately redirect to new pages and pieces.
+* Restored pieces now restore as unpublished drafts.
+* Refactored the admin bar component for maintainability.
+
+### Fixes
+
+* Advisory lock no longer triggers an update to the modification timestamp of a document.
+* Attempts to connect Apostrophe 3.x to an Apostrophe 2.x database are blocked to prevent content loss.
+* "Save as Draft" is now available as soon as a new document is created.
+* Areas nested in array schema fields can now be edited in context.
 * When using `apos.image.first`, the alt attribute of the image piece is available on the returned attachment object as `._alt`. In addition, `_credit` and `_creditUrl` are available.
+* Fixes relating to the editing of widgets in nested areas, both on the page and in the modal.
+* Removed published / draft switch for unpublished drafts.
+* "Publish Changes" appears only at appropriate times.
 
 ## 3.0.0-alpha.6.1 - 2021-03-26
 

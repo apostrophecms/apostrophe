@@ -27,7 +27,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'modal-result' ],
+  emits: [ 'modal-result', 'sort' ],
   computed: {
     relationshipErrors() {
       if (!this.relationshipField) {
@@ -50,6 +50,9 @@ export default {
       this.$emit('sort', action);
     },
     headers() {
+      if (!this.pieces) {
+        return this.options.columns || [];
+      }
       return (this.options.columns || []).filter(column => {
         return (column.name !== '_url') || this.pieces.find(item => item._url);
       });

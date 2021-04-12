@@ -126,7 +126,7 @@ module.exports = {
             'username',
             'email',
             'password',
-            'trash'
+            'archived'
           ]
         },
         permissions: {
@@ -150,7 +150,7 @@ module.exports = {
 
   async init(self) {
     self.initializeCredential();
-    self.addOurTrashPrefixFields();
+    self.addOurArchivedPrefixFields();
     self.enableSecrets();
     self.addRoleMigration();
     await self.ensureSafe();
@@ -184,7 +184,7 @@ module.exports = {
         }
       },
       // Reflect email and username changes in the safe after deduplicating in the piece
-      afterTrash: {
+      afterArchived: {
         async updateSafe(req, piece) {
           await self.insertOrUpdateSafe(req, piece, 'update');
         }
@@ -201,12 +201,12 @@ module.exports = {
     return {
 
       // Add `username` and `email` to the list of fields that automatically get uniquely prefixed
-      // when a user is in the trash, so that they can be reused by another piece. When
-      // the piece is rescued from the trash the prefix is removed again, unless the username
+      // when a user is in the archive, so that they can be reused by another piece. When
+      // the piece is rescued from the archive the prefix is removed again, unless the username
       // or email address has been claimed by another user in the meanwhile.
 
-      addOurTrashPrefixFields() {
-        self.addTrashPrefixFields([
+      addOurArchivedPrefixFields() {
+        self.addArchivedPrefixFields([
           'username',
           'email'
         ]);

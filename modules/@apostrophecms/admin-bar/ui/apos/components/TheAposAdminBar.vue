@@ -7,7 +7,7 @@
         <TheAposAdminBarMenu :items="items" />
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
-      <TheAposContextBar v-if="contextBarActive" />
+      <TheAposContextBar />
     </nav>
   </div>
 </template>
@@ -24,11 +24,6 @@ export default {
       default: function () {
         return [];
       }
-    }
-  },
-  computed: {
-    contextBarActive() {
-      return window.apos.adminBar.contextBar;
     }
   },
   async mounted() {
@@ -103,6 +98,11 @@ export default {
   &.apos-admin-bar__control-set__group {
     position: absolute;
   }
+}
+
+// make space for a widget's breadcrumbs that are flush with the admin bar
+.apos-admin-bar-spacer {
+  margin-bottom: 25px;
 }
 
 </style>

@@ -199,7 +199,10 @@ describe('Areas', function() {
 
     assert(firstRendered);
     assert.equal(firstRendered, `
-<div class="apos-area"><div data-rich-text><p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We're fighting for our right to live, to exist.</p></div>
+<div class="apos-area">
+<div data-rich-text>
+  <p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We're fighting for our right to live, to exist.</p>
+</div>
 </div>
 `);
   });
@@ -210,7 +213,8 @@ describe('Areas', function() {
 
     secondRendered = await apos.area.renderArea(req, mixedArea, areaDocs[1]);
 
-    assert(secondRendered.includes('<div data-rich-text><p>Good morning.'));
+    assert(secondRendered.includes(`<div data-rich-text>
+  <p>Good morning.`));
     assert(secondRendered.includes('<marquee>The HTML <code>&lt;marquee&gt;</code> element'));
   });
 

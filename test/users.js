@@ -94,18 +94,18 @@ describe('Users', function() {
     }
   });
 
-  it('should be able to move a user to the trash', async () => {
+  it('should be able to move a user to the archive', async () => {
     const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).toObject();
-    user.trash = true;
+    user.archived = true;
     await apos.user.update(apos.task.getReq(), user);
     const doc = await apos.doc.db.findOne({
       _id: user._id,
-      trash: true
+      archived: true
     });
     assert(doc);
   });
 
-  it('should be able to insert a user with a previously used email if the other is in the trash', async () => {
+  it('should be able to insert a user with a previously used email if the other is in the archive', async () => {
     const user = apos.user.newInstance();
 
     user.firstName = 'Dane';
@@ -117,13 +117,13 @@ describe('Users', function() {
     await apos.user.insert(apos.task.getReq(), user);
   });
 
-  it('should be able to rescue the first user from the trash and the username should revert, but the email should not because it is in use by a newer account', async () => {
-    const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).trash(true).toObject();
-    user.trash = false;
+  it('should be able to rescue the first user from the archive and the username should revert, but the email should not because it is in use by a newer account', async () => {
+    const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).archived(true).toObject();
+    user.archived = false;
     await apos.user.update(apos.task.getReq(), user);
     const doc = await apos.doc.db.findOne({
       _id: user._id,
-      trash: { $ne: true }
+      archived: { $ne: true }
     });
     assert(doc);
     assert(doc.username === 'JaneD');
@@ -138,18 +138,18 @@ describe('Users', function() {
     }
   });
 
-  it('should be able to move a user to the trash', async () => {
+  it('should be able to move a user to the archive', async () => {
     const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).toObject();
-    user.trash = true;
+    user.archived = true;
     await apos.user.update(apos.task.getReq(), user);
     const doc = await apos.doc.db.findOne({
       _id: user._id,
-      trash: true
+      archived: true
     });
     assert(doc);
   });
 
-  it('should be able to insert a user with a previously used username if the other is in the trash', async () => {
+  it('should be able to insert a user with a previously used username if the other is in the archive', async () => {
     const user = apos.user.newInstance();
 
     user.firstName = 'Dane';
@@ -161,13 +161,13 @@ describe('Users', function() {
     await apos.user.insert(apos.task.getReq(), user);
   });
 
-  it('should be able to rescue the first user from the trash and the email and username should be deduplicated', async () => {
-    const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).trash(true).toObject();
-    user.trash = false;
+  it('should be able to rescue the first user from the archive and the email and username should be deduplicated', async () => {
+    const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).archived(true).toObject();
+    user.archived = false;
     await apos.user.update(apos.task.getReq(), user);
     const doc = await apos.doc.db.findOne({
       _id: user._id,
-      trash: { $ne: true }
+      archived: { $ne: true }
     });
     assert(doc);
     assert(doc.username.match(/deduplicate.*JaneD/));

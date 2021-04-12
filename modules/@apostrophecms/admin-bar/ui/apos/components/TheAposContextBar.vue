@@ -1,32 +1,34 @@
 <template>
-  <div class="apos-admin-bar__row apos-admin-bar__row--utils">
-    <TheAposContextUndoRedo
-      :v-if="editMode"
-      :patches-since-loaded="patchesSinceLoaded"
-      :undone="undone"
-      @undo="undo"
-      @redo="redo"
-      :retrying="retrying"
-      :editing="editing"
-      :saving="saving"
-      :saved="saved"
-    />
-    <TheAposContextTitle
-      v-if="!hasCustomUi"
-      :context="context"
-      :draft-mode="draftMode"
-      @switchDraftMode="switchDraftMode"
-    />
-    <TheAposContextModeAndSettings
-      :context="context"
-      :edit-mode="editMode"
-      :has-custom-ui="hasCustomUi"
-      :ready-to-publish="readyToPublish"
-      :custom-publish-label="customPublishLabel"
-      @switchEditMode="switchEditMode"
-      @discardDraft="onDiscardDraft"
-      @publish="onPublish"
-    />
+  <div :class="classes">
+    <template v-if="contextBarActive">
+      <TheAposContextUndoRedo
+        :v-if="editMode"
+        :patches-since-loaded="patchesSinceLoaded"
+        :undone="undone"
+        @undo="undo"
+        @redo="redo"
+        :retrying="retrying"
+        :editing="editing"
+        :saving="saving"
+        :saved="saved"
+      />
+      <TheAposContextTitle
+        v-if="!hasCustomUi"
+        :context="context"
+        :draft-mode="draftMode"
+        @switchDraftMode="switchDraftMode"
+      />
+      <TheAposContextModeAndSettings
+        :context="context"
+        :edit-mode="editMode"
+        :has-custom-ui="hasCustomUi"
+        :ready-to-publish="readyToPublish"
+        :custom-publish-label="customPublishLabel"
+        @switchEditMode="switchEditMode"
+        @discardDraft="onDiscardDraft"
+        @publish="onPublish"
+      />
+    </template>
   </div>
 </template>
 
@@ -40,17 +42,19 @@ export default {
   name: 'TheAposContextBar',
   mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
   data() {
-    // Since cookie-based login sessions and sessionStorage are not precisely the same
-    // thing, correct any forbidden combination at page load time
-    if (window.apos.mode === 'published') {
-      window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
+    const query = apos.http.parseQuery(location.search);
+    // If the URL references a draft, go into draft mode but then clean up the URL
+    const draftMode = query['apos-mode'] || 'published';
+    if (draftMode === 'draft') {
+      delete query['apos-mode'];
+      history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
     }
     return {
       patchesSinceLoaded: [],
       undone: [],
       patchesSinceSave: [],
-      editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
-      draftMode: window.apos.mode,
+      editMode: false,
+      draftMode,
       original: null,
       saving: false,
       editing: false,
@@ -65,6 +69,19 @@ export default {
     };
   },
   computed: {
+    contextBarActive() {
+      return window.apos.adminBar.contextBar;
+    },
+    classes() {
+      if (!this.contextBarActive) {
+        return {};
+      } else {
+        return {
+          'apos-admin-bar__row': true,
+          'apos-admin-bar__row--utils': true
+        };
+      }
+    },
     needToAutosave() {
       return !!this.patchesSinceSave.length;
     },
@@ -308,26 +325,32 @@ export default {
       }
       try {
         // Returns the doc as represented in the new locale and mode
-        const modeDoc = await apos.http.post(`${apos.login.action}/set-context`, {
-          body: {
-            mode,
-            locale: apos.locale,
-            _id: doc._id
+        const action = (doc.slug.match(/^\//) ? self.apos.page : self.apos.modules[doc.type]).action;
+        const modeDoc = await apos.http.get(`${action}/${doc._id}`, {
+          qs: {
+            'apos-mode': mode,
+            'apos-locale': locale
           }
         });
+        if (navigate && (!modeDoc._url)) {
+          await apos.alert({
+            heading: 'Page Does Not Exist Yet',
+            description: `The page that provides a listing for this type of piece is not yet available as ${mode} in the ${locale} locale.`
+          });
+          return;
+        }
         window.sessionStorage.setItem('aposStateChange', Date.now());
         window.sessionStorage.setItem('aposStateChangeSeen', '{}');
         if (mode === 'published') {
-          window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
           this.editMode = false;
         }
-        this.draftMode = mode;
         // Patch the module options. This is necessary because we're simulating
         // something that normally would involve a new page load, but without
         // the UX negatives of that. TODO: VueX as a long term fix
         window.apos.adminBar.context = modeDoc;
         window.apos.adminBar.contextId = modeDoc._id;
         this.context = modeDoc;
+        this.draftMode = mode;
         if (navigate) {
           if (!await this.refreshOrReload(modeDoc._url)) {
             if (this.editMode) {
@@ -351,7 +374,6 @@ export default {
             description: `That document is not yet available as ${mode} in the ${locale} locale.`
           });
         } else {
-          // Should not happen
           await apos.alert({
             heading: 'An Error Occurred',
             description: 'Unable to switch modes.'
@@ -367,16 +389,10 @@ export default {
         this.save();
       }
     },
-    onStorage(e) {
-      if (e.storageArea === sessionStorage && e.key === 'aposEditMode') {
-        this.editMode = e.newValue;
-      }
-    },
     async onContentChanged() {
       this.refresh();
     },
     async switchEditMode(editing) {
-      window.sessionStorage.setItem('aposEditMode', JSON.stringify(editing));
       this.editMode = editing;
       if (editing) {
         if (!await this.lock(`${this.action}/${this.context._id}`)) {
@@ -397,6 +413,7 @@ export default {
       const qs = {
         ...apos.http.parseQuery(window.location.search),
         'apos-refresh': '1',
+        'apos-mode': this.draftMode,
         ...(this.editMode ? {
           'apos-edit': '1'
         } : {})

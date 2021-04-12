@@ -47,7 +47,7 @@ module.exports = {
     remove: [
       'title',
       'slug',
-      'trash',
+      'archived',
       'visibility'
     ]
   },

@@ -25,7 +25,8 @@
         class="apos-admin-bar__title__document"
         :button="draftButton"
         :menu="draftMenu"
-        :disabled="hasCustomUi"
+        :disabled="hasCustomUi || isUnpublished"
+        :tooltip="isUnpublished ? 'The current document is unpublished' : null"
         @item-clicked="switchDraftMode"
         menu-offset="13, 10"
         menu-placement="bottom-end"
@@ -71,6 +72,9 @@ export default {
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'
       };
+    },
+    isUnpublished() {
+      return !this.context.lastPublishedAt;
     },
     docTooltip() {
       return `Last saved on ${dayjs(this.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;

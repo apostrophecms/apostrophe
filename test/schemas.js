@@ -56,8 +56,8 @@ const realWorldCase = {
     },
     {
       type: 'boolean',
-      name: 'trash',
-      label: 'Trash',
+      name: 'archive',
+      label: 'Archived',
       contextual: true,
       def: false
     },
