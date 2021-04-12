@@ -38,9 +38,10 @@ module.exports = {
   options: {
     name: '@apostrophecms/global',
     alias: 'global',
-    label: 'Global',
-    pluralLabel: 'Global',
-    searchable: false
+    label: 'Global Content',
+    pluralLabel: 'Global Content',
+    searchable: false,
+    singleton: true
   },
   fields: {
     remove: [
