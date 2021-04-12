@@ -81,13 +81,33 @@ module.exports = {
         },
         email: {
           type: 'string',
-          name: 'email',
           label: 'Email'
         },
         password: {
           type: 'password',
-          name: 'password',
           label: 'Password'
+        },
+        role: {
+          type: 'role',
+          choices: [
+            {
+              label: 'Guest',
+              value: 'guest'
+            },
+            {
+              label: 'Contributor',
+              value: 'contributor'
+            },
+            {
+              label: 'Editor',
+              value: 'editor'
+            },
+            {
+              label: 'Admin',
+              value: 'admin'
+            }
+          ],
+          required: true
         }
       },
       remove: [ 'visibility' ],
@@ -112,7 +132,8 @@ module.exports = {
         permissions: {
           label: 'Permissions',
           fields: [
-            'disabled'
+            'disabled',
+            'role'
           ]
         }
       }
@@ -131,6 +152,7 @@ module.exports = {
     self.initializeCredential();
     self.addOurArchivedPrefixFields();
     self.enableSecrets();
+    self.addRoleMigration();
     await self.ensureSafe();
   },
   apiRoutes(self) {
@@ -400,7 +422,15 @@ module.exports = {
         }
         const req = self.apos.task.getReq();
 
-        const { password } = await prompts(
+        const user = {
+          username,
+          title: username,
+          firstName: username
+        };
+
+        await self.addPermissionsFromTask(argv, user);
+
+        user.password = (await prompts(
           {
             type: 'password',
             name: 'password',
@@ -409,14 +439,21 @@ module.exports = {
               return input ? true : 'Password is required';
             }
           }
-        );
+        )).password;
 
-        return self.apos.user.insert(req, {
-          username: username,
-          password: password,
-          title: username,
-          firstName: username
-        });
+        return self.apos.user.insert(req, user);
+      },
+
+      async addPermissionsFromTask(argv, user) {
+        let role = argv._[2] || argv.role;
+        if (!role) {
+          role = 'admin';
+          console.log('You did not pass a second argument or --role, assuming admin');
+        }
+        if (![ 'guest', 'contributor', 'editor', 'admin' ].includes(role)) {
+          throw 'Second argument or --role must be one of: guest, contributor, editor, admin';
+        }
+        user.role = role;
       },
 
       // Implement the `@apostrophecms/user:change-password` task.
@@ -448,6 +485,21 @@ module.exports = {
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;
         return self.update(req, user);
+      },
+
+      addRoleMigration() {
+        self.apos.migration.add('add-role-to-user', async () => {
+          return self.apos.doc.db.updateMany({
+            type: '@apostrophecms/user',
+            role: {
+              $exists: 0
+            }
+          }, {
+            $set: {
+              role: 'admin'
+            }
+          });
+        });
       }
     };
   },
