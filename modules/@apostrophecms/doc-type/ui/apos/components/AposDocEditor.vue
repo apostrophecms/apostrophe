@@ -31,6 +31,10 @@
         @copy="onCopy"
       />
       <AposButton
+        v-if="canPreviewDraft" type="secondary"
+        @click="saveDraftAndPreview" label="Preview Draft"
+      />
+      <AposButton
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
         @click="submit"
@@ -268,6 +272,9 @@ export default {
       }
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
+    canPreviewDraft() {
+      return !this.docId && this.moduleOptions.previewDraft;
+    },
     canArchive() {
       return !!(this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
@@ -402,6 +409,13 @@ export default {
     }
   },
   methods: {
+    async saveDraftAndPreview() {
+      await this.save({
+        andPublish: false,
+        savingDraft: true,
+        navigate: true
+      });
+    },
     updateFieldState(fieldState) {
       this.tabKey = cuid();
       for (const key in this.groups) {
@@ -460,7 +474,8 @@ export default {
     async save({
       restoreOnly = false,
       andPublish = false,
-      savingDraft = false
+      savingDraft = false,
+      navigate = false
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -525,6 +540,16 @@ export default {
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
+        if (navigate) {
+          if (doc._url) {
+            window.location = doc._url;
+          } else {
+            await apos.notify(`Draft saved but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
+              type: 'warning',
+              icon: 'alert-circle-icon'
+            });
+          }
+        }
       });
     },
     async getNewInstance() {

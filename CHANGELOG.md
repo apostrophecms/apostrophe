@@ -12,6 +12,7 @@
 * Links to each piece are available in the manage view when appropriate.
 * Search is implemented in the media library.
 * You can now pass core widgets a `className` option when configuring them as part of an area.
+* `previewDraft` for pieces, adds a Preview Draft button on creation for quick in-context editing. Defaults to true.
 
 ### Changes
 
