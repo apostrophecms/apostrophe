@@ -144,53 +144,18 @@ export default {
     background-color: var(--a-base-1);
   }
 
-  .apos-notification--success .apos-notification__indicator {
-    background-color: var(--a-success-fade);
-  }
-
   .apos-notification--warning .apos-notification__indicator {
     background-color: var(--a-warning-fade);
-  }
-  .apos-notification--danger .apos-notification__indicator {
-    background-color: var(--a-danger-fade);
-  }
-
-  .apos-notification__type-bg {
-    z-index: $z-index-base;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 80px;
-    height: 100%;
-  }
-
-  .apos-notification--success .apos-notification__type-bg {
-    background-image: linear-gradient(to right, var(--a-success) -220%, rgba(0,0,0,0));
-  }
-
-  .apos-notification--warning .apos-notification__type-bg {
-    background-image: linear-gradient(to right, var(--a-warning) -220%, rgba(0,0,0,0));
-  }
-
-  .apos-notification--danger .apos-notification__type-bg {
-    background-image: linear-gradient(to right, var(--a-danger) -220%, rgba(0,0,0,0));
-  }
-
-  .apos-notification__indicator,
-  .apos-notification__label,
-  .apos-notification__button {
-    z-index: $z-index-model-popup;
-  }
-
-  .apos-notification--warning .apos-notification__indicator {
     color: var(--a-warning);
   }
 
   .apos-notification--success .apos-notification__indicator {
+    background-color: var(--a-success-fade);
     color: var(--a-success);
   }
 
   .apos-notification--danger .apos-notification__indicator {
+    background-color: var(--a-danger-fade);
     color: var(--a-danger);
   }
 
