@@ -70,8 +70,15 @@
         class="apos-media-editor__lip"
       >
         <AposContextMenu
-          :button="moreMenu.button"
-          :menu="moreMenu.menu"
+          v-if="!restoreOnly"
+          :button="{
+            label: 'More operations',
+            iconOnly: true,
+            icon: 'dots-vertical-icon',
+            type: 'subtle',
+            modifiers: [ 'small', 'no-motion' ]
+          }"
+          :menu="moreMenu"
           @item-clicked="moreMenuHandler"
           menu-placement="top-end"
         />
@@ -133,32 +140,26 @@ export default {
       original: klona(this.media),
       lipKey: '',
       triggerValidation: false,
-      showReplace: false,
-      moreMenu: {
-        button: {
-          label: 'More operations',
-          iconOnly: true,
-          icon: 'dots-vertical-icon',
-          type: 'subtle',
-          modifiers: [ 'small', 'no-motion' ]
-        },
-        menu: [
-          {
-            label: 'Discard Changes',
-            action: 'cancel'
-          },
-          {
-            label: 'Archive Image',
-            action: 'archive',
-            modifiers: [ 'danger' ]
-          }
-        ]
-      }
+      showReplace: false
     };
   },
   computed: {
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
+    },
+    moreMenu() {
+      const menu = [ {
+        label: 'Discard Changes',
+        action: 'cancel'
+      } ];
+      if (this.activeMedia._id && !this.restoreOnly) {
+        menu.push({
+          label: 'Archive Image',
+          action: 'archive',
+          modifiers: [ 'danger' ]
+        });
+      }
+      return menu;
     },
     fileSize() {
       if (
