@@ -75,6 +75,11 @@ export default {
       types: []
     };
   },
+  watch: {
+    async next() {
+      this.types = await this.getTypes(this.next);
+    }
+  },
   async mounted() {
     // Add an null option if there isn't one already
     if (!this.field.required && !this.field.choices.find(choice => {
@@ -93,7 +98,7 @@ export default {
         this.next = this.field.choices[0].value;
       }
     });
-    this.types = await this.getTypes();
+    this.types = await this.getTypes(this.next);
   },
   methods: {
     validate(value) {
@@ -109,8 +114,13 @@ export default {
       // Allows expression of non-string values
       this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
     },
-    async getTypes() {
-      return (await apos.http.get(`${apos.permission.action}/grid`, {})).types;
+    async getTypes(role) {
+      return (await apos.http.get(`${apos.permission.action}/grid`, {
+        qs: {
+          role
+        },
+        busy: true
+      })).types;
     }
   }
 };

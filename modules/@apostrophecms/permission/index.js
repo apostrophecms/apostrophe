@@ -52,10 +52,7 @@ module.exports = {
         if (role === 'admin') {
           return true;
         }
-        if (docOrType && ((typeof docOrType) === 'object') && !docOrType.type) {
-          console.log('>>', docOrType);
-        }
-        const type = docOrType.type || docOrType;
+        const type = docOrType && (docOrType.type || docOrType);
         const manager = type && self.apos.doc.getManager(type);
         if (type && !manager) {
           self.apos.util.warn(`A permission.can() call was made with a type that has no manager: ${type}`);
@@ -223,18 +220,18 @@ module.exports = {
           permissions.push({
             name: 'create',
             label: 'Create',
-            value: self.can(req, 'edit')
+            value: self.can(req, 'edit', module.name)
           });
         }
         permissions.push({
           name: 'edit',
           label: module.options.singleton ? 'Modify' : 'Modify / Delete',
-          value: self.can(req, 'edit')
+          value: self.can(req, 'edit', module.name)
         });
         permissions.push({
           name: 'publish',
           label: 'Publish',
-          value: self.can(req, 'publish')
+          value: self.can(req, 'publish', module.name)
         });
         typeInfo.permissions = permissions;
         return typeInfo;
@@ -269,13 +266,24 @@ module.exports = {
     return {
       get: {
         async grid(req) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/user')) {
+            throw self.apos.error('forbidden');
+          }
           const types = [];
+          const effectiveRole = self.apos.launder.select(req.query.role, [ 'guest', 'contributor', 'editor', 'admin' ]);
+          if (!effectiveRole) {
+            throw self.apos.error('invalid', { role: effectiveRole });
+          }
+          const _req = self.apos.task.getReq({
+            role: effectiveRole,
+            mode: 'draft'
+          });
           for (const module of Object.values(self.apos.modules)) {
             if (self.apos.synth.instanceOf(module, '@apostrophecms/piece-type')) {
-              types.push(self.describeType(req, module, { piece: true }));
+              types.push(self.describeType(_req, module, { piece: true }));
             }
           }
-          types.push(self.describeType(req, self.apos.modules['@apostrophecms/any-page-type']));
+          types.push(self.describeType(_req, self.apos.modules['@apostrophecms/any-page-type']));
           return {
             types: self.presentTypes(types)
           };

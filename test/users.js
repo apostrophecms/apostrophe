@@ -31,6 +31,7 @@ describe('Users', function() {
     user.username = 'JaneD';
     user.password = '123password';
     user.email = 'jane@aol.com';
+    user.role = 'admin';
 
     assert(user.type === '@apostrophecms/user');
     assert(apos.user.insert);
@@ -83,6 +84,7 @@ describe('Users', function() {
     user.username = 'DaneJ';
     user.password = '321password';
     user.email = 'jane@aol.com';
+    user.role = 'admin';
     assert(user.type === '@apostrophecms/user');
 
     assert(apos.user.insert);
@@ -114,6 +116,7 @@ describe('Users', function() {
     user.username = 'DaneJ';
     user.password = '321password';
     user.email = 'jane@aol.com';
+    user.role = 'admin';
     await apos.user.insert(apos.task.getReq(), user);
   });
 
@@ -158,6 +161,7 @@ describe('Users', function() {
     user.username = 'JaneD';
     user.password = '321password';
     user.email = 'somethingelse@aol.com';
+    user.role = 'admin';
     await apos.user.insert(apos.task.getReq(), user);
   });
 
