@@ -19,6 +19,7 @@
 * Do not immediately redirect to new pages and pieces.
 * Restored pieces now restore as unpublished drafts.
 * Refactored the admin bar component for maintainability.
+* Notification style updates
 
 ### Fixes
 
@@ -30,6 +31,7 @@
 * Fixes relating to the editing of widgets in nested areas, both on the page and in the modal.
 * Removed published / draft switch for unpublished drafts.
 * "Publish Changes" appears only at appropriate times.
+* Notifications moved from the bottom right of the viewport to the bottom center, fixing some cases of UI overlap.
 
 ## 3.0.0-alpha.6.1 - 2021-03-26
 

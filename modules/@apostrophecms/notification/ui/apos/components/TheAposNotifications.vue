@@ -133,10 +133,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .list-enter-active, .list-leave-active {
+  .list-enter-active,
+  .list-leave-active {
     @include apos-transition();
   }
-  .list-enter, .list-leave-to {
+
+  .list-enter,
+  .list-leave-to {
     opacity: 0;
     transform: translateY(5px);
   }
