@@ -29,6 +29,7 @@
         v-for="item in items"
         :key="item._id"
         :class="{'is-selected': false }"
+        @mouseover="over(item._id)" @mouseout="out(item._id)"
       >
         <td
           class="apos-table__cell"
@@ -58,6 +59,8 @@
           <component
             v-if="header.component" :is="header.component"
             :header="header" :item="item"
+            :state="state[item._id]"
+            @edit="$emit('open', item._id)"
           />
           <AposCellLink
             v-else-if="header.name === '_url' && item[header.name]"
@@ -106,6 +109,15 @@ export default {
     'change',
     'updated'
   ],
+  data() {
+    const state = {};
+    this.items.forEach(item => {
+      state[item._id] = { hover: false };
+    });
+    return {
+      state
+    };
+  },
   computed: {
     checkProxy: {
       get() {
@@ -117,6 +129,16 @@ export default {
     }
   },
   methods: {
+    over(id) {
+      console.log(id);
+      console.log(this.state[id]);
+      this.state[id].hover = true;
+      console.log(JSON.stringify(this.state[id].hover));
+    },
+    out(id) {
+      console.log('fire out');
+      this.state[id].hover = false;
+    },
     getEl(header) {
       if (header.action) {
         return 'button';
