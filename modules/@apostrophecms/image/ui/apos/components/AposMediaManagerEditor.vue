@@ -69,18 +69,11 @@
       <div
         class="apos-media-editor__lip"
       >
-        <AposButton
-          @click="cancel"
-          class="apos-media-editor__back" type="outline"
-          label="Cancel"
-        />
-        <AposButton
-          v-if="activeMedia._id && !restoreOnly"
-          @click="archive"
-          icon="trash-can-icon"
-          :icon-only="true"
-          class="apos-media-editor__archive"
-          label="Archive"
+        <AposContextMenu
+          :button="moreMenu.button"
+          :menu="moreMenu.menu"
+          @item-clicked="moreMenuHandler"
+          menu-placement="top-end"
         />
         <AposButton
           @click="save" class="apos-media-editor__save"
@@ -140,7 +133,27 @@ export default {
       original: klona(this.media),
       lipKey: '',
       triggerValidation: false,
-      showReplace: false
+      showReplace: false,
+      moreMenu: {
+        button: {
+          label: 'More operations',
+          iconOnly: true,
+          icon: 'dots-vertical-icon',
+          type: 'subtle',
+          modifiers: [ 'small', 'no-motion' ]
+        },
+        menu: [
+          {
+            label: 'Discard Changes',
+            action: 'cancel'
+          },
+          {
+            label: 'Archive Image',
+            action: 'archive',
+            modifiers: [ 'danger' ]
+          }
+        ]
+      }
     };
   },
   computed: {
@@ -205,6 +218,9 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
+    moreMenuHandler(action) {
+      this[action]();
+    },
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
@@ -375,6 +391,9 @@ export default {
 
   .apos-media-editor__lip {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    & > .apos-context-menu, & > .apos-button__wrapper {
+      margin-left: 7.5px;
+    }
   }
 </style>
