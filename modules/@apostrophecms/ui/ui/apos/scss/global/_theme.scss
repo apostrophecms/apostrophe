@@ -1,8 +1,11 @@
 :root,
 .apos-theme-light {
   --a-danger: #eb443b;
+  --a-danger-fade: #eb443b30;
   --a-success: #00bf9a;
+  --a-success-fade: #00bf9a30;
   --a-warning: #ffce00;
+  --a-warning-fade: #ffce0030;
   --a-progress-bg: #2c354d;
 
   --a-danger-button-hover: #c00717;
@@ -26,6 +29,8 @@
   // Borders
   --a-border-radius: 5px;
   --a-box-shadow: 0 3px 13px 4px rgba(0, 0, 0, 0.08);
+  --a-box-shadow--large: 0 0 25px rgba(0,0,0,0.5);
+  
 
   // Backgrounds
   --a-background-primary: #fff;

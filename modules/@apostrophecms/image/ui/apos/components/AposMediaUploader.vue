@@ -114,12 +114,6 @@ export default {
           },
           draft: true
         });
-        await apos.notify(
-          // TODO: i18n
-          `Uploading ${fileCount} image${fileCount > 1 ? 's' : ''}`, {
-            dismiss: true
-          }
-        );
 
         // Send up placeholders
         for (const file of files) {
@@ -144,7 +138,7 @@ export default {
         }
 
         // TODO: i18n
-        await apos.notify('Upload Successful', {
+        await apos.notify(`Successfully uploaded ${fileCount} image${fileCount > 1 ? 's' : ''}`, {
           type: 'success',
           dismiss: true
         });

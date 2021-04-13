@@ -1,10 +1,9 @@
 <template>
   <div role="alert" :class="classList">
-    <span class="apos-notification__indicator" v-if="type !== 'none'">
-      <component
-        :is="iconComponent"
-        :decorative="true"
-        :size="icon ? 16 : 12"
+    <span class="apos-notification__indicator">
+      <AposIndicator
+        :icon="iconComponent" class="apos-notification__indicator__icon"
+        :icon-size="icon ? 16 : 12"
       />
     </span>
     <span
@@ -115,27 +114,72 @@ export default {
 
 <style lang="scss" scoped>
   .apos-notification {
+    @include apos-transition();
     position: relative;
     display: inline-flex;
+    overflow: hidden;
     min-width: 200px;
     max-width: 400px;
-    padding: 15px 35px 15px 15px;
-    border: 1px solid var(--a-base-8);
+    padding: 8px 35px 8px 8px;
     color: var(--a-text-inverted);
     background: var(--a-background-inverted);
-    border-radius: var(--a-border-radius);
+    border-radius: 30px;
     box-shadow: var(--a-box-shadow);
-
+    align-items: center;
     & + .apos-notification {
       margin-top: 8px;
+    }
+    &:hover {
+      transform: translateY(-1px);
     }
   }
 
   .apos-notification__indicator {
     position: relative;
-    top: 1px;
-    margin-right: 15px;
-    color: var(--a-base-8);
+    display: inline-flex;
+    margin-right: 10px;
+    padding: 5px;
+    color: var(--a-base-1);
+    border-radius: 50%;
+    background-color: var(--a-base-1);
+  }
+
+  .apos-notification--success .apos-notification__indicator {
+    background-color: var(--a-success-fade);
+  }
+
+  .apos-notification--warning .apos-notification__indicator {
+    background-color: var(--a-warning-fade);
+  }
+  .apos-notification--danger .apos-notification__indicator {
+    background-color: var(--a-danger-fade);
+  }
+
+  .apos-notification__type-bg {
+    z-index: $z-index-base;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80px;
+    height: 100%;
+  }
+
+  .apos-notification--success .apos-notification__type-bg {
+    background-image: linear-gradient(to right, var(--a-success) -220%, rgba(0,0,0,0));
+  }
+
+  .apos-notification--warning .apos-notification__type-bg {
+    background-image: linear-gradient(to right, var(--a-warning) -220%, rgba(0,0,0,0));
+  }
+
+  .apos-notification--danger .apos-notification__type-bg {
+    background-image: linear-gradient(to right, var(--a-danger) -220%, rgba(0,0,0,0));
+  }
+
+  .apos-notification__indicator,
+  .apos-notification__label,
+  .apos-notification__button {
+    z-index: $z-index-model-popup;
   }
 
   .apos-notification--warning .apos-notification__indicator {
@@ -152,8 +196,7 @@ export default {
 
   .apos-notification__button {
     position: absolute;
-    top: 0;
-    right: 0;
+    right: 2px;
     display: flex;
     align-items: center;
     box-sizing: border-box;
