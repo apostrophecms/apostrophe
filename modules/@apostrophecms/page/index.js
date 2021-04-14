@@ -182,8 +182,8 @@ module.exports = {
       // _id may be a page _id, or the convenient shorthands
       // `_home` or `_archive`
       async getOne(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -287,8 +287,8 @@ module.exports = {
       // editing it in a modal or similar.
 
       async put(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {
@@ -335,8 +335,8 @@ module.exports = {
       // confirmation on it. Future implementation must also consider whether attachments have zero remaining references not
       // fully deleted, which isn't the same as having references still in the archive.
       async delete(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         const page = await self.findOneForEditing(req, {
           _id
         });
@@ -348,8 +348,8 @@ module.exports = {
       // may be `before`, `after` or `inside`. To move a page into or out of the archive, set
       // `archived` to `true` or `false`.
       patch(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         return self.patch(req, _id);
       }
     };

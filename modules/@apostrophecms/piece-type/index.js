@@ -178,8 +178,8 @@ module.exports = {
       return result;
     },
     async getOne(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -199,21 +199,21 @@ module.exports = {
       return await self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
     async delete(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       const piece = await self.findOneForEditing(req, {
         _id
       });
       return self.delete(req, piece);
     },
     async patch(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       return self.convertPatchAndRefresh(req, req.body, _id);
     }
   }),
