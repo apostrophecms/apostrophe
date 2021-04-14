@@ -182,11 +182,11 @@ describe('Pieces', function() {
     assert(apos.modules.things.schema);
   });
 
-  // little test-helper function to get piece by id regardless of trash status
+  // little test-helper function to get piece by id regardless of archive status
   async function findPiece(req, id) {
     const piece = apos.modules.things.find(req, { _id: id })
       .permission('edit')
-      .trash(null)
+      .archived(null)
       .toObject();
     if (!piece) {
       throw apos.error('notfound');
@@ -310,39 +310,39 @@ describe('Pieces', function() {
     assert(manageTest === true);
   });
 
-  it('should be able to trash a piece with proper deduplication', async () => {
+  it('should be able to archive a piece with proper deduplication', async () => {
     assert(apos.modules.things.requireOneForEditing);
     const req = apos.task.getReq();
     const id = 'testThing:en:published';
     req.body = { _id: id };
-    // let's make sure the piece is not trashed to start
+    // let's make sure the piece is not archived to start
     const piece = await findPiece(req, id);
-    assert(!piece.trash);
-    piece.trash = true;
+    assert(!piece.archived);
+    piece.archived = true;
     await apos.modules.things.update(req, piece);
-    // let's get the piece to make sure it is trashed
+    // let's get the piece to make sure it is archived
     const piece2 = await findPiece(req, id);
     assert(piece2);
-    assert(piece2.trash === true);
-    assert(piece2.aposWasTrash === true);
+    assert(piece2.archived === true);
+    assert(piece2.aposWasArchived === true);
     assert.equal(piece2.slug, 'deduplicate-testThing-hello');
   });
 
-  it('should be able to rescue a trashed piece with proper deduplication', async () => {
+  it('should be able to rescue a archived piece with proper deduplication', async () => {
     const req = apos.task.getReq();
     const id = 'testThing:en:published';
     req.body = {
       _id: id
     };
-    // let's make sure the piece is trashed to start
+    // let's make sure the piece is archived to start
     const piece = await findPiece(req, id);
-    assert(piece.trash === true);
-    piece.trash = false;
+    assert(piece.archived === true);
+    piece.archived = false;
     await apos.modules.things.update(req, piece);
     const piece2 = await findPiece(req, id);
     assert(piece2);
-    assert(!piece2.trash);
-    assert(!piece2.aposWasTrash);
+    assert(!piece2.archived);
+    assert(!piece2.aposWasArchived);
     assert(piece2.slug === 'hello');
   });
 
@@ -575,16 +575,16 @@ describe('Pieces', function() {
     assert(response.body.items.length);
   });
 
-  it('can trash a product', async () => {
+  it('can archive a product', async () => {
     return apos.http.patch(`/api/v1/product/${updateProduct._id}`, {
       body: {
-        trash: true
+        archived: true
       },
       jar
     });
   });
 
-  it('cannot fetch a trashed product', async () => {
+  it('cannot fetch a archived product', async () => {
     try {
       await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
         jar
@@ -596,12 +596,12 @@ describe('Pieces', function() {
     }
   });
 
-  it('can fetch trashed product with trash=any and the right user', async () => {
-    const product = await apos.http.get(`/api/v1/product/${updateProduct._id}?trash=any`, {
+  it('can fetch archived product with archived=any and the right user', async () => {
+    const product = await apos.http.get(`/api/v1/product/${updateProduct._id}?archived=any`, {
       jar
     });
     // Should have been a 404, 200 = test fails
-    assert(product.trash);
+    assert(product.archived);
   });
 
   let relatedProductId;
@@ -817,7 +817,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         },
         title: 'Advisory Test Patched'
@@ -832,7 +832,7 @@ describe('Pieces', function() {
         jar,
         body: {
           _advisoryLock: {
-            htmlPageId: 'pdq',
+            tabId: 'pdq',
             lock: true
           }
         }
@@ -850,7 +850,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true,
           force: true
         }
@@ -863,7 +863,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true
         }
       }
@@ -875,7 +875,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: false
         },
         title: 'Advisory Test Patched Again'
@@ -889,7 +889,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         }
       }
@@ -928,13 +928,13 @@ describe('Pieces', function() {
     assert(page.match(/logged in/));
   });
 
-  it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
+  it('second user with a distinct tabId gets an appropriate error specifying who has the lock', async () => {
     try {
       await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {
-            htmlPageId: 'nbc',
+            tabId: 'nbc',
             lock: true
           }
         }

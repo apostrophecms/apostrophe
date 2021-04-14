@@ -9,7 +9,7 @@
       />
       <!-- TODO: Return this delete button when batch updates are added -->
       <!-- <AposButton
-        label="Delete" @click="$emit('trash-click')"
+        label="Delete" @click="$emit('archive-click')"
         :icon-only="true" icon="delete-icon"
         type="outline"
       /> -->
@@ -97,7 +97,7 @@ export default {
     }
   },
   emits: [
-    'trash-click',
+    'archive-click',
     'select-click',
     'filter',
     'search',

@@ -22,7 +22,7 @@ module.exports = {
   options: {
     alias: 'i18n'
   },
-  init(self, options) {
+  init(self) {
     const i18nOptions = self.options || {};
     _.defaults(i18nOptions, {
       locales: [ 'en' ],
@@ -34,7 +34,7 @@ module.exports = {
     i18n.configure(i18nOptions);
     self.i18n = i18n;
   },
-  middleware(self, options) {
+  middleware(self) {
     return {
       init(req, res, next) {
         // Support for a single apos-locale query param that
@@ -50,16 +50,12 @@ module.exports = {
         let locale;
         if (self.isValidLocale(req.query['apos-locale'])) {
           locale = req.query['apos-locale'];
-        } else if (self.isValidLocale(req.session && req.session.locale)) {
-          locale = req.session.locale;
         } else {
           locale = self.defaultLocale;
         }
         let mode;
         if (validModes.includes(req.query['apos-mode'])) {
           mode = req.query['apos-mode'];
-        } else if (validModes.includes(req.session && req.session.mode)) {
-          mode = req.session.mode;
         } else {
           mode = 'published';
         }
@@ -74,7 +70,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       isValidLocale(locale) {
         return locale && self.locales.includes(locale);
@@ -106,7 +102,7 @@ module.exports = {
           throw self.apos.error('forbidden');
         }
         if (_id.charAt(0) === '_') {
-          // A shortcut such as _home or _trash,
+          // A shortcut such as _home or _archive,
           // will be interpreted later
           return _id;
         } else {

@@ -148,7 +148,7 @@ const qs = require('qs');
 const expressBearerToken = require('express-bearer-token');
 
 module.exports = {
-  init(self, options) {
+  init(self) {
     self.createApp();
     self.prefix();
     if (self.options.baseUrl && !self.apos.baseUrl) {
@@ -157,7 +157,7 @@ module.exports = {
       self.apos.util.error('When you do so other modules will also pick up on it and make URLs absolute.');
     }
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:run': {
         async listenIfNotTask(isTask) {
@@ -198,7 +198,7 @@ module.exports = {
     };
   },
 
-  middleware(self, options) {
+  middleware(self) {
     return {
       createDataAndGuards(req, res, next) {
         if (!req.data) {
@@ -241,7 +241,7 @@ module.exports = {
           return matches[1];
         }
       },
-      expressBearerTokenMiddleware: expressBearerToken(options.expressBearerToken || {}),
+      expressBearerTokenMiddleware: expressBearerToken(self.options.expressBearerToken || {}),
       async bearerTokens(req, res, next) {
         if (!req.token) {
           return next();
@@ -279,7 +279,7 @@ module.exports = {
           return self.apos.login.deserializeUser(userId);
         }
       },
-      ...((options.csrf === false) ? {} : {
+      ...((self.options.csrf === false) ? {} : {
         // Angular-compatible CSRF protection middleware. On safe requests (GET, HEAD, OPTIONS, TRACE),
         // set the XSRF-TOKEN cookie if missing. On unsafe requests (everything else),
         // make sure our jQuery `ajaxPrefilter` set the X-XSRF-TOKEN header to match the
@@ -301,11 +301,11 @@ module.exports = {
       }),
       bodyParserUrlencoded: bodyParser.urlencoded({
         extended: true,
-        ...(options.bodyParser && options.bodyParser.urlencoded)
+        ...(self.options.bodyParser && self.options.bodyParser.urlencoded)
       }),
       bodyParserJson: bodyParser.json({
         limit: '16mb',
-        ..._(options.bodyParser && options.bodyParser.json)
+        ..._(self.options.bodyParser && self.options.bodyParser.json)
       }),
       // Sets the `req.absoluteUrl` property for all requests,
       // based on the `baseUrl` option if available, otherwise based on the user's
@@ -320,26 +320,11 @@ module.exports = {
       absoluteUrl(req, res, next) {
         self.addAbsoluteUrlsToReq(req);
         next();
-      },
-      // Makes the `@apostrophecms/Html-Page-Id` header available
-      // as `req.htmlPageId`. This header is passed by
-      // all jQuery AJAX requests made by Apostrophe. It
-      // contains a unique identifier just for the current
-      // webpage in the browser; that is, navigating to a new
-      // page always generates a *new* id, the same page in two tabs
-      // will have *different* ids, etc. This makes it easy to
-      // identify requests that come from the "same place"
-      // for purposes of conflict resolution and locking.
-      // (Note that conflicts can occur between two tabs
-      // belonging to the same user, so a session ID is not enough.)
-      htmlPageId(req, res, next) {
-        req.htmlPageId = req.header('@apostrophecms/Html-Page-Id');
-        next();
       }
     };
   },
 
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Create Apostrophe's `apos.app` and `apos.express` objects
@@ -438,6 +423,7 @@ module.exports = {
           if (!name || name.match(/^connect-mongo/)) {
             if (!sessionOptions.store.options.client) {
               sessionOptions.store.options.client = self.apos.dbClient;
+              sessionOptions.store.options.dbName = sessionOptions.store.options.dbName || self.apos.db.databaseName;
             }
           }
           if (!sessionOptions.store.name) {

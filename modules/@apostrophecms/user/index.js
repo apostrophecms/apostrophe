@@ -46,7 +46,7 @@ module.exports = {
     slugPrefix: 'user-',
     localized: false
   },
-  fields(self, options) {
+  fields(self) {
     return {
       add: {
         firstName: {
@@ -81,13 +81,33 @@ module.exports = {
         },
         email: {
           type: 'string',
-          name: 'email',
           label: 'Email'
         },
         password: {
           type: 'password',
-          name: 'password',
           label: 'Password'
+        },
+        role: {
+          type: 'role',
+          choices: [
+            {
+              label: 'Guest',
+              value: 'guest'
+            },
+            {
+              label: 'Contributor',
+              value: 'contributor'
+            },
+            {
+              label: 'Editor',
+              value: 'editor'
+            },
+            {
+              label: 'Admin',
+              value: 'admin'
+            }
+          ],
+          required: true
         }
       },
       remove: [ 'visibility' ],
@@ -106,13 +126,14 @@ module.exports = {
             'username',
             'email',
             'password',
-            'trash'
+            'archived'
           ]
         },
         permissions: {
           label: 'Permissions',
           fields: [
-            'disabled'
+            'disabled',
+            'role'
           ]
         }
       }
@@ -127,13 +148,14 @@ module.exports = {
     remove: [ 'visibility' ]
   },
 
-  async init(self, options) {
+  async init(self) {
     self.initializeCredential();
-    self.addOurTrashPrefixFields();
+    self.addOurArchivedPrefixFields();
     self.enableSecrets();
+    self.addRoleMigration();
     await self.ensureSafe();
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         async uniqueUsername(req) {
@@ -149,7 +171,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       beforeInsert: {
         async insertSafe(req, doc, options) {
@@ -162,7 +184,7 @@ module.exports = {
         }
       },
       // Reflect email and username changes in the safe after deduplicating in the piece
-      afterTrash: {
+      afterArchived: {
         async updateSafe(req, piece) {
           await self.insertOrUpdateSafe(req, piece, 'update');
         }
@@ -175,16 +197,16 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
 
       // Add `username` and `email` to the list of fields that automatically get uniquely prefixed
-      // when a user is in the trash, so that they can be reused by another piece. When
-      // the piece is rescued from the trash the prefix is removed again, unless the username
+      // when a user is in the archive, so that they can be reused by another piece. When
+      // the piece is rescued from the archive the prefix is removed again, unless the username
       // or email address has been claimed by another user in the meanwhile.
 
-      addOurTrashPrefixFields() {
-        self.addTrashPrefixFields([
+      addOurArchivedPrefixFields() {
+        self.addArchivedPrefixFields([
           'username',
           'email'
         ]);
@@ -400,7 +422,15 @@ module.exports = {
         }
         const req = self.apos.task.getReq();
 
-        const { password } = await prompts(
+        const user = {
+          username,
+          title: username,
+          firstName: username
+        };
+
+        await self.addPermissionsFromTask(argv, user);
+
+        user.password = (await prompts(
           {
             type: 'password',
             name: 'password',
@@ -409,14 +439,21 @@ module.exports = {
               return input ? true : 'Password is required';
             }
           }
-        );
+        )).password;
 
-        return self.apos.user.insert(req, {
-          username: username,
-          password: password,
-          title: username,
-          firstName: username
-        });
+        return self.apos.user.insert(req, user);
+      },
+
+      async addPermissionsFromTask(argv, user) {
+        let role = argv._[2] || argv.role;
+        if (!role) {
+          role = 'admin';
+          console.log('You did not pass a second argument or --role, assuming admin');
+        }
+        if (![ 'guest', 'contributor', 'editor', 'admin' ].includes(role)) {
+          throw 'Second argument or --role must be one of: guest, contributor, editor, admin';
+        }
+        user.role = role;
       },
 
       // Implement the `@apostrophecms/user:change-password` task.
@@ -448,10 +485,25 @@ module.exports = {
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;
         return self.update(req, user);
+      },
+
+      addRoleMigration() {
+        self.apos.migration.add('add-role-to-user', async () => {
+          return self.apos.doc.db.updateMany({
+            type: '@apostrophecms/user',
+            role: {
+              $exists: 0
+            }
+          }, {
+            $set: {
+              role: 'admin'
+            }
+          });
+        });
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       add: {
         usage: 'Usage: node app @apostrophecms/user:add username groupname\n\nThis adds a new user and assigns them to a group.\nYou will be prompted for a password.',

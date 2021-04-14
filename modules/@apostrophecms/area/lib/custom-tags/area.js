@@ -1,6 +1,6 @@
 // Implements {% area docOrWidget, 'areaName', { options... } %}
 
-module.exports = function(self, options) {
+module.exports = function(self) {
   return {
     // We need a custom parser because of the "with" syntax
     parse(parser, nodes, lexer) {
@@ -8,11 +8,27 @@ module.exports = function(self, options) {
       const token = parser.nextToken();
 
       const args = new nodes.NodeList(token.lineno, token.colno);
+      let argsCount = 0;
 
       while (true) {
         // get the arguments before "with"
         const object = parser.parseExpression();
-        args.addChild(object);
+
+        if (argsCount < 2) {
+          args.addChild(object);
+          argsCount++;
+        } else {
+          const argList = args.children;
+          if (
+            argList && argList[1] &&
+            typeof argList[1].value === 'string'
+          ) {
+            throw usage(`Too many arguments were passed to the "${argList[1].value}" area before the "with" keyword.`);
+          } else {
+            throw usage('Too many arguments were passed to an area before the "with" keyword.');
+          }
+        }
+
         const w = parser.peekToken();
         if (!(w.type === 'comma')) {
           break;
@@ -23,8 +39,8 @@ module.exports = function(self, options) {
       const w = parser.peekToken();
       if ((w.type === 'symbol') && (w.value === 'with')) {
         parser.nextToken();
-        const context = parser.parseExpression();
-        args.addChild(context);
+        const _with = parser.parseExpression();
+        args.addChild(_with);
       }
       parser.advanceAfterBlockEnd(token.value);
       return { args };
@@ -72,7 +88,7 @@ module.exports = function(self, options) {
             _id: docId,
             // Prevent race condition
             [areaDotPath]: {
-              $exists: 0
+              $eq: null
             }
           }, {
             $set: {
@@ -84,18 +100,29 @@ module.exports = function(self, options) {
           area._id = self.apos.util.get(mainDoc, areaDotPath)._id;
         }
       }
+      const manager = self.apos.util.getManagerOf(doc);
+      const field = manager.schema.find(field => field.name === name);
+      if (!field) {
+        throw new Error(`The doc of type ${doc.type} with the slug ${doc.slug} has no field named ${name}.
+In Apostrophe 3.x areas must be part of the schema for each page or piece type.`);
+      }
+      area._fieldId = field._id;
+      area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+      // For existing areas this is propagated at load time, areas in
+      // array items will always be existing areas
+      area._edit = area._edit || doc._edit;
 
       self.apos.area.prepForRender(area, doc, name);
-
       const content = await self.apos.area.renderArea(req, area, _with);
       return content;
-      function usage(message) {
-        return new Error(`${message}
-
-  Usage: {% area data.page, 'areaName' with { optional object visible as data.context in widgets } %}
-`
-        );
-      }
     }
   };
+
+  function usage(message) {
+    return new Error(`${message}
+
+Usage: {% area data.page, 'areaName' with { optional object visible as data.context in widgets } %}
+`
+    );
+  }
 };

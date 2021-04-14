@@ -24,6 +24,13 @@
 // connection instance is created that reuses the same sockets,
 // and `uri`, `host`, `connect`, etc. are ignored.
 //
+// ### `versionCheck`
+//
+// If `true`, check to make sure the database does not belong to an
+// older, incompatible major release release of Apostrophe and exit if it does.
+// Defaults to `true`. You can set this to `false` to avoid an extra query at startup
+// time.
+//
 // ## Command line tasks
 //
 // ### `@apostrophecms/db:reset`
@@ -46,15 +53,19 @@
 const mongo = require('mongodb');
 
 module.exports = {
-  async init(self, options) {
+  options: {
+    versionCheck: true
+  },
+  async init(self) {
     await self.connectToMongo();
+    await self.versionCheck();
     // TODO: Remove this conditional and `self.trace` if not necessary or add
     // documentation explaining utility and usage.
     if (process.env.APOS_TRACE_DB) {
       self.trace();
     }
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:destroy': {
         async closeDb() {
@@ -73,7 +84,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Open the database connection. Always use MongoClient with its
       // sensible defaults. Build a URI if we need to, so we can call it
@@ -86,7 +97,7 @@ module.exports = {
         if (self.options.client) {
           // Reuse a single client connection http://mongodb.github.io/node-mongodb-native/2.2/api/Db.html#db
           self.apos.dbClient = self.options.client;
-          self.apos.db = self.options.client.db(options.name || self.apos.shortName);
+          self.apos.db = self.options.client.db(self.options.name || self.apos.shortName);
           self.connectionReused = true;
           return;
         }
@@ -99,22 +110,22 @@ module.exports = {
         let uri = 'mongodb://';
         if (process.env.APOS_MONGODB_URI) {
           uri = process.env.APOS_MONGODB_URI;
-        } else if (options.uri) {
-          uri = options.uri;
+        } else if (self.options.uri) {
+          uri = self.options.uri;
         } else {
-          if (options.user) {
-            uri += options.user + ':' + options.password + '@';
+          if (self.options.user) {
+            uri += self.options.user + ':' + self.options.password + '@';
           }
-          if (!options.host) {
-            options.host = 'localhost';
+          if (!self.options.host) {
+            self.options.host = 'localhost';
           }
-          if (!options.port) {
-            options.port = 27017;
+          if (!self.options.port) {
+            self.options.port = 27017;
           }
-          if (!options.name) {
-            options.name = self.apos.shortName;
+          if (!self.options.name) {
+            self.options.name = self.apos.shortName;
           }
-          uri += options.host + ':' + options.port + '/' + options.name;
+          uri += self.options.host + ':' + self.options.port + '/' + self.options.name;
         }
 
         const connectOptions = {
@@ -124,9 +135,22 @@ module.exports = {
         };
         self.apos.dbClient = await mongo.MongoClient.connect(uri, connectOptions);
         const parsed = new URL(uri);
+        self.uri = uri;
         self.apos.db = self.apos.dbClient.db(parsed.pathname.substr(1));
       },
+      async versionCheck() {
+        if (!self.options.versionCheck) {
+          return;
+        }
+        const oldGlobal = await self.apos.db.collection('aposDocs').findOne({
+          type: 'apostrophe-global'
+        });
+        if (oldGlobal) {
+          throw new Error(`There is a problem with the database: ${self.uri ? (self.uri + ' ') : ''}
 
+This database contains an Apostrophe 2.x website. Exiting to avoid content loss.`);
+        }
+      },
       // TODO: Remove this function if not necessary. Created for debugging during
       // test conversion. If no conditional in `afterConstruct` above using this,
       // it can be safely removed.
@@ -178,7 +202,7 @@ module.exports = {
       }
     };
   },
-  tasks(self, options) {
+  tasks(self) {
     return {
       // Reset the database. Drops ALL collections. If you have
       // collections in the same database unrelated to Apostrophe they WILL

@@ -17,16 +17,19 @@ const joinr = require('./lib/joinr');
 const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
-const klona = require('klona');
+const { klona } = require('klona');
 
 module.exports = {
   options: {
     alias: 'schema'
   },
-  init(self, options) {
+  init(self) {
 
     self.fieldTypes = {};
     self.fieldsById = {};
+    self.arrayManagers = {};
+    self.objectManagers = {};
+
     self.enableBrowserData();
 
     self.addFieldType({
@@ -73,25 +76,31 @@ module.exports = {
       }
     });
 
+    function checkStringLength (string, min, max) {
+      if (string && min && string.length < min) {
+        // Would be unpleasant, but shouldn't happen since the browser
+        // also implements this. We're just checking for naughty scripts
+        throw self.apos.error('min');
+      }
+      // If max is longer than allowed, trim the value down to the max length
+      if (string && max && string.length > max) {
+        return string.substr(0, max);
+      }
+
+      return string;
+    }
+
     self.addFieldType({
       name: 'string',
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        if (object[field.name] && field.min && object[field.name].length < field.min) {
-          // Would be unpleasant, but shouldn't happen since the browser
-          // also implements this. We're just checking for naughty scripts
-          throw self.apos.error('min');
-        }
-        // If max is longer than allowed, trim the value down to the max length
-        if (object[field.name] && field.max && object[field.name].length > field.max) {
-          object[field.name] = object[field.name].substr(0, field.max);
-        }
+        object[field.name] = checkStringLength(object[field.name], field.min, field.max);
         // If field is required but empty (and client side didn't catch that)
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
-          throw self.apos.error(`required: ${field.name}`);
+          throw self.apos.error('required');
         }
       },
       index: function (value, field, texts) {
@@ -377,7 +386,7 @@ module.exports = {
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
-        if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+        if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
         if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
@@ -464,7 +473,7 @@ module.exports = {
       name: 'email',
       vueComponent: 'AposInputString',
       convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], undefined, field.min, field.max);
+        object[field.name] = self.apos.launder.string(data[field.name]);
         if (!data[field.name]) {
           if (field.required) {
             throw self.apos.error('required');
@@ -605,6 +614,8 @@ module.exports = {
         // there is actually a new value — a blank password is not cool. -Tom
         if (data[field.name]) {
           object[field.name] = self.apos.launder.string(data[field.name], field.def);
+
+          object[field.name] = checkStringLength(object[field.name], field.min, field.max);
         }
       }
     });
@@ -672,6 +683,8 @@ module.exports = {
         for (const datum of data) {
           const result = {};
           result._id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
+          result.metaType = 'arrayItem';
+          result.scopedArrayName = field.scopedArrayName;
           try {
             await self.convert(req, schema, datum, result);
           } catch (e) {
@@ -713,8 +726,13 @@ module.exports = {
           self.validateField(subField, options);
         }
       },
-      register: function (field) {
-        self.register(field.schema);
+      register: function (metaType, type, field) {
+        const localArrayName = field.arrayName || field.name;
+        field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
+        self.arrayManagers[field.scopedArrayName] = {
+          schema: field.schema
+        };
+        self.register(metaType, type, field.schema);
       },
       isEqual(req, field, one, two) {
         if (!(one[field.name] && two[field.name])) {
@@ -759,8 +777,13 @@ module.exports = {
           throw errors;
         }
       },
-      register: function (field) {
-        self.register(field.schema);
+      register: function (metaType, type, field) {
+        const localObjectName = field.objectName || field.name;
+        field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
+        self.objectManagers[field.scopedObjectName] = {
+          schema: field.schema
+        };
+        self.register(metaType, type, field.schema);
       },
       isEqual(req, field, one, two) {
         if (one && (!two)) {
@@ -1052,7 +1075,7 @@ module.exports = {
 
     self.validatedSchemas = {};
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:afterInit': {
         validateAllSchemas() {
@@ -1071,16 +1094,16 @@ module.exports = {
         },
         registerAllSchemas() {
           _.each(self.apos.doc.managers, function (manager, type) {
-            self.register(manager.schema);
+            self.register('doc', type, manager.schema);
           });
           _.each(self.apos.area.widgetManagers, function (manager, type) {
-            self.register(manager.schema);
+            self.register('widget', type, manager.schema);
           });
         }
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     const defaultGroup = self.options.defaultGroup || {
       name: 'ungrouped',
       label: 'Ungrouped'
@@ -1279,24 +1302,6 @@ module.exports = {
             }
           }
 
-          // Extra validation for select fields, TODO move this into the field type definition
-
-          if (field.type === 'select' || field.type === 'checkboxes') {
-            _.each(field.choices, function (choice) {
-              if (choice.showFields) {
-                if (!_.isArray(choice.showFields)) {
-                  throw new Error('The \'showFields\' property in the choices of a select field needs to be an array.');
-                }
-                _.each(choice.showFields, function (showFieldName) {
-                  if (!_.find(schema, function (schemaField) {
-                    return schemaField.name === showFieldName;
-                  })) {
-                    self.apos.util.error('WARNING: The field \'' + showFieldName + '\' does not exist in your schema, but you tried to toggle its display with a select field using showFields. STAAAHHHHPP!');
-                  }
-                });
-              }
-            });
-          }
         });
 
         // Shallowly clone the fields. This allows modules
@@ -1422,6 +1427,9 @@ module.exports = {
         for (const field of schema) {
           if (field.def !== undefined) {
             instance[field.name] = klona(field.def);
+          } else {
+            // All fields should have an initial value in the database
+            instance[field.name] = null;
           }
         }
         return instance;
@@ -1475,7 +1483,7 @@ module.exports = {
       // Note that for relationship fields this comparison is based on the idsStorage
       // and fieldsStorage, which are updated at the time a document is saved to the
       // database, so it will not work on a document not yet inserted or updated
-      // unless `prepareRelationshipsForStorage` is used.
+      // unless `prepareForStorage` is used.
       //
       // This method is invoked by the doc module to compare draft and published
       // documents and set the modified property of the draft, just before updating the
@@ -1574,7 +1582,7 @@ module.exports = {
         errors = errors.filter(error => {
           if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
             // It is not reasonable to enforce required for
-            // fields hidden via showFields
+            // fields hidden via conditional fields
             return false;
           }
           return true;
@@ -1585,39 +1593,47 @@ module.exports = {
       },
 
       // Determine whether the given field is visible
-      // based on showFields options of all fields
+      // based on `if` conditions of all fields
 
       isVisible(schema, object, name) {
-        const hidden = {};
-        _.each(schema, function (field) {
-          if (!_.find(field.choices || [], function (choice) {
-            return choice.showFields;
-          })) {
-            return;
-          }
-          _.each(field.choices, function (choice) {
-            if (choice.showFields) {
-              if (field.type === 'checkboxes') {
-                if (!object[field.name].includes(choice.value)) {
-                  _.each(choice.showFields, hide);
-                }
-              } else if (object[field.name] !== choice.value) {
-                _.each(choice.showFields, hide);
+        const conditionalFields = {};
+        while (true) {
+          let change = false;
+          for (const field of schema) {
+            if (field.if) {
+              const result = evaluate(field.if);
+              const previous = conditionalFields[field.name];
+              if (previous !== result) {
+                change = true;
               }
+              conditionalFields[field.name] = result;
             }
-          });
-        });
-        return !hidden[name];
-
-        function hide(name) {
-          hidden[name] = true;
-          // Cope with nested showFields
-          const field = _.find(schema, { name: name });
-          _.each(field.choices || [], function (choice) {
-            _.each(choice.showFields || [], function (name) {
-              hide(name);
-            });
-          });
+          }
+          if (!change) {
+            break;
+          }
+        }
+        if (_.has(conditionalFields, name)) {
+          return conditionalFields[name];
+        } else {
+          return true;
+        }
+        function evaluate(clause) {
+          let result = true;
+          for (const [ key, val ] of Object.entries(clause)) {
+            if (key === '$or') {
+              return val.some(clause => evaluate(clause));
+            }
+            if (conditionalFields[key] === false) {
+              result = false;
+              break;
+            }
+            if (val !== object[key]) {
+              result = false;
+              break;
+            }
+          }
+          return result;
         }
       },
 
@@ -1697,6 +1713,7 @@ module.exports = {
         }
 
         const objects = _.isArray(objectOrArray) ? objectOrArray : [ objectOrArray ];
+
         if (!objects.length) {
           // Don't waste effort
           return;
@@ -1825,7 +1842,6 @@ module.exports = {
               }
               await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
                 // Allow options to the getter to be specified in the schema,
-                // notably editable: true
                 return self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
               });
               _.each(_objects, function (object) {
@@ -1871,8 +1887,7 @@ module.exports = {
             _.extend(options.hints, relationship.hints);
           }
 
-          // Allow options to the getter to be specified in the schema,
-          // notably editable: true
+          // Allow options to the getter to be specified in the schema
           await self.apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
             return self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
           });
@@ -1894,26 +1909,28 @@ module.exports = {
         }
       },
 
-      // In the given document, for any relationships that are present in
-      // the data (such as `_products`), update the underlying
-      // idsStorage and fieldsStorage (if appropriate) so that
-      // storage to the database can take place. This method is
+      // In the given document or widget, update any underlying
+      // storage needs required for relationships, arrays, etc.,
+      // such as populating the idsStorage and fieldsStorage
+      // properties of relationship fields, or setting the
+      // arrayName property of array items. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
       // itself as needed for relationships nested in widgets,
       // array fields and object fields.
       //
-      // If the relationship field is present by name (such as `_products`)
+      // If a relationship field is present by name (such as `_products`)
       // in the document, that is taken as authoritative, and any
       // existing values in the `idsStorage` and `fieldsStorage`
       // are overwritten. If the relationship field is not present, the
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
-      // `.relationships(false)`, provided a projection was not also used.
+      // `.relationships(false)`, provided the projection included
+      // the ids.
       //
       // Currently `req` does not impact this, but that may change.
 
-      prepareRelationshipsForStorage(req, doc) {
+      prepareForStorage(req, doc) {
         if (doc.metaType === 'doc') {
           const manager = self.apos.doc.getManager(doc.type);
           if (!manager) {
@@ -1932,16 +1949,23 @@ module.exports = {
             if (field.type === 'area') {
               if (doc[field.name] && doc[field.name].items) {
                 for (const widget of doc[field.name].items) {
-                  self.prepareRelationshipsForStorage(req, widget);
+                  self.prepareForStorage(req, widget);
                 }
               }
             } else if (field.type === 'array') {
               if (doc[field.name]) {
-                doc[field.name].forEach(item => forSchema(field.schema, item));
+                doc[field.name].forEach(item => {
+                  item.metaType = 'arrayItem';
+                  item.scopedArrayName = field.scopedArrayName;
+                  forSchema(field.schema, item);
+                });
               }
             } else if (field.type === 'object') {
-              if (doc[field.name]) {
-                forSchema(field.schema, doc[field.name]);
+              const value = doc[field.name];
+              if (value) {
+                value.metaType = 'object';
+                value.scopedObjectName = field.scopedObjectName;
+                forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {
               if (Array.isArray(doc[field.name])) {
@@ -2219,7 +2243,14 @@ module.exports = {
 
       // Recursively register the given schema, giving each field an _id and making provision to be able to
       // fetch its definition via apos.schema.getFieldById().
-      register(schema) {
+      //
+      // metaType and type refer to the doc or widget that ultimately contains this schema,
+      // even if it is nested as an array schema. `metaType` will be "doc" or "widget"
+      // and `type` will be the type name. This is used to dynamically assign
+      // sufficiently unique `arrayName` properties to array fields and may be used
+      // for similar scoping tasks.
+
+      register(metaType, type, schema) {
         for (const field of schema) {
           // _id needs to be consistent across processes
           field._id = self.apos.util.md5(JSON.stringify(_.omit(field, '_id', 'group')));
@@ -2229,9 +2260,9 @@ module.exports = {
             field.def = self.fieldTypes[field.type].def;
           }
           self.fieldsById[field._id] = field;
-          const type = self.fieldTypes[field.type];
-          if (type.register) {
-            type.register(field);
+          const fieldType = self.fieldTypes[field.type];
+          if (fieldType.register) {
+            fieldType.register(metaType, type, field);
           }
         }
       },
@@ -2381,7 +2412,7 @@ module.exports = {
             if (dot !== -1) {
               _id = _id.substring(0, dot);
             }
-            const result = self.apos.util.findNestedObjectAndDotPathById(existingPage, _id);
+            const result = self.apos.util.findNestedObjectAndDotPathById(existingPage, _id, { ignoreDynamicProperties: true });
             if (!result) {
               throw self.apos.error('invalid', {
                 '@path': key
@@ -2462,10 +2493,39 @@ module.exports = {
           result.push(field);
         }
         return result;
+      },
+      // Array "managers" currently offer just a schema property, for parallelism
+      // with doc type and widget managers. This allows the getManagerOf method
+      // to operate on objects of any of three types: doc, widget or array item.
+      getArrayManager(name) {
+        return self.arrayManagers[name];
+      },
+      // Regenerate all array item, area and widget ids so they are considered
+      // new. Useful when copying an entire doc.
+      regenerateIds(req, schema, doc) {
+        for (const field of schema) {
+          if (field.type === 'array') {
+            for (const item of (doc[field.name] || [])) {
+              item._id = self.apos.util.generateId();
+              self.regenerateIds(req, field.schema, item);
+            }
+          } else if (field.type === 'area') {
+            if (doc[field.name]) {
+              doc[field.name]._id = self.apos.util.generateId();
+              for (const item of (doc[field.name].items || [])) {
+                item._id = self.apos.util.generateId();
+                const schema = self.apos.area.getWidgetManager(item.type).schema;
+                self.regenerateIds(req, schema, item);
+              }
+            }
+          }
+          // We don't want to regenerate attachment ids. They correspond to
+          // actual files, and the reference count will update automatically
+        }
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
@@ -2482,26 +2542,6 @@ module.exports = {
 
         browserOptions.components = { fields: fields };
         return browserOptions;
-      }
-    };
-  },
-  helpers(self, options) {
-    return {
-      toGroups: function (fields) {
-        return self.toGroups(fields);
-      },
-      field: function (field, readOnly) {
-        if (readOnly) {
-          field.readOnly = true;
-        }
-        // Allow custom partials for types and for individual fields
-        const partial = field.partial || self.fieldTypes[field.type].partial;
-        if (!partial) {
-          // Look for a standard partial template in the views folder
-          // of this module
-          return self.partialer(field.type)(field);
-        }
-        return partial(field);
       }
     };
   }

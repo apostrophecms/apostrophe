@@ -6,20 +6,12 @@
   >
     <template #body>
       <div class="apos-input-wrapper">
-        <textarea
-          :class="classes"
-          v-if="field.textarea" rows="5"
-          v-model="next" :placeholder="field.placeholder"
-          @keydown.enter="$emit('return')"
-          :disabled="field.disabled" :required="field.required"
-          :id="uid" :tabindex="tabindex"
-        />
         <input
-          v-else :class="classes"
+          :class="classes"
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="$emit('return')"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >
         <component
@@ -93,9 +85,14 @@ export default {
         if (this.compatible(oldValue, this.next)) {
           // If this is a page slug, we only replace the last section of the slug.
           if (this.field.page) {
-            const parts = this.next.match(/[^/]+/g);
-            parts.pop();
-            this.next = `/${parts.join('/')}${this.slugify(newValue)}`;
+            let parts = this.next.split('/');
+            parts = parts.filter(part => part.length > 0);
+            if (parts.length) {
+              // Remove last path component so we can replace it
+              parts.pop();
+            }
+            parts.push(this.slugify(newValue, { componentOnly: true }));
+            this.next = `/${parts.join('/')}`;
           } else {
             this.next = this.slugify(newValue);
           }
@@ -154,9 +151,12 @@ export default {
       }
       return ((title === '') && (slug === `${this.prefix}none`)) || this.slugify(title) === this.slugify(slug);
     },
-    slugify(s) {
+    // if componentOnly is true, we are slugifying just one component of
+    // a slug as part of following the title field, and so we do *not*
+    // want to allow slashes (when editing a page) or set a prefix.
+    slugify(s, { componentOnly = false } = {}) {
       const options = {};
-      if (this.field.page) {
+      if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
       let preserveSlash = false;
@@ -170,7 +170,7 @@ export default {
       if (preserveSlash) {
         s += '-';
       }
-      if (this.field.page) {
+      if (this.field.page && !componentOnly) {
         if (!s.charAt(0) !== '/') {
           s = `/${s}`;
         }
@@ -182,13 +182,15 @@ export default {
       if (!s.length) {
         s = 'none';
       }
-      if (!s.startsWith(this.prefix)) {
-        if (this.prefix.startsWith(s)) {
-          // If they delete the `-`, and the prefix is `recipe-`,
-          // we want to restore `recipe-`, not set it to `recipe-recipe`
-          s = this.prefix;
-        } else {
-          s = this.prefix + s;
+      if (!componentOnly) {
+        if (!s.startsWith(this.prefix)) {
+          if (this.prefix.startsWith(s)) {
+            // If they delete the `-`, and the prefix is `recipe-`,
+            // we want to restore `recipe-`, not set it to `recipe-recipe`
+            s = this.prefix;
+          } else {
+            s = this.prefix + s;
+          }
         }
       }
       return s;

@@ -16,7 +16,7 @@ const _ = require('lodash');
 // being edited so that another user, or another tab for the same user,
 // does not inadvertently interfere. These locks are refreshed frequently
 // by the browser while they are held. By default, if the browser
-// is not heard from for 30 seconds, the lock expires. Note that
+// is not heard from for 15 seconds, the lock expires. Note that
 // the browser refreshes the lock every 5 seconds. This timeout should
 // be quite short as there is no longer any reliable way to force a browser
 // to unlock the document when leaving the page.
@@ -24,17 +24,19 @@ const _ = require('lodash');
 module.exports = {
   options: {
     alias: 'doc',
-    advisoryLockTimeout: 30
+    advisoryLockTimeout: 15
   },
-  async init(self, options) {
+  async init(self) {
     self.managers = {};
     self.enableBrowserData();
     await self.enableCollection();
+    self.apos.isNew = await self.detectNew();
     await self.createIndexes();
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
+    self.addLastPublishedToAllDraftsMigration();
   },
-  restApiRoutes(self, options) {
+  restApiRoutes(self) {
     return {
       // GET /api/v1/@apostrophecms/doc/_id supports only the universal query
       // features, but works for any document type, Simplifies browser-side
@@ -45,7 +47,7 @@ module.exports = {
       }
     };
   },
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     return {
       post: {
         async slugTaken(req) {
@@ -58,7 +60,7 @@ module.exports = {
           if (_id) {
             criteria._id = { $ne: _id };
           }
-          const doc = await self.find(req, criteria).permission(false).trash(null).project({ slug: 1 }).toObject();
+          const doc = await self.find(req, criteria).permission(false).archived(null).project({ slug: 1 }).toObject();
           if (doc) {
             throw self.apos.error('conflict');
           } else {
@@ -70,7 +72,7 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       '@apostrophecms/doc-type:beforeInsert': {
         setLocale(req, doc, options) {
@@ -109,10 +111,10 @@ module.exports = {
           }
           doc.metaType = 'doc';
           doc.createdAt = new Date();
-          if (doc.trash == null) {
+          if (doc.archived == null) {
             // Not always in the schema, so ensure it's true or false
             // to simplify queries and indexing
-            doc.trash = false;
+            doc.archived = false;
           }
         },
         // Makes using our model APIs directly less tedious
@@ -127,6 +129,22 @@ module.exports = {
               }
             }
           });
+        }
+      },
+      '@apostrophecms/doc-type:beforeDelete': {
+        testPermissions(req, doc, options) {
+          if (!(options.permissions === false)) {
+            if (!self.apos.permission.can(req, 'delete', doc)) {
+              throw self.apos.error('forbidden');
+            }
+          }
+        }
+      },
+      '@apostrophecms/doc-type:beforePublish': {
+        testPermissions(req, doc) {
+          if (!self.apos.permission.can(req, 'publish', doc)) {
+            throw self.apos.error('forbidden');
+          }
         }
       },
       '@apostrophecms/doc-type:beforeSave': {
@@ -172,9 +190,10 @@ module.exports = {
           const draft = {
             ...doc,
             _id: draftId,
-            aposLocale: draftLocale
+            aposLocale: draftLocale,
+            lastPublishedAt: doc.createdAt || new Date()
           };
-          return manager.insertDraftOf(req, doc, draft);
+          return manager.insertDraftOf(req, doc, draft, options);
         }
       },
       fixUniqueError: {
@@ -229,10 +248,17 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposDocs');
+      },
+      // Detect whether the database is brand new (zero documents).
+      // This can't be done later because after this point init()
+      // functions are permitted to insert documents
+      async detectNew() {
+        const existing = await self.db.countDocuments();
+        return !existing;
       },
       async createSlugIndex() {
         const params = self.getSlugIndexParams();
@@ -400,9 +426,9 @@ module.exports = {
         return doc;
       },
 
-      // True delete. To place a document in the trash,
-      // update the trash property (for a piece) or move it
-      // to be a child of the trash (for a page). True delete
+      // True delete. To place a document in the archive,
+      // update the archived property (for a piece) or move it
+      // to be a child of the archive (for a page). True delete
       // cannot be undone
       async delete(req, doc, options = {}) {
         options = options || {};
@@ -536,10 +562,8 @@ module.exports = {
           }
         }
       },
-      // Called by `docBeforeInsert` to confirm that the user
-      // has the appropriate permissions for the doc's type
-      // and, in some extensions of Apostrophe, the new doc's
-      // content.
+      // Called by an `@apostrophecms/doc-type:insert` event handler to confirm that the user
+      // has the appropriate permissions for the doc's type and content.
       testInsertPermissions(req, doc, options) {
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'edit', doc)) {
@@ -663,9 +687,9 @@ module.exports = {
       getManager(type) {
         return self.managers[type];
       },
-      // Lock the given doc to a given `htmlPageId`, such
+      // Lock the given doc to a given `tabId`, such
       // that other calls to `apos.doc.lock` for that doc id will
-      // fail unless they have the same `htmlPageId`. If
+      // fail unless they have the same `tabId`. If
       // `options.force` is true, any existing lock is
       // overwritten. The `options` argument may be
       // omitted entirely.
@@ -680,7 +704,7 @@ module.exports = {
       // by someone else. Other errors are thrown as appropriate.
       //
       // If you need to refresh a lock in order to avoid
-      // expiration, just lock it again. As long as the htmlPageId
+      // expiration, just lock it again. As long as the tabId
       // is the same as the current lock holder you will receive
       // another successful response.
       //
@@ -689,7 +713,7 @@ module.exports = {
       // that you pass to it. This ensures it is present if you
       // follow this call up with an `update()` of the document.
 
-      async lock(req, doc, htmlPageId, options) {
+      async lock(req, doc, tabId, options) {
         if (!options) {
           options = {};
         }
@@ -702,8 +726,8 @@ module.exports = {
           throw self.apos.error('invalid', 'No doc was passed');
         }
         const _id = doc._id;
-        if (!htmlPageId) {
-          throw self.apos.error('invalid', 'no htmlPageId was passed');
+        if (!tabId) {
+          throw self.apos.error('invalid', 'no tabId was passed');
         }
         let criteria = { _id };
         if (!options.force) {
@@ -719,7 +743,7 @@ module.exports = {
               }
             },
             {
-              'advisoryLock._id': htmlPageId
+              'advisoryLock._id': tabId
             }
           ];
         }
@@ -734,7 +758,7 @@ module.exports = {
         doc.advisoryLock = {
           username: req.user && req.user.username,
           title: req.user && req.user.title,
-          _id: htmlPageId,
+          _id: tabId,
           updatedAt: new Date()
         };
         const result = await self.db.updateOne(criteria, {
@@ -779,14 +803,14 @@ module.exports = {
       getAdvisoryLockExpiration() {
         return new Date(Date.now() - 1000 * self.options.advisoryLockTimeout);
       },
-      // Release a document lock set via `lock` for a particular htmlPageId.
+      // Release a document lock set via `lock` for a particular tabId.
       // If the lock is already gone no error occurs.
       //
       // This method will unset the `advisoryLock` property of the
       // document both in the database and in the `doc` object
       // that you pass to it. This ensures it is present if you
       // follow this call up with an `update()` of the document.
-      async unlock(req, doc, htmlPageId) {
+      async unlock(req, doc, tabId) {
         if (!(req && req.res)) {
           // Use 'error' because this is always a code bug, not a bad
           // HTTP request, and the message should not be disclosed to the client
@@ -796,12 +820,12 @@ module.exports = {
         if (!id) {
           throw self.apos.error('invalid', 'no doc');
         }
-        if (!htmlPageId) {
-          throw self.apos.error('invalid', 'no htmlPageId');
+        if (!tabId) {
+          throw self.apos.error('invalid', 'no tabId');
         }
         await self.db.updateOne({
           _id: id,
-          'advisoryLock._id': htmlPageId
+          'advisoryLock._id': tabId
         }, {
           $unset: {
             advisoryLock: 1
@@ -917,6 +941,27 @@ module.exports = {
             await self.apos.doc.db.removeOne({
               _id: doc._id
             });
+          });
+        });
+      },
+      addLastPublishedToAllDraftsMigration() {
+        return self.apos.migration.add('add lastPublishedAt to all published drafts without it', async () => {
+          return self.apos.migration.eachDoc({
+            _id: /:draft$/,
+            lastPublishedAt: null
+          }, async (doc) => {
+            const published = await self.db.findOne({
+              _id: doc._id.replace(':draft', ':published')
+            });
+            if (published) {
+              return self.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: {
+                  lastPublishedAt: published.updatedAt
+                }
+              });
+            }
           });
         });
       },

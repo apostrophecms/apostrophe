@@ -1,6 +1,6 @@
 // Implements {% component 'moduleName:componentName' with dataObject %}
 
-module.exports = function(self, options) {
+module.exports = function(self) {
   return {
     // We need a custom parser because of the "with" syntax
     parse(parser, nodes, lexer) {

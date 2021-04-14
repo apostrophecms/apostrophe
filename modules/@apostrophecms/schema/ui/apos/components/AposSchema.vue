@@ -41,10 +41,16 @@ export default {
     currentFields: {
       type: Array,
       default() {
-        return [];
+        return null;
       }
     },
     followingValues: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    conditionalFields: {
       type: Object,
       default() {
         return {};
@@ -83,7 +89,8 @@ export default {
       schemaReady: false,
       next: {
         hasErrors: false,
-        data: {}
+        data: {},
+        fieldErrors: {}
       },
       fieldState: {},
       fieldComponentMap: window.apos.schema.components.fields || {}
@@ -110,6 +117,9 @@ export default {
       handler() {
         this.updateNextAndEmit();
       }
+    },
+    schema() {
+      this.populateDocData();
     },
     value: {
       deep: true,
@@ -171,12 +181,17 @@ export default {
       if (!this.schemaReady) {
         return;
       }
-
       const oldHasErrors = this.next.hasErrors;
-      this.next.hasErrors = false;
+      // destructure these for non-linked comparison
+      const oldFieldState = { ...this.next.fieldState };
+      const newFieldState = { ...this.fieldState };
+
       let changeFound = false;
 
-      this.schema.forEach(field => {
+      this.next.hasErrors = false;
+      this.next.fieldState = { ...this.fieldState };
+
+      this.schema.filter(field => this.displayComponent(field.name)).forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
@@ -190,7 +205,10 @@ export default {
           this.next.data[field.name] = this.value.data[field.name];
         }
       });
-      if (oldHasErrors !== this.next.hasErrors) {
+      if (
+        oldHasErrors !== this.next.hasErrors ||
+        oldFieldState !== newFieldState
+      ) {
         // Otherwise the save button may never unlock
         changeFound = true;
       }
@@ -201,7 +219,17 @@ export default {
       }
     },
     displayComponent(fieldName) {
-      return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
+      if (this.currentFields) {
+        if (!this.currentFields.includes(fieldName)) {
+          return false;
+        }
+      }
+      // Might not be a conditional field at all, so test explicitly for false
+      if (this.conditionalFields[fieldName] === false) {
+        return false;
+      } else {
+        return true;
+      }
     },
     scrollFieldIntoView(fieldName) {
       // The refs for a name are an array if that ref was assigned
@@ -214,6 +242,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-schema /deep/ .apos-field__wrapper {
+    max-width: $input-max-width;
+  }
+
+  .apos-schema /deep/ img {
+    max-width: 100%;
+  }
+
   .apos-field {
     .apos-schema /deep/ & {
       margin-bottom: $spacing-triple;

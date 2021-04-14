@@ -15,7 +15,7 @@ describe('Http', function() {
       root: module,
       modules: {
         test: {
-          apiRoutes: (self, options) => ({
+          apiRoutes: (self) => ({
             post: {
               '/csrf-test': (req) => {
                 return {

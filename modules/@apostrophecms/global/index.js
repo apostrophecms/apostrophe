@@ -33,29 +33,28 @@
 //
 // `_id`: the MongoDB ID of the global doc. Available after `modulesReady`.
 
-const _ = require('lodash');
-
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
     name: '@apostrophecms/global',
     alias: 'global',
-    label: 'Global',
-    pluralLabel: 'Global',
-    searchable: false
+    label: 'Global Content',
+    pluralLabel: 'Global Content',
+    searchable: false,
+    singleton: true
   },
   fields: {
     remove: [
       'title',
       'slug',
-      'trash',
+      'archived',
       'visibility'
     ]
   },
-  init(self, options) {
-    self.slug = options.slug || 'global';
+  init(self) {
+    self.slug = self.options.slug || 'global';
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         async initGlobal() {
@@ -75,7 +74,7 @@ module.exports = {
       }
     };
   },
-  middleware(self, options) {
+  middleware(self) {
     return {
       async addGlobal(req, res, next) {
         try {
@@ -93,7 +92,7 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // Fetch and return the `global` doc object. You probably don't need to call this,
       // because middleware has already populated `req.data.global` for you.
@@ -133,7 +132,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
@@ -141,19 +140,6 @@ module.exports = {
         browserOptions._id = req.data.global && req.data.global._id;
         browserOptions.quickCreate = false;
         return browserOptions;
-      },
-      getEditControls(_super, req) {
-        const controls = _super(req);
-        const more = _.find(controls, { name: 'more' });
-        if (more) {
-          more.items = _.reject(more.items, function (item) {
-            return _.includes([
-              'trash',
-              'copy'
-            ], item.action);
-          });
-        }
-        return controls;
       }
     };
   }

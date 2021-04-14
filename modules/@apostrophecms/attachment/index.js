@@ -2,8 +2,6 @@ const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 const Promise = require('bluebird');
-const uploadfs = require('uploadfs');
-const mkdirp = require('mkdirp');
 
 module.exports = {
   options: { alias: 'attachment' },
@@ -37,10 +35,16 @@ module.exports = {
     }
   },
 
-  async init(self, options) {
+  async init(self) {
+    // For convenience and bc
+    self.uploadfs = self.apos.uploadfs;
+    // uploadfs expects an array
+    self.imageSizes = Object.keys(self.imageSizes).map(name => ({
+      name,
+      ...self.imageSizes[name]
+    }));
     self.name = 'attachment';
-
-    self.fileGroups = options.fileGroups || [
+    self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
         label: 'Images',
@@ -48,7 +52,7 @@ module.exports = {
           'gif',
           'jpg',
           'png'
-        ].concat(options.svgImages ? [ 'svg' ] : []),
+        ].concat(self.options.svgImages ? [ 'svg' ] : []),
         extensionMaps: { jpeg: 'jpg' },
         // uploadfs should treat this as an image and create scaled versions
         image: true
@@ -93,45 +97,19 @@ module.exports = {
       png: true
     };
 
-    self.sizeAvailableInTrash = options.sizeAvailableInTrash || 'one-sixth';
-
-    // uploadfs expects an array
-    self.imageSizes = Object.keys(self.imageSizes).map(name => ({
-      name,
-      ...self.imageSizes[name]
-    }));
-
-    const uploadfsDefaultSettings = {
-      backend: 'local',
-      uploadsPath: self.apos.rootDir + '/public/uploads',
-      uploadsUrl: (self.apos.baseUrl || '') + self.apos.prefix + '/uploads',
-      tempPath: self.apos.rootDir + '/data/temp/uploadfs',
-      imageSizes: self.imageSizes
-    };
-
-    self.uploadfsSettings = {};
-    _.merge(self.uploadfsSettings, uploadfsDefaultSettings);
-
-    _.merge(self.uploadfsSettings, options.uploadfs || {});
-
-    if (process.env.APOS_S3_BUCKET) {
-      _.merge(self.uploadfsSettings, {
-        backend: 's3',
-        endpoint: process.env.APOS_S3_ENDPOINT,
-        secret: process.env.APOS_S3_SECRET,
-        key: process.env.APOS_S3_KEY,
-        bucket: process.env.APOS_S3_BUCKET,
-        region: process.env.APOS_S3_REGION
-      });
-    }
+    self.sizeAvailableInArchive = self.options.sizeAvailableInArchive || 'one-sixth';
 
     self.rescaleTask = require('./lib/tasks/rescale.js')(self);
-    await self.initUploadfs();
     self.addFieldType();
     self.enableBrowserData();
+
+    self.db = await self.apos.db.collection('aposAttachments');
+    await self.db.createIndex({ docIds: 1 });
+    await self.db.createIndex({ archivedDocIds: 1 });
+    self.addFixLengthPropertyMigration();
   },
 
-  tasks(self, options) {
+  tasks(self) {
     return {
       rescale: {
         usage: 'Usage: node app @apostrophecms/attachment:rescale\n\nRegenerate all sizes of all image attachments. Useful after a new size\nis added to the configuration. Takes a long time!',
@@ -149,7 +127,7 @@ module.exports = {
   },
 
   // TODO RESTify where possible
-  apiRoutes(self, options) {
+  apiRoutes(self) {
     // TODO this must be updated to employ the new useMiddleware format and that
     // section has to be implemented
     return {
@@ -162,11 +140,14 @@ module.exports = {
               // The name attribute could be anything because of how fileupload
               // controls work; we don't really care.
               const file = _.values(req.files || [])[0];
+
               if (!file) {
                 throw self.apos.error('notfound');
               }
+
               const attachment = await self.insert(req, file);
               self.all({ attachment }, { annotate: true });
+
               return attachment;
             } finally {
               for (const file of (Object.values(req.files) || {})) {
@@ -210,33 +191,15 @@ module.exports = {
       }
     };
   },
-  handlers(self, options) {
+  handlers(self) {
     return {
-      'apostrophe:modulesReady': {
-        // Delay setting up the collection until other modules
-        // are ready in a normal startup. Necessary because uploadfs must
-        // be available during asset builds but the database must not be
-        async enableCollection() {
-          self.db = await self.apos.db.collection('aposAttachments');
-          await self.db.createIndex({ docIds: 1 });
-          await self.db.createIndex({ trashDocIds: 1 });
-        },
-        addFixLengthPropertyMigration() {
-          self.addFixLengthPropertyMigration();
-        }
-      },
-      'apostrophe:destroy': {
-        async destroyUploadfs() {
-          await Promise.promisify(self.uploadfs.destroy)();
-        }
-      },
       '@apostrophecms/doc-type:afterSave': {
         async updateDocReferencesAfterSave(req, doc, options) {
           return self.updateDocReferences(doc);
         }
       },
-      '@apostrophecms/doc-type:afterTrash': {
-        async updateDocReferencesAfterTrash(req, doc) {
+      '@apostrophecms/doc-type:afterArchived': {
+        async updateDocReferencesAfterArchive(req, doc) {
           return self.updateDocReferences(doc);
         }
       },
@@ -254,24 +217,8 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
-      async initUploadfs() {
-        safeMkdirp(self.uploadfsSettings.uploadsPath);
-        safeMkdirp(self.uploadfsSettings.tempPath);
-        self.uploadfs = uploadfs();
-        await Promise.promisify(self.uploadfs.init)(self.uploadfsSettings);
-        function safeMkdirp(path) {
-          try {
-            mkdirp.sync(path);
-          } catch (e) {
-            if (!require('fs').existsSync(path)) {
-              throw e;
-            }
-          }
-        }
-      },
-
       addFieldType() {
         self.apos.schema.addFieldType({
           name: self.name,
@@ -441,7 +388,7 @@ module.exports = {
           extension: extension,
           type: 'attachment',
           docIds: [],
-          trashDocIds: []
+          archivedDocIds: []
         };
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'edit', 'attachment')) {
@@ -452,7 +399,7 @@ module.exports = {
         info.md5 = await self.apos.util.md5File(file.path);
         if (self.isSized(extension)) {
           // For images we correct automatically for common file extension mistakes
-          const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name);
+          const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name, { sizes: self.imageSizes });
           info.extension = result.extension;
           info.width = result.width;
           info.height = result.height;
@@ -502,7 +449,10 @@ module.exports = {
         const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + info.extension;
         const croppedFile = '/attachments/' + info._id + '-' + info.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + info.extension;
         await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
-        await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, { crop: crop });
+        await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
+          crop: crop,
+          sizes: self.imageSizes
+        });
         crops.push(crop);
         await self.db.updateOne({
           _id: info._id
@@ -615,16 +565,18 @@ module.exports = {
       // Find all attachments referenced within an object, whether they are
       // properties or sub-properties (via relationships, etc).
       //
-      // For best performance be reasonably specific; don't pass an entire page or piece
-      // object if you can pass piece.thumbnail to avoid an exhaustive search, especially
-      // if the piece has many relationships.
+      // For best performance be reasonably specific; don't pass an entire page
+      // or piece object if you can pass piece.thumbnail to avoid an exhaustive
+      // search, especially if the piece has many relationships.
       //
       // Returns an array of attachments, or an empty array if none are found.
       //
-      // When available, the `_description`, `_credit` and `_creditUrl` are
-      // also returned as part of the object.
+      // When available, the `description`, `credit`, `alt` and `creditUrl`
+      // properties of the containing piece are returned as `_description`,
+      // `_credit`, `_alt` and `_creditUrl`.
       //
-      // For ease of use, a null or undefined `within` argument is accepted.
+      // For ease of use, a null or undefined `within` argument is accepted,
+      // resulting in an empty array.
       //
       // Examples:
       //
@@ -683,36 +635,34 @@ module.exports = {
         }
         self.apos.doc.walk(within, function (o, key, value, dotPath, ancestors) {
           if (test(value)) {
+            if (o.credit) {
+              value._credit = o.credit;
+            }
+            if (o.creditUrl) {
+              value._creditUrl = o.creditUrl;
+            }
+            if (o.alt) {
+              value._alt = o.alt;
+            }
+            o[key] = value;
+
             // If one of our ancestors has a relationship to the piece that
             // immediately contains us, provide that as the crop. This ensures
             // that cropping coordinates stored in an @apostrophecms/image widget
             // are passed through when we make a simple call to
             // apos.attachment.url with the returned object
-            let i;
-            for (i = ancestors.length - 1; i >= 0; i--) {
+            for (let i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
               const fields = ancestor.imagesFields && ancestor.imagesFields[o._id];
               if (fields) {
-                // Clone it so that if two things have crops of the same image, we
-                // don't overwrite the value on subsequent calls
                 value = _.clone(value);
                 value._crop = _.pick(fields, 'top', 'left', 'width', 'height');
                 value._focalPoint = _.pick(fields, 'x', 'y');
-                if (o.credit) {
-                  value._credit = o.credit;
-                }
-                if (o.creditUrl) {
-                  value._creditUrl = o.creditUrl;
-                }
-                if (o.description) {
-                  value._description = o.description;
-                }
                 break;
               }
             }
+
             if (options.annotate) {
-              // Because it may have changed above due to cloning
-              o[key] = value;
               // Add URLs
               value._urls = {};
               if (value.group === 'images') {
@@ -853,14 +803,14 @@ module.exports = {
         return extension;
       },
       // When the last doc that contains this attachment goes to the
-      // trash, its permissions should change to reflect that so
+      // archive, its permissions should change to reflect that so
       // it is no longer web-accessible to those who know the URL.
       //
-      // If the doc has no more trashed *or* live docs associated
+      // If the doc has no more archived *or* live docs associated
       // with it, truly delete the attachment.
       //
-      // This method is invoked after any doc is inserted, updated, trashed
-      // or rescued.
+      // This method is invoked after any doc is inserted, updated, archived
+      // or restored.
       //
       // If a document is truly deleted, call with the `{ deleted: true}` option.
       async updateDocReferences(doc, options = {
@@ -878,22 +828,22 @@ module.exports = {
             {
               $pull: {
                 docIds: doc._id,
-                trashDocIds: doc._id
+                archivedDocIds: doc._id
               }
             }
           ]);
-        } else if (!doc.trash) {
+        } else if (!doc.archived) {
           commands.push([
             { _id: { $in: ids } },
             { $addToSet: { docIds: doc._id } }
           ], [
             { _id: { $in: ids } },
-            { $pull: { trashDocIds: doc._id } }
+            { $pull: { archivedDocIds: doc._id } }
           ]);
         } else {
           commands.push([
             { _id: { $in: ids } },
-            { $addToSet: { trashDocIds: doc._id } }
+            { $addToSet: { archivedDocIds: doc._id } }
           ], [
             { _id: { $in: ids } },
             { $pull: { docIds: doc._id } }
@@ -902,14 +852,14 @@ module.exports = {
         commands.push([
           {
             $or: [
-              { trashDocIds: { $in: [ doc._id ] } },
+              { archivedDocIds: { $in: [ doc._id ] } },
               { docIds: { $in: [ doc._id ] } }
             ],
             _id: { $nin: ids }
           },
           {
             $pull: {
-              trashDocIds: doc._id,
+              archivedDocIds: doc._id,
               docIds: doc._id
             }
           }
@@ -924,13 +874,13 @@ module.exports = {
       },
       // Enable/disable access in uploadfs to all attachments
       // based on whether the documents containing them
-      // are in the trash or not. Specifically, if an attachment
+      // are in the archive or not. Specifically, if an attachment
       // has been utilized at least once but no longer has
-      // any entries in `docIds` and `trash` is not yet true,
+      // any entries in `docIds` and `archived` is not yet true,
       // it becomes web-inaccessible, `utilized` is set to false
-      // and `trash` is set to true. Similarly, if an attachment
-      // has entries in `docIds` but `trash` is true,
-      // it becomes web-accessible and trash becomes false.
+      // and `archived` is set to true. Similarly, if an attachment
+      // has entries in `docIds` but `archived` is true,
+      // it becomes web-accessible and archived becomes false.
       //
       // This method is invoked at the end of `updateDocReferences`
       // and also at the end of the migration that adds `docIds`
@@ -938,7 +888,7 @@ module.exports = {
       //
       // This method also handles actually deleting attachments
       // if they have been utilized but are no longer associated
-      // with any document, not even in the trash, as will occur
+      // with any document, not even in the archive, as will occur
       // if the document is truly deleted.
       async alterAttachments() {
         await hide();
@@ -948,7 +898,7 @@ module.exports = {
           const attachments = await self.db.find({
             utilized: true,
             'docIds.0': { $exists: 0 },
-            trash: { $ne: true }
+            archived: { $ne: true }
           }).toArray();
           for (const attachment of attachments) {
             await alterOne(attachment, 'disable');
@@ -958,7 +908,7 @@ module.exports = {
           const attachments = await self.db.find({
             utilized: true,
             'docIds.0': { $exists: 1 },
-            trash: { $ne: false }
+            archived: { $ne: false }
           }).toArray();
           for (const attachment of attachments) {
             await alterOne(attachment, 'enable');
@@ -968,7 +918,7 @@ module.exports = {
           const attachments = await self.db.find({
             utilized: true,
             'docIds.0': { $exists: 0 },
-            'trashDocIds.0': { $exists: 0 }
+            'archivedDocIds.0': { $exists: 0 }
           }).toArray();
           for (const attachment of attachments) {
             await alterOne(attachment, 'remove');
@@ -983,7 +933,7 @@ module.exports = {
               _id: attachment._id
             }, {
               $set: {
-                trash: (action === 'disable')
+                archived: (action === 'disable')
               }
             });
           }
@@ -991,7 +941,7 @@ module.exports = {
       },
       // Enable access, disable access, or truly remove the given attachment via uploadfs,
       // based on whether `action` is `enable`, `disable`, or `remove`. If the attachment
-      // is an image, access to the size indicated by the `sizeAvailableInTrash` option
+      // is an image, access to the size indicated by the `sizeAvailableInArchive` option
       // (usually `one-sixth`) remains available except when removing. This operation is carried
       // out across all sizes and crops.
       async alterAttachment(attachment, action) {
@@ -1002,8 +952,8 @@ module.exports = {
         // Handle the original image and its scaled versions
         // here ("original" means "not cropped")
         async function original() {
-          if ((action === 'enable') && attachment.trash === undefined) {
-            // Trash status not set at all yet means
+          if ((action === 'enable') && attachment.archived === undefined) {
+            // Archive status not set at all yet means
             // it'll be a live file as of this point,
             // skip extra API calls
             return;
@@ -1015,7 +965,7 @@ module.exports = {
             sizes = self.imageSizes.concat([ { name: 'original' } ]);
           }
           for (const size of sizes) {
-            if ((action !== 'remove') && (size.name === self.sizeAvailableInTrash)) {
+            if ((action !== 'remove') && (size.name === self.sizeAvailableInArchive)) {
               // This size is always kept accessible for preview
               // in the media library
               continue;
@@ -1033,8 +983,8 @@ module.exports = {
           }
         }
         async function crops() {
-          if ((action === 'enable') && (attachment.trash === undefined)) {
-            // Trash status not set at all yet means
+          if ((action === 'enable') && (attachment.archived === undefined)) {
+            // Archive status not set at all yet means
             // it'll be a live file as of this point,
             // skip extra API calls
             return;
@@ -1045,7 +995,7 @@ module.exports = {
         }
         async function cropOne(crop) {
           for (const size of self.imageSizes.concat([ { name: 'original' } ])) {
-            if (size.name === self.sizeAvailableInTrash) {
+            if (size.name === self.sizeAvailableInArchive) {
               // This size is always kept accessible for preview
               // in the media library
               continue;

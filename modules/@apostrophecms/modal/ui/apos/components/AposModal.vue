@@ -163,7 +163,9 @@ export default {
     finishExit () {
       this.removeEventListeners();
       this.$emit('no-modal');
-      apos.modal.stack.pop();
+      // pop doesn't quite suffice because of race conditions when
+      // closing one and opening another
+      apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.esc);
@@ -356,8 +358,11 @@ export default {
     justify-content: flex-end;
     flex-grow: 1;
   }
-  .apos-modal__controls--primary /deep/ > .apos-button {
-    margin-left: 7.5px;
+  .apos-modal__controls--primary /deep/ {
+    & > .apos-button__wrapper,
+    & > .apos-context-menu {
+      margin-left: 7.5px;
+    }
   }
 
   .apos-modal__heading {
@@ -370,7 +375,7 @@ export default {
   }
 
   .apos-modal__main--with-rails {
-    grid-template-columns: 18% 1fr minmax(250px, $modal-rail-right-w);
+    grid-template-columns: 20% 1fr minmax(250px, $modal-rail-right-w);
   }
 
   .apos-modal__main--with-left-rail {

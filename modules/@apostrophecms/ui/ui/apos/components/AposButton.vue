@@ -1,41 +1,42 @@
 <template>
-  <component
-    :is="href ? 'a' : 'button'"
-    v-on="href ? {} : {click: click}"
-    :href="href.length ? href : false"
-    class="apos-button"
-    :class="modifierClass"
-    :tabindex="tabindex"
-    :disabled="isDisabled"
-    :type="buttonType"
-    :role="role"
-    v-tooltip="tooltip"
-    :id="attrs.id ? attrs.id : id"
-    v-bind="attrs"
-  >
-    <transition name="fade">
-      <AposSpinner :color="spinnerColor" v-if="busy" />
-    </transition>
-    <span
-      v-if="colorStyle"
-      class="apos-button__color-preview"
+  <span v-tooltip="tooltip" class="apos-button__wrapper">
+    <component
+      :is="href ? 'a' : 'button'"
+      v-on="href ? {} : {click: click}"
+      :href="href.length ? href : false"
+      class="apos-button"
+      :class="modifierClass"
+      :tabindex="tabindex"
+      :disabled="isDisabled"
+      :type="buttonType"
+      :role="role"
+      :id="attrs.id ? attrs.id : id"
+      v-bind="attrs"
     >
-      <span :style="colorStyle" class="apos-button__color-preview__swatch" />
-      <span class="apos-button__color-preview__checkerboard" />
-    </span>
-    <div class="apos-button__content">
-      <AposIndicator
-        v-if="icon"
-        :icon="icon"
-        :icon-size="iconSize"
-        class="apos-button__icon"
-        fill-color="currentColor"
-      />
-      <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
-        {{ label }}
+      <transition name="fade">
+        <AposSpinner :color="spinnerColor" v-if="busy" />
+      </transition>
+      <span
+        v-if="colorStyle"
+        class="apos-button__color-preview"
+      >
+        <span :style="colorStyle" class="apos-button__color-preview__swatch" />
+        <span class="apos-button__color-preview__checkerboard" />
       </span>
-    </div>
-  </component>
+      <div class="apos-button__content">
+        <AposIndicator
+          v-if="icon"
+          :icon="icon"
+          :icon-size="iconSize"
+          class="apos-button__icon"
+          fill-color="currentColor"
+        />
+        <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
+          {{ label }}
+        </span>
+      </div>
+    </component>
+  </span>
 </template>
 
 <script>
@@ -60,8 +61,8 @@ export default {
       default: null
     },
     href: {
-      type: String,
-      default: ''
+      type: [ String, Boolean ],
+      default: false
     },
     iconSize: {
       type: Number,
@@ -181,7 +182,7 @@ export default {
       return null;
     },
     isDisabled() {
-      return (this.disabled || this.busy);
+      return this.disabled || this.busy;
     }
   },
   methods: {
@@ -222,7 +223,8 @@ export default {
     &:focus:not([disabled]) {
       transform: translateY(-1px);
     }
-    &[disabled] {
+    &[disabled],
+    &.apos-button--disabled {
       background-color: var(--a-base-9);
       border: 1px solid var(--a-base-8);
       color: var(--a-base-5);
@@ -259,6 +261,7 @@ export default {
   .apos-button.apos-button--color {
     width: 50px;
     height: 50px;
+    padding: 0;
     border: 0;
     border-radius: 50%;
     box-shadow: var(--a-box-shadow);
@@ -330,7 +333,7 @@ export default {
     &:hover,
     &:focus,
     &:active {
-      color: inherit;
+      color: var(--a-text-primary);
       text-decoration: none;
       background-color: var(--a-base-10);
     }
@@ -382,6 +385,7 @@ export default {
   }
 
   .apos-button--block {
+    box-sizing: border-box;
     display: block;
     width: 100%;
     height: 47px;
@@ -434,7 +438,8 @@ export default {
       box-shadow: 0 0 0 1px var(--a-base-7),
         0 0 0 3px var(--a-primary-button-disabled);
     }
-    &[disabled] {
+    &[disabled],
+    &.apos-button--disabled {
       border: 1px solid var(--a-primary-button-disabled);
       color: var(--a-white);
       background-color: var(--a-primary-button-disabled);
@@ -561,7 +566,7 @@ export default {
 
   .apos-button--inline {
     padding: 0;
-    &, &:hover, &:active, &:focus {
+    &, &[disabled], &:hover, &:active, &:focus {
       border: 0;
       background-color: transparent;
       box-shadow: none;
@@ -584,6 +589,10 @@ export default {
       box-shadow: none;
       outline: none;
     }
+  }
+
+  .apos-button__wrapper {
+    display: inline-block;
   }
 
   @keyframes animateGradient {

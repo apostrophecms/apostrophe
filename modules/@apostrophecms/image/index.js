@@ -70,7 +70,7 @@ module.exports = {
           'creditUrl',
           'visibility',
           'slug',
-          'trash'
+          'archived'
         ]
       }
     }
@@ -82,7 +82,7 @@ module.exports = {
       }
     }
   },
-  extendRestApiRoutes: (self, options) => ({
+  extendRestApiRoutes: (self) => ({
     async getAll (_super, req) {
       const pieces = await _super(req);
 
@@ -93,7 +93,7 @@ module.exports = {
       return pieces;
     }
   }),
-  methods(self, options) {
+  methods(self) {
     return {
       // This method is available as a template helper: apos.image.first
       //
@@ -223,7 +223,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       getBrowserData(_super, req) {
         const data = _super(req);

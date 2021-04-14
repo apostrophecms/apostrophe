@@ -4,7 +4,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 // managers. Does it need to be a mixin? This may be resolved when switching to
 // Vue 3 using the composition API. - AB
 
-import klona from 'klona';
+import { klona } from 'klona';
 
 export default {
   data() {
@@ -14,7 +14,7 @@ export default {
       // as initially checked.
       checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
         : [],
-      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : false
+      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : []
     };
   },
   props: {
@@ -27,17 +27,19 @@ export default {
       default: false
     }
   },
-  emits: [ 'modal-result' ],
+  emits: [ 'modal-result', 'sort' ],
   computed: {
     relationshipErrors() {
       if (!this.relationshipField) {
         return false;
       }
-
+      if (this.relationshipField.required && !this.checked.length) {
+        // Treated as min for consistency with AposMinMaxCount
+        return 'min';
+      }
       if (this.relationshipField.min && this.checked.length < this.relationshipField.min) {
         return 'min';
       }
-
       if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
         return 'max';
       }
@@ -48,7 +50,12 @@ export default {
       this.$emit('sort', action);
     },
     headers() {
-      return this.options.columns ? this.options.columns : [];
+      if (!this.pieces) {
+        return this.options.columns || [];
+      }
+      return (this.options.columns || []).filter(column => {
+        return (column.name !== '_url') || this.pieces.find(item => item._url);
+      });
     },
     selectAllValue() {
       return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };
@@ -88,9 +95,6 @@ export default {
       }
     },
     checked () {
-      if (!this.checkedDocs) {
-        return;
-      }
       this.updateCheckedDocs();
     }
   },
@@ -140,7 +144,7 @@ export default {
       const customValues = [ 'true', 'false' ];
       this.headers.forEach(h => {
 
-        if (h.cellValue.icon) {
+        if (h.cellValue && h.cellValue.icon) {
           temp.push(h.cellValue.icon);
         }
 
@@ -149,7 +153,7 @@ export default {
         }
 
         customValues.forEach(val => {
-          if (h.cellValue[val] && h.cellValue[val].icon) {
+          if (h.cellValue && h.cellValue[val] && h.cellValue[val].icon) {
             temp.push(h.cellValue[val].icon);
           }
         });

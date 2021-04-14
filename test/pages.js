@@ -74,17 +74,17 @@ describe('Pages', function() {
     assert(home.visibility === 'public');
   });
 
-  it('parked trash can exists', async function() {
-    const trash = await apos.page.find(apos.task.getReq(), { slug: '/trash' }).trash(null).toObject();
-    assert(trash);
-    assert(trash.slug === '/trash');
-    assert(trash.path === `${homeId.replace(':en:published', '')}/${trash._id.replace(':en:published', '')}`);
-    assert(trash.type === '@apostrophecms/trash');
-    assert(trash.parked);
+  it('parked archive page exists', async function() {
+    const archive = await apos.page.find(apos.task.getReq(), { slug: '/archive' }).archived(null).toObject();
+    assert(archive);
+    assert(archive.slug === '/archive');
+    assert(archive.path === `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}`);
+    assert(archive.type === '@apostrophecms/archive-page');
+    assert(archive.parked);
     // Verify that clonePermanent did its
     // job and removed properties not meant
     // to be stored in mongodb
-    assert(!trash._children);
+    assert(!archive._children);
   });
 
   it('should be able to use db to insert documents', async function() {
@@ -397,8 +397,8 @@ describe('Pages', function() {
 
   });
 
-  it('is able to move parent to the trash', async function() {
-    await apos.page.moveToTrash(apos.task.getReq(), 'parent:en:published');
+  it('is able to move parent to the archive', async function() {
+    await apos.page.moveToArchive(apos.task.getReq(), 'parent:en:published');
 
     const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'parent' });
     const page = await cursor.toObject();
@@ -406,13 +406,13 @@ describe('Pages', function() {
     assert(!page);
 
     const req = apos.task.getReq();
-    const trash = await apos.page.findOneForEditing(req, { parkedId: 'trash' });
-    const trashed = await apos.page.findOneForEditing(req, {
+    const archive = await apos.page.findOneForEditing(req, { parkedId: 'archive' });
+    const archived = await apos.page.findOneForEditing(req, {
       _id: 'parent:en:published'
     });
-    assert.strictEqual(trashed.path, `${homeId.replace(':en:published', '')}/${trash._id.replace(':en:published', '')}/${trashed._id.replace(':en:published', '')}`);
-    assert(trashed.trash);
-    assert.strictEqual(trashed.level, 2);
+    assert.strictEqual(archived.path, `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}/${archived._id.replace(':en:published', '')}`);
+    assert(archived.archived);
+    assert.strictEqual(archived.level, 2);
   });
 
   it('should be able to find the parked homepage', async function() {

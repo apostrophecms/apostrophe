@@ -131,11 +131,10 @@
   apos.util.widgetPlayers = {};
 
   // Run the given function whenever the DOM has new changes that
-  // may require attention. For instance, we use this function to
-  // schedule apos.util.runPlayers to run widget player code for
-  // widgets that are new in the DOM. The passed function will be
+  // may require attention. The passed function will be
   // called when the DOM is ready on initial page load, and also
   // when the main content area has been refreshed by the editor.
+  // Note that you don't need this for widgets; see widget players.
 
   apos.util.onReadyAndRefresh = function(fn) {
     onReady(fn);
@@ -187,12 +186,14 @@
       const playerEls = (el || document).querySelectorAll(playerOpts.selector);
 
       playerEls.forEach(function (el) {
-        if (el.getAttribute('data-apos-played')) {
+        if (el.aposWidgetPlayed) {
           return;
         }
-
-        el.setAttribute('data-apos-played', true);
-
+        // Use an actual property, not a DOM attribute or
+        // "data" prefix property, to avoid the problem of
+        // elements cloned from innerHTML appearing to have
+        // been played too
+        el.aposWidgetPlayed = true;
         playerOpts.player(el);
       });
     }
@@ -201,9 +202,11 @@
   // Schedule runPlayers to run as soon as the document is ready, and also
   // when the page is partially refreshed by the editor.
 
-  apos.util.onReadyAndRefresh(function() {
-    apos.util.runPlayers();
-  });
+  if (!apos.bus) {
+    apos.util.onReadyAndRefresh(function() {
+      apos.util.runPlayers();
+    });
+  }
 
   // Given an attachment field value,
   // return the file URL. If options.size is set, return the URL for

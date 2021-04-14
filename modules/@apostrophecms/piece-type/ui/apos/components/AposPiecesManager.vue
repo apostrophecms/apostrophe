@@ -28,8 +28,8 @@
       <AposButton
         v-if="relationshipField"
         type="primary"
-        :label="`Select ${moduleLabels.pluralLabel || ''}`"
-        :disabled="relationshipErrors === 'min'"
+        :label="saveRelationshipLabel"
+        :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
       <AposButton
@@ -39,20 +39,21 @@
       />
     </template>
     <template v-if="relationshipField" #leftRail>
-      <div class="apos-pieces-manager__relationship__rail">
-        <div class="apos-pieces-manager__relationship__counts">
-          <AposMinMaxCount
-            :field="relationshipField"
+      <AposModalRail>
+        <div class="apos-pieces-manager__relationship__rail">
+          <div class="apos-pieces-manager__relationship__counts">
+            <AposMinMaxCount
+              :field="relationshipField"
+              :value="checkedDocs"
+            />
+          </div>
+          <AposSlatList
+            class="apos-pieces-manager__relationship__items"
+            @input="setCheckedDocs"
             :value="checkedDocs"
           />
         </div>
-        <AposSlatList
-          class="apos-pieces-manager__relationship__items"
-          @input="updateChecked"
-          :value="checkedDocs"
-          @select="select"
-        />
-      </div>
+      </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
@@ -66,7 +67,7 @@
             :filter-values="filterValues"
             :labels="moduleLabels"
             @select-click="selectAll"
-            @trash-click="trashClick"
+            @archive-click="archiveClick"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
@@ -85,7 +86,8 @@
             @open="edit"
             :options="{
               disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField
+              hideCheckboxes: !relationshipField,
+              disableUnpublished: !!relationshipField
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -110,7 +112,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'trash', 'search', 'safe-close', 'updated' ],
+  emits: [ 'archive', 'safe-close' ],
   data() {
     return {
       modal: {
@@ -147,6 +149,13 @@ export default {
         plural: this.options.pluralLabel
       };
     },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return `Select ${this.moduleLabels.label || ''}`;
+      } else {
+        return `Select ${this.moduleLabels.pluralLabel || ''}`;
+      }
+    },
     modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
@@ -159,6 +168,9 @@ export default {
 
       this.pieces.forEach(piece => {
         const data = {};
+
+        // Extra data for internal use
+        data.lastPublishedAt = piece.lastPublishedAt;
 
         this.headers.forEach(column => {
           data[column.name] = piece[column.name];
@@ -212,7 +224,7 @@ export default {
         this.new();
       }
     },
-    updateChecked(checked) {
+    setCheckedDocs(checked) {
       this.checkedDocs = checked;
       this.checked = this.checkedDocs.map(item => {
         return item._id;
@@ -267,7 +279,8 @@ export default {
     async edit(pieceId) {
       const doc = await apos.modal.execute(this.options.components.insertModal, {
         moduleName: this.moduleName,
-        docId: pieceId
+        docId: pieceId,
+        filterValues: this.filterValues
       });
       if (!doc) {
         // Cancel clicked
@@ -283,9 +296,9 @@ export default {
       }
     },
     // Toolbar handlers
-    trashClick() {
+    archiveClick() {
       // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('trash', this.checked);
+      this.$emit('archive', this.checked);
     },
     async search(query) {
       if (query) {
@@ -346,9 +359,7 @@ export default {
   }
 
   .apos-pieces-manager__relationship__rail {
-    height: 100%;
     padding: 20px;
-    background-color: var(--a-base-9);
   }
 
   .apos-pieces-manager__relationship__counts {

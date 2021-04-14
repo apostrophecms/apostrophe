@@ -21,7 +21,7 @@ module.exports = {
 
   cascades: [ 'csrfExceptions' ],
 
-  init(self, options) {
+  init(self) {
     self.apos = self.options.apos;
     // all apostrophe modules are properties of self.apos.modules.
     // Those with an alias are also properties of self.apos
@@ -51,13 +51,13 @@ module.exports = {
     self.enableAction();
   },
 
-  async afterAllSections(self, options) {
+  async afterAllSections(self) {
     self.addHelpers(self.helpers || {});
     self.addHandlers(self.handlers || {});
     await self.executeAfterModuleInitTask();
   },
 
-  methods(self, options) {
+  methods(self) {
     return {
       addSectionRoutes(section) {
         _.each(self[section] || {}, function(routes, method) {
@@ -426,8 +426,7 @@ module.exports = {
 
       // Extend this method to return the appropriate browser data for
       // your module. If you want browser data for the given req, return
-      // an object. That object is merged with the `browser` option passed
-      // to your module, then assigned to `apos.modules['your-module-name']`
+      // an object. That object is assigned to `apos.modules['your-module-name']`
       // in the browser. Do not return huge data structures, as this will impact
       // page load time and performance.
       //
@@ -443,8 +442,7 @@ module.exports = {
       // you must explicitly opt in.
 
       getBrowserData(req) {
-        self.options.browser = self.options.browser || {};
-        return self.options.browser;
+        return {};
       },
 
       // Transform a route name into a route URL. If the name begins with `/` it is understood to
@@ -509,12 +507,11 @@ module.exports = {
         return _.get(self.options, dotPathOrArray, def);
       },
 
-      // If `name` is `manager` and `options.browser.components.manager` is set,
+      // If `name` is `manager` and `options.components.manager` is set,
       // return that string, otherwise return `def`. This is used to decide what
       // Vue component to instantiate on the browser side.
-
       getComponentName(name, def) {
-        return _.get(self.options, `browser.components.${name}`, def);
+        return _.get(self.options, `components.${name}`, def);
       },
 
       // Send email. Renders an HTML email message using the template
@@ -558,7 +555,7 @@ module.exports = {
       // return that name unless `options.components[name]` has been set to
       // an alternate name. Overriding keys in the `components` option
       // allows modules to provide alternative functionality for standard
-      // components while maintaining readabile Vue code via the
+      // components while maintaining readable Vue code via the
       // <component :is="..."> syntax.
 
       getVueComponentName(name) {
@@ -605,11 +602,11 @@ module.exports = {
       },
 
       // Merge in the event emitter / responder capabilities
-      ...require('./lib/events.js')(self, options)
+      ...require('./lib/events.js')(self)
     };
   },
 
-  handlers(self, options) {
+  handlers(self) {
     return {
       'apostrophe:modulesReady': {
         addHelpers() {
@@ -658,7 +655,7 @@ module.exports = {
               return;
             }
             data.modules[self.__meta.name] = myData;
-            if (options.alias) {
+            if (self.options.alias) {
               data.modules[self.__meta.name].alias = self.options.alias;
             }
           }

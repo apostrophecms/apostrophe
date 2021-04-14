@@ -37,7 +37,7 @@ module.exports = {
     // * async components
     stackLimit: 50
   },
-  init(self, options) {
+  init(self) {
     // An id for this particular Apostrophe instance that should be
     // unique even in a multiple server environment.
     self.apos.pid = self.generateId();
@@ -45,7 +45,7 @@ module.exports = {
     self.warnedDev = {};
     return self.enableLogger();
   },
-  methods(self, options) {
+  methods(self) {
     return {
       // generate a unique identifier for a new page or other object.
       // IDs are generated with the cuid module which prevents
@@ -447,11 +447,14 @@ module.exports = {
       // Can be nested at any depth.
       //
       // Useful to locate a specific widget within a doc.
-      findNestedObjectById(object, _id) {
+      findNestedObjectById(object, _id, { ignoreDynamicProperties = false } = {}) {
         let key;
         let val;
         let result;
         for (key in object) {
+          if (ignoreDynamicProperties && (key.charAt(0) === '_')) {
+            continue;
+          }
           val = object[key];
           if (val && typeof val === 'object') {
             if (val._id === _id) {
@@ -473,13 +476,16 @@ module.exports = {
       // Returns an object like this: `{ object: { ... }, dotPath: 'dot.path.of.object' }`
       //
       // Ignore the `_dotPath` argument to this method; it is used for recursion.
-      findNestedObjectAndDotPathById(object, id, _dotPath) {
+      findNestedObjectAndDotPathById(object, id, { ignoreDynamicProperties = false } = {}, _dotPath) {
         let key;
         let val;
         let result;
         let subPath;
         _dotPath = _dotPath || [];
         for (key in object) {
+          if (ignoreDynamicProperties && (key.charAt(0) === '_')) {
+            continue;
+          }
           val = object[key];
           if (val && typeof val === 'object') {
             subPath = _dotPath.concat(key);
@@ -489,7 +495,7 @@ module.exports = {
                 dotPath: subPath.join('.')
               };
             }
-            result = self.findNestedObjectAndDotPathById(val, id, subPath);
+            result = self.findNestedObjectAndDotPathById(val, id, { ignoreDynamicProperties }, subPath);
             if (result) {
               return result;
             }
@@ -649,6 +655,10 @@ module.exports = {
           return self.apos.doc.getManager(object.type);
         } else if (object.metaType === 'widget') {
           return self.apos.area.getWidgetManager(object.type);
+        } else if (object.metaType === 'arrayItem') {
+          return self.apos.schema.getArrayManager(object.scopedArrayName);
+        } else if (object.metaType === 'object') {
+          return self.apos.schema.getArrayManager(object.scopedObjectName);
         } else {
           throw new Error('Unsupported metaType in getManagerOf:', object);
         }
@@ -712,7 +722,7 @@ module.exports = {
           if (!matches) {
             throw new Error(`@ syntax used without an id: ${path}`);
           }
-          const found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1]);
+          const found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1], { ignoreDynamicProperties: true });
           if (found) {
             if (matches[2].length) {
               o = found.object;
@@ -750,7 +760,7 @@ module.exports = {
       }
     };
   },
-  helpers(self, options) {
+  helpers(self) {
     return {
 
       // Turn the provided string into a string suitable for use as a slug.

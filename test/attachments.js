@@ -54,6 +54,7 @@ describe('Attachment', function() {
       return wipeIt();
     });
   });
+  let imageOne;
 
   describe('insert', async function() {
 
@@ -78,8 +79,9 @@ describe('Attachment', function() {
       return insert('upload_apos_api.txt');
     });
 
-    it('should upload an image file using the attachments api when user', async function() {
-      return insert('upload_image.png');
+    it('should upload an image file using the attachments api when user', async function () {
+      imageOne = await insert('upload_image.png');
+      assert(imageOne && imageOne._id);
     });
 
     it('should not upload an exe file', async function() {
@@ -199,13 +201,13 @@ describe('Attachment', function() {
       assert(image);
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(attachment);
-      assert(attachment.trash === false);
+      assert(attachment.archived === false);
       assert(attachment.docIds);
       assert(attachment.docIds.length === 2);
       assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:draft`));
       assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:published`));
-      assert(attachment.trashDocIds);
-      assert(attachment.trashDocIds.length === 0);
+      assert(attachment.archivedDocIds);
+      assert(attachment.archivedDocIds.length === 0);
       try {
         const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
         assert(fd);
@@ -213,17 +215,17 @@ describe('Attachment', function() {
       } catch (e) {
         assert(false);
       }
-      image.trash = true;
+      image.archived = true;
       await apos.image.update(req, image);
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
-      assert(!attachment.trash);
+      assert(!attachment.archived);
       assert(attachment.docIds.length === 1);
-      assert(attachment.trashDocIds.length === 1);
+      assert(attachment.archivedDocIds.length === 1);
       // Should still be accessible at this point because the draft still uses it
       const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
       assert(fd);
       fs.closeSync(fd);
-      // Now trash the draft
+      // Now archive the draft
       const draftReq = apos.task.getReq({
         mode: 'draft'
       });
@@ -232,13 +234,13 @@ describe('Attachment', function() {
       }).toObject();
       assert(draft);
       assert(draft.aposLocale === 'en:draft');
-      draft.trash = true;
+      draft.archived = true;
       await apos.image.update(req, draft);
       // Now it should be inaccessible
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
-      assert(attachment.trash);
+      assert(attachment.archived);
       assert(attachment.docIds.length === 0);
-      assert(attachment.trashDocIds.length === 2);
+      assert(attachment.archivedDocIds.length === 2);
       let good = false;
       try {
         fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
@@ -248,13 +250,13 @@ describe('Attachment', function() {
       if (!good) {
         throw new Error('should not have been accessible');
       }
-      // Now rescue the published version from the trash
-      image.trash = false;
+      // Now rescue the published version from the archive
+      image.archived = false;
       await apos.image.update(req, image);
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
-      assert(!attachment.trash);
+      assert(!attachment.archived);
       assert(attachment.docIds.length === 1);
-      assert(attachment.trashDocIds.length === 1);
+      assert(attachment.archivedDocIds.length === 1);
       try {
         const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
         assert(fd);
@@ -263,7 +265,17 @@ describe('Attachment', function() {
         assert(false);
       }
     });
+  });
 
+  describe('api', async function () {
+
+    it('should annotate images with URLs using .all method', async function () {
+      assert(!imageOne._urls);
+
+      apos.attachment.all({ imageOne }, { annotate: true });
+
+      assert(imageOne._urls);
+    });
   });
 
 });

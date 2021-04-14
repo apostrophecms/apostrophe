@@ -5,37 +5,52 @@
  *   in the form of the docFields data attribute
  * 2. A scaffold for managing server side errors, in the form of the
  *   serverErrors data attribute and the handleSaveError method
- * 3. A scaffold for handling `following` in field definitios, via
+ * 3. A scaffold for handling `following` in field definitions, via
  *   the `followingValues` method
+ * 4. A scaffold for handling conditional fields, via the
+ *   `conditionalFields` method
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.
  */
 
+import { klona } from 'klona';
+
 export default {
   data() {
     return {
       docFields: {
-        data: {},
-        hasErrors: false
+        data: {}
       },
-      serverErrors: null
+      serverErrors: null,
+      restoreOnly: false
     };
   },
 
-  methods: {
-    // followedBy is either "other" or "utility". The returned object contains
-    // properties named for each field that follows other fields. For instance if followedBy is "utility"
-    // then in our default configuration `followingValues` will be `{ slug: { title: 'latest title here' } }`
-    followingValues(followedBy) {
-      let fields;
-
-      if (followedBy) {
-        fields = (followedBy === 'other')
-          ? this.schema.filter(field => !this.utilityFields.includes(field.name)) : this.schema.filter(field => this.utilityFields.includes(field.name));
-      } else {
-        fields = this.schema;
+  computed: {
+    schema() {
+      let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      if (this.restoreOnly) {
+        schema = klona(schema);
+        for (const field of schema) {
+          field.readOnly = true;
+        }
       }
+      // Archive UI is handled via action buttons
+      schema = schema.filter(field => field.name !== 'archived');
+      return schema;
+    }
+  },
+
+  methods: {
+    // followedByCategory may be falsy (all fields), "other" or "utility". The returned
+    // object contains properties named for each field in that category that
+    // follows other fields. For instance if followedBy is "utility" then in our
+    // default configuration `followingValues` will be:
+    //
+    // `{ slug: { title: 'latest title here' } }`
+    followingValues(followedByCategory) {
+      const fields = this.getFieldsByCategory(followedByCategory);
 
       const followingValues = {};
 
@@ -50,6 +65,83 @@ export default {
       }
       return followingValues;
     },
+
+    // Fetch the subset of the schema in the given category, either
+    // 'utility' or 'other', or the entire schema if followedByCategory
+    // is falsy
+    getFieldsByCategory(followedByCategory) {
+      if (followedByCategory) {
+        return (followedByCategory === 'other')
+          ? this.schema.filter(field => !this.utilityFields.includes(field.name)) : this.schema.filter(field => this.utilityFields.includes(field.name));
+      } else {
+        return this.schema;
+      }
+    },
+
+    // The returned object contains a property for each field that is
+    // conditional on other fields, `true` if that field's conditions are
+    // satisfied and `false` if they are not. There will be no properties for
+    // fields that are not conditional.
+    //
+    // Any condition on a field that is itself conditional fails if the second
+    // field's conditions fail.
+    //
+    // If present, followedByCategory must be either "other" or "utility", and
+    // the returned object will contain properties only for conditional fields
+    // in that category, although they may be conditional upon fields in either
+    // category.
+
+    conditionalFields(followedByCategory) {
+
+      const self = this;
+      const conditionalFields = {};
+
+      while (true) {
+        let change = false;
+        for (const field of this.schema) {
+          if (field.if) {
+            const result = evaluate(field.if);
+            const previous = conditionalFields[field.name];
+            if (previous !== result) {
+              change = true;
+            }
+            conditionalFields[field.name] = result;
+          }
+        }
+        if (!change) {
+          break;
+        }
+      }
+
+      const fields = this.getFieldsByCategory(followedByCategory);
+      const result = {};
+      for (const field of fields) {
+        if (field.if) {
+          result[field.name] = conditionalFields[field.name];
+        }
+      }
+      return result;
+
+      function evaluate(clause) {
+        let result = true;
+        for (const [ key, val ] of Object.entries(clause)) {
+          if (key === '$or') {
+            return val.some(clause => evaluate(clause));
+          }
+          if (conditionalFields[key] === false) {
+            result = false;
+            break;
+          }
+          if (val !== self.getFieldValue(key)) {
+            result = false;
+            break;
+          }
+        }
+        return result;
+      }
+
+    },
+
     // Overridden by components that split the fields into several AposSchemas
     getFieldValue(name) {
       return this.docFields.data[name];
@@ -92,5 +184,6 @@ export default {
         });
       }
     }
+
   }
 };

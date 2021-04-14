@@ -11,7 +11,7 @@
           class="apos-input apos-input--password"
           v-model="next"
           :placeholder="field.placeholder"
-          :disabled="field.disabled"
+          :disabled="field.readOnly"
           :required="field.required"
           :id="uid"
           :tabindex="tabindex"

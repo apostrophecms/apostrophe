@@ -56,8 +56,8 @@ const realWorldCase = {
     },
     {
       type: 'boolean',
-      name: 'trash',
-      label: 'Trash',
+      name: 'archive',
+      label: 'Archived',
       contextual: true,
       def: false
     },
@@ -81,24 +81,21 @@ const realWorldCase = {
       choices: [
         {
           label: 'Internal Page',
-          value: 'internal',
-          showFields: [
-            '_newPage'
-          ]
+          value: 'internal'
         },
         {
           label: 'External URL',
-          value: 'external',
-          showFields: [
-            'externalUrl'
-          ]
+          value: 'external'
         }
       ]
     },
     {
       name: 'externalUrl',
       label: 'URL',
-      type: 'url'
+      type: 'url',
+      if: {
+        urlType: 'external'
+      }
     },
     {
       name: '_newPage',
@@ -106,7 +103,10 @@ const realWorldCase = {
       limit: 1,
       withType: '@apostrophecms/page',
       label: 'Page Title',
-      idsStorage: 'pageId'
+      idsStorage: 'pageId',
+      if: {
+        urlType: 'internal'
+      }
     }
   ],
   arrangeFields: [
@@ -1345,12 +1345,18 @@ describe('Schemas', function() {
         {
           name: 'age',
           type: 'integer',
-          required: true
+          required: true,
+          if: {
+            ageOrShoeSize: 'age'
+          }
         },
         {
           name: 'shoeSize',
           type: 'integer',
-          required: false
+          required: false,
+          if: {
+            ageOrShoeSize: 'shoeSize'
+          }
         },
         {
           name: 'ageOrShoeSize',
@@ -1358,13 +1364,11 @@ describe('Schemas', function() {
           choices: [
             {
               label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
+              value: 'age'
             },
             {
               label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
+              value: 'shoeSize'
             }
           ]
         }
@@ -1384,12 +1388,18 @@ describe('Schemas', function() {
         {
           name: 'age',
           type: 'integer',
-          required: true
+          required: true,
+          if: {
+            ageOrShoeSize: 'age'
+          }
         },
         {
           name: 'shoeSize',
           type: 'integer',
-          required: false
+          required: false,
+          if: {
+            ageOrShoeSize: 'shoeSize'
+          }
         },
         {
           name: 'ageOrShoeSize',
@@ -1397,13 +1407,11 @@ describe('Schemas', function() {
           choices: [
             {
               label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
+              value: 'age'
             },
             {
               label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
+              value: 'shoeSize'
             }
           ]
         }
@@ -1422,12 +1430,18 @@ describe('Schemas', function() {
         {
           name: 'age',
           type: 'integer',
-          required: true
+          required: true,
+          if: {
+            ageOrShoeSize: 'age'
+          }
         },
         {
           name: 'shoeSize',
           type: 'integer',
-          required: false
+          required: false,
+          if: {
+            ageOrShoeSize: 'shoeSize'
+          }
         },
         {
           name: 'ageOrShoeSize',
@@ -1435,15 +1449,16 @@ describe('Schemas', function() {
           choices: [
             {
               label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
+              value: 'age'
             },
             {
               label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
+              value: 'shoeSize'
             }
-          ]
+          ],
+          if: {
+            doWeCare: '1'
+          }
         },
         {
           name: 'doWeCare',
@@ -1451,13 +1466,11 @@ describe('Schemas', function() {
           choices: [
             {
               label: 'Yes',
-              value: '1',
-              showFields: [ 'ageOrShoeSize' ]
+              value: '1'
             },
             {
               label: 'No',
-              value: '0',
-              showFields: []
+              value: '0'
             }
           ]
         }
@@ -1478,12 +1491,18 @@ describe('Schemas', function() {
         {
           name: 'age',
           type: 'integer',
-          required: true
+          required: true,
+          if: {
+            ageOrShoeSize: 'age'
+          }
         },
         {
           name: 'shoeSize',
           type: 'integer',
-          required: false
+          required: false,
+          if: {
+            ageOrShoeSize: 'shoeSize'
+          }
         },
         {
           name: 'ageOrShoeSize',
@@ -1491,15 +1510,16 @@ describe('Schemas', function() {
           choices: [
             {
               label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
+              value: 'age'
             },
             {
               label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
+              value: 'shoeSize'
             }
-          ]
+          ],
+          if: {
+            doWeCare: '1'
+          }
         },
         {
           name: 'doWeCare',
@@ -1507,13 +1527,11 @@ describe('Schemas', function() {
           choices: [
             {
               label: 'Yes',
-              value: '1',
-              showFields: [ 'ageOrShoeSize' ]
+              value: '1'
             },
             {
               label: 'No',
-              value: '0',
-              showFields: []
+              value: '0'
             }
           ]
         }
@@ -1526,117 +1544,6 @@ describe('Schemas', function() {
     }, 'age', 'required');
   });
 
-  it('ignores required property for recursively hidden field with checkboxes', async () => {
-    const req = apos.task.getReq();
-    const schema = apos.schema.compose({
-      addFields: [
-        {
-          name: 'age',
-          type: 'integer',
-          required: true
-        },
-        {
-          name: 'shoeSize',
-          type: 'integer',
-          required: false
-        },
-        {
-          name: 'ageOrShoeSize',
-          type: 'checkboxes',
-          choices: [
-            {
-              label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
-            },
-            {
-              label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
-            }
-          ]
-        },
-        {
-          name: 'doWeCare',
-          type: 'checkboxes',
-          choices: [
-            {
-              label: 'Yes',
-              value: '1',
-              showFields: [ 'ageOrShoeSize' ]
-            },
-            {
-              label: 'No',
-              value: '0',
-              showFields: []
-            }
-          ]
-        }
-      ]
-    });
-    const output = {};
-    await apos.schema.convert(req, schema, {
-      ageOrShoeSize: [ 'age' ],
-      doWeCare: [ '0' ],
-      age: ''
-    }, output);
-    assert.deepStrictEqual(output.ageOrShoeSize, [ 'age' ]);
-  });
-
-  it('enforces required property for recursively shown field with checkboxes', async () => {
-    const schema = apos.schema.compose({
-      addFields: [
-        {
-          name: 'age',
-          type: 'integer',
-          required: true
-        },
-        {
-          name: 'shoeSize',
-          type: 'integer',
-          required: false
-        },
-        {
-          name: 'ageOrShoeSize',
-          type: 'checkboxes',
-          choices: [
-            {
-              label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
-            },
-            {
-              label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
-            }
-          ]
-        },
-        {
-          name: 'doWeCare',
-          type: 'checkboxes',
-          choices: [
-            {
-              label: 'Yes',
-              value: '1',
-              showFields: [ 'ageOrShoeSize' ]
-            },
-            {
-              label: 'No',
-              value: '0',
-              showFields: []
-            }
-          ]
-        }
-      ]
-    });
-    await testSchemaError(schema, {
-      ageOrShoeSize: [ 'age', 'shoeSize' ],
-      doWeCare: [ '1' ],
-      age: ''
-    }, 'age', 'required');
-  });
-
   it('ignores required property for recursively hidden field with boolean', async () => {
     const req = apos.task.getReq();
     const schema = apos.schema.compose({
@@ -1644,12 +1551,18 @@ describe('Schemas', function() {
         {
           name: 'age',
           type: 'integer',
-          required: true
+          required: true,
+          if: {
+            ageOrShoeSize: 'age'
+          }
         },
         {
           name: 'shoeSize',
           type: 'integer',
-          required: false
+          required: false,
+          if: {
+            ageOrShoeSize: 'shoeSize'
+          }
         },
         {
           name: 'ageOrShoeSize',
@@ -1657,27 +1570,26 @@ describe('Schemas', function() {
           choices: [
             {
               label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
+              value: 'age'
             },
             {
               label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
+              value: 'shoeSize'
             }
-          ]
+          ],
+          if: {
+            doWeCare: true
+          }
         },
         {
           name: 'doWeCare',
           type: 'boolean',
           choices: [
             {
-              value: true,
-              showFields: [ 'ageOrShoeSize' ]
+              value: true
             },
             {
-              value: false,
-              showFields: []
+              value: false
             }
           ]
         }
@@ -1698,49 +1610,46 @@ describe('Schemas', function() {
         {
           name: 'age',
           type: 'integer',
-          required: true
+          required: true,
+          if: {
+            ageOrShoeSize: 'age'
+          }
         },
         {
           name: 'shoeSize',
           type: 'integer',
-          required: false
+          required: false,
+          if: {
+            ageOrShoeSize: 'shoeSize'
+          }
         },
         {
           name: 'ageOrShoeSize',
-          type: 'checkboxes',
+          type: 'select',
           choices: [
             {
               label: 'age',
-              value: 'age',
-              showFields: [ 'age' ]
+              value: 'age'
             },
             {
               label: 'shoeSize',
-              value: 'shoeSize',
-              showFields: [ 'shoeSize' ]
+              value: 'shoeSize'
             }
-          ]
+          ],
+          if: {
+            doWeCare: true
+          }
         },
         {
           name: 'doWeCare',
-          type: 'boolean',
-          choices: [
-            {
-              value: true,
-              showFields: [ 'ageOrShoeSize' ]
-            },
-            {
-              value: false,
-              showFields: []
-            }
-          ]
+          type: 'boolean'
         }
       ]
     });
     await testSchemaError(schema, {
-      ageOrShoeSize: [ 'age', 'shoeSize' ],
+      ageOrShoeSize: 'age',
       doWeCare: true,
-      age: ''
+      age: null
     }, 'age', 'required');
   });
 });
@@ -1748,11 +1657,15 @@ describe('Schemas', function() {
 async function testSchemaError(schema, input, path, name) {
   const req = apos.task.getReq();
   const result = {};
+  let tooFar = false;
   try {
     await apos.schema.convert(req, schema, input, result);
+    tooFar = true;
     assert(false);
   } catch (e) {
-    assert(Array.isArray(e));
+    if (tooFar) {
+      throw e;
+    }
     assert(e.length === 1);
     assert(e[0].path === path);
     assert(e[0].name === name);

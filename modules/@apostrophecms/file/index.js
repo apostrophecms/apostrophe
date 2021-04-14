@@ -71,7 +71,7 @@ module.exports = {
       }
     }
   },
-  methods(self, options) {
+  methods(self) {
     return {
       addUrls(req, files) {
         _.each(files, function (file) {

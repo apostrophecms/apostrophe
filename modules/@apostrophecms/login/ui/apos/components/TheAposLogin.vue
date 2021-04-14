@@ -1,8 +1,9 @@
 <template>
   <transition name="fade-stage">
     <div
-      class="apos-login apos-theme-dark apos-theme--primary-purple"
+      class="apos-login apos-theme-dark"
       v-show="loaded"
+      :class="themeClass"
     >
       <div class="apos-login__wrapper">
         <transition name="fade-body">
@@ -57,8 +58,11 @@
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+
 export default {
   name: 'TheAposLogin',
+  mixins: [ AposThemeMixin ],
   data() {
     return {
       loaded: false,
@@ -131,7 +135,7 @@ export default {
         window.sessionStorage.setItem('aposStateChangeSeen', '{}');
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
-        window.location.href = `${apos.prefix}/`;
+        location.assign(`${apos.prefix}/`);
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
       } finally {
@@ -141,6 +145,12 @@ export default {
   }
 };
 </script>
+
+<style lang="scss">
+  .apos-login-page {
+    margin: 0;
+  }
+</style>
 
 <style lang="scss" scoped>
   $login-container: 330px;

@@ -1,10 +1,9 @@
 <template>
   <div role="alert" :class="classList">
-    <span class="apos-notification__indicator" v-if="type !== 'none'">
-      <component
-        :is="iconComponent"
-        :decorative="true"
-        :size="icon ? 16 : 12"
+    <span class="apos-notification__indicator">
+      <AposIndicator
+        :icon="iconComponent" class="apos-notification__indicator__icon"
+        :icon-size="icon ? 16 : 12"
       />
     </span>
     <span
@@ -115,53 +114,64 @@ export default {
 
 <style lang="scss" scoped>
   .apos-notification {
+    @include apos-transition();
     position: relative;
     display: inline-flex;
+    overflow: hidden;
     min-width: 200px;
     max-width: 400px;
-    padding: 15px 35px 15px 15px;
-    border: 1px solid var(--a-base-8);
+    padding: 8px 35px 8px 8px;
     color: var(--a-text-inverted);
     background: var(--a-background-inverted);
-    border-radius: var(--a-border-radius);
+    border-radius: 30px;
     box-shadow: var(--a-box-shadow);
-
+    align-items: center;
     & + .apos-notification {
       margin-top: 8px;
+    }
+    &:hover {
+      transform: translateY(-1px);
     }
   }
 
   .apos-notification__indicator {
     position: relative;
-    top: 1px;
-    margin-right: 15px;
-    color: var(--a-base-8);
+    display: inline-flex;
+    margin-right: 10px;
+    padding: 5px;
+    color: var(--a-base-1);
+    border-radius: 50%;
+    background-color: var(--a-base-1);
   }
 
   .apos-notification--warning .apos-notification__indicator {
+    background-color: var(--a-warning-fade);
     color: var(--a-warning);
   }
 
   .apos-notification--success .apos-notification__indicator {
+    background-color: var(--a-success-fade);
     color: var(--a-success);
   }
 
   .apos-notification--danger .apos-notification__indicator {
+    background-color: var(--a-danger-fade);
     color: var(--a-danger);
   }
 
   .apos-notification__button {
     position: absolute;
-    top: 0;
-    right: 0;
+    right: 2px;
     display: flex;
     align-items: center;
+    box-sizing: border-box;
     height: 100%;
     padding: 20px 10px;
     border: none;
     background-color: transparent;
     color: var(--a-text-inverted);
     @include apos-transition(all);
+
     &:hover {
       cursor: pointer;
     }

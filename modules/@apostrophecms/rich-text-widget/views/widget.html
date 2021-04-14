@@ -1,1 +1,8 @@
-<div data-rich-text{% if data.manager.options.className %} class="{{ data.manager.options.className }}"{% endif %}>{{ data.widget.content | safe }}</div>
+{% if data.options.className %}
+  {% set className = data.options.className %}
+{% elif data.manager.options.className %}
+  {% set className = data.manager.options.className %}
+{% endif %}
+<div data-rich-text{% if className %} class="{{ className }}" {% endif %}>
+  {{ data.widget.content | safe }}
+</div>

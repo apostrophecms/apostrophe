@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-notifications apos-theme--primary-purple">
+  <transition-group
+    name="list" tag="div"
+    class="apos-notifications" :class="themeClass"
+  >
     <AposNotification
       v-for="notification in notifications"
       :key="notification._id"
@@ -10,12 +13,14 @@
       :dismiss="notification.dismiss"
       @close="dismiss"
     />
-  </div>
+  </transition-group>
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposNotifications',
+  mixins: [ AposThemeMixin ],
   data () {
     return {
       notifications: [],
@@ -126,3 +131,16 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+  .list-enter-active,
+  .list-leave-active {
+    @include apos-transition();
+  }
+
+  .list-enter,
+  .list-leave-to {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+</style>

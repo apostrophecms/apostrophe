@@ -123,7 +123,6 @@
 
 .apos-input-wrapper {
   position: relative;
-  max-width: $input-max-width;
 }
 
 .apos-choice-label {
@@ -131,9 +130,12 @@
   display: flex;
   color: var(--a-base-2);
   align-items: center;
-  &:hover {
+  &:hover:not(.apos-choice-label--disabled) {
     color: var(--a-primary-text);
     cursor: pointer;
+  }
+  &:hover.apos-choice-label--disabled {
+    cursor: not-allowed;
   }
   & + &,
   .apos-legend + & {
@@ -192,7 +194,7 @@
 
   &:hover ~ .apos-input-icon,
   &:active ~ .apos-input-icon {
-    color: var(--a-primary);
+    color: var(--a-text-primary);
   }
 
   &[disabled] ~ .apos-input-icon {

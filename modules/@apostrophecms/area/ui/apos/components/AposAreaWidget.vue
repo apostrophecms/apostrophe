@@ -52,7 +52,7 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @insert="$emit('insert', $event);"
+          @add="$emit('add', $event);"
           @menu-open="toggleMenuFocus($event, 'top', true)"
           @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
@@ -114,7 +114,7 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @insert="$emit('insert', $event)"
+          @add="$emit('add', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
@@ -128,7 +128,7 @@
 
 <script>
 
-import klona from 'klona';
+import { klona } from 'klona';
 import AposIndicator from '../../../../ui/ui/apos/components/AposIndicator.vue';
 
 export default {
@@ -188,7 +188,7 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'add', 'changed' ],
   data() {
     const initialState = {
       controls: {
@@ -583,7 +583,7 @@ export default {
     transform: translate(-50%, 0);
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn {
+  .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn .apos-button {
     background-color: var(--a-secondary);
     border-color: var(--a-secondary);
   }
@@ -623,6 +623,7 @@ export default {
     @include type-help;
     padding: 2px;
     color: var(--a-white);
+    white-space: nowrap;
     &:hover {
       cursor: pointer;
     }

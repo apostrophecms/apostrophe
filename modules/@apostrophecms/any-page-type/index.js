@@ -15,7 +15,7 @@ module.exports = {
     pluralLabel: 'Pages'
   },
 
-  methods(self, options) {
+  methods(self) {
     return {
       // Returns a string to represent the given `doc` in an
       // autocomplete menu. `doc` will contain only the fields returned
@@ -30,7 +30,7 @@ module.exports = {
     };
   },
 
-  extendMethods(self, options) {
+  extendMethods(self) {
     return {
       find(_super, req, criteria, projection) {
         return _super(req, criteria, projection).type(false).isPage(true);
@@ -65,7 +65,7 @@ module.exports = {
           }
         },
 
-        // `.ancestors(true)` retrieves the ancestors of each returned page and assign sthem
+        // `.ancestors(true)` retrieves the ancestors of each returned page and assigns them
         // to the `._ancestors` property. The home page is `._ancestors[0]`. The
         // page itself is not included in its own `._ancestors` array.
         //

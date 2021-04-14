@@ -1,14 +1,12 @@
 :root,
 .apos-theme-light {
   --a-danger: #eb443b;
+  --a-danger-fade: #eb443b30;
   --a-success: #00bf9a;
+  --a-success-fade: #00bf9a30;
   --a-warning: #ffce00;
+  --a-warning-fade: #ffce0030;
   --a-progress-bg: #2c354d;
-
-  .apos-theme--primary-purple {
-    @include apos-primary-mixin(#6516dd);
-    --a-secondary: #e65100;
-  }
 
   --a-danger-button-hover: #c00717;
   --a-danger-button-active: #a10000;
@@ -64,6 +62,7 @@
   --a-weight-bold: 700;
 
   // Type Sizes
+  --a-type-tiny: 9px;
   --a-type-small: 10px;
   --a-type-base: 12px;
   --a-type-large: 14px;
@@ -103,23 +102,23 @@
   --a-text-primary: #fff;
   --a-text-inverted: #000;
 }
-
+.apos-theme--primary-default {
+  @include apos-primary-mixin(#6516dd);
+  --a-secondary: #e65100;
+}
 .apos-theme--primary-blue {
   @include apos-primary-mixin(#0062ff);
-}
-.apos-theme--primary-purple {
-  @include apos-primary-mixin(rgb(2, 2, 2));
 }
 .apos-theme--primary-orange {
   @include apos-primary-mixin(#e65100);
 }
-.apos-theme--primary-light-blue {
+.apos-theme--primary-aqua {
   @include apos-primary-mixin(#1eacc7);
 }
 .apos-theme--primary-sun {
   @include apos-primary-mixin(#f7a704);
 }
-.apos-theme--primary-money {
+.apos-theme--primary-green {
   @include apos-primary-mixin(#00b075);
 }
 .apos-theme--primary-pink {
