@@ -65,12 +65,19 @@ export default {
       context: window.apos.adminBar.context ? {
         ...window.apos.adminBar.context
       } : {},
-      contextStack: []
+      contextStack: [],
+      // If a published context doc itself is not editable this will contain a hint
+      // that the draft version is editable, when appropriate. It should only be
+      // consulted when the context doc is published and not editable
+      draftIsEditable: false
     };
   },
   computed: {
     contextBarActive() {
-      return window.apos.adminBar.contextBar;
+      return window.apos.adminBar.contextBar && this.canEdit;
+    },
+    canEdit() {
+      return this.context._edit || ((this.context.aposLocale && this.context.aposLocale.endsWith(':published')) && this.draftIsEditable);
     },
     classes() {
       if (!this.contextBarActive) {
@@ -142,6 +149,7 @@ export default {
         this.refresh();
       }
     }
+    await this.updateDraftIsEditable();
   },
   methods: {
     // Implements the `set-context` Apostrophe event, which can change the mode
@@ -350,6 +358,7 @@ export default {
         window.apos.adminBar.context = modeDoc;
         window.apos.adminBar.contextId = modeDoc._id;
         this.context = modeDoc;
+        await this.updateDraftIsEditable();
         this.draftMode = mode;
         if (navigate) {
           if (!await this.refreshOrReload(modeDoc._url)) {
@@ -618,6 +627,19 @@ export default {
       } else {
         // If the context is the page, we should stay, but in preview mode
         this.switchEditMode(false);
+      }
+    },
+    async updateDraftIsEditable() {
+      if (this.context.aposLocale && this.context.aposLocale.endsWith('published') && !this.context._edit) {
+        // A contributor might be able to edit the draft
+        const draftContext = await apos.http.get(`${this.moduleOptions.contextAction}/${this.context._id}`, {
+          busy: true,
+          qs: {
+            'apos-mode': 'draft',
+            'apos-locale': this.context.aposLocale.split(':')[0]
+          }
+        });
+        this.draftIsEditable = draftContext && draftContext._edit;
       }
     }
   }

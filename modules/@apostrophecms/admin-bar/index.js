@@ -240,10 +240,10 @@ module.exports = {
       },
 
       getBrowserData(req) {
-        const items = self.getVisibleItems(req);
-        if (!items.length) {
+        if (!req.user) {
           return false;
         }
+        const items = self.getVisibleItems(req);
         const context = req.data.piece || req.data.page;
         // Page caching is never desirable when possibly
         // editing that page
@@ -273,7 +273,10 @@ module.exports = {
             modified: context.modified,
             updatedAt: context.updatedAt,
             updatedBy: context.updatedBy,
-            lastPublishedAt: context.lastPublishedAt
+            lastPublishedAt: context.lastPublishedAt,
+            _edit: context._edit,
+            aposMode: context.aposMode,
+            aposLocale: context.aposLocale
           },
           // Base API URL appropriate to the context document
           contextAction,
@@ -282,7 +285,7 @@ module.exports = {
           contextId: context && context._id,
           tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/page')
         };
       }
     };
