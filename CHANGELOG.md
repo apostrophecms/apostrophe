@@ -5,6 +5,7 @@
 ### Adds
 
 * Major performance improvement to the `nestedModuleSubdirs` option.
+* Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
