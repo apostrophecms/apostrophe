@@ -90,6 +90,14 @@ module.exports = {
           } else {
             return role === 'editor';
           }
+        } else if (action === 'upload-attachment') {
+          if ((role === 'contributor') || (role === 'editor')) {
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          return false;
         }
       },
 

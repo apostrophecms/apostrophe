@@ -141,9 +141,11 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforePublish': {
-        testPermissions(req, doc) {
-          if (!self.apos.permission.can(req, 'publish', doc.draft)) {
-            throw self.apos.error('forbidden');
+        testPermissions(req, info) {
+          if (info.options.permissions !== false) {
+            if (!self.apos.permission.can(req, info.options.autopublishing ? 'edit' : 'publish', info.draft)) {
+              throw self.apos.error('forbidden');
+            }
           }
         }
       },
