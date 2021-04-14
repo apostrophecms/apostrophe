@@ -47,7 +47,13 @@ module.exports = {
       // criteria object returning only documents on which the active user
       // can carry out the specified action.
       //
-      can(req, action, docOrType) {
+      // If present, `mode` overrides `req.mode` for purposes
+      // of determining permissions. This is useful to decide whether
+      // a user should get access to the manage view of articles even
+      // though they are technically in published mode on the page.
+
+      can(req, action, docOrType, mode) {
+        mode = mode || req.mode;
         const role = req.user && req.user.role;
         if (role === 'admin') {
           return true;
@@ -66,10 +72,14 @@ module.exports = {
           } else {
             return true;
           }
+        } else if (action === 'view-draft') {
+          // Checked at the middleware level to determine if req.mode should
+          // be allowed to be set to draft at all
+          return (role === 'contributor') || (role === 'editor');
         } else if (action === 'edit') {
           if (manager && manager.isAdminOnly()) {
             return false;
-          } else if (req.mode === 'draft') {
+          } else if (mode === 'draft') {
             return (role === 'contributor') || (role === 'editor');
           } else {
             return role === 'editor';

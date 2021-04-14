@@ -233,12 +233,16 @@ module.exports = {
           // Being logged in is good enough to see this
           return true;
         }
-        return self.apos.permission.can(req, item.permission.action, item.permission.type);
+        // Test the permission as if we were in draft mode, as when you actually
+        // manage the items those requests will be made in draft mode (when
+        // applicable to the content type)
+        return self.apos.permission.can(req, item.permission.action, item.permission.type, 'draft');
       },
 
       getBrowserData(req) {
         const items = self.getVisibleItems(req);
         if (!items.length) {
+          console.log('no visible items');
           return false;
         }
         const context = req.data.piece || req.data.page;
