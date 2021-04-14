@@ -77,7 +77,8 @@ module.exports = {
         username: {
           type: 'string',
           label: 'Username',
-          required: true
+          required: true,
+          following: 'title'
         },
         email: {
           type: 'string',
