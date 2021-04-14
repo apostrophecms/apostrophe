@@ -59,7 +59,7 @@ module.exports = {
         },
         title: {
           type: 'string',
-          label: 'Full Name',
+          label: 'Dislay Name',
           following: [ 'firstName', 'lastName' ],
           required: true
         },
