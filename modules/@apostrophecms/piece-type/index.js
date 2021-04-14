@@ -5,7 +5,8 @@ module.exports = {
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
     perPage: 10,
-    quickCreate: true
+    quickCreate: true,
+    previewDraft: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -788,6 +789,7 @@ module.exports = {
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = self.options.quickCreate;
+        browserOptions.previewDraft = self.options.previewDraft;
         _.defaults(browserOptions, {
           components: {}
         });

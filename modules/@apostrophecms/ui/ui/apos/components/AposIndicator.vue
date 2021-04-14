@@ -2,6 +2,7 @@
   <span
     class="apos-indicator"
     v-tooltip="tooltip"
+    :aria-hidden="decorative"
   >
     <component
       :is="icon"
@@ -32,6 +33,10 @@ export default {
     iconColor: {
       type: String,
       default: 'currentColor'
+    },
+    decorative: {
+      type: Boolean,
+      default: true
     }
   }
 };

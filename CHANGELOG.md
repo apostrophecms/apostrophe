@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Major performance improvement to the `nestedModuleSubdirs` option.
+
 ## 3.0.0-alpha.7 - 2021-04-07
 
 ### Breaks
@@ -12,12 +18,14 @@
 * Links to each piece are available in the manage view when appropriate.
 * Search is implemented in the media library.
 * You can now pass core widgets a `className` option when configuring them as part of an area.
+* `previewDraft` for pieces, adds a Preview Draft button on creation for quick in-context editing. Defaults to true.
 
 ### Changes
 
 * Do not immediately redirect to new pages and pieces.
 * Restored pieces now restore as unpublished drafts.
 * Refactored the admin bar component for maintainability.
+* Notification style updates
 
 ### Fixes
 
@@ -29,6 +37,7 @@
 * Fixes relating to the editing of widgets in nested areas, both on the page and in the modal.
 * Removed published / draft switch for unpublished drafts.
 * "Publish Changes" appears only at appropriate times.
+* Notifications moved from the bottom right of the viewport to the bottom center, fixing some cases of UI overlap.
 
 ## 3.0.0-alpha.6.1 - 2021-03-26
 
