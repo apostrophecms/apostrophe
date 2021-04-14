@@ -34,44 +34,7 @@ module.exports = {
         updatedAt: {
           label: 'Last Edited',
           component: 'AposCellDate'
-        },
-        moreMenu: {
-          label: 'More Operations',
-          hideLabel: true,
-          component: 'AposCellMenu',
-          menu: [
-            {
-              label: 'Edit',
-              action: 'edit'
-            },
-            {
-              label: 'Preview',
-              action: 'preview'
-            },
-            {
-              label: 'Duplicate...',
-              action: 'duplicate'
-            },
-            {
-              label: 'Discard Draft',
-              action: 'discardDraft'
-            },
-            {
-              label: 'Archive',
-              action: 'archive',
-              modifiers: [ 'danger' ]
-            }
-          ]
         }
-        // visibility: {
-        //   label: 'Visibility'
-        // },
-        // Automatically hidden if none of the pieces
-        // actually have a URL
-        // _url: {
-        //   label: 'Link',
-        //   component: 'AposCellLink'
-        // }
       }
     };
   },

@@ -23,6 +23,14 @@
             {{ header.label }}
           </component>
         </th>
+        <th class="apos-table__header" key="contextMenu">
+          <component
+            :is="getEl({})"
+            class="apos-table__header-label"
+          >
+            More Operations
+          </component>
+        </th>
       </tr>
       <tr
         class="apos-table__row"
@@ -60,7 +68,6 @@
             v-if="header.component" :is="header.component"
             :header="header" :item="item"
             :state="state[item._id]"
-            @edit="$emit('open', item._id)"
           />
           <AposCellLink
             v-else-if="header.name === '_url' && item[header.name]"
@@ -69,6 +76,14 @@
           <AposCellBasic
             v-else
             :header="header" :item="item"
+          />
+        </td>
+        <!-- append context menu -->
+        <td class="apos-table__cell apos-table__cell--context-menu">
+          <AposCellContextMenu
+            :state="{}" :menu="contextMenus[item._id]"
+            @edit="$emit('open', item._id)"
+            @preview="$emit('preview', item._id)"
           />
         </td>
       </tr>
@@ -83,6 +98,10 @@ export default {
     event: 'change'
   },
   props: {
+    contextMenus: {
+      type: Object,
+      required: true
+    },
     headers: {
       type: Array,
       required: true
@@ -107,7 +126,8 @@ export default {
   emits: [
     'open',
     'change',
-    'updated'
+    'updated',
+    'preview'
   ],
   data() {
     const state = {};
@@ -130,13 +150,9 @@ export default {
   },
   methods: {
     over(id) {
-      console.log(id);
-      console.log(this.state[id]);
       this.state[id].hover = true;
-      console.log(JSON.stringify(this.state[id].hover));
     },
     out(id) {
-      console.log('fire out');
       this.state[id].hover = false;
     },
     getEl(header) {

@@ -18,7 +18,6 @@
       />
     </template>
     <template #primaryControls>
-      <!-- TODO Make sure this gets positioned correctly after Vue3/teleport -->
       <AposContextMenu
         v-if="moreMenu.menu.length"
         :button="moreMenu.button"
@@ -79,11 +78,13 @@
         </template>
         <template #bodyMain>
           <AposPiecesManagerDisplay
-            v-if="items.length > 0"
-            :items="items"
+            v-if="pieces.length > 0"
+            :items="pieces"
             :headers="headers"
             v-model="checked"
             @open="edit"
+            @preview="preview"
+            :context-menus="contextMenus"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
@@ -159,29 +160,6 @@ export default {
     modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
-    },
-    items() {
-      const items = [];
-      if (!this.pieces || !this.headers.length) {
-        return [];
-      }
-
-      this.pieces.forEach(piece => {
-        const data = {};
-
-        // Extra data for internal use
-        data.lastPublishedAt = piece.lastPublishedAt;
-
-        this.headers.forEach(column => {
-          data[column.name] = piece[column.name];
-        });
-
-        data._id = piece._id;
-
-        items.push(data);
-      });
-
-      return items;
     },
     emptyDisplay() {
       return {
@@ -274,6 +252,12 @@ export default {
       if (num) {
         this.currentPage = num;
         this.getPieces();
+      }
+    },
+    preview(pieceId) {
+      const piece = this.pieces.filter(p => p._id === pieceId)[0];
+      if (piece._url) {
+        window.open(piece._url, '_blank').focus();
       }
     },
     async edit(pieceId) {

@@ -29,6 +29,49 @@ export default {
   },
   emits: [ 'modal-result', 'sort' ],
   computed: {
+    contextMenus() {
+      if (!this.pieces[0]) {
+        return [];
+      }
+      const menus = {};
+      this.pieces.forEach(item => {
+        menus[item._id] = [ {
+          label: 'Edit',
+          action: 'edit'
+        } ];
+
+        if (item._url) {
+          menus[item._id].push({
+            label: 'Preview',
+            action: 'preview'
+          });
+        };
+
+        menus[item._id].push({
+          label: 'Duplicate...',
+          action: 'duplicate'
+        },
+        // TODO check for draft/published differences
+        {
+          label: 'Discard Draft',
+          action: 'discardDraft'
+        });
+
+        if (!item.archived) {
+          menus[item._id].push({
+            label: 'Archive',
+            action: 'archive',
+            modifiers: [ 'danger' ]
+          });
+        } else {
+          menus[item._id].push({
+            label: 'Restore',
+            action: 'restore'
+          });
+        }
+      });
+      return menus;
+    },
     relationshipErrors() {
       if (!this.relationshipField) {
         return false;

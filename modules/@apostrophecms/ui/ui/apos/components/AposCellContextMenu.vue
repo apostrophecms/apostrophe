@@ -1,10 +1,10 @@
 <template>
   <div
-    class="apos-table__cell-field" :class="classes"
+    class="apos-table__cell-field apos-table__cell-field--context-menu" :class="classes"
   >
     <AposContextMenu
       class="apos-admin-bar__sub"
-      :menu="header.menu"
+      :menu="menu"
       :button="{
         label: 'More Operations',
         modifiers: [ 'no-motion', 'tiny' ],
@@ -20,18 +20,14 @@
 
 <script>
 export default {
-  name: 'AposCellMenu',
+  name: 'AposCellContextMenu',
   props: {
     state: {
       type: Object,
       required: true
     },
-    item: {
-      type: Object,
-      required: true
-    },
-    header: {
-      type: Object,
+    menu: {
+      type: Array,
       required: true
     }
   },
@@ -42,7 +38,7 @@ export default {
   },
   computed: {
     classes() {
-      const classes = [ `apos-table__cell-field--${this.header.name}` ];
+      const classes = [ ];
       if (this.state.hover) {
         classes.push('is-hovered');
       }
