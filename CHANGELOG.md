@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Major performance improvement to the `nestedModuleSubdirs` option.
+
 ## 3.0.0-alpha.7 - 2021-04-07
 
 ### Breaks
