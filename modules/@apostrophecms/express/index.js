@@ -494,7 +494,6 @@ module.exports = {
           // See options.csrfExceptions
           if (!req.cookies[self.apos.csrfCookieName] || req.get('X-XSRF-TOKEN') !== req.cookies[self.apos.csrfCookieName] || req.session['XSRF-TOKEN'] !== req.cookies[self.apos.csrfCookieName]) {
             res.statusCode = 403;
-            console.log('CSRF exception on ' + req.url);
             return res.send({
               name: 'forbidden',
               message: 'CSRF exception'

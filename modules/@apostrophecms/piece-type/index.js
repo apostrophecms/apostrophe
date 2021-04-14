@@ -191,7 +191,6 @@ module.exports = {
       return doc;
     },
     async post(req) {
-      console.log('made it to a POST route');
       self.publicApiCheck(req);
       if (req.body._newInstance) {
         return self.newInstance();
@@ -747,7 +746,6 @@ module.exports = {
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
           if (!self.apos.permission.can(req, 'edit', self.name)) {
-            console.log(`user cannot edit ${self.name}`);
             throw self.apos.error('notfound');
           }
         }

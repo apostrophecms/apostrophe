@@ -242,7 +242,6 @@ module.exports = {
       getBrowserData(req) {
         const items = self.getVisibleItems(req);
         if (!items.length) {
-          console.log('no visible items');
           return false;
         }
         const context = req.data.piece || req.data.page;
