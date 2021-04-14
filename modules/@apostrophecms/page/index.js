@@ -1400,12 +1400,17 @@ database.`);
           return;
         }
         if (req.user && (req.mode === 'published')) {
-          // Try again in published mode
+          // Try again in draft mode
           try {
             const testReq = self.apos.task.getReq({
               user: req.user,
               url: req.url,
-              params: req.params,
+              slug: req.slug,
+              // Simulate what this looks like when the serve page route starts.
+              // This is an object, not an array
+              params: {
+                0: req.path
+              },
               query: req.query,
               mode: 'draft'
             });
@@ -1418,7 +1423,7 @@ database.`);
               return;
             }
           } catch (e) {
-            console.error(e);
+            self.apos.util.warn('Error while probing for draft page:', e);
             // Nonfatal, we were just probing
           }
         }
