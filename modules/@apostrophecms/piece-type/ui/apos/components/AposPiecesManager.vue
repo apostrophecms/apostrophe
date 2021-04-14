@@ -84,7 +84,9 @@
             v-model="checked"
             @open="edit"
             @preview="preview"
-            :context-menus="contextMenus"
+            @copy="copy"
+            @discardDraft="onDiscardDraft"
+            @archive="onArchive"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
@@ -102,11 +104,18 @@
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposDocsManagerMixin, AposModalModifiedMixin ],
+  mixins: [
+    AposDocsManagerMixin,
+    AposModalModifiedMixin,
+    AposPublishMixin,
+    AposArchiveMixin
+  ],
   props: {
     moduleName: {
       type: String,
@@ -259,6 +268,27 @@ export default {
       if (piece._url) {
         window.open(piece._url, '_blank').focus();
       }
+    },
+    async onArchive(pieceId) {
+      const piece = this.pieces.filter(p => p._id === pieceId)[0];
+      if (await this.archive(this.options.action, pieceId, !!piece.lastPublishedAt)) {
+        apos.bus.$emit('content-changed');
+      }
+    },
+    async onDiscardDraft(pieceId) {
+      const piece = this.pieces.filter(p => p._id === pieceId)[0];
+      if (await this.discardDraft(this.options.action, pieceId, !!piece.lastPublishedAt)) {
+        apos.bus.$emit('content-changed');
+      };
+    },
+    async copy(pieceId) {
+      const piece = this.pieces.filter(p => p._id === pieceId)[0];
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.options.name}:editor`,
+        props: {
+          copyOf: piece
+        }
+      });
     },
     async edit(pieceId) {
       const doc = await apos.modal.execute(this.options.components.insertModal, {

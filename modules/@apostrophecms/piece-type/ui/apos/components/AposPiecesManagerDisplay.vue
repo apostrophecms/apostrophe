@@ -67,7 +67,6 @@
           <component
             v-if="header.component" :is="header.component"
             :header="header" :item="item"
-            :state="state[item._id]"
           />
           <AposCellLink
             v-else-if="header.name === '_url' && item[header.name]"
@@ -81,9 +80,12 @@
         <!-- append context menu -->
         <td class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
-            :state="{}" :menu="contextMenus[item._id]"
+            :state="state[item._id]" :doc="item"
             @edit="$emit('open', item._id)"
             @preview="$emit('preview', item._id)"
+            @copy="$emit('copy', item._id)"
+            @discardDraft="$emit('discardDraft', item._id)"
+            @archive="$emit('archive', item._id)"
           />
         </td>
       </tr>
@@ -92,16 +94,13 @@
 </template>
 
 <script>
+import { klona } from 'klona';
 export default {
   model: {
     prop: 'checked',
     event: 'change'
   },
   props: {
-    contextMenus: {
-      type: Object,
-      required: true
-    },
     headers: {
       type: Array,
       required: true
@@ -127,12 +126,19 @@ export default {
     'open',
     'change',
     'updated',
-    'preview'
+    'preview',
+    'copy',
+    'discardDraft',
+    'archive'
   ],
   data() {
-    const state = {};
+    const state = {
+      _template: {
+        hover: false
+      }
+    };
     this.items.forEach(item => {
-      state[item._id] = { hover: false };
+      state[item._id] = klona(state._template);
     });
     return {
       state
@@ -148,12 +154,24 @@ export default {
       }
     }
   },
+  watch: {
+    items() {
+      this.refreshState();
+    }
+  },
   methods: {
     over(id) {
       this.state[id].hover = true;
     },
     out(id) {
       this.state[id].hover = false;
+    },
+    refreshState() {
+      this.items.forEach(item => {
+        if (!this.state[item._id]) {
+          this.state[item._id] = klona(this.state._template);
+        }
+      });
     },
     getEl(header) {
       if (header.action) {

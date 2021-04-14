@@ -2,18 +2,22 @@
   <div
     class="apos-table__cell-field apos-table__cell-field--context-menu" :class="classes"
   >
-    <AposContextMenu
-      class="apos-admin-bar__sub"
-      :menu="menu"
-      :button="{
-        label: 'More Operations',
-        modifiers: [ 'no-motion', 'tiny' ],
-        iconOnly: true,
-        icon: 'dots-vertical-icon',
-        type: 'outline'
-      }"
-      menu-position="bottom-end"
-      @item-clicked="handler"
+    <AposDocMoreMenu
+      :doc-id="doc._id"
+      :is-modified="doc.modified"
+      :can-discard-draft="doc.modified"
+      :is-modified-from-published="doc.modified"
+      :is-published="!!doc.lastPublishedAt"
+      :can-save-draft="false"
+      :can-open-editor="true"
+      :can-preview="!!doc._url"
+      :can-archive="!!doc.lastPublishedAt"
+      :can-copy="!!doc._id"
+      @edit="$emit('edit')"
+      @preview="$emit('preview')"
+      @copy="$emit('copy')"
+      @archive="$emit('archive')"
+      @discardDraft="$emit('discardDraft')"
     />
   </div>
 </template>
@@ -24,13 +28,16 @@ export default {
   props: {
     state: {
       type: Object,
-      required: true
+      default() {
+        return {};
+      }
     },
-    menu: {
-      type: Array,
+    doc: {
+      type: Object,
       required: true
     }
   },
+  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft' ],
   data() {
     return {
       hidden: true

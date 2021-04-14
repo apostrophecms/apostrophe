@@ -23,11 +23,13 @@
         :can-discard-draft="canDiscardDraft"
         :can-archive="canArchive"
         :can-copy="!!docId"
+        :can-preview="canPreview"
         :is-published="!!published"
         :can-save-draft="true"
         @saveDraft="saveDraft"
+        @preview="preview"
         @discardDraft="onDiscardDraft"
-        @moveToArchive="onMoveToArchive"
+        @archive="onArchive"
         @copy="onCopy"
       />
       <AposButton
@@ -106,6 +108,7 @@ import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModa
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
@@ -118,7 +121,8 @@ export default {
     AposModalModifiedMixin,
     AposEditorMixin,
     AposPublishMixin,
-    AposAdvisoryLockMixin
+    AposAdvisoryLockMixin,
+    AposArchiveMixin
   ],
   props: {
     moduleName: {
@@ -275,6 +279,13 @@ export default {
     canPreviewDraft() {
       return !this.docId && this.moduleOptions.previewDraft;
     },
+    canPreview() {
+      if (this.original) {
+        return !!this.original._url;
+      } else {
+        return null;
+      }
+    },
     canArchive() {
       return !!(this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
@@ -409,6 +420,12 @@ export default {
     }
   },
   methods: {
+    async preview() {
+      if (!await this.confirmAndCancel()) {
+        return;
+      }
+      window.location = this.original._url;
+    },
     async saveDraftAndPreview() {
       await this.save({
         andPublish: false,
@@ -605,35 +622,10 @@ export default {
         return this.$refs[field.group.name][0];
       }
     },
-    async onMoveToArchive(e) {
-      try {
-        if (await apos.confirm({
-          heading: 'Are You Sure?',
-          description: this.published
-            ? 'This will move the document to the archive and un-publish it.'
-            : 'This will move the document to the archive.'
-        })) {
-          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
-            body: {
-              archived: true,
-              _publish: true
-            },
-            busy: true,
-            draft: true
-          });
-          if (this.docId === window.apos.adminBar.contextId) {
-            // With the current context doc gone, we need to move to safe ground
-            location.assign(`${window.apos.prefix}/`);
-            return;
-          }
-          apos.bus.$emit('content-changed');
-          this.modal.showModal = false;
-        }
-      } catch (e) {
-        await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while moving the document to the archive.'
-        });
+    async onArchive(e) {
+      if (await this.archive(this.moduleAction, this.docId, !!this.published)) {
+        apos.bus.$emit('content-changed');
+        this.modal.showModal = false;
       }
     },
     async onDiscardDraft(e) {

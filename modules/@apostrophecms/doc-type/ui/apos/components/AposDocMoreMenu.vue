@@ -39,7 +39,19 @@ export default {
         return false;
       }
     },
+    canOpenEditor: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canArchive: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    canPreview: {
       type: Boolean,
       default() {
         return false;
@@ -106,10 +118,33 @@ export default {
         //   label: 'Duplicate Document',
         //   action: 'duplicate'
         // },
+        ...(this.canOpenEditor ? [
+          {
+            label: 'Edit',
+            action: 'edit'
+          }
+        ] : []),
+        {
+          label: 'Preview',
+          action: 'preview',
+          modifiers: !this.canPreview ? [ 'disabled' ] : null
+        },
+        ...(this.canSaveDraft ? [
+          {
+            label: 'Save Draft',
+            action: 'saveDraft'
+          }
+        ] : []),
+        ...(this.canCopy ? [
+          {
+            label: 'Duplicate...',
+            action: 'copy'
+          }
+        ] : []),
         ...(this.canArchive ? [
           {
-            label: 'Move to Archive',
-            action: 'moveToArchive',
+            label: 'Archive',
+            action: 'archive',
             modifiers: [ 'danger' ]
           }
         ] : []),
@@ -120,18 +155,6 @@ export default {
             modifiers: [ 'danger' ]
           }
         ] : []),
-        ...(this.canSaveDraft ? [
-          {
-            label: 'Save Draft',
-            action: 'saveDraft'
-          }
-        ] : []),
-        ...(this.canCopy ? [
-          {
-            label: 'Copy',
-            action: 'copy'
-          }
-        ] : [])
       ];
     }
   }
