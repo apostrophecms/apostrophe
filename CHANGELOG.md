@@ -5,6 +5,7 @@
 ### Adds
 
 * Major performance improvement to the `nestedModuleSubdirs` option.
+* Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
