@@ -859,7 +859,8 @@ module.exports = {
           ...initialBrowserOptions,
           name,
           label,
-          pluralLabel
+          pluralLabel,
+          canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
         browserOptions.action = self.action;
         browserOptions.schema = self.allowedSchema(req);

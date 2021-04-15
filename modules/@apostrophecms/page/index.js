@@ -406,6 +406,58 @@ module.exports = {
             return true;
           });
         },
+        ':_id/submit': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $set: {
+              submitted: {
+                by: req.user && req.user.title,
+                at: new Date()
+              }
+            }
+          });
+          self.apos.notify(req, 'Submitted for review.', {
+            type: 'success',
+            dismiss: true
+          });
+        },
+        ':_id/reject': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!self.apos.permission.can(req, 'publish', draft)) {
+            throw self.apos.error('forbidden');
+          }
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $unset: {
+              submitted: 1
+            }
+          });
+          self.apos.notify(req, 'Rejected.', {
+            type: 'success',
+            dismiss: true
+          });
+        },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
@@ -685,6 +737,8 @@ database.`);
         }
         browserOptions.name = self.__meta.name;
         browserOptions.quickCreate = self.options.quickCreate;
+        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/page');
+
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit

@@ -37,7 +37,7 @@
       <AposButton
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
-        @click="submit"
+        @click="onSave"
         :tooltip="tooltip"
       />
     </template>
@@ -251,10 +251,14 @@ export default {
       if (this.restoreOnly) {
         return 'Restore';
       } else if (this.manuallyPublished) {
-        if (this.original && this.original.lastPublishedAt) {
-          return 'Publish Changes';
+        if (this.moduleOptions.canPublish) {
+          if (this.original && this.original.lastPublishedAt) {
+            return 'Publish Changes';
+          } else {
+            return 'Publish';
+          }
         } else {
-          return 'Publish';
+          return 'Propose Changes';
         }
       } else {
         return 'Save';
@@ -461,12 +465,20 @@ export default {
     lockNotAvailable() {
       this.modal.showModal = false;
     },
-    async submit() {
-      await this.save({
-        restoreOnly: this.restoreOnly,
-        andPublish: this.manuallyPublished,
-        savingDraft: false
-      });
+    async onSave() {
+      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+        await this.save({
+          restoreOnly: this.restoreOnly,
+          andPublish: this.manuallyPublished,
+          savingDraft: false
+        });
+      } else {
+        await this.save({
+          andPublish: false,
+          savingDraft: true,
+          andSubmit: true
+        });
+      }
     },
     // If andPublish is true, publish after saving.
     // If savingDraft is true, make sure we're in draft
@@ -475,7 +487,8 @@ export default {
       restoreOnly = false,
       andPublish = false,
       savingDraft = false,
-      navigate = false
+      navigate = false,
+      andSubmit = false
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -522,6 +535,13 @@ export default {
             body,
             draft: true
           });
+          if (andSubmit) {
+            await apos.http.post(`${route}/submit`, {
+              busy: true,
+              body: {},
+              draft: true
+            });
+          }
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
           if (this.isLockedError(e)) {

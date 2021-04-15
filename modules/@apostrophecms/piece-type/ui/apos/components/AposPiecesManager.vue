@@ -33,7 +33,7 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else
+        v-elseif="options.managerHasNewButton"
         :label="`New ${ options.label }`" type="primary"
         @click="edit(null)"
       />
