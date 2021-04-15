@@ -684,7 +684,7 @@ database.`);
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
         browserOptions.name = self.__meta.name;
-        browserOptions.quickCreate = self.options.quickCreate;
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/page');
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit

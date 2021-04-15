@@ -190,7 +190,7 @@ module.exports = {
         // with no role
         async requireRole(req, doc, options) {
           if (![ 'guest', 'editor', 'contributor', 'admin' ].includes(doc.role)) {
-            throw self.apos.error('invalid', `The role property of a user must be guest, editor, contributor or admin'`);
+            throw self.apos.error('invalid', 'The role property of a user must be guest, editor, contributor or admin');
           }
         }
       },
