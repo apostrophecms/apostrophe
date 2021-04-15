@@ -182,8 +182,8 @@ module.exports = {
       // _id may be a page _id, or the convenient shorthands
       // `_home` or `_archive`
       async getOne(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -235,7 +235,7 @@ module.exports = {
         }
 
         return self.withLock(req, async () => {
-          const targetPage = await self.findForEditing(req, targetId ? { _id: targetId } : { level: 0 }).ancestors(true).permission('edit-@apostrophecms/page').toObject();
+          const targetPage = await self.findForEditing(req, targetId ? { _id: targetId } : { level: 0 }).ancestors(true).permission('edit').toObject();
           if (!targetPage) {
             throw self.apos.error('notfound');
           }
@@ -287,8 +287,8 @@ module.exports = {
       // editing it in a modal or similar.
 
       async put(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {
@@ -335,8 +335,8 @@ module.exports = {
       // confirmation on it. Future implementation must also consider whether attachments have zero remaining references not
       // fully deleted, which isn't the same as having references still in the archive.
       async delete(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         const page = await self.findOneForEditing(req, {
           _id
         });
@@ -348,8 +348,8 @@ module.exports = {
       // may be `before`, `after` or `inside`. To move a page into or out of the archive, set
       // `archived` to `true` or `false`.
       patch(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         return self.patch(req, _id);
       }
     };
@@ -907,8 +907,8 @@ database.`);
       },
       // Move a page already in the page tree to another location.
       //
-      // Insert a page. `targetId` must be an existing page id, and
-      // `position` may be `before`, `inside` or `after`. Alternatively
+      // `movedId` is the id of the page being moved. ``targetId` must be an existing page
+      // id, and `position` may be `before`, `inside` or `after`. Alternatively
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
@@ -926,7 +926,7 @@ database.`);
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
         // Handle numeric positions
-        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(req, movedId, targetId, position);
         targetId = normalized.targetId;
         position = normalized.position;
         return self.withLock(req, body);

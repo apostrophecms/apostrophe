@@ -134,7 +134,10 @@ module.exports = {
             return;
           }
           if (doc.aposLocale.includes(':draft')) {
-            return self.publish(req, doc, options);
+            return self.publish(req, doc, {
+              ...options,
+              autopublishing: true
+            });
           }
         }
       },
@@ -636,7 +639,9 @@ module.exports = {
         return self.findOneForEditing(req, criteria);
       },
       // Publish the given draft. If `options.permissions` is explicitly
-      // set to `false`, permissions checks are bypassed.
+      // set to `false`, permissions checks are bypassed. If `options.autopublishing`
+      // is true, then the `edit` permission is sufficient, otherwise the
+      // `publish` permission is checked for.
       async publish(req, draft, options = {}) {
         let firstTime = false;
         if (!self.isLocalized()) {
@@ -763,6 +768,9 @@ module.exports = {
       // there is no previous publication, throws an `invalid` exception.
 
       async revertPublishedToPrevious(req, published) {
+        if (!self.apos.permission.can(req, 'publish', published)) {
+          throw self.apos.error('forbidden');
+        }
         const previousId = published._id.replace(':published', ':previous');
         const previous = await self.apos.doc.db.findOne({
           _id: previousId

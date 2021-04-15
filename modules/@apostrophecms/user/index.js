@@ -183,6 +183,17 @@ module.exports = {
           return self.insertOrUpdateSafe(req, doc, 'update');
         }
       },
+      beforeSave: {
+        // There is a migration that sets the role to admin if the role does
+        // not exist, accommodating databases prior to 3.0 beta 1. To keep this
+        // from becoming a possible security concern, refuse any new inserts/updates
+        // with no role
+        async requireRole(req, doc, options) {
+          if (![ 'guest', 'editor', 'contributor', 'admin' ].includes(doc.role)) {
+            throw self.apos.error('invalid', `The role property of a user must be guest, editor, contributor or admin'`);
+          }
+        }
+      },
       // Reflect email and username changes in the safe after deduplicating in the piece
       afterArchived: {
         async updateSafe(req, piece) {

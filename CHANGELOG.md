@@ -5,6 +5,7 @@
 ### Adds
 
 * Major performance improvement to the `nestedModuleSubdirs` option.
+* Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role, as they already could do anything.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 

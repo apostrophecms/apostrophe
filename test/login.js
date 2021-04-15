@@ -35,6 +35,7 @@ describe('Login', function() {
     user.username = 'HarryPutter';
     user.password = 'crookshanks';
     user.email = 'hputter@aol.com';
+    user.role = 'admin';
 
     assert(user.type === '@apostrophecms/user');
     assert(apos.user.insert);

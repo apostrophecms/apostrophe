@@ -124,7 +124,7 @@ module.exports = {
             '@apostrophecms/global:singleton-editor',
             self.label,
             {
-              action: 'admin',
+              action: 'edit',
               type: self.name
             }
           );
