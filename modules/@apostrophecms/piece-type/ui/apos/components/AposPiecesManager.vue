@@ -87,6 +87,7 @@
             @copy="copy"
             @discardDraft="onDiscardDraft"
             @archive="onArchive"
+            @unarchive="onUnarchive"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
@@ -272,6 +273,12 @@ export default {
     async onArchive(pieceId) {
       const piece = this.pieces.filter(p => p._id === pieceId)[0];
       if (await this.archive(this.options.action, pieceId, !!piece.lastPublishedAt)) {
+        apos.bus.$emit('content-changed');
+      }
+    },
+    async onUnarchive(pieceId) {
+      const piece = this.pieces.filter(p => p._id === pieceId)[0];
+      if (await this.unarchive(this.options.action, pieceId, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       }
     },

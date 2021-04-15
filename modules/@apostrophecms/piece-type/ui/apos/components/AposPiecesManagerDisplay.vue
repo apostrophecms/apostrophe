@@ -9,10 +9,10 @@
         <th
           v-for="header in headers" scope="col"
           class="apos-table__header" :key="header.label"
+          :class="`apos-table__header--${header.name}`"
         >
           <component
-            :is="getEl(header)"
-            class="apos-table__header-label"
+            :is="getEl(header)" class="apos-table__header-label"
           >
             <component
               v-if="header.labelIcon"
@@ -26,7 +26,7 @@
         <th class="apos-table__header" key="contextMenu">
           <component
             :is="getEl({})"
-            class="apos-table__header-label"
+            class="apos-table__header-label is-hidden"
           >
             More Operations
           </component>
@@ -60,7 +60,9 @@
           />
         </td>
         <td
-          class="apos-table__cell apos-table__cell--pointer" v-for="header in headers"
+          v-for="header in headers"
+          class="apos-table__cell apos-table__cell--pointer"
+          :class="`apos-table__cell--${header.name}`"
           :key="item[header.name]"
           @click="$emit('open',item._id)"
         >
@@ -77,7 +79,7 @@
             :header="header" :item="item"
           />
         </td>
-        <!-- append context menu -->
+        <!-- append the context menu -->
         <td class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :doc="item"
@@ -86,6 +88,7 @@
             @copy="$emit('copy', item._id)"
             @discardDraft="$emit('discardDraft', item._id)"
             @archive="$emit('archive', item._id)"
+            @unarchive="$emit('unarchive', item._id)"
           />
         </td>
       </tr>
@@ -129,7 +132,8 @@ export default {
     'preview',
     'copy',
     'discardDraft',
-    'archive'
+    'archive',
+    'unarchive'
   ],
   data() {
     const state = {
@@ -167,11 +171,13 @@ export default {
       this.state[id].hover = false;
     },
     refreshState() {
+      const template = klona(this.state._template);
+      const state = {};
       this.items.forEach(item => {
-        if (!this.state[item._id]) {
-          this.state[item._id] = klona(this.state._template);
-        }
+        state[item._id] = klona(template);
       });
+      state._template = template;
+      this.state = state;
     },
     getEl(header) {
       if (header.action) {

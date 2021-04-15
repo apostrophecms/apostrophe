@@ -236,7 +236,7 @@ export default {
     height: calc(100vh - #{$spacing-double * 2});
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
-    border: 1px solid var(--a-base-4);
+    border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
 
     .apos-modal--slide & {

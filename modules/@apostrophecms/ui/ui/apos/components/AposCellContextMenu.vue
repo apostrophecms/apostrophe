@@ -10,14 +10,18 @@
       :is-published="!!doc.lastPublishedAt"
       :can-save-draft="false"
       :can-open-editor="true"
-      :can-preview="!!doc._url"
-      :can-archive="!!doc.lastPublishedAt"
-      :can-copy="!!doc._id"
+      :can-preview="(!!doc._url && !doc.archived)"
+      :can-archive="!doc.archived"
+      :can-unarchive="doc.archived"
+      :can-copy="(!!doc._id && !doc.archived)"
       @edit="$emit('edit')"
       @preview="$emit('preview')"
       @copy="$emit('copy')"
       @archive="$emit('archive')"
+      @unarchive="$emit('unarchive')"
       @discardDraft="$emit('discardDraft')"
+      @menuOpen="menuOpen = true"
+      @menuClose="menuOpen = false"
     />
   </div>
 </template>
@@ -37,17 +41,17 @@ export default {
       required: true
     }
   },
-  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft' ],
+  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft', 'unarchive' ],
   data() {
     return {
-      hidden: true
+      menuOpen: false
     };
   },
   computed: {
     classes() {
       const classes = [ ];
-      if (this.state.hover) {
-        classes.push('is-hovered');
+      if (this.state.hover || this.menuOpen) {
+        classes.push('is-visible');
       }
       return classes;
     }
@@ -61,7 +65,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  // .is-hovered {
-  //   border: 3px solid var(--a-danger);
-  // }
+  .apos-table__cell-field--context-menu {
+    @include apos-transition();
+    opacity: 0;
+  }
+  .is-visible {
+    opacity: 1;
+  }
 </style>

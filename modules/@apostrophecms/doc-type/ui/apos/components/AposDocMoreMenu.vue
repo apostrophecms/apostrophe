@@ -5,6 +5,8 @@
     :disabled="disabled"
     menu-placement="bottom-end"
     @item-clicked="menuHandler"
+    @open="$emit('menuOpen')"
+    @close="$emit('menuClose')"
     :button="{
       tooltip: { content: 'More Options', placement: 'bottom' },
       label: 'More Options',
@@ -57,6 +59,12 @@ export default {
         return false;
       }
     },
+    canUnarchive: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canSaveDraft: {
       type: Boolean,
       default() {
@@ -80,6 +88,7 @@ export default {
       default: false
     }
   },
+  emits: [ 'menuOpen', 'menuClose' ],
   data() {
     const menu = {
       isOpen: false,
@@ -111,24 +120,18 @@ export default {
         //     action: 'share'
         //   }
         // ] : []),
-        // TODO
-        // // You can always do this, if you do it with a new item
-        // // it just saves and you start a second one
-        // {
-        //   label: 'Duplicate Document',
-        //   action: 'duplicate'
-        // },
         ...(this.canOpenEditor ? [
           {
             label: 'Edit',
             action: 'edit'
           }
         ] : []),
-        {
-          label: 'Preview',
-          action: 'preview',
-          modifiers: !this.canPreview ? [ 'disabled' ] : null
-        },
+        ...(this.canPreview ? [
+          {
+            label: 'Preview',
+            action: 'preview'
+          }
+        ] : []),
         ...(this.canSaveDraft ? [
           {
             label: 'Save Draft',
@@ -141,13 +144,6 @@ export default {
             action: 'copy'
           }
         ] : []),
-        ...(this.canArchive ? [
-          {
-            label: 'Archive',
-            action: 'archive',
-            modifiers: [ 'danger' ]
-          }
-        ] : []),
         ...(this.canDiscardDraft ? [
           {
             label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
@@ -155,6 +151,19 @@ export default {
             modifiers: [ 'danger' ]
           }
         ] : []),
+        ...(this.canArchive ? [
+          {
+            label: 'Archive',
+            action: 'archive',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
+        ...(this.canUnarchive ? [
+          {
+            label: 'Unarchive',
+            action: 'unarchive'
+          }
+        ] : [])
       ];
     }
   }

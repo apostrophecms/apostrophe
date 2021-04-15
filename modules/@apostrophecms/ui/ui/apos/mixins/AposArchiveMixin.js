@@ -1,4 +1,5 @@
 // Provides reusable UI methods relating to the archiving and restoring documents
+import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 
 export default {
   methods: {
@@ -39,6 +40,29 @@ export default {
           heading: 'An Error Occurred',
           description: e.message || 'An error occurred while moving the document to the archive.'
         });
+      }
+    },
+    async unarchive (action, _id) {
+      const body = {
+        archived: false
+      };
+      AposAdvisoryLockMixin.methods.addLockToRequest(body);
+      try {
+        await apos.http.patch(`${action}/${_id}`, {
+          body,
+          busy: true,
+          draft: true
+        });
+        apos.bus.$emit('content-changed');
+      } catch (e) {
+        if (AposAdvisoryLockMixin.methods.isLockedError(e)) {
+          await this.showLockedError(e);
+        } else {
+          await apos.alert({
+            heading: 'An Error Occurred',
+            description: e.message || 'An error occurred while moving the document to the archive.'
+          });
+        }
       }
     }
   }

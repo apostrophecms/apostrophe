@@ -29,9 +29,11 @@ module.exports = {
       add: {
         title: {
           label: 'Title',
+          name: 'title',
           component: 'AposCellButton'
         },
         updatedAt: {
+          name: 'updatedAt',
           label: 'Last Edited',
           component: 'AposCellDate'
         }
