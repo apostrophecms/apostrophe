@@ -20,7 +20,7 @@ describe('Users', function() {
   });
 
   // Test pieces.newInstance()
-  it('should be able to insert a new user', async () => {
+  it('should be able to insert a new user with an admin req', async () => {
     assert(apos.user.newInstance);
     const user = apos.user.newInstance();
     assert(user);
@@ -31,10 +31,40 @@ describe('Users', function() {
     user.username = 'JaneD';
     user.password = '123password';
     user.email = 'jane@aol.com';
+    user.role = 'admin';
 
     assert(user.type === '@apostrophecms/user');
     assert(apos.user.insert);
-    await apos.user.insert(apos.task.getReq(), user);
+    await apos.user.insert(apos.task.getAdminReq(), user);
+  });
+
+  it('should not be able to insert a new user with any non-admin req or role', async () => {
+    assert(apos.user.newInstance);
+    const user = apos.user.newInstance();
+    assert(user);
+
+    user.firstName = 'Jim';
+    user.lastName = 'Fake';
+    user.title = 'Jim Fake';
+    user.username = 'JimF';
+    user.password = '123fakeguy';
+    user.email = 'jim@fakeohno.coim';
+    user.role = 'admin';
+
+    assert(user.type === '@apostrophecms/user');
+    assert(apos.user.insert);
+    const getReqMethods = [ apos.task.getAnonReq, apos.task.getGuestReq, apos.task.getContributorReq, apos.task.getEditorReq ];
+    let caught = 0;
+    for (const getReqMethod of getReqMethods) {
+      const req = getReqMethod();
+      try {
+        await apos.user.insert(req, user);
+      } catch (e) {
+        assert(e.name === 'forbidden');
+        caught++;
+      }
+    }
+    assert(caught === getReqMethods.length);
   });
 
   // verify a user's password
@@ -83,6 +113,7 @@ describe('Users', function() {
     user.username = 'DaneJ';
     user.password = '321password';
     user.email = 'jane@aol.com';
+    user.role = 'admin';
     assert(user.type === '@apostrophecms/user');
 
     assert(apos.user.insert);
@@ -114,6 +145,7 @@ describe('Users', function() {
     user.username = 'DaneJ';
     user.password = '321password';
     user.email = 'jane@aol.com';
+    user.role = 'admin';
     await apos.user.insert(apos.task.getReq(), user);
   });
 
@@ -158,6 +190,7 @@ describe('Users', function() {
     user.username = 'JaneD';
     user.password = '321password';
     user.email = 'somethingelse@aol.com';
+    user.role = 'admin';
     await apos.user.insert(apos.task.getReq(), user);
   });
 
