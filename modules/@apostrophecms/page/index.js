@@ -907,8 +907,8 @@ database.`);
       },
       // Move a page already in the page tree to another location.
       //
-      // Insert a page. `targetId` must be an existing page id, and
-      // `position` may be `before`, `inside` or `after`. Alternatively
+      // `movedId` is the id of the page being moved. ``targetId` must be an existing page
+      // id, and `position` may be `before`, `inside` or `after`. Alternatively
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
@@ -926,7 +926,7 @@ database.`);
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
         // Handle numeric positions
-        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(req, movedId, targetId, position);
         targetId = normalized.targetId;
         position = normalized.position;
         return self.withLock(req, body);
