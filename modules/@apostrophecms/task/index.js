@@ -223,7 +223,7 @@ module.exports = {
       },
 
       // Convenience wrapper for `getReq`. Returns a request
-      // object simulating a user with the editor role.
+      // object simulating a user with the guest role.
       getGuestReq(options) {
         return self.getReq({
           role: 'guest',
@@ -250,7 +250,7 @@ module.exports = {
       },
 
       // Convenience wrapper for `getReq`. Returns a request
-      // object simulating a user with the editor role.
+      // object simulating a user with the admin role.
       getAdminReq(options) {
         // For bc reasons this is the default behavior of getReq
         return self.getReq(options);
