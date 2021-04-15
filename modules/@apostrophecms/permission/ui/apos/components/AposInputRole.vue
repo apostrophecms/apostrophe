@@ -29,22 +29,22 @@
       </div>
       <ul class="apos-input--permission-grid">
         <li
-          v-for="type in types"
-          :key="type.name"
+          v-for="permissionSet in permissionSets"
+          :key="permissionSet.name"
         >
           <h4>
-            {{ type.label }}
+            {{ permissionSet.label }}
             <AposIndicator
-              v-if="type.tooltip"
+              v-if="permissionSet.tooltip"
               icon="help-circle-icon"
               class="apos-field__help-tooltip__icon"
-              :tooltip="type.tooltip"
+              :tooltip="permissionSet.tooltip"
               :icon-size="11"
               icon-color="var(--a-base-4)"
             />
           </h4>
           <ul>
-            <li v-for="permission in type.permissions" :key="permission.name">
+            <li v-for="permission in permissionSet.permissions" :key="permission.name">
               <AposIndicator v-if="permission.value" icon="check-bold-icon" icon-color="var(--a-success)" />
               <AposIndicator v-else icon="alpha-x-icon" icon-color="var(--a-danger)" />
               &nbsp;{{ permission.label }}
@@ -72,12 +72,12 @@ export default {
     return {
       next: (this.value.data == null) ? null : this.value.data,
       choices: [],
-      types: []
+      permissionSets: []
     };
   },
   watch: {
     async next() {
-      this.types = await this.getTypes(this.next);
+      this.permissionSets = await this.getPermissionSets(this.next);
     }
   },
   async mounted() {
@@ -98,7 +98,7 @@ export default {
         this.next = this.field.choices[0].value;
       }
     });
-    this.types = await this.getTypes(this.next);
+    this.permissionSets = await this.getPermissionSets(this.next);
   },
   methods: {
     validate(value) {
@@ -114,13 +114,13 @@ export default {
       // Allows expression of non-string values
       this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
     },
-    async getTypes(role) {
+    async getPermissionSets(role) {
       return (await apos.http.get(`${apos.permission.action}/grid`, {
         qs: {
           role
         },
         busy: true
-      })).types;
+      })).permissionSets;
     }
   }
 };
