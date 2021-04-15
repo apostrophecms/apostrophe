@@ -34,13 +34,21 @@
           v-for="(col, index) in headers"
           :key="`${col.property}-${index}`"
           :is="getEffectiveType(col, row)"
+          :item="row"
+          :header="col"
           :href="(getEffectiveType(col, row) === 'a') ? row[col.property] : false"
           :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :disabled="getCellDisabled(col, row)"
           :data-col="col.property"
           :style="getCellStyles(col.property, index)"
-          @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
+          @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
+          @edit="$emit('edit', row._id)"
+          @preview="$emit('preview', row._id)"
+          @copy="$emit('copy', row._id)"
+          @discardDraft="$emit('discardDraft', row._id)"
+          @archive="$emit('archive', row._id)"
+          @unarchive="$emit('unarchive', row._id)"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -104,6 +112,11 @@
         }"
         @update="$emit('update', $event)"
         @edit="$emit('edit', $event)"
+        @preview="$emit('preview', $event)"
+        @copy="$emit('copy', $event)"
+        @discardDraft="$emit('discardDraft', $event)"
+        @archive="$emit('archive', $event)"
+        @unarchive="$emit('unarchive', $event)"
         v-model="checkedProxy"
       />
     </li>
@@ -176,7 +189,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'archive', 'unarchive' ],
   computed: {
     myRows() {
       return this.rows;
@@ -214,6 +227,9 @@ export default {
     });
   },
   methods: {
+    test() {
+      console.log('hi?');
+    },
     setHeights() {
       this.$refs['tree-branches'].forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
@@ -296,6 +312,9 @@ export default {
       return classes;
     },
     getEffectiveType(col, row) {
+      if (col.component) {
+        return col.component;
+      }
       if (row.type === '@apostrophecms/archive-page') {
         return 'span';
       } else if (col.type === 'link') {
@@ -309,7 +328,7 @@ export default {
     getEffectiveIcon(col, row) {
       const boolStr = (!!row[col.property]).toString();
 
-      if (row.type === '@apostrophecms/archive-page') {
+      if (row.type === '@apostrophecms/archive-page' || !col.cellValue) {
         return false;
       }
 

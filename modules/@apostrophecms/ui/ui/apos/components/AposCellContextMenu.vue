@@ -1,28 +1,28 @@
 <template>
-  <div
-    class="apos-table__cell-field apos-table__cell-field--context-menu" :class="classes"
-  >
-    <AposDocMoreMenu
-      :doc-id="doc._id"
-      :is-modified="doc.modified"
-      :can-discard-draft="doc.modified"
-      :is-modified-from-published="doc.modified"
-      :is-published="!!doc.lastPublishedAt"
-      :can-save-draft="false"
-      :can-open-editor="true"
-      :can-preview="(!!doc._url && !doc.archived)"
-      :can-archive="!doc.archived"
-      :can-unarchive="doc.archived"
-      :can-copy="(!!doc._id && !doc.archived)"
-      @edit="$emit('edit')"
-      @preview="$emit('preview')"
-      @copy="$emit('copy')"
-      @archive="$emit('archive')"
-      @unarchive="$emit('unarchive')"
-      @discardDraft="$emit('discardDraft')"
-      @menuOpen="menuOpen = true"
-      @menuClose="menuOpen = false"
-    />
+  <div class="apos-table__cell-field apos-table__cell-field--context-menu">
+    <span class="apos-table__cell-field--context-menu__content" :class="classes">
+      <AposDocMoreMenu
+        :doc-id="item._id"
+        :is-modified="item.modified"
+        :can-discard-draft="item.modified"
+        :is-modified-from-published="item.modified"
+        :is-published="!!item.lastPublishedAt"
+        :can-save-draft="false"
+        :can-open-editor="true"
+        :can-preview="(!!item._url && !item.archived)"
+        :can-archive="!item.archived"
+        :can-unarchive="item.archived"
+        :can-copy="(!!item._id && !item.archived)"
+        @edit="$emit('edit')"
+        @preview="$emit('preview')"
+        @copy="$emit('copy')"
+        @archive="$emit('archive')"
+        @unarchive="$emit('unarchive')"
+        @discardDraft="$emit('discardDraft')"
+        @menuOpen="menuOpen = true"
+        @menuClose="menuOpen = false"
+      />
+    </span>
   </div>
 </template>
 
@@ -33,10 +33,10 @@ export default {
     state: {
       type: Object,
       default() {
-        return {};
+        return null;
       }
     },
-    doc: {
+    item: {
       type: Object,
       required: true
     }
@@ -50,7 +50,7 @@ export default {
   computed: {
     classes() {
       const classes = [ ];
-      if (this.state.hover || this.menuOpen) {
+      if (!this.state || this.state.hover || this.menuOpen) {
         classes.push('is-visible');
       }
       return classes;
@@ -65,7 +65,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-table__cell-field--context-menu {
+  .apos-table__cell-field--context-menu__content {
     @include apos-transition();
     opacity: 0;
   }

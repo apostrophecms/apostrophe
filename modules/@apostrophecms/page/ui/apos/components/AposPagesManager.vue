@@ -76,6 +76,9 @@
             :options="treeOptions"
             @update="update"
             @edit="openEditor"
+            @preview="onPreview"
+            @copy="copy"
+            @archive="onArchive"
           />
         </template>
       </AposModalBody>
@@ -85,14 +88,16 @@
 
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
-  emits: [ 'archive', 'search', 'safe-close' ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin ],
+  emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
   data() {
+
     return {
       moduleName: '@apostrophecms/page',
       modal: {
@@ -110,38 +115,15 @@ export default {
             cellValue: 'title'
           },
           {
-            columnHeader: 'Published',
+            columnHeader: 'Last Edited',
             property: 'lastPublishedAt',
-            cellValue: {
-              true: {
-                icon: 'circle',
-                iconSize: 10,
-                label: 'Yes',
-                class: 'is-published'
-              },
-              false: {
-                icon: 'circle',
-                iconSize: 10,
-                label: 'No'
-              }
-            }
+            component: 'AposCellLastEdited',
+            cellValue: 'lastPublishedAt'
           },
           {
-            columnHeader: 'Edit',
-            property: '_id',
-            type: 'button',
-            action: 'edit',
-            cellValue: {
-              icon: 'pencil'
-            }
-          },
-          {
-            columnHeader: 'Link',
-            property: '_url',
-            type: 'link',
-            cellValue: {
-              icon: 'link'
-            }
+            columnHeader: '',
+            property: 'contextMenu',
+            component: 'AposCellContextMenu'
           }
         ]
       },
@@ -216,10 +198,29 @@ export default {
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-
     await this.getPages();
   },
   methods: {
+    onPreview(id) {
+      this.preview(id, this.pagesFlat);
+    },
+    async onArchive(id) {
+      const page = this.pagesFlat.filter(p => p._id === id)[0];
+      if (await this.archive(this.moduleOptions.action, id, !!page.lastPublishedAt)) {
+        await this.getPages();
+      }
+    },
+    async copy(id) {
+      const page = this.pagesFlat.filter(p => p._id === id)[0];
+      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+        moduleName: this.moduleName,
+        copyOf: page
+      });
+      if (!doc) {
+        return;
+      }
+      await this.getPages();
+    },
     moreMenuHandler(action) {
       if (action === 'new') {
         this.openEditor(null);

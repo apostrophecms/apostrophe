@@ -1,6 +1,6 @@
 <template>
   <p
-    class="apos-table__cell-field"
+    class="apos-table__cell-field apos-table__cell-field--relative-time"
     :class="`apos-table__cell-field--${header.name}`"
   >
     {{ formattedDate }}
@@ -22,7 +22,7 @@ export default {
   },
   computed: {
     formattedDate () {
-      const value = this.item[this.header.name];
+      const value = this.item[this.header.name || this.header.property];
       return this.getRelativeTime(value);
     }
   },
@@ -45,26 +45,32 @@ export default {
       const YEAR = DAY * 365;
 
       if (secondsAgo < MINUTE) {
-        return secondsAgo + ' seconds ago';
+        return secondsAgo + 's';
       } else if (secondsAgo < HOUR) {
-        [ divisor, unit ] = [ MINUTE, 'minute' ];
+        [ divisor, unit ] = [ MINUTE, 'm' ];
       } else if (secondsAgo < DAY) {
-        [ divisor, unit ] = [ HOUR, 'hour' ];
+        [ divisor, unit ] = [ HOUR, 'h' ];
       } else if (secondsAgo < WEEK) {
-        [ divisor, unit ] = [ DAY, 'day' ];
+        [ divisor, unit ] = [ DAY, 'd' ];
       } else if (secondsAgo < MONTH) {
-        [ divisor, unit ] = [ WEEK, 'week' ];
+        [ divisor, unit ] = [ WEEK, 'w' ];
       } else if (secondsAgo < YEAR) {
-        [ divisor, unit ] = [ MONTH, 'month' ];
+        [ divisor, unit ] = [ MONTH, 'mo' ];
       } else if (secondsAgo > YEAR) {
-        [ divisor, unit ] = [ YEAR, 'year' ];
+        [ divisor, unit ] = [ YEAR, 'yr' ];
       }
 
       const count = Math.floor(secondsAgo / divisor);
-      return `${count} ${unit}${(count > 1) ? 's' : ''} ago`;
+      return `${count}${unit} ago`;
 
     }
 
   }
 };
 </script>
+
+<style lang="scss" scoped>
+  .apos-table__cell-field--relative-time {
+    color: var(--a-base-4);
+  }
+</style>

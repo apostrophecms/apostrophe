@@ -99,6 +99,12 @@ export default {
     }
   },
   methods: {
+    preview(docId, docs) {
+      const doc = docs.filter(d => d._id === docId)[0];
+      if (doc._url) {
+        window.open(doc._url, '_blank').focus();
+      }
+    },
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
     // a computed prop rather than a method call in the template.

@@ -83,7 +83,7 @@
             :headers="headers"
             v-model="checked"
             @open="edit"
-            @preview="preview"
+            @preview="onPreview"
             @copy="copy"
             @discardDraft="onDiscardDraft"
             @archive="onArchive"
@@ -264,11 +264,8 @@ export default {
         this.getPieces();
       }
     },
-    preview(pieceId) {
-      const piece = this.pieces.filter(p => p._id === pieceId)[0];
-      if (piece._url) {
-        window.open(piece._url, '_blank').focus();
-      }
+    onPreview(id) {
+      this.preview(id, this.pieces);
     },
     async onArchive(pieceId) {
       const piece = this.pieces.filter(p => p._id === pieceId)[0];

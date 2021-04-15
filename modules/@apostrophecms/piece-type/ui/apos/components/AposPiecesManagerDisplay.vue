@@ -78,7 +78,7 @@
         <!-- append the context menu -->
         <td class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
-            :state="state[item._id]" :doc="item"
+            :state="state[item._id]" :item="item"
             @edit="$emit('open', item._id)"
             @preview="$emit('preview', item._id)"
             @copy="$emit('copy', item._id)"

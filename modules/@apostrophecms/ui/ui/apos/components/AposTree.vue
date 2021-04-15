@@ -20,6 +20,11 @@
       :nested="nested"
       @update="update"
       @edit="$emit('edit', $event)"
+      @preview="$emit('preview', $event)"
+      @copy="$emit('copy', $event)"
+      @discardDraft="$emit('discardDraft', $event)"
+      @archive="$emit('archive', $event)"
+      @unarchive="$emit('unarchive', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -73,7 +78,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'change', 'edit' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'archive', 'unarchive' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.
@@ -173,6 +178,9 @@ export default {
     }
   },
   methods: {
+    test() {
+      console.log('am i here?');
+    },
     setWidths(widths) {
       this.colWidths = widths;
     },
