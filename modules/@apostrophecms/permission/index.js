@@ -104,7 +104,7 @@ module.exports = {
             return self.can(req, 'publish', doc);
           }
         } else {
-          return false;
+          throw self.apos.error('invalid', 'That action is not implemented');
         }
       },
 
@@ -181,10 +181,7 @@ module.exports = {
             };
           }
         } else {
-          // If I don't understand it, I don't allow it
-          return {
-            _id: 'thisIdWillNeverMatch'
-          };
+          throw self.apos.error('invalid', `The action ${action} is not implemented for apos.permission.criteria`);
         }
       },
 
