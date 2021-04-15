@@ -59,6 +59,7 @@ module.exports = {
           return true;
         }
         const type = docOrType && (docOrType.type || docOrType);
+        const doc = (docOrType && docOrType._id) ? docOrType : null;
         const manager = type && self.apos.doc.getManager(type);
         if (type && !manager) {
           self.apos.util.warn(`A permission.can() call was made with a type that has no manager: ${type}`);
@@ -96,8 +97,14 @@ module.exports = {
           } else {
             return false;
           }
+        } else if (action === 'delete') {
+          if (doc && !doc.lastPublishedAt) {
+            return self.can(req, 'edit', doc);
+          } else {
+            return self.can(req, 'publish', doc);
+          }
         } else {
-          return false;
+          throw self.apos.error('invalid', 'That action is not implemented');
         }
       },
 
@@ -158,7 +165,7 @@ module.exports = {
             };
           } else {
             return {
-              _id: 'thisIdWillNeverMatch'
+              _id: null
             };
           }
         } else if (action === 'publish') {
@@ -170,14 +177,11 @@ module.exports = {
             };
           } else {
             return {
-              _id: 'thisIdWillNeverMatch'
+              _id: null
             };
           }
         } else {
-          // If I don't understand it, I don't allow it
-          return {
-            _id: 'thisIdWillNeverMatch'
-          };
+          throw self.apos.error('invalid', `The action ${action} is not implemented for apos.permission.criteria`);
         }
       },
 
@@ -224,8 +228,8 @@ module.exports = {
       // Returns an object with properties describing the permissions associated
       // with the given module, which should be a piece type or the `@apostrophecms/any-page-type`
       // module. Used to populate the permission grid on the front end
-      describeType(req, module, options = {}) {
-        const typeInfo = {
+      describePermissionSet(req, module, options = {}) {
+        const permissionSet = {
           label: module.options.permissionsLabel || module.options.pluralLabel || module.options.label,
           name: module.__meta.name,
           adminOnly: module.options.adminOnly,
@@ -251,32 +255,32 @@ module.exports = {
           label: 'Publish',
           value: self.can(req, 'publish', module.name)
         });
-        typeInfo.permissions = permissions;
-        return typeInfo;
+        permissionSet.permissions = permissions;
+        return permissionSet;
       },
       // Receives the types for the permission grid (see the grid route) and
       // reduces the set to those considered interesting and those that
       // do not match the typical permissions, in an intuitive order
-      presentTypes(types) {
-        let newTypes = types.filter(type => self.options.interestingTypes.includes(type.name));
-        newTypes = [
-          ...newTypes,
-          types.filter(type => !newTypes.includes(type) && !self.matchTypicalPieceType(type)),
-          types.find(type => type.page)
+      presentPermissionSets(permissionSets) {
+        let newPermissionSets = permissionSets.filter(permissionSet => self.options.interestingTypes.includes(permissionSet.name));
+        newPermissionSets = [
+          ...newPermissionSets,
+          permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet)),
+          permissionSets.find(permissionSet => permissionSet.page)
         ];
-        const typicalPieceType = types.find(self.matchTypicalPieceType);
+        const typicalPieceType = permissionSets.find(self.matchTypicalPieceType);
         if (typicalPieceType) {
-          newTypes.push({
+          newPermissionSets.push({
             ...typicalPieceType,
             name: '@apostrophecms/piece-type',
             label: 'Piece Content',
-            tooltip: types.filter(type => self.matchTypicalPieceType(type) && !newTypes.includes(type)).map(type => type.label).join(', ')
+            tooltip: permissionSets.filter(permissionSet => self.matchTypicalPieceType(permissionSet) && !newPermissionSets.includes(permissionSet)).map(permissionSet => permissionSet.label).join(', ')
           });
         }
-        return newTypes;
+        return newPermissionSets;
       },
-      matchTypicalPieceType(type) {
-        return type.piece && !type.adminOnly && !self.options.interestingTypes.includes(type.name);
+      matchTypicalPieceType(permissionSet) {
+        return permissionSet.piece && !permissionSet.adminOnly && !self.options.interestingTypes.includes(permissionSet.name);
       }
     };
   },
@@ -287,7 +291,7 @@ module.exports = {
           if (!self.apos.permission.can(req, 'edit', '@apostrophecms/user')) {
             throw self.apos.error('forbidden');
           }
-          const types = [];
+          const permissionSets = [];
           const effectiveRole = self.apos.launder.select(req.query.role, [ 'guest', 'contributor', 'editor', 'admin' ]);
           if (!effectiveRole) {
             throw self.apos.error('invalid', { role: effectiveRole });
@@ -298,12 +302,12 @@ module.exports = {
           });
           for (const module of Object.values(self.apos.modules)) {
             if (self.apos.synth.instanceOf(module, '@apostrophecms/piece-type')) {
-              types.push(self.describeType(_req, module, { piece: true }));
+              permissionSets.push(self.describePermissionSet(_req, module, { piece: true }));
             }
           }
-          types.push(self.describeType(_req, self.apos.modules['@apostrophecms/any-page-type']));
+          permissionSets.push(self.describePermissionSet(_req, self.apos.modules['@apostrophecms/any-page-type']));
           return {
-            types: self.presentTypes(types)
+            permissionSets: self.presentPermissionSets(permissionSets)
           };
         }
       }
