@@ -70,10 +70,6 @@
             v-if="header.component" :is="header.component"
             :header="header" :item="item"
           />
-          <AposCellLink
-            v-else-if="header.name === '_url' && item[header.name]"
-            :header="header" :item="item"
-          />
           <AposCellBasic
             v-else
             :header="header" :item="item"

@@ -32,10 +32,15 @@ module.exports = {
           name: 'title',
           component: 'AposCellButton'
         },
+        labels: {
+          name: 'labels',
+          label: '',
+          component: 'AposCellLabels'
+        },
         updatedAt: {
           name: 'updatedAt',
           label: 'Last Edited',
-          component: 'AposCellDate'
+          component: 'AposCellLastEdited'
         }
       }
     };
