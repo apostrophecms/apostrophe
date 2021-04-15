@@ -165,7 +165,7 @@ module.exports = {
             };
           } else {
             return {
-              _id: 'thisIdWillNeverMatch'
+              _id: null
             };
           }
         } else if (action === 'publish') {
@@ -177,7 +177,7 @@ module.exports = {
             };
           } else {
             return {
-              _id: 'thisIdWillNeverMatch'
+              _id: null
             };
           }
         } else {
