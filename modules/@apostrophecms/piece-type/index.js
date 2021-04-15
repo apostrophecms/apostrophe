@@ -784,7 +784,7 @@ module.exports = {
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = self.options.quickCreate;
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
         browserOptions.previewDraft = self.options.previewDraft;
         _.defaults(browserOptions, {
           components: {}
