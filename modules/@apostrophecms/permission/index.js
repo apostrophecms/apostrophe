@@ -59,6 +59,7 @@ module.exports = {
           return true;
         }
         const type = docOrType && (docOrType.type || docOrType);
+        const doc = (docOrType && docOrType._id) ? docOrType : null;
         const manager = type && self.apos.doc.getManager(type);
         if (type && !manager) {
           self.apos.util.warn(`A permission.can() call was made with a type that has no manager: ${type}`);
@@ -95,6 +96,12 @@ module.exports = {
             return true;
           } else {
             return false;
+          }
+        } else if (action === 'delete') {
+          if (doc && !doc.lastPublishedAt) {
+            return self.can(req, 'edit', doc);
+          } else {
+            return self.can(req, 'publish', doc);
           }
         } else {
           return false;
