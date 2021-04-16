@@ -421,7 +421,10 @@ export default {
   },
   methods: {
     async preview() {
-      window.open(this.original._url, '_blank').focus();
+      if (!await this.confirmAndCancel()) {
+        return;
+      }
+      window.location = this.original._url;
     },
     async saveDraftAndPreview() {
       await this.save({
