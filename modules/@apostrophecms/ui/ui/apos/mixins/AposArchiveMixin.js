@@ -7,11 +7,9 @@ export default {
     // module whose API should be invoked. If errors occur they are displayed to the user
     // appropriately, not returned or thrown to the caller.
     //
-    // A notification of success is displayed, with a button to revert the published
-    // mode of the document to its previous value.
     //
     // Returns `true` if the document was ultimately archived.
-    async archive(action, _id, isPublished) {
+    async archive(action, _id, isPublished, isPage) {
       try {
         if (await apos.confirm({
           heading: 'Are You Sure?',
@@ -19,11 +17,29 @@ export default {
             ? 'This will move the document to the archive and un-publish it.'
             : 'This will move the document to the archive.'
         })) {
+          const body = {
+            archived: true,
+            _publish: true
+          };
+
+          if (isPage) {
+            const pageTree = (await apos.http.get(
+              '/api/v1/@apostrophecms/page', {
+                busy: true,
+                qs: {
+                  all: '1',
+                  archived: 'any'
+                },
+                draft: true
+              }
+            ));
+            const archiveId = pageTree._children.filter(p => p.type === '@apostrophecms/archive-page')[0]._id;
+            body._targetId = archiveId;
+            body._position = 'lastChild';
+          }
+
           await apos.http.patch(`${action}/${_id}`, {
-            body: {
-              archived: true,
-              _publish: true
-            },
+            body,
             busy: true,
             draft: true
           });
@@ -42,11 +58,25 @@ export default {
         });
       }
     },
-    async unarchive (action, _id) {
+    async unarchive (action, _id, isPage) {
       const body = {
         archived: false
       };
       AposAdvisoryLockMixin.methods.addLockToRequest(body);
+
+      if (isPage) {
+        const pageTree = (await apos.http.get(
+          '/api/v1/@apostrophecms/page', {
+            busy: true,
+            draft: true
+          }
+        ));
+        console.log(pageTree);
+        const homeId = pageTree[0]._id;
+        body._targetId = homeId;
+        body._position = 'lastChild';
+      }
+
       try {
         await apos.http.patch(`${action}/${_id}`, {
           body,

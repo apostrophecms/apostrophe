@@ -178,9 +178,6 @@ export default {
     }
   },
   methods: {
-    test() {
-      console.log('am i here?');
-    },
     setWidths(widths) {
       this.colWidths = widths;
     },

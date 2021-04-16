@@ -79,6 +79,7 @@
             @preview="onPreview"
             @copy="copy"
             @archive="onArchive"
+            @unarchive="onUnarchive"
           />
         </template>
       </AposModalBody>
@@ -206,7 +207,12 @@ export default {
     },
     async onArchive(id) {
       const page = this.pagesFlat.filter(p => p._id === id)[0];
-      if (await this.archive(this.moduleOptions.action, id, !!page.lastPublishedAt)) {
+      if (await this.archive(this.moduleOptions.action, id, !!page.lastPublishedAt, true)) {
+        await this.getPages();
+      }
+    },
+    async onUnarchive(id) {
+      if (await this.unarchive(this.moduleOptions.action, id, true)) {
         await this.getPages();
       }
     },
