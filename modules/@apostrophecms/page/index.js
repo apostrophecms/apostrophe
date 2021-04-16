@@ -2093,7 +2093,8 @@ database.`);
           parked: 1,
           lastPublishedAt: 1,
           aposDocId: 1,
-          aposLocale: 1
+          aposLocale: 1,
+          updatedAt: 1
         };
       },
       addArchivedMigration() {
