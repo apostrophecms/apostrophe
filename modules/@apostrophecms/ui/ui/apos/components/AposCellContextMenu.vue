@@ -8,7 +8,7 @@
         :is-modified-from-published="item.modified"
         :is-published="!!item.lastPublishedAt"
         :can-save-draft="false"
-        :can-open-editor="true"
+        :can-open-editor="!item.archived"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="!item.archived"
         :can-unarchive="item.archived"

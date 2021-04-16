@@ -103,8 +103,9 @@ export default {
       moduleName: '@apostrophecms/page',
       modal: {
         active: false,
-        type: 'overlay',
-        showModal: false
+        type: 'slide',
+        showModal: false,
+        width: 'two-thirds'
       },
       pages: [],
       pagesFlat: [],
