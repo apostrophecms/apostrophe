@@ -283,7 +283,7 @@ export default {
       if (this.original) {
         return !!this.original._url;
       } else {
-        return null;
+        return false;
       }
     },
     canArchive() {
@@ -421,10 +421,7 @@ export default {
   },
   methods: {
     async preview() {
-      if (!await this.confirmAndCancel()) {
-        return;
-      }
-      window.location = this.original._url;
+      window.open(this.original._url, '_blank').focus();
     },
     async saveDraftAndPreview() {
       await this.save({

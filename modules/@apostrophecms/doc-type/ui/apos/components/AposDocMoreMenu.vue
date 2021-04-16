@@ -5,8 +5,8 @@
     :disabled="disabled"
     menu-placement="bottom-end"
     @item-clicked="menuHandler"
-    @open="$emit('menuOpen')"
-    @close="$emit('menuClose')"
+    @open="$emit('menu-open')"
+    @close="$emit('menu-close')"
     :button="{
       tooltip: { content: 'More Options', placement: 'bottom' },
       label: 'More Options',
@@ -88,7 +88,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'menuOpen', 'menuClose' ],
+  emits: [ 'menu-open', 'menu-close' ],
   data() {
     const menu = {
       isOpen: false,

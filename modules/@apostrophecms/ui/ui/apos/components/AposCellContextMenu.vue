@@ -19,8 +19,8 @@
         @archive="$emit('archive')"
         @restore="$emit('restore')"
         @discardDraft="$emit('discardDraft')"
-        @menuOpen="menuOpen = true"
-        @menuClose="menuOpen = false"
+        @menu-open="menuOpen = true"
+        @menu-close="menuOpen = false"
       />
     </span>
   </div>

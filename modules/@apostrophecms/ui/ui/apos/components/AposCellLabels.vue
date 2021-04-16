@@ -5,18 +5,18 @@
   >
     <span v-if="item.modified">
       <AposLabel
-        label="Active Draft"
+        label="Active Draft" class="apos-table__cell-field__label"
       />
     </span>
     <span v-if="!item.lastPublishedAt">
       <AposLabel
-        label="Unpublished"
+        label="Unpublished" class="apos-table__cell-field__label"
         :modifiers="[ 'is-warning' ]"
       />
     </span>
     <span v-if="item.archived">
       <AposLabel
-        label="Archived"
+        label="Archived" class="apos-table__cell-field__label"
       />
     </span>
   </p>
@@ -42,9 +42,8 @@ export default {
   .apos-table__cell-field--labels {
     display: inline-flex;
     padding-right: 10px;
-    & /deep/ .apos-label {
-      margin-left: 5px;
-    }
   }
-
+  .apos-table__cell-field__label {
+    margin-left: 5px;
+  }
 </style>
