@@ -87,7 +87,7 @@
             @copy="copy"
             @discardDraft="onDiscardDraft"
             @archive="onArchive"
-            @unarchive="onUnarchive"
+            @restore="onRestore"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
@@ -265,22 +265,22 @@ export default {
       }
     },
     onPreview(id) {
-      this.preview(this.findDoc(id, this.pieces));
+      this.preview(this.findDocById(this.pieces, id));
     },
     async onArchive(id) {
-      const piece = this.findDoc(id, this.pieces);
+      const piece = this.findDocById(this.pieces, id);
       if (await this.archive(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       }
     },
-    async onUnarchive(id) {
-      const piece = this.findDoc(id, this.pieces);
-      if (await this.unarchive(this.options.action, id, !!piece.lastPublishedAt)) {
+    async onRestore(id) {
+      const piece = this.findDocById(this.pieces, id);
+      if (await this.restore(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       }
     },
     async onDiscardDraft(id) {
-      const piece = this.findDoc(id, this.pieces);
+      const piece = this.findDocById(this.pieces, id);
       if (await this.discardDraft(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       };
@@ -289,7 +289,7 @@ export default {
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.options.name}:editor`,
         props: {
-          copyOf: this.findDoc(id, this.pieces)
+          copyOf: this.findDocById(this.pieces, id)
         }
       });
     },

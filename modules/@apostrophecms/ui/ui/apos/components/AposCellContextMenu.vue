@@ -11,13 +11,13 @@
         :can-open-editor="!item.archived"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="!item.archived"
-        :can-unarchive="item.archived"
+        :can-restore="item.archived"
         :can-copy="(!!item._id && !item.archived)"
         @edit="$emit('edit')"
         @preview="$emit('preview')"
         @copy="$emit('copy')"
         @archive="$emit('archive')"
-        @unarchive="$emit('unarchive')"
+        @restore="$emit('restore')"
         @discardDraft="$emit('discardDraft')"
         @menuOpen="menuOpen = true"
         @menuClose="menuOpen = false"
@@ -41,7 +41,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft', 'unarchive' ],
+  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft', 'restore' ],
   data() {
     return {
       menuOpen: false

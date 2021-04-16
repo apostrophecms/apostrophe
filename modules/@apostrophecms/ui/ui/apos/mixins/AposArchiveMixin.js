@@ -48,7 +48,7 @@ export default {
         });
       }
     },
-    async unarchive (action, _id, isPage) {
+    async restore (action, _id, isPage) {
       const body = {
         archived: false
       };

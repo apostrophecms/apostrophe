@@ -102,7 +102,7 @@ export default {
     preview(doc) {
       window.open(doc._url, '_blank').focus();
     },
-    findDoc(id, docs) {
+    findDocById(docs, id) {
       return docs.find(p => p._id === id);
     },
     // It would have been nice for this to be computed, however

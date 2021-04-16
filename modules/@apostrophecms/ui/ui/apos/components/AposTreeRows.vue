@@ -48,7 +48,7 @@
           @copy="$emit('copy', row._id)"
           @discardDraft="$emit('discardDraft', row._id)"
           @archive="$emit('archive', row._id)"
-          @unarchive="$emit('unarchive', row._id)"
+          @restore="$emit('restore', row._id)"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -116,7 +116,7 @@
         @copy="$emit('copy', $event)"
         @discardDraft="$emit('discardDraft', $event)"
         @archive="$emit('archive', $event)"
-        @unarchive="$emit('unarchive', $event)"
+        @restore="$emit('restore', $event)"
         v-model="checkedProxy"
       />
     </li>
@@ -189,7 +189,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'archive', 'unarchive' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'archive', 'restore' ],
   computed: {
     myRows() {
       return this.rows;

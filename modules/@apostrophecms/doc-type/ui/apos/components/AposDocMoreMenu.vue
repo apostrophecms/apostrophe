@@ -59,7 +59,7 @@ export default {
         return false;
       }
     },
-    canUnarchive: {
+    canRestore: {
       type: Boolean,
       default() {
         return false;
@@ -158,10 +158,10 @@ export default {
             modifiers: [ 'danger' ]
           }
         ] : []),
-        ...(this.canUnarchive ? [
+        ...(this.canRestore ? [
           {
-            label: 'Unarchive',
-            action: 'unarchive'
+            label: 'Restore from Archive',
+            action: 'restore'
           }
         ] : [])
       ];

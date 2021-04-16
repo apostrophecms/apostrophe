@@ -79,7 +79,7 @@
             @preview="onPreview"
             @copy="copy"
             @archive="onArchive"
-            @unarchive="onUnarchive"
+            @restore="onRestore"
           />
         </template>
       </AposModalBody>
@@ -123,9 +123,9 @@ export default {
           },
           {
             columnHeader: 'Last Edited',
-            property: 'lastPublishedAt',
+            property: 'updatedAt',
             component: 'AposCellLastEdited',
-            cellValue: 'lastPublishedAt'
+            cellValue: 'updatedAt'
           },
           {
             columnHeader: '',
@@ -209,23 +209,23 @@ export default {
   },
   methods: {
     onPreview(id) {
-      this.preview(this.findDoc(id, this.pagesFlat));
+      this.preview(this.findDocById(this.pagesFlat, id));
     },
     async onArchive(id) {
-      const doc = this.findDoc(id, this.pagesFlat);
+      const doc = this.findDocById(this.pagesFlat, id);
       if (await this.archive(this.moduleOptions.action, id, !!doc.lastPublishedAt, true)) {
         await this.getPages();
       }
     },
-    async onUnarchive(id) {
-      if (await this.unarchive(this.moduleOptions.action, id, true)) {
+    async onRestore(id) {
+      if (await this.restore(this.moduleOptions.action, id, true)) {
         await this.getPages();
       }
     },
     async copy(id) {
       const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
         moduleName: this.moduleName,
-        copyOf: this.findDoc(id, this.pagesFlat)
+        copyOf: this.findDocById(this.pagesFlat, id)
       });
       if (!doc) {
         return;

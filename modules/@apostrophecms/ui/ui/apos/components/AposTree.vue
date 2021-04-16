@@ -24,7 +24,7 @@
       @copy="$emit('copy', $event)"
       @discardDraft="$emit('discardDraft', $event)"
       @archive="$emit('archive', $event)"
-      @unarchive="$emit('unarchive', $event)"
+      @restore="$emit('restore', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -78,7 +78,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'archive', 'unarchive' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'archive', 'restore' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.

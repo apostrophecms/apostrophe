@@ -84,7 +84,7 @@
             @copy="$emit('copy', item._id)"
             @discardDraft="$emit('discardDraft', item._id)"
             @archive="$emit('archive', item._id)"
-            @unarchive="$emit('unarchive', item._id)"
+            @restore="$emit('restore', item._id)"
           />
         </td>
       </tr>
@@ -129,7 +129,7 @@ export default {
     'copy',
     'discardDraft',
     'archive',
-    'unarchive'
+    'restore'
   ],
   data() {
     const state = {
