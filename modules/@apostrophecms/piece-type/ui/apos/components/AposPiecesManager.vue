@@ -265,32 +265,31 @@ export default {
       }
     },
     onPreview(id) {
-      this.preview(id, this.pieces);
+      this.preview(this.findDoc(id, this.pieces));
     },
-    async onArchive(pieceId) {
-      const piece = this.pieces.filter(p => p._id === pieceId)[0];
-      if (await this.archive(this.options.action, pieceId, !!piece.lastPublishedAt)) {
+    async onArchive(id) {
+      const piece = this.findDoc(id, this.pieces);
+      if (await this.archive(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       }
     },
-    async onUnarchive(pieceId) {
-      const piece = this.pieces.filter(p => p._id === pieceId)[0];
-      if (await this.unarchive(this.options.action, pieceId, !!piece.lastPublishedAt)) {
+    async onUnarchive(id) {
+      const piece = this.findDoc(id, this.pieces);
+      if (await this.unarchive(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       }
     },
-    async onDiscardDraft(pieceId) {
-      const piece = this.pieces.filter(p => p._id === pieceId)[0];
-      if (await this.discardDraft(this.options.action, pieceId, !!piece.lastPublishedAt)) {
+    async onDiscardDraft(id) {
+      const piece = this.findDoc(id, this.pieces);
+      if (await this.discardDraft(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       };
     },
-    async copy(pieceId) {
-      const piece = this.pieces.filter(p => p._id === pieceId)[0];
+    async copy(id) {
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.options.name}:editor`,
         props: {
-          copyOf: piece
+          copyOf: this.findDoc(id, this.pieces)
         }
       });
     },

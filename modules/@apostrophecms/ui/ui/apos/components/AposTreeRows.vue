@@ -300,12 +300,6 @@ export default {
         }
       ];
 
-      if (this.options.ghostUnpublished) {
-        classes.push({
-          'is-unpublished': !row.lastPublishedAt
-        });
-      }
-
       return classes;
     },
     getEffectiveType(col, row) {
@@ -449,9 +443,6 @@ export default {
 
   .apos-tree__row {
     &.is-dragging {
-      opacity: 0.5;
-    }
-    &.is-unpublished > .apos-tree__row-data {
       opacity: 0.5;
     }
   }

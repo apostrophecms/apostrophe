@@ -99,11 +99,11 @@ export default {
     }
   },
   methods: {
-    preview(docId, docs) {
-      const doc = docs.filter(d => d._id === docId)[0];
-      if (doc._url) {
-        window.open(doc._url, '_blank').focus();
-      }
+    preview(doc) {
+      window.open(doc._url, '_blank').focus();
+    },
+    findDoc(id, docs) {
+      return docs.find(p => p._id === id);
     },
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is

@@ -116,6 +116,11 @@ export default {
             cellValue: 'title'
           },
           {
+            name: 'labels',
+            columnHeader: '',
+            component: 'AposCellLabels'
+          },
+          {
             columnHeader: 'Last Edited',
             property: 'lastPublishedAt',
             component: 'AposCellLastEdited',
@@ -203,24 +208,24 @@ export default {
   },
   methods: {
     onPreview(id) {
-      this.preview(id, this.pagesFlat);
+      this.preview(this.findDoc(id, this.pagesFlat));
     },
     async onArchive(id) {
-      const page = this.pagesFlat.filter(p => p._id === id)[0];
-      if (await this.archive(this.moduleOptions.action, id, !!page.lastPublishedAt, true)) {
+      const doc = this.findDoc(id, this.pagesFlat);
+      if (await this.archive(this.moduleOptions.action, id, !!doc.lastPublishedAt, true)) {
         await this.getPages();
       }
     },
     async onUnarchive(id) {
+      console.log(id);
       if (await this.unarchive(this.moduleOptions.action, id, true)) {
         await this.getPages();
       }
     },
     async copy(id) {
-      const page = this.pagesFlat.filter(p => p._id === id)[0];
       const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
         moduleName: this.moduleName,
-        copyOf: page
+        copyOf: this.findDoc(id, this.pagesFlat)
       });
       if (!doc) {
         return;

@@ -333,7 +333,7 @@ export default {
   }
 
   .apos-modal__header__main {
-    border-bottom: 1px solid var(--a-base-4);
+    border-bottom: 1px solid var(--a-base-9);
   }
 
   .apos-modal__footer {

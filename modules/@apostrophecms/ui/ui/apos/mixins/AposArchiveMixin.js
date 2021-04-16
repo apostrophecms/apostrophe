@@ -7,7 +7,6 @@ export default {
     // module whose API should be invoked. If errors occur they are displayed to the user
     // appropriately, not returned or thrown to the caller.
     //
-    //
     // Returns `true` if the document was ultimately archived.
     async archive(action, _id, isPublished, isPage) {
       try {
@@ -23,16 +22,7 @@ export default {
           };
 
           if (isPage) {
-            const pageTree = (await apos.http.get(
-              '/api/v1/@apostrophecms/page', {
-                busy: true,
-                qs: {
-                  all: '1',
-                  archived: 'any'
-                },
-                draft: true
-              }
-            ));
+            const pageTree = await this.getPageTree();
             const archiveId = pageTree._children.filter(p => p.type === '@apostrophecms/archive-page')[0]._id;
             body._targetId = archiveId;
             body._position = 'lastChild';
@@ -65,14 +55,8 @@ export default {
       AposAdvisoryLockMixin.methods.addLockToRequest(body);
 
       if (isPage) {
-        const pageTree = (await apos.http.get(
-          '/api/v1/@apostrophecms/page', {
-            busy: true,
-            draft: true
-          }
-        ));
-        console.log(pageTree);
-        const homeId = pageTree[0]._id;
+        const pageTree = await this.getPageTree();
+        const homeId = pageTree._id;
         body._targetId = homeId;
         body._position = 'lastChild';
       }
@@ -84,16 +68,29 @@ export default {
           draft: true
         });
         apos.bus.$emit('content-changed');
+        return true;
       } catch (e) {
         if (AposAdvisoryLockMixin.methods.isLockedError(e)) {
           await this.showLockedError(e);
         } else {
           await apos.alert({
             heading: 'An Error Occurred',
-            description: e.message || 'An error occurred while moving the document to the archive.'
+            description: e.message || 'An error occurred while restoring the document from the archive.'
           });
         }
       }
+    },
+    async getPageTree() {
+      return apos.http.get(
+        '/api/v1/@apostrophecms/page', {
+          busy: true,
+          qs: {
+            all: '1',
+            archived: 'any'
+          },
+          draft: true
+        }
+      );
     }
   }
 };

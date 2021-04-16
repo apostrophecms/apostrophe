@@ -1,6 +1,6 @@
 <template>
   <p
-    class="apos-table__cell-field"
+    class="apos-table__cell-field apos-table__cell-field--labels"
     :class="`apos-table__cell-field--${header.name}`"
   >
     <span v-if="item.modified">
@@ -45,7 +45,11 @@ export default {
 
 <style lang="scss" scoped>
   .apos-table__cell-field--labels {
-    text-align: right;
+    display: inline-flex;
     padding-right: 10px;
+    & /deep/ .apos-label {
+      margin-left: 5px;
+    }
   }
+
 </style>
