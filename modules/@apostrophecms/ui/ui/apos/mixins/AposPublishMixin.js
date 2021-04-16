@@ -61,7 +61,28 @@ export default {
         return false;
       }
     },
-
+    // A UI method to submit a draft document for review and possible publication
+    // ("propose changes").
+    async submitDraft(action, _id) {
+      try {
+        const submitted = await apos.http.post(`${action}/${_id}/submit`, {
+          busy: true,
+          body: {},
+          draft: true
+        });
+        apos.notify('Submitted for review.', {
+          type: 'success',
+          dismiss: true
+        });
+        return submitted;
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred While Submitting',
+          description: e.message || 'An error occurred while submitting the document.'
+        });
+        return false;
+      }
+    },
     // A UI method to revert a draft document to the last published version or, if the document
     // has never been published, delete the draft entirely. The user is advised of the difference.
     //

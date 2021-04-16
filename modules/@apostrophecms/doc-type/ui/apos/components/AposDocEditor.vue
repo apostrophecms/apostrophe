@@ -536,11 +536,10 @@ export default {
             draft: true
           });
           if (andSubmit) {
-            await apos.http.post(`${route}/submit`, {
-              busy: true,
-              body: {},
-              draft: true
-            });
+            await this.submitDraft(this.moduleAction, doc._id);
+          }
+          if (andPublish && !restoreOnly) {
+            await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
           }
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
@@ -554,9 +553,6 @@ export default {
             });
             return;
           }
-        }
-        if (andPublish && !restoreOnly) {
-          await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;

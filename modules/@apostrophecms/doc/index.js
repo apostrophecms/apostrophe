@@ -35,6 +35,7 @@ module.exports = {
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
     self.addLastPublishedToAllDraftsMigration();
+    self.addAposModeMigration();
   },
   restApiRoutes(self) {
     return {
@@ -75,10 +76,11 @@ module.exports = {
   handlers(self) {
     return {
       '@apostrophecms/doc-type:beforeInsert': {
-        setLocale(req, doc, options) {
+        setLocaleAndMode(req, doc, options) {
           const manager = self.getManager(doc.type);
           if (manager.isLocalized()) {
             doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
+            doc.aposMode = req.mode;
           }
         },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
@@ -141,9 +143,11 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforePublish': {
-        testPermissions(req, doc) {
-          if (!self.apos.permission.can(req, 'publish', doc)) {
-            throw self.apos.error('forbidden');
+        testPermissions(req, info) {
+          if (info.options.permissions !== false) {
+            if (!self.apos.permission.can(req, info.options.autopublishing ? 'edit' : 'publish', info.draft)) {
+              throw self.apos.error('forbidden');
+            }
           }
         }
       },
@@ -976,6 +980,24 @@ module.exports = {
                 }
               });
             }
+          });
+        });
+      },
+      addAposModeMigration() {
+        self.apos.migration.add('add-apos-mode', async () => {
+          return self.apos.migration.eachDoc({
+            aposLocale: { $exists: 1 },
+            aposMode: { $exists: 0 }
+          }, 5, async (doc) => {
+            // eslint-disable-next-line no-unused-vars
+            const [ locale, mode ] = doc.aposLocale.split(':');
+            return self.db.updateOne({
+              _id: doc._id
+            }, {
+              $set: {
+                aposMode: mode
+              }
+            });
           });
         });
       },

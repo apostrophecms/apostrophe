@@ -136,6 +136,7 @@ describe('Pages REST', function() {
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
+    user.role = 'admin';
 
     await apos.user.insert(apos.task.getReq(), user);
 
@@ -148,6 +149,7 @@ describe('Pages REST', function() {
     user2.username = 'admin2';
     user2.password = 'admin2';
     user2.email = 'ad@min2.com';
+    user2.role = 'admin';
 
     return apos.user.insert(apos.task.getReq(), user2);
 

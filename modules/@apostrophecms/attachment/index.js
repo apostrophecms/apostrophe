@@ -391,7 +391,7 @@ module.exports = {
           archivedDocIds: []
         };
         if (!(options.permissions === false)) {
-          if (!self.apos.permission.can(req, 'edit', 'attachment')) {
+          if (!self.apos.permission.can(req, 'upload-attachment')) {
             throw self.apos.error('forbidden');
           }
         }
@@ -1032,7 +1032,7 @@ module.exports = {
       },
       // Middleware method used when only those with attachment privileges should be allowed to do something
       canUpload(req, res, next) {
-        if (!self.apos.permission.can(req, 'edit', 'attachment')) {
+        if (!self.apos.permission.can(req, 'upload-attachment')) {
           res.statusCode = 403;
           return res.send({
             type: 'forbidden',

@@ -23,17 +23,19 @@ module.exports = {
         component: 'AposCellType'
       },
       'submitted.at': {
-        label: 'Submitted'
+        label: 'Submitted',
+        component: 'AposCellDate'
       },
       'submitted.by': {
         label: 'Proposed By',
         component: 'AposCellDate'
       },
-      lastPublishedAt: {
-        label: 'Published',
-        // TODO not a thing yet
-        component: 'AposBooleanCellButton'
-      },
+      // lastPublishedAt: {
+      //   label: 'Published',
+      //   // TODO not a thing yet. Yes we are intentionally treating
+      //   // this as a boolean
+      //   component: 'AposBooleanCell'
+      // },
       // Automatically hidden if none of the pieces
       // actually have a URL
       _url: {
@@ -43,6 +45,41 @@ module.exports = {
     },
     remove: [ 'updatedAt' ]
   },
+
+  fields: {
+    add: {
+      _type: {
+        label: 'Type',
+        type: 'select',
+        // Patched later
+        choices: []
+      }
+    }
+  },
+
+  filters: {
+    add: {
+      _type: {
+        label: 'Type'
+      }
+    }
+  },
+
+  handlers(self) {
+    return {
+      'apostrophe:modulesReady': {
+        patchTypeField() {
+          const typeField = self.schema.find(field => field.name === '_type');
+          const managers = Object.values(self.apos.doc.managers);
+          typeField.choices = managers.filter(manager => manager.isLocalized() && !manager.options.autopublish).map(manager => ({
+            label: manager.options.label || manager.name || manager.__meta.name,
+            value: manager.name || manager.__meta.name
+          }));
+        }
+      }
+    };
+  },
+
   methods(self) {
     return {
       insert(req, piece, options) {
@@ -56,7 +93,7 @@ module.exports = {
       publish(req, piece, options) {
         // Virtual piece type, find the proper manager and use it
         const manager = self.apos.doc.getManager(piece.type);
-        return manager.update(req, piece, options);
+        return manager.publish(req, piece, options);
       },
       delete(req, piece, options) {
         // Virtual piece type, find the proper manager and use it
@@ -75,9 +112,39 @@ module.exports = {
       find(_super, req, criteria, options) {
         return _super(req, criteria, options).type(null).and({
           submitted: {
-            exists: 1
+            $exists: 1
           }
         });
+      }
+    };
+  },
+  queries(self, query) {
+    return {
+      builders: {
+        _type: {
+          def: null,
+          launder(type) {
+            return self.apos.launder.string(type);
+          },
+          finalize() {
+            const state = query.get('_type');
+            if (state) {
+              query.and({
+                type: state
+              });
+            }
+          },
+          async choices() {
+            const values = await query.toDistinct('type');
+            return values.map(name => {
+              const manager = self.apos.doc.getManager(name);
+              return {
+                value: name,
+                label: (manager && manager.options.label) || name
+              };
+            });
+          }
+        }
       }
     };
   }

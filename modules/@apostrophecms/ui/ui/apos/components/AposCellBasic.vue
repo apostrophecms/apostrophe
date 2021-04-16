@@ -3,13 +3,11 @@
     class="apos-table__cell-field"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    {{ get(item, header.name) }}
+    {{ item[header.name] }}
   </p>
 </template>
 
 <script>
-import { _get } from 'lodash';
-
 export default {
   name: 'AposCellBasic',
   props: {
@@ -20,11 +18,6 @@ export default {
     header: {
       type: Object,
       required: true
-    }
-  },
-  methods: {
-    get(object, key) {
-      return _get(object, key);
     }
   }
 };

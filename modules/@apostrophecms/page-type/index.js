@@ -92,6 +92,13 @@ module.exports = {
           await matched.handler(req);
         }
       },
+      beforeMove: {
+        checkPermissions(req, doc) {
+          if (doc.lastPublishedAt && !self.apos.permission.can(req, 'publish', '@apostrophecms/page')) {
+            throw self.apos.error('forbidden', 'Contributors may only move unpublished pages.');
+          }
+        }
+      },
       afterMove: {
         async replayMoveAfterMoved(req, doc) {
           if (!doc._id.includes(':draft')) {

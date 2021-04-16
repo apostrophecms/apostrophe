@@ -179,8 +179,8 @@ module.exports = {
       return result;
     },
     async getOne(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -199,21 +199,21 @@ module.exports = {
       return await self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
     async delete(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       const piece = await self.findOneForEditing(req, {
         _id
       });
       return self.delete(req, piece);
     },
     async patch(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       return self.convertPatchAndRefresh(req, req.body, _id);
     }
   }),
@@ -278,19 +278,16 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
+          const submitted = {
+            by: req.user && req.user.title,
+            at: new Date()
+          };
           await self.apos.doc.db.update({
             _id: draft._id
           }, {
             $set: {
-              submitted: {
-                by: req.user && req.user.title,
-                at: new Date()
-              }
+              submitted
             }
-          });
-          self.apos.notify(req, 'Submitted for review.', {
-            type: 'success',
-            dismiss: true
           });
         },
         ':_id/reject': async (req) => {
@@ -310,10 +307,6 @@ module.exports = {
             $unset: {
               submitted: 1
             }
-          });
-          self.apos.notify(req, 'Rejected.', {
-            type: 'success',
-            dismiss: true
           });
         },
         ':_id/revert-draft-to-published': async (req) => {
@@ -490,7 +483,7 @@ module.exports = {
       addEditorModal() {
         self.apos.modal.add(
           `${self.__meta.name}:editor`,
-          self.getComponentName('insertModal', 'AposDocEditor'),
+          self.getComponentName('editorModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
@@ -836,14 +829,14 @@ module.exports = {
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = self.options.quickCreate;
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
         browserOptions.previewDraft = self.options.previewDraft;
         browserOptions.managerHasNewButton = self.options.managerHasNewButton;
         _.defaults(browserOptions, {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          insertModal: 'AposDocEditor',
+          editorModal: 'AposDocEditor',
           managerModal: 'AposPiecesManager'
         });
         return browserOptions;

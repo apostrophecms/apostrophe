@@ -53,7 +53,7 @@
         <td
           class="apos-table__cell apos-table__cell--pointer" v-for="header in headers"
           :key="item[header.name]"
-          @click="$emit('open',item._id)"
+          @click="$emit('open', item)"
         >
           <component
             v-if="header.component" :is="header.component"
