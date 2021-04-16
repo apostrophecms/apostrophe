@@ -218,7 +218,6 @@ export default {
       }
     },
     async onUnarchive(id) {
-      console.log(id);
       if (await this.unarchive(this.moduleOptions.action, id, true)) {
         await this.getPages();
       }

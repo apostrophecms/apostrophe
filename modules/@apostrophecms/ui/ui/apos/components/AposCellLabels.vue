@@ -34,11 +34,6 @@ export default {
       type: Object,
       required: true
     }
-  },
-  computed: {
-  },
-  methods: {
-
   }
 };
 </script>

@@ -62,9 +62,7 @@ export default {
 
       const count = Math.floor(secondsAgo / divisor);
       return `${count}${unit} ago`;
-
     }
-
   }
 };
 </script>
