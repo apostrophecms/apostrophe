@@ -282,7 +282,7 @@ module.exports = {
           contextId: context && context._id,
           tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/page')
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/page', 'draft')
         };
       }
     };
