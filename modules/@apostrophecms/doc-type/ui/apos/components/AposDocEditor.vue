@@ -188,6 +188,9 @@ export default {
       const groupSet = {};
 
       this.schema.forEach(field => {
+        if (!this.filterOutParkedFields([ field.name ]).length) {
+          return;
+        }
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
