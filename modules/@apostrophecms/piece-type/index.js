@@ -6,8 +6,7 @@ module.exports = {
   options: {
     perPage: 10,
     quickCreate: true,
-    previewDraft: true,
-    managerHasNewButton: true
+    previewDraft: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -833,7 +832,7 @@ module.exports = {
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
         browserOptions.previewDraft = self.options.previewDraft;
-        browserOptions.managerHasNewButton = self.options.managerHasNewButton;
+        browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
         _.defaults(browserOptions, {
           components: {}
         });

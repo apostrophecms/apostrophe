@@ -416,7 +416,6 @@ export default {
     async saveDraftAndPreview() {
       await this.save({
         andPublish: false,
-        savingDraft: true,
         navigate: true
       });
     },
@@ -469,24 +468,19 @@ export default {
       if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
           restoreOnly: this.restoreOnly,
-          andPublish: this.manuallyPublished,
-          savingDraft: false
+          andPublish: this.manuallyPublished
         });
       } else {
         await this.save({
           andPublish: false,
-          savingDraft: true,
           andSubmit: true
         });
       }
     },
     // If andPublish is true, publish after saving.
-    // If savingDraft is true, make sure we're in draft
-    // mode before redirecting to the _url of the draft.
     async save({
       restoreOnly = false,
       andPublish = false,
-      savingDraft = false,
       navigate = false,
       andSubmit = false
     }) {
@@ -537,8 +531,7 @@ export default {
           });
           if (andSubmit) {
             await this.submitDraft(this.moduleAction, doc._id);
-          }
-          if (andPublish && !restoreOnly) {
+          } else if (andPublish && !restoreOnly) {
             await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
           }
           apos.bus.$emit('content-changed', doc);
@@ -676,8 +669,7 @@ export default {
     },
     saveDraft() {
       return this.save({
-        andPublish: false,
-        savingDraft: true
+        andPublish: false
       });
     },
     filterOutParkedFields(fields) {
