@@ -30,12 +30,6 @@ module.exports = {
         label: 'Proposed By',
         component: 'AposCellDate'
       },
-      // lastPublishedAt: {
-      //   label: 'Published',
-      //   // TODO not a thing yet. Yes we are intentionally treating
-      //   // this as a boolean
-      //   component: 'AposBooleanCell'
-      // },
       // Automatically hidden if none of the pieces
       // actually have a URL
       _url: {
@@ -43,7 +37,8 @@ module.exports = {
         component: 'AposCellLink'
       }
     },
-    remove: [ 'updatedAt' ]
+    remove: [ 'updatedAt', 'visibility' ],
+    order: [ 'title', 'type', 'submitted.at', 'submitted.by', '_url' ]
   },
 
   fields: {
