@@ -153,7 +153,8 @@ module.exports = {
   },
   restApiRoutes: (self) => ({
     async getAll(req) {
-      self.publicApiCheck(req);
+      // Edit access to draft is sufficient to see either
+      self.publicApiCheck(req, 'draft');
       const query = self.getRestQuery(req);
       if (!query.get('perPage')) {
         query.perPage(
@@ -180,6 +181,7 @@ module.exports = {
     },
     async getOne(req, _id) {
       _id = self.inferIdLocaleAndMode(req, _id);
+      // Edit access to draft is sufficient to see either
       self.publicApiCheck(req);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
@@ -786,9 +788,9 @@ module.exports = {
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have editing permissions. Otherwise does
       // nothing. Simplifies implementation of `getAll` and `getOne`.
-      publicApiCheck(req) {
+      publicApiCheck(req, mode) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit', self.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.name, mode || req.mode)) {
             throw self.apos.error('notfound');
           }
         }

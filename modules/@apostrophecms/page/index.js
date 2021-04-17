@@ -77,7 +77,8 @@ module.exports = {
       // array of pages.
 
       async getAll(req) {
-        self.publicApiCheck(req);
+        // Edit access to draft is sufficient to fetch either
+        self.publicApiCheck(req, 'draft');
         const all = self.apos.launder.boolean(req.query.all);
         const archived = self.apos.launder.booleanOrNull(req.query.archived);
         const flat = self.apos.launder.boolean(req.query.flat);
@@ -183,7 +184,8 @@ module.exports = {
       // `_home` or `_archive`
       async getOne(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        // Edit access to draft is sufficient to fetch either
+        self.publicApiCheck(req, 'draft');
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -2102,7 +2104,9 @@ database.`);
       },
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
+        // Minimum standard for a REST query without a public projection
+        // is being allowed to edit the draft
+        if (!self.apos.permission.can(req, 'edit', self.__meta.name, 'draft')) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -2133,9 +2137,9 @@ database.`);
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have editing permissions. Otherwise does
       // nothing. Simplifies implementation of `getAll` and `getOne`.
-      publicApiCheck(req) {
+      publicApiCheck(req, mode) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.__meta.name, mode || req.mode)) {
             throw self.apos.error('notfound');
           }
         }
