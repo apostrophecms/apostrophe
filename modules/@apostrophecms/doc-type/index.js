@@ -755,6 +755,7 @@ module.exports = {
         // Draft and published roles intentionally reversed
         self.copyForPublication(req, published, draft);
         draft.modified = false;
+        delete draft.submitted;
         draft = await self.update({
           ...req,
           mode: 'draft'
