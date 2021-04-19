@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Breaks
+
+* Removes the `firstName` and `lastName` fields in user pieces.
+
 ### Adds
 
 * Major performance improvement to the `nestedModuleSubdirs` option.
