@@ -282,13 +282,27 @@ module.exports = {
         };
       },
       async createIndexes() {
-        await self.db.createIndex({ type: 1 }, {});
+        await self.db.createIndex({
+          type: 1,
+          aposLocale: 1
+        }, {});
         await self.createSlugIndex();
-        await self.db.createIndex({ titleSortified: 1 }, {});
-        await self.db.createIndex({ updatedAt: -1 }, {});
+        await self.db.createIndex({
+          titleSortified: 1,
+          aposLocale: 1
+        }, {});
+        await self.db.createIndex({
+          updatedAt: -1,
+          aposLocale: 1
+        }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
         await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});
+        await self.db.createIndex({
+          submitted: 1,
+          aposLocale: 1
+        });
+        await self.createPathLevelIndex();
       },
       async createTextIndex() {
         try {
@@ -322,7 +336,7 @@ module.exports = {
           });
         }
       },
-      async ensurePathLevelIndex() {
+      async createPathLevelIndex() {
         const params = self.getPathLevelIndexParams();
         return self.db.createIndex(params, {});
       },

@@ -551,7 +551,7 @@ module.exports = {
         return self.apos.modules['@apostrophecms/email'].emailForModule(req, templateName, data, options, self);
       },
 
-      // Given a Vue component name, such as AposPiecesManager,
+      // Given a Vue component name, such as AposDocsManager,
       // return that name unless `options.components[name]` has been set to
       // an alternate name. Overriding keys in the `components` option
       // allows modules to provide alternative functionality for standard

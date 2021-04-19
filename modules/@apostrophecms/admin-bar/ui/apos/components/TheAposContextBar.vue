@@ -22,6 +22,7 @@
         :context="context"
         :edit-mode="editMode"
         :has-custom-ui="hasCustomUi"
+        :can-publish="canPublish"
         :ready-to-publish="readyToPublish"
         :custom-publish-label="customPublishLabel"
         @switchEditMode="switchEditMode"
@@ -92,18 +93,19 @@ export default {
     needToAutosave() {
       return !!this.patchesSinceSave.length;
     },
+    canPublish() {
+      return this.getContextModule(this.context).canPublish;
+    },
     readyToPublish() {
-      return this.context.modified && (!this.needToAutosave) && (!this.editing);
+      return this.canPublish
+        ? this.context.modified && (!this.needToAutosave) && (!this.editing)
+        : (!this.context.submitted) || (this.context.updatedAt > this.context.submitted.at);
     },
     moduleOptions() {
       return window.apos.adminBar;
     },
     action() {
-      if (this.contextStack.length) {
-        return apos.modules[this.context.type].action;
-      } else {
-        return this.moduleOptions.contextAction;
-      }
+      return this.getContextModule(this.context).action;
     },
     hasCustomUi() {
       return this.contextStack.length > 0;
@@ -245,13 +247,23 @@ export default {
       }, 1100);
     },
     async onPublish(e) {
-      const published = await this.publish(this.action, this.context._id, !!this.context.lastPublishedAt);
-      if (published) {
-        this.context = {
-          ...this.context,
-          lastPublishedAt: Date.now(),
-          modified: false
-        };
+      if (!this.canPublish) {
+        const submitted = await this.submitDraft(this.action, this.context._id);
+        if (submitted) {
+          this.context = {
+            ...this.context,
+            submitted
+          };
+        }
+      } else {
+        const published = await this.publish(this.action, this.context._id, !!this.context.lastPublishedAt);
+        if (published) {
+          this.context = {
+            ...this.context,
+            lastPublishedAt: Date.now(),
+            modified: false
+          };
+        }
       }
     },
     onBeforeUnload(e) {
@@ -282,7 +294,9 @@ export default {
           });
           this.context = {
             ...this.context,
-            modified: doc.modified
+            modified: doc.modified,
+            submitted: doc.submitted,
+            updatedAt: doc.updatedAt
           };
           this.retrying = false;
         } catch (e) {
@@ -311,6 +325,9 @@ export default {
         mode
       });
     },
+    getContextModule(doc) {
+      return doc.slug.match(/^\//) ? self.apos.page : self.apos.modules[doc.type];
+    },
     // Implementation detail of onSetContext and onPushContext.
     async setContext({
       mode,
@@ -333,7 +350,7 @@ export default {
       }
       try {
         // Returns the doc as represented in the new locale and mode
-        const action = (doc.slug.match(/^\//) ? self.apos.page : self.apos.modules[doc.type]).action;
+        const action = this.getContextModule(doc).action;
         const modeDoc = await apos.http.get(`${action}/${doc._id}`, {
           qs: {
             'apos-mode': mode,
@@ -631,7 +648,7 @@ export default {
     async updateDraftIsEditable() {
       if (this.context.aposLocale && this.context.aposLocale.endsWith('published') && !this.context._edit) {
         // A contributor might be able to edit the draft
-        const draftContext = await apos.http.get(`${this.moduleOptions.contextAction}/${this.context._id}`, {
+        const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
           busy: true,
           qs: {
             'apos-mode': 'draft',

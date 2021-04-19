@@ -76,6 +76,10 @@
             :options="treeOptions"
             @update="update"
             @edit="openEditor"
+            @preview="onPreview"
+            @copy="copy"
+            @archive="onArchive"
+            @restore="onRestore"
           />
         </template>
       </AposModalBody>
@@ -85,20 +89,23 @@
 
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
-  emits: [ 'archive', 'search', 'safe-close' ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin ],
+  emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
   data() {
+
     return {
       moduleName: '@apostrophecms/page',
       modal: {
         active: false,
-        type: 'overlay',
-        showModal: false
+        type: 'slide',
+        showModal: false,
+        width: 'two-thirds'
       },
       pages: [],
       pagesFlat: [],
@@ -110,38 +117,20 @@ export default {
             cellValue: 'title'
           },
           {
-            columnHeader: 'Published',
-            property: 'lastPublishedAt',
-            cellValue: {
-              true: {
-                icon: 'circle',
-                iconSize: 10,
-                label: 'Yes',
-                class: 'is-published'
-              },
-              false: {
-                icon: 'circle',
-                iconSize: 10,
-                label: 'No'
-              }
-            }
+            name: 'labels',
+            columnHeader: '',
+            component: 'AposCellLabels'
           },
           {
-            columnHeader: 'Edit',
-            property: '_id',
-            type: 'button',
-            action: 'edit',
-            cellValue: {
-              icon: 'pencil'
-            }
+            columnHeader: 'Last Edited',
+            property: 'updatedAt',
+            component: 'AposCellLastEdited',
+            cellValue: 'updatedAt'
           },
           {
-            columnHeader: 'Link',
-            property: '_url',
-            type: 'link',
-            cellValue: {
-              icon: 'link'
-            }
+            columnHeader: '',
+            property: 'contextMenu',
+            component: 'AposCellContextMenu'
           }
         ]
       },
@@ -216,10 +205,33 @@ export default {
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-
     await this.getPages();
   },
   methods: {
+    onPreview(id) {
+      this.preview(this.findDocById(this.pagesFlat, id));
+    },
+    async onArchive(id) {
+      const doc = this.findDocById(this.pagesFlat, id);
+      if (await this.archive(this.moduleOptions.action, id, !!doc.lastPublishedAt, true)) {
+        await this.getPages();
+      }
+    },
+    async onRestore(id) {
+      if (await this.restore(this.moduleOptions.action, id, true)) {
+        await this.getPages();
+      }
+    },
+    async copy(id) {
+      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+        moduleName: this.moduleName,
+        copyOf: this.findDocById(this.pagesFlat, id)
+      });
+      if (!doc) {
+        return;
+      }
+      await this.getPages();
+    },
     moreMenuHandler(action) {
       if (action === 'new') {
         this.openEditor(null);
@@ -311,7 +323,7 @@ export default {
       this.$emit('archive', this.selected);
     },
     async openEditor(pageId) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
         docId: pageId
       });

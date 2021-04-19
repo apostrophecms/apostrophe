@@ -364,6 +364,15 @@ module.exports = {
       async update(req, page, options = {}) {
         return self.apos.page.update(req, page, options);
       },
+      // True delete. Will throw an error if the page
+      // has descendants.
+      //
+      // This is a convenience wrapper for `apos.page.delete`, for the
+      // benefit of code that expects all managers to have a delete method.
+      // Pages are usually deleted via `apos.page.delete`.
+      async delete(req, page, options = {}) {
+        return self.apos.page.delete(req, page, options);
+      },
       // If the page does not yet have a slug, add one based on the
       // title; throw an error if there is no title
       ensureSlug(page) {

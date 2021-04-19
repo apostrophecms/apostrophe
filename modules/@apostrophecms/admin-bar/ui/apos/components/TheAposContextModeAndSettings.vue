@@ -100,7 +100,8 @@ export default {
       required: true
     },
     editMode: Boolean,
-    readyToPublish: Boolean
+    readyToPublish: Boolean,
+    canPublish: Boolean
   },
   emits: [ 'switchEditMode', 'discardDraft', 'publish' ],
   computed: {
@@ -111,12 +112,14 @@ export default {
       return this.moduleOptions.contextEditorName;
     },
     publishLabel() {
-      if (this.customPublishLabel) {
-        return this.customPublishLabel;
-      } else if (this.context.lastPublishedAt) {
-        return 'Publish Changes';
+      if (this.canPublish) {
+        if (this.original && this.original.lastPublishedAt) {
+          return 'Publish Changes';
+        } else {
+          return 'Publish';
+        }
       } else {
-        return 'Publish';
+        return 'Propose Changes';
       }
     }
   },

@@ -692,12 +692,16 @@ module.exports = {
             mode: 'published'
           }, published, options);
         }
+
         await self.apos.doc.db.updateOne({
           _id: draft._id
         }, {
           $set: {
             modified: false,
             lastPublishedAt
+          },
+          $unset: {
+            submitted: 1
           }
         });
         // Now that we're sure publication worked, update "previous" so we
@@ -751,6 +755,7 @@ module.exports = {
         // Draft and published roles intentionally reversed
         self.copyForPublication(req, published, draft);
         draft.modified = false;
+        delete draft.submitted;
         draft = await self.update({
           ...req,
           mode: 'draft'
@@ -867,7 +872,8 @@ module.exports = {
           ...initialBrowserOptions,
           name,
           label,
-          pluralLabel
+          pluralLabel,
+          canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
         browserOptions.action = self.action;
         browserOptions.schema = self.allowedSchema(req);
