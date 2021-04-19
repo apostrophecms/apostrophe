@@ -14,6 +14,7 @@
 * Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
 * Editors and admins can manage submitted drafts.
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
+* Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 
 ### Fixes
 
