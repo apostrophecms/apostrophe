@@ -1295,7 +1295,7 @@ database.`);
       // slug of the page's former parent, and `changed` is an array
       // of objects with _id and slug properties, including all subpages that
       // had to move too.
-      async moveToArchive(req, _id) {
+      async archive(req, _id) {
         const archive = await findArchive();
         if (!archive) {
           throw new Error('Site has no archive, contact administrator');
@@ -2157,7 +2157,8 @@ database.`);
           parked: 1,
           lastPublishedAt: 1,
           aposDocId: 1,
-          aposLocale: 1
+          aposLocale: 1,
+          updatedAt: 1
         };
       },
       addArchivedMigration() {

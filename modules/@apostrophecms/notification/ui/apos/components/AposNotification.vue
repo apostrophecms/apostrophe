@@ -194,10 +194,11 @@ export default {
 
     & /deep/ button {
       @include apos-button-reset();
+      padding: 0 3px;
+      font-size: inherit;
       text-decoration: underline;
       text-decoration-color: var(--a-success);
       text-underline-offset: 3px;
-      padding: 0 3px;
     }
   }
 
