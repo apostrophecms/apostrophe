@@ -13,6 +13,9 @@
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
 * Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
 * A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
+* The total number of submitted drafts is visible in the admin bar.
+* The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
+* Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
