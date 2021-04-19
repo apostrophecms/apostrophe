@@ -8,6 +8,9 @@
 * Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role, as they already could do anything.
 * The admin bar menu is fully responsive to user roles.
 * The context bar entirely appears or disappears based on user roles.
+* Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc
+* New label component
+* Doc states in managers now reflected w labels (Active Draft, Archived, Unpublished)
 * Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
 * Editors and admins can manage submitted drafts.
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.

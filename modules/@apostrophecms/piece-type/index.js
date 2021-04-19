@@ -29,20 +29,18 @@ module.exports = {
       add: {
         title: {
           label: 'Title',
+          name: 'title',
           component: 'AposCellButton'
         },
+        labels: {
+          name: 'labels',
+          label: '',
+          component: 'AposCellLabels'
+        },
         updatedAt: {
-          label: 'Edited on',
-          component: 'AposCellDate'
-        },
-        visibility: {
-          label: 'Visibility'
-        },
-        // Automatically hidden if none of the pieces
-        // actually have a URL
-        _url: {
-          label: 'Link',
-          component: 'AposCellLink'
+          name: 'updatedAt',
+          label: 'Last Edited',
+          component: 'AposCellLastEdited'
         }
       }
     };
