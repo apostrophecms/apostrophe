@@ -323,7 +323,7 @@ export default {
       this.$emit('archive', this.selected);
     },
     async openEditor(pageId) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
         docId: pageId
       });

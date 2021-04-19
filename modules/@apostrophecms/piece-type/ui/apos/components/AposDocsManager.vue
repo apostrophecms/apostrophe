@@ -32,9 +32,9 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else
+        v-else-if="options.managerHasNewButton"
         :label="`New ${ options.label }`" type="primary"
-        @click="edit(null)"
+        @click="create"
       />
     </template>
     <template v-if="relationshipField" #leftRail>
@@ -77,7 +77,7 @@
           />
         </template>
         <template #bodyMain>
-          <AposPiecesManagerDisplay
+          <AposDocsManagerDisplay
             v-if="pieces.length > 0"
             :items="pieces"
             :headers="headers"
@@ -108,6 +108,7 @@ import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsMa
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import { get } from 'lodash';
 
 export default {
   name: 'AposPiecesManager',
@@ -209,7 +210,7 @@ export default {
   methods: {
     moreMenuHandler(action) {
       if (action === 'new') {
-        this.new();
+        this.create();
       }
     },
     setCheckedDocs(checked) {
@@ -218,7 +219,7 @@ export default {
         return item._id;
       });
     },
-    new() {
+    create() {
       this.edit(null);
     },
     async finishSaved() {
@@ -293,23 +294,37 @@ export default {
         }
       });
     },
-    async edit(pieceId) {
-      const doc = await apos.modal.execute(this.options.components.insertModal, {
-        moduleName: this.moduleName,
-        docId: pieceId,
+    async edit(piece) {
+      let moduleName;
+      // Don't assume the piece has the type of the module,
+      // this could be a virtual piece type such as "submitted-draft"
+      // that manages docs of many types
+      if (piece) {
+        if (piece.slug.startsWith('/')) {
+          moduleName = '@apostrophecms/page';
+        } else {
+          moduleName = piece.type;
+        }
+      } else {
+        moduleName = this.moduleName;
+      }
+      const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
+        moduleName,
+        docId: piece._id,
         filterValues: this.filterValues
       });
       if (!doc) {
         // Cancel clicked
         return;
       }
-      await this.getPieces();
-      if (this.relationshipField && (!pieceId)) {
-        doc._fields = doc._fields || {};
-        // Must push to checked docs or it will try to do it for us
-        // and not include _fields
-        this.checkedDocs.push(doc);
-        this.checked.push(doc._id);
+      if (this.relationshipField) {
+        if (!this.checked.includes(doc._id)) {
+          doc._fields = doc._fields || {};
+          // Must push to checked docs or it will try to do it for us
+          // and not include _fields
+          this.checkedDocs.push(doc);
+          this.checked.push(doc._id);
+        }
       }
     },
     // Toolbar handlers

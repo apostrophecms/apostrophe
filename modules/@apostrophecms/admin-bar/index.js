@@ -251,14 +251,11 @@ module.exports = {
           req.res.setHeader('Cache-Control', 'no-cache');
         }
         let contextEditorName;
-        let contextAction;
         if (context) {
           if (self.apos.page.isPage(context)) {
             contextEditorName = '@apostrophecms/page:editor';
-            contextAction = self.apos.page.action;
           } else {
             contextEditorName = `${context.type}:editor`;
-            contextAction = self.apos.doc.getManager(context.type).action;
           }
         }
         return {
@@ -273,19 +270,19 @@ module.exports = {
             modified: context.modified,
             updatedAt: context.updatedAt,
             updatedBy: context.updatedBy,
+            submitted: context.submitted,
             lastPublishedAt: context.lastPublishedAt,
             _edit: context._edit,
             aposMode: context.aposMode,
             aposLocale: context.aposLocale
           },
           // Base API URL appropriate to the context document
-          contextAction,
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           // Simplifies frontend logic
           contextId: context && context._id,
           tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/page')
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/page', 'draft')
         };
       }
     };
