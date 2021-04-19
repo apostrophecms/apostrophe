@@ -29,20 +29,18 @@ module.exports = {
       add: {
         title: {
           label: 'Title',
+          name: 'title',
           component: 'AposCellButton'
         },
+        labels: {
+          name: 'labels',
+          label: '',
+          component: 'AposCellLabels'
+        },
         updatedAt: {
-          label: 'Edited on',
-          component: 'AposCellDate'
-        },
-        visibility: {
-          label: 'Visibility'
-        },
-        // Automatically hidden if none of the pieces
-        // actually have a URL
-        _url: {
-          label: 'Link',
-          component: 'AposCellLink'
+          name: 'updatedAt',
+          label: 'Last Edited',
+          component: 'AposCellLastEdited'
         }
       }
     };
@@ -482,7 +480,7 @@ module.exports = {
       addManagerModal() {
         self.apos.modal.add(
           `${self.__meta.name}:manager`,
-          self.getComponentName('managerModal', 'AposPiecesManager'),
+          self.getComponentName('managerModal', 'AposDocsManager'),
           { moduleName: self.__meta.name }
         );
       },
@@ -843,7 +841,7 @@ module.exports = {
         });
         _.defaults(browserOptions.components, {
           editorModal: 'AposDocEditor',
-          managerModal: 'AposPiecesManager'
+          managerModal: 'AposDocsManager'
         });
         return browserOptions;
       },

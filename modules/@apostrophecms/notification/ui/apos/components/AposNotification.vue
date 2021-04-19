@@ -79,6 +79,15 @@ export default {
         classes.push('apos-notification--progress');
       }
 
+      // long notifications look funky, but reading the label's length doesn't account for html.
+      // Throw the string into a fake element to get its text content
+      const div = document.createElement('div');
+      div.innerHTML = this.label;
+      const textContent = div.textContent || div.innerText || '';
+      if (textContent.length > 160) {
+        classes.push('apos-notification--long');
+      }
+
       return classes.join(' ');
     },
     iconComponent () {
@@ -119,11 +128,11 @@ export default {
     display: inline-flex;
     overflow: hidden;
     min-width: 200px;
-    max-width: 400px;
+    max-width: 500px;
     padding: 8px 35px 8px 8px;
     color: var(--a-text-inverted);
     background: var(--a-background-inverted);
-    border-radius: 30px;
+    border-radius: 200px;
     box-shadow: var(--a-box-shadow);
     align-items: center;
     & + .apos-notification {
@@ -132,6 +141,10 @@ export default {
     &:hover {
       transform: translateY(-1px);
     }
+  }
+
+  .apos-notification--long {
+    border-radius: 10px;
   }
 
   .apos-notification__indicator {
@@ -187,18 +200,12 @@ export default {
     line-height: var(--a-line-tallest);
   }
 
-  .apos-notification__label {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-
-    & /deep/ button {
-      @include apos-button-reset();
-      text-decoration: underline;
-      text-decoration-color: var(--a-success);
-      text-underline-offset: 3px;
-      padding: 0 3px;
-    }
+  .apos-notification__label /deep/ button {
+    @include apos-button-reset();
+    text-decoration: underline;
+    text-decoration-color: var(--a-success);
+    text-underline-offset: 3px;
+    padding: 0 3px;
   }
 
   .apos-notification__progress {
