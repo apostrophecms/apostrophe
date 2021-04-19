@@ -148,8 +148,8 @@ export default {
 }
 
 .apos-confirm__description {
-  @include type-large;
-  line-height: var(--a-line-tallest);
+  @include type-base;
+  line-height: var(--a-line-tall);
 }
 
 .apos-confirm__btns {

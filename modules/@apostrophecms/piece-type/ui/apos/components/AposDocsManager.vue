@@ -270,7 +270,7 @@ export default {
     },
     async onArchive(id) {
       const piece = this.findDocById(this.pieces, id);
-      if (await this.archive(this.options.action, id, !!piece.lastPublishedAt)) {
+      if (await this.archive(piece)) {
         apos.bus.$emit('content-changed');
       }
     },

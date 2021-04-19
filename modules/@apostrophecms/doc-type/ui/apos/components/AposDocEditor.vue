@@ -568,7 +568,31 @@ export default {
           }
         }
         this.$emit('modal-result', doc);
-        this.modal.showModal = false;
+        if (!this.restoreOnly) {
+          this.modal.showModal = false;
+        }
+        if (this.restoreOnly) {
+          apos.bus.$emit('busy', {
+            name: 'busy',
+            active: true
+          });
+          setTimeout(async () => {
+            this.modal.showModal = false;
+            apos.bus.$emit('busy', {
+              name: 'busy',
+              active: false
+            });
+            await apos.notify('Archived content restored', {
+              type: 'success',
+              icon: 'archive-arrow-up-icon',
+              dismiss: true
+            });
+            await apos.modal.execute(this.moduleOptions.components.editorModal, {
+              moduleName: this.moduleOptions.name,
+              docId: this.docId
+            });
+          }, 1500);
+        }
         if (navigate) {
           if (doc._url) {
             window.location = doc._url;
