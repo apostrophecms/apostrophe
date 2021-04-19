@@ -79,6 +79,15 @@ export default {
         classes.push('apos-notification--progress');
       }
 
+      // long notifications look funky, but reading the label's length doesn't account for html.
+      // Throw the string into a fake element to get its text content
+      const div = document.createElement('div');
+      div.innerHTML = this.label;
+      const textContent = div.textContent || div.innerText || '';
+      if (textContent.length > 160) {
+        classes.push('apos-notification--long');
+      }
+
       return classes.join(' ');
     },
     iconComponent () {
@@ -132,6 +141,10 @@ export default {
     &:hover {
       transform: translateY(-1px);
     }
+  }
+
+  .apos-notification--long {
+    border-radius: 10px;
   }
 
   .apos-notification__indicator {
