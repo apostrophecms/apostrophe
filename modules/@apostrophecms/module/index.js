@@ -15,7 +15,6 @@
 // to be excluded from CSRF protection.
 
 const _ = require('lodash');
-const cors = require('cors');
 
 module.exports = {
 
@@ -49,6 +48,8 @@ module.exports = {
     // module name unless they are registered with a leading /.
     // self.action is used to implement this
     self.enableAction();
+    // Routes in their final ready-to-add-to-Express form
+    self._routes = [];
   },
 
   async afterAllSections(self) {
@@ -59,9 +60,17 @@ module.exports = {
 
   methods(self) {
     return {
-      addSectionRoutes(section) {
+      compileSectionRoutes(section) {
         _.each(self[section] || {}, function(routes, method) {
-          _.each(routes, function(route, name) {
+          _.each(routes, function(config, name) {
+            let route;
+            if ((typeof config) === 'object') {
+              // Route with extra config like `before`,
+              // get to the actual route function
+              route = config.route;
+            } else {
+              route = config;
+            }
             // TODO we must set up this array based on the new route middleware section
             // at some point
             const url = self.getRouteUrl(name);
@@ -71,22 +80,32 @@ module.exports = {
                 routeFn = self.routeWrappers[section](name, routeFn);
                 route[route.length - 1] = routeFn;
               }
-              self.apos.app[method](url, function(req, res) {
-                // Invoke the middleware functions, then the route function,
-                // which is on the same array. This is an async for loop.
-                // We use async/await nearly everywhere but the Express-style
-                // middleware pattern doesn't call for it
-                let i = 0;
-                next();
-                function next() {
-                  route[i++](req, res, (i < route.length) ? next : null);
+              self._routes.push({
+                before: config.before,
+                method,
+                url,
+                route: (req, res) => {
+                  // Invoke the middleware functions, then the route function,
+                  // which is on the same array. This is an async for loop.
+                  // We use async/await nearly everywhere but the Express-style
+                  // middleware pattern doesn't call for it
+                  let i = 0;
+                  next();
+                  function next() {
+                    route[i++](req, res, (i < route.length) ? next : null);
+                  }
                 }
               });
             } else {
               if (self.routeWrappers[section]) {
                 route = self.routeWrappers[section](name, route);
               }
-              self.apos.app[method](url, route);
+              self._routes.push({
+                before: config.before,
+                method,
+                url,
+                route
+              });
             }
           });
         });
@@ -617,25 +636,19 @@ module.exports = {
           }
         }
       },
-      '@apostrophecms/express:addRoutes': {
-        // Enable CORS headers for all APIs of this module
-        enableCors() {
-          if (self.apos.app) {
-            self.apos.app.use(self.action, cors());
-          }
-        },
-        addAllRoutes() {
+      '@apostrophecms/express:compileRoutes': {
+        compileAllRoutes() {
           // Sections like `routes` don't populate `self.routes` until after init
           // resolves. Call methods that bring those sections
           // fully to life here
           self.compileRestApiRoutesToApiRoutes();
-          self.addSectionRoutes('routes');
-          self.addSectionRoutes('renderRoutes');
+          self.compileSectionRoutes('routes');
+          self.compileSectionRoutes('renderRoutes');
           // Put the api routes last so the REST api routes
           // they contain, with their wildcards, don't
           // block ordinary apiRoute names by matching them
           // as _ids
-          self.addSectionRoutes('apiRoutes');
+          self.compileSectionRoutes('apiRoutes');
         }
       },
       ...self.enabledBrowserData && {
