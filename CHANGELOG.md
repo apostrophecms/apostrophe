@@ -8,6 +8,13 @@
 * Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role, as they already could do anything.
 * The admin bar menu is fully responsive to user roles.
 * The context bar entirely appears or disappears based on user roles.
+* Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
+* Editors and admins can manage submitted drafts.
+* Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
+
+### Fixes
+
+* There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 

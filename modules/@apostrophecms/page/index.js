@@ -77,7 +77,8 @@ module.exports = {
       // array of pages.
 
       async getAll(req) {
-        self.publicApiCheck(req);
+        // Edit access to draft is sufficient to fetch either
+        self.publicApiCheck(req, 'draft');
         const all = self.apos.launder.boolean(req.query.all);
         const archived = self.apos.launder.booleanOrNull(req.query.archived);
         const flat = self.apos.launder.boolean(req.query.flat);
@@ -183,7 +184,8 @@ module.exports = {
       // `_home` or `_archive`
       async getOne(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        // Edit access to draft is sufficient to fetch either
+        self.publicApiCheck(req, 'draft');
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -406,6 +408,52 @@ module.exports = {
             return true;
           });
         },
+        ':_id/submit': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          const submitted = {
+            by: req.user && req.user.title,
+            at: new Date()
+          };
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $set: {
+              submitted
+            }
+          });
+          return submitted;
+        },
+        ':_id/reject': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!self.apos.permission.can(req, 'publish', draft)) {
+            throw self.apos.error('forbidden');
+          }
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $unset: {
+              submitted: 1
+            }
+          });
+        },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
@@ -597,6 +645,15 @@ database.`);
       async patch(req, _id) {
         return self.withLock(req, async () => {
           const input = req.body;
+          const keys = Object.keys(input);
+          let possiblePatchedFields;
+          if (input._advisoryLock && keys.length === 1) {
+            possiblePatchedFields = false;
+          } else if (keys.length === 0) {
+            possiblePatchedFields = false;
+          } else {
+            possiblePatchedFields = true;
+          }
           const page = await self.findOneForEditing(req, { _id });
           let result;
           if (!page) {
@@ -623,15 +680,19 @@ database.`);
               });
             }
             self.enforceParkedProperties(req, page, input);
-            await self.applyPatch(req, page, input);
+            if (possiblePatchedFields) {
+              await self.applyPatch(req, page, input);
+            }
             if (i === (patches.length - 1)) {
-              await self.update(req, page);
-              if (input._targetId) {
-                const targetId = self.apos.launder.string(input._targetId);
-                const position = self.apos.launder.string(input._position);
-                await self.move(req, page._id, targetId, position);
+              if (possiblePatchedFields) {
+                await self.update(req, page);
+                if (input._targetId) {
+                  const targetId = self.apos.launder.string(input._targetId);
+                  const position = self.apos.launder.string(input._position);
+                  await self.move(req, page._id, targetId, position);
+                }
+                result = self.findOneForEditing(req, { _id }, { attachments: true });
               }
-              result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
             if (tabId && !lock) {
               await self.apos.doc.unlock(req, page, tabId);
@@ -676,7 +737,7 @@ database.`);
           components: {}
         });
         _.defaults(browserOptions.components, {
-          insertModal: 'AposDocEditor',
+          editorModal: 'AposDocEditor',
           managerModal: 'AposPagesManager'
         });
 
@@ -684,6 +745,7 @@ database.`);
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
         browserOptions.name = self.__meta.name;
+        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/page');
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/page');
         return browserOptions;
       },
@@ -1925,7 +1987,7 @@ database.`);
       addEditorModal() {
         self.apos.modal.add(
           `${self.__meta.name}:editor`,
-          self.getComponentName('insertModal', 'AposDocEditor'),
+          self.getComponentName('editorModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
@@ -2042,7 +2104,9 @@ database.`);
       },
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
+        // Minimum standard for a REST query without a public projection
+        // is being allowed to edit the draft
+        if (!self.apos.permission.can(req, 'edit', self.__meta.name, 'draft')) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -2073,9 +2137,9 @@ database.`);
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have editing permissions. Otherwise does
       // nothing. Simplifies implementation of `getAll` and `getOne`.
-      publicApiCheck(req) {
+      publicApiCheck(req, mode) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.__meta.name, mode || req.mode)) {
             throw self.apos.error('notfound');
           }
         }

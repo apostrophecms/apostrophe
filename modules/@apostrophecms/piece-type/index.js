@@ -152,7 +152,8 @@ module.exports = {
   },
   restApiRoutes: (self) => ({
     async getAll(req) {
-      self.publicApiCheck(req);
+      // Edit access to draft is sufficient to see either
+      self.publicApiCheck(req, 'draft');
       const query = self.getRestQuery(req);
       if (!query.get('perPage')) {
         query.perPage(
@@ -179,6 +180,7 @@ module.exports = {
     },
     async getOne(req, _id) {
       _id = self.inferIdLocaleAndMode(req, _id);
+      // Edit access to draft is sufficient to see either
       self.publicApiCheck(req);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
@@ -265,6 +267,48 @@ module.exports = {
             }
           });
           return true;
+        },
+        ':_id/submit': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          const submitted = {
+            by: req.user && req.user.title,
+            at: new Date()
+          };
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $set: {
+              submitted
+            }
+          });
+        },
+        ':_id/reject': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $unset: {
+              submitted: 1
+            }
+          });
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -433,14 +477,14 @@ module.exports = {
       addManagerModal() {
         self.apos.modal.add(
           `${self.__meta.name}:manager`,
-          self.getComponentName('managerModal', 'AposPiecesManager'),
+          self.getComponentName('managerModal', 'AposDocsManager'),
           { moduleName: self.__meta.name }
         );
       },
       addEditorModal() {
         self.apos.modal.add(
           `${self.__meta.name}:editor`,
-          self.getComponentName('insertModal', 'AposDocEditor'),
+          self.getComponentName('editorModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
@@ -743,9 +787,9 @@ module.exports = {
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have editing permissions. Otherwise does
       // nothing. Simplifies implementation of `getAll` and `getOne`.
-      publicApiCheck(req) {
+      publicApiCheck(req, mode) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit', self.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.name, mode || req.mode)) {
             throw self.apos.error('notfound');
           }
         }
@@ -788,12 +832,13 @@ module.exports = {
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
         browserOptions.previewDraft = self.options.previewDraft;
+        browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
         _.defaults(browserOptions, {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          insertModal: 'AposDocEditor',
-          managerModal: 'AposPiecesManager'
+          editorModal: 'AposDocEditor',
+          managerModal: 'AposDocsManager'
         });
         return browserOptions;
       },
