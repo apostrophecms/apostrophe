@@ -78,7 +78,7 @@
           />
         </template>
         <template #bodyMain>
-          <AposPiecesManagerDisplay
+          <AposDocsManagerDisplay
             v-if="items.length > 0"
             :items="items"
             :headers="headers"
@@ -105,7 +105,7 @@ import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModa
 import { get } from 'lodash';
 
 export default {
-  name: 'AposPiecesManager',
+  name: 'AposDocsManager',
   mixins: [ AposDocsManagerMixin, AposModalModifiedMixin ],
   props: {
     moduleName: {
