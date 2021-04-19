@@ -608,10 +608,11 @@ export default {
     async onMoveToArchive(e) {
       try {
         if (await apos.confirm({
-          heading: 'Are You Sure?',
+          heading: `Archive ${this.moduleOptions.label || 'content'}`,
           description: this.published
-            ? 'This will move the document to the archive and un-publish it.'
-            : 'This will move the document to the archive.'
+            ? `Are you sure you want to archive the "${this.docFields.data.title}"? This also un-publish the ${this.moduleOptions.label.toLowerCase() || 'content'}.`
+            : 'This will move the document to the archive.',
+          affirmativeLabel: 'Yes, archive content'
         })) {
           await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
             body: {

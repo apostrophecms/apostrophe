@@ -72,10 +72,13 @@ export default {
     async discardDraft(action, _id, isPublished) {
       try {
         if (await apos.confirm({
-          heading: 'Are You Sure?',
+          heading: `Discard ${this.moduleOptions.label || 'content'}`,
           description: isPublished
             ? 'This will discard all changes since the document was last published.'
-            : 'Since this draft has never been published, this will completely delete the document.'
+            : `Since "${this.docFields.data.title}"? has never been published, this will completely delete the document.`,
+          affirmativeLabel: isPublished
+            ? 'Yes, discard changes'
+            : 'Yes, delete document'
         })) {
           if (isPublished) {
             const doc = await apos.http.post(`${action}/${_id}/revert-draft-to-published`, {
