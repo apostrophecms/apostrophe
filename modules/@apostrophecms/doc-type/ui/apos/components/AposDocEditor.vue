@@ -37,7 +37,7 @@
       <AposButton
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
-        @click="submit"
+        @click="onSave"
         :tooltip="tooltip"
       />
     </template>
@@ -254,10 +254,14 @@ export default {
       if (this.restoreOnly) {
         return 'Restore';
       } else if (this.manuallyPublished) {
-        if (this.original && this.original.lastPublishedAt) {
-          return 'Publish Changes';
+        if (this.moduleOptions.canPublish) {
+          if (this.original && this.original.lastPublishedAt) {
+            return 'Publish Changes';
+          } else {
+            return 'Publish';
+          }
         } else {
-          return 'Publish';
+          return 'Propose Changes';
         }
       } else {
         return 'Save';
@@ -415,7 +419,6 @@ export default {
     async saveDraftAndPreview() {
       await this.save({
         andPublish: false,
-        savingDraft: true,
         navigate: true
       });
     },
@@ -464,21 +467,25 @@ export default {
     lockNotAvailable() {
       this.modal.showModal = false;
     },
-    async submit() {
-      await this.save({
-        restoreOnly: this.restoreOnly,
-        andPublish: this.manuallyPublished,
-        savingDraft: false
-      });
+    async onSave() {
+      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+        await this.save({
+          restoreOnly: this.restoreOnly,
+          andPublish: this.manuallyPublished
+        });
+      } else {
+        await this.save({
+          andPublish: false,
+          andSubmit: true
+        });
+      }
     },
     // If andPublish is true, publish after saving.
-    // If savingDraft is true, make sure we're in draft
-    // mode before redirecting to the _url of the draft.
     async save({
       restoreOnly = false,
       andPublish = false,
-      savingDraft = false,
-      navigate = false
+      navigate = false,
+      andSubmit = false
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -525,6 +532,11 @@ export default {
             body,
             draft: true
           });
+          if (andSubmit) {
+            await this.submitDraft(this.moduleAction, doc._id);
+          } else if (andPublish && !restoreOnly) {
+            await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
+          }
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
           if (this.isLockedError(e)) {
@@ -537,9 +549,6 @@ export default {
             });
             return;
           }
-        }
-        if (andPublish && !restoreOnly) {
-          await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
@@ -663,8 +672,7 @@ export default {
     },
     saveDraft() {
       return this.save({
-        andPublish: false,
-        savingDraft: true
+        andPublish: false
       });
     },
     filterOutParkedFields(fields) {
