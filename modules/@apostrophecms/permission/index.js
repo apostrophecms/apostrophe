@@ -39,7 +39,7 @@ module.exports = {
       // the action on that doc type generally.
       //
       // If a permission is not specific to particular documents,
-      // for instance `view-draft`, `docOrType` may be omitted.
+      // `docOrType` may be omitted.
       //
       // The doc passed need not already exist in the database.
       //
@@ -47,48 +47,142 @@ module.exports = {
       // criteria object returning only documents on which the active user
       // can carry out the specified action.
       //
-      can(req, action, docOrType) {
-        if (req.user) {
+      // If present, `mode` overrides `req.mode` for purposes
+      // of determining permissions. This is useful to decide whether
+      // a user should get access to the manage view of articles even
+      // though they are technically in published mode on the page.
+
+      can(req, action, docOrType, mode) {
+        mode = mode || req.mode;
+        const role = req.user && req.user.role;
+        if (role === 'admin') {
           return true;
         }
-        const manager = docOrType && (self.apos.doc.getManager(docOrType.type || docOrType));
+        const type = docOrType && (docOrType.type || docOrType);
+        const doc = (docOrType && docOrType._id) ? docOrType : null;
+        const manager = type && self.apos.doc.getManager(type);
+        if (type && !manager) {
+          self.apos.util.warn(`A permission.can() call was made with a type that has no manager: ${type}`);
+          return false;
+        }
         if (action === 'view') {
-          if (manager.isAdminOnly()) {
+          if (manager && manager.isAdminOnly()) {
             return false;
           } else if (((typeof docOrType) === 'object') && (docOrType.visibility !== 'public')) {
-            return false;
+            return (role === 'guest') || (role === 'contributor') || (role === 'editor');
           } else {
             return true;
           }
+        } else if (action === 'view-draft') {
+          // Checked at the middleware level to determine if req.mode should
+          // be allowed to be set to draft at all
+          return (role === 'contributor') || (role === 'editor');
+        } else if (action === 'edit') {
+          if (manager && manager.isAdminOnly()) {
+            return false;
+          } else if (mode === 'draft') {
+            return (role === 'contributor') || (role === 'editor');
+          } else {
+            return role === 'editor';
+          }
+        } else if (action === 'publish') {
+          if (manager && manager.isAdminOnly()) {
+            return false;
+          } else {
+            return role === 'editor';
+          }
+        } else if (action === 'upload-attachment') {
+          if ((role === 'contributor') || (role === 'editor')) {
+            return true;
+          } else {
+            return false;
+          }
+        } else if (action === 'delete') {
+          if (doc && !doc.lastPublishedAt) {
+            return self.can(req, 'edit', doc);
+          } else {
+            return self.can(req, 'publish', doc);
+          }
         } else {
-          return false;
+          throw self.apos.error('invalid', 'That action is not implemented');
         }
       },
 
       // Returns a MongoDB criteria object that retrieves only documents
       // the user is allowed to perform `action` on.
-      //
-      // If a permission is not specific to particular documents,
-      // for instance `view-draft`, `docOrType` may be omitted.
 
       criteria(req, action) {
-        if (req.user) {
-          // For now, users can do anything
+        const role = req.user && req.user.role;
+        if (role === 'admin') {
           return {};
         }
-        if (action !== 'view') {
-          // Public can only view for now
-          return {
-            _id: 'thisIdWillNeverMatch'
-          };
-        }
         const restrictedTypes = Object.keys(self.apos.doc.managers).filter(name => self.apos.doc.getManager(name).isAdminOnly());
-        return {
-          visibility: 'public',
-          type: {
-            $nin: restrictedTypes
+        if (action === 'view') {
+          if (role === 'guest') {
+            return {
+              aposMode: {
+                $in: [ null, 'published' ]
+              },
+              visibility: {
+                $in: [ 'public', 'loginRequired' ]
+              },
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else if ((role === 'contributor') || (role === 'editor')) {
+            return {
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else {
+            return {
+              aposMode: {
+                $in: [ null, 'published' ]
+              },
+              visibility: 'public',
+              type: {
+                $nin: restrictedTypes
+              }
+            };
           }
-        };
+        } else if (action === 'edit') {
+          if (role === 'contributor') {
+            return {
+              aposMode: {
+                $in: [ null, 'draft' ]
+              },
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else if (role === 'editor') {
+            return {
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else {
+            return {
+              _id: null
+            };
+          }
+        } else if (action === 'publish') {
+          if (role === 'editor') {
+            return {
+              type: {
+                $nin: restrictedTypes
+              }
+            };
+          } else {
+            return {
+              _id: null
+            };
+          }
+        } else {
+          throw self.apos.error('invalid', `The action ${action} is not implemented for apos.permission.criteria`);
+        }
       },
 
       // For each object in the array, if the user is able to
@@ -134,8 +228,8 @@ module.exports = {
       // Returns an object with properties describing the permissions associated
       // with the given module, which should be a piece type or the `@apostrophecms/any-page-type`
       // module. Used to populate the permission grid on the front end
-      describeType(req, module, options = {}) {
-        const typeInfo = {
+      describePermissionSet(req, module, options = {}) {
+        const permissionSet = {
           label: module.options.permissionsLabel || module.options.pluralLabel || module.options.label,
           name: module.__meta.name,
           adminOnly: module.options.adminOnly,
@@ -148,45 +242,45 @@ module.exports = {
           permissions.push({
             name: 'create',
             label: 'Create',
-            value: self.can(req, 'edit')
+            value: self.can(req, 'edit', module.name)
           });
         }
         permissions.push({
           name: 'edit',
           label: module.options.singleton ? 'Modify' : 'Modify / Delete',
-          value: self.can(req, 'edit')
+          value: self.can(req, 'edit', module.name)
         });
         permissions.push({
           name: 'publish',
           label: 'Publish',
-          value: self.can(req, 'publish')
+          value: self.can(req, 'publish', module.name)
         });
-        typeInfo.permissions = permissions;
-        return typeInfo;
+        permissionSet.permissions = permissions;
+        return permissionSet;
       },
       // Receives the types for the permission grid (see the grid route) and
       // reduces the set to those considered interesting and those that
       // do not match the typical permissions, in an intuitive order
-      presentTypes(types) {
-        let newTypes = types.filter(type => self.options.interestingTypes.includes(type.name));
-        newTypes = [
-          ...newTypes,
-          types.filter(type => !newTypes.includes(type) && !self.matchTypicalPieceType(type)),
-          types.find(type => type.page)
+      presentPermissionSets(permissionSets) {
+        let newPermissionSets = permissionSets.filter(permissionSet => self.options.interestingTypes.includes(permissionSet.name));
+        newPermissionSets = [
+          ...newPermissionSets,
+          permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet)),
+          permissionSets.find(permissionSet => permissionSet.page)
         ];
-        const typicalPieceType = types.find(self.matchTypicalPieceType);
+        const typicalPieceType = permissionSets.find(self.matchTypicalPieceType);
         if (typicalPieceType) {
-          newTypes.push({
+          newPermissionSets.push({
             ...typicalPieceType,
             name: '@apostrophecms/piece-type',
             label: 'Piece Content',
-            tooltip: types.filter(type => self.matchTypicalPieceType(type) && !newTypes.includes(type)).map(type => type.label).join(', ')
+            tooltip: permissionSets.filter(permissionSet => self.matchTypicalPieceType(permissionSet) && !newPermissionSets.includes(permissionSet)).map(permissionSet => permissionSet.label).join(', ')
           });
         }
-        return newTypes;
+        return newPermissionSets;
       },
-      matchTypicalPieceType(type) {
-        return type.piece && !type.adminOnly && !self.options.interestingTypes.includes(type.name);
+      matchTypicalPieceType(permissionSet) {
+        return permissionSet.piece && !permissionSet.adminOnly && !self.options.interestingTypes.includes(permissionSet.name);
       }
     };
   },
@@ -194,15 +288,26 @@ module.exports = {
     return {
       get: {
         async grid(req) {
-          const types = [];
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/user')) {
+            throw self.apos.error('forbidden');
+          }
+          const permissionSets = [];
+          const effectiveRole = self.apos.launder.select(req.query.role, [ 'guest', 'contributor', 'editor', 'admin' ]);
+          if (!effectiveRole) {
+            throw self.apos.error('invalid', { role: effectiveRole });
+          }
+          const _req = self.apos.task.getReq({
+            role: effectiveRole,
+            mode: 'draft'
+          });
           for (const module of Object.values(self.apos.modules)) {
             if (self.apos.synth.instanceOf(module, '@apostrophecms/piece-type')) {
-              types.push(self.describeType(req, module, { piece: true }));
+              permissionSets.push(self.describePermissionSet(_req, module, { piece: true }));
             }
           }
-          types.push(self.describeType(req, self.apos.modules['@apostrophecms/any-page-type']));
+          permissionSets.push(self.describePermissionSet(_req, self.apos.modules['@apostrophecms/any-page-type']));
           return {
-            types: self.presentTypes(types)
+            permissionSets: self.presentPermissionSets(permissionSets)
           };
         }
       }

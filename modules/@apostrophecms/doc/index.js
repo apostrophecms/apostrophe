@@ -35,6 +35,7 @@ module.exports = {
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
     self.addLastPublishedToAllDraftsMigration();
+    self.addAposModeMigration();
   },
   restApiRoutes(self) {
     return {
@@ -75,10 +76,11 @@ module.exports = {
   handlers(self) {
     return {
       '@apostrophecms/doc-type:beforeInsert': {
-        setLocale(req, doc, options) {
+        setLocaleAndMode(req, doc, options) {
           const manager = self.getManager(doc.type);
           if (manager.isLocalized()) {
             doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
+            doc.aposMode = req.mode;
           }
         },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
@@ -141,9 +143,11 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforePublish': {
-        testPermissions(req, doc) {
-          if (!self.apos.permission.can(req, 'publish', doc)) {
-            throw self.apos.error('forbidden');
+        testPermissions(req, info) {
+          if (info.options.permissions !== false) {
+            if (!self.apos.permission.can(req, info.options.autopublishing ? 'edit' : 'publish', info.draft)) {
+              throw self.apos.error('forbidden');
+            }
           }
         }
       },
@@ -278,13 +282,27 @@ module.exports = {
         };
       },
       async createIndexes() {
-        await self.db.createIndex({ type: 1 }, {});
+        await self.db.createIndex({
+          type: 1,
+          aposLocale: 1
+        }, {});
         await self.createSlugIndex();
-        await self.db.createIndex({ titleSortified: 1 }, {});
-        await self.db.createIndex({ updatedAt: -1 }, {});
+        await self.db.createIndex({
+          titleSortified: 1,
+          aposLocale: 1
+        }, {});
+        await self.db.createIndex({
+          updatedAt: -1,
+          aposLocale: 1
+        }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
         await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});
+        await self.db.createIndex({
+          submitted: 1,
+          aposLocale: 1
+        });
+        await self.createPathLevelIndex();
       },
       async createTextIndex() {
         try {
@@ -318,7 +336,7 @@ module.exports = {
           });
         }
       },
-      async ensurePathLevelIndex() {
+      async createPathLevelIndex() {
         const params = self.getPathLevelIndexParams();
         return self.db.createIndex(params, {});
       },
@@ -962,6 +980,24 @@ module.exports = {
                 }
               });
             }
+          });
+        });
+      },
+      addAposModeMigration() {
+        self.apos.migration.add('add-apos-mode', async () => {
+          return self.apos.migration.eachDoc({
+            aposLocale: { $exists: 1 },
+            aposMode: { $exists: 0 }
+          }, 5, async (doc) => {
+            // eslint-disable-next-line no-unused-vars
+            const [ locale, mode ] = doc.aposLocale.split(':');
+            return self.db.updateOne({
+              _id: doc._id
+            }, {
+              $set: {
+                aposMode: mode
+              }
+            });
           });
         });
       },

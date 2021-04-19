@@ -5,6 +5,8 @@
     :disabled="disabled"
     menu-placement="bottom-end"
     @item-clicked="menuHandler"
+    @open="$emit('menu-open')"
+    @close="$emit('menu-close')"
     :button="{
       tooltip: { content: 'More Options', placement: 'bottom' },
       label: 'More Options',
@@ -39,7 +41,25 @@ export default {
         return false;
       }
     },
+    canOpenEditor: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canArchive: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    canPreview: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    canRestore: {
       type: Boolean,
       default() {
         return false;
@@ -68,6 +88,7 @@ export default {
       default: false
     }
   },
+  emits: [ 'menu-open', 'menu-close' ],
   data() {
     const menu = {
       isOpen: false,
@@ -99,25 +120,16 @@ export default {
         //     action: 'share'
         //   }
         // ] : []),
-        // TODO
-        // // You can always do this, if you do it with a new item
-        // // it just saves and you start a second one
-        // {
-        //   label: 'Duplicate Document',
-        //   action: 'duplicate'
-        // },
-        ...(this.canArchive ? [
+        ...(this.canOpenEditor ? [
           {
-            label: 'Move to Archive',
-            action: 'moveToArchive',
-            modifiers: [ 'danger' ]
+            label: 'Edit',
+            action: 'edit'
           }
         ] : []),
-        ...(this.canDiscardDraft ? [
+        ...(this.canPreview ? [
           {
-            label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
-            action: 'discardDraft',
-            modifiers: [ 'danger' ]
+            label: 'Preview',
+            action: 'preview'
           }
         ] : []),
         ...(this.canSaveDraft ? [
@@ -128,8 +140,28 @@ export default {
         ] : []),
         ...(this.canCopy ? [
           {
-            label: 'Copy',
+            label: 'Duplicate...',
             action: 'copy'
+          }
+        ] : []),
+        ...(this.canDiscardDraft ? [
+          {
+            label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
+            action: 'discardDraft',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
+        ...(this.canArchive ? [
+          {
+            label: 'Archive',
+            action: 'archive',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
+        ...(this.canRestore ? [
+          {
+            label: 'Restore from Archive',
+            action: 'restore'
           }
         ] : [])
       ];

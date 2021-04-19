@@ -77,7 +77,8 @@ module.exports = {
       // array of pages.
 
       async getAll(req) {
-        self.publicApiCheck(req);
+        // Edit access to draft is sufficient to fetch either
+        self.publicApiCheck(req, 'draft');
         const all = self.apos.launder.boolean(req.query.all);
         const archived = self.apos.launder.booleanOrNull(req.query.archived);
         const flat = self.apos.launder.boolean(req.query.flat);
@@ -182,8 +183,9 @@ module.exports = {
       // _id may be a page _id, or the convenient shorthands
       // `_home` or `_archive`
       async getOne(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        // Edit access to draft is sufficient to fetch either
+        self.publicApiCheck(req, 'draft');
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -235,7 +237,7 @@ module.exports = {
         }
 
         return self.withLock(req, async () => {
-          const targetPage = await self.findForEditing(req, targetId ? { _id: targetId } : { level: 0 }).ancestors(true).permission('edit-@apostrophecms/page').toObject();
+          const targetPage = await self.findForEditing(req, targetId ? { _id: targetId } : { level: 0 }).ancestors(true).permission('edit').toObject();
           if (!targetPage) {
             throw self.apos.error('notfound');
           }
@@ -287,8 +289,8 @@ module.exports = {
       // editing it in a modal or similar.
 
       async put(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {
@@ -335,8 +337,8 @@ module.exports = {
       // confirmation on it. Future implementation must also consider whether attachments have zero remaining references not
       // fully deleted, which isn't the same as having references still in the archive.
       async delete(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         const page = await self.findOneForEditing(req, {
           _id
         });
@@ -348,8 +350,8 @@ module.exports = {
       // may be `before`, `after` or `inside`. To move a page into or out of the archive, set
       // `archived` to `true` or `false`.
       patch(req, _id) {
-        self.publicApiCheck(req);
         _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
         return self.patch(req, _id);
       }
     };
@@ -404,6 +406,52 @@ module.exports = {
               }
             });
             return true;
+          });
+        },
+        ':_id/submit': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          const submitted = {
+            by: req.user && req.user.title,
+            at: new Date()
+          };
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $set: {
+              submitted
+            }
+          });
+          return submitted;
+        },
+        ':_id/reject': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!self.apos.permission.can(req, 'publish', draft)) {
+            throw self.apos.error('forbidden');
+          }
+          await self.apos.doc.db.update({
+            _id: draft._id
+          }, {
+            $unset: {
+              submitted: 1
+            }
           });
         },
         ':_id/revert-draft-to-published': async (req) => {
@@ -597,6 +645,15 @@ database.`);
       async patch(req, _id) {
         return self.withLock(req, async () => {
           const input = req.body;
+          const keys = Object.keys(input);
+          let possiblePatchedFields;
+          if (input._advisoryLock && keys.length === 1) {
+            possiblePatchedFields = false;
+          } else if (keys.length === 0) {
+            possiblePatchedFields = false;
+          } else {
+            possiblePatchedFields = true;
+          }
           const page = await self.findOneForEditing(req, { _id });
           let result;
           if (!page) {
@@ -623,15 +680,19 @@ database.`);
               });
             }
             self.enforceParkedProperties(req, page, input);
-            await self.applyPatch(req, page, input);
+            if (possiblePatchedFields) {
+              await self.applyPatch(req, page, input);
+            }
             if (i === (patches.length - 1)) {
-              await self.update(req, page);
-              if (input._targetId) {
-                const targetId = self.apos.launder.string(input._targetId);
-                const position = self.apos.launder.string(input._position);
-                await self.move(req, page._id, targetId, position);
+              if (possiblePatchedFields) {
+                await self.update(req, page);
+                if (input._targetId) {
+                  const targetId = self.apos.launder.string(input._targetId);
+                  const position = self.apos.launder.string(input._position);
+                  await self.move(req, page._id, targetId, position);
+                }
+                result = self.findOneForEditing(req, { _id }, { attachments: true });
               }
-              result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
             if (tabId && !lock) {
               await self.apos.doc.unlock(req, page, tabId);
@@ -676,7 +737,7 @@ database.`);
           components: {}
         });
         _.defaults(browserOptions.components, {
-          insertModal: 'AposDocEditor',
+          editorModal: 'AposDocEditor',
           managerModal: 'AposPagesManager'
         });
 
@@ -684,7 +745,8 @@ database.`);
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
         browserOptions.name = self.__meta.name;
-        browserOptions.quickCreate = self.options.quickCreate;
+        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/page');
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/page');
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
@@ -907,8 +969,8 @@ database.`);
       },
       // Move a page already in the page tree to another location.
       //
-      // Insert a page. `targetId` must be an existing page id, and
-      // `position` may be `before`, `inside` or `after`. Alternatively
+      // `movedId` is the id of the page being moved. ``targetId` must be an existing page
+      // id, and `position` may be `before`, `inside` or `after`. Alternatively
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
@@ -926,7 +988,7 @@ database.`);
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
         // Handle numeric positions
-        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(req, movedId, targetId, position);
         targetId = normalized.targetId;
         position = normalized.position;
         return self.withLock(req, body);
@@ -1233,7 +1295,7 @@ database.`);
       // slug of the page's former parent, and `changed` is an array
       // of objects with _id and slug properties, including all subpages that
       // had to move too.
-      async moveToArchive(req, _id) {
+      async archive(req, _id) {
         const archive = await findArchive();
         if (!archive) {
           throw new Error('Site has no archive, contact administrator');
@@ -1925,7 +1987,7 @@ database.`);
       addEditorModal() {
         self.apos.modal.add(
           `${self.__meta.name}:editor`,
-          self.getComponentName('insertModal', 'AposDocEditor'),
+          self.getComponentName('editorModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
@@ -2042,7 +2104,9 @@ database.`);
       },
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
+        // Minimum standard for a REST query without a public projection
+        // is being allowed to edit the draft
+        if (!self.apos.permission.can(req, 'edit', self.__meta.name, 'draft')) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -2073,9 +2137,9 @@ database.`);
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have editing permissions. Otherwise does
       // nothing. Simplifies implementation of `getAll` and `getOne`.
-      publicApiCheck(req) {
+      publicApiCheck(req, mode) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.__meta.name, mode || req.mode)) {
             throw self.apos.error('notfound');
           }
         }
@@ -2093,7 +2157,8 @@ database.`);
           parked: 1,
           lastPublishedAt: 1,
           aposDocId: 1,
-          aposLocale: 1
+          aposLocale: 1,
+          updatedAt: 1
         };
       },
       addArchivedMigration() {

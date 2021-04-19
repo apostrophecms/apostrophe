@@ -233,14 +233,17 @@ module.exports = {
           // Being logged in is good enough to see this
           return true;
         }
-        return self.apos.permission.can(req, item.permission.action, item.permission.type);
+        // Test the permission as if we were in draft mode, as when you actually
+        // manage the items those requests will be made in draft mode (when
+        // applicable to the content type)
+        return self.apos.permission.can(req, item.permission.action, item.permission.type, 'draft');
       },
 
       getBrowserData(req) {
-        const items = self.getVisibleItems(req);
-        if (!items.length) {
+        if (!req.user) {
           return false;
         }
+        const items = self.getVisibleItems(req);
         const context = req.data.piece || req.data.page;
         // Page caching is never desirable when possibly
         // editing that page
@@ -248,14 +251,11 @@ module.exports = {
           req.res.setHeader('Cache-Control', 'no-cache');
         }
         let contextEditorName;
-        let contextAction;
         if (context) {
           if (self.apos.page.isPage(context)) {
             contextEditorName = '@apostrophecms/page:editor';
-            contextAction = self.apos.page.action;
           } else {
             contextEditorName = `${context.type}:editor`;
-            contextAction = self.apos.doc.getManager(context.type).action;
           }
         }
         return {
@@ -270,16 +270,19 @@ module.exports = {
             modified: context.modified,
             updatedAt: context.updatedAt,
             updatedBy: context.updatedBy,
-            lastPublishedAt: context.lastPublishedAt
+            submitted: context.submitted,
+            lastPublishedAt: context.lastPublishedAt,
+            _edit: context._edit,
+            aposMode: context.aposMode,
+            aposLocale: context.aposLocale
           },
           // Base API URL appropriate to the context document
-          contextAction,
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           // Simplifies frontend logic
           contextId: context && context._id,
           tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/page', 'draft')
         };
       }
     };

@@ -3,7 +3,7 @@
     <li class="apos-admin-bar__item" v-if="pageTree">
       <AposButton
         type="subtle" label="Page Tree"
-        icon="file-tree-icon" class="apos-admin-bar__btn"
+        class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
         @click="emitEvent('@apostrophecms/page:manager')"
       />

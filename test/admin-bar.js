@@ -41,7 +41,7 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert.strictEqual(apos.adminBar.items.length, 5);
+      assert.strictEqual(apos.adminBar.items.length, 6);
       assert(apos.adminBar.items[2].name === '@apostrophecms/file');
       assert(apos.adminBar.items[3].name === '@apostrophecms/image');
     } finally {
@@ -78,7 +78,7 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert(apos.adminBar.items.length === 5);
+      assert(apos.adminBar.items.length === 6);
       assert(apos.adminBar.items[1].name === '@apostrophecms/file');
       assert(apos.adminBar.items[2].name === '@apostrophecms/image');
     } finally {
