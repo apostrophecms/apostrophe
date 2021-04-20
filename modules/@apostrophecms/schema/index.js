@@ -130,7 +130,8 @@ module.exports = {
             return self.sortedDistinct(field.name, query);
           }
         });
-      }
+      },
+      def: ''
     });
 
     self.addFieldType({
