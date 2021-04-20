@@ -493,7 +493,7 @@ module.exports = {
       name: 'url',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.url(data[field.name], field.def);
+        object[field.name] = self.apos.launder.url(data[field.name], field.def, true);
       },
       diffable: function (value) {
         // URLs are fine to diff and display
