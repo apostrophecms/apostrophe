@@ -247,8 +247,13 @@ module.exports = {
         }
         permissions.push({
           name: 'edit',
-          label: module.options.singleton ? 'Modify' : 'Modify / Delete',
+          label: 'Modify',
           value: self.can(req, 'edit', module.name)
+        });
+        permissions.push({
+          name: 'archive',
+          label: 'Archive / Restore',
+          value: self.can(req, 'publish', module.name)
         });
         permissions.push({
           name: 'publish',
