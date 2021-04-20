@@ -9,20 +9,44 @@ export default {
     //
     // Returns `true` if the document was ultimately archived.
 
-    async archive(doc) {
+    async archive(doc, isPage) {
       try {
-        console.log(doc.type);
         const moduleOptions = window.apos.modules[doc.type];
         const action = moduleOptions.action;
         const isPublished = !!doc.lastPublishedAt;
-        const isPage = moduleOptions.type === '@apostrophecms/page';
-        if (await apos.confirm({
-          heading: 'Are You Sure?',
+        const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
+        const hasChildren = isPage && doc._children.length;
+        const confirm = await apos.confirm({
+          heading: `Archive ${isPage ? 'Page' : (moduleOptions.label || 'Content')}`,
           description: isPublished
-            ? `Are you sure you want to archive the ${doc.title ? '"' + doc.title + '"' : 'this content'}? This will also un-publish the ${moduleOptions.label.toLowerCase() || 'content'}.`
-            : 'This will move the document to the archive.',
-          affirmativeLabel: `Yes, archive ${moduleOptions.label.toLowerCase() || 'content'}`
-        })) {
+            ? `Are you sure you want to archive ${doc.title ? '"' + doc.title + '"' : 'this content'}? This will also un-publish the ${moduleOptions.label.toLowerCase() || 'content'}.`
+            : `Are you sure you want to archive ${doc.title ? '"' + doc.title + '"' : 'this content'}?`,
+          affirmativeLabel: `Yes, archive ${isPage ? 'page' : (moduleOptions.label.toLowerCase() || 'content')}`,
+          note: isCurrentContext
+            ? 'You are currently viewing the page you want to archive. When it is archived you will be returned to the home page.'
+            : null,
+          form: hasChildren
+            ? {
+              schema: [ {
+                type: 'radio',
+                name: 'choice',
+                required: true,
+                choices: [ {
+                  label: 'Archive only this page',
+                  value: 'this'
+                }, {
+                  label: 'Archive this page and subpages',
+                  value: 'all'
+                } ]
+              } ],
+              value: {
+                data: {}
+              }
+            }
+            : null
+        });
+
+        if (confirm) {
           const body = {
             archived: true,
             _publish: true
@@ -33,6 +57,22 @@ export default {
             const archiveId = pageTree._children.filter(p => p.type === '@apostrophecms/archive-page')[0]._id;
             body._targetId = archiveId;
             body._position = 'lastChild';
+
+            if (confirm.data.choice === 'this') {
+              // Editor wants to archive one page but not it's children
+              // Before archiving the page in question, move the children up a level,
+              // preserving their current order
+              await doc._children.forEach(async child => {
+                await apos.http.patch(`${action}/${child._id}`, {
+                  body: {
+                    _targetId: doc._id,
+                    _position: 'before'
+                  },
+                  busy: false,
+                  draft: true
+                });
+              });
+            }
           }
 
           await apos.http.patch(`${action}/${doc._id}`, {
@@ -40,7 +80,13 @@ export default {
             busy: true,
             draft: true
           });
-          if (doc._id === window.apos.adminBar.contextId) {
+
+          apos.notify('Content Archived', {
+            type: 'success',
+            icon: 'archive-arrow-down-icon'
+          });
+
+          if (isCurrentContext) {
             // With the current context doc gone, we need to move to safe ground
             location.assign(`${window.apos.prefix}/`);
             return;
@@ -55,10 +101,9 @@ export default {
         });
       }
     },
-    async restore (doc) {
+    async restore (doc, isPage) {
       const moduleOptions = apos.modules[doc.type];
       const action = moduleOptions.action;
-      const isPage = moduleOptions.type === '@apostrophecms/page';
       const body = {
         archived: false
       };
