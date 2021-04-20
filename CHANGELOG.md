@@ -19,6 +19,7 @@
 ### Fixes
 
 * There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
+* A required field error no longer appears immediately when you first start creating a user.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
