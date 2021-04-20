@@ -310,7 +310,7 @@ export default {
       }
       const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
-        docId: piece._id,
+        docId: piece && piece._id,
         filterValues: this.filterValues
       });
       if (!doc) {

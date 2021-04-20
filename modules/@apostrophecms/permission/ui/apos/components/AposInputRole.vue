@@ -98,7 +98,9 @@ export default {
         this.next = this.field.choices[0].value;
       }
     });
-    this.permissionSets = await this.getPermissionSets(this.next);
+    if (this.next) {
+      this.permissionSets = await this.getPermissionSets(this.next);
+    }
   },
   methods: {
     validate(value) {
