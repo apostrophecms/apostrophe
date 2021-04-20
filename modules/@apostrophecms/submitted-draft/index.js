@@ -105,24 +105,49 @@ module.exports = {
           `${self.__meta.name}:manager`,
           self.pluralLabel,
           {
-            action: 'edit',
+            action: 'publish',
             type: self.name
           },
           {
             component: 'AposSubmittedDraftAdminBarButton'
           }
         );
+        self.apos.adminBar.add(
+          `${self.__meta.name}:manager`,
+          self.pluralLabel,
+          {
+            action: 'edit',
+            type: self.name
+          },
+          {
+            icon: 'AposSubmittedDraftAdminBarIcon',
+            contextUtility: true,
+            tooltip: 'Submitted Drafts',
+            when(req) {
+              return !self.apos.permission.can(req, 'publish', self.name);
+            }
+          }
+        );
       }
     };
+  },
+  icons: {
+    'arrow-expand-right-icon': 'ArrowExpandRight'
   },
   extendMethods(self) {
     return {
       find(_super, req, criteria, options) {
-        return _super(req, criteria, options).type(null).and({
+        const query = _super(req, criteria, options).type(null).and({
           submitted: {
             $exists: 1
           }
         });
+        if (!self.apos.permission.can(req, 'publish', self.name)) {
+          query.and({
+            'submitted.byId': req.user && req.user._id
+          });
+        }
+        return query;
       }
     };
   },

@@ -286,6 +286,7 @@ module.exports = {
           }
           const submitted = {
             by: req.user && req.user.title,
+            byId: req.user && req.user._id,
             at: new Date()
           };
           await self.apos.doc.db.update({
