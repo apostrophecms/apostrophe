@@ -111,6 +111,7 @@ export default {
 .apos-admin-bar__title {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
 
   &__document-title,
   &__separator {

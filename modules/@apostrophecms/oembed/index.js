@@ -81,7 +81,7 @@ module.exports = {
           options = {};
         }
         // Tolerant URL handling
-        url = self.apos.launder.url(url);
+        url = self.apos.launder.url(url, null, true);
         if (!url) {
           throw self.apos.error('invalid', 'Video URL invalid');
         }
