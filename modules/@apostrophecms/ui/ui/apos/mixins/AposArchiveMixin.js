@@ -12,7 +12,7 @@ export default {
     async archive(doc, isPage) {
       try {
         const moduleOptions = window.apos.modules[doc.type];
-        const action = moduleOptions.action;
+        const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
         const hasChildren = isPage && doc._children.length;
@@ -115,7 +115,7 @@ export default {
     },
     async restore (doc, isPage) {
       const moduleOptions = apos.modules[doc.type];
-      const action = moduleOptions.action;
+      const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
       const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
       let children = null;
       let confirm = null;
