@@ -828,7 +828,8 @@ module.exports = {
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
+        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
+        browserOptions.singleton = self.options.singleton;
         browserOptions.previewDraft = self.options.previewDraft;
         browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
         _.defaults(browserOptions, {
