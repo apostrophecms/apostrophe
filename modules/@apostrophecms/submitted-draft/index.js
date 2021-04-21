@@ -23,12 +23,12 @@ module.exports = {
         component: 'AposCellType'
       },
       'submitted.at': {
-        label: 'Submitted'
-        // component: 'AposCellDate'
+        label: 'Submitted',
+        component: 'AposCellDate'
       },
       'submitted.by': {
-        label: 'Proposed By'
-        // component: 'AposCellDate'
+        label: 'Proposed By',
+        component: 'AposCellDate'
       },
       // Automatically hidden if none of the pieces
       // actually have a URL
