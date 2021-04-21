@@ -30,6 +30,7 @@
               {{ item.title }}
             </div>
             <AposButton
+              v-if="canEdit"
               label="Edit"
               type="quiet"
               :modifiers="['no-motion']"
@@ -48,6 +49,10 @@
 <script>
 export default {
   props: {
+    canEdit: {
+      type: Boolean,
+      default: false
+    },
     items: {
       type: Array,
       required: true

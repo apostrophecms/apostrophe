@@ -32,7 +32,7 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else-if="options.managerHasNewButton"
+        v-else-if="options.canEdit && options.managerHasNewButton"
         :label="`New ${ options.label }`" type="primary"
         @click="create"
       />
@@ -78,8 +78,8 @@
         </template>
         <template #bodyMain>
           <AposDocsManagerDisplay
-            v-if="pieces.length > 0"
-            :items="pieces"
+            v-if="items.length > 0"
+            :items="items"
             :headers="headers"
             v-model="checked"
             @open="edit"
@@ -91,7 +91,8 @@
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
-              disableUnpublished: !!relationshipField
+              disableUnpublished: !!relationshipField,
+              canEdit: options.canEdit
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -131,7 +132,7 @@ export default {
         type: 'overlay',
         showModal: false
       },
-      pieces: [],
+      items: [],
       lastSelected: null,
       totalPages: 1,
       currentPage: 1,
@@ -193,7 +194,7 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-    if (this.relationshipField) {
+    if (this.relationshipField && this.options.canEdit) {
       // Add computed singular label to context menu
       this.moreMenu.menu.unshift({
         action: 'new',
@@ -254,7 +255,7 @@ export default {
 
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
-      this.pieces = getResponse.results;
+      this.items = getResponse.results;
       this.filterChoices = getResponse.choices;
       this.holdQueries = false;
     },
@@ -265,22 +266,22 @@ export default {
       }
     },
     onPreview(id) {
-      this.preview(this.findDocById(this.pieces, id));
+      this.preview(this.findDocById(this.items, id));
     },
     async onArchive(id) {
-      const piece = this.findDocById(this.pieces, id);
+      const piece = this.findDocById(this.items, id);
       if (await this.archive(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       }
     },
     async onRestore(id) {
-      const piece = this.findDocById(this.pieces, id);
+      const piece = this.findDocById(this.items, id);
       if (await this.restore(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       }
     },
     async onDiscardDraft(id) {
-      const piece = this.findDocById(this.pieces, id);
+      const piece = this.findDocById(this.items, id);
       if (await this.discardDraft(this.options.action, id, !!piece.lastPublishedAt)) {
         apos.bus.$emit('content-changed');
       };
@@ -289,7 +290,7 @@ export default {
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.options.name}:editor`,
         props: {
-          copyOf: this.findDocById(this.pieces, id)
+          copyOf: this.findDocById(this.items, id)
         }
       });
     },

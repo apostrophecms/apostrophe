@@ -27,7 +27,7 @@
       <AposButton
         type="primary"
         :label="`Select ${moduleLabels.pluralLabel || ''}`"
-        :disabled="relationshipErrors"
+        :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
     </template>
@@ -62,6 +62,7 @@
             :accept="accept"
             :items="items"
             :module-options="options"
+            :can-edit="options.canEdit"
             @edit="updateEditing"
             v-model="checked"
             @select="select"
@@ -94,6 +95,7 @@
           />
           <AposMediaManagerSelections
             :items="selected"
+            :can-edit="options.canEdit"
             @clear="clearSelected" @edit="updateEditing"
             v-show="!editing"
           />
@@ -291,6 +293,9 @@ export default {
       this.editing = undefined;
     },
     async updateEditing(id) {
+      if (!this.options.canEdit) {
+        return;
+      }
       // We only care about the current doc for this prompt,
       // we are not in danger of discarding a selection when
       // we switch images
