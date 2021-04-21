@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Breaks
+
+* Removes the `firstName` and `lastName` fields in user pieces.
+
 ### Adds
 
 * Major performance improvement to the `nestedModuleSubdirs` option.
@@ -17,6 +21,7 @@
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
 * Confirm modals now support a schema which can be assessed after confirmation.
 * When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
+* Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 
 ### Fixes
 

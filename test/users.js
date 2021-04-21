@@ -25,8 +25,6 @@ describe('Users', function() {
     const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'Jane';
-    user.lastName = 'Doe';
     user.title = 'Jane Doe';
     user.username = 'JaneD';
     user.password = '123password';
@@ -43,8 +41,6 @@ describe('Users', function() {
     const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'Jim';
-    user.lastName = 'Fake';
     user.title = 'Jim Fake';
     user.username = 'JimF';
     user.password = '123fakeguy';
@@ -107,8 +103,6 @@ describe('Users', function() {
     const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'Dane';
-    user.lastName = 'Joe';
     user.title = 'Dane Joe';
     user.username = 'DaneJ';
     user.password = '321password';
@@ -139,8 +133,6 @@ describe('Users', function() {
   it('should be able to insert a user with a previously used email if the other is in the archive', async () => {
     const user = apos.user.newInstance();
 
-    user.firstName = 'Dane';
-    user.lastName = 'Joe';
     user.title = 'Dane Joe';
     user.username = 'DaneJ';
     user.password = '321password';
@@ -184,8 +176,6 @@ describe('Users', function() {
   it('should be able to insert a user with a previously used username if the other is in the archive', async () => {
     const user = apos.user.newInstance();
 
-    user.firstName = 'Dane';
-    user.lastName = 'Joe';
     user.title = 'Dane Joe';
     user.username = 'JaneD';
     user.password = '321password';
@@ -219,11 +209,11 @@ describe('Users', function() {
     const user = await apos.user.find(apos.task.getReq(), { username: 'JaneD' }).toObject();
     assert(user);
     assert(user.username === 'JaneD');
-    user.firstName = 'Jill';
+    user.title = 'Jill Doe';
     await apos.user.update(apos.task.getReq(), user);
     const user2 = await apos.user.find(apos.task.getReq(), { _id: user._id }).toObject();
     assert(user2);
-    assert(user2.firstName === 'Jill');
+    assert(user2.title === 'Jill Doe');
   });
 
   it('should verify a user password after their info has been updated', async () => {

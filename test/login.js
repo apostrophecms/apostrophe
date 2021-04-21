@@ -29,8 +29,6 @@ describe('Login', function() {
     const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'Harry';
-    user.lastName = 'Putter';
     user.title = 'Harry Putter';
     user.username = 'HarryPutter';
     user.password = 'crookshanks';
