@@ -179,7 +179,7 @@ module.exports = {
     async getOne(req, _id) {
       _id = self.inferIdLocaleAndMode(req, _id);
       // Edit access to draft is sufficient to see either
-      self.publicApiCheck(req);
+      self.publicApiCheck(req, 'draft');
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -770,7 +770,7 @@ module.exports = {
       getRestQuery(req) {
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit', self.name)) {
+        if (!self.apos.permission.can(req, 'edit', self.name, 'draft')) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
