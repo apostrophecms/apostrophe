@@ -25,9 +25,11 @@
         :can-copy="!!docId"
         :is-published="!!published"
         :can-save-draft="true"
+        :can-dismiss-submission="canDismissSubmission"
         @saveDraft="saveDraft"
         @discardDraft="onDiscardDraft"
         @moveToArchive="onMoveToArchive"
+        @dismissSubmission="onDismissSubmission"
         @copy="onCopy"
       />
       <AposButton
@@ -291,6 +293,9 @@ export default {
         (!this.published) &&
         this.manuallyPublished
       ) || this.isModifiedFromPublished;
+    },
+    canDismissSubmission() {
+      return this.original && this.original.submitted && (this.moduleOptions.canPublish || (this.original.submitted.byId === apos.login.user._id));
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
@@ -649,6 +654,15 @@ export default {
       if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
         apos.bus.$emit('content-changed');
         this.modal.showModal = false;
+      }
+    },
+    async onDismissSubmission() {
+      if (await this.dismissSubmission(this.moduleAction, this.docId)) {
+        this.original = {
+          ...this.original,
+          submitted: null
+        };
+        apos.bus.$emit('content-changed');
       }
     },
     async onCopy(e) {
