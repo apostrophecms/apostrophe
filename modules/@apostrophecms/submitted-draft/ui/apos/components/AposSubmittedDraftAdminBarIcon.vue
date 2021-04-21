@@ -10,12 +10,8 @@
 export default {
   name: 'AposSubmittedDraftAdminBarIcon',
   props: {
-    icon: {
-      type: String,
-      required: true
-    },
     size: {
-      type: String,
+      type: Number,
       required: true,
       default() {
         return null;
