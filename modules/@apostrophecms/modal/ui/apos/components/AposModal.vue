@@ -18,7 +18,7 @@
       </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
         <div
-          v-if="modal.showModal"
+          v-if="modal.showModal" :class="innerClasses"
           class="apos-modal__inner" data-apos-modal-inner
         >
           <header class="apos-modal__header" v-if="!modal.disableHeader">
@@ -121,6 +121,13 @@ export default {
         classes.push('apos-modal--full-height');
       }
       return classes.join(' ');
+    },
+    innerClasses() {
+      const classes = [];
+      if (this.modal.width) {
+        classes.push(`apos-modal__inner--${this.modal.width}`);
+      };
+      return classes;
     },
     gridModifier() {
       if (this.hasLeftRail && this.hasRightRail) {
@@ -236,7 +243,7 @@ export default {
     height: calc(100vh - #{$spacing-double * 2});
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
-    border: 1px solid var(--a-base-4);
+    border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
 
     .apos-modal--slide & {
@@ -252,6 +259,18 @@ export default {
 
       @media screen and (min-width: 800px) {
         max-width: 540px;
+      }
+    }
+
+    &.apos-modal__inner--two-thirds {
+      @media screen and (min-width: 800px) {
+        max-width: 66%;
+      }
+    }
+
+    &.apos-modal__inner--half {
+      @media screen and (min-width: 800px) {
+        max-width: 50%;
       }
     }
 
@@ -333,7 +352,7 @@ export default {
   }
 
   .apos-modal__header__main {
-    border-bottom: 1px solid var(--a-base-4);
+    border-bottom: 1px solid var(--a-base-9);
   }
 
   .apos-modal__footer {
