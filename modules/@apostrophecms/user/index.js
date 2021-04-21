@@ -49,18 +49,9 @@ module.exports = {
   fields(self) {
     return {
       add: {
-        firstName: {
-          type: 'string',
-          label: 'First Name'
-        },
-        lastName: {
-          type: 'string',
-          label: 'Last Name'
-        },
         title: {
           type: 'string',
           label: 'Dislay Name',
-          following: [ 'firstName', 'lastName' ],
           required: true
         },
         slug: {
@@ -77,7 +68,8 @@ module.exports = {
         username: {
           type: 'string',
           label: 'Username',
-          required: true
+          required: true,
+          following: 'title'
         },
         email: {
           type: 'string',
@@ -115,8 +107,6 @@ module.exports = {
         basics: {
           label: 'Basics',
           fields: [
-            'firstName',
-            'lastName',
             'title',
             'slug'
           ]
@@ -435,8 +425,7 @@ module.exports = {
 
         const user = {
           username,
-          title: username,
-          firstName: username
+          title: username
         };
 
         await self.addPermissionsFromTask(argv, user);
