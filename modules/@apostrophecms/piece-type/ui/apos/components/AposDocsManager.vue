@@ -18,7 +18,6 @@
       />
     </template>
     <template #primaryControls>
-      <!-- TODO Make sure this gets positioned correctly after Vue3/teleport -->
       <AposContextMenu
         v-if="moreMenu.menu.length"
         :button="moreMenu.button"
@@ -78,12 +77,17 @@
           />
         </template>
         <template #bodyMain>
-          <AposPiecesManagerDisplay
-            v-if="items.length > 0"
-            :items="items"
+          <AposDocsManagerDisplay
+            v-if="pieces.length > 0"
+            :items="pieces"
             :headers="headers"
             v-model="checked"
             @open="edit"
+            @preview="onPreview"
+            @copy="copy"
+            @discardDraft="onDiscardDraft"
+            @archive="onArchive"
+            @restore="onRestore"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
@@ -101,12 +105,19 @@
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import { get } from 'lodash';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposDocsManagerMixin, AposModalModifiedMixin ],
+  mixins: [
+    AposDocsManagerMixin,
+    AposModalModifiedMixin,
+    AposPublishMixin,
+    AposArchiveMixin
+  ],
   props: {
     moduleName: {
       type: String,
@@ -160,31 +171,6 @@ export default {
     modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
-    },
-    items() {
-      const items = [];
-      if (!this.pieces || !this.headers.length) {
-        return [];
-      }
-
-      this.pieces.forEach(piece => {
-        const data = {};
-
-        // Extra data for internal use
-        data.lastPublishedAt = piece.lastPublishedAt;
-
-        this.headers.forEach(column => {
-          data[column.name] = get(piece, column.name);
-        });
-
-        data._id = piece._id;
-        data.slug = piece.slug;
-        data.type = piece.type;
-
-        items.push(data);
-      });
-
-      return items;
     },
     emptyDisplay() {
       return {
@@ -279,6 +265,35 @@ export default {
         this.getPieces();
       }
     },
+    onPreview(id) {
+      this.preview(this.findDocById(this.pieces, id));
+    },
+    async onArchive(id) {
+      const piece = this.findDocById(this.pieces, id);
+      if (await this.archive(this.options.action, id, !!piece.lastPublishedAt)) {
+        apos.bus.$emit('content-changed');
+      }
+    },
+    async onRestore(id) {
+      const piece = this.findDocById(this.pieces, id);
+      if (await this.restore(this.options.action, id, !!piece.lastPublishedAt)) {
+        apos.bus.$emit('content-changed');
+      }
+    },
+    async onDiscardDraft(id) {
+      const piece = this.findDocById(this.pieces, id);
+      if (await this.discardDraft(this.options.action, id, !!piece.lastPublishedAt)) {
+        apos.bus.$emit('content-changed');
+      };
+    },
+    async copy(id) {
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.options.name}:editor`,
+        props: {
+          copyOf: this.findDocById(this.pieces, id)
+        }
+      });
+    },
     async edit(piece) {
       let moduleName;
       // Don't assume the piece has the type of the module,
@@ -295,7 +310,7 @@ export default {
       }
       const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
-        docId: piece._id,
+        docId: piece && piece._id,
         filterValues: this.filterValues
       });
       if (!doc) {

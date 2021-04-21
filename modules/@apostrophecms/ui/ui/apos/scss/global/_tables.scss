@@ -11,6 +11,10 @@
   text-align: left;
 }
 
+.apos-table__header--title {
+  width: 100%;
+}
+
 .apos-table__header-icon {
   @include apos-align-icon();
   margin-right: 5px;
@@ -25,7 +29,13 @@
 .apos-table__header-label {
   display: flex;
   align-items: center;
+  white-space: nowrap;
+  &.is-hidden {
+    visibility: hidden;
+    position: absolute;
+  }
 }
+
 span.apos-table__header-label:hover {
   cursor: auto;
 }
@@ -39,8 +49,20 @@ span.apos-table__header-label:hover {
   @include apos-transition(all, 0.05s);
 }
 .apos-table__cell {
-  padding: 12.5px 4.5px;
-  border-bottom: 1px solid var(--a-base-9);
+  padding: 5px;
+  border-bottom: 1px solid var(--a-base-10);
+}
+
+.apos-table__cell--context-menu  {
+  width: 40px;
+}
+
+.apos-table__cell-field--context-menu  {
+  width: 100%;
+}
+
+.apos-table__cell:not(.apos-table__cell--title) {
+  white-space: nowrap;
 }
 
 .apos-table__link {
@@ -62,7 +84,7 @@ span.apos-table__header-label:hover {
 
 // might have to be expanded kinda magic
 .apos-table__cell-field--title {
-  max-width: 400px;
+  max-width: 50vw;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
