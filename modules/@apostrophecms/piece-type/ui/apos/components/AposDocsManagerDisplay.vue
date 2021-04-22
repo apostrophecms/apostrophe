@@ -63,8 +63,8 @@
           v-for="header in headers"
           class="apos-table__cell apos-table__cell--pointer"
           :class="`apos-table__cell--${header.name}`"
-          :key="item[header.name]"
-          @click="$emit('open', item)"
+          :key="header.name"
+          @click="options.canEdit && $emit('open', item)"
         >
           <component
             v-if="header.component" :is="header.component"
@@ -76,7 +76,7 @@
           />
         </td>
         <!-- append the context menu -->
-        <td class="apos-table__cell apos-table__cell--context-menu">
+        <td v-if="options.canEdit" class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :item="item"
             @edit="$emit('open', item._id)"

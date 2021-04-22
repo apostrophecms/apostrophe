@@ -59,7 +59,8 @@ module.exports = function(self) {
           return {
             body,
             args,
-            params: rest
+            params: rest,
+            context
           };
         });
         if (name.charAt(0) !== '_') {

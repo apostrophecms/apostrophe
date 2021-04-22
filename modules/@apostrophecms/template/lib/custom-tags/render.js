@@ -5,11 +5,6 @@ module.exports = (self) => {
         // get the tag token
         const token = parser.nextToken();
         const args = new nodes.NodeList(token.lineno, token.colno);
-        // TODO this only allows a simple name, we need
-        // to permit at least a dotted expression to
-        // accommodate imports. We can't parse it as an
-        // expression because that would invoke it
-        // as a function with the args
         const invocation = parser.parsePrimary();
         args.addChild(invocation);
         parser.advanceAfterBlockEnd(token.value);
@@ -22,7 +17,9 @@ module.exports = (self) => {
     async run(context, info) {
       try {
         const req = context.env.opts.req;
-        const input = {};
+        const input = {
+          ...info.context.ctx
+        };
         let i = 0;
         for (const param of info.params) {
           if (i === info.args.length) {
