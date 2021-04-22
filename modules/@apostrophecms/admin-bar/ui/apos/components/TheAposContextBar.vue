@@ -25,8 +25,10 @@
         :can-publish="canPublish"
         :ready-to-publish="readyToPublish"
         :custom-publish-label="customPublishLabel"
+        :can-dismiss-submission="canDismissSubmission"
         @switchEditMode="switchEditMode"
         @discardDraft="onDiscardDraft"
+        @dismissSubmission="onDismissSubmission"
         @publish="onPublish"
       />
     </template>
@@ -95,6 +97,9 @@ export default {
     },
     canPublish() {
       return this.getContextModule(this.context).canPublish;
+    },
+    canDismissSubmission() {
+      return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     readyToPublish() {
       return this.canPublish
@@ -516,6 +521,14 @@ export default {
         }
       } else {
         apos.bus.$emit('context-history-changed', result && result.doc);
+      }
+    },
+    async onDismissSubmission() {
+      if (await this.dismissSubmission(this.action, this.context._id)) {
+        this.context = {
+          ...this.context,
+          submitted: null
+        };
       }
     },
     async onRevertPublishedToPrevious(data) {

@@ -419,21 +419,10 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          const submitted = {
-            by: req.user && req.user.title,
-            byId: req.user && req.user._id,
-            at: new Date()
-          };
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $set: {
-              submitted
-            }
-          });
-          return submitted;
+          const manager = self.apos.doc.getManager(draft.type);
+          return manager.submit(req, draft);
         },
-        ':_id/reject': async (req) => {
+        ':_id/dismiss-submission': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
             ...req,
@@ -444,16 +433,8 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          if (!self.apos.permission.can(req, 'publish', draft)) {
-            throw self.apos.error('forbidden');
-          }
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $unset: {
-              submitted: 1
-            }
-          });
+          const manager = self.apos.doc.getManager(draft.type);
+          return manager.dismissSubmission(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
