@@ -1,0 +1,25 @@
+{% extends data.outerLayout %}
+
+{% import "fragment.html" as fragment %}
+
+{% block main %}
+--test1--
+Above Fragment
+
+{% render fragment.test('pos1', 'pos2', kw2 = 'kw2', 'pos3') %}
+
+Below Fragment
+--endtest1--
+
+--test2--
+Above Call Fragment
+
+{% rendercall fragment.test('pos1', 'pos2', kw2 = 'kw2', 'pos3') %}
+  Start Call Body
+  {% component "fragment-page:test" with { text: 'called' } %}
+  End Call Body
+{% endrendercall %}
+
+Below Call Fragment
+--endtest2--
+{% endblock %}
