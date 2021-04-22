@@ -12,22 +12,19 @@ module.exports = (self) => {
       if (i === info.args.length) {
         break;
       }
-      // CHANGE START
-      // it is kwargs, merge them so we can mix
+      // It is kwargs (keyword arguments), merge them so we can mix
       // positional and keyword arguments
 
-      // This is faster!
+      // For performance
       if (param && typeof param !== 'string' && param.__keywords === true) {
         kwparams = param;
         continue;
       }
-      // CHANGE END
 
       input[param] = info.args[i];
       i++;
     }
 
-    // CHANGE START
     // Deal with kwargs
     if (kwparams) {
       // Those are the defaults
@@ -39,7 +36,6 @@ module.exports = (self) => {
         Object.assign(input, kwargs);
       }
     }
-    // CHANGE END
     return input;
   };
 

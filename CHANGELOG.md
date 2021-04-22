@@ -8,12 +8,13 @@
 
 ### Adds
 
-* Major performance improvement to the `nestedModuleSubdirs` option.
-* Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
 * Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role, as they already could do anything.
 * The admin bar menu is fully responsive to user roles.
 * The context bar entirely appears or disappears based on user roles.
-* Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc
+* Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc.
+* A fragment call may now have a body using `rendercall`, just like a macro call can have a body using `call`. In addition, fragments can now have named arguments, just like macros. Many thanks to Miro Yovchev for contributing this implementation.
+* Major performance improvement to the `nestedModuleSubdirs` option.
+* Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
 * New label component
 * Doc states in managers now reflected w labels (Active Draft, Archived, Unpublished)
 * Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
@@ -30,10 +31,8 @@
 
 ### Fixes
 
-* There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
 * Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
-* Fragments support `rendercall`/`rendercaller` syntax similar to the `call`/`caller` macro syntax
-* Fragments support [keyword arguments](https://mozilla.github.io/nunjucks/templating.html#keyword-arguments)
+* There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
 * A required field error no longer appears immediately when you first start creating a user.
 * Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
 
