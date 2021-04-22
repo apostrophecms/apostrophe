@@ -98,7 +98,6 @@ export default {
     }
   },
   async mounted() {
-    console.log(this.permissionSets);
     // Add an null option if there isn't one already
     if (!this.field.required && !this.field.choices.find(choice => {
       return choice.value === null;

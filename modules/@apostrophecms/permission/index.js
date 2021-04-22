@@ -281,7 +281,6 @@ module.exports = {
             includes: permissionSets.filter(permissionSet => self.matchTypicalPieceType(permissionSet) && !newPermissionSets.includes(permissionSet)).map(permissionSet => permissionSet.label)
           });
         }
-        // console.log(newPermissionSets);
         return newPermissionSets;
       },
       matchTypicalPieceType(permissionSet) {
