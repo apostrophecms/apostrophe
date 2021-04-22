@@ -36,6 +36,18 @@ describe('Templates', function() {
               }
             };
           }
+        },
+        'fragment-all': {
+          components(self) {
+            return {
+              async test(req, input) {
+                // Be very async
+                await Promise.delay(100);
+                input.afterDelay = true;
+                return input;
+              }
+            };
+          }
         }
       }
     });
@@ -157,6 +169,62 @@ describe('Templates', function() {
     assert(componentText < afterDelay);
     assert(afterDelay < afterComponent);
     assert(afterComponent < belowFragment);
+  });
+
+  it('should support keyword arguments and render macros and fragments from other fragments', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const m = result.match(/--test1--([\S\s]*?)--endtest1--/g);
+    const arr = m[0].split('\n');
+    const data = arr
+      .slice(1, arr.length - 1)
+      .filter(s => !!s.trim())
+      .map(s => s.trim());
+
+    assert.deepStrictEqual(data, [
+      'Above Fragment',
+      'pos1',
+      'pos2',
+      'pos3',
+      'kw1_default',
+      'kw2',
+      'kw3_default',
+      'Below Fragment'
+    ]);
+  });
+
+  it('should render rendercall blocks', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const m = result.match(/--test2--([\S\s]*?)--endtest2--/g);
+    const arr = m[0].split('\n');
+    const data = arr
+      .slice(1, arr.length - 1)
+      .filter(s => !!s.trim())
+      .map(s => s.trim());
+
+    assert.deepStrictEqual(data, [
+      'Above Call Fragment',
+      'pos1',
+      'pos2',
+      'pos3',
+      'Start Call Body',
+      'Text is called',
+      'After Delay',
+      'End Call Body',
+      'kw1_default',
+      'kw2',
+      'kw3_default',
+      'Below Call Fragment'
+    ]);
   });
 
 });
