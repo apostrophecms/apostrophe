@@ -158,8 +158,13 @@ module.exports = {
         );
       }
       const result = {};
-      // populates totalPages when perPage is present
-      await query.toCount();
+      // Also populates totalPages when perPage is present
+      const count = await query.toCount();
+      if (self.apos.launder.boolean(req.query.count)) {
+        return {
+          count
+        };
+      }
       result.pages = query.get('totalPages');
       result.currentPage = query.get('page') || 1;
       result.results = await query.toArray();

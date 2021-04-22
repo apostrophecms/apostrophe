@@ -99,6 +99,19 @@ module.exports = {
         // Virtual piece type, find the proper manager and use it
         const manager = self.apos.doc.getManager(piece.type);
         return manager.revertDraftToPublished(req, piece, options);
+      },
+      addToAdminBar() {
+        self.apos.adminBar.add(
+          `${self.__meta.name}:manager`,
+          self.pluralLabel,
+          {
+            action: 'edit',
+            type: self.name
+          },
+          {
+            component: 'AposSubmittedDraftAdminBarButton'
+          }
+        );
       }
     };
   },
