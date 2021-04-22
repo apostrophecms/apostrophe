@@ -114,11 +114,15 @@
     var query;
     var qat;
 
-    if (options.draft) {
+    if (options.draft != null) {
       if (options.qs) {
         // Already assumes no query parameters baked into URL, so OK to
         // just extend qs
-        options.qs = apos.util.assign({ 'apos-mode': 'draft' }, options.qs);
+        if (options.draft) {
+          options.qs = apos.util.assign({ 'apos-mode': 'draft' }, options.qs);
+        } else {
+          options.qs = apos.util.assign({ 'apos-mode': 'published' }, options.qs);
+        }
       } else {
         // Careful, there could be existing query parameters baked into url
         qat = url.indexOf('?');
@@ -127,10 +131,16 @@
         } else {
           query = {};
         }
-        query['apos-mode'] = 'draft';
+        if (options.draft) {
+          query['apos-mode'] = 'draft';
+        } else {
+          query['apos-mode'] = 'published';
+        }
         url = apos.http.addQueryToUrl(url, query);
       }
     }
+
+    console.log(query);
 
     var busyName = options.busy === true ? 'busy' : options.busy;
     var xmlhttp = new XMLHttpRequest();

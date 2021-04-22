@@ -160,6 +160,7 @@ export default {
       },
       triggerValidation: false,
       original: null,
+      live: null,
       published: null,
       errorCount: 0,
       restoreOnly: false,
@@ -411,6 +412,7 @@ export default {
           qs: this.filters,
           draft: true
         });
+
         // Pages don't use the restore mechanism because they
         // treat the archive as a place in the tree you can drag from
         if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
@@ -431,12 +433,29 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
+          await this.loadLiveDoc();
           this.original = klona(docData);
           this.docFields.data = docData;
           this.docReady = true;
           this.prepErrors();
         }
       }
+    },
+    async loadLiveDoc() {
+      let live;
+      try {
+        live = await apos.http.get(this.getOnePath, {
+          busy: false,
+          draft: false
+        });
+      } catch (e) {
+        // non fatal
+      } finally {
+        if (live) {
+          this.live = live;
+        }
+      }
+
     },
     async preview() {
       if (!await this.confirmAndCancel()) {
