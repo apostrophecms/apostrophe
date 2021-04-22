@@ -21,12 +21,16 @@
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
 * Confirm modals now support a schema which can be assessed after confirmation.
 * When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
+* Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
+* A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 
 ### Fixes
 
 * There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
+* Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
 * A required field error no longer appears immediately when you first start creating a user.
+* Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 

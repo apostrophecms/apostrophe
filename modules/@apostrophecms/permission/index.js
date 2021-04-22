@@ -270,8 +270,7 @@ module.exports = {
         let newPermissionSets = permissionSets.filter(permissionSet => self.options.interestingTypes.includes(permissionSet.name));
         newPermissionSets = [
           ...newPermissionSets,
-          permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet)),
-          permissionSets.find(permissionSet => permissionSet.page)
+          ...permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet))
         ];
         const typicalPieceType = permissionSets.find(self.matchTypicalPieceType);
         if (typicalPieceType) {

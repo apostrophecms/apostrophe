@@ -63,7 +63,7 @@
           v-for="header in headers"
           class="apos-table__cell apos-table__cell--pointer"
           :class="`apos-table__cell--${header.name}`"
-          :key="item[header.name]"
+          :key="header.name"
           @click="$emit('open', item)"
         >
           <component
