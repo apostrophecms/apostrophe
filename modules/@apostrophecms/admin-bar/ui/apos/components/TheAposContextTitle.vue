@@ -59,8 +59,7 @@ export default {
       if (this.context.updatedBy) {
         const editor = this.context.updatedBy;
         editorLabel = '';
-        editorLabel += editor.firstName ? `${editor.firstName} ` : '';
-        editorLabel += editor.lastName ? `${editor.lastName} ` : '';
+        editorLabel += editor.title ? `${editor.title} ` : '';
         editorLabel += editor.username ? `(${editor.username})` : '';
       }
       return editorLabel;
@@ -111,6 +110,7 @@ export default {
 .apos-admin-bar__title {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
 
   &__document-title,
   &__separator {

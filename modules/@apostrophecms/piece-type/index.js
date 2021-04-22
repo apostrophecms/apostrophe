@@ -29,20 +29,18 @@ module.exports = {
       add: {
         title: {
           label: 'Title',
+          name: 'title',
           component: 'AposCellButton'
         },
+        labels: {
+          name: 'labels',
+          label: '',
+          component: 'AposCellLabels'
+        },
         updatedAt: {
-          label: 'Edited on',
-          component: 'AposCellDate'
-        },
-        visibility: {
-          label: 'Visibility'
-        },
-        // Automatically hidden if none of the pieces
-        // actually have a URL
-        _url: {
-          label: 'Link',
-          component: 'AposCellLink'
+          name: 'updatedAt',
+          label: 'Last Edited',
+          component: 'AposCellLastEdited'
         }
       }
     };
@@ -181,7 +179,7 @@ module.exports = {
     async getOne(req, _id) {
       _id = self.inferIdLocaleAndMode(req, _id);
       // Edit access to draft is sufficient to see either
-      self.publicApiCheck(req);
+      self.publicApiCheck(req, 'draft');
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -772,7 +770,7 @@ module.exports = {
       getRestQuery(req) {
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit', self.name)) {
+        if (!self.apos.permission.can(req, 'edit', self.name, 'draft')) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -830,7 +828,8 @@ module.exports = {
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
+        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name);
+        browserOptions.singleton = self.options.singleton;
         browserOptions.previewDraft = self.options.previewDraft;
         browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
         _.defaults(browserOptions, {
