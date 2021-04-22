@@ -12,15 +12,8 @@
       v-for="item in menuItems" :key="item.name"
       class="apos-admin-bar__item"
     >
-      <AposButton
-        v-if="item.options" type="subtle"
-        @click="emitEvent(item.action)"
-        :label="item.label"
-        :modifiers="['no-motion']"
-        class="apos-admin-bar__btn"
-      />
       <AposContextMenu
-        v-else-if="item.items" class="apos-admin-bar__sub"
+        v-if="item.items" class="apos-admin-bar__sub"
         :menu="item.items" :button="{
           label: item.label,
           modifiers: ['no-motion'],
@@ -28,6 +21,15 @@
           type: 'subtle'
         }"
         @item-clicked="emitEvent"
+      />
+      <Component
+        v-else
+        :is="item.options && item.options.component || 'AposButton'"
+        type="subtle"
+        @click="emitEvent(item.action)"
+        :label="item.label"
+        :modifiers="['no-motion']"
+        class="apos-admin-bar__btn"
       />
     </li>
     <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
