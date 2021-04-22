@@ -50,11 +50,11 @@ export default {
       this.$emit('sort', action);
     },
     headers() {
-      if (!this.pieces) {
+      if (!this.items) {
         return this.options.columns || [];
       }
       return (this.options.columns || []).filter(column => {
-        return (column.name !== '_url') || this.pieces.find(item => item._url);
+        return (column.name !== '_url') || this.items.find(item => item._url);
       });
     },
     selectAllValue() {
@@ -62,7 +62,7 @@ export default {
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
-      const itemCount = this.items.length;
+      const itemCount = (this.items && this.items.length) || 0;
 
       return checkCount > 0 && checkCount !== itemCount ? {
         value: 'checked',

@@ -2,6 +2,7 @@
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
+        v-if="canEdit"
         :disabled="maxReached"
         :action="moduleOptions.action"
         :accept="accept"
@@ -81,6 +82,10 @@ export default {
     event: 'change'
   },
   props: {
+    canEdit: {
+      type: Boolean,
+      default: false
+    },
     maxReached: {
       type: Boolean,
       default: false
