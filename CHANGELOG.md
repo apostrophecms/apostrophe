@@ -22,6 +22,7 @@
 * Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
 * A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
+* Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
 
 ### Fixes
 
