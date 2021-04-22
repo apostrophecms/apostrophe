@@ -269,13 +269,13 @@ export default {
       this.preview(this.findDocById(this.items, id));
     },
     async onArchive(id) {
-      const piece = this.findDocById(this.pieces, id);
+      const piece = this.findDocById(this.items, id);
       if (await this.archive(piece)) {
         apos.bus.$emit('content-changed');
       }
     },
     async onRestore(id) {
-      const piece = this.findDocById(this.pieces, id);
+      const piece = this.findDocById(this.items, id);
       if (await this.restore(piece)) {
         apos.bus.$emit('content-changed');
       }

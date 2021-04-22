@@ -585,23 +585,13 @@ export default {
           this.modal.showModal = false;
         }
         if (this.restoreOnly) {
-          apos.bus.$emit('busy', {
-            name: 'busy',
-            active: true
+          this.filters.archived = false;
+          await this.loadDoc();
+          await apos.notify('Archived content restored', {
+            type: 'success',
+            icon: 'archive-arrow-up-icon',
+            dismiss: true
           });
-          setTimeout(async () => {
-            this.filters.archived = false;
-            this.loadDoc();
-            apos.bus.$emit('busy', {
-              name: 'busy',
-              active: false
-            });
-            await apos.notify('Archived content restored', {
-              type: 'success',
-              icon: 'archive-arrow-up-icon',
-              dismiss: true
-            });
-          }, 1000);
         }
         if (navigate) {
           if (doc._url) {
