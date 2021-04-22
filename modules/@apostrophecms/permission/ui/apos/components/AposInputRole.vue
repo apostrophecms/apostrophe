@@ -7,7 +7,7 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-input-wrapper">
+      <div class="apos-input-wrapper apos-input__role">
         <select
           class="apos-input apos-input--select apos-input--role" :id="uid"
           @change="change($event.target.value)"
@@ -27,12 +27,13 @@
           :icon-size="20"
         />
       </div>
-      <ul class="apos-input--permission-grid">
-        <li
+      <div class="apos-input__role__permission-grid">
+        <div
           v-for="permissionSet in permissionSets"
           :key="permissionSet.name"
+          class="apos-input__role__permission-grid__set"
         >
-          <h4>
+          <h4 class="apos-input__role__permission-grid__set-name">
             {{ permissionSet.label }}
             <AposIndicator
               v-if="permissionSet.tooltip"
@@ -43,15 +44,31 @@
               icon-color="var(--a-base-4)"
             />
           </h4>
-          <ul>
-            <li v-for="permission in permissionSet.permissions" :key="permission.name">
-              <AposIndicator v-if="permission.value" icon="check-bold-icon" icon-color="var(--a-success)" />
-              <AposIndicator v-else icon="alpha-x-icon" icon-color="var(--a-danger)" />
-              &nbsp;{{ permission.label }}
-            </li>
-          </ul>
-        </li>
-      </ul>
+          <dl class="apos-input__role__permission-grid__list">
+            <div
+              v-for="permission in permissionSet.permissions"
+              :key="permission.name"
+              class="apos-input__role__permission-grid__row"
+            >
+              <dd class="apos-input__role__permission-grid__value">
+                <AposIndicator
+                  :icon="permission.value ? 'check-bold-icon' : 'alpha-x-icon'"
+                  :icon-color="permission.value ? 'var(--a-success)' : 'var(--a-danger)'"
+                />
+                <span v-if="permission.value" class="apos-sr-only">
+                  Enabled
+                </span>
+                <span v-else class="apos-sr-only">
+                  Disabled
+                </span>
+              </dd>
+              <dt class="apos-input__role__permission-grid__label">
+                {{ permission.label }}
+              </dt>
+            </div>
+          </dl>
+        </div>
+      </div>
     </template>
   </AposInputWrapper>
 </template>
@@ -129,21 +146,23 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-input-icon {
-  @include apos-transition();
-}
-ul {
-  list-style: none;
-  padding-inline-start: 0;
-}
+  .apos-input-icon {
+    @include apos-transition();
+  }
 
-.apos-input--permission-grid > li {
-  h4 {
-    font-weight: bold;
+  .apos-input__role__permission-grid {
+    @include type-base;
   }
-  li {
-    padding: 0.5em 1em 0.25em;
-    border-bottom: 1px solid var(--a-base-7);
+
+  .apos-input__role__permission-grid__row {
+    display: flex;
+    align-items: baseline;
+    padding-bottom: $spacing-half;
+    margin-bottom: $spacing-half;
+    border-bottom: 1px solid var(--a-base-9);
   }
-}
+
+  .apos-input__role__permission-grid__value {
+    margin: 0;
+  }
 </style>
