@@ -278,9 +278,10 @@ module.exports = {
             ...typicalPieceType,
             name: '@apostrophecms/piece-type',
             label: 'Piece Content',
-            tooltip: permissionSets.filter(permissionSet => self.matchTypicalPieceType(permissionSet) && !newPermissionSets.includes(permissionSet)).map(permissionSet => permissionSet.label).join(', ')
+            includes: permissionSets.filter(permissionSet => self.matchTypicalPieceType(permissionSet) && !newPermissionSets.includes(permissionSet)).map(permissionSet => permissionSet.label)
           });
         }
+        // console.log(newPermissionSets);
         return newPermissionSets;
       },
       matchTypicalPieceType(permissionSet) {

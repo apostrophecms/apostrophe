@@ -36,10 +36,10 @@
           <h4 class="apos-input__role__permission-grid__set-name">
             {{ permissionSet.label }}
             <AposIndicator
-              v-if="permissionSet.tooltip"
+              v-if="permissionSet.includes"
               icon="help-circle-icon"
-              class="apos-field__help-tooltip__icon"
-              :tooltip="permissionSet.tooltip"
+              class="apos-input__role__permission-grid__help"
+              :tooltip="getTooltip(permissionSet.includes)"
               :icon-size="11"
               icon-color="var(--a-base-4)"
             />
@@ -52,8 +52,8 @@
             >
               <dd class="apos-input__role__permission-grid__value">
                 <AposIndicator
-                  :icon="permission.value ? 'check-bold-icon' : 'alpha-x-icon'"
-                  :icon-color="permission.value ? 'var(--a-success)' : 'var(--a-danger)'"
+                  :icon="permission.value ? 'check-bold-icon' : 'close-icon'"
+                  :icon-color="permission.value ? 'var(--a-success)' : 'var(--a-base-5)'"
                 />
                 <span v-if="permission.value" class="apos-sr-only">
                   Enabled
@@ -98,6 +98,7 @@ export default {
     }
   },
   async mounted() {
+    console.log(this.permissionSets);
     // Add an null option if there isn't one already
     if (!this.field.required && !this.field.choices.find(choice => {
       return choice.value === null;
@@ -120,6 +121,30 @@ export default {
     }
   },
   methods: {
+    getTooltip(includes) {
+      const html = document.createElement('div');
+      html.setAttribute('class', 'apos-info');
+      const list = document.createElement('ul');
+      const intro = document.createElement('p');
+      const followUp = document.createElement('p');
+      const link = document.createElement('a');
+      intro.appendChild(document.createTextNode('Pieces are structured content. They are often used for content like articles, events, products, categories, etc.'));
+      followUp.appendChild(document.createTextNode('Pieces for this site include:'));
+      link.appendChild(document.createTextNode('Explanation of Pieces'));
+      link.setAttribute('href', 'https://a3.docs.apostrophecms.org/reference/glossary.html#piece');
+      link.setAttribute('_target', 'blank');
+      html.appendChild(intro);
+      html.appendChild(followUp);
+      includes.forEach(item => {
+        const li = document.createElement('li');
+        li.appendChild(document.createTextNode(item));
+        list.appendChild(li);
+      });
+      html.appendChild(list);
+      // TODO append this link when doc urls are more stable
+      // html.appendChild(link);
+      return { content: html };
+    },
     validate(value) {
       if (this.field.required && !value.length) {
         return 'required';
@@ -152,17 +177,37 @@ export default {
 
   .apos-input__role__permission-grid {
     @include type-base;
+    display: grid;
+    margin-top: $spacing-triple;
+    grid-template-columns: repeat(auto-fit, minmax(50%, 1fr));
   }
 
   .apos-input__role__permission-grid__row {
     display: flex;
-    align-items: baseline;
-    padding-bottom: $spacing-half;
-    margin-bottom: $spacing-half;
+    align-items: center;
+    padding-bottom: $spacing-three-quarters;
+    margin-bottom: $spacing-three-quarters;
     border-bottom: 1px solid var(--a-base-9);
+  }
+  .apos-input__role__permission-grid__list {
+    margin-top: 0;
+  }
+  .apos-input__role__permission-grid__set {
+    padding: 0 $spacing-base;
+    margin-bottom: $spacing-double;
+  }
+
+  .apos-input__role__permission-grid__set-name {
+    display: inline-flex;
+    margin: 0 0 $spacing-double;
   }
 
   .apos-input__role__permission-grid__value {
-    margin: 0;
+    display: inline-flex;
+    margin: 0 $spacing-half 0 0;
+  }
+
+  .apos-input__role__permission-grid__help {
+    margin-left: $spacing-half;
   }
 </style>
