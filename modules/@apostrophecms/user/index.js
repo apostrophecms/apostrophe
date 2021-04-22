@@ -41,10 +41,12 @@ module.exports = {
     label: 'User',
     pluralLabel: 'Users',
     quickCreate: false,
-    adminOnly: true,
     searchable: false,
     slugPrefix: 'user-',
-    localized: false
+    localized: false,
+    editRole: 'admin',
+    publishRole: 'admin',
+    viewRole: 'admin'
   },
   fields(self) {
     return {

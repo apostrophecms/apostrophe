@@ -21,7 +21,9 @@ module.exports = {
     insertViaUpload: true,
     searchable: false,
     slugPrefix: 'image-',
-    autopublish: true
+    autopublish: true,
+    editRole: 'editor',
+    publishRole: 'editor'
   },
   fields: {
     add: {
