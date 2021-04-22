@@ -108,10 +108,9 @@ import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsMa
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
-import { get } from 'lodash';
 
 export default {
-  name: 'AposPiecesManager',
+  name: 'AposDocsManager',
   mixins: [
     AposDocsManagerMixin,
     AposModalModifiedMixin,
@@ -310,7 +309,7 @@ export default {
       }
       const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
-        docId: piece._id,
+        docId: piece && piece._id,
         filterValues: this.filterValues
       });
       if (!doc) {
