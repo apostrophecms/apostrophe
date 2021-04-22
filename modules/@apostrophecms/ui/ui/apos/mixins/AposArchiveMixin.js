@@ -9,9 +9,10 @@ export default {
     //
     // Returns `true` if the document was ultimately archived.
 
-    async archive(doc, isPage) {
+    async archive(doc) {
       try {
         const moduleOptions = window.apos.modules[doc.type];
+        const isPage = doc.slug.startsWith('/');
         const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
@@ -72,7 +73,7 @@ export default {
               // Editor wants to archive one page but not it's children
               // Before archiving the page in question, move the children up a level,
               // preserving their current order
-              doc._children.forEach(async child => {
+              for (const child of doc._children) {
                 await apos.http.patch(`${action}/${child._id}`, {
                   body: {
                     _targetId: doc._id,
@@ -81,7 +82,7 @@ export default {
                   busy: false,
                   draft: true
                 });
-              });
+              }
             }
           }
 
@@ -113,17 +114,16 @@ export default {
         });
       }
     },
-    async restore (doc, isPage) {
+    async restore (doc) {
       const moduleOptions = apos.modules[doc.type];
+      const isPage = doc.slug.startsWith('/');
       const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
       const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
-      let children = null;
       let confirm = null;
 
       try {
         // If the doc has children, ask if they should be restored as well
         if (doc._children) {
-          children = [ ...doc._children ];
           const childLength = doc._children.length;
           const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : null}.`;
           confirm = await apos.confirm({
@@ -152,7 +152,7 @@ export default {
 
         // If restoring a page and the editor wants to leave the children in the archive
         if (confirm && confirm.data.choice === 'this') {
-          children.forEach(async child => {
+          for (const child of doc._children) {
             await apos.http.patch(`${action}/${child._id}`, {
               body: {
                 _targetId: '_archive',
@@ -163,7 +163,7 @@ export default {
               busy: false,
               draft: true
             });
-          });
+          }
         }
 
         // Move doc in question

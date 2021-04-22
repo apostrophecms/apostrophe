@@ -162,10 +162,14 @@ export default {
       original: null,
       published: null,
       errorCount: 0,
-      restoreOnly: false
+      restoreOnly: false,
+      filters: { ...this.filterValues }
     };
   },
   computed: {
+    getOnePath() {
+      return `${this.moduleAction}/${this.docId}`;
+    },
     tooltip() {
       // TODO I18N
       let msg;
@@ -354,48 +358,15 @@ export default {
     // After computed properties become available
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
-      let docData;
-      const getOnePath = `${this.moduleAction}/${this.docId}`;
-      try {
-        if (!await this.lock(getOnePath, this.docId)) {
-          await this.lockNotAvailable();
-          return;
-        }
-        docData = await apos.http.get(getOnePath, {
-          busy: true,
-          qs: this.filterValues,
-          draft: true
-        });
-        // Pages don't use the restore mechanism because they
-        // treat the archive as a place in the tree you can drag from
-        if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
-          this.restoreOnly = true;
-        }
-      } catch {
-        // TODO a nicer message here, but moduleLabels is undefined here
-        await apos.notify('The requested document was not found.', {
-          type: 'warning',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-        await this.confirmAndCancel();
-      } finally {
-        if (docData) {
-          if (docData.type !== this.docType) {
-            this.docType = docData.type;
-          }
-          this.original = klona(docData);
-          this.docFields.data = docData;
-          this.docReady = true;
-          this.prepErrors();
-        }
-      }
+      // begin load
+      await this.loadDoc();
+      // end load
       try {
         if (this.manuallyPublished) {
-          this.published = await apos.http.get(getOnePath, {
+          this.published = await apos.http.get(this.getOnePath, {
             busy: true,
             qs: {
-              ...this.filterValues,
+              ...this.filters,
               'apos-mode': 'published'
             }
           });
@@ -430,6 +401,45 @@ export default {
     }
   },
   methods: {
+    async loadDoc() {
+      let docData;
+      try {
+        if (!await this.lock(this.getOnePath, this.docId)) {
+          await this.lockNotAvailable();
+          return;
+        }
+        docData = await apos.http.get(this.getOnePath, {
+          busy: true,
+          qs: this.filters,
+          draft: true
+        });
+        // Pages don't use the restore mechanism because they
+        // treat the archive as a place in the tree you can drag from
+        if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
+          this.restoreOnly = true;
+        } else {
+          this.restoreOnly = false;
+        }
+      } catch {
+        // TODO a nicer message here, but moduleLabels is undefined here
+        await apos.notify('The requested document was not found.', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        await this.confirmAndCancel();
+      } finally {
+        if (docData) {
+          if (docData.type !== this.docType) {
+            this.docType = docData.type;
+          }
+          this.original = klona(docData);
+          this.docFields.data = docData;
+          this.docReady = true;
+          this.prepErrors();
+        }
+      }
+    },
     async preview() {
       if (!await this.confirmAndCancel()) {
         return;
@@ -580,7 +590,8 @@ export default {
             active: true
           });
           setTimeout(async () => {
-            this.modal.showModal = false;
+            this.filters.archived = false;
+            this.loadDoc();
             apos.bus.$emit('busy', {
               name: 'busy',
               active: false
@@ -590,11 +601,7 @@ export default {
               icon: 'archive-arrow-up-icon',
               dismiss: true
             });
-            await apos.modal.execute(this.moduleOptions.components.editorModal, {
-              moduleName: this.moduleOptions.name,
-              docId: this.docId
-            });
-          }, 1500);
+          }, 1000);
         }
         if (navigate) {
           if (doc._url) {
