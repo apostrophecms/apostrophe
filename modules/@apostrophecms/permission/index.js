@@ -10,6 +10,13 @@
 // them alone. Editors can edit anything except user accounts, and admins
 // can edit anything.
 
+const ranks = {
+  guest: 0,
+  contributor: 1,
+  editor: 2,
+  admin: 3
+};
+
 module.exports = {
   options: {
     alias: 'permission',
@@ -66,7 +73,7 @@ module.exports = {
           return false;
         }
         if (action === 'view') {
-          if (manager && manager.isAdminOnly()) {
+          if (manager && manager.options.viewRole && (ranks[role] < ranks[manager.options.viewRole])) {
             return false;
           } else if (((typeof docOrType) === 'object') && (docOrType.visibility !== 'public')) {
             return (role === 'guest') || (role === 'contributor') || (role === 'editor');
@@ -78,7 +85,7 @@ module.exports = {
           // be allowed to be set to draft at all
           return (role === 'contributor') || (role === 'editor');
         } else if (action === 'edit') {
-          if (manager && manager.isAdminOnly()) {
+          if (manager && manager.options.editRole && (ranks[role] < ranks[manager.options.editRole])) {
             return false;
           } else if (mode === 'draft') {
             return (role === 'contributor') || (role === 'editor');
@@ -86,7 +93,7 @@ module.exports = {
             return role === 'editor';
           }
         } else if (action === 'publish') {
-          if (manager && manager.isAdminOnly()) {
+          if (manager && manager.options.publishRole && (ranks[role] < ranks[manager.options.publishRole])) {
             return false;
           } else {
             return role === 'editor';
@@ -116,7 +123,9 @@ module.exports = {
         if (role === 'admin') {
           return {};
         }
-        const restrictedTypes = Object.keys(self.apos.doc.managers).filter(name => self.apos.doc.getManager(name).isAdminOnly());
+        const restrictedViewTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.viewRole] > ranks[role]);
+        const restrictedEditTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.editRole] > ranks[role]);
+        const restrictedPublishTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.publishRole] > ranks[role]);
         if (action === 'view') {
           if (role === 'guest') {
             return {
@@ -127,13 +136,13 @@ module.exports = {
                 $in: [ 'public', 'loginRequired' ]
               },
               type: {
-                $nin: restrictedTypes
+                $nin: restrictedViewTypes
               }
             };
           } else if ((role === 'contributor') || (role === 'editor')) {
             return {
               type: {
-                $nin: restrictedTypes
+                $nin: restrictedViewTypes
               }
             };
           } else {
@@ -143,7 +152,7 @@ module.exports = {
               },
               visibility: 'public',
               type: {
-                $nin: restrictedTypes
+                $nin: restrictedViewTypes
               }
             };
           }
@@ -154,13 +163,13 @@ module.exports = {
                 $in: [ null, 'draft' ]
               },
               type: {
-                $nin: restrictedTypes
+                $nin: restrictedEditTypes
               }
             };
           } else if (role === 'editor') {
             return {
               type: {
-                $nin: restrictedTypes
+                $nin: restrictedEditTypes
               }
             };
           } else {
@@ -172,7 +181,7 @@ module.exports = {
           if (role === 'editor') {
             return {
               type: {
-                $nin: restrictedTypes
+                $nin: restrictedPublishTypes
               }
             };
           } else {
@@ -232,7 +241,6 @@ module.exports = {
         const permissionSet = {
           label: module.options.permissionsLabel || module.options.pluralLabel || module.options.label,
           name: module.__meta.name,
-          adminOnly: module.options.adminOnly,
           singleton: module.options.singleton,
           page: module.__meta.name === '@apostrophecms/any-page-type',
           ...options
@@ -265,8 +273,7 @@ module.exports = {
         let newPermissionSets = permissionSets.filter(permissionSet => self.options.interestingTypes.includes(permissionSet.name));
         newPermissionSets = [
           ...newPermissionSets,
-          permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet)),
-          permissionSets.find(permissionSet => permissionSet.page)
+          ...permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet))
         ];
         const typicalPieceType = permissionSets.find(self.matchTypicalPieceType);
         if (typicalPieceType) {
@@ -280,7 +287,8 @@ module.exports = {
         return newPermissionSets;
       },
       matchTypicalPieceType(permissionSet) {
-        return permissionSet.piece && !permissionSet.adminOnly && !self.options.interestingTypes.includes(permissionSet.name);
+        const manager = self.apos.doc.getManager(permissionSet.name);
+        return permissionSet.piece && (manager.options.viewRole === false) && (manager.options.editRole === 'contributor') && (manager.options.publishRole === 'editor') && !self.options.interestingTypes.includes(permissionSet.name);
       }
     };
   },

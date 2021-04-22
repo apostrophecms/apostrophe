@@ -3,7 +3,10 @@ const _ = require('lodash');
 module.exports = {
   options: {
     localized: true,
-    contextBar: true
+    contextBar: true,
+    editRole: 'contributor',
+    publishRole: 'editor',
+    viewRole: false
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -405,10 +408,6 @@ module.exports = {
       // desired text.
       decorateChange(doc, change) {
         change.text = doc.title;
-      },
-      // Returns true if only admins are allowed to edit this type.
-      isAdminOnly() {
-        return self.options.adminOnly;
       },
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `permission`
@@ -1360,7 +1359,7 @@ module.exports = {
             const property = query.get('explicitOrderProperty');
             if (!values.length) {
               // MongoDB gets mad if you have an empty $in
-              criteria[property] = { _id: '__iNeverMatch' };
+              criteria[property] = { _id: null };
               query.and(criteria);
               return;
             }

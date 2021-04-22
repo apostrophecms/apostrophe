@@ -373,8 +373,6 @@ module.exports = {
           ...(req.user ? {
             user: {
               _id: req.user._id,
-              firstName: req.user.firstName,
-              lastName: req.user.lastName,
               title: req.user.title,
               username: req.user.username,
               email: req.user.email

@@ -77,8 +77,7 @@ module.exports = {
       // array of pages.
 
       async getAll(req) {
-        // Edit access to draft is sufficient to fetch either
-        self.publicApiCheck(req, 'draft');
+        self.publicApiCheck(req);
         const all = self.apos.launder.boolean(req.query.all);
         const archived = self.apos.launder.booleanOrNull(req.query.archived);
         const flat = self.apos.launder.boolean(req.query.flat);
@@ -185,7 +184,7 @@ module.exports = {
       async getOne(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         // Edit access to draft is sufficient to fetch either
-        self.publicApiCheck(req, 'draft');
+        self.publicApiCheck(req);
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -557,11 +556,12 @@ database.`);
               self.apos.doc.managers[type] = {
                 // Do-nothing placeholder manager
                 schema: [],
+                options: {
+                  editRole: 'admin',
+                  publishRole: 'admin'
+                },
                 find(req) {
                   return [];
-                },
-                isAdminOnly() {
-                  return true;
                 },
                 isLocalized() {
                   return false;
@@ -2087,12 +2087,12 @@ database.`);
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
         // Minimum standard for a REST query without a public projection
-        // is being allowed to edit the draft
-        if (!self.apos.permission.can(req, 'edit', self.__meta.name, 'draft')) {
+        // is being allowed to view drafts on the site
+        if (!self.apos.permission.can(req, 'view-draft')) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
-              _id: '__iNeverMatch'
+              _id: null
             });
           } else {
             query.project(self.options.publicApiProjection);
@@ -2117,11 +2117,13 @@ database.`);
         return self.findForEditing(req, criteria, builders).toObject();
       },
       // Throws a `notfound` exception if a public API projection is
-      // not specified and the user does not have editing permissions. Otherwise does
-      // nothing. Simplifies implementation of `getAll` and `getOne`.
-      publicApiCheck(req, mode) {
+      // not specified and the user does not have the `view-draft` permission,
+      // which all roles capable of editing the site at all will have. This is needed because
+      // although all API calls check permissions specifically where appropriate,
+      // we also want to flunk all public access to REST APIs if not specifically configured.
+      publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit', self.__meta.name, mode || req.mode)) {
+          if (!self.apos.permission.can(req, 'view-draft')) {
             throw self.apos.error('notfound');
           }
         }
