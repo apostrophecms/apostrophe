@@ -22,7 +22,7 @@
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
         :can-archive="canArchive"
-        :can-copy="!!docId"
+        :can-copy="!!docId && !moduleOptions.singleton"
         :can-preview="canPreview"
         :is-published="!!published"
         :can-save-draft="true"
@@ -294,10 +294,13 @@ export default {
       }
     },
     canArchive() {
-      return !!(this.docId &&
+      return !!(
+        !this.moduleOptions.singleton &&
+        this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
         !this.restoreOnly &&
-        (this.published || !this.manuallyPublished));
+        (this.published || !this.manuallyPublished)
+      );
     },
     canDiscardDraft() {
       return (

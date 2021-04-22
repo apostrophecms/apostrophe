@@ -138,7 +138,6 @@ module.exports = {
         const browserOptions = _super(req);
         // _id of the piece, which is a singleton
         browserOptions._id = req.data.global && req.data.global._id;
-        browserOptions.quickCreate = false;
         return browserOptions;
       }
     };

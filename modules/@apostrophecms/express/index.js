@@ -146,6 +146,7 @@ const expressSession = require('express-session');
 const cookieParser = require('cookie-parser');
 const qs = require('qs');
 const expressBearerToken = require('express-bearer-token');
+const cors = require('cors');
 
 module.exports = {
   init(self) {
@@ -181,18 +182,28 @@ module.exports = {
         addCsrf() {
           self.enableCsrf();
         },
-        addModuleMiddleware() {
+        async addModuleMiddlewareAndRoutes() {
           // This has to happen on modulesReady, so that it happens before
           // the adding of routes by other, later modules on modulesReady,
           // and before the adding of the catch-all route for pages
           // on afterInit
-          self.findModuleMiddleware();
-          for (const middleware of self.finalModuleMiddleware) {
-            self.apos.app.use(middleware);
+          await self.findModuleMiddlewareAndRoutes();
+          for (const item of self.finalModuleMiddlewareAndRoutes) {
+            if (item.method) {
+              self.apos.app[item.method](item.url, item.route);
+            } else if (item.middleware) {
+              if (item.url) {
+                self.apos.app.use(item.url, item.middleware);
+              } else {
+                self.apos.app.use(item.middleware);
+              }
+            } else if ((typeof item) === 'function') {
+              // Simple middleware
+              self.apos.app.use(item);
+            } else {
+              throw self.apos.error('error', 'Unrecognized entry on finalModuleMiddlewareAndRoutes chain', item);
+            }
           }
-        },
-        async addModuleRoutes() {
-          await self.emit('addRoutes');
         }
       }
     };
@@ -200,6 +211,11 @@ module.exports = {
 
   middleware(self) {
     return {
+      // Enable CORS headers for all APIs
+      enableCors: {
+        url: '/api/v1',
+        middleware: cors()
+      },
       createDataAndGuards(req, res, next) {
         if (!req.data) {
           req.data = {};
@@ -583,40 +599,53 @@ module.exports = {
         _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));
       },
 
-      // Locate modules with middleware and add it to the list. By default
+      // Locate modules with middleware and routes and add them to the list. By default
       // the order is: middleware of this module, then middleware of all other
-      // modules in module registration order. The "before" keyword can be used
-      // to change this
-      findModuleMiddleware() {
+      // modules in module registration order, then routes of all modules in
+      // module registration order.
+      //
+      // The "before" keyword can be used to change this
+      async findModuleMiddlewareAndRoutes() {
+        await self.emit('compileRoutes');
         const labeledList = [];
         const moduleNames = Array.from(new Set([ self.__meta.name, ...Object.keys(self.apos.modules) ]));
         for (const name of moduleNames) {
-          const middleware = self.apos.modules[name].middleware;
-          if (!middleware) {
-            continue;
-          }
+          const middleware = self.apos.modules[name].middleware || {};
           labeledList.push({
-            name,
+            name: `middleware:${name}`,
             middleware: Object.values(middleware).filter(middleware => !middleware.before)
           });
         }
         for (const name of Object.keys(self.apos.modules)) {
-          const middleware = self.apos.modules[name].middleware;
-          if (!middleware) {
-            continue;
-          }
-          for (const item of Object.values(middleware)) {
+          const _routes = self.apos.modules[name]._routes;
+          labeledList.push({
+            name: `routes:${name}`,
+            routes: _routes.filter(route => !route.before)
+          });
+        }
+        for (const name of Object.keys(self.apos.modules)) {
+          const middleware = self.apos.modules[name].middleware || {};
+          const _routes = self.apos.modules[name]._routes;
+          for (const item of [ ...Object.values(middleware), ..._routes ]) {
             if (item.before) {
-              const before = labeledList.find(entry => entry.name === item.before);
+              let fullBeforeName = item.before;
+              if ((!item.before.startsWith('routes:')) && (!item.before.startsWith('middleware:'))) {
+                if (item.routes) {
+                  fullBeforeName = `routes:${item.before}`;
+                } else {
+                  fullBeforeName = `middleware:${item.before}`;
+                }
+              }
+              const before = labeledList.find(entry => entry.name === fullBeforeName);
               if (!before) {
-                throw new Error(`The module ${name} attempted to add middleware "before" the module ${item.before}, which does not exist`);
+                throw new Error(`The module ${name} attempted to add middleware or routes "before" the module ${fullBeforeName.split(':')[1]}, which does not exist`);
               }
               before.prepending = before.prepending || [];
-              before.prepending.push(item.middleware);
+              before.prepending.push(item);
             }
           }
         }
-        self.finalModuleMiddleware = labeledList.map(item => (item.prepending || []).concat(item.middleware)).flat();
+        self.finalModuleMiddlewareAndRoutes = labeledList.map(item => (item.prepending || []).concat(item.middleware || item.routes)).flat();
       }
     };
   }

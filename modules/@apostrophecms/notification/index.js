@@ -29,6 +29,63 @@ module.exports = {
     self.enableBrowserData();
   },
   restApiRoutes: (self) => ({
+    // Poll for active notifications. Responds with:
+    //
+    // `{ notifications: [ ... ], dismissed: [ id1... ] }`
+    //
+    // Each notification has an `html` property containing
+    // its rendered, localized markup, as well as `_id`, `createdAt`
+    // and `id` (if one was provided when it was triggered).
+    //
+    // The client should provide `modifiedOnOrSince` and `seenIds` in the
+    // query. `modifiedOnOrSince` is the timestamp of the most recent
+    // notification modification time (updatedAt) the client has already seen,
+    // and `seenIds` must contain the _ids of the notifications with that
+    // exact notification time that the client has already seen, for
+    // disambiguation.
+    //
+    // Waits up to 10 seconds for new notifications (long polling),
+    // but then responds with an empty array to avoid proxy server timeouts.
+    getAll: {
+      before: 'middleware:@apostrophecms/global',
+      async route(req) {
+        let modifiedOnOrSince;
+        if (!(req.user && req.user._id)) {
+          throw self.apos.error('invalid');
+        }
+        const start = Date.now();
+        try {
+          modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
+        } catch (e) {
+          throw self.apos.error('invalid');
+        }
+        const seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
+        return await attempt();
+
+        async function attempt() {
+          if (Date.now() - start >= (self.options.longPollingTimeout || 10000)) {
+            return {
+              notifications: [],
+              dismissed: []
+            };
+          }
+
+          const { notifications, dismissed } = await self.find(req, {
+            modifiedOnOrSince,
+            seenIds
+          });
+          if (!notifications.length && !dismissed.length) {
+            await delay(self.options.queryInterval || 1000);
+            return attempt();
+          }
+
+          return {
+            notifications,
+            dismissed
+          };
+        }
+      }
+    },
     getOne(req, _id) {
       return self.find(req, { displayingIds: [ _id ] });
     },
@@ -215,86 +272,6 @@ module.exports = {
           userId: 1,
           createdAt: 1
         });
-      }
-    };
-  },
-  middleware(self) {
-    return {
-      // This middleware is essentially a GET route at
-      // `/api/v1/@apostrophecms/notification/poll`. It is implemented
-      // as middleware to allow it to run before `req.data.global` is loaded,
-      // which can be a very expensive operation on some sites and should
-      // thus not be required before a high-frequency polling operation.
-      //
-      // Poll for active notifications. Responds with:
-      //
-      // `{ status: 'ok', notifications: [ ... ], dismissed: [ id1... ] }`
-      //
-      // Each notification has an `html` property containing
-      // its rendered, localized markup, as well as `_id`, `createdAt`
-      // and `id` (if one was provided when it was triggered).
-      //
-      // The client should provide `modifiedOnOrSince` and `seenIds` in the
-      // query. `modifiedOnOrSince` is the timestamp of the most recent
-      // notification modification time (updatedAt) the client has already seen,
-      // and `seenIds` must contain the _ids of the notifications with that
-      // exact notification time that the client has already seen, for
-      // disambiguation.
-      //
-      // Waits up to 10 seconds for new notifications (long polling),
-      // but then responds with an empty array to avoid proxy server timeouts.
-      //
-      // As usual POST is used to avoid unwanted caching of the response.
-      notifications: {
-        before: '@apostrophecms/global',
-        middleware: async (req, res, next) => {
-          let start;
-          let modifiedOnOrSince;
-          let seenIds;
-          try {
-            const reqUrl = new URL(req.url, req.baseUrl);
-            if (req.method.toUpperCase() !== 'GET' || reqUrl.pathname !== self.action) {
-              return next();
-            }
-            if (!(req.user && req.user._id)) {
-              throw self.apos.error('invalid');
-            }
-            start = Date.now();
-
-            try {
-              modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
-            } catch (e) {
-              throw self.apos.error('invalid');
-            }
-            seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
-            await attempt();
-          } catch (e) {
-            return self.routeSendError(req, e);
-          }
-
-          async function attempt() {
-            if (Date.now() - start >= (self.options.longPollingTimeout || 10000)) {
-              return res.send({
-                notifications: [],
-                dismissed: []
-              });
-            }
-
-            const { notifications, dismissed } = await self.find(req, {
-              modifiedOnOrSince,
-              seenIds
-            });
-            if (!notifications.length && !dismissed.length) {
-              await delay(self.options.queryInterval || 1000);
-              return attempt();
-            }
-
-            return res.send({
-              notifications,
-              dismissed
-            });
-          }
-        }
       }
     };
   }
