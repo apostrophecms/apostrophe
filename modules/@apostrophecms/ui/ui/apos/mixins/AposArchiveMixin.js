@@ -8,32 +8,98 @@ export default {
     // appropriately, not returned or thrown to the caller.
     //
     // Returns `true` if the document was ultimately archived.
-    async archive(action, _id, isPublished, isPage) {
+
+    async archive(doc) {
       try {
-        if (await apos.confirm({
-          heading: 'Are You Sure?',
-          description: isPublished
-            ? 'This will move the document to the archive and un-publish it.'
-            : 'This will move the document to the archive.'
-        })) {
+        const moduleOptions = window.apos.modules[doc.type];
+        const isPage = doc.slug.startsWith('/');
+        const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
+        const isPublished = !!doc.lastPublishedAt;
+        const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
+        const hasChildren = isPage && doc._children.length;
+        const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
+        let description = `You are going to archive the ${plainType} "${doc.title}"`;
+
+        if (hasChildren) {
+          description += `, which has ${doc._children.length} child ${plainType}${doc._children.length > 1 ? 's' : null}`;
+        }
+
+        if (isPublished) {
+          description += `. This will also un-publish the ${plainType}`;
+        }
+
+        description += '.';
+
+        // Confirm archiving
+        const confirm = await apos.confirm({
+          heading: `Archive ${plainType}`,
+          description,
+          affirmativeLabel: `Yes, archive ${plainType}`,
+          note: isCurrentContext
+            ? 'You are currently viewing the page you want to archive. When it is archived you will be returned to the home page.'
+            : null,
+          form: hasChildren
+            ? {
+              schema: [ {
+                type: 'radio',
+                name: 'choice',
+                required: true,
+                choices: [ {
+                  label: `Archive only this ${plainType}`,
+                  value: 'this'
+                }, {
+                  label: `Archive this ${plainType} and all child ${plainType}s`,
+                  value: 'all'
+                } ]
+              } ],
+              value: {
+                data: {}
+              }
+            }
+            : null
+        });
+
+        if (confirm) {
           const body = {
             archived: true,
             _publish: true
           };
 
           if (isPage) {
-            const pageTree = await this.getPageTree();
-            const archiveId = pageTree._children.filter(p => p.type === '@apostrophecms/archive-page')[0]._id;
-            body._targetId = archiveId;
+            body._targetId = '_archive';
             body._position = 'lastChild';
+
+            if (confirm.data && confirm.data.choice === 'this') {
+              // Editor wants to archive one page but not it's children
+              // Before archiving the page in question, move the children up a level,
+              // preserving their current order
+              for (const child of doc._children) {
+                await apos.http.patch(`${action}/${child._id}`, {
+                  body: {
+                    _targetId: doc._id,
+                    _position: 'before'
+                  },
+                  busy: false,
+                  draft: true
+                });
+              }
+            }
           }
 
-          await apos.http.patch(`${action}/${_id}`, {
+          // Move doc in question
+          await apos.http.patch(`${action}/${doc._id}`, {
             body,
             busy: true,
             draft: true
           });
-          if (_id === window.apos.adminBar.contextId) {
+
+          apos.notify('Content Archived', {
+            type: 'success',
+            icon: 'archive-arrow-down-icon',
+            dismiss: true
+          });
+
+          if (isCurrentContext) {
             // With the current context doc gone, we need to move to safe ground
             location.assign(`${window.apos.prefix}/`);
             return;
@@ -48,27 +114,82 @@ export default {
         });
       }
     },
-    async restore (action, _id, isPage) {
-      const body = {
-        archived: false
-      };
-      AposAdvisoryLockMixin.methods.addLockToRequest(body);
-
-      if (isPage) {
-        const pageTree = await this.getPageTree();
-        const homeId = pageTree._id;
-        body._targetId = homeId;
-        body._position = 'lastChild';
-      }
+    async restore (doc) {
+      const moduleOptions = apos.modules[doc.type];
+      const isPage = doc.slug.startsWith('/');
+      const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
+      const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
+      let confirm = null;
 
       try {
-        await apos.http.patch(`${action}/${_id}`, {
+        // If the doc has children, ask if they should be restored as well
+        if (doc._children) {
+          const childLength = doc._children.length;
+          const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : null}.`;
+          confirm = await apos.confirm({
+            heading: `Restore ${plainType}`,
+            description,
+            affirmativeLabel: `Yes, restore ${plainType}`,
+            form: {
+              schema: [ {
+                type: 'radio',
+                name: 'choice',
+                required: true,
+                choices: [ {
+                  label: 'Restore only this page',
+                  value: 'this'
+                }, {
+                  label: 'Restore this page and subpages',
+                  value: 'all'
+                } ]
+              } ],
+              value: {
+                data: {}
+              }
+            }
+          });
+        }
+
+        // If restoring a page and the editor wants to leave the children in the archive
+        if (confirm && confirm.data.choice === 'this') {
+          for (const child of doc._children) {
+            await apos.http.patch(`${action}/${child._id}`, {
+              body: {
+                _targetId: '_archive',
+                _position: 'lastChild',
+                archived: true,
+                _publish: false
+              },
+              busy: false,
+              draft: true
+            });
+          }
+        }
+
+        // Move doc in question
+        const body = {
+          archived: false,
+          _targetId: isPage ? '_home' : null,
+          _position: isPage ? 'firstChild' : null
+        };
+
+        AposAdvisoryLockMixin.methods.addLockToRequest(body);
+
+        await apos.http.patch(`${action}/${doc._id}`, {
           body,
           busy: true,
           draft: true
         });
+
+        apos.notify('Content Restored', {
+          type: 'success',
+          icon: 'archive-arrow-up-icon',
+          dismiss: true
+        });
+
         apos.bus.$emit('content-changed');
         return true;
+
       } catch (e) {
         if (AposAdvisoryLockMixin.methods.isLockedError(e)) {
           await this.showLockedError(e);
@@ -79,18 +200,6 @@ export default {
           });
         }
       }
-    },
-    async getPageTree() {
-      return apos.http.get(
-        '/api/v1/@apostrophecms/page', {
-          busy: true,
-          qs: {
-            all: '1',
-            archived: 'any'
-          },
-          draft: true
-        }
-      );
     }
   }
 };

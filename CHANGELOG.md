@@ -19,6 +19,8 @@
 * Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
 * Editors and admins can manage submitted drafts.
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
+* Confirm modals now support a schema which can be assessed after confirmation.
+* When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
 * Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
 * A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
 * The total number of submitted drafts is visible in the admin bar.

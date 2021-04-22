@@ -213,12 +213,13 @@ export default {
     },
     async onArchive(id) {
       const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.archive(this.moduleOptions.action, id, !!doc.lastPublishedAt, true)) {
+      if (await this.archive(doc)) {
         await this.getPages();
       }
     },
     async onRestore(id) {
-      if (await this.restore(this.moduleOptions.action, id, true)) {
+      const doc = this.findDocById(this.pagesFlat, id);
+      if (await this.restore(doc)) {
         await this.getPages();
       }
     },

@@ -9,15 +9,15 @@ export default function() {
       }
     },
     methods: {
-      async confirm(confirmContent) {
+      async confirm(content) {
         return this.execute(apos.modal.components.confirm, {
-          confirmContent,
+          content,
           mode: 'confirm'
         });
       },
       async alert(alertContent) {
         return this.execute(apos.modal.components.confirm, {
-          confirmContent: alertContent,
+          content: alertContent,
           mode: 'alert'
         });
       },

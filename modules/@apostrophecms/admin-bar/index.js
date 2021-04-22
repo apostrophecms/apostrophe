@@ -274,7 +274,8 @@ module.exports = {
             lastPublishedAt: context.lastPublishedAt,
             _edit: context._edit,
             aposMode: context.aposMode,
-            aposLocale: context.aposLocale
+            aposLocale: context.aposLocale,
+            aposDocId: context.aposDocId
           },
           // Base API URL appropriate to the context document
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
