@@ -358,9 +358,7 @@ export default {
     // After computed properties become available
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
-      // begin load
       await this.loadDoc();
-      // end load
       try {
         if (this.manuallyPublished) {
           this.published = await apos.http.get(this.getOnePath, {
