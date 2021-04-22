@@ -18,6 +18,7 @@
 ### Fixes
 
 * There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
+* Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
