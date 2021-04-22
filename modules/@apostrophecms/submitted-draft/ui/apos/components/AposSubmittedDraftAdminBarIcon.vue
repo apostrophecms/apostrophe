@@ -1,10 +1,14 @@
 <template>
-  <arrow-expand-right-icon
-    v-if="count > 0"
-    :size="size"
-    class="apos-indicator__icon"
-    :fill-color="fillColor"
-  />
+  <span v-if="count > 0" class="apos-submitted-draft-admin-bar-container">
+    <AposIndicator
+      icon="tray-full-icon"
+      class="apos-input-icon"
+      :icon-size="size"
+    />
+    <span v-if="canPublish" class="apos-submitted-draft-admin-bar-counter">
+      {{ count }}
+    </span>
+  </span>
 </template>
 <script>
 export default {
@@ -17,13 +21,6 @@ export default {
         return null;
       }
     },
-    fillColor: {
-      type: String,
-      required: false,
-      default() {
-        return null;
-      }
-    }
   },
   data() {
     return {
@@ -36,6 +33,11 @@ export default {
   destroyed() {
     if (this.timeout) {
       clearTimeout(this.timeout);
+    }
+  },
+  computed: {
+    canPublish() {
+      return window.apos.modules['@apostrophecms/submitted-draft'].canPublish;
     }
   },
   methods: {

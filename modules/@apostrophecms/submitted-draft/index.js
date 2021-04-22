@@ -105,34 +105,20 @@ module.exports = {
           `${self.__meta.name}:manager`,
           self.pluralLabel,
           {
-            action: 'publish',
-            type: self.name
-          },
-          {
-            component: 'AposSubmittedDraftAdminBarButton'
-          }
-        );
-        self.apos.adminBar.add(
-          `${self.__meta.name}:manager`,
-          self.pluralLabel,
-          {
             action: 'edit',
             type: self.name
           },
           {
             icon: 'AposSubmittedDraftAdminBarIcon',
             contextUtility: true,
-            tooltip: 'Submitted Drafts',
-            when(req) {
-              return !self.apos.permission.can(req, 'publish', self.name);
-            }
+            tooltip: 'Submitted Drafts'
           }
         );
       }
     };
   },
   icons: {
-    'arrow-expand-right-icon': 'ArrowExpandRight'
+    'tray-full-icon': 'TrayFull'
   },
   extendMethods(self) {
     return {

@@ -822,6 +822,7 @@ module.exports = {
         browserOptions.previewDraft = self.options.previewDraft;
         browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
+        browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {
           components: {}
         });
