@@ -61,8 +61,8 @@
             ref="display"
             :accept="accept"
             :items="items"
-            :module-options="options"
-            :can-edit="options.canEdit"
+            :module-options="moduleOptions"
+            :can-edit="moduleOptions.canEdit"
             @edit="updateEditing"
             v-model="checked"
             @select="select"
@@ -95,7 +95,7 @@
           />
           <AposMediaManagerSelections
             :items="selected"
-            :can-edit="options.canEdit"
+            :can-edit="moduleOptions.canEdit"
             @clear="clearSelected" @edit="updateEditing"
             v-show="!editing"
           />
@@ -148,37 +148,45 @@ export default {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.pluralLabel}`;
     },
-    options() {
+    moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
     toolbarFilters() {
-      if (!this.options || !this.options.filters) {
+      if (!this.moduleOptions || !this.moduleOptions.filters) {
         return null;
       }
 
-      return this.options.filters.filter(filter => {
+      return this.moduleOptions.filters.filter(filter => {
         // Removes _tags since that will be in the left sidebar.
         return filter.name !== '_tags';
       });
     },
     moduleLabels() {
-      if (!this.options) {
+      if (!this.moduleOptions) {
         return null;
       }
       return {
-        label: this.options.label,
-        pluralLabel: this.options.pluralLabel
+        label: this.moduleOptions.label,
+        pluralLabel: this.moduleOptions.pluralLabel
       };
     },
     selected() {
       return this.items.filter(item => this.checked.includes(item._id));
     },
     accept() {
-      return this.options.schema.find(field => field.name === 'attachment').accept;
+      return this.moduleOptions.schema.find(field => field.name === 'attachment').accept;
     },
     // Whether a cancellation requires confirmation or not
     isModified () {
       return (this.editing && this.modified) || this.relationshipIsModified();
+    },
+    headers() {
+      if (!this.items) {
+        return this.moduleOptions.columns || [];
+      }
+      return (this.moduleOptions.columns || []).filter(column => {
+        return (column.name !== '_url') || this.items.find(item => item._url);
+      });
     }
   },
   watch: {
@@ -210,8 +218,8 @@ export default {
         page: this.currentPage
       };
       const filtered = !!Object.keys(this.filterValues).length;
-      if (this.options && Array.isArray(this.options.filters)) {
-        this.options.filters.forEach(filter => {
+      if (this.moduleOptions && Array.isArray(this.moduleOptions.filters)) {
+        this.moduleOptions.filters.forEach(filter => {
           if (!filter.choices && qs.choices) {
             qs.choices += `,${filter.name}`;
           } else if (!filter.choices) {
@@ -227,7 +235,7 @@ export default {
         };
       }
       const apiResponse = (await apos.http.get(
-        this.options.action, {
+        this.moduleOptions.action, {
           busy: true,
           qs,
           draft: true
@@ -240,7 +248,7 @@ export default {
           // and folders don't disappear when empty. So we need to make a
           // separate query for distinct tags if our first query was filtered
           const apiResponse = (await apos.http.get(
-            this.options.action, {
+            this.moduleOptions.action, {
               busy: true,
               qs: {
                 choices: '_tags'
@@ -293,7 +301,7 @@ export default {
       this.editing = undefined;
     },
     async updateEditing(id) {
-      if (!this.options.canEdit) {
+      if (!this.moduleOptions.canEdit) {
         return;
       }
       // We only care about the current doc for this prompt,

@@ -8,8 +8,12 @@ module.exports = function(self) {
         const args = parser.parseSignature();
         args.addChild(primary);
         args.children = args.children.map(child => {
-          const node = new nodes.Literal(child.lineno, child.colno, child.value);
-          return node;
+          if (child.typename === 'KeywordArgs') {
+            // Keep the KeywordsArgs nodelist in order to enable keyword arguments support
+            // https://mozilla.github.io/nunjucks/templating.html#keyword-arguments
+            return child;
+          }
+          return new nodes.Literal(child.lineno, child.colno, child.value);
         });
         parser.advanceAfterBlockEnd(symbolToken.value);
         // We need to capture the body source code, not parse it. For that

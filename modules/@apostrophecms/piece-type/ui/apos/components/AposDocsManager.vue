@@ -32,8 +32,8 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else-if="options.canEdit && options.managerHasNewButton"
-        :label="`New ${ options.label }`" type="primary"
+        v-else-if="moduleOptions.canEdit && moduleOptions.managerHasNewButton"
+        :label="`New ${ moduleOptions.label }`" type="primary"
         @click="create"
       />
     </template>
@@ -61,7 +61,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages"
             :current-page="currentPage"
-            :filters="options.filters"
+            :filters="moduleOptions.filters"
             :filter-choices="filterChoices"
             :filter-values="filterValues"
             :labels="moduleLabels"
@@ -92,7 +92,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
-              canEdit: options.canEdit
+              canEdit: moduleOptions.canEdit
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -152,13 +152,13 @@ export default {
     };
   },
   computed: {
-    options() {
+    moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
     moduleLabels() {
       return {
-        singular: this.options.label,
-        plural: this.options.pluralLabel
+        singular: this.moduleOptions.label,
+        plural: this.moduleOptions.pluralLabel
       };
     },
     saveRelationshipLabel() {
@@ -178,10 +178,18 @@ export default {
         message: '',
         emoji: '📄'
       };
+    },
+    headers() {
+      if (!this.items) {
+        return this.moduleOptions.columns || [];
+      }
+      return (this.moduleOptions.columns || []).filter(column => {
+        return (column.name !== '_url') || this.items.find(item => item._url);
+      });
     }
   },
   created() {
-    this.options.filters.forEach(filter => {
+    this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
@@ -194,7 +202,7 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-    if (this.relationshipField && this.options.canEdit) {
+    if (this.relationshipField && this.moduleOptions.canEdit) {
       // Add computed singular label to context menu
       this.moreMenu.menu.unshift({
         action: 'new',
@@ -246,7 +254,7 @@ export default {
       }
 
       const getResponse = (await apos.http.get(
-        this.options.action, {
+        this.moduleOptions.action, {
           busy: true,
           qs,
           draft: true
@@ -270,25 +278,25 @@ export default {
     },
     async onArchive(id) {
       const piece = this.findDocById(this.items, id);
-      if (await this.archive(this.options.action, id, !!piece.lastPublishedAt)) {
+      if (await this.archive(piece)) {
         apos.bus.$emit('content-changed');
       }
     },
     async onRestore(id) {
       const piece = this.findDocById(this.items, id);
-      if (await this.restore(this.options.action, id, !!piece.lastPublishedAt)) {
+      if (await this.restore(piece)) {
         apos.bus.$emit('content-changed');
       }
     },
     async onDiscardDraft(id) {
       const piece = this.findDocById(this.items, id);
-      if (await this.discardDraft(this.options.action, id, !!piece.lastPublishedAt)) {
+      if (await this.discardDraft(piece)) {
         apos.bus.$emit('content-changed');
       };
     },
     async copy(id) {
       apos.bus.$emit('admin-menu-click', {
-        itemName: `${this.options.name}:editor`,
+        itemName: `${this.moduleOptions.name}:editor`,
         props: {
           copyOf: this.findDocById(this.items, id)
         }

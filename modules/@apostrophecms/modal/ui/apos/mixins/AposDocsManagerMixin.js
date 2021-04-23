@@ -49,14 +49,6 @@ export default {
     sort(action) {
       this.$emit('sort', action);
     },
-    headers() {
-      if (!this.items) {
-        return this.options.columns || [];
-      }
-      return (this.options.columns || []).filter(column => {
-        return (column.name !== '_url') || this.items.find(item => item._url);
-      });
-    },
     selectAllValue() {
       return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };
     },

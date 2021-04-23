@@ -1,0 +1,16 @@
+{% import "fragment-print.html" as f %}
+{% import "macro.html" as m %}
+
+{% fragment test(pos1, pos2, kw1 = 'kw1_default', kw2 = 'kw2_default', pos3, kw3 = 'kw3_default') %}
+  {{ pos1 }}
+  {{ pos2 }}
+  {{ pos3 }}
+  {{ rendercaller() }}
+  {% render _print(kw1) %}
+  {% render f.print(kw2) %}
+  {{ m.print(kw3) }}
+{% endfragment %}
+
+{% fragment _print(text) %}
+  {{ text }}
+{% endfragment %}
