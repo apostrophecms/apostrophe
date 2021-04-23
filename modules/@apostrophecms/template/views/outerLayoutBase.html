@@ -4,7 +4,7 @@
     {% block startHead %}
     {% endblock %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'prepend' } %}
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}{{ data.piece.title or data.page.title }}{% endblock %}</title>
     {{ apos.asset.stylesheets(data.scene) }}
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">

@@ -27,6 +27,7 @@
 * The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
+* Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
 
 ### Fixes
 
