@@ -644,7 +644,7 @@ module.exports = {
           // Make the query available to templates for easy access to
           // filter settings etc.
           query: req.query,
-          url: req.url
+          url: unrefreshed(req.url)
         };
 
         _.extend(args, data);
@@ -672,6 +672,22 @@ module.exports = {
           self.apos.util.error(e);
           req.statusCode = 500;
           return self.render(req, 'templateError');
+        }
+
+        function unrefreshed(url) {
+          // Including apos-refresh=1 in data.url leads to busted pages in
+          // navigation links, so strip that out. However this is invoked on
+          // every page load so do it as quickly as we can to avoid the
+          // overhead of a full parse and rebuild
+          if (!url.includes('apos-refresh=1')) {
+            return url;
+          } else if (url.endsWith('?apos-refresh=1')) {
+            return url.replace('?apos-refresh=1', '');
+          } else if (url.includes('?apos-refresh=1')) {
+            return url.replace('?apos-refresh=1&', '?');
+          } else {
+            return url.replace('&apos-refresh=1', '');
+          }
         }
       },
 
