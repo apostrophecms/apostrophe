@@ -7,7 +7,7 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-input-wrapper">
+      <div class="apos-input-wrapper apos-input__role">
         <select
           class="apos-input apos-input--select apos-input--role" :id="uid"
           @change="change($event.target.value)"
@@ -27,31 +27,48 @@
           :icon-size="20"
         />
       </div>
-      <ul class="apos-input--permission-grid">
-        <li
+      <div class="apos-input__role__permission-grid">
+        <div
           v-for="permissionSet in permissionSets"
           :key="permissionSet.name"
+          class="apos-input__role__permission-grid__set"
         >
-          <h4>
+          <h4 class="apos-input__role__permission-grid__set-name">
             {{ permissionSet.label }}
             <AposIndicator
-              v-if="permissionSet.tooltip"
+              v-if="permissionSet.includes"
               icon="help-circle-icon"
-              class="apos-field__help-tooltip__icon"
-              :tooltip="permissionSet.tooltip"
+              class="apos-input__role__permission-grid__help"
+              :tooltip="getTooltip(permissionSet.includes)"
               :icon-size="11"
               icon-color="var(--a-base-4)"
             />
           </h4>
-          <ul>
-            <li v-for="permission in permissionSet.permissions" :key="permission.name">
-              <AposIndicator v-if="permission.value" icon="check-bold-icon" icon-color="var(--a-success)" />
-              <AposIndicator v-else icon="alpha-x-icon" icon-color="var(--a-danger)" />
-              &nbsp;{{ permission.label }}
-            </li>
-          </ul>
-        </li>
-      </ul>
+          <dl class="apos-input__role__permission-grid__list">
+            <div
+              v-for="permission in permissionSet.permissions"
+              :key="permission.name"
+              class="apos-input__role__permission-grid__row"
+            >
+              <dd class="apos-input__role__permission-grid__value">
+                <AposIndicator
+                  :icon="permission.value ? 'check-bold-icon' : 'close-icon'"
+                  :icon-color="permission.value ? 'var(--a-success)' : 'var(--a-base-5)'"
+                />
+                <span v-if="permission.value" class="apos-sr-only">
+                  Enabled
+                </span>
+                <span v-else class="apos-sr-only">
+                  Disabled
+                </span>
+              </dd>
+              <dt class="apos-input__role__permission-grid__label">
+                {{ permission.label }}
+              </dt>
+            </div>
+          </dl>
+        </div>
+      </div>
     </template>
   </AposInputWrapper>
 </template>
@@ -103,6 +120,30 @@ export default {
     }
   },
   methods: {
+    getTooltip(includes) {
+      const html = document.createElement('div');
+      html.setAttribute('class', 'apos-info');
+      const list = document.createElement('ul');
+      const intro = document.createElement('p');
+      const followUp = document.createElement('p');
+      const link = document.createElement('a');
+      intro.appendChild(document.createTextNode('Pieces are structured content. They are often used for content like articles, events, products, categories, etc.'));
+      followUp.appendChild(document.createTextNode('Pieces for this site include:'));
+      link.appendChild(document.createTextNode('Explanation of Pieces'));
+      link.setAttribute('href', 'https://a3.docs.apostrophecms.org/reference/glossary.html#piece');
+      link.setAttribute('_target', 'blank');
+      html.appendChild(intro);
+      html.appendChild(followUp);
+      includes.forEach(item => {
+        const li = document.createElement('li');
+        li.appendChild(document.createTextNode(item));
+        list.appendChild(li);
+      });
+      html.appendChild(list);
+      // TODO append this link when doc urls are more stable
+      // html.appendChild(link);
+      return { content: html };
+    },
     validate(value) {
       if (this.field.required && !value.length) {
         return 'required';
@@ -129,21 +170,43 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-input-icon {
-  @include apos-transition();
-}
-ul {
-  list-style: none;
-  padding-inline-start: 0;
-}
+  .apos-input-icon {
+    @include apos-transition();
+  }
 
-.apos-input--permission-grid > li {
-  h4 {
-    font-weight: bold;
+  .apos-input__role__permission-grid {
+    @include type-base;
+    display: grid;
+    margin-top: $spacing-triple;
+    grid-template-columns: repeat(auto-fit, minmax(50%, 1fr));
   }
-  li {
-    padding: 0.5em 1em 0.25em;
-    border-bottom: 1px solid var(--a-base-7);
+
+  .apos-input__role__permission-grid__row {
+    display: flex;
+    align-items: center;
+    padding-bottom: $spacing-three-quarters;
+    margin-bottom: $spacing-three-quarters;
+    border-bottom: 1px solid var(--a-base-9);
   }
-}
+  .apos-input__role__permission-grid__list {
+    margin-top: 0;
+  }
+  .apos-input__role__permission-grid__set {
+    padding: 0 $spacing-base;
+    margin-bottom: $spacing-double;
+  }
+
+  .apos-input__role__permission-grid__set-name {
+    display: inline-flex;
+    margin: 0 0 $spacing-double;
+  }
+
+  .apos-input__role__permission-grid__value {
+    display: inline-flex;
+    margin: 0 $spacing-half 0 0;
+  }
+
+  .apos-input__role__permission-grid__help {
+    margin-left: $spacing-half;
+  }
 </style>
