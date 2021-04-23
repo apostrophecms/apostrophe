@@ -200,6 +200,9 @@ export default {
       } else {
         return 'Select Pages';
       }
+    },
+    headers() {
+      return this.options.columns || [];
     }
   },
   async mounted() {
