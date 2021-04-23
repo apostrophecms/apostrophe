@@ -39,14 +39,15 @@ module.exports = {
           await fs.remove(modulesDir);
           await fs.mkdirp(modulesDir);
 
-          let cleanBuild = false;
-          const APOS_ONLY_BUNDLE = 'apos-only-bundle.js';
+          let rebuildAposUi = false;
           const APOS_MERGED_BUNDLE = 'apos-bundle.js';
+          const APOS_ONLY_BUNDLE = 'apos-only-bundle.js';
+          const APOS_ONLY_TS = '.apos-only-timestamp.txt';
           const PUBLIC_BUNDLE_CSS = 'public-bundle.css';
           const PUBLIC_BUNDLE_JS = 'public-bundle.js';
 
           if (!fs.exists(bundleDir)) {
-            cleanBuild = true;
+            rebuildAposUi = true;
             await fs.mkdirp(bundleDir);
           } else {
             await fs.remove(`${bundleDir}/${APOS_MERGED_BUNDLE}`);
@@ -54,11 +55,27 @@ module.exports = {
             await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_JS}`);
           }
 
+          const tsExists = await fs.pathExists(`${bundleDir}/${APOS_ONLY_TS}`);
+
+          if (!rebuildAposUi && tsExists) {
+            // If we have a UI build timestamp file compare against the app's
+            // package.json modified time.
+            if (await pkgJsonIsNewerThanUi()) {
+              rebuildAposUi = true;
+              await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
+            }
+
+            fs.remove(`${bundleDir}/${APOS_ONLY_TS}`);
+          } else {
+            rebuildAposUi = true;
+            await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
+          }
+
           await moduleOverrides();
           buildPublicCssBundle();
           buildPublicJsBundle();
 
-          if (cleanBuild) {
+          if (rebuildAposUi) {
             await buildAposBundle();
           }
 
@@ -193,6 +210,9 @@ module.exports = {
             ));
           }
 
+          const now = Date.now().toString();
+          fs.writeFileSync(`${bundleDir}/${APOS_ONLY_TS}`, now);
+
           function getIcons() {
 
             for (const name of self.apos.modulesToBeInstantiated()) {
@@ -310,6 +330,14 @@ module.exports = {
               }
             });
             return output;
+          }
+
+          async function pkgJsonIsNewerThanUi() {
+            const timestamp = fs.readFileSync(`${bundleDir}/${APOS_ONLY_TS}`, 'utf8');
+            const pkgStats = await fs.stat(`${self.apos.rootDir}/package.json`);
+            const pkgTimestamp = pkgStats && pkgStats.mtimeMs;
+
+            return pkgTimestamp > parseInt(timestamp);
           }
         }
       }
