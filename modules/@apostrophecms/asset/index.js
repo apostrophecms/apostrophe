@@ -5,6 +5,7 @@ const webpackModule = require('webpack');
 const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
 
@@ -104,17 +105,16 @@ module.exports = {
             // Of course, developers can push an "public" asset that is
             // the output of an ES6 pipeline.
             const publicImports = getImports('public', '*.js', { });
-            fs.writeFileSync(`${bundleDir}/public-bundle.js`,
-              `
-    (function() {
-    window.apos = window.apos || {};
-    var data = document.body && document.body.getAttribute('data-apos');
-    Object.assign(window.apos, JSON.parse(data || '{}'));
-    if (data) {
-      document.body.removeAttribute('data-apos');
-    }
-    })();
-    ` +
+            fs.writeFileSync(`${bundleDir}/public-bundle.js`, stripIndent`
+              (function() {
+                window.apos = window.apos || {};
+                var data = document.body && document.body.getAttribute('data-apos');
+                Object.assign(window.apos, JSON.parse(data || '{}'));
+                if (data) {
+                  document.body.removeAttribute('data-apos');
+                }
+              })();
+            ` + '\n' +
             publicImports.paths.map(path => {
               return fs.readFileSync(path);
             }).join('\n')); // TODO: use webpack just to minify at the end.
@@ -130,28 +130,28 @@ module.exports = {
             });
             const importFile = `${buildDir}/import.js`;
 
-            fs.writeFileSync(importFile, `
-    import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-    import Vue from 'Modules/@apostrophecms/ui/lib/vue';
-    if (window.apos.modules) {
-    for (const module of Object.values(window.apos.modules)) {
-      if (module.alias) {
-        window.apos[module.alias] = module;
-      }
-    }
-    }
-    window.apos.bus = new Vue();
-    ${iconImports.importCode}
-    ${iconImports.registerCode}
-    ${componentImports.importCode}
-    ${tiptapExtensionImports.importCode}
-    ${appImports.importCode}
-    ${iconImports.registerCode}
-    ${componentImports.registerCode}
-    ${tiptapExtensionImports.registerCode}
-    setTimeout(() => {
-    ${appImports.invokeCode}
-    }, 0);
+            fs.writeFileSync(importFile, stripIndent`
+              import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
+              import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+              if (window.apos.modules) {
+                for (const module of Object.values(window.apos.modules)) {
+                  if (module.alias) {
+                    window.apos[module.alias] = module;
+                  }
+                }
+              }
+              window.apos.bus = new Vue();
+              ${iconImports.importCode}
+              ${iconImports.registerCode}
+              ${componentImports.importCode}
+              ${tiptapExtensionImports.importCode}
+              ${appImports.importCode}
+              ${iconImports.registerCode}
+              ${componentImports.registerCode}
+              ${tiptapExtensionImports.registerCode}
+              setTimeout(() => {
+                ${appImports.invokeCode}
+              }, 0);
             `);
 
             fs.writeFileSync(`${buildDir}/imports.json`, JSON.stringify({
@@ -211,7 +211,11 @@ module.exports = {
           }
 
           function merge() {
-            fs.writeFileSync(`${bundleDir}/apos-bundle.js`, fs.readFileSync(`${bundleDir}/public-bundle.js`) + fs.readFileSync(`${bundleDir}/apos-only-bundle.js`));
+            fs.writeFileSync(
+              `${bundleDir}/apos-bundle.js`,
+              fs.readFileSync(`${bundleDir}/public-bundle.js`) +
+                fs.readFileSync(`${bundleDir}/apos-only-bundle.js`)
+            );
           }
 
           async function deploy() {
@@ -275,10 +279,10 @@ module.exports = {
               }
 
               if (options.registerTiptapExtensions) {
-                output.registerCode += `
-    apos.tiptapExtensions = apos.tiptapExtensions || [];
-    apos.tiptapExtensions.push(${name});
-    `;
+                output.registerCode += stripIndent`
+                  apos.tiptapExtensions = apos.tiptapExtensions || [];
+                  apos.tiptapExtensions.push(${name});
+                `;
               }
               if (options.invokeApps) {
                 output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
@@ -359,11 +363,14 @@ module.exports = {
           }).trim();
           return fromGit;
         } catch (e) {
-          throw new Error(`When running in production you must set the APOS_RELEASE_ID
-environment variable to a short, unique string identifying this particular
-release of the application, or write it to the file release-id. Apostrophe will
-also autodetect HEROKU_RELEASE_VERSION, PLATFORM_TREE_ID or the current git commit
-if your deployment is a git checkout.`);
+          throw new Error(stripIndent`
+            When running in production you must set the APOS_RELEASE_ID
+            environment variable to a short, unique string identifying this
+            particular release of the application, or write it to the file
+            release-id. Apostrophe will also autodetect HEROKU_RELEASE_VERSION,
+            PLATFORM_TREE_ID or the current git commit if your deployment is a
+            git checkout.
+          `);
         }
       },
       // Can be overridden to namespace several asset bundles
