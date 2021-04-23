@@ -149,25 +149,27 @@ export default {
         const matches = slug.match(/[^/]+$/);
         slug = (matches && matches[0]) || '';
       }
-      return ((title === '') && (slug === `${this.prefix}none`)) || this.slugify(title) === this.slugify(slug);
+      return ((title === '') && (slug === `${this.prefix}`)) || this.slugify(title) === this.slugify(slug);
     },
     // if componentOnly is true, we are slugifying just one component of
     // a slug as part of following the title field, and so we do *not*
     // want to allow slashes (when editing a page) or set a prefix.
     slugify(s, { componentOnly = false } = {}) {
-      const options = {};
+      const options = {
+        def: ''
+      };
       if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
-      let preserveSlash = false;
+      let preserveDash = false;
       // When you are typing a slug it feels wrong for hyphens you typed
       // to disappear as you go, so if the last character is not valid in a slug,
       // restore it after we call sluggo for the full string
-      if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === 'none')) {
-        preserveSlash = true;
+      if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === '')) {
+        preserveDash = true;
       }
       s = sluggo(s, options);
-      if (preserveSlash) {
+      if (preserveDash) {
         s += '-';
       }
       if (this.field.page && !componentOnly) {
@@ -178,9 +180,6 @@ export default {
         if (s !== '/') {
           s = s.replace(/\/$/, '');
         }
-      }
-      if (!s.length) {
-        s = 'none';
       }
       if (!componentOnly) {
         if (!s.startsWith(this.prefix)) {

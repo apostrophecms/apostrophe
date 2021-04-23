@@ -44,7 +44,8 @@ export default {
   emits: [ 'return' ],
   data () {
     return {
-      step: undefined
+      step: undefined,
+      wasPopulated: false
     };
   },
   computed: {
@@ -91,14 +92,20 @@ export default {
         // previous value matched the previous value of the other field(s)
         oldValue = Object.values(oldValue).join(' ').trim();
         newValue = Object.values(newValue).join(' ').trim();
-        if (((this.next == null) || (!this.next.length)) || (this.next === oldValue)) {
+        if ((!this.wasPopulated && ((this.next == null) || (!this.next.length))) || (this.next === oldValue)) {
           this.next = newValue;
         }
+      }
+    },
+    next() {
+      if (this.next && this.next.length) {
+        this.wasPopulated = true;
       }
     }
   },
   mounted() {
     this.defineStep();
+    this.wasPopulated = this.next && this.next.length;
   },
   methods: {
     enterEmit() {
