@@ -4,14 +4,18 @@
 
 {% block main %}
 --test1--
+{% render fragment.test('pos1', 'pos2') %}
+--endtest1--
+
+--test2--
 Above Fragment
 
 {% render fragment.test('pos1', 'pos2', kw2 = 'kw2', 'pos3') %}
 
 Below Fragment
---endtest1--
+--endtest2--
 
---test2--
+--test3--
 Above Call Fragment
 
 {% rendercall fragment.test('pos1', 'pos2', kw2 = 'kw2', 'pos3') %}
@@ -21,5 +25,5 @@ Above Call Fragment
 {% endrendercall %}
 
 Below Call Fragment
---endtest2--
+--endtest3--
 {% endblock %}

@@ -4,6 +4,29 @@
   z-index: $z-index-notifications;
   display: block;
 
+  .apos-info {
+    max-width: 330px;
+    p {
+      margin-top: 0;
+      line-height: var(--a-line-tall);
+    }
+    ul, ol {
+      padding-left: $spacing-base;
+    }
+    ul {
+      list-style-type: none;
+    }
+    ul li,
+    ol li {
+      margin-bottom: $spacing-half;
+    }
+    ul li:before {
+      content: '-';
+      position: relative;
+      left: -$spacing-half;
+    }
+  }
+
   .apos-tooltip__inner {
     @include type-small;
     z-index: $z-index-default;

@@ -1,4 +1,5 @@
 const util = require('util');
+const _ = require('lodash');
 
 module.exports = (self) => {
   // Create the render input object, used to parse the fragment source
@@ -9,19 +10,16 @@ module.exports = (self) => {
     let i = 0;
     let kwparams = null;
     for (const param of info.params) {
-      if (i === info.args.length) {
-        break;
-      }
-      // It is kwargs (keyword arguments), merge them so we can mix
-      // positional and keyword arguments
-
-      // For performance
+      // Grab kw param if available, it's the last one
       if (param && typeof param !== 'string' && param.__keywords === true) {
         kwparams = param;
-        continue;
+        break;
       }
-
-      input[param] = info.args[i];
+      // loop through everything (because kwargs are always last) and don't assign if
+      // no argument is provided
+      if (typeof info.args[i] !== 'undefined') {
+        input[param] = info.args[i];
+      }
       i++;
     }
 
@@ -30,9 +28,10 @@ module.exports = (self) => {
       // Those are the defaults
       Object.assign(input, kwparams);
       // Those are the passed arguments
-      // andare ALWAYS the last array item
+      // and they are ALWAYS the last array item
       const kwargs = info.args[info.args.length - 1];
-      if (kwargs && kwargs.__keywords === true) {
+      // Be sure it's an object!
+      if (kwargs && _.isPlainObject(kwargs) && kwargs.__keywords === true) {
         Object.assign(input, kwargs);
       }
     }
@@ -75,15 +74,13 @@ module.exports = (self) => {
       // A `noop` function for `rendercaller`
       let rendercaller = () => '';
       if (hasBody) {
-        // wait for the body string and make caller return safe string
+        // wait for the body to be parsed to a string and let caller return safe string
         const renderBody = await util.promisify(rest.pop())();
         rendercaller = () => self.safe(renderBody);
-        // This is the other option, but we need to mark it safe...
-        // rendercaller = rest.pop();
       }
 
       const info = rest.pop();
-      const body = info.body();
+      const source = info.body();
       const input = createRenderInput(info);
 
       const req = context.env.opts.req;
@@ -97,7 +94,7 @@ module.exports = (self) => {
 
       const result = await require('util').promisify((s, args, callback) => {
         return env.renderString(s, args, callback);
-      })(body, input);
+      })(source, input);
       return result;
     } catch (e) {
       console.error(e);
