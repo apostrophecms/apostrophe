@@ -561,9 +561,9 @@ export default {
             draft: true
           });
           if (andSubmit) {
-            await this.submitDraft(this.moduleAction, doc._id);
+            await this.submitDraft(doc);
           } else if (andPublish && !restoreOnly) {
-            await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
+            await this.publish(doc);
           }
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
@@ -663,7 +663,7 @@ export default {
       }
     },
     async onDiscardDraft(e) {
-      if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+      if (await this.discardDraft(this.original)) {
         apos.bus.$emit('content-changed');
         this.modal.showModal = false;
       }

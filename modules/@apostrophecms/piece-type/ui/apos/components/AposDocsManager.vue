@@ -290,7 +290,7 @@ export default {
     },
     async onDiscardDraft(id) {
       const piece = this.findDocById(this.items, id);
-      if (await this.discardDraft(this.moduleOptions.action, id, !!piece.lastPublishedAt)) {
+      if (await this.discardDraft(piece)) {
         apos.bus.$emit('content-changed');
       };
     },

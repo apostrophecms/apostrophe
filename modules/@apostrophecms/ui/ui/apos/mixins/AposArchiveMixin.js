@@ -13,7 +13,7 @@ export default {
       try {
         const moduleOptions = window.apos.modules[doc.type];
         const isPage = doc.slug.startsWith('/');
-        const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
+        const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
         const hasChildren = isPage && doc._children.length;
@@ -117,7 +117,7 @@ export default {
     async restore (doc) {
       const moduleOptions = apos.modules[doc.type];
       const isPage = doc.slug.startsWith('/');
-      const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
+      const action = window.apos.modules[doc.type].action;
       const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
       let confirm = null;
 
