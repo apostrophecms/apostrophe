@@ -92,13 +92,14 @@ export default {
     //
     // If the draft document still exists the returned object will have a `doc` property containing
     // its newly reverted contents.
-    async discardDraft(doc, isPublished) {
+    async discardDraft(doc) {
+      const isPublished = !!doc.lastPublishedAt;
       try {
         if (await apos.confirm({
           heading: `Discard ${this.moduleOptions.label || 'content'}`,
           description: isPublished
             ? 'This will discard all changes since the document was last published.'
-            : `Since "${this.doc.title}" has never been published, this will completely delete the document.`,
+            : `Since "${doc.title}" has never been published, this will completely delete the document.`,
           affirmativeLabel: isPublished
             ? 'Yes, discard changes'
             : 'Yes, delete document'

@@ -16,7 +16,7 @@ export default {
         const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
-        const hasChildren = isPage && doc._children.length;
+        const hasChildren = isPage && doc._children && doc._children.length;
         const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
         let description = `You are going to archive the ${plainType} "${doc.title}"`;
 
@@ -123,7 +123,7 @@ export default {
 
       try {
         // If the doc has children, ask if they should be restored as well
-        if (isPage && doc._children) {
+        if (isPage && doc._children && doc._children.length) {
           const childLength = doc._children.length;
           const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : null}.`;
           confirm = await apos.confirm({
