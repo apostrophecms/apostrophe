@@ -179,6 +179,14 @@ export default {
     // Whether a cancellation requires confirmation or not
     isModified () {
       return (this.editing && this.modified) || this.relationshipIsModified();
+    },
+    headers() {
+      if (!this.items) {
+        return this.moduleOptions.columns || [];
+      }
+      return (this.moduleOptions.columns || []).filter(column => {
+        return (column.name !== '_url') || this.items.find(item => item._url);
+      });
     }
   },
   watch: {
