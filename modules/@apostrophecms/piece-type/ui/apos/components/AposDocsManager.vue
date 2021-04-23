@@ -92,7 +92,8 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
-              canEdit: options.canEdit
+              canEdit: options.canEdit,
+              manuallyPublished: manuallyPublished
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -178,6 +179,9 @@ export default {
         message: '',
         emoji: '📄'
       };
+    },
+    manuallyPublished() {
+      return this.options.localized && !this.options.autopublish;
     }
   },
   created() {

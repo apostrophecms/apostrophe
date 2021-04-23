@@ -3,12 +3,12 @@
     class="apos-table__cell-field apos-table__cell-field--labels"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    <span v-if="item.modified">
+    <span v-if="manuallyPublished && item.modified">
       <AposLabel
         label="Active Draft" class="apos-table__cell-field__label"
       />
     </span>
-    <span v-if="!item.lastPublishedAt">
+    <span v-if="manuallyPublished && !item.lastPublishedAt">
       <AposLabel
         label="Unpublished" class="apos-table__cell-field__label"
         :modifiers="[ 'is-warning' ]"
@@ -32,6 +32,10 @@ export default {
     },
     header: {
       type: Object,
+      required: true
+    },
+    manuallyPublished: {
+      type: Boolean,
       required: true
     }
   }

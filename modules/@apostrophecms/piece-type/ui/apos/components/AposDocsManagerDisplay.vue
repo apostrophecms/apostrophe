@@ -69,6 +69,7 @@
           <component
             v-if="header.component" :is="header.component"
             :header="header" :item="item"
+            :manually-published="options.manuallyPublished"
           />
           <AposCellBasic
             v-else
@@ -119,7 +120,7 @@ export default {
       default() {
         return {};
       }
-    }
+    },
   },
   emits: [
     'open',
