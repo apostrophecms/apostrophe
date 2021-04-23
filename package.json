@@ -48,7 +48,6 @@
     "dayjs": "^1.9.8",
     "debounce-async": "0.0.2",
     "deep-get-set": "^0.1.1",
-    "eslint-plugin-promise": "^4.3.1",
     "express": "^4.16.4",
     "express-bearer-token": "^2.4.0",
     "express-session": "^1.17.1",
