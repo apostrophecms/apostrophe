@@ -24,6 +24,15 @@
               icon-color="var(--a-base-4)"
             />
           </span>
+          <span v-if="displayOptions.changed" class="apos-field__changed-indicator">
+            <AposIndicator
+              icon="information-icon"
+              class="apos-field__changed-indicator__icon"
+              tooltip="Has unpublished changed"
+              :icon-size="13"
+              icon-color="var(--a-primary)"
+            />
+          </span>
         </component>
         <!-- TODO i18n -->
         <p
@@ -146,6 +155,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.apos-field__wrapper {
+  position: relative;
+}
+
 .apos-field {
   border-width: 0;
   padding: 0;
@@ -175,6 +188,11 @@ export default {
 
 .apos-field__help-tooltip__icon {
   position: relative;
+}
+
+.apos-field__changed-indicator {
+  position: absolute;
+  right: 0;
 }
 
 .apos-field__error {
@@ -209,6 +227,11 @@ export default {
 
 .apos-field--area {
   max-width: $input-max-width;
+  .apos-input-wrapper {
+    padding: $spacing-base;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+  }
 }
 
 </style>

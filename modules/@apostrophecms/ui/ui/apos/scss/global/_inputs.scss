@@ -72,6 +72,14 @@
   @include apos-input();
 }
 
+.apos-field--changed,
+.apos-field--changed.apos-field--inverted {
+  .apos-input, .apos-input:not([disabled]) {
+    border: 1px solid var(--a-warning);
+    background-color: var(--a-warning-fade);
+  }
+}
+
 .apos-field--inverted {
   .apos-input:not([disabled]) {
     background-color: var(--a-background-primary);

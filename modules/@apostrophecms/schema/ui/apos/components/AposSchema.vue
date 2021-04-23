@@ -13,8 +13,8 @@
         :following-values="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
-        :modifiers="fields[field.name].modifiers"
-        :display-options="displayOptions"
+        :modifiers="getModifiers(field.name)"
+        :display-options="getDisplayOptions(field.name)"
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
@@ -81,6 +81,12 @@ export default {
       default() {
         return {};
       }
+    },
+    changed: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'input', 'reset' ],
@@ -142,6 +148,23 @@ export default {
     this.populateDocData();
   },
   methods: {
+    getModifiers(fieldName) {
+      const modifiers = [ ...this.fields[fieldName].modifiers ];
+      if (this.changed.includes(fieldName)) {
+        modifiers.push('changed');
+      }
+      return modifiers;
+    },
+    getDisplayOptions(fieldName) {
+      let options = {};
+      if (this.displayOptions) {
+        options = { ...this.displayOptions };
+      }
+      if (this.changed && this.changed.includes(fieldName)) {
+        options.changed = true;
+      }
+      return options;
+    },
     populateDocData() {
       this.schemaReady = false;
       const next = {

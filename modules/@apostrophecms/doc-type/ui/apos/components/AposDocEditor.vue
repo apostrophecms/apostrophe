@@ -63,6 +63,7 @@
               v-for="tab in tabs"
               v-show="tab.name === currentTab"
               :key="tab.name"
+              :changed="changed"
               :schema="groups[tab.name].schema"
               :current-fields="groups[tab.name].fields"
               :trigger-validation="triggerValidation"
@@ -85,6 +86,7 @@
           <AposSchema
             v-if="docReady"
             :schema="groups['utility'].schema"
+            :changed="changed"
             :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
@@ -161,6 +163,7 @@ export default {
       triggerValidation: false,
       original: null,
       live: null,
+      changed: [],
       published: null,
       errorCount: 0,
       restoreOnly: false,
@@ -433,29 +436,26 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
-          await this.loadLiveDoc();
+          this.live = await this.loadLiveDoc();
           this.original = klona(docData);
           this.docFields.data = docData;
+          this.changed = detectDocChange(this.schema, this.original, this.live, { differences: true });
           this.docReady = true;
           this.prepErrors();
         }
       }
     },
     async loadLiveDoc() {
-      let live;
       try {
-        live = await apos.http.get(this.getOnePath, {
+        return await apos.http.get(this.getOnePath, {
           busy: false,
           draft: false
         });
       } catch (e) {
         // non fatal
-      } finally {
-        if (live) {
-          this.live = live;
-        }
+        console.warn(e);
+        return null;
       }
-
     },
     async preview() {
       if (!await this.confirmAndCancel()) {
