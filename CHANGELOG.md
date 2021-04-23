@@ -36,6 +36,7 @@
 * Fragments support [keyword arguments](https://mozilla.github.io/nunjucks/templating.html#keyword-arguments)
 * A required field error no longer appears immediately when you first start creating a user.
 * Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
+* "Save Draft" is not an appropriate operation to offer when editing users.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
