@@ -83,6 +83,27 @@ export default {
         return false;
       }
     },
+    // A UI method to dismiss a previous submission. Returns true on success.
+    // Notifies the user appropriately.
+    async dismissSubmission(action, _id) {
+      try {
+        await apos.http.post(`${action}/${_id}/dismiss-submission`, {
+          body: {},
+          busy: true
+        });
+        apos.notify('Dismissed submission.', {
+          type: 'success',
+          dismiss: true
+        });
+        return true;
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred While Dismissing',
+          description: e.message || 'An error occurred while dismissing the submission.'
+        });
+        return false;
+      }
+    },
     // A UI method to revert a draft document to the last published version or, if the document
     // has never been published, delete the draft entirely. The user is advised of the difference.
     //

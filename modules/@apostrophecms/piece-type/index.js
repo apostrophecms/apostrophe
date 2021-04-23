@@ -280,19 +280,9 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          const submitted = {
-            by: req.user && req.user.title,
-            at: new Date()
-          };
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $set: {
-              submitted
-            }
-          });
+          return self.submit(req, draft);
         },
-        ':_id/reject': async (req) => {
+        ':_id/dismiss-submission': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
             ...req,
@@ -303,13 +293,7 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $unset: {
-              submitted: 1
-            }
-          });
+          return self.dismissSubmission(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -838,6 +822,7 @@ module.exports = {
         browserOptions.previewDraft = self.options.previewDraft;
         browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
+        browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {
           components: {}
         });
