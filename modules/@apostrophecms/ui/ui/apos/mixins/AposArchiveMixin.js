@@ -62,7 +62,7 @@ export default {
         if (confirm) {
           const body = {
             archived: true,
-            _publish: true
+            _publish: !isPage
           };
 
           if (isPage) {
@@ -123,7 +123,7 @@ export default {
 
       try {
         // If the doc has children, ask if they should be restored as well
-        if (doc._children) {
+        if (isPage && doc._children) {
           const childLength = doc._children.length;
           const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : null}.`;
           confirm = await apos.confirm({
@@ -170,7 +170,8 @@ export default {
         const body = {
           archived: false,
           _targetId: isPage ? '_home' : null,
-          _position: isPage ? 'firstChild' : null
+          _position: isPage ? 'firstChild' : null,
+          _publish: !isPage
         };
 
         AposAdvisoryLockMixin.methods.addLockToRequest(body);

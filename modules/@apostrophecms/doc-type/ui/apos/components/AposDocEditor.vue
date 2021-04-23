@@ -303,7 +303,7 @@ export default {
         this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
         !this.restoreOnly &&
-        (this.published || !this.manuallyPublished)
+        ((this.moduleOptions.canPublish && this.published) || !this.manuallyPublished)
       );
     },
     canDiscardDraft() {

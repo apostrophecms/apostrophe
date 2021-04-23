@@ -1176,9 +1176,10 @@ module.exports = {
             }
           },
           after(results) {
-            // In all cases we mark the docs with ._edit if
-            // the req is permitted to do that
+            // In all cases we mark the docs with ._edit and ._publish if
+            // the req is permitted to do those things
             self.apos.permission.annotate(query.req, 'edit', results);
+            self.apos.permission.annotate(query.req, 'publish', results);
           }
         },
 
