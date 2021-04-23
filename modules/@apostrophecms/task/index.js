@@ -5,11 +5,11 @@
 // node app @apostrophecms/migration:migrate
 //
 // Apostrophe is fully initialized before your task is run, except that it does
-// not listen for connections. So you may access all of its features in your task.
+// not listen for connections. So you may access all of its features in your
+// task.
 
-// Direct use of `console` makes sense here because
-// we're implementing an interaction at the CLI.
-// -Tom
+// Direct use of `console` makes sense here because we're implementing an
+// interaction at the CLI.
 
 /* eslint-disable no-console */
 
@@ -77,8 +77,9 @@ module.exports = {
   methods(self) {
     return {
 
-      // For use when you wish to execute an Apostrophe command line task from your code and continue,
-      // without using the command line or using the `child_process` module.
+      // For use when you wish to execute an Apostrophe command line task from
+      // your code and continue, without using the command line or using the
+      // `child_process` module.
       //
       // Except for `name`, all arguments may be omitted.
       //
@@ -95,18 +96,20 @@ module.exports = {
       // If present, `args` contains an array of positional arguments to
       // the task, **not including** the task name.
       //
-      // If present, `options` contains the optional parameters that would normally
-      // be hyphenated, i.e. at the command line you might write `--total=20`.
+      // If present, `options` contains the optional parameters that would
+      // normally be hyphenated, i.e. at the command line you might write
+      // `--total=20`.
       //
       // **Gotchas**
       //
-      // If you can invoke a method directly rather than invoking a task, do that. This
-      // method is for cases where that option is not readily available.
+      // If you can invoke a method directly rather than invoking a task, do
+      // that. This method is for cases where that option is not readily
+      // available.
       //
       // During the execution of the task, `self.apos.argv` will have a new,
-      // temporary value to accommodate tasks that inspect this property directly
-      // rather than examining their `argv` argument. `self.apos.argv` will be
-      // restored at the end of task execution.
+      // temporary value to accommodate tasks that inspect this property
+      // directly rather than examining their `argv` argument. `self.apos.argv`
+      // will be restored at the end of task execution.
       //
       // Some tasks may not be written to be "good neighbors." For instance, a
       // task developer might assume they can exit the process directly.
