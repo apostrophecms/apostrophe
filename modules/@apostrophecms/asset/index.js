@@ -38,12 +38,30 @@ module.exports = {
           await fs.mkdirp(buildDir);
           await fs.remove(modulesDir);
           await fs.mkdirp(modulesDir);
-          await fs.remove(bundleDir);
-          await fs.mkdirp(bundleDir);
+
+          let cleanBuild = false;
+          const APOS_ONLY_BUNDLE = 'apos-only-bundle.js';
+          const APOS_MERGED_BUNDLE = 'apos-bundle.js';
+          const PUBLIC_BUNDLE_CSS = 'public-bundle.css';
+          const PUBLIC_BUNDLE_JS = 'public-bundle.js';
+
+          if (!fs.exists(bundleDir)) {
+            cleanBuild = true;
+            await fs.mkdirp(bundleDir);
+          } else {
+            await fs.remove(`${bundleDir}/${APOS_MERGED_BUNDLE}`);
+            await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`);
+            await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_JS}`);
+          }
+
           await moduleOverrides();
           buildPublicCssBundle();
           buildPublicJsBundle();
-          await buildAposBundle();
+
+          if (cleanBuild) {
+            await buildAposBundle();
+          }
+
           merge();
           await deploy();
 
@@ -87,8 +105,9 @@ module.exports = {
           }
 
           function buildPublicCssBundle() {
+            console.info('🦶', 'buildPublicCssBundle');
             const publicImports = getImports('public', '*.css', { });
-            fs.writeFileSync(`${bundleDir}/public-bundle.css`,
+            fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`,
               publicImports.paths.map(path => {
                 return fs.readFileSync(path);
               }).join('\n')
@@ -96,6 +115,7 @@ module.exports = {
           }
 
           function buildPublicJsBundle() {
+            console.info('🦶', 'buildPublicJsBundle');
             // We do not use an import file here because import is not
             // an ES5 feature and it is contrary to the spirit of ES5 code
             // to force-fit that type of code. We do not mandate ES6 in
@@ -105,7 +125,7 @@ module.exports = {
             // Of course, developers can push an "public" asset that is
             // the output of an ES6 pipeline.
             const publicImports = getImports('public', '*.js', { });
-            fs.writeFileSync(`${bundleDir}/public-bundle.js`, stripIndent`
+            fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_JS}`, stripIndent`
               (function() {
                 window.apos = window.apos || {};
                 var data = document.body && document.body.getAttribute('data-apos');
@@ -121,6 +141,7 @@ module.exports = {
           }
 
           async function buildAposBundle() {
+            console.info('🦶', 'buildAposBundle');
             const iconImports = getIcons();
             const componentImports = getImports('apos/components', '*.vue', { registerComponents: true });
             const tiptapExtensionImports = getImports('apos/tiptap-extensions', '*.js', { registerTiptapExtensions: true });
@@ -166,7 +187,7 @@ module.exports = {
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
-                outputFilename: 'apos-only-bundle.js'
+                outputFilename: APOS_ONLY_BUNDLE
               },
               self.apos
             ));
@@ -212,7 +233,7 @@ module.exports = {
 
           function merge() {
             fs.writeFileSync(
-              `${bundleDir}/apos-bundle.js`,
+              `${bundleDir}/${APOS_MERGED_BUNDLE}`,
               fs.readFileSync(`${bundleDir}/public-bundle.js`) +
                 fs.readFileSync(`${bundleDir}/apos-only-bundle.js`)
             );
