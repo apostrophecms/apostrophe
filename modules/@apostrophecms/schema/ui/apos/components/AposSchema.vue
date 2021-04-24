@@ -13,7 +13,7 @@
         :following-values="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
-        :modifiers="getModifiers(field.name)"
+        :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
@@ -148,13 +148,6 @@ export default {
     this.populateDocData();
   },
   methods: {
-    getModifiers(fieldName) {
-      const modifiers = [ ...this.fields[fieldName].modifiers ];
-      if (this.changed.includes(fieldName)) {
-        modifiers.push('changed');
-      }
-      return modifiers;
-    },
     getDisplayOptions(fieldName) {
       let options = {};
       if (this.displayOptions) {

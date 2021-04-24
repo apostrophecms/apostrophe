@@ -163,7 +163,6 @@ export default {
       triggerValidation: false,
       original: null,
       live: null,
-      changed: [],
       published: null,
       errorCount: 0,
       restoreOnly: false,
@@ -439,7 +438,9 @@ export default {
           this.live = await this.loadLiveDoc();
           this.original = klona(docData);
           this.docFields.data = docData;
-          this.changed = detectDocChange(this.schema, this.original, this.live, { differences: true });
+          if (this.live) {
+            this.changed = detectDocChange(this.schema, this.original, this.live, { differences: true });
+          }
           this.docReady = true;
           this.prepErrors();
         }
