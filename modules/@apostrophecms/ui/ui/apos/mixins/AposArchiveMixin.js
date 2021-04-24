@@ -21,7 +21,7 @@ export default {
         let description = `You are going to archive the ${plainType} "${doc.title}"`;
 
         if (hasChildren) {
-          description += `, which has ${doc._children.length} child ${plainType}${doc._children.length > 1 ? 's' : null}`;
+          description += `, which has ${doc._children.length} child ${plainType}${doc._children.length > 1 ? 's' : ''}`;
         }
 
         if (isPublished) {
@@ -125,7 +125,7 @@ export default {
         // If the doc has children, ask if they should be restored as well
         if (isPage && doc._children && doc._children.length) {
           const childLength = doc._children.length;
-          const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : null}.`;
+          const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : ''}.`;
           confirm = await apos.confirm({
             heading: `Restore ${plainType}`,
             description,

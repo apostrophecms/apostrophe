@@ -87,9 +87,10 @@ export default {
     },
     // A UI method to dismiss a previous submission. Returns true on success.
     // Notifies the user appropriately.
-    async dismissSubmission(action, _id) {
+    async dismissSubmission(doc) {
+      const action = window.apos.modules[doc.type].action;
       try {
-        await apos.http.post(`${action}/${_id}/dismiss-submission`, {
+        await apos.http.post(`${action}/${doc._id}/dismiss-submission`, {
           body: {},
           busy: true
         });

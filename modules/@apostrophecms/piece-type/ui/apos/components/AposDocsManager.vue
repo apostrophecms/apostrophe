@@ -86,6 +86,7 @@
             @preview="onPreview"
             @copy="copy"
             @discardDraft="onDiscardDraft"
+            @dismissSubmission="onDismissSubmission"
             @archive="onArchive"
             @restore="onRestore"
             :options="{
@@ -291,6 +292,12 @@ export default {
     async onDiscardDraft(id) {
       const piece = this.findDocById(this.items, id);
       if (await this.discardDraft(piece)) {
+        apos.bus.$emit('content-changed');
+      };
+    },
+    async onDismissSubmission(id) {
+      const piece = this.findDocById(this.items, id);
+      if (await this.dismissSubmission(piece)) {
         apos.bus.$emit('content-changed');
       };
     },

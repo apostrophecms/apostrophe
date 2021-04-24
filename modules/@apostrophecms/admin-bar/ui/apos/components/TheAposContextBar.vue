@@ -521,7 +521,7 @@ export default {
       }
     },
     async onDismissSubmission() {
-      if (await this.dismissSubmission(this.action, this.context._id)) {
+      if (await this.dismissSubmission(this.context)) {
         this.context = {
           ...this.context,
           submitted: null

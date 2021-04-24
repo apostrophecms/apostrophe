@@ -996,6 +996,9 @@ database.`);
           if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._edit)) {
             throw self.apos.error('forbidden');
           }
+          if (moved.lastPublishedAt && !parent.lastPublishedAt) {
+            throw self.apos.error('forbidden', 'Publish the parent page first.');
+          }
           await nudgeNewPeers();
           await moveSelf();
           await updateDescendants();
@@ -2142,7 +2145,8 @@ database.`);
           lastPublishedAt: 1,
           aposDocId: 1,
           aposLocale: 1,
-          updatedAt: 1
+          updatedAt: 1,
+          submitted: 1
         };
       },
       addArchivedMigration() {

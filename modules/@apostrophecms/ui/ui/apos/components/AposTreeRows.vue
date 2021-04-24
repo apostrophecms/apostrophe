@@ -20,7 +20,7 @@
     >
       <div class="apos-tree__row-data">
         <button
-          v-if="row.children && row.children.length > 0"
+          v-if="row._children && row._children.length > 0"
           class="apos-tree__row__toggle" data-apos-tree-toggle
           aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
@@ -47,6 +47,7 @@
           @preview="$emit('preview', row._id)"
           @copy="$emit('copy', row._id)"
           @discardDraft="$emit('discardDraft', row._id)"
+          @dismissSubmission="$emit('dismissSubmission', row._id)"
           @archive="$emit('archive', row._id)"
           @restore="$emit('restore', row._id)"
         >
@@ -97,7 +98,7 @@
         data-apos-branch-height
         :data-list-row="row._id"
         ref="tree-branches"
-        :rows="row.children"
+        :rows="row._children"
         :headers="headers"
         :icons="icons"
         :col-widths="colWidths"
@@ -115,6 +116,7 @@
         @preview="$emit('preview', $event)"
         @copy="$emit('copy', $event)"
         @discardDraft="$emit('discardDraft', $event)"
+        @dismissSubmission="$emit('dismissSubmission', $event)"
         @archive="$emit('archive', $event)"
         @restore="$emit('restore', $event)"
         v-model="checkedProxy"
@@ -189,7 +191,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'archive', 'restore' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'dismissSubmission', 'archive', 'restore' ],
   computed: {
     myRows() {
       return this.rows;
@@ -294,7 +296,7 @@ export default {
         'apos-tree__row',
         {
           'is-parked': !!row.parked,
-          'apos-tree__row--parent': row.children && row.children.length > 0,
+          'apos-tree__row--parent': row._children && row._children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
         }

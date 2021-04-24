@@ -674,7 +674,7 @@ export default {
       }
     },
     async onDismissSubmission() {
-      if (await this.dismissSubmission(this.moduleAction, this.docId)) {
+      if (await this.dismissSubmission(this.original)) {
         this.original = {
           ...this.original,
           submitted: null
