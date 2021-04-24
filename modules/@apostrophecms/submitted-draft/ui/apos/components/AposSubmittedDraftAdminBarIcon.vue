@@ -2,7 +2,7 @@
   <span v-if="count > 0" class="apos-submitted-draft-admin-bar-container">
     <AposIndicator
       icon="tray-full-icon"
-      class="apos-input-icon"
+      class="apos-input-icon apos-submitted-draft-admin-bar-icon"
       :icon-size="size"
     />
     <span v-if="canPublish" class="apos-submitted-draft-admin-bar-counter">
@@ -20,12 +20,17 @@ export default {
       default() {
         return null;
       }
-    },
+    }
   },
   data() {
     return {
       count: 0
     };
+  },
+  computed: {
+    canPublish() {
+      return window.apos.modules['@apostrophecms/submitted-draft'].canPublish;
+    }
   },
   mounted() {
     this.updateCount();
@@ -33,11 +38,6 @@ export default {
   destroyed() {
     if (this.timeout) {
       clearTimeout(this.timeout);
-    }
-  },
-  computed: {
-    canPublish() {
-      return window.apos.modules['@apostrophecms/submitted-draft'].canPublish;
     }
   },
   methods: {
@@ -54,3 +54,9 @@ export default {
   }
 };
 </script>
+<style lang="scss" scoped>
+  .apos-submitted-draft-admin-bar-container {
+    /* TODO: hack to make it visible for now */
+    width: 32px;
+  }
+</style>
