@@ -5,6 +5,8 @@ $brand-blue: #66f;
 $brand-green: #00bf9a;
 
 $spacing-base: 10px;
+$spacing-half: $spacing-base / 2;
+$spacing-three-quarters: ($spacing-base / 2) + (($spacing-base / 4));
 $spacing-double: $spacing-base * 2;
 $spacing-triple: $spacing-base * 3;
 

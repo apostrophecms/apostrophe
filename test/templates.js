@@ -171,7 +171,7 @@ describe('Templates', function() {
     assert(afterComponent < belowFragment);
   });
 
-  it('should support keyword arguments and render macros and fragments from other fragments', async () => {
+  it('should render fragment without passing any keyword arguments', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
     if (result.match(/error/)) {
@@ -179,6 +179,29 @@ describe('Templates', function() {
     }
 
     const m = result.match(/--test1--([\S\s]*?)--endtest1--/g);
+    const arr = m[0].split('\n');
+    const data = arr
+      .slice(1, arr.length - 1)
+      .filter(s => !!s.trim())
+      .map(s => s.trim());
+
+    assert.deepStrictEqual(data, [
+      'pos1',
+      'pos2',
+      'kw1_default',
+      'kw2_default',
+      'kw3_default'
+    ]);
+  });
+
+  it('should support keyword arguments and render macros and fragments from other fragments', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const m = result.match(/--test2--([\S\s]*?)--endtest2--/g);
     const arr = m[0].split('\n');
     const data = arr
       .slice(1, arr.length - 1)
@@ -204,7 +227,7 @@ describe('Templates', function() {
       throw result;
     }
 
-    const m = result.match(/--test2--([\S\s]*?)--endtest2--/g);
+    const m = result.match(/--test3--([\S\s]*?)--endtest3--/g);
     const arr = m[0].split('\n');
     const data = arr
       .slice(1, arr.length - 1)

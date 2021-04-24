@@ -27,6 +27,7 @@
 * The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
+* Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
 
 ### Fixes
 
@@ -36,6 +37,7 @@
 * Fragments support [keyword arguments](https://mozilla.github.io/nunjucks/templating.html#keyword-arguments)
 * A required field error no longer appears immediately when you first start creating a user.
 * Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
+* Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
