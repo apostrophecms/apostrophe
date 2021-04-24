@@ -54,8 +54,4 @@ export default {
     background-color: var(--a-warning-fade);
     color: var(--a-base-1);
   }
-
-  .is-subtle {
-    opacity: 0.75;
-  }
 </style>

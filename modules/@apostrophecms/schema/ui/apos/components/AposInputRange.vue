@@ -119,8 +119,8 @@ export default {
   }
 
   .apos-range__value {
-    padding-top: 2px;
-    min-width: 120px;
+    padding-top: 7px;
+    min-width: 100px;
     &.is-unset {
       opacity: 0;
       pointer-events: none;

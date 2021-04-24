@@ -99,10 +99,6 @@ export default {
       border: 1px solid var(--a-base-8);
       border-radius: var(--a-border-radius);
     }
-    // &.apos-field--changed .apos-input-wrapper:not(.is-empty) {
-    //   border: 1px solid var(--a-warning);
-    //   background-color: var(--a-warning-fade);
-    // }
   }
 
 </style>

@@ -37,7 +37,6 @@ module.exports = {
   'format-quote-close-icon': 'FormatQuoteClose',
   'help-circle-icon': 'HelpCircle',
   'information-outline-icon': 'InformationOutline',
-  'information-icon': 'Information',
   'image-icon': 'Image',
   'image-size-select-actual-icon': 'ImageSizeSelectActual',
   'play-box-icon': 'PlayBox',
