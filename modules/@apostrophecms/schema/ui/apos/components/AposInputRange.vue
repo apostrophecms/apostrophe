@@ -2,6 +2,7 @@
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
     :error="effectiveError" :uid="uid"
+    :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-input-wrapper">
@@ -118,8 +119,8 @@ export default {
   }
 
   .apos-range__value {
-    padding-top: 7px;
-    min-width: 100px;
+    padding-top: 2px;
+    min-width: 120px;
     &.is-unset {
       opacity: 0;
       pointer-events: none;

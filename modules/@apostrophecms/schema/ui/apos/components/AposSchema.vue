@@ -275,7 +275,7 @@ export default {
 
   .apos-field {
     .apos-schema /deep/ & {
-      margin-bottom: $spacing-triple;
+      margin-bottom: $spacing-quadruple;
       &.apos-field--micro {
         margin-bottom: $spacing-double;
       }

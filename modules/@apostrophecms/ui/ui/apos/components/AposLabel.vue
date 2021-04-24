@@ -1,6 +1,7 @@
 <template>
   <span
     class="apos-label" :class="modifiers"
+    v-tooltip="tooltip"
   >
     {{ label }}
   </span>
@@ -13,6 +14,10 @@ export default {
     label: {
       type: String,
       required: true
+    },
+    tooltip: {
+      type: String,
+      default: null
     },
     modifiers: {
       type: Array,
@@ -39,5 +44,18 @@ export default {
 
   .is-error {
     border-color: var(--a-danger);
+  }
+
+  .is-filled {
+    background-color: var(--a-base-10);
+  }
+
+  .is-warning.is-filled {
+    background-color: var(--a-warning-fade);
+    color: var(--a-base-1);
+  }
+
+  .is-subtle {
+    opacity: 0.75;
   }
 </style>

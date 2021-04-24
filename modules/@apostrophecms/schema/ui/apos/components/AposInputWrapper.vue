@@ -24,13 +24,11 @@
               icon-color="var(--a-base-4)"
             />
           </span>
-          <span v-if="displayOptions.changed" class="apos-field__changed-indicator">
-            <AposIndicator
-              icon="information-icon"
-              class="apos-field__changed-indicator__icon"
-              tooltip="Has unpublished changed"
-              :icon-size="13"
-              icon-color="var(--a-primary)"
+          <span v-if="displayOptions.changed" class="apos-field__changed">
+            <AposLabel
+              label="Changed" class="apos-field__changed__label"
+              :modifiers="[ 'is-warning', 'is-filled' ]"
+              tooltip="This field has unpublished changes"
             />
           </span>
         </component>
@@ -172,7 +170,7 @@ export default {
 }
 
 .apos-field__label {
-  @include type-base;
+  @include type-medium;
   display: block;
   margin: 0 0 $spacing-base;
   padding: 0;
@@ -190,9 +188,10 @@ export default {
   position: relative;
 }
 
-.apos-field__changed-indicator {
-  position: absolute;
-  right: 0;
+.apos-field__changed {
+  position: relative;
+  margin-left: $spacing-half;
+  top: -2px;
 }
 
 .apos-field__error {
@@ -222,15 +221,6 @@ export default {
   }
   .apos-field__info {
     margin-right: 4%;
-  }
-}
-
-.apos-field--area {
-  max-width: $input-max-width;
-  .apos-input-wrapper {
-    padding: $spacing-base;
-    border: 1px solid var(--a-base-8);
-    border-radius: var(--a-border-radius);
   }
 }
 
