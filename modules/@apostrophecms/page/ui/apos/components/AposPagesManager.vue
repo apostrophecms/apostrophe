@@ -56,16 +56,16 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposModalToolbar>
-            <template #rightControls>
-              <AposContextMenu
-                :menu="pageSetMenu"
-                menu-placement="bottom-end"
-                @item-clicked="pageSetMenuSelection = $event"
-                :button="pageSetMenuButton"
-              />
-            </template>
-          </AposModalToolbar>
+          <AposDocsManagerToolbar
+            :selected-state="selectAllState"
+            @select-click="selectAll"
+            @archive-click="archiveClick"
+            :options="{
+              noSearch: true,
+              noPager: true,
+              hideSelectAll: !relationshipField
+            }"
+          />
         </template>
         <template #bodyMain>
           <AposTree
@@ -155,8 +155,7 @@ export default {
         iconOnly: true,
         type: 'subtle',
         modifiers: [ 'small', 'no-motion' ]
-      },
-      pageSetMenuSelection: 'published'
+      }
     };
   },
   computed: {
@@ -204,28 +203,6 @@ export default {
     },
     headers() {
       return this.options.columns || [];
-    },
-    pageSetMenu() {
-      const isPublished = this.pageSetMenuSelection === 'published';
-      return [ {
-        label: 'Published',
-        action: 'published',
-        modifiers: isPublished ? [ 'selected', 'disabled' ] : []
-      }, {
-        label: 'Archive',
-        action: 'archive',
-        modifiers: !isPublished ? [ 'selected', 'disabled' ] : []
-      } ];
-    },
-    pageSetMenuButton() {
-      const isPublished = this.pageSetMenuSelection === 'published';
-      const button = {
-        label: isPublished ? 'Published' : 'Archived',
-        icon: 'chevron-down-icon',
-        modifiers: [ 'no-motion', 'outline', 'icon-right' ],
-        class: 'apos-pages-manager__page-set-menu-button'
-      };
-      return button;
     }
   },
   async mounted() {

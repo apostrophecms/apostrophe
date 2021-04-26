@@ -81,16 +81,16 @@ export default {
     draftMenu() {
       return [
         {
-          label: 'Draft',
+          label: (this.draftMode === 'draft') ? '✓ Draft' : 'Draft',
           name: 'draft',
           action: 'draft',
-          modifiers: (this.draftMode === 'draft') ? [ 'disabled', 'selected' ] : null
+          modifiers: (this.draftMode === 'draft') ? [ 'disabled' ] : null
         },
         {
-          label: 'Published',
+          label: (this.draftMode === 'published') ? '✓ Published' : 'Published',
           name: 'published',
           action: 'published',
-          modifiers: (this.draftMode === 'published') ? [ 'disabled', 'selected' ] : null
+          modifiers: (this.draftMode === 'published') ? [ 'disabled' ] : null
         }
       ];
     }
