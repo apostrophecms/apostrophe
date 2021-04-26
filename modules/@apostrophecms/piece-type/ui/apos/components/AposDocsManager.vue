@@ -182,6 +182,14 @@ export default {
     },
     manuallyPublished() {
       return this.options.localized && !this.options.autopublish;
+    },
+    headers() {
+      if (!this.items) {
+        return this.options.columns || [];
+      }
+      return (this.options.columns || []).filter(column => {
+        return (column.name !== '_url') || this.items.find(item => item._url);
+      });
     }
   },
   created() {
