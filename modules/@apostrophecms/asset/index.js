@@ -76,8 +76,6 @@ module.exports = {
               rebuildAposUi = true;
               await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
             }
-
-            fs.remove(`${bundleDir}/${APOS_ONLY_TS}`);
           } else {
             rebuildAposUi = true;
             await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
