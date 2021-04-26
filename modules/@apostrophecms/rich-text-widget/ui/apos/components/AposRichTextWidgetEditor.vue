@@ -282,12 +282,11 @@ function computeEditorOptions(type, explicitOptions) {
   }
 
   .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
-    @include apos-transition(all);
-    box-shadow: 0 0 0 0 var(--a-primary);
     outline: none;
   }
 
   .apos-rich-text-editor__editor {
+    @include apos-transition();
     position: relative;
     border-radius: var(--a-border-radius);
     box-shadow: 0 0 0 1px transparent;
