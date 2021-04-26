@@ -650,7 +650,7 @@ module.exports = {
           byId: req.user && req.user._id,
           at: new Date()
         };
-        await self.apos.doc.db.update({
+        await self.apos.doc.db.updateOne({
           _id: draft._id
         }, {
           $set: {
@@ -671,7 +671,7 @@ module.exports = {
           }
         }
         // Don't use "return" here, that could leak mongodb details
-        await self.apos.doc.db.update({
+        await self.apos.doc.db.updateOne({
           _id: draft._id
         }, {
           $unset: {
