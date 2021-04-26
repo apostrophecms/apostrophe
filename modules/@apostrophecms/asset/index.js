@@ -82,7 +82,7 @@ module.exports = {
           }
 
           await moduleOverrides();
-          buildPublicCssBundle();
+          await buildPublicCssBundle();
           buildPublicJsBundle();
 
           if (rebuildAposUi) {
@@ -131,8 +131,10 @@ module.exports = {
             }
           }
 
-          function buildPublicCssBundle() {
+          async function buildPublicCssBundle() {
             const publicImports = getImports('public', '*.css', { });
+            await fs.ensureFile(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`);
+
             fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`,
               publicImports.paths.map(path => {
                 return fs.readFileSync(path);
@@ -150,6 +152,7 @@ module.exports = {
             // Of course, developers can push an "public" asset that is
             // the output of an ES6 pipeline.
             const publicImports = getImports('public', '*.js', { });
+
             fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_JS}`, stripIndent`
               (function() {
                 window.apos = window.apos || {};
