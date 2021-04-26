@@ -30,6 +30,7 @@
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
 * Admin bar items can include a `when` function as an option. The `when` function is called with `req` on each page request and the admin bar item in question only appears if it returns a truthy value.
+* `apos.http.addQueryToUrl` now supports an `options.merge` argument, which allows merging new query parameters with an existing query string, if any.
 
 ### Fixes
 
