@@ -56,16 +56,16 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposDocsManagerToolbar
-            :selected-state="selectAllState"
-            @select-click="selectAll"
-            @archive-click="archiveClick"
-            :options="{
-              noSearch: true,
-              noPager: true,
-              hideSelectAll: !relationshipField
-            }"
-          />
+          <AposModalToolbar>
+            <template #rightControls>
+              <AposContextMenu
+                :menu="pageSetMenu"
+                menu-placement="bottom-end"
+                @item-clicked="pageSetMenuSelection = $event"
+                :button="pageSetMenuButton"
+              />
+            </template>
+          </AposModalToolbar>
         </template>
         <template #bodyMain>
           <AposTree
@@ -155,7 +155,8 @@ export default {
         iconOnly: true,
         type: 'subtle',
         modifiers: [ 'small', 'no-motion' ]
-      }
+      },
+      pageSetMenuSelection: 'live'
     };
   },
   computed: {
@@ -203,6 +204,33 @@ export default {
     },
     headers() {
       return this.options.columns || [];
+    },
+    pageSetMenu() {
+      const isLive = this.pageSetMenuSelection === 'live';
+      return [ {
+        label: 'Live',
+        action: 'live',
+        modifiers: isLive ? [ 'selected', 'disabled' ] : []
+      }, {
+        label: 'Archive',
+        action: 'archive',
+        modifiers: !isLive ? [ 'selected', 'disabled' ] : []
+      } ];
+    },
+    pageSetMenuButton() {
+      const isLive = this.pageSetMenuSelection === 'live';
+      const button = {
+        label: isLive ? 'Live' : 'Archive',
+        icon: 'chevron-down-icon',
+        modifiers: [ 'no-motion', 'outline', 'icon-right' ],
+        class: 'apos-pages-manager__page-set-menu-button'
+      };
+      return button;
+    }
+  },
+  watch: {
+    async pageSetMenuSelection() {
+      await this.getPages();
     }
   },
   async mounted() {
@@ -246,16 +274,21 @@ export default {
       this.pagesFlat = [];
       const self = this;
 
-      const pageTree = (await apos.http.get(
+      let pageTree = (await apos.http.get(
         '/api/v1/@apostrophecms/page', {
           busy: true,
           qs: {
             all: '1',
-            archived: this.relationshipField ? '0' : 'any'
+            archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any'
           },
           draft: true
         }
       ));
+
+      // If editor is looking at the archive tree, trim the normal page tree response
+      if (this.pageSetMenuSelection === 'archive') {
+        pageTree = pageTree._children.find(page => page.slug === '/archive');
+      }
 
       formatPage(pageTree);
 
