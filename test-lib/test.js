@@ -7,8 +7,9 @@ if (!fs.existsSync(path.join(__dirname, '/../test/node_modules'))) {
 }
 
 if (!fs.existsSync(path.join(__dirname, '/../test/package.json'))) {
-  // Adding a blank package.json file for the start up build task to find.
-  fs.ensureFile(path.join(__dirname, '/../test/package.json'));
+  // Linking package.json file for the start up build task to find.
+  fs.ensureSymlink(path.join(__dirname, '/../package.json'), path.join(__dirname, '/../test/package.json'));
+
 }
 
 module.exports = require('./util.js');
