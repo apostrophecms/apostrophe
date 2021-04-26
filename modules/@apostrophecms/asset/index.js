@@ -23,6 +23,15 @@ module.exports = {
       ...globalIcons
     };
   },
+  handlers (self) {
+    return {
+      'apostrophe:modulesReady': {
+        async runUiBuildTask() {
+          await self.apos.task.invoke('@apostrophecms/asset:build');
+        }
+      }
+    };
+  },
   tasks(self) {
     return {
       build: {
