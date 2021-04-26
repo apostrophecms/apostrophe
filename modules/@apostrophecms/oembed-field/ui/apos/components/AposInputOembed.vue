@@ -26,9 +26,6 @@
         />
       </div>
     </template>
-    <!-- <template #secondary>
-
-    </template> -->
   </AposInputWrapper>
 </template>
 
