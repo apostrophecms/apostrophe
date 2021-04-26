@@ -309,7 +309,16 @@ export default {
         }
       });
     },
-    async edit(piece) {
+    // If pieceOrId is null, a new piece is created
+    async edit(pieceOrId) {
+      let piece;
+      if ((typeof pieceOrId) === 'object') {
+        piece = pieceOrId;
+      } else if (pieceOrId) {
+        piece = this.items.find(item => item._id === pieceOrId);
+      } else {
+        piece = null;
+      }
       let moduleName;
       // Don't assume the piece has the type of the module,
       // this could be a virtual piece type such as "submitted-draft"
