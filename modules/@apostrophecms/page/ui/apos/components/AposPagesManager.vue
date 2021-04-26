@@ -239,7 +239,7 @@ export default {
       }
     },
     async copy(id) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
         copyOf: this.findDocById(this.pagesFlat, id)
       });
