@@ -25,7 +25,7 @@
         :can-copy="!!docId && !moduleOptions.singleton"
         :can-preview="canPreview"
         :is-published="!!published"
-        :can-save-draft="true"
+        :can-save-draft="manuallyPublished"
         :can-dismiss-submission="canDismissSubmission"
         @saveDraft="saveDraft"
         @preview="preview"
