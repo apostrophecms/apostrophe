@@ -139,6 +139,11 @@ export default {
         return 'editor-menu-bar';
       }
       return 'editor-menu-bubble';
+    },
+    isVisuallyEmpty () {
+      const div = document.createElement('div');
+      div.appendChild(this.content);
+      return div.textContent;
     }
   },
   watch: {
