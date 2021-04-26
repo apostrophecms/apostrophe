@@ -120,7 +120,7 @@ export default {
       default() {
         return {};
       }
-    },
+    }
   },
   emits: [
     'open',
