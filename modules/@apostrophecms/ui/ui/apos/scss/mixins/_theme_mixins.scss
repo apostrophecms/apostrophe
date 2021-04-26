@@ -53,9 +53,9 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-base);
 }
 
-@mixin type-medium {
+@mixin type-label {
   font-family: var(--a-family-default);
-  font-size: var(--a-type-medium);
+  font-size: var(--a-type-label);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
   line-height: var(--a-line-tall);

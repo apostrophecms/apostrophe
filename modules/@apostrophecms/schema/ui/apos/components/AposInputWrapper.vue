@@ -170,7 +170,7 @@ export default {
 }
 
 .apos-field__label {
-  @include type-medium;
+  @include type-label;
   display: block;
   margin: 0 0 $spacing-base;
   padding: 0;
