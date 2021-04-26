@@ -156,7 +156,7 @@ export default {
         type: 'subtle',
         modifiers: [ 'small', 'no-motion' ]
       },
-      pageSetMenuSelection: 'published'
+      pageSetMenuSelection: 'live'
     };
   },
   computed: {
@@ -206,21 +206,21 @@ export default {
       return this.options.columns || [];
     },
     pageSetMenu() {
-      const isPublished = this.pageSetMenuSelection === 'published';
+      const isLive = this.pageSetMenuSelection === 'live';
       return [ {
-        label: 'Published',
-        action: 'published',
-        modifiers: isPublished ? [ 'selected', 'disabled' ] : []
+        label: 'Live',
+        action: 'live',
+        modifiers: isLive ? [ 'selected', 'disabled' ] : []
       }, {
         label: 'Archive',
         action: 'archive',
-        modifiers: !isPublished ? [ 'selected', 'disabled' ] : []
+        modifiers: !isLive ? [ 'selected', 'disabled' ] : []
       } ];
     },
     pageSetMenuButton() {
-      const isPublished = this.pageSetMenuSelection === 'published';
+      const isLive = this.pageSetMenuSelection === 'live';
       const button = {
-        label: isPublished ? 'Published' : 'Archive',
+        label: isLive ? 'Live' : 'Archive',
         icon: 'chevron-down-icon',
         modifiers: [ 'no-motion', 'outline', 'icon-right' ],
         class: 'apos-pages-manager__page-set-menu-button'
@@ -279,7 +279,7 @@ export default {
           busy: true,
           qs: {
             all: '1',
-            archived: this.relationshipField || this.pageSetMenuSelection === 'published' ? '0' : 'any'
+            archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any'
           },
           draft: true
         }
