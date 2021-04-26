@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+* It's now possible to set the status code when redirecting using `req.redirect` by setting `req.statusCode`. When it it is not set, `apostrophe-pages` will attempt to use the `statusCode` option of `apostrophe-soft-redirects` if it exists. It will fallback to 302 (Found) otherwise, which was the existing behavior.
+
 ## 2.117.1 (2021-04-07)
 
 ### Fixes
