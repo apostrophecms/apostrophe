@@ -28,6 +28,10 @@
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+* Moves the core UI build task into the start up process. The UI build runs when:
+  1. The build folder does not yet exist.
+  2. The package.json file is newer than the existing UI build.
+  3. You explicitly tell it to by setting the environment variable `CORE_ENV=true`
 
 ### Fixes
 

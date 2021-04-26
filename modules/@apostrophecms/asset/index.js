@@ -45,6 +45,7 @@ module.exports = {
           const APOS_ONLY_TS = '.apos-only-timestamp.txt';
           const PUBLIC_BUNDLE_CSS = 'public-bundle.css';
           const PUBLIC_BUNDLE_JS = 'public-bundle.js';
+          let checkTimestamp = false;
 
           if (!fs.exists(bundleDir)) {
             rebuildAposUi = true;
@@ -55,9 +56,11 @@ module.exports = {
             await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_JS}`);
           }
 
-          const tsExists = await fs.pathExists(`${bundleDir}/${APOS_ONLY_TS}`);
+          if (process.env.CORE_DEV !== 'true') {
+            checkTimestamp = await fs.pathExists(`${bundleDir}/${APOS_ONLY_TS}`);
+          }
 
-          if (!rebuildAposUi && tsExists) {
+          if (!rebuildAposUi && checkTimestamp) {
             // If we have a UI build timestamp file compare against the app's
             // package.json modified time.
             if (await pkgJsonIsNewerThanUi()) {
