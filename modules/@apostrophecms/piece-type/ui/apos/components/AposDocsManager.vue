@@ -85,8 +85,8 @@
             @open="edit"
             @preview="onPreview"
             @copy="copy"
-            @discardDraft="onDiscardDraft"
-            @dismissSubmission="onDismissSubmission"
+            @discard-draft="onDiscardDraft"
+            @dismiss-submission="onDismissSubmission"
             @archive="onArchive"
             @restore="onRestore"
             :options="{

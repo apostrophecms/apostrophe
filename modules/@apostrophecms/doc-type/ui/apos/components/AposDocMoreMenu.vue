@@ -150,7 +150,7 @@ export default {
         ...(this.canDismissSubmission ? [
           {
             label: 'Dismiss Submission',
-            action: 'dismissSubmission'
+            action: 'dismiss-submission'
           }
         ] : []),
         ...(this.canCopy ? [
@@ -162,7 +162,7 @@ export default {
         ...(this.canDiscardDraft ? [
           {
             label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
-            action: 'discardDraft',
+            action: 'discard-draft',
             modifiers: [ 'danger' ]
           }
         ] : []),

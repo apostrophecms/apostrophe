@@ -29,8 +29,8 @@
         :can-dismiss-submission="canDismissSubmission"
         @saveDraft="saveDraft"
         @preview="preview"
-        @discardDraft="onDiscardDraft"
-        @dismissSubmission="onDismissSubmission"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
         @archive="onArchive"
         @copy="onCopy"
       />

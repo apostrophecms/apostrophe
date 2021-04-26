@@ -80,8 +80,8 @@
             @copy="copy"
             @archive="onArchive"
             @restore="onRestore"
-            @discardDraft="onDiscardDraft"
-            @dismissSubmission="onDismissSubmission"
+            @discard-draft="onDiscardDraft"
+            @dismiss-submission="onDismissSubmission"
           />
         </template>
       </AposModalBody>
@@ -166,22 +166,10 @@ export default {
       return apos.page;
     },
     items() {
-      const items = [];
       if (!this.pages || !this.headers.length) {
         return [];
       }
-
-      const pagesSet = klona(this.pages);
-
-      pagesSet.forEach(page => {
-        const data = {
-          // Clone but don't omit anything, we use a lot of properties of the page
-          // in the cell context menu UI
-          ...page
-        };
-        items.push(data);
-      });
-      return items;
+      return klona(this.pages);
     },
     selectAllChoice() {
       const checkLen = this.checked.length;

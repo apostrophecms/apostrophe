@@ -62,8 +62,8 @@
         :is-published="!!context.lastPublishedAt"
         :can-save-draft="false"
         :can-dismiss-submission="canDismissSubmission"
-        @discardDraft="onDiscardDraft"
-        @dismissSubmission="onDismissSubmission"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
       />
       <AposButton
         v-if="!hasCustomUi"
@@ -106,7 +106,7 @@ export default {
     canPublish: Boolean,
     canDismissSubmission: Boolean
   },
-  emits: [ 'switchEditMode', 'discardDraft', 'publish', 'dismissSubmission' ],
+  emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
   computed: {
     moduleOptions() {
       return window.apos.adminBar;
@@ -131,10 +131,10 @@ export default {
       this.$emit('switchEditMode', mode);
     },
     onDiscardDraft() {
-      this.$emit('discardDraft');
+      this.$emit('discard-draft');
     },
     onDismissSubmission() {
-      this.$emit('dismissSubmission');
+      this.$emit('dismiss-submission');
     },
     onPublish() {
       this.$emit('publish');
