@@ -55,13 +55,15 @@
 
       <AposDocMoreMenu
         :doc-id="context._id"
-        :disabled="!context.modified"
+        :disabled="!context.modified && !canDismissSubmission"
         :is-modified="context.modified"
         :can-discard-draft="context.modified"
         :is-modified-from-published="context.modified"
         :is-published="!!context.lastPublishedAt"
         :can-save-draft="false"
+        :can-dismiss-submission="canDismissSubmission"
         @discardDraft="onDiscardDraft"
+        @dismissSubmission="onDismissSubmission"
       />
       <AposButton
         v-if="!hasCustomUi"
@@ -101,9 +103,10 @@ export default {
     },
     editMode: Boolean,
     readyToPublish: Boolean,
-    canPublish: Boolean
+    canPublish: Boolean,
+    canDismissSubmission: Boolean
   },
-  emits: [ 'switchEditMode', 'discardDraft', 'publish' ],
+  emits: [ 'switchEditMode', 'discardDraft', 'publish', 'dismissSubmission' ],
   computed: {
     moduleOptions() {
       return window.apos.adminBar;
@@ -129,6 +132,9 @@ export default {
     },
     onDiscardDraft() {
       this.$emit('discardDraft');
+    },
+    onDismissSubmission() {
+      this.$emit('dismissSubmission');
     },
     onPublish() {
       this.$emit('publish');

@@ -109,20 +109,31 @@ module.exports = {
             type: self.name
           },
           {
-            component: 'AposSubmittedDraftAdminBarButton'
+            icon: 'AposSubmittedDraftAdminBarIcon',
+            contextUtility: true,
+            tooltip: 'Submitted Drafts'
           }
         );
       }
     };
   },
+  icons: {
+    'tray-full-icon': 'TrayFull'
+  },
   extendMethods(self) {
     return {
       find(_super, req, criteria, options) {
-        return _super(req, criteria, options).type(null).and({
+        const query = _super(req, criteria, options).type(null).and({
           submitted: {
             $exists: 1
           }
         });
+        if (!self.apos.permission.can(req, 'publish', self.name)) {
+          query.and({
+            'submitted.byId': req.user && req.user._id
+          });
+        }
+        return query;
       }
     };
   },
