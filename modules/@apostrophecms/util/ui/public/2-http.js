@@ -334,9 +334,18 @@
   // and arrays, in a way compatible with qs and most other parsers including
   // those baked into PHP frameworks etc. If the URL already contains a query
   // it is discarded and replaced with the new one. If `data` is an empty object
-  // no ? is added to the URL.
+  // no ? is added to the URL. `options` may be omitted. If `options.merge`
+  // is truthy then the properties of `data` are merged with any existing
+  // query string properties.
 
-  apos.http.addQueryToUrl = function(url, data) {
+  apos.http.addQueryToUrl = function(url, data, options) {
+    if (options && options.merge) {
+      var existing = url.indexOf('?');
+      if (existing !== -1) {
+        existing = apos.http.parseQuery(url.substring(existing + 1));
+        data = apos.util.assign({}, existing, data);
+      }
+    }
     url = url.replace(/\?.*$/, '');
     var i;
     var flat;

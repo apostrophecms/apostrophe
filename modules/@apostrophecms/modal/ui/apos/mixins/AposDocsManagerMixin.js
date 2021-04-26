@@ -92,7 +92,7 @@ export default {
   },
   methods: {
     preview(doc) {
-      window.open(doc._url, '_blank').focus();
+      window.open(apos.http.addQueryToUrl(doc._url, { 'apos-mode': 'draft' }, { merge: true }), '_blank').focus();
     },
     findDocById(docs, id) {
       return docs.find(p => p._id === id);
