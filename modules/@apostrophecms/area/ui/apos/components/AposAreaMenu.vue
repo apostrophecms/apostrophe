@@ -7,6 +7,7 @@
       @open="menuOpen"
       @close="menuClose"
       ref="contextMenu"
+      :popover-modifiers="inContext ? ['z-index-in-context'] : []"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -106,6 +107,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    inContext: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'menu-close', 'menu-open', 'add' ],
