@@ -25,10 +25,12 @@
         :can-copy="!!docId && !moduleOptions.singleton"
         :can-preview="canPreview"
         :is-published="!!published"
-        :can-save-draft="true"
+        :can-save-draft="manuallyPublished"
+        :can-dismiss-submission="canDismissSubmission"
         @saveDraft="saveDraft"
         @preview="preview"
-        @discardDraft="onDiscardDraft"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
         @archive="onArchive"
         @copy="onCopy"
       />
@@ -303,7 +305,7 @@ export default {
         this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
         !this.restoreOnly &&
-        (this.published || !this.manuallyPublished)
+        ((this.moduleOptions.canPublish && this.published) || !this.manuallyPublished)
       );
     },
     canDiscardDraft() {
@@ -312,6 +314,9 @@ export default {
         (!this.published) &&
         this.manuallyPublished
       ) || this.isModifiedFromPublished;
+    },
+    canDismissSubmission() {
+      return this.original && this.original.submitted && (this.moduleOptions.canPublish || (this.original.submitted.byId === apos.login.user._id));
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
@@ -561,9 +566,9 @@ export default {
             draft: true
           });
           if (andSubmit) {
-            await this.submitDraft(this.moduleAction, doc._id);
+            await this.submitDraft(doc);
           } else if (andPublish && !restoreOnly) {
-            await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
+            await this.publish(doc);
           }
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
@@ -663,9 +668,18 @@ export default {
       }
     },
     async onDiscardDraft(e) {
-      if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+      if (await this.discardDraft(this.original)) {
         apos.bus.$emit('content-changed');
         this.modal.showModal = false;
+      }
+    },
+    async onDismissSubmission() {
+      if (await this.dismissSubmission(this.original)) {
+        this.original = {
+          ...this.original,
+          submitted: null
+        };
+        apos.bus.$emit('content-changed');
       }
     },
     async onCopy(e) {

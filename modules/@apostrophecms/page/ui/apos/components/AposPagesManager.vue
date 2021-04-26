@@ -80,6 +80,8 @@
             @copy="copy"
             @archive="onArchive"
             @restore="onRestore"
+            @discard-draft="onDiscardDraft"
+            @dismiss-submission="onDismissSubmission"
           />
         </template>
       </AposModalBody>
@@ -90,12 +92,13 @@
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
   emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
   data() {
 
@@ -164,25 +167,10 @@ export default {
       return apos.page;
     },
     items() {
-      const items = [];
       if (!this.pages || !this.headers.length) {
         return [];
       }
-
-      const pagesSet = klona(this.pages);
-
-      pagesSet.forEach(page => {
-        const data = {};
-
-        this.headers.forEach(column => {
-          data[column.property] = page[column.property];
-          data._id = page._id;
-          data.children = page.children;
-          data.parked = page.parked;
-        });
-        items.push(data);
-      });
-      return items;
+      return klona(this.pages);
     },
     selectAllChoice() {
       const checkLen = this.checked.length;
@@ -254,8 +242,20 @@ export default {
         await this.getPages();
       }
     },
+    async onDiscardDraft(id) {
+      const doc = this.findDocById(this.pagesFlat, id);
+      if (await this.discardDraft(doc)) {
+        await this.getPages();
+      }
+    },
+    async onDismissSubmission(id) {
+      const doc = this.findDocById(this.pagesFlat, id);
+      if (await this.dismissSubmission(doc)) {
+        await this.getPages();
+      }
+    },
     async copy(id) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
         copyOf: this.findDocById(this.pagesFlat, id)
       });
@@ -297,11 +297,8 @@ export default {
       function formatPage(page) {
         self.pagesFlat.push(klona(page));
 
-        page.children = page._children;
-        delete page._children;
-
-        if (Array.isArray(page.children)) {
-          page.children.forEach(formatPage);
+        if (Array.isArray(page._children)) {
+          page._children.forEach(formatPage);
         }
       }
     },
