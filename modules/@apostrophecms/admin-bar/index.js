@@ -68,6 +68,9 @@ module.exports = {
       // `options.tooltip` is used. The regular label is also present for
       // screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
+      //
+      // If an `options.when` function is provided, it will be invoked with
+      // `req` to test whether this admin bar item should be displayed or not.
 
       add(name, label, permission, options) {
         let index;
@@ -236,7 +239,15 @@ module.exports = {
         // Test the permission as if we were in draft mode, as when you actually
         // manage the items those requests will be made in draft mode (when
         // applicable to the content type)
-        return self.apos.permission.can(req, item.permission.action, item.permission.type, 'draft');
+        if (!self.apos.permission.can(req, item.permission.action, item.permission.type, 'draft')) {
+          return false;
+        }
+        if (item.options.when) {
+          if (!item.options.when(req)) {
+            return false;
+          }
+        }
+        return true;
       },
 
       getBrowserData(req) {

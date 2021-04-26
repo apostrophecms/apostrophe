@@ -3,22 +3,24 @@
     <span class="apos-table__cell-field--context-menu__content" :class="classes">
       <AposDocMoreMenu
         :doc-id="item._id"
-        :is-modified="item.modified"
-        :can-discard-draft="item.modified"
-        :is-modified-from-published="item.modified"
-        :is-published="!!item.lastPublishedAt"
+        :is-modified="manuallyPublished(item) && item.modified"
+        :can-discard-draft="manuallyPublished(item) && item.modified"
+        :is-modified-from-published="manuallyPublished(item) && item.modified"
+        :is-published="manuallyPublished(item) && !!item.lastPublishedAt"
         :can-save-draft="false"
         :can-open-editor="!item.archived"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="!item.archived && item._publish"
         :can-restore="item.archived && item._publish"
         :can-copy="(!!item._id && !item.archived)"
+        :can-dismiss-submission="item.submitted && (item._publish || (item.submitted.byId === userId))"
         @edit="$emit('edit')"
         @preview="$emit('preview')"
         @copy="$emit('copy')"
         @archive="$emit('archive')"
         @restore="$emit('restore')"
         @discardDraft="$emit('discardDraft')"
+        @dismissSubmission="$emit('dismissSubmission')"
         @menu-open="menuOpen = true"
         @menu-close="menuOpen = false"
       />
@@ -41,7 +43,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft', 'restore' ],
+  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft', 'dismissSubmission', 'restore' ],
   data() {
     return {
       menuOpen: false
@@ -54,11 +56,18 @@ export default {
         classes.push('is-visible');
       }
       return classes;
+    },
+    userId() {
+      return apos.login.user._id;
     }
   },
   methods: {
     handler(action) {
       this.$emit(action);
+    },
+    manuallyPublished(doc) {
+      const module = apos.modules[doc.type];
+      return module.localized && !module.autopublish;
     }
   }
 };

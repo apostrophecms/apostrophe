@@ -83,6 +83,7 @@
             @preview="$emit('preview', item._id)"
             @copy="$emit('copy', item._id)"
             @discardDraft="$emit('discardDraft', item._id)"
+            @dismissSubmission="$emit('dismissSubmission', item._id)"
             @archive="$emit('archive', item._id)"
             @restore="$emit('restore', item._id)"
           />
@@ -128,6 +129,7 @@ export default {
     'preview',
     'copy',
     'discardDraft',
+    'dismissSubmission',
     'archive',
     'restore'
   ],
