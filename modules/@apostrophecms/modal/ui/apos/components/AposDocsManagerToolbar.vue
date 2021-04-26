@@ -32,16 +32,6 @@
         :values="filterValues"
         @input="filter"
       />
-      <AposContextMenu
-        v-if="archiveLiveToggle" class="apos-manager-toolbar__archive-live-toggle"
-        :menu="" :button="{
-          label: item.label,
-          modifiers: ['no-motion'],
-          class: 'apos-admin-bar__btn',
-          type: 'subtle'
-        }"
-        @item-clicked="emitEvent"
-      />
       <AposInputString
         v-if="!options.noSearch"
         @input="search" @return="search($event, true)"
