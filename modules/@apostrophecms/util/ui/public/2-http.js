@@ -129,7 +129,9 @@
         } else {
           query = {};
         }
-        query['apos-mode'] = options.draft ? 'draft' : 'published';
+        if (typeof options.draft !== 'undefined') {
+          query['apos-mode'] = options.draft ? 'draft' : 'published';
+        }
         url = apos.http.addQueryToUrl(url, query);
       }
     }
