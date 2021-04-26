@@ -37,7 +37,7 @@ module.exports = {
       build: {
         usage: 'Build Apostrophe frontend javascript master import files',
         afterModuleInit: true,
-        async task(argv) {
+        async task() {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const modulesDir = `${buildDir}/modules`;
@@ -132,7 +132,6 @@ module.exports = {
           }
 
           function buildPublicCssBundle() {
-            console.info('🦶', 'buildPublicCssBundle');
             const publicImports = getImports('public', '*.css', { });
             fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`,
               publicImports.paths.map(path => {
@@ -142,7 +141,6 @@ module.exports = {
           }
 
           function buildPublicJsBundle() {
-            console.info('🦶', 'buildPublicJsBundle');
             // We do not use an import file here because import is not
             // an ES5 feature and it is contrary to the spirit of ES5 code
             // to force-fit that type of code. We do not mandate ES6 in
@@ -168,7 +166,6 @@ module.exports = {
           }
 
           async function buildAposBundle() {
-            console.info('🦶', 'buildAposBundle');
             const iconImports = getIcons();
             const componentImports = getImports('apos/components', '*.vue', { registerComponents: true });
             const tiptapExtensionImports = getImports('apos/tiptap-extensions', '*.js', { registerTiptapExtensions: true });
@@ -218,10 +215,10 @@ module.exports = {
               },
               self.apos
             ));
-          }
 
-          const now = Date.now().toString();
-          fs.writeFileSync(`${bundleDir}/${APOS_ONLY_TS}`, now);
+            const now = Date.now().toString();
+            fs.writeFileSync(`${bundleDir}/${APOS_ONLY_TS}`, now);
+          }
 
           function getIcons() {
 
