@@ -220,17 +220,12 @@ export default {
     pageSetMenuButton() {
       const isPublished = this.pageSetMenuSelection === 'published';
       const button = {
-        label: isPublished ? 'Published' : 'Archive',
+        label: isPublished ? 'Published' : 'Archived',
         icon: 'chevron-down-icon',
         modifiers: [ 'no-motion', 'outline', 'icon-right' ],
         class: 'apos-pages-manager__page-set-menu-button'
       };
       return button;
-    }
-  },
-  watch: {
-    async pageSetMenuSelection() {
-      await this.getPages();
     }
   },
   async mounted() {
@@ -274,21 +269,16 @@ export default {
       this.pagesFlat = [];
       const self = this;
 
-      let pageTree = (await apos.http.get(
+      const pageTree = (await apos.http.get(
         '/api/v1/@apostrophecms/page', {
           busy: true,
           qs: {
             all: '1',
-            archived: this.relationshipField || this.pageSetMenuSelection === 'published' ? '0' : 'any'
+            archived: this.relationshipField ? '0' : 'any'
           },
           draft: true
         }
       ));
-
-      // If editor is looking at the archive tree, trim the normal page tree response
-      if (this.pageSetMenuSelection === 'archive') {
-        pageTree = pageTree._children.find(page => page.slug === '/archive');
-      }
 
       formatPage(pageTree);
 
