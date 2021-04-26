@@ -19,14 +19,12 @@
           class="apos-input-icon"
           :is="icon"
         />
+        <div
+          v-if="!error && oembedResult.html" v-html="oembedResult.html"
+          class="apos-input__embed" :class="{ 'is-dynamic': !!dynamicRatio }"
+          :style="{ paddingTop: dynamicRatio && `${(dynamicRatio * 100)}%` }"
+        />
       </div>
-    </template>
-    <template #secondary>
-      <div
-        v-if="!error && oembedResult.html" v-html="oembedResult.html"
-        class="apos-input__embed" :class="{ 'is-dynamic': !!dynamicRatio }"
-        :style="{ paddingTop: dynamicRatio && `${(dynamicRatio * 100)}%` }"
-      />
     </template>
   </AposInputWrapper>
 </template>
@@ -52,7 +50,7 @@ export default {
       return this.field.disableFocus ? '-1' : '0';
     },
     classes () {
-      return [ 'apos-input', 'apos-input--url' ];
+      return [ 'apos-input', 'apos-input--oembed' ];
     },
     icon () {
       if (this.error) {
@@ -133,6 +131,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-input--oembed {
+    margin-bottom: $spacing-double;
+  }
   .apos-input__embed {
     /deep/ iframe {
       max-width: 100%;
