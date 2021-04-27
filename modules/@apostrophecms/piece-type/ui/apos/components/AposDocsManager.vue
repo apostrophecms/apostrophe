@@ -93,6 +93,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
+              manuallyPublished: manuallyPublished
               canEdit: moduleOptions.canEdit
             }"
           />
@@ -179,6 +180,9 @@ export default {
         message: '',
         emoji: '📄'
       };
+    },
+    manuallyPublished() {
+      return this.options.localized && !this.options.autopublish;
     },
     headers() {
       if (!this.items) {
