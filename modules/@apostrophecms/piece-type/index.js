@@ -707,44 +707,6 @@ module.exports = {
         await self.apos.schema.convert(req, schema, input, piece);
         await self.emit('afterConvert', req, input, piece);
       },
-      // TODO: Remove this if deprecated. - ab
-      getChooserControls(req) {
-        return [
-          {
-            type: 'minor',
-            label: 'Cancel',
-            action: 'cancel'
-          },
-          {
-            type: 'major',
-            label: 'New ' + self.options.label,
-            // TODO: fully deprecate `insertViaUpload`
-            action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
-            uploadable: self.options.insertViaUpload
-          },
-          {
-            type: 'major',
-            label: 'Save Choices',
-            action: 'save'
-          }
-        ];
-      },
-      // TODO: Remove this if deprecated. - ab
-      getManagerControls(req) {
-        return [
-          {
-            type: 'minor',
-            label: 'Finished',
-            action: 'cancel'
-          },
-          {
-            type: 'major',
-            label: 'Add ' + self.options.label,
-            action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
-            uploadable: self.options.insertViaUpload
-          }
-        ];
-      },
       // Generate a sample piece of this type. The `i` counter
       // is used to distinguish it from other samples. Useful
       // for things like testing pagination, see the

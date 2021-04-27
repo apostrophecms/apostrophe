@@ -28,7 +28,8 @@ export default {
         };
         apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</button>`, {
           type: 'success',
-          dismiss: true
+          dismiss: true,
+          icon: 'check-all-icon'
         });
         return true;
       } catch (e) {
@@ -72,8 +73,9 @@ export default {
           body: {},
           draft: true
         });
-        apos.notify('Submitted for review.', {
+        apos.notify('Submitted to Admins and Editors for review', {
           type: 'success',
+          icon: 'list-status-icon',
           dismiss: true
         });
         return submitted;
@@ -96,7 +98,8 @@ export default {
         });
         apos.notify('Dismissed submission.', {
           type: 'success',
-          dismiss: true
+          dismiss: true,
+          icon: 'close-circle-icon'
         });
         return true;
       } catch (e) {
@@ -118,7 +121,9 @@ export default {
       const isPublished = !!doc.lastPublishedAt;
       try {
         if (await apos.confirm({
-          heading: `Discard ${this.moduleOptions.label || 'content'}`,
+          heading: isPublished
+            ? 'Discard Draft'
+            : 'Delete Draft',
           description: isPublished
             ? 'This will discard all changes since the document was last published.'
             : `Since "${doc.title}" has never been published, this will completely delete the document.`,
@@ -132,9 +137,11 @@ export default {
               body: {},
               busy: true
             });
-            apos.notify('Discarded draft.', {
+            const notificationHeader = isPublished ? 'Draft Discarded' : 'Draft Deleted';
+            apos.notify(notificationHeader, {
               type: 'success',
-              dismiss: true
+              dismiss: true,
+              icon: 'text-box-remove-icon'
             });
             apos.bus.$emit('content-changed', newDoc);
             return {

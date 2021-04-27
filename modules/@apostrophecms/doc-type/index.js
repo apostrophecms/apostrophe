@@ -6,7 +6,8 @@ module.exports = {
     contextBar: true,
     editRole: 'contributor',
     publishRole: 'editor',
-    viewRole: false
+    viewRole: false,
+    previewDraft: true
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -920,6 +921,7 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
+        browserOptions.previewDraft = self.options.previewDraft;
 
         return browserOptions;
       }

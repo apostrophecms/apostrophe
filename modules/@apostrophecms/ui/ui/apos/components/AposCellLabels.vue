@@ -3,15 +3,23 @@
     class="apos-table__cell-field apos-table__cell-field--labels"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    <span v-if="item.modified">
+    <span v-if="item.modified && item.lastPublishedAt">
       <AposLabel
-        label="Active Draft" class="apos-table__cell-field__label"
+        label="Pending Updates" class="apos-table__cell-field__label"
+        tooltip="Published document with unpublished updates"
+      />
+    </span>
+    <span v-if="item.submitted">
+      <AposLabel
+        label="Pending" class="apos-table__cell-field__label"
+        tooltip="Awaiting approval from Admins & Editors"
       />
     </span>
     <span v-if="manuallyPublished && !item.lastPublishedAt">
       <AposLabel
-        label="Unpublished" class="apos-table__cell-field__label"
+        label="Draft" class="apos-table__cell-field__label"
         :modifiers="[ 'is-warning' ]"
+        tooltip="Unpublished Draft"
       />
     </span>
     <span v-if="item.archived">
