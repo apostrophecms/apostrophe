@@ -38,6 +38,18 @@ describe('Pages', function() {
               label: 'Test Page'
             }
           ]
+        },
+        'redirect-to-home-pages': {
+          extend: 'apostrophe-custom-pages',
+
+          construct: function (self, options) {
+            self.dispatch('/', function (req, callback) {
+              req.statusCode = 301;
+              req.redirect = '/';
+              req.template = 'home';
+              callback();
+            });
+          }
         }
       },
       afterInit: function(callback) {
@@ -437,6 +449,29 @@ describe('Pages', function() {
       assert(body.match(/Tab: \/another-parent/));
       // console.log(body);
       return done();
+    });
+  });
+
+  it('should redirect a page with a default status code when req.redirect is set', function (done) {
+    const parentId = homeId;
+    const newPage = {
+      slug: '/redirect-default',
+      published: true,
+      type: 'redirect-to-home-page',
+      title: 'Redirect to home page'
+    };
+
+    const req = apos.tasks.getReq();
+    apos.pages.insert(req, parentId, newPage, function (err) {
+      assert(!err, 'Could not create page "/redirect-default" for the test');
+      request({
+        url: 'http://localhost:7900/redirect-default',
+        followRedirect: false
+      }, function(err, response, body) {
+        assert(!err);
+        assert.equal(response.statusCode, 301);
+        done();
+      });
     });
   });
 
