@@ -65,14 +65,14 @@ module.exports = {
             await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_JS}`);
           }
 
-          if (process.env.CORE_DEV !== 'true') {
+          if (!process.env.CORE_DEV) {
             checkTimestamp = await fs.pathExists(`${bundleDir}/${APOS_ONLY_TS}`);
           }
 
           if (!rebuildAposUi && checkTimestamp) {
             // If we have a UI build timestamp file compare against the app's
             // package.json modified time.
-            if (await pkgJsonIsNewerThanUi()) {
+            if (await lockFileNewerThanUi()) {
               rebuildAposUi = true;
               await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
             }
@@ -344,9 +344,16 @@ module.exports = {
             return output;
           }
 
-          async function pkgJsonIsNewerThanUi() {
+          async function lockFileNewerThanUi() {
             const timestamp = fs.readFileSync(`${bundleDir}/${APOS_ONLY_TS}`, 'utf8');
-            const pkgStats = await fs.stat(`${self.apos.rootDir}/package.json`);
+            let pkgStats;
+
+            if (await fs.pathExists(`${self.apos.rootDir}/package-lock.json`)) {
+              pkgStats = await fs.stat(`${self.apos.rootDir}/package-lock.json`);
+            } else if (await fs.pathExists(`${self.apos.rootDir}/yarn.lock`)) {
+              pkgStats = await fs.stat(`${self.apos.rootDir}/yarn.lock`);
+            }
+
             const pkgTimestamp = pkgStats && pkgStats.mtimeMs;
 
             return pkgTimestamp > parseInt(timestamp);
