@@ -42,15 +42,9 @@ describe('Pages', function() {
         'redirect-to-home-pages': {
           extend: 'apostrophe-custom-pages',
 
-          addFields: [{
-            name: 'redirectWith',
-            type: 'integer',
-            def: null
-          }],
-
           construct: function (self, options) {
             self.dispatch('/', function (req, callback) {
-              req.statusCode = req.data.page.redirectWith;
+              req.statusCode = 301;
               req.redirect = '/';
               req.template = 'home';
               callback();
@@ -464,8 +458,7 @@ describe('Pages', function() {
       slug: '/redirect-default',
       published: true,
       type: 'redirect-to-home-page',
-      title: 'Redirect to home page',
-      redirectWith: null
+      title: 'Redirect to home page'
     };
 
     const req = apos.tasks.getReq();
@@ -476,31 +469,7 @@ describe('Pages', function() {
         followRedirect: false
       }, function(err, response, body) {
         assert(!err);
-        assert.equal(response.statusCode, 302);
-        done();
-      });
-    });
-  });
-
-  it('should redirect a page with the provided status code when both req.redirect and req.statusCode are set', function (done) {
-    const parentId = homeId;
-    const newPage = {
-      slug: '/redirect-with-307',
-      published: true,
-      type: 'redirect-to-home-page',
-      title: 'Redirect to home page with a 307',
-      redirectWith: 307
-    };
-
-    const req = apos.tasks.getReq();
-    apos.pages.insert(req, parentId, newPage, function (err) {
-      assert(!err, 'Could not create page "/redirect-with-307" for the test');
-      request({
-        url: 'http://localhost:7900/redirect-with-307',
-        followRedirect: false
-      }, function(err, response, body) {
-        assert(!err);
-        assert.equal(response.statusCode, 307);
+        assert.equal(response.statusCode, 301);
         done();
       });
     });
