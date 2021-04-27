@@ -36,6 +36,9 @@ export default {
     border: 1px solid var(--a-base-8);
     border-radius: var(--a-border-radius);
     font-size: var(--a-type-tiny);
+    &:hover {
+      cursor: auto;
+    }
   }
 
   .is-warning {
