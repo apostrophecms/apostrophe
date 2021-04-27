@@ -8,7 +8,7 @@
         label="Active Draft" class="apos-table__cell-field__label"
       />
     </span>
-    <span v-if="manuallyPublished(item) && !item.lastPublishedAt">
+    <span v-if="manuallyPublished && !item.lastPublishedAt">
       <AposLabel
         label="Unpublished" class="apos-table__cell-field__label"
         :modifiers="[ 'is-warning' ]"
@@ -35,9 +35,9 @@ export default {
       required: true
     }
   },
-  methods: {
-    manuallyPublished(doc) {
-      const module = apos.modules[doc.type];
+  computed: {
+    manuallyPublished() {
+      const module = apos.modules[this.item.type];
       return module.localized && !module.autopublish;
     }
   }
