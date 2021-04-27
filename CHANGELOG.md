@@ -19,6 +19,7 @@
 * Doc states in managers now reflected w labels (Active Draft, Archived, Unpublished)
 * Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
 * Editors and admins can manage submitted drafts.
+* Editors and admins can easily see the number of proposed changes awaiting their attention.
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
 * Confirm modals now support a schema which can be assessed after confirmation.
 * When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
@@ -29,7 +30,6 @@
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
-* Admin bar items can include a `when` function as an option. The `when` function is called with `req` on each page request and the admin bar item in question only appears if it returns a truthy value.
 
 ### Fixes
 

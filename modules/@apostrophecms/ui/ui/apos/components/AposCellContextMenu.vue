@@ -3,10 +3,10 @@
     <span class="apos-table__cell-field--context-menu__content" :class="classes">
       <AposDocMoreMenu
         :doc-id="item._id"
-        :is-modified="manuallyPublished(item) && item.modified"
-        :can-discard-draft="manuallyPublished(item) && item.modified"
-        :is-modified-from-published="manuallyPublished(item) && item.modified"
-        :is-published="manuallyPublished(item) && !!item.lastPublishedAt"
+        :is-modified="manuallyPublished && item.modified"
+        :can-discard-draft="manuallyPublished && item.modified"
+        :is-modified-from-published="manuallyPublished && item.modified"
+        :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
         :can-open-editor="!item.archived"
         :can-preview="(!!item._url && !item.archived)"
@@ -19,8 +19,8 @@
         @copy="$emit('copy')"
         @archive="$emit('archive')"
         @restore="$emit('restore')"
-        @discardDraft="$emit('discardDraft')"
-        @dismissSubmission="$emit('dismissSubmission')"
+        @discard-draft="$emit('discard-draft')"
+        @dismiss-submission="$emit('dismiss-submission')"
         @menu-open="menuOpen = true"
         @menu-close="menuOpen = false"
       />
@@ -43,7 +43,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft', 'dismissSubmission', 'restore' ],
+  emits: [ 'edit', 'preview', 'copy', 'archive', 'discard-draft', 'dismiss-submission', 'restore' ],
   data() {
     return {
       menuOpen: false
@@ -59,15 +59,15 @@ export default {
     },
     userId() {
       return apos.login.user._id;
+    },
+    manuallyPublished() {
+      const module = apos.modules[this.item.type];
+      return module.localized && !module.autopublish;
     }
   },
   methods: {
     handler(action) {
       this.$emit(action);
-    },
-    manuallyPublished(doc) {
-      const module = apos.modules[doc.type];
-      return module.localized && !module.autopublish;
     }
   }
 };

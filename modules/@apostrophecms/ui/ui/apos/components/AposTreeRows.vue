@@ -46,8 +46,8 @@
           @edit="$emit('edit', row._id)"
           @preview="$emit('preview', row._id)"
           @copy="$emit('copy', row._id)"
-          @discardDraft="$emit('discardDraft', row._id)"
-          @dismissSubmission="$emit('dismissSubmission', row._id)"
+          @discard-draft="$emit('discard-draft', row._id)"
+          @dismiss-submission="$emit('dismiss-submission', row._id)"
           @archive="$emit('archive', row._id)"
           @restore="$emit('restore', row._id)"
         >
@@ -115,8 +115,8 @@
         @edit="$emit('edit', $event)"
         @preview="$emit('preview', $event)"
         @copy="$emit('copy', $event)"
-        @discardDraft="$emit('discardDraft', $event)"
-        @dismissSubmission="$emit('dismissSubmission', $event)"
+        @discard-draft="$emit('discard-draft', $event)"
+        @dismiss-submission="$emit('dismiss-submission', $event)"
         @archive="$emit('archive', $event)"
         @restore="$emit('restore', $event)"
         v-model="checkedProxy"
@@ -191,7 +191,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discardDraft', 'dismissSubmission', 'archive', 'restore' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore' ],
   computed: {
     myRows() {
       return this.rows;

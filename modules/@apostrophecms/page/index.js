@@ -1818,6 +1818,7 @@ database.`);
             // Parking the home page for the first time
             _item.aposDocId = self.apos.util.generateId();
             _item.path = _item.aposDocId;
+            _item.lastPublishedAt = new Date();
             return self.apos.doc.insert(req, _item);
           } else {
             return self.insert(req, parent._id, 'lastChild', _item);
