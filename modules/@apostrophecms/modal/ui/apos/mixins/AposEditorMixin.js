@@ -23,7 +23,8 @@ export default {
         data: {}
       },
       serverErrors: null,
-      restoreOnly: false
+      restoreOnly: false,
+      changed: []
     };
   },
 

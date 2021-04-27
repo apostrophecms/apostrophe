@@ -5,7 +5,8 @@ module.exports = {
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
     perPage: 10,
-    quickCreate: true
+    quickCreate: true,
+    previewDraft: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -28,20 +29,18 @@ module.exports = {
       add: {
         title: {
           label: 'Title',
+          name: 'title',
           component: 'AposCellButton'
         },
+        labels: {
+          name: 'labels',
+          label: '',
+          component: 'AposCellLabels'
+        },
         updatedAt: {
-          label: 'Edited on',
-          component: 'AposCellDate'
-        },
-        visibility: {
-          label: 'Visibility'
-        },
-        // Automatically hidden if none of the pieces
-        // actually have a URL
-        _url: {
-          label: 'Link',
-          component: 'AposCellLink'
+          name: 'updatedAt',
+          label: 'Last Edited',
+          component: 'AposCellLastEdited'
         }
       }
     };
@@ -159,8 +158,13 @@ module.exports = {
         );
       }
       const result = {};
-      // populates totalPages when perPage is present
-      await query.toCount();
+      // Also populates totalPages when perPage is present
+      const count = await query.toCount();
+      if (self.apos.launder.boolean(req.query.count)) {
+        return {
+          count
+        };
+      }
       result.pages = query.get('totalPages');
       result.currentPage = query.get('page') || 1;
       result.results = await query.toArray();
@@ -177,8 +181,8 @@ module.exports = {
       return result;
     },
     async getOne(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -197,21 +201,21 @@ module.exports = {
       return await self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
     async delete(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       const piece = await self.findOneForEditing(req, {
         _id
       });
       return self.delete(req, piece);
     },
     async patch(req, _id) {
-      self.publicApiCheck(req);
       _id = self.inferIdLocaleAndMode(req, _id);
+      self.publicApiCheck(req);
       return self.convertPatchAndRefresh(req, req.body, _id);
     }
   }),
@@ -264,6 +268,32 @@ module.exports = {
             }
           });
           return true;
+        },
+        ':_id/submit': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          return self.submit(req, draft);
+        },
+        ':_id/dismiss-submission': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          return self.dismissSubmission(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -432,14 +462,14 @@ module.exports = {
       addManagerModal() {
         self.apos.modal.add(
           `${self.__meta.name}:manager`,
-          self.getComponentName('managerModal', 'AposPiecesManager'),
+          self.getComponentName('managerModal', 'AposDocsManager'),
           { moduleName: self.__meta.name }
         );
       },
       addEditorModal() {
         self.apos.modal.add(
           `${self.__meta.name}:editor`,
-          self.getComponentName('insertModal', 'AposDocEditor'),
+          self.getComponentName('editorModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
@@ -727,11 +757,11 @@ module.exports = {
       getRestQuery(req) {
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit', self.name)) {
+        if (!self.apos.permission.can(req, 'view-draft')) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
-              _id: '__iNeverMatch'
+              _id: null
             });
           } else {
             query.project(self.options.publicApiProjection);
@@ -740,11 +770,13 @@ module.exports = {
         return query;
       },
       // Throws a `notfound` exception if a public API projection is
-      // not specified and the user does not have editing permissions. Otherwise does
-      // nothing. Simplifies implementation of `getAll` and `getOne`.
+      // not specified and the user does not have the `view-draft` permission,
+      // which all roles capable of editing the site at all will have. This is needed because
+      // although all API calls check permissions specifically where appropriate,
+      // we also want to flunk all public access to REST APIs if not specifically configured.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit', self.name)) {
+          if (!self.apos.permission.can(req, 'view-draft')) {
             throw self.apos.error('notfound');
           }
         }
@@ -785,13 +817,18 @@ module.exports = {
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = self.options.quickCreate;
+        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
+        browserOptions.singleton = self.options.singleton;
+        browserOptions.previewDraft = self.options.previewDraft;
+        browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
+        browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
+        browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          insertModal: 'AposDocEditor',
-          managerModal: 'AposPiecesManager'
+          editorModal: 'AposDocEditor',
+          managerModal: 'AposDocsManager'
         });
         return browserOptions;
       },
@@ -801,7 +838,7 @@ module.exports = {
     };
   },
   tasks(self) {
-    return self.isAdminOnly() ? {} : {
+    return (self.options.editRole === 'admin') ? {} : {
       generate: {
         usage: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',
         async task(argv) {

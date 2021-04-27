@@ -69,18 +69,18 @@
       <div
         class="apos-media-editor__lip"
       >
-        <AposButton
-          @click="cancel"
-          class="apos-media-editor__back" type="outline"
-          label="Cancel"
-        />
-        <AposButton
-          v-if="activeMedia._id && !restoreOnly"
-          @click="archive"
-          icon="trash-can-icon"
-          :icon-only="true"
-          class="apos-media-editor__archive"
-          label="Archive"
+        <AposContextMenu
+          v-if="!restoreOnly"
+          :button="{
+            label: 'More operations',
+            iconOnly: true,
+            icon: 'dots-vertical-icon',
+            type: 'subtle',
+            modifiers: [ 'small', 'no-motion' ]
+          }"
+          :menu="moreMenu"
+          @item-clicked="moreMenuHandler"
+          menu-placement="top-end"
         />
         <AposButton
           @click="save" class="apos-media-editor__save"
@@ -147,6 +147,20 @@ export default {
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
     },
+    moreMenu() {
+      const menu = [ {
+        label: 'Discard Changes',
+        action: 'cancel'
+      } ];
+      if (this.activeMedia._id && !this.restoreOnly) {
+        menu.push({
+          label: 'Archive Image',
+          action: 'archive',
+          modifiers: [ 'danger' ]
+        });
+      }
+      return menu;
+    },
     fileSize() {
       if (
         !this.activeMedia.attachment || !this.activeMedia.attachment.length ||
@@ -205,6 +219,9 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
+    moreMenuHandler(action) {
+      this[action]();
+    },
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
@@ -375,6 +392,9 @@ export default {
 
   .apos-media-editor__lip {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    & > .apos-context-menu, & > .apos-button__wrapper {
+      margin-left: 7.5px;
+    }
   }
 </style>

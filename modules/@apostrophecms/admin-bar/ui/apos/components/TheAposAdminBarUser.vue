@@ -23,11 +23,6 @@ export default {
     return {
       menu: [
         {
-          label: 'My Profile',
-          name: 'profile',
-          action: 'user-profile'
-        },
-        {
           label: 'Log out',
           name: 'logOut',
           action: 'user-logout'
@@ -50,14 +45,7 @@ export default {
   },
   methods: {
     emitEvent(e) {
-      if (e === 'user-profile') {
-        apos.bus.$emit('admin-menu-click', {
-          itemName: '@apostrophecms/user:editor',
-          props: {
-            docId: this.user._id
-          }
-        });
-      } else if (e === 'user-logout') {
+      if (e === 'user-logout') {
         apos.bus.$emit('admin-menu-click', '@apostrophecms/login-logout');
       }
     }

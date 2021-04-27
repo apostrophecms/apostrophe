@@ -3,7 +3,9 @@ module.exports = {
   options: {
     label: 'Image Tag',
     quickCreate: false,
-    autopublish: true
+    autopublish: true,
+    editRole: 'editor',
+    publishRole: 'editor'
   },
   fields: {
     remove: [ 'visibility' ]

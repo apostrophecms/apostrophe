@@ -1,13 +1,24 @@
 // Detect whether a document or document field has been changed,
 // in a way that warrants confirmation before exiting a modal,
 // or emitting an update event
+// Optionally returns an array of differeing field names
 
 import { isEqual } from 'lodash';
 
-export function detectDocChange(schema, v1, v2) {
-  return schema.some(field => {
-    return detectFieldChange(field, v1[field.name], v2[field.name]);
-  });
+export function detectDocChange(schema, v1, v2, options = {}) {
+  if (options.differences) {
+    const differences = [];
+    schema.forEach(field => {
+      if (detectFieldChange(field, v1[field.name], v2[field.name])) {
+        differences.push(field.name);
+      }
+    });
+    return differences;
+  } else {
+    return schema.some(field => {
+      return detectFieldChange(field, v1[field.name], v2[field.name]);
+    });
+  }
 }
 
 export function detectFieldChange(field, v1, v2) {

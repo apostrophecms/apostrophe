@@ -32,6 +32,7 @@ export default {
     // To allow for injecting additional props dynamically, if itemName is an
     // object, it must have an itemName property and a props property. The props
     // property is merged with the props supplied by the server-side configuration.
+
     apos.bus.$on('admin-menu-click', async (itemName) => {
       let item;
       if (itemName === '@apostrophecms/global:singleton-editor') {

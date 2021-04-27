@@ -3,7 +3,10 @@ const _ = require('lodash');
 module.exports = {
   options: {
     localized: true,
-    contextBar: true
+    contextBar: true,
+    editRole: 'contributor',
+    publishRole: 'editor',
+    viewRole: false
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -134,7 +137,10 @@ module.exports = {
             return;
           }
           if (doc.aposLocale.includes(':draft')) {
-            return self.publish(req, doc, options);
+            return self.publish(req, doc, {
+              ...options,
+              autopublishing: true
+            });
           }
         }
       },
@@ -403,10 +409,6 @@ module.exports = {
       decorateChange(doc, change) {
         change.text = doc.title;
       },
-      // Returns true if only admins are allowed to edit this type.
-      isAdminOnly() {
-        return self.options.adminOnly;
-      },
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `permission`
       // property of the schema field, or there is no `permission` property for the field.
@@ -635,8 +637,52 @@ module.exports = {
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
+      // Submit the current draft for review. The identity
+      // of `req.user` is associated with the submission.
+      // Returns the `submitted` object, with `by`, `byId`,
+      // and `at` properties.
+      async submit(req, draft) {
+        if (!self.apos.permission.can(req, 'edit', draft)) {
+          throw self.apos.error('forbidden');
+        }
+        const submitted = {
+          by: req.user && req.user.title,
+          byId: req.user && req.user._id,
+          at: new Date()
+        };
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $set: {
+            submitted
+          }
+        });
+        return submitted;
+      },
+      // Dismisses a previous submission of the given draft for review.
+      // The draft is unchanged; it simply is no longer marked as needing review.
+      async dismissSubmission(req, draft) {
+        if (!self.apos.permission.can(req, 'publish', draft)) {
+          if (!self.apos.permission.can(req, 'edit', draft)) {
+            throw self.apos.error('forbidden');
+          }
+          if (!(draft.submitted && (draft.submitted.byId === req.user._id))) {
+            throw self.apos.error('forbidden');
+          }
+        }
+        // Don't use "return" here, that could leak mongodb details
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $unset: {
+            submitted: 1
+          }
+        });
+      },
       // Publish the given draft. If `options.permissions` is explicitly
-      // set to `false`, permissions checks are bypassed.
+      // set to `false`, permissions checks are bypassed. If `options.autopublishing`
+      // is true, then the `edit` permission is sufficient, otherwise the
+      // `publish` permission is checked for.
       async publish(req, draft, options = {}) {
         let firstTime = false;
         if (!self.isLocalized()) {
@@ -687,12 +733,16 @@ module.exports = {
             mode: 'published'
           }, published, options);
         }
+
         await self.apos.doc.db.updateOne({
           _id: draft._id
         }, {
           $set: {
             modified: false,
             lastPublishedAt
+          },
+          $unset: {
+            submitted: 1
           }
         });
         // Now that we're sure publication worked, update "previous" so we
@@ -746,6 +796,7 @@ module.exports = {
         // Draft and published roles intentionally reversed
         self.copyForPublication(req, published, draft);
         draft.modified = false;
+        delete draft.submitted;
         draft = await self.update({
           ...req,
           mode: 'draft'
@@ -763,6 +814,9 @@ module.exports = {
       // there is no previous publication, throws an `invalid` exception.
 
       async revertPublishedToPrevious(req, published) {
+        if (!self.apos.permission.can(req, 'publish', published)) {
+          throw self.apos.error('forbidden');
+        }
         const previousId = published._id.replace(':published', ':previous');
         const previous = await self.apos.doc.db.findOne({
           _id: previousId
@@ -859,7 +913,8 @@ module.exports = {
           ...initialBrowserOptions,
           name,
           label,
-          pluralLabel
+          pluralLabel,
+          canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
         browserOptions.action = self.action;
         browserOptions.schema = self.allowedSchema(req);
@@ -1163,9 +1218,10 @@ module.exports = {
             }
           },
           after(results) {
-            // In all cases we mark the docs with ._edit if
-            // the req is permitted to do that
+            // In all cases we mark the docs with ._edit and ._publish if
+            // the req is permitted to do those things
             self.apos.permission.annotate(query.req, 'edit', results);
+            self.apos.permission.annotate(query.req, 'publish', results);
           }
         },
 
@@ -1304,7 +1360,7 @@ module.exports = {
             const property = query.get('explicitOrderProperty');
             if (!values.length) {
               // MongoDB gets mad if you have an empty $in
-              criteria[property] = { _id: '__iNeverMatch' };
+              criteria[property] = { _id: null };
               query.and(criteria);
               return;
             }

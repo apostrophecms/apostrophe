@@ -22,10 +22,13 @@
         :context="context"
         :edit-mode="editMode"
         :has-custom-ui="hasCustomUi"
+        :can-publish="canPublish"
         :ready-to-publish="readyToPublish"
         :custom-publish-label="customPublishLabel"
+        :can-dismiss-submission="canDismissSubmission"
         @switchEditMode="switchEditMode"
-        @discardDraft="onDiscardDraft"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
         @publish="onPublish"
       />
     </template>
@@ -42,17 +45,19 @@ export default {
   name: 'TheAposContextBar',
   mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
   data() {
-    // Since cookie-based login sessions and sessionStorage are not precisely the same
-    // thing, correct any forbidden combination at page load time
-    if (window.apos.mode === 'published') {
-      window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
+    const query = apos.http.parseQuery(location.search);
+    // If the URL references a draft, go into draft mode but then clean up the URL
+    const draftMode = query['apos-mode'] || 'published';
+    if (draftMode === 'draft') {
+      delete query['apos-mode'];
+      history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
     }
     return {
       patchesSinceLoaded: [],
       undone: [],
       patchesSinceSave: [],
-      editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
-      draftMode: window.apos.mode,
+      editMode: false,
+      draftMode,
       original: null,
       saving: false,
       editing: false,
@@ -63,12 +68,19 @@ export default {
       context: window.apos.adminBar.context ? {
         ...window.apos.adminBar.context
       } : {},
-      contextStack: []
+      contextStack: [],
+      // If a published context doc itself is not editable this will contain a hint
+      // that the draft version is editable, when appropriate. It should only be
+      // consulted when the context doc is published and not editable
+      draftIsEditable: false
     };
   },
   computed: {
     contextBarActive() {
-      return window.apos.adminBar.contextBar;
+      return window.apos.adminBar.contextBar && this.canEdit;
+    },
+    canEdit() {
+      return this.context._edit || ((this.context.aposLocale && this.context.aposLocale.endsWith(':published')) && this.draftIsEditable);
     },
     classes() {
       if (!this.contextBarActive) {
@@ -83,18 +95,22 @@ export default {
     needToAutosave() {
       return !!this.patchesSinceSave.length;
     },
+    canPublish() {
+      return apos.modules[this.context.type].canPublish;
+    },
+    canDismissSubmission() {
+      return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
+    },
     readyToPublish() {
-      return this.context.modified && (!this.needToAutosave) && (!this.editing);
+      return this.canPublish
+        ? this.context.modified && (!this.needToAutosave) && (!this.editing)
+        : (!this.context.submitted) || (this.context.updatedAt > this.context.submitted.at);
     },
     moduleOptions() {
       return window.apos.adminBar;
     },
     action() {
-      if (this.contextStack.length) {
-        return apos.modules[this.context.type].action;
-      } else {
-        return this.moduleOptions.contextAction;
-      }
+      return apos.modules[this.context.type].action;
     },
     hasCustomUi() {
       return this.contextStack.length > 0;
@@ -140,6 +156,7 @@ export default {
         this.refresh();
       }
     }
+    await this.updateDraftIsEditable();
   },
   methods: {
     // Implements the `set-context` Apostrophe event, which can change the mode
@@ -235,13 +252,23 @@ export default {
       }, 1100);
     },
     async onPublish(e) {
-      const published = await this.publish(this.action, this.context._id, !!this.context.lastPublishedAt);
-      if (published) {
-        this.context = {
-          ...this.context,
-          lastPublishedAt: Date.now(),
-          modified: false
-        };
+      if (!this.canPublish) {
+        const submitted = await this.submitDraft(this.context);
+        if (submitted) {
+          this.context = {
+            ...this.context,
+            submitted
+          };
+        }
+      } else {
+        const published = await this.publish(this.context);
+        if (published) {
+          this.context = {
+            ...this.context,
+            lastPublishedAt: Date.now(),
+            modified: false
+          };
+        }
       }
     },
     onBeforeUnload(e) {
@@ -272,7 +299,9 @@ export default {
           });
           this.context = {
             ...this.context,
-            modified: doc.modified
+            modified: doc.modified,
+            submitted: doc.submitted,
+            updatedAt: doc.updatedAt
           };
           this.retrying = false;
         } catch (e) {
@@ -323,26 +352,33 @@ export default {
       }
       try {
         // Returns the doc as represented in the new locale and mode
-        const modeDoc = await apos.http.post(`${apos.login.action}/set-context`, {
-          body: {
-            mode,
-            locale: apos.locale,
-            _id: doc._id
+        const action = window.apos.modules[doc.type].action;
+        const modeDoc = await apos.http.get(`${action}/${doc._id}`, {
+          qs: {
+            'apos-mode': mode,
+            'apos-locale': locale
           }
         });
+        if (navigate && (!modeDoc._url)) {
+          await apos.alert({
+            heading: 'Page Does Not Exist Yet',
+            description: `The page that provides a listing for this type of piece is not yet available as ${mode} in the ${locale} locale.`
+          });
+          return;
+        }
         window.sessionStorage.setItem('aposStateChange', Date.now());
         window.sessionStorage.setItem('aposStateChangeSeen', '{}');
         if (mode === 'published') {
-          window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
           this.editMode = false;
         }
-        this.draftMode = mode;
         // Patch the module options. This is necessary because we're simulating
         // something that normally would involve a new page load, but without
         // the UX negatives of that. TODO: VueX as a long term fix
         window.apos.adminBar.context = modeDoc;
         window.apos.adminBar.contextId = modeDoc._id;
         this.context = modeDoc;
+        await this.updateDraftIsEditable();
+        this.draftMode = mode;
         if (navigate) {
           if (!await this.refreshOrReload(modeDoc._url)) {
             if (this.editMode) {
@@ -366,7 +402,6 @@ export default {
             description: `That document is not yet available as ${mode} in the ${locale} locale.`
           });
         } else {
-          // Should not happen
           await apos.alert({
             heading: 'An Error Occurred',
             description: 'Unable to switch modes.'
@@ -382,16 +417,10 @@ export default {
         this.save();
       }
     },
-    onStorage(e) {
-      if (e.storageArea === sessionStorage && e.key === 'aposEditMode') {
-        this.editMode = e.newValue;
-      }
-    },
     async onContentChanged() {
       this.refresh();
     },
     async switchEditMode(editing) {
-      window.sessionStorage.setItem('aposEditMode', JSON.stringify(editing));
       this.editMode = editing;
       if (editing) {
         if (!await this.lock(`${this.action}/${this.context._id}`)) {
@@ -412,6 +441,7 @@ export default {
       const qs = {
         ...apos.http.parseQuery(window.location.search),
         'apos-refresh': '1',
+        'apos-mode': this.draftMode,
         ...(this.editMode ? {
           'apos-edit': '1'
         } : {})
@@ -455,28 +485,27 @@ export default {
       apos.bus.$emit('refreshed');
     },
     async onDiscardDraft(e) {
-      const result = await this.discardDraft(this.action, this.context._id, !!this.context.lastPublishedAt);
-      if (!result) {
-        return;
-      }
+      const result = await this.discardDraft(this.context);
       this.context = {
         ...this.context,
         modified: false
       };
-      if (this.contextStack.length) {
-        // Pushed contexts might edit any property of the doc
-        this.original = klona(result.doc);
-      } else {
-        // On-page we only edit areas
-        this.original = Object.fromEntries(
-          Object.entries(
-            result.doc
-          ).filter(
-            ([ key, value ]) => value && value.metaType === 'area'
-          ).map(
-            ([ key, value ]) => [ key, klona(value) ]
-          )
-        );
+      if (result.doc) {
+        if (this.contextStack.length) {
+          // Pushed contexts might edit any property of the doc
+          this.original = klona(result.doc);
+        } else {
+          // On-page we only edit areas
+          this.original = Object.fromEntries(
+            Object.entries(
+              result.doc
+            ).filter(
+              ([ key, value ]) => value && value.metaType === 'area'
+            ).map(
+              ([ key, value ]) => [ key, klona(value) ]
+            )
+          );
+        }
       }
       this.patchesSinceLoaded = [];
       this.undone = [];
@@ -489,6 +518,14 @@ export default {
         }
       } else {
         apos.bus.$emit('context-history-changed', result && result.doc);
+      }
+    },
+    async onDismissSubmission() {
+      if (await this.dismissSubmission(this.context)) {
+        this.context = {
+          ...this.context,
+          submitted: null
+        };
       }
     },
     async onRevertPublishedToPrevious(data) {
@@ -616,6 +653,19 @@ export default {
       } else {
         // If the context is the page, we should stay, but in preview mode
         this.switchEditMode(false);
+      }
+    },
+    async updateDraftIsEditable() {
+      if (this.context.aposLocale && this.context.aposLocale.endsWith('published') && !this.context._edit) {
+        // A contributor might be able to edit the draft
+        const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
+          busy: true,
+          qs: {
+            'apos-mode': 'draft',
+            'apos-locale': this.context.aposLocale.split(':')[0]
+          }
+        });
+        this.draftIsEditable = draftContext && draftContext._edit;
       }
     }
   }

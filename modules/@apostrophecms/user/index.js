@@ -41,26 +41,19 @@ module.exports = {
     label: 'User',
     pluralLabel: 'Users',
     quickCreate: false,
-    adminOnly: true,
     searchable: false,
     slugPrefix: 'user-',
-    localized: false
+    localized: false,
+    editRole: 'admin',
+    publishRole: 'admin',
+    viewRole: 'admin'
   },
   fields(self) {
     return {
       add: {
-        firstName: {
-          type: 'string',
-          label: 'First Name'
-        },
-        lastName: {
-          type: 'string',
-          label: 'Last Name'
-        },
         title: {
           type: 'string',
-          label: 'Full Name',
-          following: [ 'firstName', 'lastName' ],
+          label: 'Dislay Name',
           required: true
         },
         slug: {
@@ -77,17 +70,38 @@ module.exports = {
         username: {
           type: 'string',
           label: 'Username',
-          required: true
+          required: true,
+          following: 'title'
         },
         email: {
           type: 'string',
-          name: 'email',
           label: 'Email'
         },
         password: {
           type: 'password',
-          name: 'password',
           label: 'Password'
+        },
+        role: {
+          type: 'role',
+          choices: [
+            {
+              label: 'Guest',
+              value: 'guest'
+            },
+            {
+              label: 'Contributor',
+              value: 'contributor'
+            },
+            {
+              label: 'Editor',
+              value: 'editor'
+            },
+            {
+              label: 'Admin',
+              value: 'admin'
+            }
+          ],
+          required: true
         }
       },
       remove: [ 'visibility' ],
@@ -95,8 +109,6 @@ module.exports = {
         basics: {
           label: 'Basics',
           fields: [
-            'firstName',
-            'lastName',
             'title',
             'slug'
           ]
@@ -112,7 +124,8 @@ module.exports = {
         permissions: {
           label: 'Permissions',
           fields: [
-            'disabled'
+            'disabled',
+            'role'
           ]
         }
       }
@@ -131,6 +144,7 @@ module.exports = {
     self.initializeCredential();
     self.addOurArchivedPrefixFields();
     self.enableSecrets();
+    self.addRoleMigration();
     await self.ensureSafe();
   },
   apiRoutes(self) {
@@ -159,6 +173,17 @@ module.exports = {
       beforeUpdate: {
         async updateSafe(req, doc, options) {
           return self.insertOrUpdateSafe(req, doc, 'update');
+        }
+      },
+      beforeSave: {
+        // There is a migration that sets the role to admin if the role does
+        // not exist, accommodating databases prior to 3.0 beta 1. To keep this
+        // from becoming a possible security concern, refuse any new inserts/updates
+        // with no role
+        async requireRole(req, doc, options) {
+          if (![ 'guest', 'editor', 'contributor', 'admin' ].includes(doc.role)) {
+            throw self.apos.error('invalid', 'The role property of a user must be guest, editor, contributor or admin');
+          }
         }
       },
       // Reflect email and username changes in the safe after deduplicating in the piece
@@ -400,7 +425,14 @@ module.exports = {
         }
         const req = self.apos.task.getReq();
 
-        const { password } = await prompts(
+        const user = {
+          username,
+          title: username
+        };
+
+        await self.addPermissionsFromTask(argv, user);
+
+        user.password = (await prompts(
           {
             type: 'password',
             name: 'password',
@@ -409,14 +441,21 @@ module.exports = {
               return input ? true : 'Password is required';
             }
           }
-        );
+        )).password;
 
-        return self.apos.user.insert(req, {
-          username: username,
-          password: password,
-          title: username,
-          firstName: username
-        });
+        return self.apos.user.insert(req, user);
+      },
+
+      async addPermissionsFromTask(argv, user) {
+        let role = argv._[2] || argv.role;
+        if (!role) {
+          role = 'admin';
+          console.log('You did not pass a second argument or --role, assuming admin');
+        }
+        if (![ 'guest', 'contributor', 'editor', 'admin' ].includes(role)) {
+          throw 'Second argument or --role must be one of: guest, contributor, editor, admin';
+        }
+        user.role = role;
       },
 
       // Implement the `@apostrophecms/user:change-password` task.
@@ -448,6 +487,21 @@ module.exports = {
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;
         return self.update(req, user);
+      },
+
+      addRoleMigration() {
+        self.apos.migration.add('add-role-to-user', async () => {
+          return self.apos.doc.db.updateMany({
+            type: '@apostrophecms/user',
+            role: {
+              $exists: 0
+            }
+          }, {
+            $set: {
+              role: 'admin'
+            }
+          });
+        });
       }
     };
   },

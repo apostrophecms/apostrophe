@@ -29,13 +29,13 @@ module.exports = {
           convert: async function (req, field, data, object) {
             if (typeof data[field.name] === 'string') {
               object[field.name] = {
-                url: self.apos.launder.url(data[field.name])
+                url: self.apos.launder.url(data[field.name], null, true)
               };
             } else if (data[field.name]) {
               object[field.name] = {
-                url: self.apos.launder.url(data[field.name].url),
+                url: self.apos.launder.url(data[field.name].url, null, true),
                 title: self.apos.launder.string(data[field.name].title),
-                thumbnail: self.apos.launder.url(data[field.name].thumbnail)
+                thumbnail: self.apos.launder.url(data[field.name].thumbnail, null, true)
               };
             }
           },

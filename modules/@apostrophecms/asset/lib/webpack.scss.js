@@ -12,7 +12,8 @@ module.exports = (options, apos) => {
             {
               loader: 'css-loader',
               options: {
-                esModule: false
+                esModule: false,
+                sourceMap: true
               }
             }
           ]
@@ -25,12 +26,14 @@ module.exports = (options, apos) => {
             {
               loader: 'css-loader',
               options: {
-                esModule: false
+                esModule: false,
+                sourceMap: true
               }
             },
             {
               loader: 'postcss-loader',
               options: {
+                sourceMap: true,
                 postcssOptions: {
                   plugins: [
                     [
@@ -44,6 +47,7 @@ module.exports = (options, apos) => {
             {
               loader: 'sass-loader',
               options: {
+                sourceMap: false,
                 implementation: require('node-sass'),
                 additionalData: `
 @import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";

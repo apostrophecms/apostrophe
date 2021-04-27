@@ -9,7 +9,7 @@
 
 <script>
 export default {
-  name: 'AposCellBasic',
+  name: 'AposCellDate',
   props: {
     item: {
       type: Object,

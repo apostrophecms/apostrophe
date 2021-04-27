@@ -1,5 +1,45 @@
 # Changelog
 
+## UNRELEASED
+
+### Breaks
+
+* Removes the `firstName` and `lastName` fields in user pieces.
+
+### Adds
+
+* Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role, as they already could do anything.
+* The admin bar menu is fully responsive to user roles.
+* The context bar entirely appears or disappears based on user roles.
+* Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc.
+* A fragment call may now have a body using `rendercall`, just like a macro call can have a body using `call`. In addition, fragments can now have named arguments, just like macros. Many thanks to Miro Yovchev for contributing this implementation.
+* Major performance improvement to the `nestedModuleSubdirs` option.
+* Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
+* New label component
+* Doc states in managers now reflected w labels (Active Draft, Archived, Unpublished)
+* Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
+* Editors and admins can manage submitted drafts.
+* Editors and admins can easily see the number of proposed changes awaiting their attention.
+* Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
+* Confirm modals now support a schema which can be assessed after confirmation.
+* When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
+* Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
+* A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
+* The total number of submitted drafts is visible in the admin bar.
+* The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
+* Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
+* Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
+* Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+
+### Fixes
+
+* Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
+* There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
+* A required field error no longer appears immediately when you first start creating a user.
+* Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
+* "Save Draft" is not an appropriate operation to offer when editing users.
+* Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
+
 ## 3.0.0-alpha.7 - 2021-04-07
 
 ### Breaks
@@ -12,12 +52,14 @@
 * Links to each piece are available in the manage view when appropriate.
 * Search is implemented in the media library.
 * You can now pass core widgets a `className` option when configuring them as part of an area.
+* `previewDraft` for pieces, adds a Preview Draft button on creation for quick in-context editing. Defaults to true.
 
 ### Changes
 
 * Do not immediately redirect to new pages and pieces.
 * Restored pieces now restore as unpublished drafts.
 * Refactored the admin bar component for maintainability.
+* Notification style updates
 
 ### Fixes
 
@@ -29,6 +71,7 @@
 * Fixes relating to the editing of widgets in nested areas, both on the page and in the modal.
 * Removed published / draft switch for unpublished drafts.
 * "Publish Changes" appears only at appropriate times.
+* Notifications moved from the bottom right of the viewport to the bottom center, fixing some cases of UI overlap.
 
 ## 3.0.0-alpha.6.1 - 2021-03-26
 

@@ -351,22 +351,20 @@ describe('Pieces', function() {
     const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'ad';
-    user.lastName = 'min';
     user.title = 'admin';
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
+    user.role = 'admin';
 
     await apos.user.insert(apos.task.getReq(), user);
 
     const user2 = apos.user.newInstance();
-    user2.firstName = 'ad';
-    user2.lastName = 'min2';
     user2.title = 'admin2';
     user2.username = 'admin2';
     user2.password = 'admin2';
     user2.email = 'ad@min2.com';
+    user2.role = 'admin';
 
     return apos.user.insert(apos.task.getReq(), user2);
 

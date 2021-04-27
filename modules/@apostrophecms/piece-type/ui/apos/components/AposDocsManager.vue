@@ -18,7 +18,6 @@
       />
     </template>
     <template #primaryControls>
-      <!-- TODO Make sure this gets positioned correctly after Vue3/teleport -->
       <AposContextMenu
         v-if="moreMenu.menu.length"
         :button="moreMenu.button"
@@ -33,9 +32,9 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else
-        :label="`New ${ options.label }`" type="primary"
-        @click="edit(null)"
+        v-else-if="moduleOptions.canEdit && moduleOptions.managerHasNewButton"
+        :label="`New ${ moduleOptions.label }`" type="primary"
+        @click="create"
       />
     </template>
     <template v-if="relationshipField" #leftRail>
@@ -62,7 +61,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages"
             :current-page="currentPage"
-            :filters="options.filters"
+            :filters="moduleOptions.filters"
             :filter-choices="filterChoices"
             :filter-values="filterValues"
             :labels="moduleLabels"
@@ -78,15 +77,24 @@
           />
         </template>
         <template #bodyMain>
-          <AposPiecesManagerDisplay
+          <AposDocsManagerDisplay
             v-if="items.length > 0"
             :items="items"
             :headers="headers"
             v-model="checked"
             @open="edit"
+            @preview="onPreview"
+            @copy="copy"
+            @discard-draft="onDiscardDraft"
+            @dismiss-submission="onDismissSubmission"
+            @archive="onArchive"
+            @restore="onRestore"
             :options="{
               disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField
+              hideCheckboxes: !relationshipField,
+              disableUnpublished: !!relationshipField,
+              manuallyPublished: manuallyPublished,
+              canEdit: moduleOptions.canEdit
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -100,11 +108,18 @@
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 
 export default {
-  name: 'AposPiecesManager',
-  mixins: [ AposDocsManagerMixin, AposModalModifiedMixin ],
+  name: 'AposDocsManager',
+  mixins: [
+    AposDocsManagerMixin,
+    AposModalModifiedMixin,
+    AposPublishMixin,
+    AposArchiveMixin
+  ],
   props: {
     moduleName: {
       type: String,
@@ -119,7 +134,7 @@ export default {
         type: 'overlay',
         showModal: false
       },
-      pieces: [],
+      items: [],
       lastSelected: null,
       totalPages: 1,
       currentPage: 1,
@@ -139,13 +154,13 @@ export default {
     };
   },
   computed: {
-    options() {
+    moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
     moduleLabels() {
       return {
-        singular: this.options.label,
-        plural: this.options.pluralLabel
+        singular: this.moduleOptions.label,
+        plural: this.moduleOptions.pluralLabel
       };
     },
     saveRelationshipLabel() {
@@ -159,36 +174,27 @@ export default {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
     },
-    items() {
-      const items = [];
-      if (!this.pieces || !this.headers.length) {
-        return [];
-      }
-
-      this.pieces.forEach(piece => {
-        const data = {};
-
-        this.headers.forEach(column => {
-          data[column.name] = piece[column.name];
-        });
-
-        data._id = piece._id;
-
-        items.push(data);
-      });
-
-      return items;
-    },
     emptyDisplay() {
       return {
         title: `No ${this.moduleLabels.plural || this.moduleLabels.singular} Found`,
         message: '',
         emoji: '📄'
       };
+    },
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+    },
+    headers() {
+      if (!this.items) {
+        return this.moduleOptions.columns || [];
+      }
+      return (this.moduleOptions.columns || []).filter(column => {
+        return (column.name !== '_url') || this.items.find(item => item._url);
+      });
     }
   },
   created() {
-    this.options.filters.forEach(filter => {
+    this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
@@ -201,7 +207,7 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-    if (this.relationshipField) {
+    if (this.relationshipField && this.moduleOptions.canEdit) {
       // Add computed singular label to context menu
       this.moreMenu.menu.unshift({
         action: 'new',
@@ -217,7 +223,7 @@ export default {
   methods: {
     moreMenuHandler(action) {
       if (action === 'new') {
-        this.new();
+        this.create();
       }
     },
     setCheckedDocs(checked) {
@@ -226,7 +232,7 @@ export default {
         return item._id;
       });
     },
-    new() {
+    create() {
       this.edit(null);
     },
     async finishSaved() {
@@ -253,7 +259,7 @@ export default {
       }
 
       const getResponse = (await apos.http.get(
-        this.options.action, {
+        this.moduleOptions.action, {
           busy: true,
           qs,
           draft: true
@@ -262,7 +268,7 @@ export default {
 
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
-      this.pieces = getResponse.results;
+      this.items = getResponse.results;
       this.filterChoices = getResponse.choices;
       this.holdQueries = false;
     },
@@ -272,23 +278,81 @@ export default {
         this.getPieces();
       }
     },
-    async edit(pieceId) {
-      const doc = await apos.modal.execute(this.options.components.insertModal, {
-        moduleName: this.moduleName,
-        docId: pieceId,
+    onPreview(id) {
+      this.preview(this.findDocById(this.items, id));
+    },
+    async onArchive(id) {
+      const piece = this.findDocById(this.items, id);
+      if (await this.archive(piece)) {
+        apos.bus.$emit('content-changed');
+      }
+    },
+    async onRestore(id) {
+      const piece = this.findDocById(this.items, id);
+      if (await this.restore(piece)) {
+        apos.bus.$emit('content-changed');
+      }
+    },
+    async onDiscardDraft(id) {
+      const piece = this.findDocById(this.items, id);
+      if (await this.discardDraft(piece)) {
+        apos.bus.$emit('content-changed');
+      };
+    },
+    async onDismissSubmission(id) {
+      const piece = this.findDocById(this.items, id);
+      if (await this.dismissSubmission(piece)) {
+        apos.bus.$emit('content-changed');
+      };
+    },
+    async copy(id) {
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.moduleOptions.name}:editor`,
+        props: {
+          copyOf: this.findDocById(this.items, id)
+        }
+      });
+    },
+    // If pieceOrId is null, a new piece is created
+    async edit(pieceOrId) {
+      let piece;
+      if ((typeof pieceOrId) === 'object') {
+        piece = pieceOrId;
+      } else if (pieceOrId) {
+        piece = this.items.find(item => item._id === pieceOrId);
+      } else {
+        piece = null;
+      }
+      let moduleName;
+      // Don't assume the piece has the type of the module,
+      // this could be a virtual piece type such as "submitted-draft"
+      // that manages docs of many types
+      if (piece) {
+        if (piece.slug.startsWith('/')) {
+          moduleName = '@apostrophecms/page';
+        } else {
+          moduleName = piece.type;
+        }
+      } else {
+        moduleName = this.moduleName;
+      }
+      const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
+        moduleName,
+        docId: piece && piece._id,
         filterValues: this.filterValues
       });
       if (!doc) {
         // Cancel clicked
         return;
       }
-      await this.getPieces();
-      if (this.relationshipField && (!pieceId)) {
-        doc._fields = doc._fields || {};
-        // Must push to checked docs or it will try to do it for us
-        // and not include _fields
-        this.checkedDocs.push(doc);
-        this.checked.push(doc._id);
+      if (this.relationshipField) {
+        if (!this.checked.includes(doc._id)) {
+          doc._fields = doc._fields || {};
+          // Must push to checked docs or it will try to do it for us
+          // and not include _fields
+          this.checkedDocs.push(doc);
+          this.checked.push(doc._id);
+        }
       }
     },
     // Toolbar handlers

@@ -398,7 +398,7 @@ describe('Pages', function() {
   });
 
   it('is able to move parent to the archive', async function() {
-    await apos.page.moveToArchive(apos.task.getReq(), 'parent:en:published');
+    await apos.page.archive(apos.task.getReq(), 'parent:en:published');
 
     const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'parent' });
     const page = await cursor.toObject();

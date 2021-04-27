@@ -22,18 +22,26 @@
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
         :can-archive="canArchive"
-        :can-copy="!!docId"
+        :can-copy="!!docId && !moduleOptions.singleton"
+        :can-preview="canPreview"
         :is-published="!!published"
-        :can-save-draft="true"
+        :can-save-draft="manuallyPublished"
+        :can-dismiss-submission="canDismissSubmission"
         @saveDraft="saveDraft"
-        @discardDraft="onDiscardDraft"
-        @moveToArchive="onMoveToArchive"
+        @preview="preview"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
+        @archive="onArchive"
         @copy="onCopy"
+      />
+      <AposButton
+        v-if="canPreviewDraft" type="secondary"
+        @click="saveDraftAndPreview" label="Preview Draft"
       />
       <AposButton
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
-        @click="submit"
+        @click="onSave"
         :tooltip="tooltip"
       />
     </template>
@@ -57,6 +65,7 @@
               v-for="tab in tabs"
               v-show="tab.name === currentTab"
               :key="tab.name"
+              :changed="changed"
               :schema="groups[tab.name].schema"
               :current-fields="groups[tab.name].fields"
               :trigger-validation="triggerValidation"
@@ -79,6 +88,7 @@
           <AposSchema
             v-if="docReady"
             :schema="groups['utility'].schema"
+            :changed="changed"
             :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
@@ -102,6 +112,7 @@ import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModa
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
@@ -114,7 +125,8 @@ export default {
     AposModalModifiedMixin,
     AposEditorMixin,
     AposPublishMixin,
-    AposAdvisoryLockMixin
+    AposAdvisoryLockMixin,
+    AposArchiveMixin
   ],
   props: {
     moduleName: {
@@ -152,12 +164,17 @@ export default {
       },
       triggerValidation: false,
       original: null,
+      live: null,
       published: null,
       errorCount: 0,
-      restoreOnly: false
+      restoreOnly: false,
+      filters: { ...this.filterValues }
     };
   },
   computed: {
+    getOnePath() {
+      return `${this.moduleAction}/${this.docId}`;
+    },
     tooltip() {
       // TODO I18N
       let msg;
@@ -184,6 +201,9 @@ export default {
       const groupSet = {};
 
       this.schema.forEach(field => {
+        if (!this.filterOutParkedFields([ field.name ]).length) {
+          return;
+        }
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
@@ -247,10 +267,14 @@ export default {
       if (this.restoreOnly) {
         return 'Restore';
       } else if (this.manuallyPublished) {
-        if (this.original && this.original.lastPublishedAt) {
-          return 'Publish Changes';
+        if (this.moduleOptions.canPublish) {
+          if (this.original && this.original.lastPublishedAt) {
+            return 'Publish Changes';
+          } else {
+            return 'Publish';
+          }
         } else {
-          return 'Publish';
+          return 'Propose Changes';
         }
       } else {
         return 'Save';
@@ -268,11 +292,24 @@ export default {
       }
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
+    canPreviewDraft() {
+      return !this.docId && this.moduleOptions.previewDraft;
+    },
+    canPreview() {
+      if (this.original) {
+        return !!this.original._url;
+      } else {
+        return false;
+      }
+    },
     canArchive() {
-      return !!(this.docId &&
+      return !!(
+        !this.moduleOptions.singleton &&
+        this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
         !this.restoreOnly &&
-        (this.published || !this.manuallyPublished));
+        ((this.moduleOptions.canPublish && this.published) || !this.manuallyPublished)
+      );
     },
     canDiscardDraft() {
       return (
@@ -280,6 +317,9 @@ export default {
         (!this.published) &&
         this.manuallyPublished
       ) || this.isModifiedFromPublished;
+    },
+    canDismissSubmission() {
+      return this.original && this.original.submitted && (this.moduleOptions.canPublish || (this.original.submitted.byId === apos.login.user._id));
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
@@ -326,48 +366,13 @@ export default {
     // After computed properties become available
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
-      let docData;
-      const getOnePath = `${this.moduleAction}/${this.docId}`;
-      try {
-        if (!await this.lock(getOnePath, this.docId)) {
-          await this.lockNotAvailable();
-          return;
-        }
-        docData = await apos.http.get(getOnePath, {
-          busy: true,
-          qs: this.filterValues,
-          draft: true
-        });
-        // Pages don't use the restore mechanism because they
-        // treat the archive as a place in the tree you can drag from
-        if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
-          this.restoreOnly = true;
-        }
-      } catch {
-        // TODO a nicer message here, but moduleLabels is undefined here
-        await apos.notify('The requested document was not found.', {
-          type: 'warning',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-        await this.confirmAndCancel();
-      } finally {
-        if (docData) {
-          if (docData.type !== this.docType) {
-            this.docType = docData.type;
-          }
-          this.original = klona(docData);
-          this.docFields.data = docData;
-          this.docReady = true;
-          this.prepErrors();
-        }
-      }
+      await this.loadDoc();
       try {
         if (this.manuallyPublished) {
-          this.published = await apos.http.get(getOnePath, {
+          this.published = await apos.http.get(this.getOnePath, {
             busy: true,
             qs: {
-              ...this.filterValues,
+              ...this.filters,
               'apos-mode': 'published'
             }
           });
@@ -402,6 +407,74 @@ export default {
     }
   },
   methods: {
+    async loadDoc() {
+      let docData;
+      try {
+        if (!await this.lock(this.getOnePath, this.docId)) {
+          await this.lockNotAvailable();
+          return;
+        }
+        docData = await apos.http.get(this.getOnePath, {
+          busy: true,
+          qs: this.filters,
+          draft: true
+        });
+
+        // Pages don't use the restore mechanism because they
+        // treat the archive as a place in the tree you can drag from
+        if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
+          this.restoreOnly = true;
+        } else {
+          this.restoreOnly = false;
+        }
+      } catch {
+        // TODO a nicer message here, but moduleLabels is undefined here
+        await apos.notify('The requested document was not found.', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        await this.confirmAndCancel();
+      } finally {
+        if (docData) {
+          if (docData.type !== this.docType) {
+            this.docType = docData.type;
+          }
+          this.live = await this.loadLiveDoc();
+          this.original = klona(docData);
+          this.docFields.data = docData;
+          if (this.live) {
+            this.changed = detectDocChange(this.schema, this.original, this.live, { differences: true });
+          }
+          this.docReady = true;
+          this.prepErrors();
+        }
+      }
+    },
+    async loadLiveDoc() {
+      try {
+        return await apos.http.get(this.getOnePath, {
+          busy: false,
+          draft: false
+        });
+      } catch (e) {
+        // non fatal
+        console.warn(e);
+        return null;
+      }
+    },
+    async preview() {
+      if (!await this.confirmAndCancel()) {
+        return;
+      }
+      window.location = this.original._url;
+    },
+    async saveDraftAndPreview() {
+      await this.save({
+        andPublish: false,
+        navigate: true
+      });
+    },
     updateFieldState(fieldState) {
       this.tabKey = cuid();
       for (const key in this.groups) {
@@ -447,20 +520,25 @@ export default {
     lockNotAvailable() {
       this.modal.showModal = false;
     },
-    async submit() {
-      await this.save({
-        restoreOnly: this.restoreOnly,
-        andPublish: this.manuallyPublished,
-        savingDraft: false
-      });
+    async onSave() {
+      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+        await this.save({
+          restoreOnly: this.restoreOnly,
+          andPublish: this.manuallyPublished
+        });
+      } else {
+        await this.save({
+          andPublish: false,
+          andSubmit: true
+        });
+      }
     },
     // If andPublish is true, publish after saving.
-    // If savingDraft is true, make sure we're in draft
-    // mode before redirecting to the _url of the draft.
     async save({
       restoreOnly = false,
       andPublish = false,
-      savingDraft = false
+      navigate = false,
+      andSubmit = false
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -507,6 +585,11 @@ export default {
             body,
             draft: true
           });
+          if (andSubmit) {
+            await this.submitDraft(doc);
+          } else if (andPublish && !restoreOnly) {
+            await this.publish(doc);
+          }
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
           if (this.isLockedError(e)) {
@@ -520,11 +603,29 @@ export default {
             return;
           }
         }
-        if (andPublish && !restoreOnly) {
-          await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
-        }
         this.$emit('modal-result', doc);
-        this.modal.showModal = false;
+        if (!this.restoreOnly) {
+          this.modal.showModal = false;
+        }
+        if (this.restoreOnly) {
+          this.filters.archived = false;
+          await this.loadDoc();
+          await apos.notify('Archived content restored', {
+            type: 'success',
+            icon: 'archive-arrow-up-icon',
+            dismiss: true
+          });
+        }
+        if (navigate) {
+          if (doc._url) {
+            window.location = doc._url;
+          } else {
+            await apos.notify(`Draft saved but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
+              type: 'warning',
+              icon: 'alert-circle-icon'
+            });
+          }
+        }
       });
     },
     async getNewInstance() {
@@ -580,41 +681,25 @@ export default {
         return this.$refs[field.group.name][0];
       }
     },
-    async onMoveToArchive(e) {
-      try {
-        if (await apos.confirm({
-          heading: 'Are You Sure?',
-          description: this.published
-            ? 'This will move the document to the archive and un-publish it.'
-            : 'This will move the document to the archive.'
-        })) {
-          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
-            body: {
-              archived: true,
-              _publish: true
-            },
-            busy: true,
-            draft: true
-          });
-          if (this.docId === window.apos.adminBar.contextId) {
-            // With the current context doc gone, we need to move to safe ground
-            location.assign(`${window.apos.prefix}/`);
-            return;
-          }
-          apos.bus.$emit('content-changed');
-          this.modal.showModal = false;
-        }
-      } catch (e) {
-        await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while moving the document to the archive.'
-        });
+    async onArchive(e) {
+      if (await this.archive(this.original)) {
+        apos.bus.$emit('content-changed');
+        this.modal.showModal = false;
       }
     },
     async onDiscardDraft(e) {
-      if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+      if (await this.discardDraft(this.original)) {
         apos.bus.$emit('content-changed');
         this.modal.showModal = false;
+      }
+    },
+    async onDismissSubmission() {
+      if (await this.dismissSubmission(this.original)) {
+        this.original = {
+          ...this.original,
+          submitted: null
+        };
+        apos.bus.$emit('content-changed');
       }
     },
     async onCopy(e) {
@@ -635,8 +720,7 @@ export default {
     },
     saveDraft() {
       return this.save({
-        andPublish: false,
-        savingDraft: true
+        andPublish: false
       });
     },
     filterOutParkedFields(fields) {

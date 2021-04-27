@@ -49,20 +49,12 @@ export default {
     sort(action) {
       this.$emit('sort', action);
     },
-    headers() {
-      if (!this.pieces) {
-        return this.options.columns || [];
-      }
-      return (this.options.columns || []).filter(column => {
-        return (column.name !== '_url') || this.pieces.find(item => item._url);
-      });
-    },
     selectAllValue() {
       return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
-      const itemCount = this.items.length;
+      const itemCount = (this.items && this.items.length) || 0;
 
       return checkCount > 0 && checkCount !== itemCount ? {
         value: 'checked',
@@ -99,6 +91,12 @@ export default {
     }
   },
   methods: {
+    preview(doc) {
+      window.open(doc._url, '_blank').focus();
+    },
+    findDocById(docs, id) {
+      return docs.find(p => p._id === id);
+    },
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
     // a computed prop rather than a method call in the template.

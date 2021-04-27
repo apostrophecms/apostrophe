@@ -92,6 +92,13 @@ module.exports = {
           await matched.handler(req);
         }
       },
+      beforeMove: {
+        checkPermissions(req, doc) {
+          if (doc.lastPublishedAt && !self.apos.permission.can(req, 'publish', '@apostrophecms/page')) {
+            throw self.apos.error('forbidden', 'Contributors may only move unpublished pages.');
+          }
+        }
+      },
       afterMove: {
         async replayMoveAfterMoved(req, doc) {
           if (!doc._id.includes(':draft')) {
@@ -357,6 +364,15 @@ module.exports = {
       async update(req, page, options = {}) {
         return self.apos.page.update(req, page, options);
       },
+      // True delete. Will throw an error if the page
+      // has descendants.
+      //
+      // This is a convenience wrapper for `apos.page.delete`, for the
+      // benefit of code that expects all managers to have a delete method.
+      // Pages are usually deleted via `apos.page.delete`.
+      async delete(req, page, options = {}) {
+        return self.apos.page.delete(req, page, options);
+      },
       // If the page does not yet have a slug, add one based on the
       // title; throw an error if there is no title
       ensureSlug(page) {
@@ -376,6 +392,9 @@ module.exports = {
   },
   extendMethods(self) {
     return {
+      enableAction() {
+        self.action = self.apos.modules['@apostrophecms/page'].action;
+      },
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);
         const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';

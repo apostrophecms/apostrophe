@@ -20,7 +20,7 @@
     >
       <div class="apos-tree__row-data">
         <button
-          v-if="row.children && row.children.length > 0"
+          v-if="row._children && row._children.length > 0"
           class="apos-tree__row__toggle" data-apos-tree-toggle
           aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
@@ -34,13 +34,22 @@
           v-for="(col, index) in headers"
           :key="`${col.property}-${index}`"
           :is="getEffectiveType(col, row)"
+          :item="row"
+          :header="col"
           :href="(getEffectiveType(col, row) === 'a') ? row[col.property] : false"
           :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :disabled="getCellDisabled(col, row)"
           :data-col="col.property"
           :style="getCellStyles(col.property, index)"
-          @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
+          @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
+          @edit="$emit('edit', row._id)"
+          @preview="$emit('preview', row._id)"
+          @copy="$emit('copy', row._id)"
+          @discard-draft="$emit('discard-draft', row._id)"
+          @dismiss-submission="$emit('dismiss-submission', row._id)"
+          @archive="$emit('archive', row._id)"
+          @restore="$emit('restore', row._id)"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -89,7 +98,7 @@
         data-apos-branch-height
         :data-list-row="row._id"
         ref="tree-branches"
-        :rows="row.children"
+        :rows="row._children"
         :headers="headers"
         :icons="icons"
         :col-widths="colWidths"
@@ -104,6 +113,12 @@
         }"
         @update="$emit('update', $event)"
         @edit="$emit('edit', $event)"
+        @preview="$emit('preview', $event)"
+        @copy="$emit('copy', $event)"
+        @discard-draft="$emit('discard-draft', $event)"
+        @dismiss-submission="$emit('dismiss-submission', $event)"
+        @archive="$emit('archive', $event)"
+        @restore="$emit('restore', $event)"
         v-model="checkedProxy"
       />
     </li>
@@ -176,7 +191,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore' ],
   computed: {
     myRows() {
       return this.rows;
@@ -281,21 +296,18 @@ export default {
         'apos-tree__row',
         {
           'is-parked': !!row.parked,
-          'apos-tree__row--parent': row.children && row.children.length > 0,
+          'apos-tree__row--parent': row._children && row._children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
         }
       ];
 
-      if (this.options.ghostUnpublished) {
-        classes.push({
-          'is-unpublished': !row.lastPublishedAt
-        });
-      }
-
       return classes;
     },
     getEffectiveType(col, row) {
+      if (col.component) {
+        return col.component;
+      }
       if (row.type === '@apostrophecms/archive-page') {
         return 'span';
       } else if (col.type === 'link') {
@@ -309,7 +321,7 @@ export default {
     getEffectiveIcon(col, row) {
       const boolStr = (!!row[col.property]).toString();
 
-      if (row.type === '@apostrophecms/archive-page') {
+      if (row.type === '@apostrophecms/archive-page' || !col.cellValue) {
         return false;
       }
 
@@ -433,9 +445,6 @@ export default {
 
   .apos-tree__row {
     &.is-dragging {
-      opacity: 0.5;
-    }
-    &.is-unpublished > .apos-tree__row-data {
       opacity: 0.5;
     }
   }

@@ -16,7 +16,9 @@ module.exports = {
     quickCreate: false,
     insertViaUpload: true,
     slugPrefix: 'file-',
-    autopublish: true
+    autopublish: true,
+    editRole: 'editor',
+    publishRole: 'editor'
   },
   fields: {
     add: {

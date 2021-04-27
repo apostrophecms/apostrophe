@@ -6,7 +6,10 @@ module.exports = (options, apos) => {
       rules: [
         {
           test: /\.vue$/,
-          loader: 'vue-loader'
+          loader: 'vue-loader',
+          options: {
+            sourceMap: true
+          }
         }
       ]
     },

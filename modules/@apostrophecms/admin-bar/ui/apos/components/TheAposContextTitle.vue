@@ -59,8 +59,7 @@ export default {
       if (this.context.updatedBy) {
         const editor = this.context.updatedBy;
         editorLabel = '';
-        editorLabel += editor.firstName ? `${editor.firstName} ` : '';
-        editorLabel += editor.lastName ? `${editor.lastName} ` : '';
+        editorLabel += editor.title ? `${editor.title} ` : '';
         editorLabel += editor.username ? `(${editor.username})` : '';
       }
       return editorLabel;
@@ -82,16 +81,16 @@ export default {
     draftMenu() {
       return [
         {
-          label: (this.draftMode === 'draft') ? '✓ Draft' : 'Draft',
+          label: 'Draft',
           name: 'draft',
           action: 'draft',
-          modifiers: (this.draftMode === 'draft') ? [ 'disabled' ] : null
+          modifiers: (this.draftMode === 'draft') ? [ 'disabled', 'selected' ] : null
         },
         {
-          label: (this.draftMode === 'published') ? '✓ Published' : 'Published',
+          label: 'Published',
           name: 'published',
           action: 'published',
-          modifiers: (this.draftMode === 'published') ? [ 'disabled' ] : null
+          modifiers: (this.draftMode === 'published') ? [ 'disabled', 'selected' ] : null
         }
       ];
     }
@@ -111,6 +110,7 @@ export default {
 .apos-admin-bar__title {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
 
   &__document-title,
   &__separator {
