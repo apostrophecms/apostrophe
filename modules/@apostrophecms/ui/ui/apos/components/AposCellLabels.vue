@@ -10,7 +10,7 @@
         :modifiers="[ 'is-success', 'is-filled' ]"
       />
     </span>
-    <span v-if="item.submitted">
+    <span v-else-if="item.submitted">
       <AposLabel
         label="Pending" class="apos-table__cell-field__label"
         tooltip="Changes to this document are awaiting approval by an admin or editor."
