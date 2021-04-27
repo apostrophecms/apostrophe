@@ -109,7 +109,7 @@ module.exports = {
             type: self.name
           },
           {
-            icon: 'AposSubmittedDraftAdminBarIcon',
+            icon: 'AposSubmittedDraftIcon',
             contextUtility: true,
             tooltip: 'Submitted Drafts'
           }

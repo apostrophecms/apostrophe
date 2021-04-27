@@ -19,6 +19,7 @@
 * Doc states in managers now reflected w labels (Active Draft, Archived, Unpublished)
 * Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
 * Editors and admins can manage submitted drafts.
+* Editors and admins can easily see the number of proposed changes awaiting their attention.
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
 * Confirm modals now support a schema which can be assessed after confirmation.
 * When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children

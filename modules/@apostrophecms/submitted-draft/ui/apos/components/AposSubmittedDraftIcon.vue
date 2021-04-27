@@ -1,18 +1,18 @@
 <template>
-  <span v-if="count > 0" class="apos-submitted-draft-admin-bar-container">
+  <span v-if="count > 0" class="apos-submitted-drafts__container">
     <AposIndicator
       icon="tray-full-icon"
-      class="apos-input-icon apos-submitted-draft-admin-bar-icon"
+      class="apos-submitted-drafts__icon"
       :icon-size="size"
     />
-    <span v-if="canPublish" class="apos-submitted-draft-admin-bar-counter">
+    <span v-if="canPublish" class="apos-submitted-drafts__counter">
       {{ count }}
     </span>
   </span>
 </template>
 <script>
 export default {
-  name: 'AposSubmittedDraftAdminBarIcon',
+  name: 'AposSubmittedDraftIcon',
   props: {
     size: {
       type: Number,
@@ -54,9 +54,3 @@ export default {
   }
 };
 </script>
-<style lang="scss" scoped>
-  .apos-submitted-draft-admin-bar-container {
-    /* TODO: hack to make it visible for now */
-    width: 32px;
-  }
-</style>

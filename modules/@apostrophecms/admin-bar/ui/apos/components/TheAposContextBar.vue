@@ -27,8 +27,8 @@
         :custom-publish-label="customPublishLabel"
         :can-dismiss-submission="canDismissSubmission"
         @switchEditMode="switchEditMode"
-        @discardDraft="onDiscardDraft"
-        @dismissSubmission="onDismissSubmission"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
         @publish="onPublish"
       />
     </template>
