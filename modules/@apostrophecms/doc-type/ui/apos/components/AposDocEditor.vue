@@ -269,15 +269,19 @@ export default {
       } else if (this.manuallyPublished) {
         if (this.moduleOptions.canPublish) {
           if (this.original && this.original.lastPublishedAt) {
-            return 'Publish Changes';
+            return 'Update';
           } else {
             return 'Publish';
           }
         } else {
-          return 'Propose Changes';
+          if (this.original && this.original.lastPublishedAt) {
+            return 'Submit Update';
+          } else {
+            return 'Submit';
+          }
         }
       } else {
-        return 'Save';
+        return 'Update';
       }
     },
     isModified() {

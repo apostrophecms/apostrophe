@@ -85,7 +85,7 @@
         <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          :label="restoreOnly ? 'Restore' : 'Save'" type="primary"
+          :label="restoreOnly ? 'Restore' : 'Update'" type="primary"
         />
       </div>
     </AposModalLip>

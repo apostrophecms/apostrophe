@@ -12,7 +12,7 @@
       />
       <AposButton
         v-else
-        type="default" label="Finished"
+        type="default" label="Exit"
         @click="confirmAndCancel"
       />
     </template>
