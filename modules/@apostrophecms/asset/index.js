@@ -169,6 +169,7 @@ module.exports = {
           }
 
           async function buildAposBundle() {
+            self.apos.util.log('🧑‍💻 Building the Apostrophe admin UI...');
             const iconImports = getIcons();
             const componentImports = getImports('apos/components', '*.vue', { registerComponents: true });
             const tiptapExtensionImports = getImports('apos/tiptap-extensions', '*.js', { registerTiptapExtensions: true });
@@ -218,6 +219,7 @@ module.exports = {
               },
               self.apos
             ));
+            self.apos.util.log('👍 Apostrophe UI build is complete!');
 
             const now = Date.now().toString();
             fs.writeFileSync(`${bundleDir}/${APOS_ONLY_TS}`, now);
