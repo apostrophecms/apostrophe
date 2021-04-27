@@ -447,7 +447,7 @@ export default {
       if (!await this.confirmAndCancel()) {
         return;
       }
-      window.location = this.original._url;
+      window.location = apos.http.addQueryToUrl(this.original._url, { 'apos-mode': 'draft' }, { merge: true });
     },
     async saveDraftAndPreview() {
       await this.save({
