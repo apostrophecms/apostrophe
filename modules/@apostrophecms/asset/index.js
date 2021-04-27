@@ -27,7 +27,13 @@ module.exports = {
     return {
       'apostrophe:modulesReady': {
         async runUiBuildTask() {
-          await self.apos.task.invoke('@apostrophecms/asset:build');
+          if (!self.apos.isTask()) {
+            // If starting up normally, run the build task, checking if we
+            // really need to update the core UI build.
+            await self.apos.task.invoke('@apostrophecms/asset:build', {
+              checkUiBuild: true
+            });
+          }
         }
       }
     };
@@ -37,7 +43,7 @@ module.exports = {
       build: {
         usage: 'Build Apostrophe frontend javascript master import files',
         afterModuleInit: true,
-        async task() {
+        async task(argv) {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const modulesDir = `${buildDir}/modules`;
@@ -48,7 +54,8 @@ module.exports = {
           await fs.remove(modulesDir);
           await fs.mkdirp(modulesDir);
 
-          let rebuildAposUi = false;
+          let rebuildAposUi = argv && !argv.checkUiBuild;
+
           const APOS_MERGED_BUNDLE = 'apos-bundle.js';
           const APOS_ONLY_BUNDLE = 'apos-only-bundle.js';
           const APOS_ONLY_TS = '.apos-only-timestamp.txt';
@@ -135,7 +142,6 @@ module.exports = {
 
           async function buildPublicCssBundle() {
             const publicImports = getImports('public', '*.css', { });
-            await fs.ensureFile(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`);
 
             fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`,
               publicImports.paths.map(path => {
