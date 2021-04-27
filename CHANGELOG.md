@@ -39,6 +39,7 @@
 * Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
 * "Save Draft" is not an appropriate operation to offer when editing users.
 * Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
+* Language of buttons, labels, filters, and other UI updated and normalized throughout.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
