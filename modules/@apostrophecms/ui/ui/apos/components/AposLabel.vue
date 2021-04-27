@@ -46,12 +46,24 @@ export default {
     border-color: var(--a-danger);
   }
 
+  .is-success {
+    border-color: var(--a-success);
+  }
+
   .is-filled {
     background-color: var(--a-base-10);
+    color: var(--a-base-1);
   }
 
   .is-warning.is-filled {
     background-color: var(--a-warning-fade);
-    color: var(--a-base-1);
+  }
+
+  .is-error.is-filled {
+    background-color: var(--a-danger-fade);
+  }
+
+  .is-success.is-filled {
+    background-color: var(--a-success-fade);
   }
 </style>

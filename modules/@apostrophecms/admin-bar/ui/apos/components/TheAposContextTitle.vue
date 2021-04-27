@@ -131,10 +131,6 @@ export default {
   &__document {
     margin-top: 3.5px;
   }
-
-  & /deep/ .apos-indicator {
-    margin-top: 1px;
-  }
 }
 
 .apos-admin-bar__title__indicator {

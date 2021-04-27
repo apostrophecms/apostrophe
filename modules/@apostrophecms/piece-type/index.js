@@ -69,7 +69,7 @@ module.exports = {
         def: true
       },
       archived: {
-        label: 'Archived',
+        label: 'Archive',
         inputType: 'radio',
         choices: [
           {
@@ -78,7 +78,7 @@ module.exports = {
           },
           {
             value: true,
-            label: 'Archived'
+            label: 'Archive'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
