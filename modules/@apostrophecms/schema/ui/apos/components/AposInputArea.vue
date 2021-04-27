@@ -20,6 +20,7 @@
           :field-id="field._id"
           :field="field"
           @changed="changed"
+          :in-context="false"
         />
       </div>
     </template>
