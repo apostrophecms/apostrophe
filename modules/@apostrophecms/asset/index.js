@@ -56,7 +56,9 @@ module.exports = {
           const PUBLIC_BUNDLE_JS = 'public-bundle.js';
           let checkTimestamp = false;
 
-          if (!fs.exists(bundleDir)) {
+          const bundleExists = await fs.pathExists(bundleDir);
+
+          if (!bundleExists) {
             rebuildAposUi = true;
             await fs.mkdirp(bundleDir);
           } else {
