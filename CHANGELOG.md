@@ -37,6 +37,7 @@
 * There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
 * A required field error no longer appears immediately when you first start creating a user.
 * Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
+* "Save Draft" is not an appropriate operation to offer when editing users.
 * Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
 
 ## 3.0.0-alpha.7 - 2021-04-07
