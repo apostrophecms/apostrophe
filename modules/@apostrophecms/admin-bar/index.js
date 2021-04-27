@@ -68,6 +68,9 @@ module.exports = {
       // `options.tooltip` is used. The regular label is also present for
       // screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
+      //
+      // If an `options.when` function is provided, it will be invoked with
+      // `req` to test whether this admin bar item should be displayed or not.
 
       add(name, label, permission, options) {
         let index;

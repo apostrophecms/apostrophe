@@ -83,6 +83,12 @@ export default {
         return false;
       }
     },
+    canDismissSubmission: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     disabled: {
       type: Boolean,
       default: false
@@ -104,6 +110,9 @@ export default {
       this.menu = this.recomputeMenu();
     },
     isPublished() {
+      this.menu = this.recomputeMenu();
+    },
+    canDismissSubmission() {
       this.menu = this.recomputeMenu();
     }
   },
@@ -138,6 +147,12 @@ export default {
             action: 'saveDraft'
           }
         ] : []),
+        ...(this.canDismissSubmission ? [
+          {
+            label: 'Dismiss Submission',
+            action: 'dismiss-submission'
+          }
+        ] : []),
         ...(this.canCopy ? [
           {
             label: 'Duplicate...',
@@ -147,7 +162,7 @@ export default {
         ...(this.canDiscardDraft ? [
           {
             label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
-            action: 'discardDraft',
+            action: 'discard-draft',
             modifiers: [ 'danger' ]
           }
         ] : []),

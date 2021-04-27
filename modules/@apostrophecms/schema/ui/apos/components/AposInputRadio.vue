@@ -3,6 +3,7 @@
     :field="field" :error="effectiveError"
     :uid="uid"
     :display-options="displayOptions"
+    :modifiers="modifiers"
   >
     <template #body>
       <label

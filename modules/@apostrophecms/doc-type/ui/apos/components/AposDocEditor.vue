@@ -26,9 +26,11 @@
         :can-preview="canPreview"
         :is-published="!!published"
         :can-save-draft="manuallyPublished"
+        :can-dismiss-submission="canDismissSubmission"
         @saveDraft="saveDraft"
         @preview="preview"
-        @discardDraft="onDiscardDraft"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
         @archive="onArchive"
         @copy="onCopy"
       />
@@ -63,6 +65,7 @@
               v-for="tab in tabs"
               v-show="tab.name === currentTab"
               :key="tab.name"
+              :changed="changed"
               :schema="groups[tab.name].schema"
               :current-fields="groups[tab.name].fields"
               :trigger-validation="triggerValidation"
@@ -85,6 +88,7 @@
           <AposSchema
             v-if="docReady"
             :schema="groups['utility'].schema"
+            :changed="changed"
             :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
@@ -160,6 +164,7 @@ export default {
       },
       triggerValidation: false,
       original: null,
+      live: null,
       published: null,
       errorCount: 0,
       restoreOnly: false,
@@ -303,7 +308,7 @@ export default {
         this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
         !this.restoreOnly &&
-        (this.published || !this.manuallyPublished)
+        ((this.moduleOptions.canPublish && this.published) || !this.manuallyPublished)
       );
     },
     canDiscardDraft() {
@@ -312,6 +317,9 @@ export default {
         (!this.published) &&
         this.manuallyPublished
       ) || this.isModifiedFromPublished;
+    },
+    canDismissSubmission() {
+      return this.original && this.original.submitted && (this.moduleOptions.canPublish || (this.original.submitted.byId === apos.login.user._id));
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
@@ -411,6 +419,7 @@ export default {
           qs: this.filters,
           draft: true
         });
+
         // Pages don't use the restore mechanism because they
         // treat the archive as a place in the tree you can drag from
         if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
@@ -431,11 +440,27 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
+          this.live = await this.loadLiveDoc();
           this.original = klona(docData);
           this.docFields.data = docData;
+          if (this.live) {
+            this.changed = detectDocChange(this.schema, this.original, this.live, { differences: true });
+          }
           this.docReady = true;
           this.prepErrors();
         }
+      }
+    },
+    async loadLiveDoc() {
+      try {
+        return await apos.http.get(this.getOnePath, {
+          busy: false,
+          draft: false
+        });
+      } catch (e) {
+        // non fatal
+        console.warn(e);
+        return null;
       }
     },
     async preview() {
@@ -561,9 +586,9 @@ export default {
             draft: true
           });
           if (andSubmit) {
-            await this.submitDraft(this.moduleAction, doc._id);
+            await this.submitDraft(doc);
           } else if (andPublish && !restoreOnly) {
-            await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
+            await this.publish(doc);
           }
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
@@ -663,9 +688,18 @@ export default {
       }
     },
     async onDiscardDraft(e) {
-      if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+      if (await this.discardDraft(this.original)) {
         apos.bus.$emit('content-changed');
         this.modal.showModal = false;
+      }
+    },
+    async onDismissSubmission() {
+      if (await this.dismissSubmission(this.original)) {
+        this.original = {
+          ...this.original,
+          submitted: null
+        };
+        apos.bus.$emit('content-changed');
       }
     },
     async onCopy(e) {
