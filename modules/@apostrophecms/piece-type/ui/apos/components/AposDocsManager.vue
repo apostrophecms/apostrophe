@@ -93,7 +93,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
-              manuallyPublished: manuallyPublished
+              manuallyPublished: manuallyPublished,
               canEdit: moduleOptions.canEdit
             }"
           />
@@ -182,7 +182,7 @@ export default {
       };
     },
     manuallyPublished() {
-      return this.options.localized && !this.options.autopublish;
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     },
     headers() {
       if (!this.items) {
