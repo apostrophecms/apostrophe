@@ -31,7 +31,7 @@
 * Moves the core UI build task into the start up process. The UI build runs when:
   1. The build folder does not yet exist.
   2. The package.json file is newer than the existing UI build.
-  3. You explicitly tell it to by setting the environment variable `CORE_ENV=true`
+  3. You explicitly tell it to by setting the environment variable `CORE_DEV=true`
 
 ### Fixes
 
