@@ -14,7 +14,7 @@
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
-        :display-options="displayOptions"
+        :display-options="getDisplayOptions(field.name)"
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
@@ -81,6 +81,12 @@ export default {
       default() {
         return {};
       }
+    },
+    changed: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'input', 'reset' ],
@@ -142,6 +148,16 @@ export default {
     this.populateDocData();
   },
   methods: {
+    getDisplayOptions(fieldName) {
+      let options = {};
+      if (this.displayOptions) {
+        options = { ...this.displayOptions };
+      }
+      if (this.changed && this.changed.includes(fieldName)) {
+        options.changed = true;
+      }
+      return options;
+    },
     populateDocData() {
       this.schemaReady = false;
       const next = {
@@ -252,7 +268,7 @@ export default {
 
   .apos-field {
     .apos-schema /deep/ & {
-      margin-bottom: $spacing-triple;
+      margin-bottom: $spacing-quadruple;
       &.apos-field--micro {
         margin-bottom: $spacing-double;
       }

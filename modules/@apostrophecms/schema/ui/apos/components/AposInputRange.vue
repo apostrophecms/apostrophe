@@ -2,6 +2,7 @@
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
     :error="effectiveError" :uid="uid"
+    :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-input-wrapper">

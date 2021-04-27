@@ -19,6 +19,7 @@
 * Doc states in managers now reflected w labels (Active Draft, Archived, Unpublished)
 * Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
 * Editors and admins can manage submitted drafts.
+* Editors and admins can easily see the number of proposed changes awaiting their attention.
 * Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
 * Confirm modals now support a schema which can be assessed after confirmation.
 * When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
@@ -36,8 +37,10 @@
 * There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
 * A required field error no longer appears immediately when you first start creating a user.
 * Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
+* "Save Draft" is not an appropriate operation to offer when editing users.
 * Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
 * You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
+* Language of buttons, labels, filters, and other UI updated and normalized throughout.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 

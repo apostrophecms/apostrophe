@@ -69,7 +69,7 @@ module.exports = {
         def: true
       },
       archived: {
-        label: 'Archived',
+        label: 'Archive',
         inputType: 'radio',
         choices: [
           {
@@ -78,7 +78,7 @@ module.exports = {
           },
           {
             value: true,
-            label: 'Archived'
+            label: 'Archive'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
@@ -280,19 +280,9 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          const submitted = {
-            by: req.user && req.user.title,
-            at: new Date()
-          };
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $set: {
-              submitted
-            }
-          });
+          return self.submit(req, draft);
         },
-        ':_id/reject': async (req) => {
+        ':_id/dismiss-submission': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
             ...req,
@@ -303,13 +293,7 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $unset: {
-              submitted: 1
-            }
-          });
+          return self.dismissSubmission(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -723,44 +707,6 @@ module.exports = {
         await self.apos.schema.convert(req, schema, input, piece);
         await self.emit('afterConvert', req, input, piece);
       },
-      // TODO: Remove this if deprecated. - ab
-      getChooserControls(req) {
-        return [
-          {
-            type: 'minor',
-            label: 'Cancel',
-            action: 'cancel'
-          },
-          {
-            type: 'major',
-            label: 'New ' + self.options.label,
-            // TODO: fully deprecate `insertViaUpload`
-            action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
-            uploadable: self.options.insertViaUpload
-          },
-          {
-            type: 'major',
-            label: 'Save Choices',
-            action: 'save'
-          }
-        ];
-      },
-      // TODO: Remove this if deprecated. - ab
-      getManagerControls(req) {
-        return [
-          {
-            type: 'minor',
-            label: 'Finished',
-            action: 'cancel'
-          },
-          {
-            type: 'major',
-            label: 'Add ' + self.options.label,
-            action: self.options.insertViaUpload ? 'upload-' + self.options.name : 'create-' + self.options.name,
-            uploadable: self.options.insertViaUpload
-          }
-        ];
-      },
       // Generate a sample piece of this type. The `i` counter
       // is used to distinguish it from other samples. Useful
       // for things like testing pagination, see the
@@ -838,6 +784,7 @@ module.exports = {
         browserOptions.previewDraft = self.options.previewDraft;
         browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
+        browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {
           components: {}
         });

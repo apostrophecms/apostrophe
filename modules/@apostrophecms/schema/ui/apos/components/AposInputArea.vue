@@ -3,9 +3,12 @@
     :field="field"
     :error="effectiveError" :uid="uid"
     :display-options="displayOptions"
+    :modifiers="modifiers"
   >
     <template #body>
-      <div class="apos-input-wrapper">
+      <div
+        class="apos-input-wrapper" :class="!next.items.length ? 'is-empty' : null"
+      >
         <!-- We do not pass docId here because it is solely for
           contextual editing as far as the area editor is concerned. -Tom -->
         <Component
@@ -87,3 +90,15 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+  .apos-field--area {
+    max-width: $input-max-width;
+    .apos-input-wrapper:not(.is-empty) {
+      padding: $spacing-base;
+      border: 1px solid var(--a-base-8);
+      border-radius: var(--a-border-radius);
+    }
+  }
+
+</style>

@@ -69,6 +69,7 @@
           <component
             v-if="header.component" :is="header.component"
             :header="header" :item="item"
+            :manually-published="options.manuallyPublished"
           />
           <AposCellBasic
             v-else
@@ -82,7 +83,8 @@
             @edit="$emit('open', item._id)"
             @preview="$emit('preview', item._id)"
             @copy="$emit('copy', item._id)"
-            @discardDraft="$emit('discardDraft', item._id)"
+            @discard-draft="$emit('discard-draft', item._id)"
+            @dismiss-submission="$emit('dismiss-submission', item._id)"
             @archive="$emit('archive', item._id)"
             @restore="$emit('restore', item._id)"
           />
@@ -127,7 +129,8 @@ export default {
     'updated',
     'preview',
     'copy',
-    'discardDraft',
+    'discard-draft',
+    'dismiss-submission',
     'archive',
     'restore'
   ],

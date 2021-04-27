@@ -6,7 +6,8 @@ module.exports = {
     contextBar: true,
     editRole: 'contributor',
     publishRole: 'editor',
-    viewRole: false
+    viewRole: false,
+    previewDraft: true
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -637,6 +638,48 @@ module.exports = {
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
+      // Submit the current draft for review. The identity
+      // of `req.user` is associated with the submission.
+      // Returns the `submitted` object, with `by`, `byId`,
+      // and `at` properties.
+      async submit(req, draft) {
+        if (!self.apos.permission.can(req, 'edit', draft)) {
+          throw self.apos.error('forbidden');
+        }
+        const submitted = {
+          by: req.user && req.user.title,
+          byId: req.user && req.user._id,
+          at: new Date()
+        };
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $set: {
+            submitted
+          }
+        });
+        return submitted;
+      },
+      // Dismisses a previous submission of the given draft for review.
+      // The draft is unchanged; it simply is no longer marked as needing review.
+      async dismissSubmission(req, draft) {
+        if (!self.apos.permission.can(req, 'publish', draft)) {
+          if (!self.apos.permission.can(req, 'edit', draft)) {
+            throw self.apos.error('forbidden');
+          }
+          if (!(draft.submitted && (draft.submitted.byId === req.user._id))) {
+            throw self.apos.error('forbidden');
+          }
+        }
+        // Don't use "return" here, that could leak mongodb details
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $unset: {
+            submitted: 1
+          }
+        });
+      },
       // Publish the given draft. If `options.permissions` is explicitly
       // set to `false`, permissions checks are bypassed. If `options.autopublishing`
       // is true, then the `edit` permission is sufficient, otherwise the
@@ -878,6 +921,7 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
+        browserOptions.previewDraft = self.options.previewDraft;
 
         return browserOptions;
       }
@@ -1176,9 +1220,10 @@ module.exports = {
             }
           },
           after(results) {
-            // In all cases we mark the docs with ._edit if
-            // the req is permitted to do that
+            // In all cases we mark the docs with ._edit and ._publish if
+            // the req is permitted to do those things
             self.apos.permission.annotate(query.req, 'edit', results);
+            self.apos.permission.annotate(query.req, 'publish', results);
           }
         },
 
