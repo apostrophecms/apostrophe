@@ -50,12 +50,22 @@
       v-if="trayItems.length > 0"
       class="apos-admin-bar__item apos-admin-bar__tray-items"
     >
-      <Component
-        v-for="item in trayItems"
-        :is="item.options.component"
-        :key="item.name"
-        @click="emitEvent(action)"
-      />
+      <template v-for="item in trayItems">
+        <Component
+          v-if="item.options.component"
+          :is="item.options.component"
+          :key="item.name"
+        />
+        <AposButton
+          v-else :key="item.name"
+          type="subtle" :modifiers="['small', 'no-motion']"
+          :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
+          :icon="item.options.icon" :icon-only="true"
+          :label="item.label"
+          :state="trayItemState[item.name] ? [ 'active' ] : []"
+          @click="emitEvent(item.action)"
+        />
+      </template>
     </li>
   </ul>
 </template>
@@ -77,7 +87,8 @@ export default {
     return {
       createMenu: [],
       menuItems: [],
-      trayItems: []
+      trayItems: [],
+      trayItemState: {}
     };
   },
   computed: {
@@ -90,7 +101,7 @@ export default {
   },
   async mounted() {
     const itemsSet = klona(this.items);
-    this.menuItems = itemsSet.filter(item => !(item.options && item.options.tray))
+    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextTray))
       .map(item => {
         if (item.items) {
           item.items.forEach(subitem => {
@@ -115,6 +126,36 @@ export default {
   methods: {
     emitEvent(name) {
       apos.bus.$emit('admin-menu-click', name);
+    },
+    trayItemTooltip(item) {
+      if (item.options.toggle) {
+        if (this.trayItemState[item.name] && item.options.tooltip && item.options.tooltip.deactivate) {
+          return {
+            content: item.options.tooltip.deactivate,
+            placement: 'bottom'
+          };
+        } else if (item.options.tooltip && item.options.tooltip.activate) {
+          return {
+            content: item.options.tooltip.activate,
+            placement: 'bottom'
+          };
+        } else {
+          return false;
+        }
+      } else {
+        return item.options.tooltip;
+      }
+    },
+    // Maintain a knowledge of which tray item toggles are active
+    onAdminMenuClick(e) {
+      const name = e.itemName || e;
+      const trayItem = this.trayItems.find(item => item.name === name);
+      if (trayItem) {
+        this.trayItemState = {
+          ...this.trayItemState,
+          [name]: !this.trayItemState[name]
+        };
+      }
     }
   }
 };
@@ -141,7 +182,7 @@ export default {
   top: calc(100% + 5px);
 }
 
- /deep/ .apos-admin-bar__create {
+/deep/ .apos-admin-bar__create {
   margin-left: 10px;
 
   .apos-context-menu__btn {

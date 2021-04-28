@@ -49,7 +49,7 @@ export default {
   props: {
     label: {
       type: String,
-      default: ''
+      default: 'Provide a Button Label'
     },
     modifiers: {
       type: Array,

@@ -17,7 +17,6 @@
 <script>
 export default {
   name: 'AposSubmittedDraftIcon',
-  emits: [ '@apostrophecms/submitted-draft:manager' ],
   data() {
     return {
       count: 0
