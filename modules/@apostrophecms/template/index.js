@@ -629,7 +629,7 @@ module.exports = {
         // Waits for DOMready to give other
         // things maximum opportunity to happen.
 
-        const decorate = (req.query['aposRefresh'] !== '1');
+        const decorate = req.query.aposRefresh !== '1';
 
         // data.url will be the original requested page URL, for use in building
         // relative links, adding or removing query parameters, etc. If this is a
