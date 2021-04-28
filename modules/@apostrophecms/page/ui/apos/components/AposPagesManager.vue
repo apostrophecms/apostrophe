@@ -225,6 +225,10 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     await this.getPages();
+    apos.bus.$on('content-changed', this.getPages);
+  },
+  destroyed() {
+    apos.bus.$off('content-changed', this.getPages);
   },
   methods: {
     onPreview(id) {
@@ -270,31 +274,42 @@ export default {
       }
     },
     async getPages () {
-      this.pages = [];
-      this.pagesFlat = [];
       const self = this;
-
-      let pageTree = (await apos.http.get(
-        '/api/v1/@apostrophecms/page', {
-          busy: true,
-          qs: {
-            all: '1',
-            archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any',
-            // Also fetch published docs as _publishedDoc subproperties
-            withPublished: 1
-          },
-          draft: true
-        }
-      ));
-
-      // If editor is looking at the archive tree, trim the normal page tree response
-      if (this.pageSetMenuSelection === 'archive') {
-        pageTree = pageTree._children.find(page => page.slug === '/archive');
+      if (this.gettingPages) {
+        // Avoid race conditions by trying again later if already in progress
+        setTimeout(this.getPages, 100);
+        return;
       }
+      // Not reactive, so not in data()
+      this.gettingPages = true;
+      try {
+        this.pages = [];
+        this.pagesFlat = [];
 
-      formatPage(pageTree);
+        let pageTree = (await apos.http.get(
+          '/api/v1/@apostrophecms/page', {
+            busy: true,
+            qs: {
+              all: '1',
+              archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any',
+              // Also fetch published docs as _publishedDoc subproperties
+              withPublished: 1
+            },
+            draft: true
+          }
+        ));
 
-      this.pages = [ pageTree ];
+        // If editor is looking at the archive tree, trim the normal page tree response
+        if (this.pageSetMenuSelection === 'archive') {
+          pageTree = pageTree._children.find(page => page.slug === '/archive');
+        }
+
+        formatPage(pageTree);
+
+        this.pages = [ pageTree ];
+      } finally {
+        this.gettingPages = false;
+      }
 
       function formatPage(page) {
         self.pagesFlat.push(klona(page));
