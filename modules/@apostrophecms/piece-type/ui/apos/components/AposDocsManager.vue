@@ -390,7 +390,7 @@ export default {
         document.activeElement.tagName !== 'INPUT' &&
         this.$refs.modal.id === topModal
       ) {
-        this.new();
+        this.create();
       }
     },
 
