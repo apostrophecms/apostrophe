@@ -52,6 +52,7 @@
     "express": "^4.16.4",
     "express-bearer-token": "^2.4.0",
     "express-session": "^1.17.1",
+    "form-data": "^4.0.0",
     "fs-extra": "^7.0.1",
     "glob": "^5.0.15",
     "he": "^0.5.0",

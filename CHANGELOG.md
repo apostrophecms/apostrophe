@@ -30,6 +30,7 @@
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+* The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the [`form-data`](https://www.npmjs.com/package/form-data) npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
 * `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
 
 ### Fixes

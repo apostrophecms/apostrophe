@@ -64,7 +64,7 @@ module.exports = {
         _.each(self[section] || {}, function(routes, method) {
           _.each(routes, function(config, name) {
             let route;
-            if ((typeof config) === 'object') {
+            if (((typeof config) === 'object') && (!Array.isArray(config))) {
               // Route with extra config like `before`,
               // get to the actual route function
               route = config.route;
