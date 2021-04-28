@@ -418,7 +418,10 @@ export default {
       }
     },
     async onContentChanged() {
-      this.refresh();
+      this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
+        busy: true
+      });
+      await this.refresh();
     },
     async switchEditMode(editing) {
       this.editMode = editing;
