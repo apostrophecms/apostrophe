@@ -191,6 +191,9 @@ export default {
       return (this.moduleOptions.columns || []).filter(column => {
         return (column.name !== '_url') || this.items.find(item => item._url);
       });
+    },
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     }
   },
   created() {
@@ -248,7 +251,9 @@ export default {
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
-        ...this.queryExtras
+        ...this.queryExtras,
+        // Also fetch published docs as _publishedDoc subproperties
+        published: 1
       };
 
       // Avoid undefined properties.
@@ -258,17 +263,20 @@ export default {
         };
       }
 
-      const getResponse = (await apos.http.get(
+      const getResponse = await apos.http.get(
         this.moduleOptions.action, {
           busy: true,
           qs,
           draft: true
         }
-      ));
+      );
 
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
-      this.items = getResponse.results;
+      // Don't set this.items too soon, it won't detect
+      // the addition of the _publishedDoc sub-properties
+      const items = getResponse.results;
+      this.items = items;
       this.filterChoices = getResponse.choices;
       this.holdQueries = false;
     },

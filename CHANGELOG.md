@@ -30,6 +30,9 @@
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+* The new `._id(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `apos-mode` query parameter if present.
+* The `.published(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `published=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
+* The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
 
 ### Fixes
 

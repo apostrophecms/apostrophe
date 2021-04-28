@@ -898,6 +898,20 @@ module.exports = {
             to[field.name] = from[field.name];
           }
         }
+      },
+      // If the type is not localized, return the `_id` without modification to
+      // either `_id` or `req`.
+      //
+      // If the type is localized, infer `req.locale` and `req.mode` from `_id`
+      // if they were not set already by explicit query parameters. Conversely,
+      // if the appropriate query parameters were set, rewrite
+      // `_id` accordingly. Returns `_id`, after rewriting if appropriate.
+      inferIdLocaleAndMode(req, _id) {
+        if (!self.isLocalized()) {
+          return _id;
+        } else {
+          return self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        }
       }
     };
   },
@@ -1337,56 +1351,62 @@ module.exports = {
           }
         },
 
-        // `.explicitOrder([ id1, id2... ])` causes the query to return values
-        // in that order, assuming the documents with the specified ids exist.
-        // If a doc is not mentioned in the array it will
-        // be discarded from the result. Docs that
-        // exist in the array but not in the database are
-        // also absent from the result.
-        //
-        // As a second argument you may optionally specify a property name
-        // other than `_id` to order on.
+        // `._id([ id1, id2... ])` causes the query to return only those
+        // documents, and to return them in that order, assuming the documents
+        // with the specified ids exist. All documents are fetched in the
+        // same locale regardless of the locale suffix of the _id. If
+        // no locale can be determined via query parameters, the locale is
+        // inferred from the first _id.
 
-        explicitOrder: {
-          set(values, property) {
-            property = property || '_id';
-            query.set('explicitOrder', values);
-            query.set('explicitOrderProperty', property);
+        _id: {
+          set(values) {
+            if (Array.isArray(values)) {
+              query.set('_id', values);
+            } else if (values) {
+              query.set([ values ]);
+            }
+          },
+          launder(values) {
+            return self.apos.launder.ids(values);
           },
           finalize() {
-            if (!query.get('explicitOrder')) {
+            if (!query.get('_id')) {
               return;
             }
             const criteria = {};
-            const values = query.get('explicitOrder');
-            const property = query.get('explicitOrderProperty');
+            let values = query.get('_id');
             if (!values.length) {
               // MongoDB gets mad if you have an empty $in
-              criteria[property] = { _id: null };
+              criteria._id = { _id: null };
               query.and(criteria);
               return;
             }
-            criteria[property] = { $in: values };
+            if (self.isLocalized()) {
+              const parts = values[0].split(':');
+              if (parts.length > 1) {
+                values = values.map(value => self.inferIdLocaleAndMode(query.req, `${value.split(':')[0]}:${parts[1]}:${parts[2]}`));
+              }
+            }
+            criteria._id = { $in: values };
             query.and(criteria);
-            query.set('explicitOrderSkip', query.get('skip'));
-            query.set('explicitOrderLimit', query.get('limit'));
+            query.set('_idSkip', query.get('skip'));
+            query.set('_idLimit', query.get('limit'));
             query.set('skip', undefined);
             query.set('limit', undefined);
           },
           after(results) {
-            const values = query.get('explicitOrder');
+            const values = query.get('_id');
             if (!values) {
               return;
             }
-            const property = query.get('explicitOrderProperty');
-            const temp = self.apos.util.orderById(values, results, property);
+            const temp = self.apos.util.orderById(values, results, '_id');
             let i;
             // Must modify array in place
             for (i = 0; (i < temp.length); i++) {
               results[i] = temp[i];
             }
-            const skip = query.get('explicitOrderSkip');
-            const limit = query.get('explicitOrderLimit');
+            const skip = query.get('_idSkip');
+            const limit = query.get('_idLimit');
             if ((typeof (skip) !== 'number') && (typeof (limit) !== 'number')) {
               return;
             }
@@ -1395,6 +1415,33 @@ module.exports = {
             // for returning a new one
             results.splice(0, skip);
             results.splice(limit, results.length - limit);
+          }
+        },
+
+        published: {
+          launder(value) {
+            return self.apos.launder.boolean(value);
+          },
+          async after(results) {
+            if (!self.isLocalized()) {
+              return;
+            }
+            const value = query.get('published');
+            if (!value) {
+              return;
+            }
+            if (!results.length) {
+              return;
+            }
+            const _req = {
+              ...query.req,
+              mode: 'published'
+            };
+            const publishedDocs = await self.find(_req)._id(results.map(result => result._id.replace(':draft', ':published'))).project(query.get('project')).toArray();
+            for (const doc of results) {
+              const publishedDoc = publishedDocs.find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
+              doc._publishedDoc = publishedDoc;
+            }
           }
         },
 

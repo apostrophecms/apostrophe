@@ -8,8 +8,11 @@
 </template>
 
 <script>
+import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
+
 export default {
   name: 'AposCellLastEdited',
+  mixins: [ AposCellMixin ],
   props: {
     item: {
       type: Object,
@@ -22,7 +25,7 @@ export default {
   },
   computed: {
     formattedDate () {
-      const value = this.item[this.header.name || this.header.property];
+      const value = this.displayValue(this.header.name || this.header.property);
       return this.getRelativeTime(value);
     }
   },

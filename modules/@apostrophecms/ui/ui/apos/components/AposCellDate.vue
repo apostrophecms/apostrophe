@@ -8,8 +8,12 @@
 </template>
 
 <script>
+
+import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
+
 export default {
   name: 'AposCellDate',
+  mixins: [ AposCellMixin ],
   props: {
     item: {
       type: Object,
@@ -22,8 +26,7 @@ export default {
   },
   computed: {
     formattedDate () {
-      const value = this.item[this.header.name];
-
+      const value = this.displayValue(this.header.name);
       return this.formatDateColumn(value);
     }
   },

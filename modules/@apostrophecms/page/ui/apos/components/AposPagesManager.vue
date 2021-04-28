@@ -279,7 +279,9 @@ export default {
           busy: true,
           qs: {
             all: '1',
-            archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any'
+            archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any',
+            // Also fetch published docs as _publishedDoc subproperties
+            published: 1
           },
           draft: true
         }

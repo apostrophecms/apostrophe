@@ -753,20 +753,6 @@ module.exports = {
             throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
           }
         }
-      },
-      // If the type is not localized, return the `_id` without modification to
-      // either `_id` or `req`.
-      //
-      // If the type is localized, infer `req.locale` and `req.mode` from `_id`
-      // if they were not set already by explicit query parameters. Conversely,
-      // if the appropriate query parameters were set, rewrite
-      // `_id` accordingly. Returns `_id`, after rewriting if appropriate.
-      inferIdLocaleAndMode(req, _id) {
-        if (!self.isLocalized()) {
-          return _id;
-        } else {
-          return self.apos.i18n.inferIdLocaleAndMode(req, _id);
-        }
       }
     };
   },
