@@ -2228,6 +2228,9 @@ module.exports = {
         if (!field.label && !field.contextual) {
           field.label = _.startCase(field.name.replace(/^_/, ''));
         }
+        if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
+          fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
+        }
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
         }
