@@ -1,6 +1,6 @@
 <template>
   <a
-    :href="displayValue(header.name)"
+    :href="get(header.name)"
     @click.stop
   >
     <link-icon :size="14" />
@@ -13,16 +13,6 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 
 export default {
   name: 'AposCellLink',
-  mixins: [ AposCellMixin ],
-  props: {
-    item: {
-      type: Object,
-      required: true
-    },
-    header: {
-      type: Object,
-      required: true
-    }
-  }
+  mixins: [ AposCellMixin ]
 };
 </script>

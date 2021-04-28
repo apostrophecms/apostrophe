@@ -14,19 +14,9 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 export default {
   name: 'AposCellDate',
   mixins: [ AposCellMixin ],
-  props: {
-    item: {
-      type: Object,
-      required: true
-    },
-    header: {
-      type: Object,
-      required: true
-    }
-  },
   computed: {
     formattedDate () {
-      const value = this.displayValue(this.header.name);
+      const value = this.get(this.header.name);
       return this.formatDateColumn(value);
     }
   },

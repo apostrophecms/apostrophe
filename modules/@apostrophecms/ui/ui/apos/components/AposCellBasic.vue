@@ -3,7 +3,7 @@
     class="apos-table__cell-field"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    {{ displayValue(header.name) }}
+    {{ get(header.name) }}
   </p>
 </template>
 
@@ -13,16 +13,6 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 
 export default {
   name: 'AposCellBasic',
-  mixins: [ AposCellMixin ],
-  props: {
-    item: {
-      type: Object,
-      required: true
-    },
-    header: {
-      type: Object,
-      required: true
-    }
-  }
+  mixins: [ AposCellMixin ]
 };
 </script>

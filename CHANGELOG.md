@@ -32,9 +32,10 @@
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
 * The new `._ids(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `aposMode` query parameter if present.
-* The `.published(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `published=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
+* The `.withPublished(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `withPublished=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
 * The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
 * `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
+* `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
 
 ### Fixes
 

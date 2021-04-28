@@ -1,10 +1,41 @@
+import { get } from 'lodash';
+
 export default {
+  props: {
+    header: {
+      type: Object,
+      required: true
+    },
+    item: {
+      type: Object,
+      required: true
+    },
+    draft: {
+      type: Object,
+      default() {
+        return null;
+      }
+    },
+    published: {
+      type: Object,
+      default() {
+        return null;
+      }
+    }
+  },
   methods: {
-    // Fetch a field from the published version of the item, if available and
-    // defined, otherwise from the draft version of the item
-    displayValue(fieldName) {
-      const publishedDoc = this.item._publishedDoc;
-      return (publishedDoc && (publishedDoc[fieldName] !== undefined) && publishedDoc[fieldName]) || this.item[fieldName];
+    // Access to property or sub-property via dot path. You can also optionally
+    // specify a source object other than `item`.
+    //
+    // `this.get('title')` gets `this.item.title`. `this.get('draft:submitted.by')` gets
+    // `this.draft.submitted.by`.
+    get(fieldName) {
+      let [ namespace, path ] = fieldName.split(':');
+      if (!path) {
+        path = namespace;
+        namespace = 'item';
+      }
+      return get(this[namespace], path);
     }
   }
 };

@@ -13,19 +13,9 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 export default {
   name: 'AposCellLastEdited',
   mixins: [ AposCellMixin ],
-  props: {
-    item: {
-      type: Object,
-      required: true
-    },
-    header: {
-      type: Object,
-      required: true
-    }
-  },
   computed: {
     formattedDate () {
-      const value = this.displayValue(this.header.name || this.header.property);
+      const value = this.get(this.header.name || this.header.property);
       return this.getRelativeTime(value);
     }
   },

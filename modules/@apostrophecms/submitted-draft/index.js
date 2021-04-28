@@ -22,23 +22,17 @@ module.exports = {
         // TODO need to push the choices somehow
         component: 'AposCellType'
       },
-      'submitted.at': {
+      'draft:submitted.at': {
         label: 'Submitted',
         component: 'AposCellDate'
       },
-      'submitted.by': {
+      'draft:submitted.by': {
         label: 'Proposed By',
-        component: 'AposCellDate'
-      },
-      // Automatically hidden if none of the pieces
-      // actually have a URL
-      _url: {
-        label: 'Link',
-        component: 'AposCellLink'
+        component: 'AposCellBasic'
       }
     },
     remove: [ 'updatedAt', 'visibility' ],
-    order: [ 'title', 'type', 'submitted.at', 'submitted.by', '_url' ]
+    order: [ 'title', 'type', 'draft:submitted.at', 'draft:submitted.by' ]
   },
 
   fields: {

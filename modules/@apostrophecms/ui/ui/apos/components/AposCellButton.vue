@@ -3,7 +3,7 @@
     class="apos-table__cell-field" type="button"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    {{ displayValue(header.name) }}
+    {{ get(header.name) }}
   </button>
 </template>
 
