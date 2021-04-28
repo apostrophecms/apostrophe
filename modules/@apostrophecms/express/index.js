@@ -147,6 +147,7 @@ const cookieParser = require('cookie-parser');
 const qs = require('qs');
 const expressBearerToken = require('express-bearer-token');
 const cors = require('cors');
+const Promise = require('bluebird');
 
 module.exports = {
   init(self) {
@@ -554,28 +555,43 @@ module.exports = {
           address = false;
         }
 
-        if (address !== false) {
-          self.server = self.apos.baseApp.listen(port, address);
-        } else if (port) {
-          self.server = self.apos.baseApp.listen(port);
-        } else {
-          self.server = self.apos.baseApp.listen();
+        try {
+          await listen();
+        } catch (e) {
+          if (process.env.NODE_ENV !== 'production') {
+            // Retry once, working around a frequently seen timing issue in nodemon
+            await Promise.delay(500);
+            // If it fails again, let it throw
+            await listen();
+          }
         }
+        self.apos.util.log(`Listening at http://${self.address}:${self.port}`);
 
-        return new Promise(function (resolve, reject) {
-          self.server.on('error', reject);
-          self.server.on('listening', function () {
-            self.address = self.server.address().address;
-            if (self.address === '::') {
-              // :: is not recognized as an ipv6 address by Chrome
-              self.address = 'localhost';
-            }
-            self.port = self.server.address().port;
-            self.apos.util.log(`Listening at http://${self.address}:${self.port}`);
-            enableDestroy(self.server);
-            return resolve();
+        // awaitable listen function
+        function listen() {
+          if (address !== false) {
+            self.server = self.apos.baseApp.listen(port, address);
+          } else if (port) {
+            self.server = self.apos.baseApp.listen(port);
+          } else {
+            self.server = self.apos.baseApp.listen();
+          }
+          return new Promise(function (resolve, reject) {
+            self.server.on('error', function(e) {
+              return reject(e);
+            });
+            self.server.on('listening', function () {
+              self.address = self.server.address().address;
+              if (self.address === '::') {
+                // :: is not recognized as an ipv6 address by Chrome
+                self.address = 'localhost';
+              }
+              self.port = self.server.address().port;
+              enableDestroy(self.server);
+              return resolve();
+            });
           });
-        });
+        }
       },
 
       // Sets the `req.absoluteUrl` property for all requests,
