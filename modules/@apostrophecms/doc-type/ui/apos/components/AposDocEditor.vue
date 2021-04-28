@@ -187,7 +187,7 @@ export default {
       return this.followingValues('utility');
     },
     saveDisabled() {
-      return this.errorCount > 0 || (this.docId && !this.isModified);
+      return this.errorCount > 0 || (this.docId && !this.isModified && !(this.original && this.original.submitted && this.moduleOptions.canPublish));
     },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
