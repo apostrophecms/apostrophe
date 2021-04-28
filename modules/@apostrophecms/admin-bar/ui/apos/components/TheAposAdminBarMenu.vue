@@ -46,16 +46,15 @@
         @item-clicked="emitEvent"
       />
     </li>
-    <li class="apos-admin-bar__item apos-admin-bar__tray-items" v-if="trayItems.length > 0">
-      <AposButton
+    <li
+      v-if="trayItems.length > 0"
+      class="apos-admin-bar__item apos-admin-bar__tray-items"
+    >
+      <Component
         v-for="item in trayItems"
+        :is="item.options.component"
         :key="item.name"
-        type="subtle" :modifiers="['small', 'no-motion']"
-        :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
-        :icon="item.options.icon" :icon-only="true"
-        :label="item.label"
-        :state="trayItemState[item.name] ? [ 'active' ] : []"
-        @click="emitEvent(item.action)"
+        @click="emitEvent(action)"
       />
     </li>
   </ul>
@@ -78,8 +77,7 @@ export default {
     return {
       createMenu: [],
       menuItems: [],
-      trayItems: [],
-      trayItemState: {}
+      trayItems: []
     };
   },
   computed: {
@@ -91,10 +89,8 @@ export default {
     }
   },
   async mounted() {
-    apos.bus.$on('admin-menu-click', this.onAdminMenuClick);
-
     const itemsSet = klona(this.items);
-    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility))
+    this.menuItems = itemsSet.filter(item => !(item.options && item.options.tray))
       .map(item => {
         if (item.items) {
           item.items.forEach(subitem => {
@@ -104,7 +100,7 @@ export default {
         }
         return item;
       });
-    this.trayItems = itemsSet.filter(item => item.options && item.options.contextUtility);
+    this.trayItems = itemsSet.filter(item => item.options && item.options.contextTray);
 
     Object.values(apos.modules).forEach(module => {
       if (module.quickCreate) {
@@ -119,36 +115,6 @@ export default {
   methods: {
     emitEvent(name) {
       apos.bus.$emit('admin-menu-click', name);
-    },
-    trayItemTooltip(item) {
-      if (item.options.toggle) {
-        if (this.trayItemState[item.name] && item.options.tooltip && item.options.tooltip.deactivate) {
-          return {
-            content: item.options.tooltip.deactivate,
-            placement: 'bottom'
-          };
-        } else if (item.options.tooltip && item.options.tooltip.activate) {
-          return {
-            content: item.options.tooltip.activate,
-            placement: 'bottom'
-          };
-        } else {
-          return false;
-        }
-      } else {
-        return item.options.tooltip;
-      }
-    },
-    // Maintain a knowledge of which tray item toggles are active
-    onAdminMenuClick(e) {
-      const name = e.itemName || e;
-      const trayItem = this.trayItems.find(item => item.name === name);
-      if (trayItem) {
-        this.trayItemState = {
-          ...this.trayItemState,
-          [name]: !this.trayItemState[name]
-        };
-      }
     }
   }
 };

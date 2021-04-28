@@ -1,27 +1,23 @@
 <template>
-  <span class="apos-submitted-drafts__container" :class="count < 1 ? 'apos-submitted-drafts__container--disabled' : ''">
-    <AposIndicator
-      icon="tray-full-icon"
-      class="apos-submitted-drafts__icon"
-      :icon-size="size"
-    />
-    <span v-if="canPublish && count > 0" class="apos-submitted-drafts__counter">
-      {{ count }}
-    </span>
-  </span>
+  <AposButton
+    icon="tray-full-icon"
+    type="subtle" :modifiers="['small', 'no-motion']"
+    @click="open"
+    :disabled="count <= 0"
+    :tooltip="tooltip"
+    :icon-only="true"
+  >
+    <template #label>
+      <span v-if="canPublish && count > 0" class="apos-submitted-drafts__counter">
+        {{ count }}
+      </span>
+    </template>
+  </AposButton>
 </template>
 <script>
 export default {
   name: 'AposSubmittedDraftIcon',
-  props: {
-    size: {
-      type: Number,
-      required: true,
-      default() {
-        return null;
-      }
-    }
-  },
+  emits: [ '@apostrophecms/submitted-draft:manager' ],
   data() {
     return {
       count: 0
@@ -30,6 +26,13 @@ export default {
   computed: {
     canPublish() {
       return window.apos.modules['@apostrophecms/submitted-draft'].canPublish;
+    },
+    tooltip() {
+      if (this.count > 0) {
+        return 'Manage Draft Submissions';
+      } else {
+        return 'No Draft Submissions to Manage';
+      }
     }
   },
   mounted() {
@@ -41,6 +44,9 @@ export default {
     }
   },
   methods: {
+    open() {
+      apos.bus.$emit('admin-menu-click', '@apostrophecms/submitted-draft:manager');
+    },
     async updateCount() {
       this.count = (await apos.http.get(apos.modules['@apostrophecms/submitted-draft'].action, {
         qs: {
@@ -56,30 +62,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-submitted-drafts__container {
+  /deep/ .apos-submitted-drafts__counter {
     display: inline-flex;
-    align-content: center;
-    justify-items: space-between;
-    &:hover {
-      /deep/ .apos-submitted-drafts__icon svg {
-        fill: var(--a-primary);
-      }
-    }
-  }
-
-  .apos-submitted-drafts__container--disabled {
-    &:hover {
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-    & /deep/ .apos-submitted-drafts__icon svg {
-      fill: var(--a-base-6);
-    }
-  }
-
-  .apos-submitted-drafts__counter {
-    display: inline-flex;
-    margin-left: $spacing-half;
+    margin-left: $spacing-base;
     padding: 3px;
     background-color: var(--a-primary-10);
     border-radius: var(--a-border-radius);

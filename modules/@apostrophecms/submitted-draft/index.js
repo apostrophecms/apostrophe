@@ -109,8 +109,8 @@ module.exports = {
             type: self.name
           },
           {
-            icon: 'AposSubmittedDraftIcon',
-            contextUtility: true,
+            component: 'AposSubmittedDraftIcon',
+            contextTray: true,
             tooltip: 'Submitted Drafts'
           }
         );
