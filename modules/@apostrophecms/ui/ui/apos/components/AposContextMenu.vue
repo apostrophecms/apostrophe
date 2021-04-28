@@ -86,6 +86,12 @@ export default {
     tooltip: {
       type: [ String, Boolean ],
       default: false
+    },
+    popoverModifiers: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'open', 'close', 'item-clicked' ],
@@ -98,7 +104,11 @@ export default {
   },
   computed: {
     popoverClass() {
-      return [ 'apos-popover' ].concat(this.themeClass);
+      const classes = [ 'apos-popover' ].concat(this.themeClass);
+      this.popoverModifiers.forEach(m => {
+        classes.push(`apos-popover--${m}`);
+      });
+      return classes;
     },
     classList() {
       const classes = [];
@@ -242,6 +252,10 @@ export default {
     visibility: visible;
     opacity: 1;
   }
+}
+
+.apos-popover--z-index-in-context {
+  z-index: $z-index-widget-focused-controls;
 }
 
 </style>

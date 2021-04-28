@@ -187,7 +187,40 @@ export default {
       return this.followingValues('utility');
     },
     saveDisabled() {
-      return this.errorCount > 0;
+      if (this.errorCount) {
+        // Always block save if there are errors in the modal
+        return true;
+      }
+      if (!this.docId) {
+        // If it is new you can always save it, even just to insert it with defaults is sometimes useful
+        return false;
+      }
+      if (this.isModified) {
+        // If it has been modified in the modal you can always save it
+        return false;
+      }
+      // If it is not manually published this is a simple "save" operation, don't allow it
+      // since the doc is unmodified in the modal
+      if (!this.manuallyPublished) {
+        return true;
+      }
+      if (this.moduleOptions.canPublish) {
+        // Primary button is "publish". If it is previously published and the draft is not modified
+        // since then, don't allow it
+        return this.published && !this.isModifiedFromPublished;
+      }
+      if (!this.original) {
+        // There is an id but no original — that means we're still loading the original — block
+        // until ready
+        return true;
+      }
+      // Contributor case. Button is "submit"
+      if (!this.original.submitted) {
+        // Allow initial submission
+        return false;
+      }
+      // Block re-submission of an unmodified draft (we already checked modified)
+      return true;
     },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
@@ -260,24 +293,25 @@ export default {
         return [];
       }
     },
-    manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
-    },
     saveLabel() {
       if (this.restoreOnly) {
         return 'Restore';
       } else if (this.manuallyPublished) {
         if (this.moduleOptions.canPublish) {
           if (this.original && this.original.lastPublishedAt) {
-            return 'Publish Changes';
+            return 'Update';
           } else {
             return 'Publish';
           }
         } else {
-          return 'Propose Changes';
+          if (this.original && this.original.lastPublishedAt) {
+            return 'Submit Update';
+          } else {
+            return 'Submit';
+          }
         }
       } else {
-        return 'Save';
+        return 'Update';
       }
     },
     isModified() {

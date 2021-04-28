@@ -161,7 +161,7 @@ export default {
         ] : []),
         ...(this.canDiscardDraft ? [
           {
-            label: this.isPublished ? 'Discard Changes' : 'Discard Draft',
+            label: this.isPublished ? 'Discard Draft' : 'Delete Draft',
             action: 'discard-draft',
             modifiers: [ 'danger' ]
           }

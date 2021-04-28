@@ -69,6 +69,7 @@
           <component
             v-if="header.component" :is="header.component"
             :header="header" :item="item"
+            :manually-published="options.manuallyPublished"
           />
           <AposCellBasic
             v-else
@@ -79,6 +80,7 @@
         <td v-if="options.canEdit" class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :item="item"
+            :options="contextMenuOptions"
             @edit="$emit('open', item._id)"
             @preview="$emit('preview', item._id)"
             @copy="$emit('copy', item._id)"
@@ -154,6 +156,11 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
+    },
+    contextMenuOptions() {
+      return {
+        canCreate: this.options.canCreate
+      };
     }
   },
   watch: {

@@ -117,12 +117,12 @@ export default {
     publishLabel() {
       if (this.canPublish) {
         if (this.original && this.original.lastPublishedAt) {
-          return 'Publish Changes';
+          return 'Publish Updates';
         } else {
           return 'Publish';
         }
       } else {
-        return 'Propose Changes';
+        return 'Submit Updates';
       }
     }
   },
