@@ -108,7 +108,7 @@ module.exports = {
             relationships: false,
             areas: false,
             permission: false,
-            published: self.apos.launder.boolean(req.query.published),
+            withPublished: self.apos.launder.boolean(req.query.withPublished),
             project: self.getAllProjection()
           }).toObject();
 
@@ -1469,7 +1469,7 @@ database.`);
             await self.emit('serve', testReq);
             if (self.isFound(testReq)) {
               req.redirect = self.apos.url.build(req.url, {
-                'apos-mode': 'draft'
+                aposMode: 'draft'
               });
               return;
             }

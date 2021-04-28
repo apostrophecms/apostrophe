@@ -191,9 +191,6 @@ export default {
       return (this.moduleOptions.columns || []).filter(column => {
         return (column.name !== '_url') || this.items.find(item => item._url);
       });
-    },
-    manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     }
   },
   created() {
@@ -253,7 +250,7 @@ export default {
         page: this.currentPage,
         ...this.queryExtras,
         // Also fetch published docs as _publishedDoc subproperties
-        published: 1
+        withPublished: 1
       };
 
       // Avoid undefined properties.
@@ -273,10 +270,7 @@ export default {
 
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
-      // Don't set this.items too soon, it won't detect
-      // the addition of the _publishedDoc sub-properties
-      const items = getResponse.results;
-      this.items = items;
+      this.items = getResponse.results;
       this.filterChoices = getResponse.choices;
       this.holdQueries = false;
     },

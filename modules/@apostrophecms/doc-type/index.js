@@ -1351,17 +1351,19 @@ module.exports = {
           }
         },
 
-        // `._id([ id1, id2... ])` causes the query to return only those
+        // `._ids([ id1, id2... ])` causes the query to return only those
         // documents, and to return them in that order, assuming the documents
         // with the specified ids exist. All documents are fetched in the
-        // same locale regardless of the locale suffix of the _id. If
+        // same locale regardless of the locale suffix of the _ids. If
         // no locale can be determined via query parameters, the locale is
-        // inferred from the first _id.
+        // inferred from the first _id in the set.
+        //
+        // Can also be called with a string, which is treated as a single `_id`.
 
-        _id: {
+        _ids: {
           set(values) {
             if (Array.isArray(values)) {
-              query.set('_id', values);
+              query.set('_ids', values);
             } else if (values) {
               query.set([ values ]);
             }
@@ -1370,11 +1372,11 @@ module.exports = {
             return self.apos.launder.ids(values);
           },
           finalize() {
-            if (!query.get('_id')) {
+            if (!query.get('_ids')) {
               return;
             }
             const criteria = {};
-            let values = query.get('_id');
+            let values = query.get('_ids');
             if (!values.length) {
               // MongoDB gets mad if you have an empty $in
               criteria._id = { _id: null };
@@ -1389,8 +1391,8 @@ module.exports = {
             }
             criteria._id = { $in: values };
             query.and(criteria);
-            query.set('_idSkip', query.get('skip'));
-            query.set('_idLimit', query.get('limit'));
+            query.set('_idsSkip', query.get('skip'));
+            query.set('_idsLimit', query.get('limit'));
             query.set('skip', undefined);
             query.set('limit', undefined);
           },
@@ -1405,8 +1407,8 @@ module.exports = {
             for (i = 0; (i < temp.length); i++) {
               results[i] = temp[i];
             }
-            const skip = query.get('_idSkip');
-            const limit = query.get('_idLimit');
+            const skip = query.get('_idsSkip');
+            const limit = query.get('_idsLimit');
             if ((typeof (skip) !== 'number') && (typeof (limit) !== 'number')) {
               return;
             }
@@ -1418,7 +1420,10 @@ module.exports = {
           }
         },
 
-        published: {
+        // If set to true, attach a `_publishedDoc` property to each draft document,
+        // containing the related published document.
+
+        withPublished: {
           launder(value) {
             return self.apos.launder.boolean(value);
           },
@@ -1426,7 +1431,7 @@ module.exports = {
             if (!self.isLocalized()) {
               return;
             }
-            const value = query.get('published');
+            const value = query.get('withPublished');
             if (!value) {
               return;
             }
@@ -1437,7 +1442,7 @@ module.exports = {
               ...query.req,
               mode: 'published'
             };
-            const publishedDocs = await self.find(_req)._id(results.map(result => result._id.replace(':draft', ':published'))).project(query.get('project')).toArray();
+            const publishedDocs = await self.find(_req)._ids(results.map(result => result._id.replace(':draft', ':published'))).project(query.get('project')).toArray();
             for (const doc of results) {
               const publishedDoc = publishedDocs.find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
               doc._publishedDoc = publishedDoc;

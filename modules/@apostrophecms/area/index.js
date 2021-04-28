@@ -145,7 +145,7 @@ module.exports = {
             item._docId = area._docId;
           }
         }
-        const canEdit = area._edit && (options.edit !== false) && req.query['apos-edit'];
+        const canEdit = area._edit && (options.edit !== false) && req.query.aposEdit;
         if (canEdit) {
           // Ease of access to image URLs. When not editing we
           // just use the helpers

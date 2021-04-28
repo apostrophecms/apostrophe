@@ -575,7 +575,7 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // If `req.query.apos-refresh` is `'1'`,
+      // If `req.query.aposRefresh` is `'1'`,
       // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are also provided on the `data` object
@@ -629,7 +629,7 @@ module.exports = {
         // Waits for DOMready to give other
         // things maximum opportunity to happen.
 
-        const decorate = (req.query['apos-refresh'] !== '1');
+        const decorate = (req.query['aposRefresh'] !== '1');
 
         // data.url will be the original requested page URL, for use in building
         // relative links, adding or removing query parameters, etc. If this is a
@@ -675,18 +675,18 @@ module.exports = {
         }
 
         function unrefreshed(url) {
-          // Including apos-refresh=1 in data.url leads to busted pages in
+          // Including aposRefresh=1 in data.url leads to busted pages in
           // navigation links, so strip that out. However this is invoked on
           // every page load so do it as quickly as we can to avoid the
           // overhead of a full parse and rebuild
-          if (!url.includes('apos-refresh=1')) {
+          if (!url.includes('aposRefresh=1')) {
             return url;
-          } else if (url.endsWith('?apos-refresh=1')) {
-            return url.replace('?apos-refresh=1', '');
-          } else if (url.includes('?apos-refresh=1')) {
-            return url.replace('?apos-refresh=1&', '?');
+          } else if (url.endsWith('?aposRefresh=1')) {
+            return url.replace('?aposRefresh=1', '');
+          } else if (url.includes('?aposRefresh=1')) {
+            return url.replace('?aposRefresh=1&', '?');
           } else {
-            return url.replace('&apos-refresh=1', '');
+            return url.replace('&aposRefresh=1', '');
           }
         }
       },
