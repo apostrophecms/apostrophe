@@ -9,7 +9,7 @@ module.exports = {
     quickCreate: false,
     label: 'Submitted Draft',
     pluralLabel: 'Submitted Drafts',
-    managerHasNewButton: false
+    canCreate: false
   },
   columns: {
     add: {

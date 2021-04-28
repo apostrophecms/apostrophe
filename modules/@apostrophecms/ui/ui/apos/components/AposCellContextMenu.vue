@@ -10,9 +10,9 @@
         :can-save-draft="false"
         :can-open-editor="!item.archived"
         :can-preview="(!!item._url && !item.archived)"
-        :can-archive="!item.archived && item._publish"
+        :can-archive="!item.archived && item._publish && (!manuallyPublished || !!item.lastPublishedAt)"
         :can-restore="item.archived && item._publish"
-        :can-copy="(!!item._id && !item.archived)"
+        :can-copy="!!item._id && !item.archived && canCreate"
         :can-dismiss-submission="item.submitted && (item._publish || (item.submitted.byId === userId))"
         @edit="$emit('edit')"
         @preview="$emit('preview')"
@@ -41,6 +41,12 @@ export default {
     item: {
       type: Object,
       required: true
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'edit', 'preview', 'copy', 'archive', 'discard-draft', 'dismiss-submission', 'restore' ],
@@ -50,6 +56,13 @@ export default {
     };
   },
   computed: {
+    canCreate() {
+      if (this.options.canCreate != null) {
+        return this.options.canCreate;
+      } else {
+        return true;
+      }
+    },
     classes() {
       const classes = [ ];
       if (!this.state || this.state.hover || this.menuOpen) {
