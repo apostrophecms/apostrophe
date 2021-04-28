@@ -41,6 +41,8 @@
 * Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
 * You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
 * Language of buttons, labels, filters, and other UI updated and normalized throughout.
+* A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.
+* The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
