@@ -139,10 +139,10 @@ module.exports = {
             try {
               // The name attribute could be anything because of how fileupload
               // controls work; we don't really care.
-              const file = _.values(req.files || [])[0];
+              const file = Object.values(req.files || {})[0];
 
               if (!file) {
-                throw self.apos.error('notfound');
+                throw self.apos.error('invalid');
               }
 
               const attachment = await self.insert(req, file);
@@ -150,7 +150,7 @@ module.exports = {
 
               return attachment;
             } finally {
-              for (const file of (Object.values(req.files) || {})) {
+              for (const file of (Object.values(req.files || {}))) {
                 try {
                   fs.unlinkSync(file.path);
                 } catch (e) {
