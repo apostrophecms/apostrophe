@@ -1,6 +1,11 @@
 // Provides reusable UI methods relating to the publication and management of drafts.
 
 export default {
+  computed: {
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+    }
+  },
   methods: {
     // A UI method to publish a document. If errors occur they are displayed to the user
     // appropriately, not returned or thrown to the caller. If a page cannot be published

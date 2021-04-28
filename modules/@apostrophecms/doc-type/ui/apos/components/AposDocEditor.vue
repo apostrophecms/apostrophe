@@ -293,9 +293,6 @@ export default {
         return [];
       }
     },
-    manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
-    },
     saveLabel() {
       if (this.restoreOnly) {
         return 'Restore';

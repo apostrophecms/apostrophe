@@ -181,9 +181,6 @@ export default {
         emoji: '📄'
       };
     },
-    manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
-    },
     headers() {
       if (!this.items) {
         return this.moduleOptions.columns || [];
