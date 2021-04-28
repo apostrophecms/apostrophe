@@ -1397,7 +1397,7 @@ module.exports = {
             query.set('limit', undefined);
           },
           after(results) {
-            const values = query.get('_id');
+            const values = query.get('_ids');
             if (!values) {
               return;
             }

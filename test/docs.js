@@ -495,7 +495,7 @@ describe('Docs', function() {
     }
   });
 
-  it('should respect _id()', async function() {
+  it('should respect _ids()', async function() {
     const testItems = [];
     let i;
 
@@ -515,7 +515,6 @@ describe('Docs', function() {
 
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
       ._ids([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).toArray();
-
     assert(docs[0]._id === 'i7:en:published');
     assert(docs[0].aposDocId === 'i7');
     assert(docs[0].aposLocale === 'en:published');
@@ -525,7 +524,7 @@ describe('Docs', function() {
     assert(!docs[4]);
   });
 
-  it('should respect _id with skip and limit', async function() {
+  it('should respect _ids with skip and limit', async function() {
     // Relies on test data of previous test
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
       ._ids([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).skip(2).limit(2).toArray();
