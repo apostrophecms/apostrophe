@@ -31,7 +31,7 @@ module.exports = {
             // If starting up normally, run the build task, checking if we
             // really need to update the core UI build.
             await self.apos.task.invoke('@apostrophecms/asset:build', {
-              checkUiBuild: true
+              'check-ui-build': true
             });
           }
         }
@@ -54,7 +54,7 @@ module.exports = {
           await fs.remove(modulesDir);
           await fs.mkdirp(modulesDir);
 
-          let rebuildAposUi = argv && !argv.checkUiBuild;
+          let rebuildAposUi = argv && !argv['check-ui-build'];
 
           const APOS_MERGED_BUNDLE = 'apos-bundle.js';
           const APOS_ONLY_BUNDLE = 'apos-only-bundle.js';
