@@ -27,7 +27,7 @@
         </div>
       </AposContextMenuDialog>
     </component>
-    <div class="apos-rich-text-editor__editor">
+    <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
   </div>
@@ -139,6 +139,18 @@ export default {
         return 'editor-menu-bar';
       }
       return 'editor-menu-bubble';
+    },
+    isVisuallyEmpty () {
+      const div = document.createElement('div');
+      div.innerHTML = this.value.content;
+      return !div.textContent;
+    },
+    editorModifiers () {
+      const classes = [];
+      if (this.isVisuallyEmpty) {
+        classes.push('is-visually-empty');
+      }
+      return classes;
     }
   },
   watch: {
@@ -271,6 +283,41 @@ function computeEditorOptions(type, explicitOptions) {
 
   .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
     outline: none;
+  }
+
+  .apos-rich-text-editor__editor {
+    @include apos-transition();
+    position: relative;
+    border-radius: var(--a-border-radius);
+    box-shadow: 0 0 0 1px transparent;
+    &:after {
+      @include type-small;
+      content: 'Empty Rich Text Widget';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: block;
+      width: 200px;
+      height: 10px;
+      margin: auto;
+      color: var(--a-base-5);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+  }
+  .apos-rich-text-editor__editor.is-visually-empty {
+    box-shadow: 0 0 0 1px var(--a-primary-50);
+    &:after {
+      opacity: 1;
+      visibility: visible;
+    }
   }
 
   .apos-rich-text-toolbar__inner /deep/ > .apos-rich-text-editor__control {

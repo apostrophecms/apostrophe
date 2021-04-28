@@ -13,7 +13,7 @@
       />
       <AposButton
         v-else
-        type="default" label="Finished"
+        type="default" label="Exit"
         @click="confirmAndCancel"
       />
     </template>
@@ -32,8 +32,8 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else-if="options.canEdit && options.managerHasNewButton"
-        :label="`New ${ options.label }`" type="primary"
+        v-else-if="moduleOptions.canEdit && moduleOptions.canCreate"
+        :label="`New ${ moduleOptions.label }`" type="primary"
         @click="create"
       />
     </template>
@@ -61,7 +61,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages"
             :current-page="currentPage"
-            :filters="options.filters"
+            :filters="moduleOptions.filters"
             :filter-choices="filterChoices"
             :filter-values="filterValues"
             :labels="moduleLabels"
@@ -85,14 +85,17 @@
             @open="edit"
             @preview="onPreview"
             @copy="copy"
-            @discardDraft="onDiscardDraft"
+            @discard-draft="onDiscardDraft"
+            @dismiss-submission="onDismissSubmission"
             @archive="onArchive"
             @restore="onRestore"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
-              canEdit: options.canEdit
+              manuallyPublished: manuallyPublished,
+              canEdit: moduleOptions.canEdit,
+              canCreate: moduleOptions.canCreate
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -152,13 +155,13 @@ export default {
     };
   },
   computed: {
-    options() {
+    moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
     moduleLabels() {
       return {
-        singular: this.options.label,
-        plural: this.options.pluralLabel
+        singular: this.moduleOptions.label,
+        plural: this.moduleOptions.pluralLabel
       };
     },
     saveRelationshipLabel() {
@@ -178,10 +181,18 @@ export default {
         message: '',
         emoji: '📄'
       };
+    },
+    headers() {
+      if (!this.items) {
+        return this.moduleOptions.columns || [];
+      }
+      return (this.moduleOptions.columns || []).filter(column => {
+        return (column.name !== '_url') || this.items.find(item => item._url);
+      });
     }
   },
   created() {
-    this.options.filters.forEach(filter => {
+    this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
@@ -194,7 +205,7 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-    if (this.relationshipField && this.options.canEdit) {
+    if (this.relationshipField && this.moduleOptions.canEdit) {
       // Add computed singular label to context menu
       this.moreMenu.menu.unshift({
         action: 'new',
@@ -246,7 +257,7 @@ export default {
       }
 
       const getResponse = (await apos.http.get(
-        this.options.action, {
+        this.moduleOptions.action, {
           busy: true,
           qs,
           draft: true
@@ -282,19 +293,34 @@ export default {
     },
     async onDiscardDraft(id) {
       const piece = this.findDocById(this.items, id);
-      if (await this.discardDraft(this.options.action, id, !!piece.lastPublishedAt)) {
+      if (await this.discardDraft(piece)) {
+        apos.bus.$emit('content-changed');
+      };
+    },
+    async onDismissSubmission(id) {
+      const piece = this.findDocById(this.items, id);
+      if (await this.dismissSubmission(piece)) {
         apos.bus.$emit('content-changed');
       };
     },
     async copy(id) {
       apos.bus.$emit('admin-menu-click', {
-        itemName: `${this.options.name}:editor`,
+        itemName: `${this.moduleOptions.name}:editor`,
         props: {
           copyOf: this.findDocById(this.items, id)
         }
       });
     },
-    async edit(piece) {
+    // If pieceOrId is null, a new piece is created
+    async edit(pieceOrId) {
+      let piece;
+      if ((typeof pieceOrId) === 'object') {
+        piece = pieceOrId;
+      } else if (pieceOrId) {
+        piece = this.items.find(item => item._id === pieceOrId);
+      } else {
+        piece = null;
+      }
       let moduleName;
       // Don't assume the piece has the type of the module,
       // this could be a virtual piece type such as "submitted-draft"

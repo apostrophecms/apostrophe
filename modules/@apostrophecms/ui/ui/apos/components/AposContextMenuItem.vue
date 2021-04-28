@@ -6,7 +6,7 @@
       @click="click"
       :tabindex="tabindex"
     >
-      {{ menuItem.label }}
+      {{ label }}
     </button>
   </li>
 </template>
@@ -34,6 +34,13 @@ export default {
         });
       }
       return classes.join(' ');
+    },
+    label() {
+      let label = this.menuItem.label;
+      if (this.menuItem.modifiers && this.menuItem.modifiers.includes('selected')) {
+        label = `✓ ${this.menuItem.label}`;
+      }
+      return label;
     }
   },
   methods: {

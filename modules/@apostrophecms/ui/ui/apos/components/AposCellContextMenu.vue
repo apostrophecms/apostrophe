@@ -3,22 +3,24 @@
     <span class="apos-table__cell-field--context-menu__content" :class="classes">
       <AposDocMoreMenu
         :doc-id="item._id"
-        :is-modified="item.modified"
-        :can-discard-draft="item.modified"
-        :is-modified-from-published="item.modified"
-        :is-published="!!item.lastPublishedAt"
+        :is-modified="manuallyPublished && item.modified"
+        :can-discard-draft="manuallyPublished && (item.modified || !item.lastPublishedAt)"
+        :is-modified-from-published="manuallyPublished && item.modified"
+        :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
         :can-open-editor="!item.archived"
         :can-preview="(!!item._url && !item.archived)"
-        :can-archive="!item.archived"
-        :can-restore="item.archived"
-        :can-copy="(!!item._id && !item.archived)"
+        :can-archive="!item.archived && item._publish && (!manuallyPublished || !!item.lastPublishedAt)"
+        :can-restore="item.archived && item._publish"
+        :can-copy="!!item._id && !item.archived && canCreate"
+        :can-dismiss-submission="item.submitted && (item._publish || (item.submitted.byId === userId))"
         @edit="$emit('edit')"
         @preview="$emit('preview')"
         @copy="$emit('copy')"
         @archive="$emit('archive')"
         @restore="$emit('restore')"
-        @discardDraft="$emit('discardDraft')"
+        @discard-draft="$emit('discard-draft')"
+        @dismiss-submission="$emit('dismiss-submission')"
         @menu-open="menuOpen = true"
         @menu-close="menuOpen = false"
       />
@@ -39,21 +41,41 @@ export default {
     item: {
       type: Object,
       required: true
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
-  emits: [ 'edit', 'preview', 'copy', 'archive', 'discardDraft', 'restore' ],
+  emits: [ 'edit', 'preview', 'copy', 'archive', 'discard-draft', 'dismiss-submission', 'restore' ],
   data() {
     return {
       menuOpen: false
     };
   },
   computed: {
+    canCreate() {
+      if (this.options.canCreate != null) {
+        return this.options.canCreate;
+      } else {
+        return true;
+      }
+    },
     classes() {
       const classes = [ ];
       if (!this.state || this.state.hover || this.menuOpen) {
         classes.push('is-visible');
       }
       return classes;
+    },
+    userId() {
+      return apos.login.user._id;
+    },
+    manuallyPublished() {
+      const module = apos.modules[this.item.type];
+      return module.localized && !module.autopublish;
     }
   },
   methods: {

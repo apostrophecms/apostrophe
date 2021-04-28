@@ -12,7 +12,7 @@
       />
       <AposButton
         v-else
-        type="default" label="Finished"
+        type="default" label="Exit"
         @click="confirmAndCancel"
       />
     </template>
@@ -56,16 +56,16 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposDocsManagerToolbar
-            :selected-state="selectAllState"
-            @select-click="selectAll"
-            @archive-click="archiveClick"
-            :options="{
-              noSearch: true,
-              noPager: true,
-              hideSelectAll: !relationshipField
-            }"
-          />
+          <AposModalToolbar>
+            <template #rightControls>
+              <AposContextMenu
+                :menu="pageSetMenu"
+                menu-placement="bottom-end"
+                @item-clicked="pageSetMenuSelection = $event"
+                :button="pageSetMenuButton"
+              />
+            </template>
+          </AposModalToolbar>
         </template>
         <template #bodyMain>
           <AposTree
@@ -80,6 +80,8 @@
             @copy="copy"
             @archive="onArchive"
             @restore="onRestore"
+            @discard-draft="onDiscardDraft"
+            @dismiss-submission="onDismissSubmission"
           />
         </template>
       </AposModalBody>
@@ -90,12 +92,13 @@
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
   emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
   data() {
 
@@ -155,7 +158,8 @@ export default {
         iconOnly: true,
         type: 'subtle',
         modifiers: [ 'small', 'no-motion' ]
-      }
+      },
+      pageSetMenuSelection: 'live'
     };
   },
   computed: {
@@ -163,25 +167,10 @@ export default {
       return apos.page;
     },
     items() {
-      const items = [];
       if (!this.pages || !this.headers.length) {
         return [];
       }
-
-      const pagesSet = klona(this.pages);
-
-      pagesSet.forEach(page => {
-        const data = {};
-
-        this.headers.forEach(column => {
-          data[column.property] = page[column.property];
-          data._id = page._id;
-          data.children = page.children;
-          data.parked = page.parked;
-        });
-        items.push(data);
-      });
-      return items;
+      return klona(this.pages);
     },
     selectAllChoice() {
       const checkLen = this.checked.length;
@@ -200,12 +189,46 @@ export default {
       } else {
         return 'Select Pages';
       }
+    },
+    headers() {
+      return this.options.columns || [];
+    },
+    pageSetMenu() {
+      const isLive = this.pageSetMenuSelection === 'live';
+      return [ {
+        label: 'Live',
+        action: 'live',
+        modifiers: isLive ? [ 'selected', 'disabled' ] : []
+      }, {
+        label: 'Archive',
+        action: 'archive',
+        modifiers: !isLive ? [ 'selected', 'disabled' ] : []
+      } ];
+    },
+    pageSetMenuButton() {
+      const isLive = this.pageSetMenuSelection === 'live';
+      const button = {
+        label: isLive ? 'Live' : 'Archive',
+        icon: 'chevron-down-icon',
+        modifiers: [ 'no-motion', 'outline', 'icon-right' ],
+        class: 'apos-pages-manager__page-set-menu-button'
+      };
+      return button;
+    }
+  },
+  watch: {
+    async pageSetMenuSelection() {
+      await this.getPages();
     }
   },
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     await this.getPages();
+    apos.bus.$on('content-changed', this.getPages);
+  },
+  destroyed() {
+    apos.bus.$off('content-changed', this.getPages);
   },
   methods: {
     onPreview(id) {
@@ -223,8 +246,20 @@ export default {
         await this.getPages();
       }
     },
+    async onDiscardDraft(id) {
+      const doc = this.findDocById(this.pagesFlat, id);
+      if (await this.discardDraft(doc)) {
+        await this.getPages();
+      }
+    },
+    async onDismissSubmission(id) {
+      const doc = this.findDocById(this.pagesFlat, id);
+      if (await this.dismissSubmission(doc)) {
+        await this.getPages();
+      }
+    },
     async copy(id) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
         copyOf: this.findDocById(this.pagesFlat, id)
       });
@@ -239,33 +274,46 @@ export default {
       }
     },
     async getPages () {
-      this.pages = [];
-      this.pagesFlat = [];
       const self = this;
+      if (this.gettingPages) {
+        // Avoid race conditions by trying again later if already in progress
+        setTimeout(this.getPages, 100);
+        return;
+      }
+      // Not reactive, so not in data()
+      this.gettingPages = true;
+      try {
+        this.pages = [];
+        this.pagesFlat = [];
 
-      const pageTree = (await apos.http.get(
-        '/api/v1/@apostrophecms/page', {
-          busy: true,
-          qs: {
-            all: '1',
-            archived: this.relationshipField ? '0' : 'any'
-          },
-          draft: true
+        let pageTree = (await apos.http.get(
+          '/api/v1/@apostrophecms/page', {
+            busy: true,
+            qs: {
+              all: '1',
+              archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any'
+            },
+            draft: true
+          }
+        ));
+
+        // If editor is looking at the archive tree, trim the normal page tree response
+        if (this.pageSetMenuSelection === 'archive') {
+          pageTree = pageTree._children.find(page => page.slug === '/archive');
         }
-      ));
 
-      formatPage(pageTree);
+        formatPage(pageTree);
 
-      this.pages = [ pageTree ];
+        this.pages = [ pageTree ];
+      } finally {
+        this.gettingPages = false;
+      }
 
       function formatPage(page) {
         self.pagesFlat.push(klona(page));
 
-        page.children = page._children;
-        delete page._children;
-
-        if (Array.isArray(page.children)) {
-          page.children.forEach(formatPage);
+        if (Array.isArray(page._children)) {
+          page._children.forEach(formatPage);
         }
       }
     },

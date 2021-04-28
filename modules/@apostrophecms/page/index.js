@@ -418,20 +418,10 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          const submitted = {
-            by: req.user && req.user.title,
-            at: new Date()
-          };
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $set: {
-              submitted
-            }
-          });
-          return submitted;
+          const manager = self.apos.doc.getManager(draft.type);
+          return manager.submit(req, draft);
         },
-        ':_id/reject': async (req) => {
+        ':_id/dismiss-submission': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           const draft = await self.findOneForEditing({
             ...req,
@@ -442,16 +432,8 @@ module.exports = {
           if (!draft) {
             throw self.apos.error('notfound');
           }
-          if (!self.apos.permission.can(req, 'publish', draft)) {
-            throw self.apos.error('forbidden');
-          }
-          await self.apos.doc.db.update({
-            _id: draft._id
-          }, {
-            $unset: {
-              submitted: 1
-            }
-          });
+          const manager = self.apos.doc.getManager(draft.type);
+          return manager.dismissSubmission(req, draft);
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -746,7 +728,7 @@ database.`);
         }
         browserOptions.name = self.__meta.name;
         browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/page');
-        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/page');
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/page', 'draft');
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
@@ -1013,6 +995,9 @@ database.`);
           }
           if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._edit)) {
             throw self.apos.error('forbidden');
+          }
+          if (moved.lastPublishedAt && !parent.lastPublishedAt) {
+            throw self.apos.error('forbidden', 'Publish the parent page first.');
           }
           await nudgeNewPeers();
           await moveSelf();
@@ -1833,6 +1818,7 @@ database.`);
             // Parking the home page for the first time
             _item.aposDocId = self.apos.util.generateId();
             _item.path = _item.aposDocId;
+            _item.lastPublishedAt = new Date();
             return self.apos.doc.insert(req, _item);
           } else {
             return self.insert(req, parent._id, 'lastChild', _item);
@@ -2160,7 +2146,8 @@ database.`);
           lastPublishedAt: 1,
           aposDocId: 1,
           aposLocale: 1,
-          updatedAt: 1
+          updatedAt: 1,
+          submitted: 1
         };
       },
       addArchivedMigration() {

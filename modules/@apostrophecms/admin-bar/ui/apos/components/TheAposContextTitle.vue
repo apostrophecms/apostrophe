@@ -22,6 +22,7 @@
         —
       </span>
       <AposContextMenu
+        v-if="!isUnpublished"
         class="apos-admin-bar__title__document"
         :button="draftButton"
         :menu="draftMenu"
@@ -30,6 +31,11 @@
         @item-clicked="switchDraftMode"
         menu-offset="13, 10"
         menu-placement="bottom-end"
+      />
+      <AposLabel
+        v-else
+        label="Draft" :modifiers="['is-warning']"
+        tooltip="This document has not been published"
       />
     </span>
   </transition-group>
@@ -81,16 +87,16 @@ export default {
     draftMenu() {
       return [
         {
-          label: (this.draftMode === 'draft') ? '✓ Draft' : 'Draft',
+          label: 'Draft',
           name: 'draft',
           action: 'draft',
-          modifiers: (this.draftMode === 'draft') ? [ 'disabled' ] : null
+          modifiers: (this.draftMode === 'draft') ? [ 'disabled', 'selected' ] : null
         },
         {
-          label: (this.draftMode === 'published') ? '✓ Published' : 'Published',
+          label: 'Published',
           name: 'published',
           action: 'published',
-          modifiers: (this.draftMode === 'published') ? [ 'disabled' ] : null
+          modifiers: (this.draftMode === 'published') ? [ 'disabled', 'selected' ] : null
         }
       ];
     }
@@ -130,10 +136,6 @@ export default {
 
   &__document {
     margin-top: 3.5px;
-  }
-
-  & /deep/ .apos-indicator {
-    margin-top: 1px;
   }
 }
 

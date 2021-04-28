@@ -25,8 +25,10 @@
         :can-publish="canPublish"
         :ready-to-publish="readyToPublish"
         :custom-publish-label="customPublishLabel"
+        :can-dismiss-submission="canDismissSubmission"
         @switchEditMode="switchEditMode"
-        @discardDraft="onDiscardDraft"
+        @discard-draft="onDiscardDraft"
+        @dismiss-submission="onDismissSubmission"
         @publish="onPublish"
       />
     </template>
@@ -94,7 +96,10 @@ export default {
       return !!this.patchesSinceSave.length;
     },
     canPublish() {
-      return this.getContextModule(this.context).canPublish;
+      return apos.modules[this.context.type].canPublish;
+    },
+    canDismissSubmission() {
+      return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     readyToPublish() {
       return this.canPublish
@@ -105,7 +110,7 @@ export default {
       return window.apos.adminBar;
     },
     action() {
-      return this.getContextModule(this.context).action;
+      return apos.modules[this.context.type].action;
     },
     hasCustomUi() {
       return this.contextStack.length > 0;
@@ -248,7 +253,7 @@ export default {
     },
     async onPublish(e) {
       if (!this.canPublish) {
-        const submitted = await this.submitDraft(this.action, this.context._id);
+        const submitted = await this.submitDraft(this.context);
         if (submitted) {
           this.context = {
             ...this.context,
@@ -256,7 +261,7 @@ export default {
           };
         }
       } else {
-        const published = await this.publish(this.action, this.context._id, !!this.context.lastPublishedAt);
+        const published = await this.publish(this.context);
         if (published) {
           this.context = {
             ...this.context,
@@ -325,9 +330,6 @@ export default {
         mode
       });
     },
-    getContextModule(doc) {
-      return doc.slug.match(/^\//) ? self.apos.page : self.apos.modules[doc.type];
-    },
     // Implementation detail of onSetContext and onPushContext.
     async setContext({
       mode,
@@ -350,7 +352,7 @@ export default {
       }
       try {
         // Returns the doc as represented in the new locale and mode
-        const action = this.getContextModule(doc).action;
+        const action = window.apos.modules[doc.type].action;
         const modeDoc = await apos.http.get(`${action}/${doc._id}`, {
           qs: {
             'apos-mode': mode,
@@ -483,7 +485,7 @@ export default {
       apos.bus.$emit('refreshed');
     },
     async onDiscardDraft(e) {
-      const result = await this.discardDraft(this.action, this.context._id, !!this.context.lastPublishedAt);
+      const result = await this.discardDraft(this.context);
       this.context = {
         ...this.context,
         modified: false
@@ -516,6 +518,14 @@ export default {
         }
       } else {
         apos.bus.$emit('context-history-changed', result && result.doc);
+      }
+    },
+    async onDismissSubmission() {
+      if (await this.dismissSubmission(this.context)) {
+        this.context = {
+          ...this.context,
+          submitted: null
+        };
       }
     },
     async onRevertPublishedToPrevious(data) {

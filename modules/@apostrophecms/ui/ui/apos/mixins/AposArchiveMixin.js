@@ -13,15 +13,15 @@ export default {
       try {
         const moduleOptions = window.apos.modules[doc.type];
         const isPage = doc.slug.startsWith('/');
-        const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
+        const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
-        const hasChildren = isPage && doc._children.length;
+        const hasChildren = isPage && doc._children && doc._children.length;
         const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
         let description = `You are going to archive the ${plainType} "${doc.title}"`;
 
         if (hasChildren) {
-          description += `, which has ${doc._children.length} child ${plainType}${doc._children.length > 1 ? 's' : null}`;
+          description += `, which has ${doc._children.length} child ${plainType}${doc._children.length > 1 ? 's' : ''}`;
         }
 
         if (isPublished) {
@@ -62,7 +62,7 @@ export default {
         if (confirm) {
           const body = {
             archived: true,
-            _publish: true
+            _publish: !isPage
           };
 
           if (isPage) {
@@ -117,15 +117,15 @@ export default {
     async restore (doc) {
       const moduleOptions = apos.modules[doc.type];
       const isPage = doc.slug.startsWith('/');
-      const action = isPage ? window.apos.modules['@apostrophecms/page'].action : moduleOptions.action;
+      const action = window.apos.modules[doc.type].action;
       const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
       let confirm = null;
 
       try {
         // If the doc has children, ask if they should be restored as well
-        if (doc._children) {
+        if (isPage && doc._children && doc._children.length) {
           const childLength = doc._children.length;
-          const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : null}.`;
+          const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : ''}.`;
           confirm = await apos.confirm({
             heading: `Restore ${plainType}`,
             description,
@@ -170,7 +170,8 @@ export default {
         const body = {
           archived: false,
           _targetId: isPage ? '_home' : null,
-          _position: isPage ? 'firstChild' : null
+          _position: isPage ? 'firstChild' : null,
+          _publish: !isPage
         };
 
         AposAdvisoryLockMixin.methods.addLockToRequest(body);

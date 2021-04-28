@@ -114,11 +114,15 @@
     var query;
     var qat;
 
-    if (options.draft) {
+    // Intentional true / falsey check for determining
+    // what set of docs the request is interested in
+    if (options.draft != null) {
       if (options.qs) {
         // Already assumes no query parameters baked into URL, so OK to
         // just extend qs
-        options.qs = apos.util.assign({ 'apos-mode': 'draft' }, options.qs);
+        options.qs = options.draft
+          ? apos.util.assign({ 'apos-mode': 'draft' }, options.qs)
+          : apos.util.assign({ 'apos-mode': 'published' }, options.qs);
       } else {
         // Careful, there could be existing query parameters baked into url
         qat = url.indexOf('?');
@@ -127,7 +131,7 @@
         } else {
           query = {};
         }
-        query['apos-mode'] = 'draft';
+        query['apos-mode'] = options.draft ? 'draft' : 'published';
         url = apos.http.addQueryToUrl(url, query);
       }
     }
