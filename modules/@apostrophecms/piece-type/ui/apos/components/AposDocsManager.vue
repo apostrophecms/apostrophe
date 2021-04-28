@@ -32,7 +32,7 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else-if="moduleOptions.canEdit && moduleOptions.managerHasNewButton"
+        v-else-if="moduleOptions.canEdit && moduleOptions.canCreate"
         :label="`New ${ moduleOptions.label }`" type="primary"
         @click="create"
       />
@@ -94,7 +94,8 @@
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
               manuallyPublished: manuallyPublished,
-              canEdit: moduleOptions.canEdit
+              canEdit: moduleOptions.canEdit,
+              canCreate: moduleOptions.canCreate
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
