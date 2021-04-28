@@ -4,7 +4,7 @@
       <AposDocMoreMenu
         :doc-id="item._id"
         :is-modified="manuallyPublished && item.modified"
-        :can-discard-draft="manuallyPublished && item.modified"
+        :can-discard-draft="manuallyPublished && (item.modified || !item.lastPublishedAt)"
         :is-modified-from-published="manuallyPublished && item.modified"
         :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
