@@ -41,6 +41,7 @@
 * Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
 * You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
 * Language of buttons, labels, filters, and other UI updated and normalized throughout.
+* Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
