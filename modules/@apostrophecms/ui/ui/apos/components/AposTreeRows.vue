@@ -307,8 +307,7 @@ export default {
     getEffectiveType(col, row) {
       if (col.component) {
         return col.component;
-      }
-      if (row.type === '@apostrophecms/archive-page') {
+      } else if (row.type === '@apostrophecms/archive-page') {
         return 'span';
       } else if (col.type === 'link') {
         return 'a';
