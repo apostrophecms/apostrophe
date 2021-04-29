@@ -27,7 +27,14 @@ module.exports = {
     return {
       'apostrophe:modulesReady': {
         async runUiBuildTask() {
-          if (!self.apos.isTask() && process.env.NODE_ENV !== 'production') {
+          if (
+            // Do not automatically build the UI if we're starting from a task
+            !self.apos.isTask() &&
+            // Or if we're in production
+            process.env.NODE_ENV !== 'production' &&
+            // Or if we're running the core test suite
+            process.env.NODE_ENV !== 'test'
+          ) {
             // If starting up normally, run the build task, checking if we
             // really need to update the core UI build.
             await self.apos.task.invoke('@apostrophecms/asset:build', {
