@@ -102,9 +102,15 @@ export default {
       return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     readyToPublish() {
-      return this.canPublish
-        ? this.context.modified && (!this.needToAutosave) && (!this.editing)
-        : (!this.context.submitted) || (this.context.updatedAt > this.context.submitted.at);
+      if (this.canPublish) {
+        return this.context.modified && (!this.needToAutosave) && (!this.editing);
+      } else if (this.context.submitted) {
+        return this.context.updatedAt > this.context.submitted.at;
+      } else if (this.context.lastPublishedAt) {
+        return this.context.updatedAt > this.context.lastPublishedAt;
+      } else {
+        return true;
+      }
     },
     moduleOptions() {
       return window.apos.adminBar;
