@@ -2,6 +2,7 @@
   <div class="apos-table__cell-field apos-table__cell-field--context-menu">
     <span class="apos-table__cell-field--context-menu__content" :class="classes">
       <AposDocMoreMenu
+        :disabled="disabled"
         :doc-id="item._id"
         :is-modified="manuallyPublished && item.modified"
         :can-discard-draft="manuallyPublished && (item.modified || !item.lastPublishedAt)"
@@ -56,6 +57,9 @@ export default {
     };
   },
   computed: {
+    disabled() {
+      return this.item.type === '@apostrophecms/archive-page';
+    },
     canCreate() {
       if (this.options.canCreate != null) {
         return this.options.canCreate;

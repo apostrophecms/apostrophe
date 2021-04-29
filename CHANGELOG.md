@@ -55,6 +55,7 @@
 * A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.
 * The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
 * Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
+* The main archive page cannot be restored, etc. via the context menu in the page tree.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
