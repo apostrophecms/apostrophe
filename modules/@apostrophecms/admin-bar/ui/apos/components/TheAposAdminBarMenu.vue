@@ -100,6 +100,8 @@ export default {
     }
   },
   async mounted() {
+    apos.bus.$on('admin-menu-click', this.onAdminMenuClick);
+
     const itemsSet = klona(this.items);
     this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility))
       .map(item => {
