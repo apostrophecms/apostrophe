@@ -63,7 +63,7 @@ export default {
 <style lang="scss" scoped>
   /deep/ .apos-submitted-drafts__counter {
     display: inline-flex;
-    margin-left: $spacing-base;
+    margin-left: $spacing-half;
     padding: 3px;
     background-color: var(--a-primary-10);
     border-radius: var(--a-border-radius);

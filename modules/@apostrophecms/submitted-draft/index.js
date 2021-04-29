@@ -110,7 +110,7 @@ module.exports = {
           },
           {
             component: 'AposSubmittedDraftIcon',
-            contextTray: true,
+            contextUtility: true,
             tooltip: 'Submitted Drafts'
           }
         );

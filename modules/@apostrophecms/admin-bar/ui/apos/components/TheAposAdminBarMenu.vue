@@ -101,7 +101,7 @@ export default {
   },
   async mounted() {
     const itemsSet = klona(this.items);
-    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextTray))
+    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility))
       .map(item => {
         if (item.items) {
           item.items.forEach(subitem => {
@@ -111,7 +111,7 @@ export default {
         }
         return item;
       });
-    this.trayItems = itemsSet.filter(item => item.options && item.options.contextTray);
+    this.trayItems = itemsSet.filter(item => item.options && item.options.contextUtility);
 
     Object.values(apos.modules).forEach(module => {
       if (module.quickCreate) {

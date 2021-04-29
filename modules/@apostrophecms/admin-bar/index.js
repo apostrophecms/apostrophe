@@ -59,13 +59,13 @@ module.exports = {
       // wish to implement a custom admin bar item not powered by
       // the `AposModals` app.
       //
-      // If `options.contextTray` is true the item will be displayed in a tray of
+      // If `options.contextUtility` is true the item will be displayed in a tray of
       // icons just to the left of the page settings gear. If `options.toggle` is also true,
       // then the button will have the `active` state until toggled
       // off again. `options.openTooltip` and `options.closeTooltip` may be
       // provided to offer a different tooltip during the active state. Otherwise
       // `options.tooltip` is used. The regular label is also present for
-      // screenreaders only. The contextTray functionality is typically used for
+      // screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
       //
       // If an `options.when` function is provided, it will be invoked with
