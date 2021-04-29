@@ -46,17 +46,26 @@
         @item-clicked="emitEvent"
       />
     </li>
-    <li class="apos-admin-bar__item apos-admin-bar__tray-items" v-if="trayItems.length > 0">
-      <AposButton
-        v-for="item in trayItems"
-        :key="item.name"
-        type="subtle" :modifiers="['small', 'no-motion']"
-        :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
-        :icon="item.options.icon" :icon-only="true"
-        :label="item.label"
-        :state="trayItemState[item.name] ? [ 'active' ] : []"
-        @click="emitEvent(item.action)"
-      />
+    <li
+      v-if="trayItems.length > 0"
+      class="apos-admin-bar__item apos-admin-bar__tray-items"
+    >
+      <template v-for="item in trayItems">
+        <Component
+          v-if="item.options.component"
+          :is="item.options.component"
+          :key="item.name"
+        />
+        <AposButton
+          v-else :key="item.name"
+          type="subtle" :modifiers="['small', 'no-motion']"
+          :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
+          :icon="item.options.icon" :icon-only="true"
+          :label="item.label"
+          :state="trayItemState[item.name] ? [ 'active' ] : []"
+          @click="emitEvent(item.action)"
+        />
+      </template>
     </li>
   </ul>
 </template>
@@ -175,7 +184,7 @@ export default {
   top: calc(100% + 5px);
 }
 
- /deep/ .apos-admin-bar__create {
+/deep/ .apos-admin-bar__create {
   margin-left: 10px;
 
   .apos-context-menu__btn {

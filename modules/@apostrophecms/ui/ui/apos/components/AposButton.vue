@@ -31,24 +31,25 @@
           class="apos-button__icon"
           fill-color="currentColor"
         />
-        <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
-          {{ label }}
-        </span>
+        <slot name="label">
+          <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
+            {{ label }}
+          </span>
+        </slot>
       </div>
     </component>
   </span>
 </template>
 
 <script>
-import tinycolor from 'tinycolor2';
 import cuid from 'cuid';
 
 export default {
   name: 'AposButton',
   props: {
     label: {
-      required: true,
-      type: String
+      type: String,
+      default: 'Provide a Button Label'
     },
     modifiers: {
       type: Array,
