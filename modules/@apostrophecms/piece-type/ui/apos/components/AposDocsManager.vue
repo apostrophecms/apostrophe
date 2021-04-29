@@ -32,7 +32,7 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else-if="moduleOptions.canEdit && moduleOptions.managerHasNewButton"
+        v-else-if="moduleOptions.canEdit && moduleOptions.canCreate"
         :label="`New ${ moduleOptions.label }`" type="primary"
         @click="create"
       />
@@ -94,7 +94,8 @@
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
               manuallyPublished: manuallyPublished,
-              canEdit: moduleOptions.canEdit
+              canEdit: moduleOptions.canEdit,
+              canCreate: moduleOptions.canCreate
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -180,9 +181,6 @@ export default {
         message: '',
         emoji: '📄'
       };
-    },
-    manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     },
     headers() {
       if (!this.items) {
@@ -392,7 +390,7 @@ export default {
         document.activeElement.tagName !== 'INPUT' &&
         this.$refs.modal.id === topModal
       ) {
-        this.new();
+        this.create();
       }
     },
 

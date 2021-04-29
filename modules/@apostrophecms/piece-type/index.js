@@ -782,7 +782,7 @@ module.exports = {
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.singleton = self.options.singleton;
         browserOptions.previewDraft = self.options.previewDraft;
-        browserOptions.managerHasNewButton = self.options.managerHasNewButton !== false;
+        browserOptions.canCreate = self.options.canCreate !== false;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {

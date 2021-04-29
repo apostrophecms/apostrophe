@@ -2,6 +2,9 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
 const cuid = require('cuid');
+const fs = require('fs');
+const path = require('path');
+const FormData = require('form-data');
 
 let apos;
 let jar;
@@ -172,6 +175,20 @@ describe('Pieces', function() {
                 type: 'string',
                 min: 5,
                 max: 10
+              }
+            }
+          }
+        },
+        resume: {
+          options: {
+            alias: 'resume'
+          },
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              attachment: {
+                type: 'attachment',
+                required: true
               }
             }
           }
@@ -1100,6 +1117,33 @@ describe('Pieces', function() {
     });
     assert(response);
     assert(response.title === 'API Key Product');
+  });
+
+  it('can insert a resume with an attachment', async () => {
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(path.join(__dirname, '/public/static-test.txt')));
+
+    // Make an async request to upload the image.
+    const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      },
+      body: formData
+    });
+
+    const resume = await apos.http.post('/api/v1/resume', {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      },
+      body: {
+        title: 'Jane Doe',
+        attachment
+      }
+    });
+    assert(resume);
+    assert(resume.title === 'Jane Doe');
+    assert(resume.attachment._url);
+    assert(fs.readFileSync(path.join(__dirname, 'public', resume.attachment._url), 'utf8') === fs.readFileSync(path.join(__dirname, '/public/static-test.txt'), 'utf8'));
   });
 
 });

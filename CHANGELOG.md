@@ -30,6 +30,8 @@
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+* The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the [`form-data`](https://www.npmjs.com/package/form-data) npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
+* `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
 
 ### Fixes
 
@@ -41,6 +43,9 @@
 * Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
 * You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
 * Language of buttons, labels, filters, and other UI updated and normalized throughout.
+* A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.
+* The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
+* Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
