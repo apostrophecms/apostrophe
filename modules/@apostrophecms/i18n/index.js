@@ -37,25 +37,25 @@ module.exports = {
   middleware(self) {
     return {
       init(req, res, next) {
-        // Support for a single apos-locale query param that
+        // Support for a single aposLocale query param that
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
         // structured that way
-        if (req.query['apos-locale'] && req.query['apos-locale'].includes(':')) {
-          const parts = req.query['apos-locale'].split(':');
-          req.query['apos-locale'] = parts[0];
-          req.query['apos-mode'] = parts[1];
+        if (req.query.aposLocale && req.query.aposLocale.includes(':')) {
+          const parts = req.query.aposLocale.split(':');
+          req.query.aposLocale = parts[0];
+          req.query.aposMode = parts[1];
         }
         const validModes = [ 'draft', 'published' ];
         let locale;
-        if (self.isValidLocale(req.query['apos-locale'])) {
-          locale = req.query['apos-locale'];
+        if (self.isValidLocale(req.query.aposLocale)) {
+          locale = req.query.aposLocale;
         } else {
           locale = self.defaultLocale;
         }
         let mode;
-        if (validModes.includes(req.query['apos-mode'])) {
-          mode = req.query['apos-mode'];
+        if (validModes.includes(req.query.aposMode)) {
+          mode = req.query.aposMode;
         } else {
           mode = 'published';
         }
@@ -82,12 +82,12 @@ module.exports = {
       inferIdLocaleAndMode(req, _id) {
         let [ cuid, locale, mode ] = _id.split(':');
         if (locale && mode) {
-          if (!req.query['apos-locale']) {
+          if (!req.query.aposLocale) {
             req.locale = locale;
           } else {
             locale = req.locale;
           }
-          if (!req.query['apos-mode']) {
+          if (!req.query.aposMode) {
             req.mode = mode;
           } else {
             mode = req.mode;

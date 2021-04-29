@@ -495,7 +495,7 @@ describe('Docs', function() {
     }
   });
 
-  it('should respect explicitOrder()', async function() {
+  it('should respect _ids()', async function() {
     const testItems = [];
     let i;
 
@@ -514,8 +514,7 @@ describe('Docs', function() {
     await apos.doc.db.insertMany(testItems);
 
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
-      .explicitOrder([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).toArray();
-
+      ._ids([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).toArray();
     assert(docs[0]._id === 'i7:en:published');
     assert(docs[0].aposDocId === 'i7');
     assert(docs[0].aposLocale === 'en:published');
@@ -525,10 +524,10 @@ describe('Docs', function() {
     assert(!docs[4]);
   });
 
-  it('should respect explicitOrder with skip and limit', async function() {
+  it('should respect _ids with skip and limit', async function() {
     // Relies on test data of previous test
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
-      .explicitOrder([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).skip(2).limit(2).toArray();
+      ._ids([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).skip(2).limit(2).toArray();
 
     assert(docs[0]._id === 'i27:en:published');
     assert(docs[1]._id === 'i9:en:published');

@@ -407,7 +407,7 @@ export default {
             busy: true,
             qs: {
               ...this.filters,
-              'apos-mode': 'published'
+              aposMode: 'published'
             }
           });
         }

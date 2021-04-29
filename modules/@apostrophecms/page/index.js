@@ -66,7 +66,7 @@ module.exports = {
       // also get a light version of the entire tree with ?all=1, for use in a
       // drag-and-drop UI.
       //
-      // If flat=1 is present, the pages are returned as a flat list rather than a tree,
+      // If ?flat=1 is present, the pages are returned as a flat list rather than a tree,
       // and the `_children` property of each is just an array of `_id`s.
       //
       // If ?autocomplete=x is present, then an autocomplete prefix search for pages
@@ -75,6 +75,9 @@ module.exports = {
       // The user must have some page editing privileges to use it. The 10 best
       // matches are returned as an object with a `results` property containing the
       // array of pages.
+      //
+      // If querying for draft pages, you may add ?published=1 to attach a
+      // `_publishedDoc` property to each draft that also exists in a published form.
 
       async getAll(req) {
         self.publicApiCheck(req);
@@ -105,6 +108,7 @@ module.exports = {
             relationships: false,
             areas: false,
             permission: false,
+            withPublished: self.apos.launder.boolean(req.query.withPublished),
             project: self.getAllProjection()
           }).toObject();
 
@@ -1465,7 +1469,7 @@ database.`);
             await self.emit('serve', testReq);
             if (self.isFound(testReq)) {
               req.redirect = self.apos.url.build(req.url, {
-                'apos-mode': 'draft'
+                aposMode: 'draft'
               });
               return;
             }
@@ -2147,7 +2151,8 @@ database.`);
           aposDocId: 1,
           aposLocale: 1,
           updatedAt: 1,
-          submitted: 1
+          submitted: 1,
+          modified: 1
         };
       },
       addArchivedMigration() {

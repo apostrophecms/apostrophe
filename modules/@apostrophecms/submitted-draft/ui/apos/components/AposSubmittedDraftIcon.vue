@@ -50,7 +50,7 @@ export default {
       this.count = (await apos.http.get(apos.modules['@apostrophecms/submitted-draft'].action, {
         qs: {
           count: 1,
-          'apos-mode': 'draft'
+          aposMode: 'draft'
         }
       })).count;
       // Not declared in data() because it is not reactive
