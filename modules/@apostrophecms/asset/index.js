@@ -32,8 +32,8 @@ module.exports = {
             !self.apos.isTask() &&
             // Or if we're in production
             process.env.NODE_ENV !== 'production' &&
-            // Or if we're running the core test suite
-            process.env.NODE_ENV !== 'test'
+            // Or if we've set an app option to skip the auto build
+            self.apos.options.autoBuild !== false
           ) {
             // If starting up normally, run the build task, checking if we
             // really need to update the core UI build.

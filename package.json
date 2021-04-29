@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "pretest": "npm audit && npm run lint",
-    "test": "NODE_ENV=test nyc --reporter=html mocha",
+    "test": "nyc --reporter=html mocha",
     "lint": "eslint ."
   },
   "repository": {
