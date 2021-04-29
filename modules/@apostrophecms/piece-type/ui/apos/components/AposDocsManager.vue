@@ -95,7 +95,8 @@
               disableUnpublished: !!relationshipField,
               manuallyPublished: manuallyPublished,
               canEdit: moduleOptions.canEdit,
-              canCreate: moduleOptions.canCreate
+              canCreate: moduleOptions.canCreate,
+              canDismissSubmission: moduleOptions.canDismissSubmission
             }"
           />
           <div v-else class="apos-pieces-manager__empty">

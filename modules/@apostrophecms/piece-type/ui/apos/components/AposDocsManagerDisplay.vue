@@ -162,9 +162,7 @@ export default {
       }
     },
     contextMenuOptions() {
-      return {
-        canCreate: this.options.canCreate
-      };
+      return this.options;
     }
   },
   watch: {
