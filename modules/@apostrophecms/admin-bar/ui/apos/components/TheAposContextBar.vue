@@ -456,6 +456,7 @@ export default {
         headers: {
           'Cache-Control': 'no-cache'
         },
+        draft: true,
         busy: true
       });
       const refreshable = document.querySelector('[data-apos-refreshable]');
