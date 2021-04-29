@@ -361,7 +361,7 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // If `req.query.apos-refresh` is `'1'`,
+      // If `req.query.aposRefresh` is `'1'`,
       // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are provided on
@@ -399,7 +399,7 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // If `req.query.apos-refresh` is `'1'`,
+      // If `req.query.aposRefresh` is `'1'`,
       // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are provided on

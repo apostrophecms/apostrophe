@@ -5,6 +5,7 @@
 ### Breaks
 
 * Removes the `firstName` and `lastName` fields in user pieces.
+* The query parameters `apos-refresh`, `apos-edit`, `apos-mode` and `apos-locale` are now `aposRefresh`, `aposEdit`, `aposMode` and `aposLocale`. Going forward all query parameters will be camelCase for consistency with query builders.
 
 ### Adds
 
@@ -34,8 +35,12 @@
   1. The build folder does not yet exist.
   2. The package.json file is newer than the existing UI build.
   3. You explicitly tell it to by setting the environment variable `CORE_DEV=1`
+* The new `._ids(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `aposMode` query parameter if present.
+* The `.withPublished(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `withPublished=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
+* The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
 * The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the [`form-data`](https://www.npmjs.com/package/form-data) npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
 * `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
+* `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
 
 ### Fixes
 
@@ -44,7 +49,7 @@
 * A required field error no longer appears immediately when you first start creating a user.
 * Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
 * "Save Draft" is not an appropriate operation to offer when editing users.
-* Pager links no longer break due to `apos-refresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
+* Pager links no longer break due to `aposRefresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
 * You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
 * Language of buttons, labels, filters, and other UI updated and normalized throughout.
 * A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.

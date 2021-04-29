@@ -51,7 +51,7 @@ export default {
                 });
               }
               // Retry now that ancestors are published
-              return this.publish(action, doc._id, previouslyPublished);
+              return this.publish(doc);
             } catch (e) {
               await apos.alert({
                 heading: 'An Error Occurred While Publishing',

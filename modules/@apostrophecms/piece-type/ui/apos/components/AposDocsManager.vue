@@ -246,7 +246,9 @@ export default {
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
-        ...this.queryExtras
+        ...this.queryExtras,
+        // Also fetch published docs as _publishedDoc subproperties
+        withPublished: 1
       };
 
       // Avoid undefined properties.
@@ -256,13 +258,13 @@ export default {
         };
       }
 
-      const getResponse = (await apos.http.get(
+      const getResponse = await apos.http.get(
         this.moduleOptions.action, {
           busy: true,
           qs,
           draft: true
         }
-      ));
+      );
 
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;

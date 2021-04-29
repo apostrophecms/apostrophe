@@ -19,6 +19,7 @@ $input-color-disabled: var(--a-base-4);
 @mixin apos-primary-mixin($color) {
   --a-primary: #{$color};
   --a-primary-50: #{transparentize($color, 0.5)};
+  --a-primary-10: #{transparentize($color, 0.9)};
   // stylelint-disable
   --a-primary-button-hover: #{mix(black, $color, 10%)};
   --a-primary-button-active: #{mix(black, $color, 15%)};

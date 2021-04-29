@@ -143,8 +143,10 @@ module.exports = {
               aposLocale: draft.aposLocale
             }).project({
               _id: 1,
+              aposLocale: 1,
               aposDocId: 1,
-              title: 1
+              title: 1,
+              type: 1
             }).toArray();
             throw self.apos.error('invalid', {
               unpublishedAncestors: draftAncestors.filter(draftAncestor => !publishedAncestors.find(publishedAncestor => draftAncestor.aposDocId === publishedAncestor.aposDocId))

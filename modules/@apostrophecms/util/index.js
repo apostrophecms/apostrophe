@@ -400,7 +400,7 @@ module.exports = {
       // `req.query.xhr` is set to emulate it) and Apostrophe's
       // main content area refresh mechanism is not in play.
       isAjaxRequest(req) {
-        return (req.xhr || req.query.xhr) && (req.query['apos-refresh'] !== '1');
+        return (req.xhr || req.query.xhr) && (req.query.aposRefresh !== '1');
       },
       // Sort the given array of strings in place, comparing strings in a case-insensitive way.
       insensitiveSort(strings) {

@@ -68,12 +68,16 @@
         >
           <component
             v-if="header.component" :is="header.component"
-            :header="header" :item="item"
+            :header="header" :item="item._publishedDoc || item"
+            :draft="item" :published="item._publishedDoc"
             :manually-published="options.manuallyPublished"
           />
           <AposCellBasic
             v-else
-            :header="header" :item="item"
+            :header="header"
+            :item="item._publishedDoc || item"
+            :draft="item"
+            :published="item._publishedDoc"
           />
         </td>
         <!-- append the context menu -->

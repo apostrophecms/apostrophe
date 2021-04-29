@@ -64,7 +64,7 @@
   // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
   // parsed as JSON only if the content-type is application/json)
   // `headers` (an object containing header names and values)
-  // `draft` (if true, always add apos-mode=draft to the query string, creating one if needed)
+  // `draft` (if true, always add aposMode=draft to the query string, creating one if needed)
   // `csrf` (unless explicitly set to `false`, send the X-XSRF-TOKEN header when talking to the same site)
   // `fullResponse` (if true, return an object with `status`, `headers` and `body`
   // properties, rather than returning the body directly; the individual `headers` are canonicalized
@@ -121,8 +121,8 @@
         // Already assumes no query parameters baked into URL, so OK to
         // just extend qs
         options.qs = options.draft
-          ? apos.util.assign({ 'apos-mode': 'draft' }, options.qs)
-          : apos.util.assign({ 'apos-mode': 'published' }, options.qs);
+          ? apos.util.assign({ aposMode: 'draft' }, options.qs)
+          : apos.util.assign({ aposMode: 'published' }, options.qs);
       } else {
         // Careful, there could be existing query parameters baked into url
         qat = url.indexOf('?');
@@ -131,7 +131,7 @@
         } else {
           query = {};
         }
-        query['apos-mode'] = options.draft ? 'draft' : 'published';
+        query.aposMode = options.draft ? 'draft' : 'published';
         url = apos.http.addQueryToUrl(url, query);
       }
     }

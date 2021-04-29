@@ -373,10 +373,11 @@ export default {
       }
 
       // Original default of just printing the row property value
-      if (row[col.cellValue]) {
-        return row[col.cellValue];
+      const publishedDoc = row._publishedDoc;
+      const value = (publishedDoc && (publishedDoc[col.cellValue] !== undefined) && publishedDoc[col.cellValue]) || row[col.cellValue];
+      if (value) {
+        return value;
       }
-
       return false;
     },
     getCellClasses(col, row) {

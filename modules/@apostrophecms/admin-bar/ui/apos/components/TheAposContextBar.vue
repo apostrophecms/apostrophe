@@ -47,9 +47,9 @@ export default {
   data() {
     const query = apos.http.parseQuery(location.search);
     // If the URL references a draft, go into draft mode but then clean up the URL
-    const draftMode = query['apos-mode'] || 'published';
+    const draftMode = query['aposMode'] || 'published';
     if (draftMode === 'draft') {
-      delete query['apos-mode'];
+      delete query['aposMode'];
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
     }
     return {
@@ -355,8 +355,8 @@ export default {
         const action = window.apos.modules[doc.type].action;
         const modeDoc = await apos.http.get(`${action}/${doc._id}`, {
           qs: {
-            'apos-mode': mode,
-            'apos-locale': locale
+            aposMode: mode,
+            aposLocale: locale
           }
         });
         if (navigate && (!modeDoc._url)) {
@@ -418,7 +418,10 @@ export default {
       }
     },
     async onContentChanged() {
-      this.refresh();
+      this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
+        busy: true
+      });
+      await this.refresh();
     },
     async switchEditMode(editing) {
       this.editMode = editing;
@@ -440,10 +443,10 @@ export default {
       let url = window.location.href;
       const qs = {
         ...apos.http.parseQuery(window.location.search),
-        'apos-refresh': '1',
-        'apos-mode': this.draftMode,
+        'aposRefresh': '1',
+        'aposMode': this.draftMode,
         ...(this.editMode ? {
-          'apos-edit': '1'
+          'aposEdit': '1'
         } : {})
       };
       url = url.replace(/\?.*$/, '');
@@ -661,8 +664,8 @@ export default {
         const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
           busy: true,
           qs: {
-            'apos-mode': 'draft',
-            'apos-locale': this.context.aposLocale.split(':')[0]
+            aposMode: 'draft',
+            aposLocale: this.context.aposLocale.split(':')[0]
           }
         });
         this.draftIsEditable = draftContext && draftContext._edit;
