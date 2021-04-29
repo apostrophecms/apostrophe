@@ -12,16 +12,6 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 
 export default {
   name: 'AposCellButton',
-  mixins: [ AposCellMixin ],
-  props: {
-    item: {
-      type: Object,
-      required: true
-    },
-    header: {
-      type: Object,
-      required: true
-    }
-  }
+  mixins: [ AposCellMixin ]
 };
 </script>
