@@ -12,6 +12,7 @@ npm-debug.log
 .out
 coverage
 node_modules
+test/package.json
 test/node_modules
 
 # We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for

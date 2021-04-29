@@ -21,5 +21,4 @@ describe('Assets', function() {
     const text = await apos.http.get('/static-test.txt');
     assert(text.match(/served/));
   });
-
 });

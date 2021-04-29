@@ -5,6 +5,7 @@ const webpackModule = require('webpack');
 const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
 
@@ -22,6 +23,28 @@ module.exports = {
       ...globalIcons
     };
   },
+  handlers (self) {
+    return {
+      'apostrophe:modulesReady': {
+        async runUiBuildTask() {
+          if (
+            // Do not automatically build the UI if we're starting from a task
+            !self.apos.isTask() &&
+            // Or if we're in production
+            process.env.NODE_ENV !== 'production' &&
+            // Or if we've set an app option to skip the auto build
+            self.apos.options.autoBuild !== false
+          ) {
+            // If starting up normally, run the build task, checking if we
+            // really need to update the core UI build.
+            await self.apos.task.invoke('@apostrophecms/asset:build', {
+              'check-ui-build': true
+            });
+          }
+        }
+      }
+    };
+  },
   tasks(self) {
     return {
       build: {
@@ -37,12 +60,51 @@ module.exports = {
           await fs.mkdirp(buildDir);
           await fs.remove(modulesDir);
           await fs.mkdirp(modulesDir);
-          await fs.remove(bundleDir);
-          await fs.mkdirp(bundleDir);
+
+          let rebuildAposUi = argv && !argv['check-ui-build'];
+
+          const APOS_MERGED_BUNDLE = 'apos-bundle.js';
+          const APOS_ONLY_BUNDLE = 'apos-only-bundle.js';
+          const APOS_ONLY_TS = '.apos-only-timestamp.txt';
+          const PUBLIC_BUNDLE_CSS = 'public-bundle.css';
+          const PUBLIC_BUNDLE_JS = 'public-bundle.js';
+          let checkTimestamp = false;
+
+          const bundleExists = await fs.pathExists(bundleDir);
+
+          if (!bundleExists) {
+            rebuildAposUi = true;
+            await fs.mkdirp(bundleDir);
+          } else {
+            await fs.remove(`${bundleDir}/${APOS_MERGED_BUNDLE}`);
+            await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`);
+            await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_JS}`);
+          }
+
+          if (!process.env.CORE_DEV) {
+            checkTimestamp = await fs.pathExists(`${bundleDir}/${APOS_ONLY_TS}`);
+          }
+
+          if (!rebuildAposUi && checkTimestamp) {
+            // If we have a UI build timestamp file compare against the app's
+            // package.json modified time.
+            if (await lockFileNewerThanUi()) {
+              rebuildAposUi = true;
+              await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
+            }
+          } else {
+            rebuildAposUi = true;
+            await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
+          }
+
           await moduleOverrides();
-          buildPublicCssBundle();
+          await buildPublicCssBundle();
           buildPublicJsBundle();
-          await buildAposBundle();
+
+          if (rebuildAposUi) {
+            await buildAposBundle();
+          }
+
           merge();
           await deploy();
 
@@ -85,9 +147,10 @@ module.exports = {
             }
           }
 
-          function buildPublicCssBundle() {
+          async function buildPublicCssBundle() {
             const publicImports = getImports('public', '*.css', { });
-            fs.writeFileSync(`${bundleDir}/public-bundle.css`,
+
+            fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`,
               publicImports.paths.map(path => {
                 return fs.readFileSync(path);
               }).join('\n')
@@ -104,23 +167,24 @@ module.exports = {
             // Of course, developers can push an "public" asset that is
             // the output of an ES6 pipeline.
             const publicImports = getImports('public', '*.js', { });
-            fs.writeFileSync(`${bundleDir}/public-bundle.js`,
-              `
-    (function() {
-    window.apos = window.apos || {};
-    var data = document.body && document.body.getAttribute('data-apos');
-    Object.assign(window.apos, JSON.parse(data || '{}'));
-    if (data) {
-      document.body.removeAttribute('data-apos');
-    }
-    })();
-    ` +
+
+            fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_JS}`, stripIndent`
+              (function() {
+                window.apos = window.apos || {};
+                var data = document.body && document.body.getAttribute('data-apos');
+                Object.assign(window.apos, JSON.parse(data || '{}'));
+                if (data) {
+                  document.body.removeAttribute('data-apos');
+                }
+              })();
+            ` + '\n' +
             publicImports.paths.map(path => {
               return fs.readFileSync(path);
             }).join('\n')); // TODO: use webpack just to minify at the end.
           }
 
           async function buildAposBundle() {
+            self.apos.util.log('🧑‍💻 Building the Apostrophe admin UI...');
             const iconImports = getIcons();
             const componentImports = getImports('apos/components', '*.vue', { registerComponents: true });
             const tiptapExtensionImports = getImports('apos/tiptap-extensions', '*.js', { registerTiptapExtensions: true });
@@ -130,28 +194,28 @@ module.exports = {
             });
             const importFile = `${buildDir}/import.js`;
 
-            fs.writeFileSync(importFile, `
-    import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-    import Vue from 'Modules/@apostrophecms/ui/lib/vue';
-    if (window.apos.modules) {
-    for (const module of Object.values(window.apos.modules)) {
-      if (module.alias) {
-        window.apos[module.alias] = module;
-      }
-    }
-    }
-    window.apos.bus = new Vue();
-    ${iconImports.importCode}
-    ${iconImports.registerCode}
-    ${componentImports.importCode}
-    ${tiptapExtensionImports.importCode}
-    ${appImports.importCode}
-    ${iconImports.registerCode}
-    ${componentImports.registerCode}
-    ${tiptapExtensionImports.registerCode}
-    setTimeout(() => {
-    ${appImports.invokeCode}
-    }, 0);
+            fs.writeFileSync(importFile, stripIndent`
+              import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
+              import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+              if (window.apos.modules) {
+                for (const module of Object.values(window.apos.modules)) {
+                  if (module.alias) {
+                    window.apos[module.alias] = module;
+                  }
+                }
+              }
+              window.apos.bus = new Vue();
+              ${iconImports.importCode}
+              ${iconImports.registerCode}
+              ${componentImports.importCode}
+              ${tiptapExtensionImports.importCode}
+              ${appImports.importCode}
+              ${iconImports.registerCode}
+              ${componentImports.registerCode}
+              ${tiptapExtensionImports.registerCode}
+              setTimeout(() => {
+                ${appImports.invokeCode}
+              }, 0);
             `);
 
             fs.writeFileSync(`${buildDir}/imports.json`, JSON.stringify({
@@ -166,10 +230,14 @@ module.exports = {
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
-                outputFilename: 'apos-only-bundle.js'
+                outputFilename: APOS_ONLY_BUNDLE
               },
               self.apos
             ));
+            self.apos.util.log('👍 Apostrophe UI build is complete!');
+
+            const now = Date.now().toString();
+            fs.writeFileSync(`${bundleDir}/${APOS_ONLY_TS}`, now);
           }
 
           function getIcons() {
@@ -211,7 +279,11 @@ module.exports = {
           }
 
           function merge() {
-            fs.writeFileSync(`${bundleDir}/apos-bundle.js`, fs.readFileSync(`${bundleDir}/public-bundle.js`) + fs.readFileSync(`${bundleDir}/apos-only-bundle.js`));
+            fs.writeFileSync(
+              `${bundleDir}/${APOS_MERGED_BUNDLE}`,
+              fs.readFileSync(`${bundleDir}/public-bundle.js`) +
+                fs.readFileSync(`${bundleDir}/apos-only-bundle.js`)
+            );
           }
 
           async function deploy() {
@@ -275,16 +347,31 @@ module.exports = {
               }
 
               if (options.registerTiptapExtensions) {
-                output.registerCode += `
-    apos.tiptapExtensions = apos.tiptapExtensions || [];
-    apos.tiptapExtensions.push(${name});
-    `;
+                output.registerCode += stripIndent`
+                  apos.tiptapExtensions = apos.tiptapExtensions || [];
+                  apos.tiptapExtensions.push(${name});
+                `;
               }
               if (options.invokeApps) {
                 output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
               }
             });
             return output;
+          }
+
+          async function lockFileNewerThanUi() {
+            const timestamp = fs.readFileSync(`${bundleDir}/${APOS_ONLY_TS}`, 'utf8');
+            let pkgStats;
+
+            if (await fs.pathExists(`${self.apos.rootDir}/package-lock.json`)) {
+              pkgStats = await fs.stat(`${self.apos.rootDir}/package-lock.json`);
+            } else if (await fs.pathExists(`${self.apos.rootDir}/yarn.lock`)) {
+              pkgStats = await fs.stat(`${self.apos.rootDir}/yarn.lock`);
+            }
+
+            const pkgTimestamp = pkgStats && pkgStats.mtimeMs;
+
+            return pkgTimestamp > parseInt(timestamp);
           }
         }
       }
@@ -359,11 +446,14 @@ module.exports = {
           }).trim();
           return fromGit;
         } catch (e) {
-          throw new Error(`When running in production you must set the APOS_RELEASE_ID
-environment variable to a short, unique string identifying this particular
-release of the application, or write it to the file release-id. Apostrophe will
-also autodetect HEROKU_RELEASE_VERSION, PLATFORM_TREE_ID or the current git commit
-if your deployment is a git checkout.`);
+          throw new Error(stripIndent`
+            When running in production you must set the APOS_RELEASE_ID
+            environment variable to a short, unique string identifying this
+            particular release of the application, or write it to the file
+            release-id. Apostrophe will also autodetect HEROKU_RELEASE_VERSION,
+            PLATFORM_TREE_ID or the current git commit if your deployment is a
+            git checkout.
+          `);
         }
       },
       // Can be overridden to namespace several asset bundles
