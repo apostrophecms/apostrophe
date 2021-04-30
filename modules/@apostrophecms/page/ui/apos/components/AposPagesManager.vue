@@ -312,7 +312,7 @@ export default {
 
         formatPage(pageTree);
 
-        if (!pageTree.length) {
+        if (!pageTree.length && pageTree.length !== 0) {
           pageTree = [ pageTree ];
         }
 
