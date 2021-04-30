@@ -221,31 +221,21 @@ module.exports = {
       '@apostrophecms/doc-type:afterDelete': {
         // If deleting draft also delete published, but
         // not vice versa ("undo publish" is a thing).
-        async deleteOtherModeAfterDelete(req, doc) {
+        async deleteOtherModeAfterDelete(req, doc, options) {
           if (doc.aposLocale.endsWith(':draft')) {
             return cleanup('published');
           }
+          if (doc.aposLocale.endsWith(':published')) {
+            return cleanup('previous');
+          }
           async function cleanup(mode) {
-            const manager = self.getManager(doc.type);
-            const _req = {
-              ...req,
-              mode
-            };
-            const peer = await manager.findOneForEditing(_req, {
-              aposDocId: doc.aposDocId
+            const peer = await self.apos.doc.db.findOne({
+              _id: doc._id.replace(':draft', ':published')
             });
             if (peer) {
-              await manager.delete(_req, peer);
+              const manager = peer.slug.startsWith('/') ? self.apos.page : self.getManager(peer.type);
+              await manager.delete(req, peer, options);
             }
-          }
-        },
-        // Remove the copy we keep around for undoing publish
-        async deletePreviousAfterDelete(req, doc) {
-          if (doc.aposLocale.endsWith('published')) {
-            return self.db.removeOne({
-              aposDocId: doc.aposDocId,
-              aposLocale: doc.aposLocale.replace(':published', ':previous')
-            });
           }
         }
       }
@@ -446,7 +436,10 @@ module.exports = {
       // True delete. To place a document in the archive,
       // update the archived property (for a piece) or move it
       // to be a child of the archive (for a page). True delete
-      // cannot be undone
+      // cannot be undone.
+      //
+      // This operation ignores the locale and mode of `req`
+      // in favor of the actual document's locale and mode.
       async delete(req, doc, options = {}) {
         options = options || {};
         const m = self.getManager(doc.type);

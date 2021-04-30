@@ -215,12 +215,14 @@ module.exports = {
           }
         },
         async checkForChildren(req, doc, options) {
-          const descendants = await self.apos.doc.db.countDocuments({
-            path: self.apos.page.matchDescendants(doc),
-            aposLocale: doc.aposLocale
-          });
-          if (descendants) {
-            throw self.apos.error('invalid', 'You must delete the children of this page first.');
+          if (options.checkForChildren !== false) {
+            const descendants = await self.apos.doc.db.countDocuments({
+              path: self.apos.page.matchDescendants(doc),
+              aposLocale: doc.aposLocale
+            });
+            if (descendants) {
+              throw self.apos.error('invalid', 'You must delete the children of this page first.');
+            }
           }
         }
       }
