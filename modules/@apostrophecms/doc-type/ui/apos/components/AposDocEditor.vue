@@ -37,7 +37,7 @@
       />
       <AposButton
         v-if="canPreviewDraft" type="secondary"
-        :disabled="previewDraftDisabled"
+        :disabled="errorCount > 0"
         @click="saveDraftAndPreview" label="Preview Draft"
       />
       <AposButton
@@ -330,9 +330,6 @@ export default {
     },
     canPreviewDraft() {
       return !this.docId && this.moduleOptions.previewDraft;
-    },
-    previewDraftDisabled() {
-      return this.errorCount > 0;
     },
     canPreview() {
       if (this.original) {
