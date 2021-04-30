@@ -31,6 +31,10 @@
 * Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
 * Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
 * Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+* Moves the core UI build task into the start up process. The UI build runs automatically when `NODE_ENV` is *not* 'production' and when:
+  1. The build folder does not yet exist.
+  2. The package.json file is newer than the existing UI build.
+  3. You explicitly tell it to by setting the environment variable `CORE_DEV=1`
 * The new `._ids(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `aposMode` query parameter if present.
 * The `.withPublished(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `withPublished=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
 * The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
@@ -52,7 +56,7 @@
 * The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
 * Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
 * Update the current page's context bar properly when appropriate after actions such as "Discard Draft."
- 
+* The main archive page cannot be restored, etc. via the context menu in the page tree.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
