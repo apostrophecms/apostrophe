@@ -307,16 +307,27 @@ export default {
         // If editor is looking at the archive tree, trim the normal page tree response
         if (this.pageSetMenuSelection === 'archive') {
           pageTree = pageTree._children.find(page => page.slug === '/archive');
+          pageTree = pageTree._children;
         }
 
         formatPage(pageTree);
 
-        this.pages = [ pageTree ];
+        if (!pageTree.length) {
+          pageTree = [ pageTree ];
+        }
+
+        this.pages = [ ...pageTree ];
+
       } finally {
         this.gettingPages = false;
       }
 
       function formatPage(page) {
+        if (page.length) {
+          page.forEach(formatPage);
+          return;
+        }
+
         self.pagesFlat.push(klona(page));
 
         if (Array.isArray(page._children)) {
