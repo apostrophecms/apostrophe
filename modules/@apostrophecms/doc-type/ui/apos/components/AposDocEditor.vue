@@ -18,6 +18,7 @@
         depend on modification from published -->
       <AposDocMoreMenu
         v-if="hasMoreMenu"
+        :disabled="errorCount > 0"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
@@ -36,6 +37,7 @@
       />
       <AposButton
         v-if="canPreviewDraft" type="secondary"
+        :disabled="previewDraftDisabled"
         @click="saveDraftAndPreview" label="Preview Draft"
       />
       <AposButton
@@ -328,6 +330,9 @@ export default {
     },
     canPreviewDraft() {
       return !this.docId && this.moduleOptions.previewDraft;
+    },
+    previewDraftDisabled() {
+      return this.errorCount > 0;
     },
     canPreview() {
       if (this.original) {
