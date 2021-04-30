@@ -12,20 +12,38 @@ export default {
     async archive(doc) {
       try {
         const moduleOptions = window.apos.modules[doc.type];
+        
+        // Make sure that if there are any modified descendants we know about them
         const isPage = doc.slug.startsWith('/');
+        if (isPage) {
+          doc = await apos.http.get(`${moduleOptions.action}/${doc._id}`, {
+            draft: true,
+            qs: {
+              _children: {
+                depth: 10
+              }
+            }
+          });
+          console.log(JSON.stringify(doc, null, '  '));
+        }
+        const isModified = findModified(doc);
+        const descendants = countDescendants(doc);
         const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
-        const hasChildren = isPage && doc._children && doc._children.length;
         const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
         let description = `You are going to archive the ${plainType} "${doc.title}"`;
 
-        if (hasChildren) {
-          description += `, which has ${doc._children.length} child ${plainType}${doc._children.length > 1 ? 's' : ''}`;
+        if (descendants > 0) {
+          description += `, which has ${descendants} child pages.`;
         }
 
         if (isPublished) {
           description += `. This will also un-publish the ${plainType}`;
+        }
+
+        if (isModified) {
+          description += `. Unpublished draft changes to this document and/or its children will be permanently deleted`;
         }
 
         description += '.';
@@ -112,6 +130,12 @@ export default {
           heading: 'An Error Occurred',
           description: e.message || 'An error occurred while moving the document to the archive.'
         });
+      }
+      function findModified(doc) {
+        if (doc.modified) {
+          return true;
+        }
+        return (doc._children || []).find(doc => findModified(doc));
       }
     },
     async restore (doc) {

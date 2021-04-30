@@ -112,7 +112,7 @@ module.exports = {
         }
       },
       afterSave: {
-        async emitAfterArchivedOrAfterRescue(req, doc) {
+        async emitAfterArchiveOrAfterRescue(req, doc) {
           if (doc.archived && (!doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
@@ -121,7 +121,7 @@ module.exports = {
                 aposWasArchived: true
               }
             });
-            return self.emit('afterArchived', req, doc);
+            return self.emit('afterArchive', req, doc);
           } else if ((!doc.archived) && (doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
@@ -145,10 +145,10 @@ module.exports = {
           }
         }
       },
-      afterArchived: {
-        // Mark draft only after moving to trash, to reactivate UI
-        // associated with things never published before
-        async markNeverPublished(req, doc) {
+      afterArchive: {
+        // After archiving only the last published version remains,
+        // discard draft and previous.
+        async discardDraftAndPrevious(req, doc) {
           if (!self.options.localized) {
             return;
           }
@@ -798,6 +798,7 @@ module.exports = {
         self.copyForPublication(req, published, draft);
         draft.modified = false;
         delete draft.submitted;
+        delete draft.modified;
         draft = await self.update({
           ...req,
           mode: 'draft'
@@ -856,6 +857,58 @@ module.exports = {
           }
         });
         return result.published;
+      },
+
+      // Archive the document. Only the content of the current published
+      // version is kept. It is kept in the `draft` mode and will be
+      // restored as an unpublished draft later if `restore` is invoked.
+      async archive(req, doc) {
+        if (self.isLocalized() && !self.options.autopublish) {
+          if (!doc._id.endsWith(':draft')) {
+            doc = await self.apos.doc.db.findOne({
+              _id: doc._id.replace(`:${doc.aposMode}`, `:draft`)
+            });
+          }
+          if (draft.modified) {
+            doc = await self.revertDraftToPublished(req, doc);
+          }
+          await self.apos.doc.db.removeMany({
+            _id: {
+              $in: [
+                doc._id.replace(':draft', ':published'),
+                doc._id.replace(':draft', ':previous')
+              ]
+            }
+          });
+        }
+        await self.apos.doc.db.updateOne({
+          _id: doc._id
+        }, {
+          $set: {
+            archived: true,
+            lastPublishedAt: null
+          }
+        });
+        return self.emit('afterArchive', req, doc);
+      },
+
+      // Restore a document. The document is restored as an unpublished draft.
+      async restore(req, doc) {
+        if (self.isLocalized() && !self.options.autopublish) {
+          if (!doc._id.endsWith(':draft')) {
+            doc = await self.apos.doc.db.findOne({
+              _id: doc._id.replace(`:${doc.aposMode}`, `:draft`)
+            });
+          }
+        }
+        await self.apos.doc.db.updateOne({
+          _id: doc._id
+        }, {
+          $set: {
+            archived: false
+          }
+        });
+        return self.emit('afterRestore', req, doc);
       },
 
       // Returns true if the given draft has been modified from the published
