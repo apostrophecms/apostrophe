@@ -187,24 +187,6 @@ module.exports = {
           }
         }
       },
-      afterRevertDraftToPublished: {
-        async replayMoveAfterRevert(req, result) {
-          const _req = {
-            ...req,
-            mode: 'draft'
-          };
-          if (!result.draft.level) {
-            // The home page cannot move, so there is no
-            // chance we need to "replay" such a move
-            return;
-          }
-          await self.apos.page.move(_req, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
-          const draft = await self.apos.page.findOneForEditing(_req, {
-            _id: result.draft._id
-          });
-          result.draft = draft;
-        }
-      },
       afterRevertPublishedToPrevious: {
         async replayMoveAfterRevert(req, result) {
           const publishedReq = {

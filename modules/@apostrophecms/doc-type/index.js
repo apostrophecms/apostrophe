@@ -112,7 +112,7 @@ module.exports = {
         }
       },
       afterSave: {
-        async emitAfterArchivedOrAfterRescue(req, doc) {
+        async emitAfterArchiveOrAfterRescue(req, doc) {
           if (doc.archived && (!doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
@@ -121,7 +121,7 @@ module.exports = {
                 aposWasArchived: true
               }
             });
-            return self.emit('afterArchived', req, doc);
+            return self.emit('afterArchive', req, doc);
           } else if ((!doc.archived) && (doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
@@ -145,11 +145,14 @@ module.exports = {
           }
         }
       },
-      afterArchived: {
+      afterArchive: {
         // Mark draft only after moving to trash, to reactivate UI
         // associated with things never published before
-        async markNeverPublished(req, doc) {
+        async markNeverPublishedAndRevertDraftToPublished(req, doc) {
           if (!self.options.localized) {
+            return;
+          }
+          if (self.options.autopublish) {
             return;
           }
           if (!doc._id.includes(':draft')) {
@@ -160,8 +163,12 @@ module.exports = {
             // avoid overcomplicating parked pages
             return;
           }
-          if (self.options.autopublish) {
-            return;
+          if (doc.modified) {
+            doc = await self.revertDraftToPublished(req, doc, {
+              overrides: {
+                archived: true
+              }
+            });
           }
           await self.apos.doc.db.updateOne({
             _id: doc._id
@@ -776,7 +783,11 @@ module.exports = {
       // Emits the `afterRevertDraftToPublished` event before
       // returning, which receives `req, { draft }` and may
       // replace the `draft` property to alter the returned value.
-      async revertDraftToPublished(req, draft) {
+      //
+      // If you need to keep certain properties that would otherwise
+      // revert, you can pass values for those properties in an
+      // `options.overrides` object.
+      async revertDraftToPublished(req, draft, options = {}) {
         if (!draft.modified) {
           return false;
         }
@@ -798,6 +809,9 @@ module.exports = {
         self.copyForPublication(req, published, draft);
         draft.modified = false;
         delete draft.submitted;
+        if (options.overrides) {
+          Object.assign(draft, options.overrides);
+        }
         draft = await self.update({
           ...req,
           mode: 'draft'
