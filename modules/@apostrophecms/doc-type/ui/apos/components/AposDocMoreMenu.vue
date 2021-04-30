@@ -131,7 +131,8 @@ export default {
         // ] : []),
         ...(this.canOpenEditor ? [
           {
-            label: 'Edit',
+            // When archived the edit action opens a read-only "editor"
+            label: this.canRestore ? 'View' : 'Edit',
             action: 'edit'
           }
         ] : []),

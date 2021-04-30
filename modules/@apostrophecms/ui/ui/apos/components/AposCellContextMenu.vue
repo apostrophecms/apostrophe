@@ -9,7 +9,7 @@
         :is-modified-from-published="manuallyPublished && item.modified"
         :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
-        :can-open-editor="!item.archived"
+        :can-open-editor="true"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="!item.archived && item._publish && (!manuallyPublished || !!item.lastPublishedAt)"
         :can-restore="item.archived && item._publish"
