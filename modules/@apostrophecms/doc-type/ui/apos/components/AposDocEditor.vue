@@ -18,6 +18,7 @@
         depend on modification from published -->
       <AposDocMoreMenu
         v-if="hasMoreMenu"
+        :disabled="errorCount > 0"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
@@ -36,6 +37,7 @@
       />
       <AposButton
         v-if="canPreviewDraft" type="secondary"
+        :disabled="errorCount > 0"
         @click="saveDraftAndPreview" label="Preview Draft"
       />
       <AposButton
