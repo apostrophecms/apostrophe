@@ -2,13 +2,14 @@
   <div class="apos-table__cell-field apos-table__cell-field--context-menu">
     <span class="apos-table__cell-field--context-menu__content" :class="classes">
       <AposDocMoreMenu
+        :disabled="disabled"
         :doc-id="item._id"
         :is-modified="manuallyPublished && item.modified"
         :can-discard-draft="manuallyPublished && (item.modified || !item.lastPublishedAt)"
         :is-modified-from-published="manuallyPublished && item.modified"
         :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
-        :can-open-editor="!item.archived"
+        :can-open-editor="true"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="!item.archived && item._publish && (!manuallyPublished || !!item.lastPublishedAt)"
         :can-restore="item.archived && item._publish"
@@ -56,6 +57,9 @@ export default {
     };
   },
   computed: {
+    disabled() {
+      return this.item.type === '@apostrophecms/archive-page';
+    },
     canCreate() {
       // Defaults to yes as only "virtual" views like "submitted drafts" would forbid it
       if (this.options.canCreate != null) {

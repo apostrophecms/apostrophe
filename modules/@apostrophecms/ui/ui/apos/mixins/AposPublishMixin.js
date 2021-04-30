@@ -142,22 +142,21 @@ export default {
               body: {},
               busy: true
             });
-            const notificationHeader = isPublished ? 'Draft Discarded' : 'Draft Deleted';
-            apos.notify(notificationHeader, {
+            apos.notify('Draft Discarded', {
               type: 'success',
               dismiss: true,
               icon: 'text-box-remove-icon'
             });
             apos.bus.$emit('content-changed', newDoc);
             return {
-              newDoc
+              doc: newDoc
             };
           } else {
             await apos.http.delete(`${action}/${doc._id}`, {
               body: {},
               busy: true
             });
-            apos.notify('Deleted document.', {
+            apos.notify('Draft Deleted', {
               type: 'success',
               dismiss: true
             });
