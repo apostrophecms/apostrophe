@@ -57,6 +57,7 @@
 * Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
 * Update the current page's context bar properly when appropriate after actions such as "Discard Draft."
 * The main archive page cannot be restored, etc. via the context menu in the page tree.
+* "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
