@@ -189,6 +189,10 @@ export default {
       return this.followingValues('utility');
     },
     saveDisabled() {
+      if (this.restoreOnly) {
+        // Can always restore if it's a read-only view of the archive
+        return false;
+      }
       if (this.errorCount) {
         // Always block save if there are errors in the modal
         return true;
@@ -300,13 +304,17 @@ export default {
         return 'Restore';
       } else if (this.manuallyPublished) {
         if (this.moduleOptions.canPublish) {
-          if (this.original && this.original.lastPublishedAt) {
+          if (this.copyOf) {
+            return 'Publish';
+          } else if (this.original && this.original.lastPublishedAt) {
             return 'Update';
           } else {
             return 'Publish';
           }
         } else {
-          if (this.original && this.original.lastPublishedAt) {
+          if (this.copyOf) {
+            return 'Submit';
+          } else if (this.original && this.original.lastPublishedAt) {
             return 'Submit Update';
           } else {
             return 'Submit';

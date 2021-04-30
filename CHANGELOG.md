@@ -58,6 +58,7 @@
 * Update the current page's context bar properly when appropriate after actions such as "Discard Draft."
 * The main archive page cannot be restored, etc. via the context menu in the page tree.
 * The context menu and "Preview Draft" are both disabled while errors are present in the editor dialog box.
+* "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
