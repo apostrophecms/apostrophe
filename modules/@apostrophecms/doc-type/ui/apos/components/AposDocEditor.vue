@@ -187,6 +187,10 @@ export default {
       return this.followingValues('utility');
     },
     saveDisabled() {
+      if (this.restoreOnly) {
+        // Can always restore if it's a read-only view of the archive
+        return false;
+      }
       if (this.errorCount) {
         // Always block save if there are errors in the modal
         return true;
