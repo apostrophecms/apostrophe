@@ -140,14 +140,6 @@ export default {
     copyOf: {
       type: Object,
       default: null
-    },
-    filterValues: {
-      type: Object,
-      default() {
-        return {
-          archived: false
-        };
-      }
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -167,8 +159,7 @@ export default {
       live: null,
       published: null,
       errorCount: 0,
-      restoreOnly: false,
-      filters: { ...this.filterValues }
+      restoreOnly: false
     };
   },
   computed: {
@@ -406,7 +397,7 @@ export default {
           this.published = await apos.http.get(this.getOnePath, {
             busy: true,
             qs: {
-              ...this.filters,
+              archived: 'any',
               aposMode: 'published'
             }
           });
@@ -450,13 +441,13 @@ export default {
         }
         docData = await apos.http.get(this.getOnePath, {
           busy: true,
-          qs: this.filters,
+          qs: {
+            archived: 'any'
+          },
           draft: true
         });
 
-        // Pages don't use the restore mechanism because they
-        // treat the archive as a place in the tree you can drag from
-        if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
+        if (docData.archived) {
           this.restoreOnly = true;
         } else {
           this.restoreOnly = false;
@@ -555,9 +546,10 @@ export default {
       this.modal.showModal = false;
     },
     async onSave() {
-      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+      if (this.restoreOnly) {
+        await this.restore(this.original);
+      } else if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
-          restoreOnly: this.restoreOnly,
           andPublish: this.manuallyPublished
         });
       } else {
@@ -642,7 +634,6 @@ export default {
           this.modal.showModal = false;
         }
         if (this.restoreOnly) {
-          this.filters.archived = false;
           await this.loadDoc();
           await apos.notify('Archived content restored', {
             type: 'success',
