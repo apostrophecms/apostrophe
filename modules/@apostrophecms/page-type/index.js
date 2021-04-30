@@ -154,23 +154,6 @@ module.exports = {
           }
         }
       },
-      afterPublish: {
-        async replayMoveAfterPublish(req, { published, firstTime }) {
-          if (!firstTime) {
-            // We already do this after every move of the draft, so
-            // if there was already a published version it will have
-            // already been moved
-            return;
-          }
-          // Home page does not move
-          if (published.aposLastTargetId) {
-            return self.apos.page.move({
-              ...req,
-              mode: 'published'
-            }, published._id, published.aposLastTargetId, published.aposLastPosition);
-          }
-        }
-      },
       beforeUnpublish: {
         async descendantsMustNotBePublished(req, published) {
           const descendants = await self.apos.doc.db.countDocuments({
@@ -185,42 +168,6 @@ module.exports = {
             // acceptable coverage here for now
             throw self.apos.error('invalid', 'You must unpublish child pages before unpublishing their parent.');
           }
-        }
-      },
-      afterRevertDraftToPublished: {
-        async replayMoveAfterRevert(req, result) {
-          const _req = {
-            ...req,
-            mode: 'draft'
-          };
-          if (!result.draft.level) {
-            // The home page cannot move, so there is no
-            // chance we need to "replay" such a move
-            return;
-          }
-          await self.apos.page.move(_req, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
-          const draft = await self.apos.page.findOneForEditing(_req, {
-            _id: result.draft._id
-          });
-          result.draft = draft;
-        }
-      },
-      afterRevertPublishedToPrevious: {
-        async replayMoveAfterRevert(req, result) {
-          const publishedReq = {
-            ...req,
-            mode: 'published'
-          };
-          if (!result.published.level) {
-            // The home page cannot move, so there is no
-            // chance we need to "replay" such a move
-            return;
-          }
-          await self.apos.page.move(publishedReq, result.published._id, result.published.aposLastTargetId, result.published.aposLastPosition);
-          const published = await self.apos.page.findOneForEditing(publishedReq, {
-            _id: result.published._id
-          });
-          result.published = published;
         }
       },
       beforeDelete: {
