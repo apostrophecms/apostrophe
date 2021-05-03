@@ -198,7 +198,7 @@ module.exports = {
           return self.updateDocReferences(doc);
         }
       },
-      '@apostrophecms/doc-type:afterArchived': {
+      '@apostrophecms/doc-type:afterArchive': {
         async updateDocReferencesAfterArchive(req, doc) {
           return self.updateDocReferences(doc);
         }

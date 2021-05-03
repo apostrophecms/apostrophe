@@ -458,6 +458,7 @@ describe('Draft / Published', function() {
     }), parent._id, 'lastChild', grandchild);
     assert(grandchild.modified);
     assert.strictEqual(grandchild.path, `${parent.path}/${grandchild.aposDocId}`);
+    assert.strictEqual(grandchild.slug, '/parent/grandchild');
   });
 
   it('published grandchild should not exist yet', async () => {
@@ -472,6 +473,15 @@ describe('Draft / Published', function() {
     await apos.page.publish(apos.task.getReq({
       mode: 'draft'
     }), grandchild);
+    const published = await apos.page.find(apos.task.getReq({
+      mode: 'published'
+    }), {
+      aposDocId: grandchild.aposDocId
+    }).toObject();
+    assert(published);
+    assert.strictEqual(published.aposMode, 'published');
+    assert.strictEqual(published.path, `${parent.path}/${grandchild.aposDocId}`);
+    assert.strictEqual(published.slug, '/parent/grandchild');
   });
 
   it('should be able to move the grandchild page beneath the sibling page', async () => {
