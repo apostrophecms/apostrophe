@@ -182,16 +182,15 @@ export default {
     // height of date/time input is slightly larger than others due to the browser spinner ui
     height: 46px;
     padding-right: 40px;
+    &::-webkit-calendar-picker-indicator {
+      background: none;
+    }
   }
   .apos-input--date {
-    &::-webkit-calendar-picker-indicator { opacity: 0; }
     &::-webkit-clear-button {
       position: relative;
       right: 5px;
     }
-  }
-  .apos-input--time {
-    &::-webkit-time-picker-indicator { opacity: 0; }
   }
 
   .apos-field--small .apos-input--date,
