@@ -193,7 +193,7 @@ module.exports = {
             ...req,
             mode: 'published'
           };
-          if (!result.published.level) {
+          if (result.published.level === 0) {
             // The home page cannot move, so there is no
             // chance we need to "replay" such a move
             return;

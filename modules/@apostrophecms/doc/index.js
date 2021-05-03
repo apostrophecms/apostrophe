@@ -219,9 +219,12 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:afterDelete': {
-        // If deleting draft also delete published, but
-        // not vice versa ("undo publish" is a thing).
-        async deleteOtherModeAfterDelete(req, doc, options) {
+        // Deleting a draft implies deleting the document completely, since
+        // a draft must always exist. Deleting a published doc implies deleting
+        // the "previous" copy, since it only makes sense as a tool to revert
+        // the published doc's content. Note that deleting a draft recursively
+        // deletes both the published and previous docs.
+        async deleteOtherModes(req, doc, options) {
           if (doc.aposLocale.endsWith(':draft')) {
             return cleanup('published');
           }
@@ -230,7 +233,7 @@ module.exports = {
           }
           async function cleanup(mode) {
             const peer = await self.apos.doc.db.findOne({
-              _id: doc._id.replace(':draft', ':published')
+              _id: doc._id.replace(/:[\w]+$/, `:${mode}`)
             });
             if (peer) {
               const manager = peer.slug.startsWith('/') ? self.apos.page : self.getManager(peer.type);
@@ -593,7 +596,7 @@ module.exports = {
         if (manager.isLocalized(doc.type)) {
           // Performance hit now at write time is better than inaccurate
           // indicators of which docs are modified later (per Ben)
-          if (doc.aposLocale.endsWith(':draft')) {
+          if (doc.aposLocale.endsWith(':draft') && (options.updateModified !== false)) {
             doc.modified = await manager.isModified(req, doc);
           }
         }

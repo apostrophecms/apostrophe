@@ -646,7 +646,7 @@ module.exports = {
         } else {
           possiblePatchedFields = true;
         }
-        return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
+        await self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
           const piece = await self.findOneForEditing(req, { _id });
           let result;
           if (!piece) {

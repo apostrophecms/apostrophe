@@ -10,10 +10,10 @@ export default {
     // Returns `true` if the document was ultimately archived.
 
     async archive(doc) {
+      const moduleOptions = window.apos.modules[doc.type];
+      // Make sure that if there are any modified descendants we know about them
+      const isPage = doc.slug.startsWith('/');
       try {
-        const moduleOptions = window.apos.modules[doc.type];
-        // Make sure that if there are any modified descendants we know about them
-        const isPage = doc.slug.startsWith('/');
         if (isPage) {
           doc = await apos.http.get(`${moduleOptions.action}/${doc._id}`, {
             draft: true,
@@ -30,11 +30,12 @@ export default {
         const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
-        const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
+        const plainType = isPage ? 'page' : (moduleOptions.label || 'document');
+        const pluralPlainType = isPage ? 'pages' : (moduleOptions.pluralLabel || (moduleOptions.label && `${moduleOptions.label}s`) || 'documents');
         let description = `You are going to archive the ${plainType} "${doc.title}"`;
 
         if (descendants > 0) {
-          description += `, which has ${descendants} child ${plainType}${descendants > 1 ? 's' : ''}`;
+          description += `, which has ${descendants} child ${pluralPlainType}`;
         }
 
         if (draftDescendants > 0) {
@@ -50,7 +51,11 @@ export default {
         }
 
         if (isModified) {
-          description += '. Also, unpublished draft changes to this document and/or its children will be permanently deleted';
+          if (isPage) {
+            description += '. Also, unpublished draft changes to this document and/or its children will be permanently deleted';
+          } else {
+            description += '. Also, unpublished draft changes to this document will be permanently deleted';
+          }
         }
 
         description += '.';
@@ -73,7 +78,7 @@ export default {
                   label: `Archive only this ${plainType}`,
                   value: 'this'
                 }, {
-                  label: `Archive this ${plainType} and all child ${plainType}s`,
+                  label: `Archive this ${plainType} and all child ${pluralPlainType}`,
                   value: 'all'
                 } ]
               } ],
@@ -86,8 +91,7 @@ export default {
 
         if (confirm) {
           const body = {
-            archived: true,
-            _publish: !isPage
+            archived: true
           };
 
           if (isPage) {
@@ -145,6 +149,9 @@ export default {
         return (doc._children || []).find(doc => findModified(doc));
       }
       function countDescendants(doc) {
+        if (!isPage) {
+          return 0;
+        }
         let total = 0;
         for (const child of doc._children) {
           total++;
@@ -153,6 +160,9 @@ export default {
         return total;
       }
       function countDraftDescendants(doc) {
+        if (!isPage) {
+          return 0;
+        }
         let total = 0;
         for (const child of doc._children) {
           total += ((child.lastPublishedAt && 1) || 0);
@@ -205,8 +215,7 @@ export default {
               body: {
                 _targetId: '_archive',
                 _position: 'lastChild',
-                archived: true,
-                _publish: false
+                archived: true
               },
               busy: false,
               draft: true
@@ -218,8 +227,7 @@ export default {
         const body = {
           archived: false,
           _targetId: isPage ? '_home' : null,
-          _position: isPage ? 'firstChild' : null,
-          _publish: !isPage
+          _position: isPage ? 'firstChild' : null
         };
 
         AposAdvisoryLockMixin.methods.addLockToRequest(body);

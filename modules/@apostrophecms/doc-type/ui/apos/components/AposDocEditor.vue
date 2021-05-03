@@ -187,6 +187,10 @@ export default {
       return this.followingValues('utility');
     },
     saveDisabled() {
+      if (this.restoreOnly) {
+        // The whole reason we're here, allow it
+        return false;
+      }
       if (this.errorCount) {
         // Always block save if there are errors in the modal
         return true;

@@ -147,9 +147,7 @@ module.exports = {
         }
       },
       afterArchive: {
-        // Mark draft only after moving to trash, to reactivate UI
-        // associated with things never published before
-        async markNeverPublishedAndRevertDraftToPublished(req, doc) {
+        async retainOnlyAsDraft(req, doc) {
           if (!self.options.localized) {
             return;
           }
@@ -185,11 +183,9 @@ module.exports = {
             _id: doc._id.replace(':draft', ':previous')
           });
           if (published) {
-            await self.apos.doc.db.remove({ _id: published._id });
             self.emit('afterDelete', req, published, { checkForChildren: false });
           }
           if (previous) {
-            await self.apos.doc.db.remove({ _id: previous._id });
             self.emit('afterDelete', req, previous, { checkForChildren: false });
           }
         },
@@ -822,7 +818,9 @@ module.exports = {
         draft = await self.update({
           ...req,
           mode: 'draft'
-        }, draft);
+        }, draft, {
+          updateModified: false
+        });
         const result = {
           draft
         };
