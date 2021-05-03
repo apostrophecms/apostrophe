@@ -152,7 +152,7 @@ export default {
     onAdminMenuClick(e) {
       const name = e.itemName || e;
       const trayItem = this.trayItems.find(item => item.name === name);
-      if (trayItem) {
+      if (trayItem && trayItem.options.toggle) {
         this.trayItemState = {
           ...this.trayItemState,
           [name]: !this.trayItemState[name]
