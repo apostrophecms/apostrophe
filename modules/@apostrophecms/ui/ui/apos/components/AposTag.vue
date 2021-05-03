@@ -22,7 +22,7 @@ export default {
       required: true
     }
   },
-  emits: ['click'],
+  emits: [ 'click' ],
   methods: {
     click() {
       this.$emit('click', this.slug);
