@@ -176,7 +176,7 @@ export default {
         ] : []),
         ...(this.canRestore ? [
           {
-            label: 'Restore from Archive',
+            label: 'Restore',
             action: 'restore'
           }
         ] : [])
