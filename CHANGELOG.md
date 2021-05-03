@@ -59,6 +59,7 @@
 * The main archive page cannot be restored, etc. via the context menu in the page tree.
 * The context menu and "Preview Draft" are both disabled while errors are present in the editor dialog box.
 * "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
+* "Preview Draft" never appears for types that do not use drafts.
 * The toggle state of admin bar utility items should only be mapped to an `is-active` class if, like palette, they opt in with `toggle: true`
 
 ## 3.0.0-alpha.7 - 2021-04-07

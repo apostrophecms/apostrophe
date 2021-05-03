@@ -769,7 +769,6 @@ module.exports = {
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.singleton = self.options.singleton;
-        browserOptions.previewDraft = self.options.previewDraft;
         browserOptions.canCreate = self.options.canCreate;
         browserOptions.canDismissSubmission = self.options.canDismissSubmission;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
