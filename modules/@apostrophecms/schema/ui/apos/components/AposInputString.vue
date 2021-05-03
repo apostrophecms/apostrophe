@@ -181,10 +181,9 @@ export default {
     // lame magic number ..
     // height of date/time input is slightly larger than others due to the browser spinner ui
     height: 46px;
+    padding-right: 40px;
   }
   .apos-input--date {
-    // padding is lessend to overlap with calendar UI
-    padding-right: $input-padding * 1.4;
     &::-webkit-calendar-picker-indicator { opacity: 0; }
     &::-webkit-clear-button {
       position: relative;
@@ -192,7 +191,7 @@ export default {
     }
   }
   .apos-input--time {
-    padding-right: calc(#{$input-padding} - 2px);
+    &::-webkit-time-picker-indicator { opacity: 0; }
   }
 
   .apos-field--small .apos-input--date,
