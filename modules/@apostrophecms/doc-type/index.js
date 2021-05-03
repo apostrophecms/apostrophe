@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const util = require('util');
 
 module.exports = {
   options: {
@@ -60,7 +61,7 @@ module.exports = {
           ]
         },
         utility: {
-          
+
           fields: [
             'slug',
             'visibility'
@@ -108,7 +109,7 @@ module.exports = {
         }
       },
       afterSave: {
-        async emitAfterArchivedOrAfterRescue(req, doc) {
+        async emitAfterArchiveOrAfterRescue(req, doc) {
           if (doc.archived && (!doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
@@ -117,7 +118,7 @@ module.exports = {
                 aposWasArchived: true
               }
             });
-            return self.emit('afterArchived', req, doc);
+            return self.emit('afterArchive', req, doc);
           } else if ((!doc.archived) && (doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
@@ -141,11 +142,12 @@ module.exports = {
           }
         }
       },
-      afterArchived: {
-        // Mark draft only after moving to trash, to reactivate UI
-        // associated with things never published before
-        async markNeverPublished(req, doc) {
+      afterArchive: {
+        async retainOnlyAsDraft(req, doc) {
           if (!self.options.localized) {
+            return;
+          }
+          if (self.options.autopublish) {
             return;
           }
           if (!doc._id.includes(':draft')) {
@@ -156,8 +158,12 @@ module.exports = {
             // avoid overcomplicating parked pages
             return;
           }
-          if (self.options.autopublish) {
-            return;
+          if (doc.modified) {
+            doc = await self.revertDraftToPublished(req, doc, {
+              overrides: {
+                archived: true
+              }
+            });
           }
           await self.apos.doc.db.updateOne({
             _id: doc._id
@@ -166,14 +172,20 @@ module.exports = {
               lastPublishedAt: null
             }
           });
-          return self.apos.doc.db.removeMany({
-            _id: {
-              $in: [
-                doc._id.replace(':draft', ':published'),
-                doc._id.replace(':draft', ':previous')
-              ]
-            }
+          const published = await self.apos.doc.db.findOne({
+            _id: doc._id.replace(':draft', ':published')
           });
+          const previous = await self.apos.doc.db.findOne({
+            _id: doc._id.replace(':draft', ':previous')
+          });
+          if (published) {
+            await self.apos.doc.db.remove({ _id: published._id });
+            self.emit('afterDelete', req, published, { checkForChildren: false });
+          }
+          if (previous) {
+            await self.apos.doc.db.remove({ _id: previous._id });
+            self.emit('afterDelete', req, previous, { checkForChildren: false });
+          }
         },
         deduplicateArchive(req, doc) {
           const deduplicateKey = doc.aposDocId;
@@ -191,9 +203,9 @@ module.exports = {
             }
             if (doc[name].substr(0, prefix.length) !== prefix) {
               $set[name] = prefix + doc[name];
+              // So methods called later, or extending this method, see the change in piece
+              doc[name] = $set[name];
             }
-            // So methods called later, or extending this method, see the change in piece
-            doc[name] = $set[name];
           });
           _.each(self.archivedSuffixFields, function (name) {
             if (typeof doc[name] !== 'string') {
@@ -202,9 +214,9 @@ module.exports = {
             }
             if (doc[name].substr(doc[name].length - suffix.length) !== suffix) {
               $set[name] = doc[name] + suffix;
+              // So methods called later, or extending this method, see the change in piece
+              doc[name] = $set[name];
             }
-            // So methods called later, or extending this method, see the change in piece
-            doc[name] = $set[name];
           });
           if (_.isEmpty($set)) {
             return;
@@ -772,7 +784,11 @@ module.exports = {
       // Emits the `afterRevertDraftToPublished` event before
       // returning, which receives `req, { draft }` and may
       // replace the `draft` property to alter the returned value.
-      async revertDraftToPublished(req, draft) {
+      //
+      // If you need to keep certain properties that would otherwise
+      // revert, you can pass values for those properties in an
+      // `options.overrides` object.
+      async revertDraftToPublished(req, draft, options = {}) {
         if (!draft.modified) {
           return false;
         }
@@ -794,10 +810,15 @@ module.exports = {
         self.copyForPublication(req, published, draft);
         draft.modified = false;
         delete draft.submitted;
+        if (options.overrides) {
+          Object.assign(draft, options.overrides);
+        }
         draft = await self.update({
           ...req,
           mode: 'draft'
-        }, draft);
+        }, draft, {
+          updateModified: false
+        });
         const result = {
           draft
         };
@@ -1962,7 +1983,13 @@ module.exports = {
             _.assign(criteria, lateCriteria);
           }
           if (query.get('log') || process.env.APOS_LOG_ALL_QUERIES) {
-            self.apos.util.log(require('util').inspect(criteria, { depth: 20 }));
+            self.apos.util.log(util.inspect({
+              criteria: query.get('criteria'),
+              skip: query.get('skip'),
+              limit: query.get('limit'),
+              sort: query.get('sortMongo'),
+              project: query.get('project')
+            }, { depth: 20 }));
           }
           return query.lowLevelMongoCursor(query.req, query.get('criteria'), query.get('project'), {
             skip: query.get('skip'),
