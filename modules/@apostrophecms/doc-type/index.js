@@ -37,7 +37,8 @@ module.exports = {
         },
         visibility: {
           type: 'select',
-          label: 'Who can view this?',
+          label: 'Visibility',
+          help: 'Select whether this content is public or private',
           def: 'public',
           required: true,
           choices: [
@@ -60,16 +61,11 @@ module.exports = {
           ]
         },
         utility: {
+          
           fields: [
-            'slug'
-          ]
-        },
-        permissions: {
-          label: 'Permissions',
-          fields: [
+            'slug',
             'visibility'
-          ],
-          last: true
+          ]
         }
       }
     };
@@ -956,7 +952,7 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
-        browserOptions.previewDraft = self.options.previewDraft;
+        browserOptions.previewDraft = self.isLocalized() && !browserOptions.autopublish && self.options.previewDraft;
 
         return browserOptions;
       }

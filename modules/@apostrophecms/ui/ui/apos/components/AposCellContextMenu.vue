@@ -9,12 +9,12 @@
         :is-modified-from-published="manuallyPublished && item.modified"
         :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
-        :can-open-editor="!item.archived"
+        :can-open-editor="true"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="!item.archived && item._publish && (!manuallyPublished || !!item.lastPublishedAt)"
-        :can-restore="item.archived && item._publish"
+        :can-restore="item.archived && item._edit"
         :can-copy="!!item._id && !item.archived && canCreate"
-        :can-dismiss-submission="item.submitted && (item._publish || (item.submitted.byId === userId))"
+        :can-dismiss-submission="canDismissSubmission && item.submitted && (item._publish || (item.submitted.byId === userId))"
         @edit="$emit('edit')"
         @preview="$emit('preview')"
         @copy="$emit('copy')"
@@ -61,11 +61,16 @@ export default {
       return this.item.type === '@apostrophecms/archive-page';
     },
     canCreate() {
+      // Defaults to yes as only "virtual" views like "submitted drafts" would forbid it
       if (this.options.canCreate != null) {
         return this.options.canCreate;
       } else {
         return true;
       }
+    },
+    canDismissSubmission() {
+      // Defaults to no as this is really only for the "submitted drafts" view
+      return this.options.canDismissSubmission;
     },
     classes() {
       const classes = [ ];
