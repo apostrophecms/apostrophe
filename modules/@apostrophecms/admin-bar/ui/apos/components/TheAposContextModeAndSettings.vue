@@ -125,7 +125,7 @@ export default {
           if (this.hasBeenPublished && !this.readyToPublish) {
             return 'Published';
           }
-          return 'Publish Updates';
+          return 'Publish Update';
         } else {
           if (this.hasBeenPublished && !this.readyToPublish) {
             return 'Published';
@@ -136,7 +136,7 @@ export default {
         if (this.hasBeenPublished && !this.readyToPublish) {
           return 'Submitted';
         }
-        return 'Submit Updates';
+        return 'Submit Update';
       }
     }
   },
