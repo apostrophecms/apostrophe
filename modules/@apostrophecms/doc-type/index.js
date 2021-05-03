@@ -36,7 +36,8 @@ module.exports = {
         },
         visibility: {
           type: 'select',
-          label: 'Who can view this?',
+          label: 'Visibility',
+          help: 'Select whether this content is public or private',
           def: 'public',
           required: true,
           choices: [
@@ -59,16 +60,11 @@ module.exports = {
           ]
         },
         utility: {
+          
           fields: [
-            'slug'
-          ]
-        },
-        permissions: {
-          label: 'Permissions',
-          fields: [
+            'slug',
             'visibility'
-          ],
-          last: true
+          ]
         }
       }
     };
