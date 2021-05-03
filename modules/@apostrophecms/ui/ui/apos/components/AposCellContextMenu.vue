@@ -5,13 +5,13 @@
         :disabled="disabled"
         :doc-id="item._id"
         :is-modified="manuallyPublished && item.modified"
-        :can-discard-draft="manuallyPublished && (item.modified || !item.lastPublishedAt)"
+        :can-discard-draft="canDiscardDraft"
         :is-modified-from-published="manuallyPublished && item.modified"
         :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
         :can-open-editor="true"
         :can-preview="(!!item._url && !item.archived)"
-        :can-archive="!item.archived && item._publish && (!manuallyPublished || !!item.lastPublishedAt)"
+        :can-archive="canArchive"
         :can-restore="item.archived && item._publish"
         :can-copy="!!item._id && !item.archived && canCreate"
         :can-dismiss-submission="canDismissSubmission && item.submitted && (item._publish || (item.submitted.byId === userId))"
@@ -67,6 +67,22 @@ export default {
       } else {
         return true;
       }
+    },
+    canDiscardDraft() {
+      let initial = true;
+      // Defaults to yes as only "virtual" views like "submitted drafts" would forbid it
+      if (this.options.canDiscardDraft != null) {
+        initial = this.options.canDiscardDraft;
+      }
+      return initial && this.manuallyPublished && (this.item.modified || !this.item.lastPublishedAt);
+    },
+    canArchive() {
+      let initial = true;
+      // Defaults to yes as only "virtual" views like "submitted drafts" would forbid it
+      if (this.options.canArchive != null) {
+        initial = this.options.canArchive;
+      }
+      return initial && !this.item.archived && this.item._publish && (!this.manuallyPublished || !!this.item.lastPublishedAt);
     },
     canDismissSubmission() {
       // Defaults to no as this is really only for the "submitted drafts" view
