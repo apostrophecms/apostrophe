@@ -183,9 +183,11 @@ module.exports = {
             _id: doc._id.replace(':draft', ':previous')
           });
           if (published) {
+            await self.apos.doc.db.remove({ _id: published._id });
             self.emit('afterDelete', req, published, { checkForChildren: false });
           }
           if (previous) {
+            await self.apos.doc.db.remove({ _id: previous._id });
             self.emit('afterDelete', req, previous, { checkForChildren: false });
           }
         },
