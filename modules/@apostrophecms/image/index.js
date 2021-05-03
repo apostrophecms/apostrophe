@@ -26,6 +26,7 @@ module.exports = {
     publishRole: 'editor'
   },
   fields: {
+    remove: [ 'visibility' ],
     add: {
       slug: {
         type: 'slug',
@@ -70,7 +71,6 @@ module.exports = {
           '_tags',
           'credit',
           'creditUrl',
-          'visibility',
           'slug',
           'archived'
         ]
@@ -78,6 +78,7 @@ module.exports = {
     }
   },
   filters: {
+    remove: [ 'visibility' ],
     add: {
       _tags: {
         label: 'Tags'
