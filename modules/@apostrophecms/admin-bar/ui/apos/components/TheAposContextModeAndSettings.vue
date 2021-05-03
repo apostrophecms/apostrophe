@@ -107,6 +107,12 @@ export default {
     canDismissSubmission: Boolean
   },
   emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
+  data() {
+    return {
+      hasBeenPublishedThisPageload: false,
+      hasBeenPublishedButNotUpdated: false
+    };
+  },
   computed: {
     moduleOptions() {
       return window.apos.adminBar;
@@ -116,13 +122,33 @@ export default {
     },
     publishLabel() {
       if (this.canPublish) {
-        if (this.original && this.original.lastPublishedAt) {
-          return 'Publish Updates';
+        if (this.context.lastPublishedAt) {
+          // Document went from unpublished to published and has nothing staged
+          if (this.hasBeenPublishedThisPageload && !this.readyToPublish && this.hasBeenPublishedButNotUpdated) {
+            return 'Published';
+          // Document *has* had changes published this page load, but nothing staged now
+          } else if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
+            return 'Updated';
+          // Document has been published and has staged changes
+          } else {
+            return 'Update';
+          }
+        // Document has never been published and has staged changes
         } else {
           return 'Publish';
         }
       } else {
-        return 'Submit Update';
+        // Document has been submitted this page load and has nothing staged
+        if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
+          return 'Submitted';
+        }
+        // Document has been previously published and contributor has staged changes
+        if (this.context.lastPublishedAt) {
+          return 'Submit Update';
+        } else {
+        // Document has never been published and has staged changes
+          return 'Submit';
+        }
       }
     }
   },
@@ -137,7 +163,13 @@ export default {
       this.$emit('dismiss-submission');
     },
     onPublish() {
+      if (!this.context.lastPublishedAt) {
+        this.hasBeenPublishedButNotUpdated = true;
+      } else {
+        this.hasBeenPublishedButNotUpdated = false;
+      }
       this.$emit('publish');
+      this.hasBeenPublishedThisPageload = true;
     },
     emitEvent(name) {
       apos.bus.$emit('admin-menu-click', name);
