@@ -34,7 +34,7 @@
       />
       <AposLabel
         v-else
-        label="Draft" :modifiers="['is-warning']"
+        label="Draft" :modifiers="['is-warning', 'is-filled']"
         tooltip="This document has not been published"
       />
     </span>
