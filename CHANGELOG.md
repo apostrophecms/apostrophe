@@ -6,6 +6,7 @@
 
 * Removes the `firstName` and `lastName` fields in user pieces.
 * The query parameters `apos-refresh`, `apos-edit`, `apos-mode` and `apos-locale` are now `aposRefresh`, `aposEdit`, `aposMode` and `aposLocale`. Going forward all query parameters will be camelCase for consistency with query builders.
+* Archiving a page or piece deletes any outstanding draft in favor of archiving the last published version. Previously the behavior was effectively the opposite.
 
 ### Adds
 
@@ -41,7 +42,8 @@
 * The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the [`form-data`](https://www.npmjs.com/package/form-data) npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
 * `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
 * `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
-
+* For page queries, the `children` query builder is now supported in query strings, including the `depth` subproperty. For instance you could fetch `/api/v1/@apostrophecms/page/id-of-page?children=1` or `/api/v1/@apostrophecms/page/id-of-page?children[depth]=3`.
+* Setting `APOS_LOG_ALL_QUERIES=1` now logs the projection, skip, limit and sort in addition to the criteria, which were previously logged.
 ### Fixes
 
 * Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
@@ -59,6 +61,8 @@
 * The main archive page cannot be restored, etc. via the context menu in the page tree.
 * The context menu and "Preview Draft" are both disabled while errors are present in the editor dialog box.
 * "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
+* "Preview Draft" never appears for types that do not use drafts.
+* The toggle state of admin bar utility items should only be mapped to an `is-active` class if, like palette, they opt in with `toggle: true`
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
