@@ -154,23 +154,6 @@ module.exports = {
           }
         }
       },
-      afterPublish: {
-        async replayMoveAfterPublish(req, { published, firstTime }) {
-          if (!firstTime) {
-            // We already do this after every move of the draft, so
-            // if there was already a published version it will have
-            // already been moved
-            return;
-          }
-          // Home page does not move
-          if (published.aposLastTargetId) {
-            return self.apos.page.move({
-              ...req,
-              mode: 'published'
-            }, published._id, published.aposLastTargetId, published.aposLastPosition);
-          }
-        }
-      },
       beforeUnpublish: {
         async descendantsMustNotBePublished(req, published) {
           const descendants = await self.apos.doc.db.countDocuments({
