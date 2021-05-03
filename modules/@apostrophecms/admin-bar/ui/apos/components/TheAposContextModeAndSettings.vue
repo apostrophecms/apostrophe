@@ -122,7 +122,7 @@ export default {
           return 'Publish';
         }
       } else {
-        return 'Submit Updates';
+        return 'Submit Update';
       }
     }
   },
