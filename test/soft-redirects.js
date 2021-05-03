@@ -73,10 +73,11 @@ describe('Soft Redirects - with `statusCode` option', async() => {
     return t.destroy(apos);
   });
 
-  it('should exist', async () => {
+  it('should exist', async function () {
+    this.timeout(t.timeout);
+    this.slow(4000);
     apos = await t.create({
       root: module,
-
       modules: {
         '@apostrophecms/page': {
           options: {
@@ -101,6 +102,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
       }
     });
     assert(apos.modules['@apostrophecms/soft-redirect']);
+
     assert.strictEqual(apos.modules['@apostrophecms/soft-redirect'].options.statusCode, 301);
   });
 
