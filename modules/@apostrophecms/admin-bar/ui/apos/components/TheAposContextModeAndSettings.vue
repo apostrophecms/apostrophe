@@ -107,6 +107,11 @@ export default {
     canDismissSubmission: Boolean
   },
   emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
+  data() {
+    return {
+      hasBeenPublished: false
+    };
+  },
   computed: {
     moduleOptions() {
       return window.apos.adminBar;
@@ -117,11 +122,20 @@ export default {
     publishLabel() {
       if (this.canPublish) {
         if (this.original && this.original.lastPublishedAt) {
+          if (this.hasBeenPublished && !this.readyToPublish) {
+            return 'Published';
+          }
           return 'Publish Updates';
         } else {
+          if (this.hasBeenPublished && !this.readyToPublish) {
+            return 'Published';
+          }
           return 'Publish';
         }
       } else {
+        if (this.hasBeenPublished && !this.readyToPublish) {
+          return 'Submitted';
+        }
         return 'Submit Updates';
       }
     }
@@ -138,6 +152,7 @@ export default {
     },
     onPublish() {
       this.$emit('publish');
+      this.hasBeenPublished = true;
     },
     emitEvent(name) {
       apos.bus.$emit('admin-menu-click', name);
