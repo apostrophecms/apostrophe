@@ -75,7 +75,6 @@
           <AposCellBasic
             v-else
             :header="header"
-            :item="item._publishedDoc || item"
             :draft="item"
             :published="item._publishedDoc"
           />
