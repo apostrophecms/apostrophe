@@ -116,21 +116,18 @@ module.exports = {
             throw self.apos.error('notfound');
           }
 
-          let data = [ page ];
-
-          // Prune pages we can't reorganize
-          data = clean(data);
           if (flat) {
             const result = [];
-            flatten(result, data[0]);
+            flatten(result, page);
 
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
               results: result
             };
+          } else {
+            return page;
           }
-          return data[0];
         } else {
           const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
           if (!result) {
@@ -142,37 +139,6 @@ module.exports = {
           return result;
         }
 
-        // If I can't edit at least one of a node's
-        // descendants, prune it from the tree. Returns
-        // a pruned version of the tree
-
-        function clean(nodes) {
-          mark(nodes, []);
-          return prune(nodes);
-          function mark(nodes, ancestors) {
-            _.each(nodes, function(node) {
-              if (node._edit) {
-                // TODO: Ensure `good` is removed from API responses.
-                node.good = true;
-                _.each(ancestors, function(ancestor) {
-                  ancestor.good = true;
-                });
-              }
-              mark(node._children || [], ancestors.concat([ node ]));
-            });
-          }
-          function prune(nodes) {
-            const newNodes = [];
-            _.each(nodes, function(node) {
-              node._children = prune(node._children || []);
-              if (node.good) {
-                newNodes.push(node);
-              }
-            });
-            return newNodes;
-          }
-
-        }
         function flatten(result, node) {
           const children = node._children;
           node._children = _.map(node._children, '_id');
@@ -334,11 +300,6 @@ module.exports = {
           return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
       },
-      // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
-      // To manipulate apostrophe's archived status for something, use a `PATCH` call to modify the `archived` property and set
-      // it to `true` or `false`. TODO: robust DELETE support as part of a recycle-bin-emptying UI with a big fat
-      // confirmation on it. Future implementation must also consider whether attachments have zero remaining references not
-      // fully deleted, which isn't the same as having references still in the archive.
       async delete(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         self.publicApiCheck(req);
@@ -578,7 +539,9 @@ database.`);
       'apostrophe:afterInit': {
         addServeRoute() {
           self.apos.app.get('*', self.serve);
-        },
+        }
+      },
+      '@apostrophecms/migration:after': {
         async implementParkAll() {
           const req = self.apos.task.getReq();
           for (const item of self.parked) {
@@ -1006,7 +969,6 @@ database.`);
           await nudgeNewPeers();
           await moveSelf();
           await updateDescendants();
-          await archiveDescendants();
           await manager.emit('afterMove', req, moved, {
             originalSlug,
             originalPath,
@@ -1126,28 +1088,6 @@ database.`);
           }
           async function updateDescendants() {
             changed = changed.concat(await self.updateDescendantsAfterMove(req, moved, originalPath, originalSlug));
-          }
-          async function archiveDescendants() {
-            // Make sure our descendants have the same archived status
-            const matchParentPathPrefix = self.matchDescendants(moved);
-            const $set = {};
-            const $unset = {};
-            if (moved.archived) {
-              $set.archived = true;
-            } else {
-              $unset.archived = true;
-            }
-            const action = {};
-            if (!_.isEmpty($set)) {
-              action.$set = $set;
-            }
-            if (!_.isEmpty($unset)) {
-              action.$unset = $unset;
-            }
-            if (_.isEmpty(action)) {
-              return;
-            }
-            await self.apos.doc.db.updateMany({ path: matchParentPathPrefix }, action);
           }
         }
       },
@@ -1687,13 +1627,8 @@ database.`);
       // indicating the new slugs for any pages that were modified.
       async updateDescendantsAfterMove(req, page, originalPath, originalSlug) {
         // If our slug changed, then our descendants' slugs should
-        // also change, if they are still similar. You can't do a
-        // global substring replace in MongoDB the way you can
-        // in MySQL, so we need to fetch them and update them
-        // individually. async.mapSeries is a good choice because
-        // there may be zillions of descendants and we don't want
-        // to choke the server. We could use async.mapLimit, but
-        // let's not get fancy just yet
+        // also change, if they are still similar. Also the archived
+        // status should match the new parent
         const changed = [];
         if (originalSlug === page.slug && originalPath === page.path) {
           return changed;
@@ -1701,60 +1636,37 @@ database.`);
         const oldLevel = originalPath.split('/').length - 1;
         const matchParentPathPrefix = new RegExp('^' + self.apos.util.regExpQuote(originalPath + '/'));
         const matchParentSlugPrefix = new RegExp('^' + self.apos.util.regExpQuote(originalSlug + '/'));
-        let done = false;
-        const query = self.apos.doc.db.find({ path: matchParentPathPrefix }).project({
-          slug: 1,
-          path: 1,
-          level: 1,
-          trash: 1,
-          lastPublishedAt: 1
-        });
-        while (!done) {
-          const desc = await query.next();
-          if (!desc) {
-            // This means there are no more objects
-            done = true;
-            break;
+        const descendants = await self.findForEditing(req, {
+          path: matchParentPathPrefix
+        }).areas(false).relationships(false).toArray();
+        for (const descendant of descendants) {
+          if (page.archived && !descendant.lastPublishedAt) {
+            await self.delete(req, descendant, { checkForChildren: false });
+            continue;
           }
-          let newSlug = desc.slug.replace(matchParentSlugPrefix, page.slug + '/');
-          if (page.archived && !desc.archived) {
+          let newSlug = descendant.slug.replace(matchParentSlugPrefix, page.slug + '/');
+          if (page.archived && !descendant.archived) {
             // #385: we are moving this to the archive, force a new slug
             // even if it was formerly a customized one. Otherwise it is
             // difficult to free up custom slugs by archiving pages
-            if (newSlug === desc.slug) {
-              newSlug = page.slug + '/' + path.basename(desc.slug);
+            if (newSlug === descendant.slug) {
+              newSlug = page.slug + '/' + path.basename(descendant.slug);
             }
           }
           changed.push({
-            _id: desc._id,
+            _id: descendant._id,
             slug: newSlug
           });
           // Allow for the possibility that the slug becomes
           // a duplicate of something already nested under
           // the new parent at this point
-          desc.path = desc.path.replace(matchParentPathPrefix, page.path + '/');
-          desc.slug = newSlug;
-          desc.level = desc.level + (page.level - oldLevel);
-          desc.trash = page.trash;
-          if (desc.trash) {
-            desc.lastPublishedAt = null;
-          }
-          await self.apos.doc.retryUntilUnique(req, desc, () => updateDescendant(desc));
+          descendant.path = descendant.path.replace(matchParentPathPrefix, page.path + '/');
+          descendant.slug = newSlug;
+          descendant.level = descendant.level + (page.level - oldLevel);
+          descendant.archived = page.archived;
+          await self.apos.doc.retryUntilUnique(req, descendant, () => self.update(req, descendant));
         }
         return changed;
-        async function updateDescendant(desc) {
-          await self.apos.doc.db.updateOne({ _id: desc._id }, { $set: _.pick(desc, 'path', 'slug', 'level', 'lastPublishedAt', 'trash') });
-          if (desc.trash) {
-            await self.apos.doc.db.removeMany({
-              _id: {
-                $in: [
-                  desc._id.replace(':draft', ':published'),
-                  desc._id.replace(':draft', ':previous')
-                ]
-              }
-            });
-          }
-        }
       },
       // Parks one page as found in the `park` option. Called by
       // `implementParkAll`.

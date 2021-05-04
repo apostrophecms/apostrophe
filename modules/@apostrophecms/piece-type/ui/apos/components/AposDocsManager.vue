@@ -95,7 +95,10 @@
               disableUnpublished: !!relationshipField,
               manuallyPublished: manuallyPublished,
               canEdit: moduleOptions.canEdit,
-              canCreate: moduleOptions.canCreate
+              canCreate: moduleOptions.canCreate,
+              canDismissSubmission: moduleOptions.canDismissSubmission,
+              canDiscardDraft: moduleOptions.canDiscardDraft,
+              canArchive: moduleOptions.canArchive
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -135,6 +138,7 @@ export default {
         type: 'overlay',
         showModal: false
       },
+      headers: [],
       items: [],
       lastSelected: null,
       totalPages: 1,
@@ -181,14 +185,6 @@ export default {
         message: '',
         emoji: '📄'
       };
-    },
-    headers() {
-      if (!this.items) {
-        return this.moduleOptions.columns || [];
-      }
-      return (this.moduleOptions.columns || []).filter(column => {
-        return (column.name !== '_url') || this.items.find(item => item._url);
-      });
     }
   },
   created() {
@@ -202,6 +198,7 @@ export default {
   },
   async mounted() {
     this.bindShortcuts();
+    this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
@@ -382,6 +379,7 @@ export default {
       this.currentPage = 1;
 
       this.getPieces();
+      this.headers = this.computeHeaders();
     },
 
     shortcutNew(event) {
@@ -401,6 +399,13 @@ export default {
     },
     destroyShortcuts() {
       window.removeEventListener('keydown', this.shortcutNew);
+    },
+    computeHeaders() {
+      let headers = this.moduleOptions.columns || [];
+      if (this.filterValues.archived) {
+        headers = headers.filter(h => h.component !== 'AposCellLabels');
+      }
+      return headers;
     }
   }
 };

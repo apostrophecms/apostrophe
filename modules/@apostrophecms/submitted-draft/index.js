@@ -9,7 +9,10 @@ module.exports = {
     quickCreate: false,
     label: 'Submitted Draft',
     pluralLabel: 'Submitted Drafts',
-    canCreate: false
+    canCreate: false,
+    canDismissSubmission: true,
+    canArchive: false,
+    canDiscardDraft: false
   },
   columns: {
     add: {

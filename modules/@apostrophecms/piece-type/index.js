@@ -6,7 +6,9 @@ module.exports = {
   options: {
     perPage: 10,
     quickCreate: true,
-    previewDraft: true
+    previewDraft: true,
+    canCreate: true,
+    canDismissSubmission: false
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -767,8 +769,10 @@ module.exports = {
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.singleton = self.options.singleton;
-        browserOptions.previewDraft = self.options.previewDraft;
-        browserOptions.canCreate = self.options.canCreate !== false;
+        browserOptions.canCreate = self.options.canCreate;
+        browserOptions.canDismissSubmission = self.options.canDismissSubmission;
+        browserOptions.canArchive = self.options.canArchive;
+        browserOptions.canDiscardDraft = self.options.canDiscardDraft;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {

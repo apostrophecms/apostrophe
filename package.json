@@ -38,6 +38,7 @@
     "broadband": "^1.1.0",
     "cheerio": "^0.22.0",
     "child-process-promise": "^2.2.1",
+    "common-tags": "^1.8.0",
     "connect-mongo": "^3.0.0",
     "connect-multiparty": "^2.1.1",
     "cookie-parser": "^1.4.5",

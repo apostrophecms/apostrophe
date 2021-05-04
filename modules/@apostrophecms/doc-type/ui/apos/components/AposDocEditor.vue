@@ -18,6 +18,7 @@
         depend on modification from published -->
       <AposDocMoreMenu
         v-if="hasMoreMenu"
+        :disabled="errorCount > 0"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
@@ -36,6 +37,7 @@
       />
       <AposButton
         v-if="canPreviewDraft" type="secondary"
+        :disabled="errorCount > 0"
         @click="saveDraftAndPreview" label="Preview Draft"
       />
       <AposButton
@@ -140,14 +142,6 @@ export default {
     copyOf: {
       type: Object,
       default: null
-    },
-    filterValues: {
-      type: Object,
-      default() {
-        return {
-          archived: false
-        };
-      }
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -167,8 +161,7 @@ export default {
       live: null,
       published: null,
       errorCount: 0,
-      restoreOnly: false,
-      filters: { ...this.filterValues }
+      restoreOnly: false
     };
   },
   computed: {
@@ -187,6 +180,10 @@ export default {
       return this.followingValues('utility');
     },
     saveDisabled() {
+      if (this.restoreOnly) {
+        // Can always restore if it's a read-only view of the archive
+        return false;
+      }
       if (this.errorCount) {
         // Always block save if there are errors in the modal
         return true;
@@ -302,20 +299,24 @@ export default {
         return 'Restore';
       } else if (this.manuallyPublished) {
         if (this.moduleOptions.canPublish) {
-          if (this.original && this.original.lastPublishedAt) {
+          if (this.copyOf) {
+            return 'Publish';
+          } else if (this.original && this.original.lastPublishedAt) {
             return 'Update';
           } else {
             return 'Publish';
           }
         } else {
-          if (this.original && this.original.lastPublishedAt) {
+          if (this.copyOf) {
+            return 'Submit';
+          } else if (this.original && this.original.lastPublishedAt) {
             return 'Submit Update';
           } else {
             return 'Submit';
           }
         }
       } else {
-        return 'Update';
+        return 'Save';
       }
     },
     isModified() {
@@ -410,7 +411,7 @@ export default {
           this.published = await apos.http.get(this.getOnePath, {
             busy: true,
             qs: {
-              ...this.filters,
+              archived: 'any',
               aposMode: 'published'
             }
           });
@@ -428,8 +429,18 @@ export default {
       }
     } else if (this.copyOf) {
       const newInstance = klona(this.copyOf);
+      delete newInstance.parked;
       newInstance.title = `Copy of ${this.copyOf.title}`;
-      newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+      if (this.copyOf.slug.startsWith('/')) {
+        const matches = this.copyOf.slug.match(/\/([^/]+)$/);
+        if (matches) {
+          newInstance.slug = `${apos.page.page.slug}/copy-of-${matches[1]}`;
+        } else {
+          newInstance.slug = '/copy-of-home-page';
+        }
+      } else {
+        newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+      }
       delete newInstance._id;
       this.original = newInstance;
       if (newInstance && newInstance.type !== this.docType) {
@@ -454,13 +465,13 @@ export default {
         }
         docData = await apos.http.get(this.getOnePath, {
           busy: true,
-          qs: this.filters,
+          qs: {
+            archived: 'any'
+          },
           draft: true
         });
 
-        // Pages don't use the restore mechanism because they
-        // treat the archive as a place in the tree you can drag from
-        if (docData.archived && (!(this.moduleName === '@apostrophecms/page'))) {
+        if (docData.archived) {
           this.restoreOnly = true;
         } else {
           this.restoreOnly = false;
@@ -559,9 +570,10 @@ export default {
       this.modal.showModal = false;
     },
     async onSave() {
-      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+      if (this.restoreOnly) {
+        await this.restore(this.original);
+      } else if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
-          restoreOnly: this.restoreOnly,
           andPublish: this.manuallyPublished
         });
       } else {
@@ -646,7 +658,6 @@ export default {
           this.modal.showModal = false;
         }
         if (this.restoreOnly) {
-          this.filters.archived = false;
           await this.loadDoc();
           await apos.notify('Archived content restored', {
             type: 'success',

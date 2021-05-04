@@ -75,7 +75,6 @@
           <AposCellBasic
             v-else
             :header="header"
-            :item="item._publishedDoc || item"
             :draft="item"
             :published="item._publishedDoc"
           />
@@ -162,9 +161,7 @@ export default {
       }
     },
     contextMenuOptions() {
-      return {
-        canCreate: this.options.canCreate
-      };
+      return this.options;
     }
   },
   watch: {
