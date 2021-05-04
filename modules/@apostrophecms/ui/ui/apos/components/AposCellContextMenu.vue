@@ -12,7 +12,7 @@
         :can-open-editor="true"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="canArchive"
-        :can-restore="item.archived && item._publish"
+        :can-restore="item.archived && item._edit"
         :can-copy="!!item._id && !item.archived && canCreate"
         :can-dismiss-submission="canDismissSubmission && item.submitted && (item._publish || (item.submitted.byId === userId))"
         @edit="$emit('edit')"

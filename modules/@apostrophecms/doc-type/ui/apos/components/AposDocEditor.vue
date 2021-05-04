@@ -425,8 +425,18 @@ export default {
       }
     } else if (this.copyOf) {
       const newInstance = klona(this.copyOf);
+      delete newInstance.parked;
       newInstance.title = `Copy of ${this.copyOf.title}`;
-      newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+      if (this.copyOf.slug.startsWith('/')) {
+        const matches = this.copyOf.slug.match(/\/([^/]+)$/);
+        if (matches) {
+          newInstance.slug = `${apos.page.page.slug}/copy-of-${matches[1]}`;
+        } else {
+          newInstance.slug = '/copy-of-home-page';
+        }
+      } else {
+        newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+      }
       delete newInstance._id;
       this.original = newInstance;
       if (newInstance && newInstance.type !== this.docType) {

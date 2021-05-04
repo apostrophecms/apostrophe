@@ -162,6 +162,20 @@ module.exports = {
         // for the children, which you may use to filter them.
         children: {
           def: false,
+          launder(input) {
+            let value = null;
+            if (input) {
+              if ((typeof input) === 'object') {
+                value = {};
+                if (input.depth) {
+                  value.depth = self.apos.launder.integer(input.depth);
+                }
+              } else {
+                value = true;
+              }
+            }
+            return value;
+          },
           async after(results) {
             const value = query.get('children');
             if ((!value) || (!results.length)) {
