@@ -67,7 +67,9 @@ describe('Soft Redirects', function() {
 
 });
 
-describe('Soft Redirects - with `statusCode` option', async() => {
+describe('Soft Redirects - with `statusCode` option', async function() {
+
+  this.timeout(t.timeout);
 
   after(async() => {
     return t.destroy(apos);
