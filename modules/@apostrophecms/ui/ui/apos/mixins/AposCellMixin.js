@@ -12,9 +12,7 @@ export default {
     },
     draft: {
       type: Object,
-      default() {
-        return null;
-      }
+      required: true
     },
     published: {
       type: Object,
