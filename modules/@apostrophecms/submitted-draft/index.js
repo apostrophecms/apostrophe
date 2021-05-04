@@ -10,7 +10,9 @@ module.exports = {
     label: 'Submitted Draft',
     pluralLabel: 'Submitted Drafts',
     canCreate: false,
-    canDismissSubmission: true
+    canDismissSubmission: true,
+    canArchive: false,
+    canDiscardDraft: false
   },
   columns: {
     add: {

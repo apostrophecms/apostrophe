@@ -100,8 +100,11 @@ export default {
       }
     }
   },
-  mounted() {
+  async mounted() {
     this.debouncedCheckConflict = debounce(() => this.checkConflict(), 250);
+    if (this.next.length) {
+      await this.debouncedCheckConflict();
+    }
   },
   methods: {
     async watchNext() {

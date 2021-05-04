@@ -96,7 +96,9 @@
               manuallyPublished: manuallyPublished,
               canEdit: moduleOptions.canEdit,
               canCreate: moduleOptions.canCreate,
-              canDismissSubmission: moduleOptions.canDismissSubmission
+              canDismissSubmission: moduleOptions.canDismissSubmission,
+              canDiscardDraft: moduleOptions.canDiscardDraft,
+              canArchive: moduleOptions.canArchive
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
