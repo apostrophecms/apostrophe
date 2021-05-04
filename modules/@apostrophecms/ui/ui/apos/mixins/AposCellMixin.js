@@ -6,10 +6,6 @@ export default {
       type: Object,
       required: true
     },
-    item: {
-      type: Object,
-      required: true
-    },
     draft: {
       type: Object,
       required: true
@@ -34,6 +30,11 @@ export default {
         namespace = 'item';
       }
       return get(this[namespace], path);
+    }
+  },
+  computed: {
+    item() {
+      return this.published || this.draft;
     }
   }
 };
