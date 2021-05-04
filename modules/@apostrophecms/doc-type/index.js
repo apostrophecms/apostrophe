@@ -61,7 +61,6 @@ module.exports = {
           ]
         },
         utility: {
-
           fields: [
             'slug',
             'visibility'
