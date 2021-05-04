@@ -37,6 +37,7 @@ module.exports = {
           fields: [
             'slug',
             'type',
+            'visibility',
             'orphan'
           ]
         }
@@ -170,6 +171,24 @@ module.exports = {
           }
         }
       },
+      afterRevertPublishedToPrevious: {
+        async replayMoveAfterRevert(req, result) {
+          const publishedReq = {
+            ...req,
+            mode: 'published'
+          };
+          if (result.published.level === 0) {
+            // The home page cannot move, so there is no
+            // chance we need to "replay" such a move
+            return;
+          }
+          await self.apos.page.move(publishedReq, result.published._id, result.published.aposLastTargetId, result.published.aposLastPosition);
+          const published = await self.apos.page.findOneForEditing(publishedReq, {
+            _id: result.published._id
+          });
+          result.published = published;
+        }
+      },
       beforeDelete: {
         async checkForParked(req, doc, options) {
           if (doc.level === 0) {
@@ -180,12 +199,14 @@ module.exports = {
           }
         },
         async checkForChildren(req, doc, options) {
-          const descendants = await self.apos.doc.db.countDocuments({
-            path: self.apos.page.matchDescendants(doc),
-            aposLocale: doc.aposLocale
-          });
-          if (descendants) {
-            throw self.apos.error('invalid', 'You must delete the children of this page first.');
+          if (options.checkForChildren !== false) {
+            const descendants = await self.apos.doc.db.countDocuments({
+              path: self.apos.page.matchDescendants(doc),
+              aposLocale: doc.aposLocale
+            });
+            if (descendants) {
+              throw self.apos.error('invalid', 'You must delete the children of this page first.');
+            }
           }
         }
       }

@@ -10,22 +10,52 @@ export default {
     // Returns `true` if the document was ultimately archived.
 
     async archive(doc) {
+      const moduleOptions = window.apos.modules[doc.type];
+      // Make sure that if there are any modified descendants we know about them
+      const isPage = doc.slug.startsWith('/');
       try {
-        const moduleOptions = window.apos.modules[doc.type];
-        const isPage = doc.slug.startsWith('/');
+        if (isPage) {
+          doc = await apos.http.get(`${moduleOptions.action}/${doc._id}`, {
+            draft: true,
+            qs: {
+              children: {
+                depth: 10
+              }
+            }
+          });
+        }
+        const isModified = findModified(doc);
+        const descendants = countDescendants(doc);
+        const draftDescendants = countDraftDescendants(doc);
         const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
-        const hasChildren = isPage && doc._children && doc._children.length;
-        const plainType = isPage ? 'page' : (moduleOptions.label || 'content');
+        const plainType = isPage ? 'page' : (moduleOptions.label || 'document');
+        const pluralPlainType = isPage ? 'pages' : (moduleOptions.pluralLabel || (moduleOptions.label && `${moduleOptions.label}s`) || 'documents');
         let description = `You are going to archive the ${plainType} "${doc.title}"`;
 
-        if (hasChildren) {
-          description += `, which has ${doc._children.length} child ${plainType}${doc._children.length > 1 ? 's' : ''}`;
+        if (descendants > 0) {
+          description += `, which has ${descendants} child ${pluralPlainType}`;
+        }
+
+        if (draftDescendants > 0) {
+          description += `, ${draftDescendants} of which have never been published`;
         }
 
         if (isPublished) {
           description += `. This will also un-publish the ${plainType}`;
+        }
+
+        if (draftDescendants > 0) {
+          description += '. Child pages that have never been published will be permanently deleted';
+        }
+
+        if (isModified) {
+          if (isPage) {
+            description += '. Also, unpublished draft changes to this document and/or its children will be permanently deleted';
+          } else {
+            description += '. Also, unpublished draft changes to this document will be permanently deleted';
+          }
         }
 
         description += '.';
@@ -38,7 +68,7 @@ export default {
           note: isCurrentContext
             ? 'You are currently viewing the page you want to archive. When it is archived you will be returned to the home page.'
             : null,
-          form: hasChildren
+          form: descendants > 0
             ? {
               schema: [ {
                 type: 'radio',
@@ -48,7 +78,7 @@ export default {
                   label: `Archive only this ${plainType}`,
                   value: 'this'
                 }, {
-                  label: `Archive this ${plainType} and all child ${plainType}s`,
+                  label: `Archive this ${plainType} and all child ${pluralPlainType}`,
                   value: 'all'
                 } ]
               } ],
@@ -112,6 +142,34 @@ export default {
           description: e.message || 'An error occurred while moving the document to the archive.'
         });
       }
+      function findModified(doc) {
+        if (doc.modified) {
+          return true;
+        }
+        return (doc._children || []).find(doc => findModified(doc));
+      }
+      function countDescendants(doc) {
+        if (!isPage) {
+          return 0;
+        }
+        let total = 0;
+        for (const child of doc._children) {
+          total++;
+          total += countDescendants(child);
+        }
+        return total;
+      }
+      function countDraftDescendants(doc) {
+        if (!isPage) {
+          return 0;
+        }
+        let total = 0;
+        for (const child of doc._children) {
+          total += ((child.lastPublishedAt && 1) || 0);
+          total += countDraftDescendants(child);
+        }
+        return total;
+      }
     },
     async restore(doc) {
       const moduleOptions = apos.modules[doc.type];
@@ -156,8 +214,7 @@ export default {
               body: {
                 _targetId: '_archive',
                 _position: 'lastChild',
-                archived: true,
-                _publish: false
+                archived: true
               },
               busy: false,
               draft: true

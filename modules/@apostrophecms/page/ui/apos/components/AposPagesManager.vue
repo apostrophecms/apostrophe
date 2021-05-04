@@ -191,29 +191,34 @@ export default {
       }
     },
     headers() {
-      return this.options.columns || [];
+      let headers = this.options.columns || [];
+      if (!this.pageSetMenuSelectionIsLive) {
+        headers = headers.filter(h => h.component !== 'AposCellLabels');
+      }
+      return headers;
     },
     pageSetMenu() {
-      const isLive = this.pageSetMenuSelection === 'live';
       return [ {
         label: 'Live',
         action: 'live',
-        modifiers: isLive ? [ 'selected', 'disabled' ] : []
+        modifiers: this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
       }, {
         label: 'Archive',
         action: 'archive',
-        modifiers: !isLive ? [ 'selected', 'disabled' ] : []
+        modifiers: !this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
       } ];
     },
     pageSetMenuButton() {
-      const isLive = this.pageSetMenuSelection === 'live';
       const button = {
-        label: isLive ? 'Live' : 'Archive',
+        label: this.pageSetMenuSelectionIsLive ? 'Live' : 'Archive',
         icon: 'chevron-down-icon',
         modifiers: [ 'no-motion', 'outline', 'icon-right' ],
         class: 'apos-pages-manager__page-set-menu-button'
       };
       return button;
+    },
+    pageSetMenuSelectionIsLive() {
+      return this.pageSetMenuSelection === 'live';
     }
   },
   watch: {
@@ -291,7 +296,7 @@ export default {
             busy: true,
             qs: {
               all: '1',
-              archived: this.relationshipField || this.pageSetMenuSelection === 'live' ? '0' : 'any',
+              archived: this.relationshipField || this.pageSetMenuSelectionIsLive ? '0' : 'any',
               // Also fetch published docs as _publishedDoc subproperties
               withPublished: 1
             },
@@ -302,16 +307,27 @@ export default {
         // If editor is looking at the archive tree, trim the normal page tree response
         if (this.pageSetMenuSelection === 'archive') {
           pageTree = pageTree._children.find(page => page.slug === '/archive');
+          pageTree = pageTree._children;
         }
 
         formatPage(pageTree);
 
-        this.pages = [ pageTree ];
+        if (!pageTree.length && pageTree.length !== 0) {
+          pageTree = [ pageTree ];
+        }
+
+        this.pages = [ ...pageTree ];
+
       } finally {
         this.gettingPages = false;
       }
 
       function formatPage(page) {
+        if (page.length) {
+          page.forEach(formatPage);
+          return;
+        }
+
         self.pagesFlat.push(klona(page));
 
         if (Array.isArray(page._children)) {
