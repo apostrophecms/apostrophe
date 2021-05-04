@@ -771,6 +771,8 @@ module.exports = {
         browserOptions.singleton = self.options.singleton;
         browserOptions.canCreate = self.options.canCreate;
         browserOptions.canDismissSubmission = self.options.canDismissSubmission;
+        browserOptions.canArchive = self.options.canArchive;
+        browserOptions.canDiscardDraft = self.options.canDiscardDraft;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {
