@@ -3,7 +3,7 @@
     class="apos-table__cell-field apos-table__cell-field--labels"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    <span v-if="manuallyPublished && item.modified && !item.submitted && item.lastPublishedAt">
+    <span v-if="manuallyPublished && (item.modified || draft.modified) && !item.submitted && item.lastPublishedAt">
       <AposLabel
         label="Pending Updates" class="apos-table__cell-field__label"
         tooltip="There are active changes to this document."
@@ -38,6 +38,10 @@ export default {
   name: 'AposCellLabels',
   props: {
     item: {
+      type: Object,
+      required: true
+    },
+    draft: {
       type: Object,
       required: true
     },
