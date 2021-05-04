@@ -37,6 +37,7 @@ module.exports = {
           fields: [
             'slug',
             'type',
+            'visibility',
             'orphan'
           ]
         }
