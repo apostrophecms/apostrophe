@@ -44,6 +44,7 @@
 * `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
 * For page queries, the `children` query builder is now supported in query strings, including the `depth` subproperty. For instance you could fetch `/api/v1/@apostrophecms/page/id-of-page?children=1` or `/api/v1/@apostrophecms/page/id-of-page?children[depth]=3`.
 * Setting `APOS_LOG_ALL_QUERIES=1` now logs the projection, skip, limit and sort in addition to the criteria, which were previously logged.
+
 ### Fixes
 
 * Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
@@ -66,6 +67,8 @@
 * Attention is properly called to a slug conflict if it exists immediately when the document is opened (such as making a copy where the suggested slug has already been used for another copy).
 * "Preview Draft" never appears for types that do not use drafts.
 * The toggle state of admin bar utility items should only be mapped to an `is-active` class if, like palette, they opt in with `toggle: true`
+* Fixed unique key errors in the migrate task by moving the parking of parked pages to a new `@apostrophecms/migrate:after` event handler, which runs only after migrations, whether that is at startup (in dev) or at the end of the migration task (in production).
+* UI does not offer "Archive" for the home page, or other archived pages.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
