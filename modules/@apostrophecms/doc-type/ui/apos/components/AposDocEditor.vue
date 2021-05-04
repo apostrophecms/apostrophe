@@ -557,9 +557,8 @@ export default {
     },
     async onSave() {
       if (this.restoreOnly) {
-        const doc = await this.restore(this.original);
-        this.$emit('modal-result', doc);
-        this.modal.showModal = false;
+        await this.restore(this.original);
+        await this.loadDoc();
       } else if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
           andPublish: this.manuallyPublished
