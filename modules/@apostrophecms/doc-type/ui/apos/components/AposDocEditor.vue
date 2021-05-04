@@ -212,6 +212,10 @@ export default {
         return true;
       }
       // Contributor case. Button is "submit"
+      // If previously published and not modified since, we can't submit
+      if (this.published && !this.isModifiedFromPublished) {
+        return true;
+      }
       if (!this.original.submitted) {
         // Allow initial submission
         return false;
