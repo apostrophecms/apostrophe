@@ -1,5 +1,3 @@
-import { get } from 'lodash';
-
 export default {
   props: {
     header: {
@@ -29,7 +27,17 @@ export default {
         path = namespace;
         namespace = 'item';
       }
-      return get(this[namespace], path);
+      const components = path.split('.');
+      let value = this[namespace];
+      try {
+        for (const component of components) {
+          value = value[component];
+        }
+      } catch (e) {
+        // Intentionally tolerant, like _.get
+        return null;
+      }
+      return value;
     }
   },
   computed: {
