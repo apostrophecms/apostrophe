@@ -245,6 +245,15 @@ module.exports = {
               await self.runOne(migration);
             }
           }
+          // In production, this event is emitted only at the end of the migrate command line task.
+          // In dev it is emitted at every startup after the automatic migration.
+          //
+          // Intentionally emitted regardless of whether the site is new or not.
+          //
+          // This is the right time to park pages, for instance, because the
+          // database is guaranteed to be in a sane state, whether because the
+          // site is new or because migrations ran successfully.
+          await self.emit('after');
         } finally {
           await self.apos.lock.unlock(self.__meta.name);
         }
