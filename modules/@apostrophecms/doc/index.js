@@ -646,6 +646,11 @@ module.exports = {
           // different from the published, which won't exist yet
           doc.modified = true;
         }
+        if (!doc.visibility) {
+          // If the visibility property has been removed from the schema
+          // (images and files), make sure public queries can still match this type
+          doc.visibility = 'public';
+        }
         return self.retryUntilUnique(req, doc, async function () {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
         });
