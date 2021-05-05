@@ -27,7 +27,7 @@ module.exports = {
       },
       'draft:submitted.at': {
         label: 'Submitted',
-        component: 'AposCellDate'
+        component: 'AposCellLastEdited'
       },
       'draft:submitted.by': {
         label: 'Proposed By',

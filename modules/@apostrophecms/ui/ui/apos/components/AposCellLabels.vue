@@ -3,7 +3,7 @@
     class="apos-table__cell-field apos-table__cell-field--labels"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    <span v-if="manuallyPublished && draft.modified && draft.submitted && draft.lastPublishedAt">
+    <span v-if="manuallyPublished && draft.modified && draft.lastPublishedAt">
       <AposLabel
         label="Pending Updates" class="apos-table__cell-field__label"
         tooltip="There are active changes to this document."
