@@ -83,6 +83,13 @@
         <td v-if="options.canEdit" class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :item="item"
+            :draft="item"
+            :published="item._publishedDoc"
+            :header="{
+              columnHeader: '',
+              property: 'contextMenu',
+              component: 'AposCellContextMenu'
+            }"
             :options="contextMenuOptions"
             @edit="$emit('open', item._id)"
             @preview="$emit('preview', item._id)"
