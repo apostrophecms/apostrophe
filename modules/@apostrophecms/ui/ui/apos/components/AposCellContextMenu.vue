@@ -30,18 +30,18 @@
 </template>
 
 <script>
+
+import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
+
 export default {
   name: 'AposCellContextMenu',
+  mixins: [ AposCellMixin ],
   props: {
     state: {
       type: Object,
       default() {
         return null;
       }
-    },
-    item: {
-      type: Object,
-      required: true
     },
     options: {
       type: Object,
