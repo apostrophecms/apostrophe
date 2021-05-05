@@ -7,7 +7,7 @@
         <TheAposAdminBarMenu :items="items" />
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
-      <TheAposContextBar />
+      <TheAposContextBar @mounted="setSpacer" />
     </nav>
   </div>
 </template>
@@ -27,8 +27,13 @@ export default {
     }
   },
   async mounted() {
-    window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
-    this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
+    this.setSpacer();
+  },
+  methods: {
+    setSpacer() {
+      window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
+      this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
+    }
   }
 };
 </script>
