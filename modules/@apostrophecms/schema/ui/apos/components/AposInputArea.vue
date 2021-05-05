@@ -6,8 +6,11 @@
     :modifiers="modifiers"
   >
     <template #body>
+      <!-- data-apos-schema-area lets all the child areas know that this area is in a schema (which is in a modal)
+       and that we should position the z-index of context menus appropriately high -->
       <div
         class="apos-input-wrapper" :class="!next.items.length ? 'is-empty' : null"
+        data-apos-schema-area
       >
         <!-- We do not pass docId here because it is solely for
           contextual editing as far as the area editor is concerned. -Tom -->
@@ -20,7 +23,6 @@
           :field-id="field._id"
           :field="field"
           @changed="changed"
-          :in-context="false"
         />
       </div>
     </template>
