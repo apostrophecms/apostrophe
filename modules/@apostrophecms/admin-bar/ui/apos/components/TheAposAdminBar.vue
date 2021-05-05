@@ -33,6 +33,7 @@ export default {
     setSpacer() {
       window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
       this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
+      apos.bus.$emit('admin-menu-height-changed');
     }
   }
 };
