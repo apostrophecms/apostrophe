@@ -26,7 +26,6 @@
           :widget-options="options.widgets"
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
-          :in-context="inContext"
         />
       </template>
     </div>
@@ -47,7 +46,6 @@
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
         :rendering="rendering(widget)"
-        :in-context="inContext"
         @up="up"
         @down="down"
         @remove="remove"
@@ -111,12 +109,6 @@ export default {
       type: Object,
       default() {
         return {};
-      }
-    },
-    inContext: {
-      type: Boolean,
-      default() {
-        return true;
       }
     }
   },
