@@ -46,6 +46,7 @@
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
         :rendering="rendering(widget)"
+        :in-context="inContext"
         @up="up"
         @down="down"
         @remove="remove"
