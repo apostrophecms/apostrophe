@@ -34,7 +34,6 @@
           v-for="(col, index) in headers"
           :key="`${col.property}-${index}`"
           :is="getEffectiveType(col, row)"
-          :item="row._publishedDoc || row"
           :draft="row"
           :published="row._publishedDoc"
           :header="col"
