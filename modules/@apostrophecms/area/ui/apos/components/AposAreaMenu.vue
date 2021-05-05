@@ -107,17 +107,14 @@ export default {
     disabled: {
       type: Boolean,
       default: false
-    },
-    inContext: {
-      type: Boolean,
-      default: true
     }
   },
   emits: [ 'menu-close', 'menu-open', 'add' ],
   data() {
     return {
       active: 0,
-      groupIsFocused: false
+      groupIsFocused: false,
+      inContext: true
     };
   },
   computed: {
@@ -172,6 +169,11 @@ export default {
     menuId() {
       return `areaMenu-${cuid()}`;
     }
+  },
+  mounted() {
+    // if this area is not in-context then it is assumed in a schema's modal and we need to bump
+    // the z-index of menus above them
+    this.inContext = !apos.util.closest(this.$el, '[data-apos-schema-area]');
   },
   methods: {
     menuClose(e) {
