@@ -58,6 +58,7 @@
           :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="options.widgets"
+          :in-context="inContext"
         />
       </div>
       <div
@@ -118,6 +119,7 @@
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
+          :in-context="inContext"
           @menu-open="toggleMenuFocus($event, 'bottom', true)"
           @menu-close="toggleMenuFocus($event, 'bottom', false)"
         />
@@ -185,6 +187,12 @@ export default {
       type: Object,
       default() {
         return null;
+      }
+    },
+    inContext: {
+      type: Boolean,
+      default() {
+        return true;
       }
     }
   },
