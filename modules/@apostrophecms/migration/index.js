@@ -40,8 +40,11 @@ module.exports = {
           });
         },
         async executeMigrations() {
-          if (process.env.NODE_ENV !== 'production') {
-            // Run migrations at dev startup (low friction)
+          if ((process.env.NODE_ENV !== 'production') || self.apos.isNew) {
+            // Run migrations at dev startup (low friction).
+            // Also always run migrations at first startup, so even
+            // in prod with a brand new database the after event always fires
+            // and we get a chance to mark the migrations as skipped
             await self.migrate(self.apos.argv);
           }
         }
