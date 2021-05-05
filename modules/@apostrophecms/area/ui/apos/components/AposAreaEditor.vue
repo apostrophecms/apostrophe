@@ -42,6 +42,7 @@
         :doc-id="docId"
         :context-menu-options="contextMenuOptions"
         :field-id="fieldId"
+        :disabled="field && field.readOnly"
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
