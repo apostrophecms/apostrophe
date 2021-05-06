@@ -2,75 +2,77 @@
 
 ## 3.0.0-beta.1 - 2021-05-06
 
-### Breaks
+### **Breaks**
 
-* Removes the `firstName` and `lastName` fields in user pieces.
-* The query parameters `apos-refresh`, `apos-edit`, `apos-mode` and `apos-locale` are now `aposRefresh`, `aposEdit`, `aposMode` and `aposLocale`. Going forward all query parameters will be camelCase for consistency with query builders.
-* Archiving a page or piece deletes any outstanding draft in favor of archiving the last published version. Previously the behavior was effectively the opposite.
+- Removes the `firstName` and `lastName` fields in user pieces.
+- The query parameters `apos-refresh`, `apos-edit`, `apos-mode` and `apos-locale` are now `aposRefresh`, `aposEdit`, `aposMode`and `aposLocale`. Going forward all query parameters will be camelCase for consistency with query builders.
 
-### Adds
+### Changes
 
-* Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role, as they already could do anything.
-* The admin bar menu is fully responsive to user roles.
-* The context bar entirely appears or disappears based on user roles.
-* Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc.
-* A fragment call may now have a body using `rendercall`, just like a macro call can have a body using `call`. In addition, fragments can now have named arguments, just like macros. Many thanks to Miro Yovchev for contributing this implementation.
-* Major performance improvement to the `nestedModuleSubdirs` option.
-* Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
-* New label component
-* Doc states in managers now reflected w labels (Active Draft, Archived, Unpublished)
-* Contributors can submit drafts for review ("Propose Changes" versus "Publish Changes").
-* Editors and admins can manage submitted drafts.
-* Editors and admins can easily see the number of proposed changes awaiting their attention.
-* Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
-* Confirm modals now support a schema which can be assessed after confirmation.
-* When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
-* Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
-* A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
-* The total number of submitted drafts is visible in the admin bar.
-* The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
-* Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
-* Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
-* Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
-* Moves the core UI build task into the start up process. The UI build runs automatically when `NODE_ENV` is *not* 'production' and when:
-  1. The build folder does not yet exist.
-  2. The package.json file is newer than the existing UI build.
-  3. You explicitly tell it to by setting the environment variable `CORE_DEV=1`
-* The new `._ids(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `aposMode` query parameter if present.
-* The `.withPublished(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `withPublished=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
-* The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
-* The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the [`form-data`](https://www.npmjs.com/package/form-data) npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
-* `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
-* `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
-* For page queries, the `children` query builder is now supported in query strings, including the `depth` subproperty. For instance you could fetch `/api/v1/@apostrophecms/page/id-of-page?children=1` or `/api/v1/@apostrophecms/page/id-of-page?children[depth]=3`.
-* Setting `APOS_LOG_ALL_QUERIES=1` now logs the projection, skip, limit and sort in addition to the criteria, which were previously logged.
+- Archiving a page or piece deletes any outstanding draft in favor of archiving the last published version. Previously the behavior was effectively the opposite.
+- "Publish Changes" button label has been changes to "Update".
+- Draft mode is no longer the default view for published documents.
+- The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
+- Notifications have been updated with a new visual display and animation style.
 
-### Fixes
+### **Adds**
 
-* Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
-* There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
-* A required field error no longer appears immediately when you first start creating a user.
-* Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
-* "Save Draft" is not an appropriate operation to offer when editing users.
-* Pager links no longer break due to `aposRefresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
-* You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
-* Language of buttons, labels, filters, and other UI updated and normalized throughout.
-* A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.
-* The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
-* Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
-* Update the current page's context bar properly when appropriate after actions such as "Discard Draft."
-* The main archive page cannot be restored, etc. via the context menu in the page tree.
-* The context menu and "Preview Draft" are both disabled while errors are present in the editor dialog box.
-* "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
-* When you "Duplicate" the home page you should be able to set a slug for the new page (parked properties of parked pages should be editable when making a duplicate).
-* When duplicating the home page, the suggested slug should not be `/` as only one page can have that slug at a time.
-* Attention is properly called to a slug conflict if it exists immediately when the document is opened (such as making a copy where the suggested slug has already been used for another copy).
-* "Preview Draft" never appears for types that do not use drafts.
-* The toggle state of admin bar utility items should only be mapped to an `is-active` class if, like palette, they opt in with `toggle: true`
-* Fixed unique key errors in the migrate task by moving the parking of parked pages to a new `@apostrophecms/migrate:after` event handler, which runs only after migrations, whether that is at startup (in dev) or at the end of the migration task (in production).
-* UI does not offer "Archive" for the home page, or other archived pages.
-* Notification checks and other polling requests now occur only when the tab is in the foreground, resolving a number of problems that masqueraded as other bugs when the browser hit its connection limit for multiple tabs on the same site.
-* Parked pages are now parked immediately after database migrations are checked and/or run. In dev this still happens at each startup. In production this happens when the database is brand new and when the migration task is manually run.
+- Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role.
+- Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc.
+- A fragment call may now have a body using `rendercall`, just like a macro call can have a body using `call`. In addition, fragments can now have named arguments, just like macros. Many thanks to Miro Yovchev for contributing this implementation.
+- Major performance improvement to the `nestedModuleSubdirs` option.
+- Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
+- Documents receive a state label based on their document state (draft, pending, pending updates)
+- Contributors can submit drafts for review ("Submit" versus "Submit Updates").
+- Editors and admins can manage submitted drafts.
+- Editors and admins can easily see the number of proposed changes awaiting their attention.
+- Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
+- Confirm modals now support a schema which can be assessed after confirmation.
+- When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
+- Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
+- A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
+- The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
+- Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
+- Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
+- Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+- Moves the core UI build task into the start up process. The UI build runs automatically when `NODE_ENV` is *not* 'production' and when:
+    1. The build folder does not yet exist.
+    2. The package.json file is newer than the existing UI build.
+    3. You explicitly tell it to by setting the environment variable `CORE_DEV=1`
+- The new `._ids(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `aposMode` query parameter if present.
+- The `.withPublished(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `withPublished=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
+- The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the `[form-data](https://www.npmjs.com/package/form-data)` npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
+- `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
+- `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
+- For page queries, the `children` query builder is now supported in query strings, including the `depth` subproperty. For instance you could fetch `/api/v1/@apostrophecms/page/id-of-page?children=1` or `/api/v1/@apostrophecms/page/id-of-page?children[depth]=3`.
+- Setting `APOS_LOG_ALL_QUERIES=1` now logs the projection, skip, limit and sort in addition to the criteria, which were previously logged.
+
+### **Fixes**
+
+- Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
+- There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
+- A required field error no longer appears immediately when you first start creating a user.
+- Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
+- "Save Draft" is not an appropriate operation to offer when editing users.
+- Pager links no longer break due to `aposRefresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
+- You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
+- Language of buttons, labels, filters, and other UI updated and normalized throughout.
+- A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.
+- The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
+- Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
+- Update the current page's context bar properly when appropriate after actions such as "Discard Draft."
+- The main archive page cannot be restored, etc. via the context menu in the page tree.
+- The context menu and "Preview Draft" are both disabled while errors are present in the editor dialog box.
+- "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
+- When you "Duplicate" the home page you should be able to set a slug for the new page (parked properties of parked pages should be editable when making a duplicate).
+- When duplicating the home page, the suggested slug should not be `/` as only one page can have that slug at a time.
+- Attention is properly called to a slug conflict if it exists immediately when the document is opened (such as making a copy where the suggested slug has already been used for another copy).
+- "Preview Draft" never appears for types that do not use drafts.
+- The toggle state of admin bar utility items should only be mapped to an `is-active` class if, like palette, they opt in with `toggle: true`
+- Fixed unique key errors in the migrate task by moving the parking of parked pages to a new `@apostrophecms/migrate:after` event handler, which runs only after migrations, whether that is at startup (in dev) or at the end of the migration task (in production).
+- UI does not offer "Archive" for the home page, or other archived pages.
+- Notification checks and other polling requests now occur only when the tab is in the foreground, resolving a number of problems that masqueraded as other bugs when the browser hit its connection limit for multiple tabs on the same site.
+- Parked pages are now parked immediately after database migrations are checked and/or run. In dev this still happens at each startup. In production this happens when the database is brand new and when the migration task is manually run.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
