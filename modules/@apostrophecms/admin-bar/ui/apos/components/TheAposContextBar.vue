@@ -44,6 +44,7 @@ import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisory
 export default {
   name: 'TheAposContextBar',
   mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
+  emits: [ 'mounted' ],
   data() {
     const query = apos.http.parseQuery(location.search);
     // If the URL references a draft, go into draft mode but then clean up the URL
@@ -163,6 +164,9 @@ export default {
       }
     }
     await this.updateDraftIsEditable();
+    this.$nextTick(() => {
+      this.$emit('mounted');
+    });
   },
   methods: {
     // Implements the `set-context` Apostrophe event, which can change the mode
