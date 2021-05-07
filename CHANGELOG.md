@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.0-beta.1.1 - 2021-05-07
+
+### Fixes
+
+- A hotfix for an issue spotted in beta 1 in our demo: all previously published pages of sites migrated from early alpha releases had a "Draft" label until published again.
+
 ## 3.0.0-beta.1 - 2021-05-06
 
 ### **Breaks**
