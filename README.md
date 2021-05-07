@@ -35,7 +35,7 @@ ApostropheCMS is content software for everyone in an organization. It helps team
 
 ## Getting Started
 
-To get started with Apostrophe 3, follow these steps to set up a local development environment. For more detail, refer to the [A3 getting started guide](https://a3.docs.apos.dev/guide/starting-your-project.html) in the documentation.
+To get started with Apostrophe 3, follow these steps to set up a local development environment. For more detail, refer to the [A3 getting started guide](https://a3.docs.apostrophecms.org/guide/setting-up.html) in the documentation.
 
 #### Prerequisites
 
