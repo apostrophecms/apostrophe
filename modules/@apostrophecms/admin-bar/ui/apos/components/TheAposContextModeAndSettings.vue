@@ -116,7 +116,7 @@ export default {
       hasBeenPublishedThisPageload: false,
       hasBeenPublishedButNotUpdated: false,
       saveButton: {
-        type: 'primary'
+        type: 'default'
       },
       saveMenu: [
         {
