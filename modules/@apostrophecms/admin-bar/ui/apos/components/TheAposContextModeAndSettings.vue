@@ -14,6 +14,10 @@
       v-if="!editMode" :key="'switchToEditMode'"
       class="apos-admin-bar__control-set__group"
     >
+      <AposButtonSplit
+        :menu="saveMenu"
+        :button="saveButton"
+      />
       <AposButton
         class="apos-admin-bar__context-button"
         label="Edit" type="subtle"
@@ -110,7 +114,33 @@ export default {
   data() {
     return {
       hasBeenPublishedThisPageload: false,
-      hasBeenPublishedButNotUpdated: false
+      hasBeenPublishedButNotUpdated: false,
+      saveButton: {
+        type: 'primary'
+      },
+      saveMenu: [
+        {
+          label: 'Publish',
+          description: 'Publish new changes now.',
+          action: 'publish'
+        },
+        {
+          label: 'Publish and Navigate',
+          description: 'Publish new changes and then be redirected to it.',
+          action: 'publish-and-navigate'
+        },
+        {
+          label: 'Save Draft',
+          description: 'Save changes as a draft to publish later.',
+          action: 'save-draft',
+          def: true
+        },
+        {
+          label: 'Save Draft and Navigate',
+          description: 'Save changes as a draft to publish later, then be redirected to it.',
+          action: 'save-draft-and-navigate'
+        }
+      ]
     };
   },
   computed: {
