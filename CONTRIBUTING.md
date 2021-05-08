@@ -72,7 +72,7 @@ PRs to resolve existing issues are fantastic. Two good places to start are the
 ["help wanted"](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 and ["good first issue"](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) issues.
 
-Please not that if you are using Windows for development, we strongly recommend
+Please note that if you are using Windows for development, we strongly recommend
 using 
 [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/windows-or-wsl)
 both for development on the core Apostrophe modules and developing your own
@@ -92,8 +92,7 @@ We don't expect that every contributor is ready to write Nightwatch tests like
 these, but it is surely appreciated. If you are submit bug fix, please do
 include a test that reproduces the issue.
 2. **Make sure existing tests pass.** Run `npm test` to run the tests, including
-the code linters. Note that tests require access to the /test folder in order to
-create symlinks, so on Windows you may need to run the tests as an administrator.
+the code linters.
 3. **Enhancements should include documentation** and include implementation details
 were applicable. For Apostrophe core, that should be in the
 [main documentation](https://github.com/apostrophecms/apostrophe-documentation)
