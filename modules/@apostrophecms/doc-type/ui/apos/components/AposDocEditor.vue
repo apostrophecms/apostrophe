@@ -46,6 +46,12 @@
         @click="onSave"
         :tooltip="tooltip"
       />
+      <AposButtonSplit
+        :menu="saveMenu"
+        :disabled="saveDisabled"
+        :tooltip="tooltip"
+        @click="saveHandler($event)"
+      />
     </template>
     <template #leftRail>
       <AposModalRail>
@@ -362,6 +368,7 @@ export default {
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
+      // TODO drafts handled by big menu
       if (!this.docId && hasPublishUi) {
         // You can always save a draft of a new thing
         return true;
@@ -378,6 +385,44 @@ export default {
       } else {
         return false;
       }
+    },
+    saveMenu () {
+      // Powers the dropdown Save menu
+      // all actions expected to be methods of this component
+      const label = this.moduleOptions.label.toLowerCase();
+      const menu = [
+        {
+          label: this.saveLabel,
+          action: 'onSave',
+          description: `${this.saveLabel} the current changes and return to the ${label} manager.`,
+          def: true
+        },
+        {
+          label: `${this.saveLabel} and View`,
+          action: 'onSaveAndView',
+          description: `${this.saveLabel} the current changes and be redirected to the ${label}.`
+        },
+        {
+          label: `${this.saveLabel} and Create New`,
+          action: 'onSaveAndNew',
+          description: `${this.saveLabel} the current changes and create a new ${label}.`
+        }
+      ];
+      if (this.manuallyPublished) {
+        menu.push({
+          label: 'Save Draft',
+          action: 'saveDraft',
+          description: 'Save edits as a draft to publish later.'
+        });
+      }
+      if (this.canPreviewDraft) {
+        menu.push({
+          label: 'Save Draft and Preview',
+          action: 'saveDraftAndPreview',
+          description: `Save edits as a draft and preview the ${label}.`
+        });
+      }
+      return menu;
     }
   },
   watch: {
@@ -456,6 +501,14 @@ export default {
     }
   },
   methods: {
+    saveHandler(action) {
+      this[action]();
+      // if (condition) {
+        
+      // } else {
+      //   this[action]();
+      // }
+    },
     async loadDoc() {
       let docData;
       try {
@@ -583,6 +636,21 @@ export default {
           andSubmit: true
         });
       }
+    },
+    async onSaveAndView() {
+      await this.save({
+        andPublish: true,
+        navigate: true
+      });
+    },
+    async onSaveAndNew() {
+      await this.save({
+        andPublish: true
+      });
+      this.modal.showModal = false;
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.moduleName}:editor`
+      });
     },
     // If andPublish is true, publish after saving.
     async save({

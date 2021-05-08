@@ -1,18 +1,44 @@
 <template>
   <div class="apos-button-split" :class="modifiers">
     <AposButton
-      v-bind="myButton" :label="label"
-      @click="$emit(action)"
       class="apos-button-split__button"
+      v-bind="button"
+      :label="label"
+      :disabled="disabled"
+      :tooltip="tooltip"
+      @click="$emit('click', action)"
     />
     <AposContextMenu
       class="apos-button-split__menu"
       :menu="menu"
       :button="contextMenuButton"
-      @item-clicked="setButton($event)"
       menu-offset="1, 10"
       menu-placement="bottom-end"
-    />
+      ref="contextMenu"
+    >
+      <dl class="apos-button-split__menu__dialog">
+        <button
+          v-for="item in menu" :key="item.action"
+          class="apos-button-split__menu__dialog-item"
+          :class="{ 'is-selected': item.action === action }"
+          @click="selectionHandler(item.action)"
+        >
+          <AposIndicator
+            v-if="action === item.action"
+            class="apos-button-split__menu__dialog-check"
+            icon="check-bold-icon"
+            :icon-size="18"
+            icon-color="var(--a-primary)"
+          />
+          <dt class="apos-button-split__menu__dialog-label">
+            {{ item.label }}
+          </dt>
+          <dd v-if="item.description" class="apos-button-split__menu__dialog-description">
+            {{ item.description }}
+          </dd>
+        </button>
+      </dl>
+    </AposContextMenu>
   </div>
 </template>
 
@@ -25,15 +51,17 @@ export default {
       type: Array,
       required: true
     },
-    button: {
-      type: Object,
-      default() {
-        return {
-          label: 'Something here',
-          type: 'primary',
-          modifiers: [ 'no-motion' ]
-        };
-      }
+    type: {
+      type: String,
+      default: 'primary'
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    },
+    tooltip: {
+      type: String,
+      default: null
     },
     selected: {
       // corresponds to a menu item action
@@ -46,13 +74,15 @@ export default {
     return {
       label: null,
       action: null,
-      myMenu: [ ...this.menu ],
-      myButton: { ...this.button },
+      button: {
+        type: this.type,
+        modifiers: [ 'no-motion' ]
+      },
       contextMenuButton: {
         iconOnly: true,
         icon: 'chevron-down-icon',
         modifiers: [ 'no-motion' ],
-        type: this.button.type
+        type: this.type
       }
     };
   },
@@ -72,10 +102,6 @@ export default {
       initial = this.menu.find(i => i.def).action;
     }
     this.setButton(initial);
-
-    this.myButton.modifiers
-      ? this.myButton.modifiers.push('no-motion')
-      : this.myButton.modifiers = [ 'no-motion' ];
   },
   methods: {
     // sets the label and emitted action of the button
@@ -83,8 +109,9 @@ export default {
       this.action = action;
       this.label = this.menu.find(i => i.action === action).label;
     },
-    click($event) {
-      this.$emit('click', $event);
+    selectionHandler(action) {
+      this.setButton(action);
+      this.$refs.contextMenu.hide();
     }
   }
 };
@@ -94,32 +121,72 @@ export default {
     position: relative;
   }
 
+  .apos-button-split__menu__dialog {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    min-width: 300px;
+  }
+
+  .apos-button-split__menu__dialog-item {
+    @include apos-button-reset();
+    @include apos-transition();
+    padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
+    border-bottom: 1px solid var(--a-base-9);
+    &:hover {
+      background-color: var(--a-base-9);
+    }
+    &:last-child {
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+    &.is-selected {
+      background-color: var(--a-base-9);
+    }
+  }
+
+  .apos-button-split__menu__dialog-check {
+    position: absolute;
+    left: $spacing-base;
+  }
+
+  .apos-button-split__menu__dialog-label {
+    @include type-large;
+    margin-bottom: $spacing-half;
+  }
+
+  .apos-button-split__menu__dialog-description {
+    margin-left: 0;
+    color: var(--a-base-3);
+    font-size: var(--a-type-base);
+  }
+
   .apos-button-split__button /deep/ .apos-button {
     padding-right: $spacing-quadruple + $spacing-base;
     margin-top: 0;
     margin-bottom: 0;
   }
 
-  .apos-button-split {
-    .apos-button-split__menu /deep/ .apos-button {
-      color: var(--a-text-primary);
-      &:hover,
-      &:focus,
-      &:active {
-        color: var(--a-text-primary);
-      }
-    }
-  }
+  // .apos-button-split {
+  //   .apos-button-split__menu /deep/ .apos-button {
+  //     // color: var(--a-text-primary);
+  //     &:hover,
+  //     &:focus,
+  //     &:active {
+  //       // color: var(--a-text-primary);
+  //     }
+  //   }
+  // }
 
-  .apos-button-split--type-primary {
-    .apos-button-split__menu /deep/ .apos-button {
-      &:hover,
-      &:focus,
-      &:active {
-        color: var(--a-white);
-      }
-    }
-  }
+  // .apos-button-split--type-primary {
+  //   .apos-button-split__menu /deep/ .apos-button {
+  //     &:hover,
+  //     &:focus,
+  //     &:active {
+  //       // color: var(--a-white);
+  //     }
+  //   }
+  // }
 
   .apos-button-split__menu {
     position: absolute;
