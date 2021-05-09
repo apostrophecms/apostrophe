@@ -15,6 +15,7 @@
       menu-offset="1, 10"
       menu-placement="bottom-end"
       ref="contextMenu"
+      :disabled="disabled"
     >
       <dl class="apos-button-split__menu__dialog">
         <button

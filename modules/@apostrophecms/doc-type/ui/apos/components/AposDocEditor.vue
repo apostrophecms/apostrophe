@@ -26,20 +26,19 @@
         :can-copy="!!docId && !moduleOptions.singleton"
         :can-preview="canPreview"
         :is-published="!!published"
-        :can-save-draft="manuallyPublished"
+        :can-save-draft="false"
         :can-dismiss-submission="canDismissSubmission"
-        @saveDraft="saveDraft"
         @preview="preview"
         @discard-draft="onDiscardDraft"
         @dismiss-submission="onDismissSubmission"
         @archive="onArchive"
         @copy="onCopy"
       />
-      <AposButton
+      <!-- <AposButton
         v-if="canPreviewDraft" type="secondary"
         :disabled="errorCount > 0"
         @click="saveDraftAndPreview" label="Preview Draft"
-      />
+      /> -->
       <AposButton
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
@@ -369,10 +368,7 @@ export default {
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
       // TODO drafts handled by big menu
-      if (!this.docId && hasPublishUi) {
-        // You can always save a draft of a new thing
-        return true;
-      } else if (this.restoreOnly) {
+      if (this.restoreOnly) {
         return false;
       } else if (this.canArchive) {
         return true;
@@ -411,14 +407,14 @@ export default {
       if (this.manuallyPublished) {
         menu.push({
           label: 'Save Draft',
-          action: 'saveDraft',
+          action: 'onSaveDraft',
           description: 'Save edits as a draft to publish later.'
         });
       }
       if (this.canPreviewDraft) {
         menu.push({
           label: 'Save Draft and Preview',
-          action: 'saveDraftAndPreview',
+          action: 'onSaveDraftAndView',
           description: `Save edits as a draft and preview the ${label}.`
         });
       }
@@ -503,11 +499,6 @@ export default {
   methods: {
     saveHandler(action) {
       this[action]();
-      // if (condition) {
-        
-      // } else {
-      //   this[action]();
-      // }
     },
     async loadDoc() {
       let docData;
@@ -571,12 +562,6 @@ export default {
       }
       window.location = this.original._url;
     },
-    async saveDraftAndPreview() {
-      await this.save({
-        andPublish: false,
-        navigate: true
-      });
-    },
     updateFieldState(fieldState) {
       this.tabKey = cuid();
       for (const key in this.groups) {
@@ -622,11 +607,12 @@ export default {
     lockNotAvailable() {
       this.modal.showModal = false;
     },
+    async onRestore() {
+      await this.restore(this.original);
+      await this.loadDoc();
+    },
     async onSave() {
-      if (this.restoreOnly) {
-        await this.restore(this.original);
-        await this.loadDoc();
-      } else if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
           andPublish: this.manuallyPublished
         });
@@ -639,17 +625,33 @@ export default {
     },
     async onSaveAndView() {
       await this.save({
-        andPublish: true,
+        andPublish: this.moduleOptions.canPublish,
+        andSubmit: !this.moduleOptions.canPublish,
         navigate: true
       });
     },
     async onSaveAndNew() {
       await this.save({
-        andPublish: true
+        andPublish: this.moduleOptions.canPublish,
+        andSubmit: !this.moduleOptions.canPublish
       });
       this.modal.showModal = false;
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`
+      });
+    },
+    async onSaveDraftAndView() {
+      await this.onSaveDraft({ navigate: true });
+    },
+    async onSaveDraft(navigate = false) {
+      await this.save({
+        andPublish: false,
+        navigate
+      });
+      await apos.notify('Draft saved', {
+        type: 'success',
+        dismiss: true,
+        icon: 'file-document-icon'
       });
     },
     // If andPublish is true, publish after saving.
@@ -720,7 +722,8 @@ export default {
           if (doc._url) {
             window.location = doc._url;
           } else {
-            await apos.notify(`Draft saved but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
+            const subject = andPublish ? 'Document published' : 'Draft saved';
+            await apos.notify(`${subject} but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
               type: 'warning',
               icon: 'alert-circle-icon'
             });
@@ -816,11 +819,6 @@ export default {
             _id: this.docId
           }
         }
-      });
-    },
-    saveDraft() {
-      return this.save({
-        andPublish: false
       });
     },
     filterOutParkedFields(fields) {
