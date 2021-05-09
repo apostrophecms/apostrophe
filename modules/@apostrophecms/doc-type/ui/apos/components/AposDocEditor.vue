@@ -34,18 +34,15 @@
         @archive="onArchive"
         @copy="onCopy"
       />
-      <!-- <AposButton
-        v-if="canPreviewDraft" type="secondary"
-        :disabled="errorCount > 0"
-        @click="saveDraftAndPreview" label="Preview Draft"
-      /> -->
       <AposButton
+        v-if="restoreOnly"
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
-        @click="onSave"
+        @click="onRestore"
         :tooltip="tooltip"
       />
       <AposButtonSplit
+        v-else-if="saveMenu"
         :menu="saveMenu"
         :disabled="saveDisabled"
         :tooltip="tooltip"
@@ -166,7 +163,8 @@ export default {
       live: null,
       published: null,
       errorCount: 0,
-      restoreOnly: false
+      restoreOnly: false,
+      saveMenu: null
     };
   },
   computed: {
@@ -367,7 +365,6 @@ export default {
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
-      // TODO drafts handled by big menu
       if (this.restoreOnly) {
         return false;
       } else if (this.canArchive) {
@@ -381,44 +378,6 @@ export default {
       } else {
         return false;
       }
-    },
-    saveMenu () {
-      // Powers the dropdown Save menu
-      // all actions expected to be methods of this component
-      const label = this.moduleOptions.label.toLowerCase();
-      const menu = [
-        {
-          label: this.saveLabel,
-          action: 'onSave',
-          description: `${this.saveLabel} the current changes and return to the ${label} manager.`,
-          def: true
-        },
-        {
-          label: `${this.saveLabel} and View`,
-          action: 'onSaveAndView',
-          description: `${this.saveLabel} the current changes and be redirected to the ${label}.`
-        },
-        {
-          label: `${this.saveLabel} and Create New`,
-          action: 'onSaveAndNew',
-          description: `${this.saveLabel} the current changes and create a new ${label}.`
-        }
-      ];
-      if (this.manuallyPublished) {
-        menu.push({
-          label: 'Save Draft',
-          action: 'onSaveDraft',
-          description: 'Save edits as a draft to publish later.'
-        });
-      }
-      if (this.canPreviewDraft) {
-        menu.push({
-          label: 'Save Draft and Preview',
-          action: 'onSaveDraftAndView',
-          description: `Save edits as a draft and preview the ${label}.`
-        });
-      }
-      return menu;
     }
   },
   watch: {
@@ -433,7 +392,6 @@ export default {
         }
       }
     },
-
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
         this.currentTab = this.tabs[0] && this.tabs[0].name;
@@ -444,6 +402,7 @@ export default {
   async mounted() {
     this.modal.active = true;
     // After computed properties become available
+    this.saveMenu = this.computeSaveMenu();
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
       await this.loadDoc();
@@ -825,6 +784,54 @@ export default {
       return fields.filter(fieldName => {
         return !((this.original && this.original.parked) || []).includes(fieldName);
       });
+    },
+    computeSaveMenu () {
+      // Powers the dropdown Save menu
+      // all actions expected to be methods of this component
+      // Needs to be manually computed because this.saveLabel doesnt stay reactive when part of an object
+      const typeLabel = this.moduleOptions
+        ? this.moduleOptions.label.toLowerCase()
+        : 'document';
+      const isNew = !this.docId;
+      const menu = [
+        {
+          label: this.saveLabel,
+          action: 'onSave',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and return to the ${typeLabel} manager.`
+            : `${this.saveLabel} updates and return to the ${typeLabel} manager.`,
+          def: true
+        },
+        {
+          label: `${this.saveLabel} and View`,
+          action: 'onSaveAndView',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and be redirected to the ${typeLabel}.`
+            : `${this.saveLabel} updates and be redirected to the ${typeLabel}.`
+        },
+        {
+          label: `${this.saveLabel} and Create New`,
+          action: 'onSaveAndNew',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and create a new one.`
+            : `${this.saveLabel} updates and create a new ${typeLabel}.`
+        }
+      ];
+      if (this.manuallyPublished) {
+        menu.push({
+          label: 'Save Draft',
+          action: 'onSaveDraft',
+          description: 'Save updates as a draft to publish later.'
+        });
+      }
+      if (this.canPreviewDraft) {
+        menu.push({
+          label: 'Save Draft and Preview',
+          action: 'onSaveDraftAndView',
+          description: `Save updates as a draft and preview the ${typeLabel}.`
+        });
+      }
+      return menu;
     }
   }
 };

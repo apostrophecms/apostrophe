@@ -158,7 +158,7 @@ export default {
 
   .apos-button-split__menu__dialog-description {
     margin-left: 0;
-    color: var(--a-base-3);
+    color: var(--a-base-2);
     font-size: var(--a-type-base);
   }
 
@@ -167,27 +167,6 @@ export default {
     margin-top: 0;
     margin-bottom: 0;
   }
-
-  // .apos-button-split {
-  //   .apos-button-split__menu /deep/ .apos-button {
-  //     // color: var(--a-text-primary);
-  //     &:hover,
-  //     &:focus,
-  //     &:active {
-  //       // color: var(--a-text-primary);
-  //     }
-  //   }
-  // }
-
-  // .apos-button-split--type-primary {
-  //   .apos-button-split__menu /deep/ .apos-button {
-  //     &:hover,
-  //     &:focus,
-  //     &:active {
-  //       // color: var(--a-white);
-  //     }
-  //   }
-  // }
 
   .apos-button-split__menu {
     position: absolute;
