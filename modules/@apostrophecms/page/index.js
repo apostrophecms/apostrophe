@@ -906,13 +906,6 @@ database.`);
         return page;
       },
       allowedChildTypes(page) {
-        if (!page && self.options.allowedHomepageTypes) {
-          return self.options.allowedHomepageTypes;
-        } else if (page && self.options.allowedSubpageTypes) {
-          if (self.options.allowedSubpageTypes[page.type]) {
-            return self.options.allowedSubpageTypes[page.type];
-          }
-        }
         // Default is to allow any type in the configured list
         return _.map(self.typeChoices, 'name');
       },
