@@ -212,6 +212,10 @@ export default {
         return true;
       }
       // Contributor case. Button is "submit"
+      // If previously published and not modified since, we can't submit
+      if (this.published && !this.isModifiedFromPublished) {
+        return true;
+      }
       if (!this.original.submitted) {
         // Allow initial submission
         return false;
@@ -568,6 +572,7 @@ export default {
     async onSave() {
       if (this.restoreOnly) {
         await this.restore(this.original);
+        await this.loadDoc();
       } else if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
           andPublish: this.manuallyPublished
@@ -581,14 +586,13 @@ export default {
     },
     // If andPublish is true, publish after saving.
     async save({
-      restoreOnly = false,
       andPublish = false,
       navigate = false,
       andSubmit = false
     }) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        if (this.errorCount && (!restoreOnly)) {
+        if (this.errorCount) {
           await apos.notify('Resolve errors before saving.', {
             type: 'warning',
             icon: 'alert-circle-icon',
@@ -597,19 +601,12 @@ export default {
           this.focusNextError();
           return;
         }
-        let body = this.docFields.data;
+        const body = this.docFields.data;
         let route;
         let requestMethod;
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
-          if (restoreOnly) {
-            requestMethod = apos.http.patch;
-            body = {
-              archived: false
-            };
-          } else {
-            requestMethod = apos.http.put;
-          }
+          requestMethod = apos.http.put;
           this.addLockToRequest(body);
         } else {
           route = this.moduleAction;
@@ -633,7 +630,7 @@ export default {
           });
           if (andSubmit) {
             await this.submitDraft(doc);
-          } else if (andPublish && !restoreOnly) {
+          } else if (andPublish) {
             await this.publish(doc);
           }
           apos.bus.$emit('content-changed', doc);
@@ -644,23 +641,13 @@ export default {
             return;
           } else {
             await this.handleSaveError(e, {
-              fallback: `An error occurred ${restoreOnly ? 'restoring' : 'saving'} the document.`
+              fallback: 'An error occurred saving the document.'
             });
             return;
           }
         }
         this.$emit('modal-result', doc);
-        if (!this.restoreOnly) {
-          this.modal.showModal = false;
-        }
-        if (this.restoreOnly) {
-          await this.loadDoc();
-          await apos.notify('Archived content restored', {
-            type: 'success',
-            icon: 'archive-arrow-up-icon',
-            dismiss: true
-          });
-        }
+        this.modal.showModal = false;
         if (navigate) {
           if (doc._url) {
             window.location = doc._url;

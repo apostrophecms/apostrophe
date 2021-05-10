@@ -35,6 +35,7 @@ module.exports = {
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
     self.addLastPublishedToAllDraftsMigration();
+    self.addLastPublishedToAllPublishedDocsMigration();
     self.addAposModeMigration();
   },
   restApiRoutes(self) {
@@ -646,6 +647,11 @@ module.exports = {
           // different from the published, which won't exist yet
           doc.modified = true;
         }
+        if (!doc.visibility) {
+          // If the visibility property has been removed from the schema
+          // (images and files), make sure public queries can still match this type
+          doc.visibility = 'public';
+        }
         return self.retryUntilUnique(req, doc, async function () {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
         });
@@ -972,6 +978,27 @@ module.exports = {
               }, {
                 $set: {
                   lastPublishedAt: published.updatedAt
+                }
+              });
+            }
+          });
+        });
+      },
+      addLastPublishedToAllPublishedDocsMigration() {
+        return self.apos.migration.add('add-last-published-to-published-docs', async () => {
+          return self.apos.migration.eachDoc({
+            _id: /:published$/,
+            lastPublishedAt: null
+          }, async (doc) => {
+            const draft = await self.db.findOne({
+              _id: doc._id.replace(':published', ':draft')
+            });
+            if (draft) {
+              return self.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: {
+                  lastPublishedAt: draft.lastPublishedAt
                 }
               });
             }

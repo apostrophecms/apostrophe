@@ -539,7 +539,9 @@ database.`);
       'apostrophe:afterInit': {
         addServeRoute() {
           self.apos.app.get('*', self.serve);
-        },
+        }
+      },
+      '@apostrophecms/migration:after': {
         async implementParkAll() {
           const req = self.apos.task.getReq();
           for (const item of self.parked) {

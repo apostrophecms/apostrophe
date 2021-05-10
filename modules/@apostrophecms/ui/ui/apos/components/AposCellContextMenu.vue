@@ -30,18 +30,18 @@
 </template>
 
 <script>
+
+import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
+
 export default {
   name: 'AposCellContextMenu',
+  mixins: [ AposCellMixin ],
   props: {
     state: {
       type: Object,
       default() {
         return null;
       }
-    },
-    item: {
-      type: Object,
-      required: true
     },
     options: {
       type: Object,
@@ -82,7 +82,7 @@ export default {
       if (this.options.canArchive != null) {
         initial = this.options.canArchive;
       }
-      return initial && !this.item.archived && this.item._publish && (!this.manuallyPublished || !!this.item.lastPublishedAt);
+      return initial && !this.item.parked && !this.item.archived && this.item._publish && (!this.manuallyPublished || !!this.item.lastPublishedAt);
     },
     canDismissSubmission() {
       // Defaults to no as this is really only for the "submitted drafts" view

@@ -44,6 +44,7 @@ import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisory
 export default {
   name: 'TheAposContextBar',
   mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
+  emits: [ 'mounted' ],
   data() {
     const query = apos.http.parseQuery(location.search);
     // If the URL references a draft, go into draft mode but then clean up the URL
@@ -102,9 +103,15 @@ export default {
       return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     readyToPublish() {
-      return this.canPublish
-        ? this.context.modified && (!this.needToAutosave) && (!this.editing)
-        : (!this.context.submitted) || (this.context.updatedAt > this.context.submitted.at);
+      if (this.canPublish) {
+        return this.context.modified && (!this.needToAutosave) && (!this.editing);
+      } else if (this.context.submitted) {
+        return this.context.updatedAt > this.context.submitted.at;
+      } else if (this.context.lastPublishedAt) {
+        return this.context.updatedAt > this.context.lastPublishedAt;
+      } else {
+        return true;
+      }
     },
     moduleOptions() {
       return window.apos.adminBar;
@@ -157,6 +164,9 @@ export default {
       }
     }
     await this.updateDraftIsEditable();
+    this.$nextTick(() => {
+      this.$emit('mounted');
+    });
   },
   methods: {
     // Implements the `set-context` Apostrophe event, which can change the mode

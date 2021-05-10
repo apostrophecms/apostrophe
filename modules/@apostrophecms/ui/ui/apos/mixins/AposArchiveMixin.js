@@ -171,8 +171,7 @@ export default {
         return total;
       }
     },
-
-    async restore (doc) {
+    async restore(doc) {
       const moduleOptions = apos.modules[doc.type];
       const isPage = doc.slug.startsWith('/');
       const action = window.apos.modules[doc.type].action;
@@ -232,7 +231,7 @@ export default {
 
         AposAdvisoryLockMixin.methods.addLockToRequest(body);
 
-        await apos.http.patch(`${action}/${doc._id}`, {
+        doc = await apos.http.patch(`${action}/${doc._id}`, {
           body,
           busy: true,
           draft: true
@@ -245,8 +244,7 @@ export default {
         });
 
         apos.bus.$emit('content-changed');
-        return true;
-
+        return doc;
       } catch (e) {
         if (AposAdvisoryLockMixin.methods.isLockedError(e)) {
           await this.showLockedError(e);

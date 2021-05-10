@@ -58,6 +58,7 @@
           :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="options.widgets"
+          :disabled="disabled"
         />
       </div>
       <div
@@ -69,6 +70,7 @@
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
           :foreign="foreign"
+          :disabled="disabled"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -118,6 +120,7 @@
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
+          :disabled="disabled"
           @menu-open="toggleMenuFocus($event, 'bottom', true)"
           @menu-close="toggleMenuFocus($event, 'bottom', false)"
         />
@@ -186,6 +189,10 @@ export default {
       default() {
         return null;
       }
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'add', 'changed' ],
