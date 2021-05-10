@@ -22,18 +22,20 @@
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :can-discard-draft="canDiscardDraft"
+        :can-delete="canDelete"
         :can-archive="canArchive"
-        :can-copy="!!docId && !moduleOptions.singleton"
+        :can-copy="!!docId && !moduleOptions.singleton && !archived"
         :can-preview="canPreview"
         :is-published="!!published"
-        :can-save-draft="manuallyPublished"
+        :can-save-draft="manuallyPublished && !archived"
         :can-dismiss-submission="canDismissSubmission"
-        @saveDraft="saveDraft"
+        @save-draft="saveDraft"
         @preview="preview"
         @discard-draft="onDiscardDraft"
         @dismiss-submission="onDismissSubmission"
         @archive="onArchive"
         @copy="onCopy"
+        @delete="onDelete"
       />
       <AposButton
         v-if="canPreviewDraft" type="secondary"
@@ -161,7 +163,7 @@ export default {
       live: null,
       published: null,
       errorCount: 0,
-      restoreOnly: false
+      archived: false
     };
   },
   computed: {
@@ -180,7 +182,7 @@ export default {
       return this.followingValues('utility');
     },
     saveDisabled() {
-      if (this.restoreOnly) {
+      if (this.archived) {
         // Can always restore if it's a read-only view of the archive
         return false;
       }
@@ -295,7 +297,7 @@ export default {
       }
     },
     saveLabel() {
-      if (this.restoreOnly) {
+      if (this.archived) {
         return 'Restore';
       } else if (this.manuallyPublished) {
         if (this.moduleOptions.canPublish) {
@@ -332,9 +334,12 @@ export default {
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canPreviewDraft() {
-      return !this.docId && this.moduleOptions.previewDraft;
+      return !this.archived && !this.docId && this.moduleOptions.previewDraft;
     },
     canPreview() {
+      if (this.archived) {
+        return false;
+      }
       if (this.original) {
         return !!this.original._url;
       } else {
@@ -346,27 +351,34 @@ export default {
         !this.moduleOptions.singleton &&
         this.docId &&
         !(this.moduleName === '@apostrophecms/page') &&
-        !this.restoreOnly &&
+        !this.archived &&
         ((this.moduleOptions.canPublish && this.published) || !this.manuallyPublished)
       );
     },
     canDiscardDraft() {
       return (
+        !this.archived &&
         this.docId &&
         (!this.published) &&
         this.manuallyPublished
       ) || this.isModifiedFromPublished;
     },
     canDismissSubmission() {
+      if (this.archived) {
+        return false;
+      }
       return this.original && this.original.submitted && (this.moduleOptions.canPublish || (this.original.submitted.byId === apos.login.user._id));
+    },
+    canDelete() {
+      return this.archived;
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
       if (!this.docId && hasPublishUi) {
         // You can always save a draft of a new thing
         return true;
-      } else if (this.restoreOnly) {
-        return false;
+      } else if (this.archived) {
+        return true;
       } else if (this.canArchive) {
         return true;
       } else if (this.docId) {
@@ -472,9 +484,9 @@ export default {
         });
 
         if (docData.archived) {
-          this.restoreOnly = true;
+          this.archived = true;
         } else {
-          this.restoreOnly = false;
+          this.archived = false;
         }
       } catch {
         // TODO a nicer message here, but moduleLabels is undefined here
@@ -570,7 +582,7 @@ export default {
       this.modal.showModal = false;
     },
     async onSave() {
-      if (this.restoreOnly) {
+      if (this.archived) {
         await this.restore(this.original);
         await this.loadDoc();
       } else if (this.moduleOptions.canPublish || !this.manuallyPublished) {
@@ -721,6 +733,12 @@ export default {
     },
     async onDiscardDraft(e) {
       if (await this.discardDraft(this.original)) {
+        apos.bus.$emit('content-changed');
+        this.modal.showModal = false;
+      }
+    },
+    async onDelete(e) {
+      if (await this.delete(this.original)) {
         apos.bus.$emit('content-changed');
         this.modal.showModal = false;
       }

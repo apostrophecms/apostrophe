@@ -77,6 +77,12 @@ export default {
         return false;
       }
     },
+    canDelete: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canCopy: {
       type: Boolean,
       default() {
@@ -145,7 +151,7 @@ export default {
         ...(this.canSaveDraft ? [
           {
             label: 'Save Draft',
-            action: 'saveDraft'
+            action: 'save-draft'
           }
         ] : []),
         ...(this.canDismissSubmission ? [
@@ -164,6 +170,13 @@ export default {
           {
             label: this.isPublished ? 'Discard Draft' : 'Delete Draft',
             action: 'discard-draft',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
+        ...(this.canDelete ? [
+          {
+            label: 'Delete Permanently',
+            action: 'delete',
             modifiers: [ 'danger' ]
           }
         ] : []),

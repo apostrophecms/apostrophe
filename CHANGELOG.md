@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+- A "Delete" option officially appears on all archived items, allowing them to be deleted completely.
+
 ### Fixes
 
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.

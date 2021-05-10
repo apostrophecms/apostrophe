@@ -10,6 +10,7 @@
         :is-published="manuallyPublished && !!item.lastPublishedAt"
         :can-save-draft="false"
         :can-open-editor="true"
+        :can-delete="item.archived"
         :can-preview="(!!item._url && !item.archived)"
         :can-archive="canArchive"
         :can-restore="item.archived && item._edit"
@@ -22,6 +23,7 @@
         @restore="$emit('restore')"
         @discard-draft="$emit('discard-draft')"
         @dismiss-submission="$emit('dismiss-submission')"
+        @delete="$emit('delete')"
         @menu-open="menuOpen = true"
         @menu-close="menuOpen = false"
       />
@@ -50,7 +52,7 @@ export default {
       }
     }
   },
-  emits: [ 'edit', 'preview', 'copy', 'archive', 'discard-draft', 'dismiss-submission', 'restore' ],
+  emits: [ 'edit', 'preview', 'copy', 'archive', 'discard-draft', 'dismiss-submission', 'restore', 'delete' ],
   data() {
     return {
       menuOpen: false
@@ -74,7 +76,7 @@ export default {
       if (this.options.canDiscardDraft != null) {
         initial = this.options.canDiscardDraft;
       }
-      return initial && this.manuallyPublished && (this.item.modified || !this.item.lastPublishedAt);
+      return initial && this.manuallyPublished && !this.item.archived && (this.item.modified || !this.item.lastPublishedAt);
     },
     canArchive() {
       let initial = true;

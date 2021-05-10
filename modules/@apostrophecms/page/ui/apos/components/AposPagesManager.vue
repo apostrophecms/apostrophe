@@ -82,6 +82,7 @@
             @restore="onRestore"
             @discard-draft="onDiscardDraft"
             @dismiss-submission="onDismissSubmission"
+            @delete="onDelete"
           />
         </template>
       </AposModalBody>
@@ -254,6 +255,12 @@ export default {
     async onDiscardDraft(id) {
       const doc = this.findDocById(this.pagesFlat, id);
       if (await this.discardDraft(doc)) {
+        await this.getPages();
+      }
+    },
+    async onDelete(id) {
+      const doc = this.findDocById(this.pagesFlat, id);
+      if (await this.delete(doc)) {
         await this.getPages();
       }
     },

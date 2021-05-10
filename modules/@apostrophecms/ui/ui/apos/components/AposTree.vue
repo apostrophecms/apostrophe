@@ -26,6 +26,7 @@
       @dismiss-submission="$emit('dismiss-submission', $event)"
       @archive="$emit('archive', $event)"
       @restore="$emit('restore', $event)"
+      @delete="$emit('delete', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -79,7 +80,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore', 'delete' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.

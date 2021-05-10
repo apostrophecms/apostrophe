@@ -51,6 +51,7 @@
           @dismiss-submission="$emit('dismiss-submission', row._id)"
           @archive="$emit('archive', row._id)"
           @restore="$emit('restore', row._id)"
+          @delete="$emit('delete', row._id)"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -192,7 +193,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore' ],
+  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore', 'delete' ],
   computed: {
     myRows() {
       return this.rows;

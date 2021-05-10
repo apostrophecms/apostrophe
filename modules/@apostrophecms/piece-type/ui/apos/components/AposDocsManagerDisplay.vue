@@ -98,6 +98,7 @@
             @dismiss-submission="$emit('dismiss-submission', item._id)"
             @archive="$emit('archive', item._id)"
             @restore="$emit('restore', item._id)"
+            @delete="$emit('delete', item._id)"
           />
         </td>
       </tr>

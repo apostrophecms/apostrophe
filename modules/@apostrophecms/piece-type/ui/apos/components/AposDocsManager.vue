@@ -86,6 +86,7 @@
             @preview="onPreview"
             @copy="copy"
             @discard-draft="onDiscardDraft"
+            @delete="onDelete"
             @dismiss-submission="onDismissSubmission"
             @archive="onArchive"
             @restore="onRestore"
@@ -293,6 +294,12 @@ export default {
     async onDiscardDraft(id) {
       const piece = this.findDocById(this.items, id);
       if (await this.discardDraft(piece)) {
+        apos.bus.$emit('content-changed');
+      };
+    },
+    async onDelete(id) {
+      const piece = this.findDocById(this.items, id);
+      if (await this.delete(piece)) {
         apos.bus.$emit('content-changed');
       };
     },

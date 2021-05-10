@@ -171,6 +171,39 @@ export default {
         return total;
       }
     },
+
+    // A UI method to delete a document entirely. The user is warned.
+    // This should only be called for documents that are drafts, or of a type
+    // that has no drafts, and already in the archive.
+    //
+    // Returns true if the document was deleted, or false if an error was reported to the user.
+    async delete(doc) {
+      try {
+        if (await apos.confirm({
+          heading: 'Delete Permanently',
+          description: 'Deleting this document from the Archive can\'t be reversed, are you sure you want to delete this document permanently?',
+          affirmativeLabel: 'Yes, delete document'
+        })) {
+          const action = window.apos.modules[doc.type].action;
+          await apos.http.delete(`${action}/${doc._id}`, {
+            body: {},
+            busy: true
+          });
+          apos.notify('Deleted', {
+            type: 'success',
+            dismiss: true
+          });
+          apos.bus.$emit('content-changed');
+          return true;
+        }
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred',
+          description: e.message || 'An error occurred while deleting the document.'
+        });
+      }
+    },
+
     async restore(doc) {
       const moduleOptions = apos.modules[doc.type];
       const isPage = doc.slug.startsWith('/');
