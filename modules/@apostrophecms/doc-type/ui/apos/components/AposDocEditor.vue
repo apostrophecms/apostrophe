@@ -336,7 +336,7 @@ export default {
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canPreviewDraft() {
-      return !this.docId && this.moduleOptions.previewDraft;
+      return this.moduleOptions.previewDraft;
     },
     canPreview() {
       if (this.original) {
@@ -402,6 +402,10 @@ export default {
           this.prepErrors();
         }
       }
+    },
+    // comes in late for pages only?
+    manuallyPublished() {
+      this.saveMenu = this.computeSaveMenu();
     },
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
@@ -584,34 +588,30 @@ export default {
       await this.restore(this.original);
       await this.loadDoc();
     },
-    async onSave() {
+    async onSave(navigate = false) {
       if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
-          andPublish: this.manuallyPublished
+          andPublish: this.manuallyPublished,
+          navigate
         });
       } else {
         await this.save({
           andPublish: false,
-          andSubmit: true
+          andSubmit: true,
+          navigate
         });
       }
     },
     async onSaveAndView() {
-      await this.save({
-        andPublish: this.moduleOptions.canPublish,
-        andSubmit: !this.moduleOptions.canPublish,
-        navigate: true
-      });
+      await this.onSave({ navigate: true });
     },
     async onSaveAndNew() {
-      await this.save({
-        andPublish: this.moduleOptions.canPublish,
-        andSubmit: !this.moduleOptions.canPublish
-      });
-      this.modal.showModal = false;
-      apos.bus.$emit('admin-menu-click', {
-        itemName: `${this.moduleName}:editor`
-      });
+      await this.onSave();
+      this.startNew();
+    },
+    async onSaveDraftAndNew() {
+      await this.onSaveDraft();
+      this.startNew();
     },
     async onSaveDraftAndView() {
       await this.onSaveDraft({ navigate: true });
@@ -743,6 +743,12 @@ export default {
       this.prepErrors();
       this.docReady = true;
     },
+    startNew() {
+      this.modal.showModal = false;
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.moduleName}:editor`
+      });
+    },
     updateDocFields(value) {
       this.updateFieldState(value.fieldState);
       this.docFields.data = {
@@ -806,45 +812,67 @@ export default {
       const typeLabel = this.moduleOptions
         ? this.moduleOptions.label.toLowerCase()
         : 'document';
+      const newBlocklist = [ '@apostrophecms/global' ];
+      const previewBlocklist = [
+        '@apostrophecms/global',
+        '@apostrophecms/file',
+        '@apostrophecms/file-tag',
+        '@apostrophecms/image',
+        '@apostrophecms/image-tag',
+        '@apostrophecms/user'
+      ];
       const isNew = !this.docId;
+      const canPreview = !previewBlocklist.includes(this.moduleName);
+      const canNew = !newBlocklist.includes(this.moduleName);
       const menu = [
         {
           label: this.saveLabel,
           action: 'onSave',
           description: isNew
-            ? `${this.saveLabel} ${typeLabel} and return to the ${typeLabel} manager.`
-            : `${this.saveLabel} updates and return to the ${typeLabel} manager.`,
+            ? `${this.saveLabel} ${typeLabel} and return to the ${typeLabel} listing.`
+            : `${this.saveLabel} updates and return to the ${typeLabel} listing.`,
           def: true
-        },
-        {
+        }
+      ];
+      if (canPreview) {
+        menu.push({
           label: `${this.saveLabel} and View`,
           action: 'onSaveAndView',
           description: isNew
             ? `${this.saveLabel} ${typeLabel} and be redirected to the ${typeLabel}.`
             : `${this.saveLabel} updates and be redirected to the ${typeLabel}.`
-        },
-        {
+        });
+      }
+      if (canNew) {
+        menu.push({
           label: `${this.saveLabel} and Create New`,
           action: 'onSaveAndNew',
           description: isNew
             ? `${this.saveLabel} ${typeLabel} and create a new one.`
             : `${this.saveLabel} updates and create a new ${typeLabel}.`
-        }
-      ];
+        });
+      }
       if (this.manuallyPublished) {
         menu.push({
           label: 'Save Draft',
           action: 'onSaveDraft',
-          description: 'Save updates as a draft to publish later.'
+          description: 'Save as a draft to publish later.'
         });
       }
-      if (this.canPreviewDraft) {
+      if (this.canPreviewDraft && canPreview) {
         menu.push({
           label: 'Save Draft and Preview',
           action: 'onSaveDraftAndView',
-          description: `Save updates as a draft and preview the ${typeLabel}.`
+          description: `Save as a draft and preview the ${typeLabel}.`
         });
       };
+      if (this.manuallyPublished && canNew) {
+        menu.push({
+          label: 'Save Draft and Create New',
+          action: 'onSaveDraftAndNew',
+          description: `Save as a draft and create a new ${typeLabel}.`
+        });
+      }
       return menu;
     },
     setSavePreference(pref) {

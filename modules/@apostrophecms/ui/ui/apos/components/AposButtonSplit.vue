@@ -94,15 +94,13 @@ export default {
       return classes;
     }
   },
-  mounted() {
-    // set the initial button action
-    let initial = this.menu[0].action || null;
-    if (this.selected) {
-      initial = this.selected;
-    } else if (this.menu.find(i => i.def)) {
-      initial = this.menu.find(i => i.def).action;
+  watch: {
+    menu() {
+      this.initialize();
     }
-    this.setButton(initial);
+  },
+  mounted() {
+    this.initialize();
   },
   methods: {
     // sets the label and emitted action of the button
@@ -113,6 +111,15 @@ export default {
     selectionHandler(action) {
       this.setButton(action);
       this.$refs.contextMenu.hide();
+    },
+    initialize() {
+      let initial = this.menu[0].action || null;
+      if (this.selected && this.menu.find(i => i.action === this.selected)) {
+        initial = this.selected;
+      } else if (this.menu.find(i => i.def)) {
+        initial = this.menu.find(i => i.def).action;
+      }
+      this.setButton(initial);
     }
   }
 };
