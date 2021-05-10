@@ -5,6 +5,7 @@
 ## Fixes
 
 - Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
+- "Save Draft" is disabled when a document has been previously published and no further changes have yet been made in the editor dialog box.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 

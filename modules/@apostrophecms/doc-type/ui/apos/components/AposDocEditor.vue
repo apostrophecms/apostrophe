@@ -26,7 +26,8 @@
         :can-copy="!!docId && !moduleOptions.singleton"
         :can-preview="canPreview"
         :is-published="!!published"
-        :can-save-draft="manuallyPublished"
+        :can-save-draft="canSaveDraft"
+        :disable-save-draft="disableSaveDraft"
         :can-dismiss-submission="canDismissSubmission"
         @saveDraft="saveDraft"
         @preview="preview"
@@ -221,6 +222,21 @@ export default {
         return false;
       }
       // Block re-submission of an unmodified draft (we already checked modified)
+      return true;
+    },
+    // Whether to show the feature at all
+    canSaveDraft() {
+      return this.manuallyPublished;
+    },
+    // Whether to disable it when it is shown
+    disableSaveDraft() {
+      if (!this.published) {
+        return false;
+      }
+      // There must be a new change since you opened the modal
+      if (this.isModified) {
+        return false;
+      }
       return true;
     },
     moduleOptions() {
