@@ -12,7 +12,6 @@
       :popover-class="popoverClass"
       popover-wrapper-class="apos-popover__wrapper"
       popover-inner-class="apos-popover__inner"
-      ref="popover"
     >
       <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
@@ -29,15 +28,12 @@
           'aria-expanded': isOpen ? true : false
         }"
       />
-      <template
-        #popover class="apos-popover__slot"
-      >
-        <AposContextMenuDialog
+      <template #popover class="apos-popover__slot">
+        <AposContextMenuDialog>
           :menu-placement="menuPlacement"
           :class-list="classList"
           :menu="menu"
           @item-clicked="menuItemClicked"
-        >
           <slot />
         </AposContextMenuDialog>
       </template>
@@ -148,10 +144,6 @@ export default {
   methods: {
     show() {
       this.isOpen = true;
-      console.log(this.$refs.popover.$el.offsetHeight);
-      // while (condition) {
-        
-      // }
     },
     hide() {
       this.isOpen = false;
