@@ -44,6 +44,7 @@
       <AposButtonSplit
         v-else-if="saveMenu"
         :menu="saveMenu"
+        menu-label="Select Save Method"
         :disabled="saveDisabled"
         :tooltip="tooltip"
         :selected="savePreference"
@@ -403,7 +404,7 @@ export default {
         }
       }
     },
-    // comes in late for pages only?
+    // comes in late for pages
     manuallyPublished() {
       this.saveMenu = this.computeSaveMenu();
     },
@@ -471,11 +472,23 @@ export default {
     }
   },
   methods: {
-    saveHandler(action) {
-      if (this.savePreference !== action) {
-        this.setSavePreference(action);
-      }
-      this[action]();
+    async saveHandler(action) {
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        if (this.savePreference !== action) {
+          this.setSavePreference(action);
+        }
+        if (!this.errorCount) {
+          this[action]();
+        } else {
+          await apos.notify('Resolve errors before saving.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+          this.focusNextError();
+        }
+      });
     },
     async loadDoc() {
       let docData;
@@ -633,76 +646,64 @@ export default {
       navigate = false,
       andSubmit = false
     }) {
-      this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.errorCount) {
-          await apos.notify('Resolve errors before saving.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
+      const body = this.docFields.data;
+      let route;
+      let requestMethod;
+      if (this.docId) {
+        route = `${this.moduleAction}/${this.docId}`;
+        requestMethod = apos.http.put;
+        this.addLockToRequest(body);
+      } else {
+        route = this.moduleAction;
+        requestMethod = apos.http.post;
+
+        if (this.moduleName === '@apostrophecms/page') {
+          // New pages are always born as drafts
+          body._targetId = apos.page.page._id.replace(':published', ':draft');
+          body._position = 'lastChild';
+        }
+        if (this.copyOf) {
+          body._copyingId = this.copyOf._id;
+        }
+      }
+      let doc;
+      try {
+        doc = await requestMethod(route, {
+          busy: true,
+          body,
+          draft: true
+        });
+        if (andSubmit) {
+          await this.submitDraft(doc);
+        } else if (andPublish) {
+          await this.publish(doc);
+        }
+        apos.bus.$emit('content-changed', doc);
+      } catch (e) {
+        if (this.isLockedError(e)) {
+          await this.showLockedError(e);
+          this.modal.showModal = false;
+          return;
+        } else {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the document.'
           });
-          this.focusNextError();
           return;
         }
-        const body = this.docFields.data;
-        let route;
-        let requestMethod;
-        if (this.docId) {
-          route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
-          this.addLockToRequest(body);
+      }
+      this.$emit('modal-result', doc);
+      this.modal.showModal = false;
+      if (navigate) {
+        if (doc._url) {
+          window.location = doc._url;
         } else {
-          route = this.moduleAction;
-          requestMethod = apos.http.post;
-
-          if (this.moduleName === '@apostrophecms/page') {
-            // New pages are always born as drafts
-            body._targetId = apos.page.page._id.replace(':published', ':draft');
-            body._position = 'lastChild';
-          }
-          if (this.copyOf) {
-            body._copyingId = this.copyOf._id;
-          }
-        }
-        let doc;
-        try {
-          doc = await requestMethod(route, {
-            busy: true,
-            body,
-            draft: true
+          const subject = andPublish ? 'Document published' : 'Draft saved';
+          await apos.notify(`${subject} but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
+            type: 'warning',
+            icon: 'alert-circle-icon'
           });
-          if (andSubmit) {
-            await this.submitDraft(doc);
-          } else if (andPublish) {
-            await this.publish(doc);
-          }
-          apos.bus.$emit('content-changed', doc);
-        } catch (e) {
-          if (this.isLockedError(e)) {
-            await this.showLockedError(e);
-            this.modal.showModal = false;
-            return;
-          } else {
-            await this.handleSaveError(e, {
-              fallback: 'An error occurred saving the document.'
-            });
-            return;
-          }
         }
-        this.$emit('modal-result', doc);
-        this.modal.showModal = false;
-        if (navigate) {
-          if (doc._url) {
-            window.location = doc._url;
-          } else {
-            const subject = andPublish ? 'Document published' : 'Draft saved';
-            await apos.notify(`${subject} but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
-              type: 'warning',
-              icon: 'alert-circle-icon'
-            });
-          }
-        }
-      });
+      }
     },
     async getNewInstance() {
       try {

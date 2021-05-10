@@ -12,17 +12,25 @@
       class="apos-button-split__menu"
       :menu="menu"
       :button="contextMenuButton"
+      :disabled="disabled"
       menu-offset="1, 10"
       menu-placement="bottom-end"
       ref="contextMenu"
-      :disabled="disabled"
+      @open="focus"
     >
-      <dl class="apos-button-split__menu__dialog">
+      <dl
+        class="apos-button-split__menu__dialog" role="menu"
+        :aria-label="menuLabel"
+      >
         <button
           v-for="item in menu" :key="item.action"
           class="apos-button-split__menu__dialog-item"
           :class="{ 'is-selected': item.action === action }"
           @click="selectionHandler(item.action)"
+          :aria-checked="item.action === action ? 'true' : 'false'"
+          role="menuitemradio"
+          :value="item.action"
+          ref="choices"
         >
           <AposIndicator
             v-if="action === item.action"
@@ -50,6 +58,10 @@ export default {
   props: {
     menu: {
       type: Array,
+      required: true
+    },
+    menuLabel: {
+      type: String,
       required: true
     },
     type: {
@@ -120,6 +132,12 @@ export default {
         initial = this.menu.find(i => i.def).action;
       }
       this.setButton(initial);
+    },
+    focus() {
+      // takes a moment to be on screen and focusable
+      setTimeout(() => {
+        this.$refs.choices[0].focus();
+      }, 200);
     }
   }
 };
@@ -141,15 +159,19 @@ export default {
     @include apos-transition();
     padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
     border-bottom: 1px solid var(--a-base-9);
-    &:hover {
+    &:hover,
+    &:focus,
+    &:active,
+    &.is-selected {
       background-color: var(--a-base-9);
+    }
+    &:focus,
+    &:active {
+      outline: 1px solid var(--a-primary);
     }
     &:last-child {
       margin-bottom: 0;
       border-bottom: 0;
-    }
-    &.is-selected {
-      background-color: var(--a-base-9);
     }
   }
 
