@@ -29,11 +29,12 @@
         }"
       />
       <template #popover class="apos-popover__slot">
-        <AposContextMenuDialog>
+        <AposContextMenuDialog
           :menu-placement="menuPlacement"
           :class-list="classList"
           :menu="menu"
           @item-clicked="menuItemClicked"
+        >
           <slot />
         </AposContextMenuDialog>
       </template>
