@@ -696,7 +696,7 @@ export default {
         this.docType = newInstance.type;
       }
       this.docFields.data = newInstance;
-      const slugField = this.schema().find(field => field.name === 'slug');
+      const slugField = this.schema.find(field => field.name === 'slug');
       if (slugField) {
         // As a matter of UI implementation, we know our slug input field will
         // automatically change the empty string to the prefix, so to

@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+## Fixes
+
+- Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
+
 ## 3.0.0-beta.1.1 - 2021-05-07
 
 ### Fixes
