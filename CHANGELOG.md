@@ -1,5 +1,10 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+* Officially updated dependencies to ensure moog 1.3.0 is used, bringing in a performance fix for `nestedModuleSubdirs`, although `npm update` should already find this due to semantic versioning rules.
+
 ## 2.118.0 (2021-05-05)
 
 ### Features
