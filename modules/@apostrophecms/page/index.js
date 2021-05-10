@@ -1987,7 +1987,7 @@ database.`);
           if (!label) {
             const manager = self.apos.doc.getManager(name);
             if (!manager) {
-              throw new Error('There is no page type ' + name + ' but it is configured in allowedHomepageTypes or allowedSubpageTypes or is the type of an existing page, I give up');
+              throw new Error(`There is no page type ${name} but it is configured in the types option`);
             }
             label = manager.label;
           }
