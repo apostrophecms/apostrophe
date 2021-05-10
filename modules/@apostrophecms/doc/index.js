@@ -35,6 +35,7 @@ module.exports = {
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
     self.addLastPublishedToAllDraftsMigration();
+    self.addLastPublishedToAllPublishedDocsMigration();
     self.addAposModeMigration();
   },
   restApiRoutes(self) {
@@ -977,6 +978,27 @@ module.exports = {
               }, {
                 $set: {
                   lastPublishedAt: published.updatedAt
+                }
+              });
+            }
+          });
+        });
+      },
+      addLastPublishedToAllPublishedDocsMigration() {
+        return self.apos.migration.add('add-last-published-to-published-docs', async () => {
+          return self.apos.migration.eachDoc({
+            _id: /:published$/,
+            lastPublishedAt: null
+          }, async (doc) => {
+            const draft = await self.db.findOne({
+              _id: doc._id.replace(':published', ':draft')
+            });
+            if (draft) {
+              return self.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: {
+                  lastPublishedAt: draft.lastPublishedAt
                 }
               });
             }
