@@ -13,15 +13,6 @@
 //
 // The label of the widget, as seen in menus for adding widgets.
 //
-// ### `name`
-//
-// The unique name of this type of widget, as seen in the `type` property in the database.
-// It will be singular if it displays one thing, like `@apostrophecms/video`,
-// and plural if it displays more than one thing, like `@apostrophecms/piece-type`.
-// **By default, Apostrophe automatically removes `-widget` from the name
-// of your module to set this option for you.** This is a good convention
-// but you may set this option instead if you wish.
-//
 // ### `playerData`
 //
 // By default, all of the permanent properties of your widget's schema
@@ -135,7 +126,7 @@ module.exports = {
 
     self.template = self.options.template || 'widget';
 
-    self.name = self.options.name || self.__meta.name.replace(/-widget$/, '');
+    self.name = self.__meta.name.replace(/-widget$/, '');
 
     if (!self.options.label) {
       self.options.label = _.startCase(self.name);
