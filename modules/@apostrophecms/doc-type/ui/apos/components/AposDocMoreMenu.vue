@@ -71,6 +71,12 @@ export default {
         return false;
       }
     },
+    disableSaveDraft: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     canDiscardDraft: {
       type: Boolean,
       default() {
@@ -114,6 +120,9 @@ export default {
     },
     canDismissSubmission() {
       this.menu = this.recomputeMenu();
+    },
+    disableSaveDraft() {
+      this.menu = this.recomputeMenu();
     }
   },
   methods: {
@@ -145,7 +154,8 @@ export default {
         ...(this.canSaveDraft ? [
           {
             label: 'Save Draft',
-            action: 'saveDraft'
+            action: 'saveDraft',
+            modifiers: this.disableSaveDraft ? [ 'disabled' ] : []
           }
         ] : []),
         ...(this.canDismissSubmission ? [

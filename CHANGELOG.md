@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+## Fixes
+
+- "Save Draft" is disabled when a document has been previously published and no further changes have yet been made in the editor dialog box.
+
 ## 3.0.0-beta.1.1 - 2021-05-07
 
 ### Fixes
