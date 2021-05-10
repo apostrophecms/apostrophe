@@ -46,6 +46,7 @@
         :menu="saveMenu"
         :disabled="saveDisabled"
         :tooltip="tooltip"
+        :selected="savePreference"
         @click="saveHandler($event)"
       />
     </template>
@@ -378,6 +379,16 @@ export default {
       } else {
         return false;
       }
+    },
+    savePreferenceName() {
+      return `apos-${this.moduleName}-save-pref`;
+    },
+    savePreference() {
+      let pref = window.localStorage.getItem(this.savePreferenceName);
+      if (typeof pref !== 'string') {
+        pref = null;
+      }
+      return pref;
     }
   },
   watch: {
@@ -457,6 +468,9 @@ export default {
   },
   methods: {
     saveHandler(action) {
+      if (this.savePreference !== action) {
+        this.setSavePreference(action);
+      }
       this[action]();
     },
     async loadDoc() {
@@ -830,8 +844,11 @@ export default {
           action: 'onSaveDraftAndView',
           description: `Save updates as a draft and preview the ${typeLabel}.`
         });
-      }
+      };
       return menu;
+    },
+    setSavePreference(pref) {
+      window.localStorage.setItem(this.savePreferenceName, pref);
     }
   }
 };
