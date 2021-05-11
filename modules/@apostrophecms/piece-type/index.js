@@ -372,6 +372,10 @@ module.exports = {
       // per published document. `options` is passed on to the
       // insert operation.
       async insertDraftOf(req, doc, draft, options) {
+        options = {
+          ...options,
+          updateModified: false
+        };
         const inserted = await self.insert({
           ...req,
           mode: 'draft'
