@@ -26,9 +26,8 @@
         :can-copy="!!docId && !moduleOptions.singleton"
         :can-preview="canPreview"
         :is-published="!!published"
-        :can-save-draft="manuallyPublished"
+        :can-save-draft="false"
         :can-dismiss-submission="canDismissSubmission"
-        @saveDraft="saveDraft"
         @preview="preview"
         @discard-draft="onDiscardDraft"
         @dismiss-submission="onDismissSubmission"
@@ -36,15 +35,20 @@
         @copy="onCopy"
       />
       <AposButton
-        v-if="canPreviewDraft" type="secondary"
-        :disabled="errorCount > 0"
-        @click="saveDraftAndPreview" label="Preview Draft"
-      />
-      <AposButton
+        v-if="restoreOnly"
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
-        @click="onSave"
+        @click="onRestore"
         :tooltip="tooltip"
+      />
+      <AposButtonSplit
+        v-else-if="saveMenu"
+        :menu="saveMenu"
+        menu-label="Select Save Method"
+        :disabled="saveDisabled"
+        :tooltip="tooltip"
+        :selected="savePreference"
+        @click="saveHandler($event)"
       />
     </template>
     <template #leftRail>
@@ -161,7 +165,8 @@ export default {
       live: null,
       published: null,
       errorCount: 0,
-      restoreOnly: false
+      restoreOnly: false,
+      saveMenu: null
     };
   },
   computed: {
@@ -332,7 +337,7 @@ export default {
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
     canPreviewDraft() {
-      return !this.docId && this.moduleOptions.previewDraft;
+      return this.moduleOptions.previewDraft;
     },
     canPreview() {
       if (this.original) {
@@ -362,10 +367,7 @@ export default {
     },
     hasMoreMenu() {
       const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
-      if (!this.docId && hasPublishUi) {
-        // You can always save a draft of a new thing
-        return true;
-      } else if (this.restoreOnly) {
+      if (this.restoreOnly) {
         return false;
       } else if (this.canArchive) {
         return true;
@@ -378,6 +380,16 @@ export default {
       } else {
         return false;
       }
+    },
+    savePreferenceName() {
+      return `apos-${this.moduleName}-save-pref`;
+    },
+    savePreference() {
+      let pref = window.localStorage.getItem(this.savePreferenceName);
+      if (typeof pref !== 'string') {
+        pref = null;
+      }
+      return pref;
     }
   },
   watch: {
@@ -392,7 +404,10 @@ export default {
         }
       }
     },
-
+    // comes in late for pages
+    manuallyPublished() {
+      this.saveMenu = this.computeSaveMenu();
+    },
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
         this.currentTab = this.tabs[0] && this.tabs[0].name;
@@ -403,6 +418,7 @@ export default {
   async mounted() {
     this.modal.active = true;
     // After computed properties become available
+    this.saveMenu = this.computeSaveMenu();
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
       await this.loadDoc();
@@ -456,6 +472,24 @@ export default {
     }
   },
   methods: {
+    async saveHandler(action) {
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        if (this.savePreference !== action) {
+          this.setSavePreference(action);
+        }
+        if (!this.errorCount) {
+          this[action]();
+        } else {
+          await apos.notify('Resolve errors before saving.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+          this.focusNextError();
+        }
+      });
+    },
     async loadDoc() {
       let docData;
       try {
@@ -518,12 +552,6 @@ export default {
       }
       window.location = this.original._url;
     },
-    async saveDraftAndPreview() {
-      await this.save({
-        andPublish: false,
-        navigate: true
-      });
-    },
     updateFieldState(fieldState) {
       this.tabKey = cuid();
       for (const key in this.groups) {
@@ -569,20 +597,48 @@ export default {
     lockNotAvailable() {
       this.modal.showModal = false;
     },
-    async onSave() {
-      if (this.restoreOnly) {
-        await this.restore(this.original);
-        await this.loadDoc();
-      } else if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+    async onRestore() {
+      await this.restore(this.original);
+      await this.loadDoc();
+    },
+    async onSave(navigate = false) {
+      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
         await this.save({
-          andPublish: this.manuallyPublished
+          andPublish: this.manuallyPublished,
+          navigate
         });
       } else {
         await this.save({
           andPublish: false,
-          andSubmit: true
+          andSubmit: true,
+          navigate
         });
       }
+    },
+    async onSaveAndView() {
+      await this.onSave({ navigate: true });
+    },
+    async onSaveAndNew() {
+      await this.onSave();
+      this.startNew();
+    },
+    async onSaveDraftAndNew() {
+      await this.onSaveDraft();
+      this.startNew();
+    },
+    async onSaveDraftAndView() {
+      await this.onSaveDraft({ navigate: true });
+    },
+    async onSaveDraft(navigate = false) {
+      await this.save({
+        andPublish: false,
+        navigate
+      });
+      await apos.notify('Draft saved', {
+        type: 'success',
+        dismiss: true,
+        icon: 'file-document-icon'
+      });
     },
     // If andPublish is true, publish after saving.
     async save({
@@ -590,75 +646,64 @@ export default {
       navigate = false,
       andSubmit = false
     }) {
-      this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.errorCount) {
-          await apos.notify('Resolve errors before saving.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
+      const body = this.docFields.data;
+      let route;
+      let requestMethod;
+      if (this.docId) {
+        route = `${this.moduleAction}/${this.docId}`;
+        requestMethod = apos.http.put;
+        this.addLockToRequest(body);
+      } else {
+        route = this.moduleAction;
+        requestMethod = apos.http.post;
+
+        if (this.moduleName === '@apostrophecms/page') {
+          // New pages are always born as drafts
+          body._targetId = apos.page.page._id.replace(':published', ':draft');
+          body._position = 'lastChild';
+        }
+        if (this.copyOf) {
+          body._copyingId = this.copyOf._id;
+        }
+      }
+      let doc;
+      try {
+        doc = await requestMethod(route, {
+          busy: true,
+          body,
+          draft: true
+        });
+        if (andSubmit) {
+          await this.submitDraft(doc);
+        } else if (andPublish) {
+          await this.publish(doc);
+        }
+        apos.bus.$emit('content-changed', doc);
+      } catch (e) {
+        if (this.isLockedError(e)) {
+          await this.showLockedError(e);
+          this.modal.showModal = false;
+          return;
+        } else {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the document.'
           });
-          this.focusNextError();
           return;
         }
-        const body = this.docFields.data;
-        let route;
-        let requestMethod;
-        if (this.docId) {
-          route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
-          this.addLockToRequest(body);
+      }
+      this.$emit('modal-result', doc);
+      this.modal.showModal = false;
+      if (navigate) {
+        if (doc._url) {
+          window.location = doc._url;
         } else {
-          route = this.moduleAction;
-          requestMethod = apos.http.post;
-
-          if (this.moduleName === '@apostrophecms/page') {
-            // New pages are always born as drafts
-            body._targetId = apos.page.page._id.replace(':published', ':draft');
-            body._position = 'lastChild';
-          }
-          if (this.copyOf) {
-            body._copyingId = this.copyOf._id;
-          }
-        }
-        let doc;
-        try {
-          doc = await requestMethod(route, {
-            busy: true,
-            body,
-            draft: true
+          const subject = andPublish ? 'Document published' : 'Draft saved';
+          await apos.notify(`${subject} but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
+            type: 'warning',
+            icon: 'alert-circle-icon'
           });
-          if (andSubmit) {
-            await this.submitDraft(doc);
-          } else if (andPublish) {
-            await this.publish(doc);
-          }
-          apos.bus.$emit('content-changed', doc);
-        } catch (e) {
-          if (this.isLockedError(e)) {
-            await this.showLockedError(e);
-            this.modal.showModal = false;
-            return;
-          } else {
-            await this.handleSaveError(e, {
-              fallback: 'An error occurred saving the document.'
-            });
-            return;
-          }
         }
-        this.$emit('modal-result', doc);
-        this.modal.showModal = false;
-        if (navigate) {
-          if (doc._url) {
-            window.location = doc._url;
-          } else {
-            await apos.notify(`Draft saved but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
-              type: 'warning',
-              icon: 'alert-circle-icon'
-            });
-          }
-        }
-      });
+      }
     },
     async getNewInstance() {
       try {
@@ -698,6 +743,12 @@ export default {
       this.docFields.data = newInstance;
       this.prepErrors();
       this.docReady = true;
+    },
+    startNew() {
+      this.modal.showModal = false;
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.moduleName}:editor`
+      });
     },
     updateDocFields(value) {
       this.updateFieldState(value.fieldState);
@@ -750,15 +801,83 @@ export default {
         }
       });
     },
-    saveDraft() {
-      return this.save({
-        andPublish: false
-      });
-    },
     filterOutParkedFields(fields) {
       return fields.filter(fieldName => {
         return !((this.original && this.original.parked) || []).includes(fieldName);
       });
+    },
+    computeSaveMenu () {
+      // Powers the dropdown Save menu
+      // all actions expected to be methods of this component
+      // Needs to be manually computed because this.saveLabel doesnt stay reactive when part of an object
+      const typeLabel = this.moduleOptions
+        ? this.moduleOptions.label.toLowerCase()
+        : 'document';
+      const newBlocklist = [ '@apostrophecms/global' ];
+      const previewBlocklist = [
+        '@apostrophecms/global',
+        '@apostrophecms/file',
+        '@apostrophecms/file-tag',
+        '@apostrophecms/image',
+        '@apostrophecms/image-tag',
+        '@apostrophecms/user'
+      ];
+      const isNew = !this.docId;
+      const canPreview = !previewBlocklist.includes(this.moduleName);
+      const canNew = !newBlocklist.includes(this.moduleName);
+      const menu = [
+        {
+          label: this.saveLabel,
+          action: 'onSave',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and return to the ${typeLabel} listing.`
+            : `${this.saveLabel} updates and return to the ${typeLabel} listing.`,
+          def: true
+        }
+      ];
+      if (canPreview) {
+        menu.push({
+          label: `${this.saveLabel} and View`,
+          action: 'onSaveAndView',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and be redirected to the ${typeLabel}.`
+            : `${this.saveLabel} updates and be redirected to the ${typeLabel}.`
+        });
+      }
+      if (canNew) {
+        menu.push({
+          label: `${this.saveLabel} and Create New`,
+          action: 'onSaveAndNew',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and create a new one.`
+            : `${this.saveLabel} updates and create a new ${typeLabel}.`
+        });
+      }
+      if (this.manuallyPublished) {
+        menu.push({
+          label: 'Save Draft',
+          action: 'onSaveDraft',
+          description: 'Save as a draft to publish later.'
+        });
+      }
+      if (this.canPreviewDraft && canPreview) {
+        menu.push({
+          label: 'Save Draft and Preview',
+          action: 'onSaveDraftAndView',
+          description: `Save as a draft and preview the ${typeLabel}.`
+        });
+      };
+      if (this.manuallyPublished && canNew) {
+        menu.push({
+          label: 'Save Draft and Create New',
+          action: 'onSaveDraftAndNew',
+          description: `Save as a draft and create a new ${typeLabel}.`
+        });
+      }
+      return menu;
+    },
+    setSavePreference(pref) {
+      window.localStorage.setItem(this.savePreferenceName, pref);
     }
   }
 };
