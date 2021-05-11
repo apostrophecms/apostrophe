@@ -46,7 +46,7 @@
               :label="affirmativeLabel"
               @click="confirm"
               :type="content.theme || 'primary'"
-              :disabled="isDisabled"
+              ref="confirm"
             />
           </div>
           <p
@@ -121,6 +121,10 @@ export default {
     if (this.content.form) {
       this.formValues = this.content.form.value;
     }
+    // wait to be drawn
+    setTimeout(() => {
+      this.$refs.confirm.$el.querySelector('button').focus();
+    }, 0);
   },
   methods: {
     confirm() {
@@ -166,7 +170,7 @@ export default {
 }
 
 /deep/ .apos-modal__body {
-  padding: 40px 60px;
+  padding: 60px;
 }
 
 /deep/ .apos-modal__body-main {
