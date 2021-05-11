@@ -55,7 +55,7 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader>
+        <template #bodyHeader v-if="!relationshipField">
           <AposModalToolbar>
             <template #rightControls>
               <AposContextMenu
