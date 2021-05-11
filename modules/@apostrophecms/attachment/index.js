@@ -414,9 +414,6 @@ module.exports = {
           // be reasonably safe)
           await Promise.promisify(self.uploadfs.copyIn)(file.path, '/attachments/' + info._id + '-' + info.name + '.' + info.extension);
         }
-        if (options.permissions !== false) {
-          info.ownerId = req.user && req.user._id;
-        }
         info.createdAt = new Date();
         await self.db.insertOne(info);
         return info;
