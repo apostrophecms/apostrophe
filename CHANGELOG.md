@@ -2,9 +2,10 @@
 
 ## UNRELEASED
 
-## Fixes
+### Fixes
 
 - "Save Draft" is disabled when a document has been previously published and no further changes have yet been made in the editor dialog box.
+- The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
