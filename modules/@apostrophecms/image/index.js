@@ -23,7 +23,8 @@ module.exports = {
     slugPrefix: 'image-',
     autopublish: true,
     editRole: 'editor',
-    publishRole: 'editor'
+    publishRole: 'editor',
+    showPermissions: true
   },
   fields: {
     remove: [ 'visibility' ],

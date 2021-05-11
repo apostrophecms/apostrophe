@@ -10,8 +10,6 @@ module.exports = {
   extend: '@apostrophecms/doc-type',
 
   options: {
-    // Never actually found
-    name: '@apostrophecms/page',
     pluralLabel: 'Pages'
   },
 

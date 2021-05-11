@@ -101,7 +101,7 @@ const realWorldCase = {
       name: '_newPage',
       type: 'relationship',
       limit: 1,
-      withType: '@apostrophecms/page',
+      withType: '@apostrophecms/any-page-type',
       label: 'Page Title',
       idsStorage: 'pageId',
       if: {

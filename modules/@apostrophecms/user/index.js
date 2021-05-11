@@ -46,7 +46,8 @@ module.exports = {
     localized: false,
     editRole: 'admin',
     publishRole: 'admin',
-    viewRole: 'admin'
+    viewRole: 'admin',
+    showPermissions: true
   },
   fields(self) {
     return {
