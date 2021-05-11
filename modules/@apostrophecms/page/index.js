@@ -906,13 +906,6 @@ database.`);
         return page;
       },
       allowedChildTypes(page) {
-        if (!page && self.options.allowedHomepageTypes) {
-          return self.options.allowedHomepageTypes;
-        } else if (page && self.options.allowedSubpageTypes) {
-          if (self.options.allowedSubpageTypes[page.type]) {
-            return self.options.allowedSubpageTypes[page.type];
-          }
-        }
         // Default is to allow any type in the configured list
         return _.map(self.typeChoices, 'name');
       },
@@ -1994,7 +1987,7 @@ database.`);
           if (!label) {
             const manager = self.apos.doc.getManager(name);
             if (!manager) {
-              throw new Error('There is no page type ' + name + ' but it is configured in allowedHomepageTypes or allowedSubpageTypes or is the type of an existing page, I give up');
+              throw new Error(`There is no page type ${name} but it is configured in the types option`);
             }
             label = manager.label;
           }
