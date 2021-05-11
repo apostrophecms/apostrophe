@@ -46,6 +46,7 @@
               :label="affirmativeLabel"
               @click="confirm"
               :type="content.theme || 'primary'"
+              :disabled="isDisabled"
               ref="confirm"
             />
           </div>
