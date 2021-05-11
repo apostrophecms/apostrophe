@@ -9,8 +9,7 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
     }
 
     queryAndPlay(el, {
-      url: videoUrl,
-      neverOpenGraph: 1
+      url: videoUrl
     });
 
     function queryAndPlay(el, options) {
