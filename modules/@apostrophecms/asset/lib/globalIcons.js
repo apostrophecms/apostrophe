@@ -29,6 +29,7 @@ module.exports = {
   'drag-icon': 'Apps',
   'eye-icon': 'Eye',
   'file-tree-icon': 'FileTree',
+  'file-document-icon': 'FileDocument',
   'format-bold-icon': 'FormatBold',
   'format-list-bulleted-icon': 'FormatListBulleted',
   'format-list-numbered-icon': 'FormatListNumbered',

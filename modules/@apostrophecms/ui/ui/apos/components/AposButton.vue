@@ -425,7 +425,7 @@ export default {
   }
 
   .apos-button--primary {
-    border: 1px solid var(--a-primary);
+    border: 1px solid var(--a-primary-button-hover);
     color: var(--a-white);
     background: var(--a-primary);
     &:hover {

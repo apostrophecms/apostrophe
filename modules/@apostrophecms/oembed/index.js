@@ -65,9 +65,6 @@ module.exports = {
       // representation via `oembetter`, and on success returns an
       // object containing the oembed API response from the service provider.
       //
-      // If `oembetter` has no luck, open graph is used as a fallback,
-      // unless `options.neverOpenGraph` is set.
-      //
       // If `options.alwaysIframe` is true, the result is a simple
       // iframe of the URL. If `options.iframeHeight` is set, the iframe
       // has that height in pixels, otherwise it is left to CSS.
@@ -114,68 +111,6 @@ module.exports = {
         // cache oembed responses for one hour
         await self.apos.cache.set('@apostrophecms/oembed', key, response, self.options.cacheLifetime);
         return response;
-      },
-      // Given a URL, return a nice oembed response for it
-      // based on its Open Graph tags, or the best we can
-      // fake, based on the HTML markup of the page. Called
-      // for you by `self.query` if `oembetter` is unsuccessful.
-      async openGraph(req, url) {
-        const body = await self.apos.http.get(url);
-        const $ = cheerio.load(body);
-        let title = $('meta[property="og:title"]').attr('content') || $('title').text();
-        if (!title) {
-          // A common goof these days
-          title = $('h1').text();
-          if (!title) {
-            // Oh c'mon
-            title = url;
-          }
-        }
-        const type = $('meta[property="og:type"]').attr('content') || 'website';
-        let image = $('meta[property="og:image"]').attr('content');
-        if (!image) {
-          // Looks like cheerio doesn't do :first yet?
-          const $img = $('img');
-          if ($img.length) {
-            image = $img.attr('src');
-          }
-        }
-        if (image) {
-          if (image.match(/^\w+:/)) {
-            if (!image.match(/^https?:/)) {
-              // No dangerous schemes
-              image = undefined;
-            }
-          } else {
-            // Relative URL
-            image = new URL(image, url).toString();
-          }
-        }
-        if (!image) {
-          image = undefined;
-        }
-        let description = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content');
-        if (!description) {
-          // Remove text that isn't text
-          $('script').remove();
-          $('styles').remove();
-          description = $('body').text();
-        }
-        description = self.apos.util.truncatePlaintext(description, 300);
-        url = $('meta[property="og:url"]').attr('content') || url;
-        const markup = self.render(req, 'openGraphEmbed.html', {
-          title: title,
-          type: type,
-          image: image,
-          description: description,
-          url: url
-        });
-        return {
-          thumbnail_url: image,
-          title: title,
-          type: 'rich',
-          html: markup
-        };
       },
       // Given a URL, return an oembed response for it
       // which just iframes the URL given. Fetches the page
@@ -270,8 +205,7 @@ module.exports = {
           const url = self.apos.launder.string(req.query.url);
           const options = {
             alwaysIframe: self.apos.launder.boolean(req.query.alwaysIframe),
-            iframeHeight: self.apos.launder.integer(req.query.iframeHeight),
-            neverOpenGraph: self.apos.launder.boolean(req.query.neverOpenGraph)
+            iframeHeight: self.apos.launder.integer(req.query.iframeHeight)
           };
 
           const result = await self.query(req, url, options);

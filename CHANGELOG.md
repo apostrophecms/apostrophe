@@ -2,9 +2,10 @@
 
 ## UNRELEASED
 
-## Fixes
+### Fixes
 
 - Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
+- The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
