@@ -95,7 +95,7 @@ module.exports = {
       },
       beforeMove: {
         checkPermissions(req, doc) {
-          if (doc.lastPublishedAt && !self.apos.permission.can(req, 'publish', '@apostrophecms/page')) {
+          if (doc.lastPublishedAt && !self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type')) {
             throw self.apos.error('forbidden', 'Contributors may only move unpublished pages.');
           }
         }

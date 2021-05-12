@@ -704,7 +704,7 @@ module.exports = {
       // pieces, the `data.global` doc, and page types registered
       // with `@apostrophecms/page` always have one).
       getManager(type) {
-        return self.managers[type];
+        return self.managers[self.normalizeType(type)];
       },
       // Lock the given doc to a given `tabId`, such
       // that other calls to `apos.doc.lock` for that doc id will
@@ -1025,6 +1025,16 @@ module.exports = {
       },
       isDraft(doc) {
         return doc.aposLocale.endsWith(':draft');
+      },
+      // Given a type name, normalize for any backwards compatibility
+      // provisions such as accepting @apostrophecms/page for
+      // @apostrophecms/any-page-type
+      normalizeType(type) {
+        if (type === '@apostrophecms/page') {
+          // Backwards compatible
+          type = '@apostrophecms/any-page-type';
+        }
+        return type;
       }
     };
   }
