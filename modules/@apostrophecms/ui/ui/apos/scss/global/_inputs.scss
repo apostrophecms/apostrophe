@@ -132,7 +132,7 @@
   color: var(--a-base-2);
   align-items: center;
   &:hover:not(.apos-choice-label--disabled) {
-    color: var(--a-primary-text);
+    color: var(--a-text-primary);
     cursor: pointer;
   }
   &:hover.apos-choice-label--disabled {

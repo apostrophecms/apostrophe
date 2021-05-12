@@ -19,7 +19,7 @@
       />
       <AposButton
         v-if="!foreign"
-        :disabled="disabled"
+        :disabled="disabled || maxReached"
         v-bind="cloneButton"
         @click="$emit('clone')"
       />
@@ -62,6 +62,10 @@ export default {
       required: true
     },
     disabled: {
+      type: Boolean,
+      default: false
+    },
+    maxReached: {
       type: Boolean,
       default: false
     }
