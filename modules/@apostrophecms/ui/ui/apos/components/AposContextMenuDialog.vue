@@ -12,7 +12,10 @@
     />
     <div class="apos-context-menu__pane">
       <slot>
-        <ul class="apos-context-menu__items" v-if="menu">
+        <ul
+          v-if="menu"
+          class="apos-context-menu__items" role="menu"
+        >
           <AposContextMenuItem
             v-for="item in menu"
             :key="item.action"

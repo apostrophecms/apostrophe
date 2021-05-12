@@ -22,6 +22,11 @@
         ref="button"
         :disabled="disabled"
         :tooltip="tooltip"
+        role="button"
+        :attrs="{
+          'aria-haspopup': 'menu',
+          'aria-expanded': isOpen ? true : false
+        }"
       />
       <template #popover class="apos-popover__slot">
         <AposContextMenuDialog

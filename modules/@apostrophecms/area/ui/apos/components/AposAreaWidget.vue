@@ -71,6 +71,7 @@
           :options="{ contextual: isContextual }"
           :foreign="foreign"
           :disabled="disabled"
+          :max-reached="maxReached"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
