@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### **Breaks**
+
+- Removed `apos.adminBar.group` method, which is unlikely to be needed in 3.x. One can group admin bar items into dropdowns via the `groups` option.
+
 ### Fixes
 
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.

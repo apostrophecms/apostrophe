@@ -124,6 +124,7 @@ export default {
 <style lang="scss" scoped>
   .apos-notification {
     @include apos-transition();
+    pointer-events: auto;
     position: relative;
     display: inline-flex;
     overflow: hidden;
