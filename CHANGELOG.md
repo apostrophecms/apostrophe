@@ -11,6 +11,7 @@
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
 - In-context editing works properly when the current browser URL has a `#` part, enabling the use of the `#` part for project-specific work. Thanks to [https://stepanjakl.com/](Štěpán Jákl) for reporting the issue.
 - When present, the `apos.http.addQueryToUrl` method preserves the `#` part of the URL intact.
+- The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 

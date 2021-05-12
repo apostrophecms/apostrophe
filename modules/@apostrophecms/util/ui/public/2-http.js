@@ -298,9 +298,9 @@
       var match;
       var parentKey = 'root';
       var context = data;
+      key = decodeURIComponent(key);
       var path = key.split('[');
       path.forEach(function(subKey) {
-        subKey = decodeURIComponent(subKey);
         if (subKey === ']') {
           if (!Array.isArray(context[parentKey])) {
             context[parentKey] = [];
