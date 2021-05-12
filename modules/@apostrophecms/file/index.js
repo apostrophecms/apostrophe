@@ -18,7 +18,8 @@ module.exports = {
     slugPrefix: 'file-',
     autopublish: true,
     editRole: 'editor',
-    publishRole: 'editor'
+    publishRole: 'editor',
+    showPermissions: true
   },
   fields: {
     remove: [ 'visibility' ],

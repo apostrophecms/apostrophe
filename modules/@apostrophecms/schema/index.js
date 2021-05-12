@@ -969,20 +969,22 @@ module.exports = {
         }
         if (Array.isArray(field.withType)) {
           _.each(field.withType, function (type) {
-            if (!_.find(self.apos.doc.managers, { name: type })) {
-              fail('withType property, ' + type + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
-            }
+            lintType(type);
           });
         } else {
-          if (!_.find(self.apos.doc.managers, { name: field.withType })) {
-            fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
-          }
+          lintType(field.withType);
         }
         if (field.schema && !field.fieldsStorage) {
           field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
         }
         if (field.schema && !Array.isArray(field.schema)) {
           fail('schema property should be an array if present at this stage');
+        }
+        function lintType(type) {
+          type = self.apos.doc.normalizeType(type);
+          if (!_.find(self.apos.doc.managers, { name: type })) {
+            fail('withType property, ' + type + ', does not match the name of any piece or page type module.');
+          }
         }
       },
       isEqual(req, field, one, two) {
@@ -1024,13 +1026,13 @@ module.exports = {
           // Try to supply reasonable value based on relationship name
           const withType = field.name.replace(/^_/, '').replace(/s$/, '');
           if (!_.find(self.apos.doc.managers, { name: withType })) {
-            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
+            fail('withType property is missing. Hint: it must match the name of a piece or page type module. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
         }
-        const otherModule = _.find(self.apos.doc.managers, { name: field.withType });
+        const otherModule = _.find(self.apos.doc.managers, { name: self.apos.doc.normalizeType(field.withType) });
         if (!otherModule) {
-          fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
+          fail('withType property, ' + field.withType + ', does not match the name of a piece or page type module.');
         }
         if (!(field.reverseOf || field.idsStorage)) {
           self.validate(otherModule.schema, {
