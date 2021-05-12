@@ -78,7 +78,7 @@ export default {
       default: ''
     }
   },
-  emits: [ 'inactive', 'esc', 'show-modal', 'no-modal' ],
+  emits: [ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ],
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));
@@ -152,6 +152,9 @@ export default {
     }
   },
   methods: {
+    done() {
+      alert('hi stu');
+    },
     esc (e) {
       if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
         return;
@@ -166,6 +169,9 @@ export default {
       this.bindEventListeners();
       apos.modal.stack = apos.modal.stack || [];
       apos.modal.stack.push(this);
+      this.$nextTick(() => {
+        this.$emit('ready');
+      });
     },
     finishExit () {
       this.removeEventListeners();

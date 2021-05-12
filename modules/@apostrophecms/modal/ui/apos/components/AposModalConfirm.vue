@@ -4,6 +4,7 @@
     v-on="mode !== 'alert' ? { 'esc': cancel } : null"
     @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    @ready="ready"
   >
     <template #main>
       <AposModalBody>
@@ -122,12 +123,11 @@ export default {
     if (this.content.form) {
       this.formValues = this.content.form.value;
     }
-    // wait to be drawn
-    setTimeout(() => {
-      this.$refs.confirm.$el.querySelector('button').focus();
-    }, 0);
   },
   methods: {
+    ready() {
+      this.$refs.confirm.$el.querySelector('button').focus();
+    },
     confirm() {
       this.modal.showModal = false;
       const result = this.content.form ? this.formValues : true;
