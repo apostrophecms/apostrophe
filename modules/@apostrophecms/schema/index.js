@@ -1542,7 +1542,7 @@ module.exports = {
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
 
-      async convert(req, schema, data, object) {
+      async convert(req, schema, data, destination) {
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
@@ -1561,7 +1561,7 @@ module.exports = {
           const convert = self.fieldTypes[field.type].convert;
           if (convert) {
             try {
-              await convert(req, field, data, object);
+              await convert(req, field, data, destination);
             } catch (e) {
               if (Array.isArray(e)) {
                 const invalid = self.apos.error('invalid', {
@@ -1581,7 +1581,7 @@ module.exports = {
         }
 
         errors = errors.filter(error => {
-          if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
+          if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, destination, error.path)) {
             // It is not reasonable to enforce required for
             // fields hidden via conditional fields
             return false;
