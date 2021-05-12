@@ -138,6 +138,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-notifications {
+    z-index: $z-index-notifications;
+    pointer-events: none;
+    position: fixed;
+    bottom: 20px;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+  }
+
   .list-enter-active,
   .list-leave-active {
     @include apos-transition();
@@ -148,4 +159,5 @@ export default {
     opacity: 0;
     transform: translateY(5px);
   }
+
 </style>
