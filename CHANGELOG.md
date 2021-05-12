@@ -12,6 +12,7 @@
 ### Fixes
 
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
+- The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
