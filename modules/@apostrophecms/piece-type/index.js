@@ -374,7 +374,7 @@ module.exports = {
       async insertDraftOf(req, doc, draft, options) {
         options = {
           ...options,
-          updateModified: false
+          setModified: false
         };
         const inserted = await self.insert({
           ...req,

@@ -298,7 +298,7 @@ module.exports = {
         };
         options = {
           ...options,
-          updateModified: false
+          setModified: false
         };
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale
