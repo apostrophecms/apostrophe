@@ -816,7 +816,7 @@ module.exports = {
           ...req,
           mode: 'draft'
         }, draft, {
-          updateModified: false
+          setModified: false
         });
         const result = {
           draft
