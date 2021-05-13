@@ -19,13 +19,7 @@ const ranks = {
 
 module.exports = {
   options: {
-    alias: 'permission',
-    interestingTypes: [
-      '@apostrophecms/user',
-      '@apostrophecms/global',
-      '@apostrophecms/image',
-      '@apostrophecms/file'
-    ]
+    alias: 'permission'
   },
   init(self) {
     self.permissionPattern = /^([^-]+)-(.*)$/;
@@ -270,10 +264,10 @@ module.exports = {
       // reduces the set to those considered interesting and those that
       // do not match the typical permissions, in an intuitive order
       presentPermissionSets(permissionSets) {
-        let newPermissionSets = permissionSets.filter(permissionSet => self.options.interestingTypes.includes(permissionSet.name));
+        let newPermissionSets = permissionSets.filter(permissionSet => self.matchInterestingType(permissionSet));
         newPermissionSets = [
           ...newPermissionSets,
-          ...permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet))
+          ...permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet) && !self.neverMentionType(permissionSet))
         ];
         const typicalPieceType = permissionSets.find(self.matchTypicalPieceType);
         if (typicalPieceType) {
@@ -288,7 +282,15 @@ module.exports = {
       },
       matchTypicalPieceType(permissionSet) {
         const manager = self.apos.doc.getManager(permissionSet.name);
-        return permissionSet.piece && (manager.options.viewRole === false) && (manager.options.editRole === 'contributor') && (manager.options.publishRole === 'editor') && !self.options.interestingTypes.includes(permissionSet.name);
+        return permissionSet.piece && (manager.options.viewRole === false) && (manager.options.editRole === 'contributor') && (manager.options.publishRole === 'editor') && !self.matchInterestingType(permissionSet) && !self.neverMentionType(permissionSet);
+      },
+      neverMentionType(permissionSet) {
+        const manager = self.apos.doc.getManager(permissionSet.name);
+        return manager.options.showPermissions === false;
+      },
+      matchInterestingType(permissionSet) {
+        const manager = self.apos.doc.getManager(permissionSet.name);
+        return manager.options.showPermissions;
       }
     };
   },

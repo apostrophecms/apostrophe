@@ -1,5 +1,5 @@
-// This module provides a special doc type manager for the `@apostrophecms/page` type, which
-// actually refers to any page in the tree, regardless of type. This
+// This module provides a special doc type manager, `@apostrophecms/any-page-type`, a virtual
+// type which actually refers to any page in the tree, regardless of type. This
 // allows you to create [@apostrophecms/schema](Apostrophe schema relationships) that can link to
 // any page in the page tree, rather than one specific page type.
 
@@ -10,8 +10,6 @@ module.exports = {
   extend: '@apostrophecms/doc-type',
 
   options: {
-    // Never actually found
-    name: '@apostrophecms/page',
     pluralLabel: 'Pages'
   },
 

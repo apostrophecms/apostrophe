@@ -816,7 +816,7 @@ module.exports = {
           ...req,
           mode: 'draft'
         }, draft, {
-          updateModified: false
+          setModified: false
         });
         const result = {
           draft
@@ -2393,7 +2393,7 @@ module.exports = {
             // has a manager thanks to @apostrophecms/any-page-type. Use that as a default
             // so that we always get a manager object
 
-            const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/page');
+            const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/any-page-type');
             if (!(manager && manager.schema)) {
               return;
             }

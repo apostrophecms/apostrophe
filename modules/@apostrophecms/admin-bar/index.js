@@ -91,17 +91,6 @@ module.exports = {
         self.items.push(item);
       },
 
-      // Group several menu items together in the interface (currently
-      // implemented as a dropdown menu). If `items` is an array of menu
-      // item names, then the group's label is the same as the label of
-      // the first item. If you wish the label to differ from the label
-      // of the first item, instead pass an object with a `label` property
-      // and an `items` property.
-
-      group(items) {
-        self.groups.push(items);
-      },
-
       getVisibleItems(req) {
         // Find the subset of admin bar items this user is permitted to see
         const user = req.user;
@@ -285,7 +274,7 @@ module.exports = {
           contextId: context && context._id,
           tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/page', 'draft')
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft')
         };
       }
     };

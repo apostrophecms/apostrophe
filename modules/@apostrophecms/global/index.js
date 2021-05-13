@@ -41,7 +41,8 @@ module.exports = {
     label: 'Global Content',
     pluralLabel: 'Global Content',
     searchable: false,
-    singleton: true
+    singleton: true,
+    showPermissions: true
   },
   fields: {
     remove: [
