@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.0-beta.1.2 - 2021-05-14
+
+### Adds
+
+- An `uploadfs` option may be passed to the `@apostrophecms/asset` module, in order to pass options configuring a separate instance of `uploadfs` specifically for the static assets. The `@apostrophecms/uploadfs` module now exports a method to instantiate an uploadfs instance. The default behavior, in which user-uploaded attachments and static assets share a single instance of uploadfs, is unchanged. Note that asset builds never use uploadfs unless `APOS_UPLOADFS_ASSETS=1` is set in the environment.
+
 ## 3.0.0-beta.1.1 - 2021-05-07
 
 ### Fixes

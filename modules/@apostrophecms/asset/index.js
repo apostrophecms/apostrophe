@@ -22,6 +22,7 @@ module.exports = {
     self.iconMap = {
       ...globalIcons
     };
+    self.initUploadfs();
   },
   handlers (self) {
     return {
@@ -296,7 +297,7 @@ module.exports = {
             if (process.env.APOS_UPLOADFS_ASSETS) {
               // The right choice if uploadfs is mapped to S3, Azure, etc.,
               // not the local filesystem
-              copyIn = require('util').promisify(self.apos.uploadfs.copyIn);
+              copyIn = require('util').promisify(self.uploadfs.copyIn);
               releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
             } else {
               // The right choice with Docker if uploadfs is just the local filesystem
@@ -387,6 +388,13 @@ module.exports = {
   },
   methods(self) {
     return {
+      async initUploadfs() {
+        if (self.options.uploadfs) {
+          self.uploadfs = await self.apos.modules['@apostrophecms/uploadfs'].getInstance(self.options.uploadfs);
+        } else {
+          self.uploadfs = self.apos.uploadfs;
+        }
+      },
       stylesheetsHelper(when) {
         const base = self.getAssetBaseUrl();
         // The styles for apostrophe admin UI are baked into the JS bundle. But
@@ -469,7 +477,7 @@ module.exports = {
           const releaseId = self.getReleaseId();
           const releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
           if (process.env.APOS_UPLOADFS_ASSETS) {
-            return `${self.apos.uploadfs.getUrl()}${releaseDir}`;
+            return `${self.uploadfs.getUrl()}${releaseDir}`;
           } else {
             return releaseDir;
           }
