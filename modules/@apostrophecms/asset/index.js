@@ -43,6 +43,13 @@ module.exports = {
             });
           }
         }
+      },
+      'apostrophe:destroy': {
+        async destroyUploadfs() {
+          if (self.uploadfs && (self.uploadfs !== self.apos.uploadfs)) {
+            await Promise.promisify(self.uploadfs.destroy)();
+          }
+        }
       }
     };
   },

@@ -57,7 +57,9 @@ module.exports = {
     return {
       'apostrophe:destroy': {
         async destroyUploadfs() {
-          await Promise.promisify(self.apos.uploadfs.destroy)();
+          if (self.apos.uploadfs) {
+            await Promise.promisify(self.apos.uploadfs.destroy)();
+          }
         }
       }
     };
