@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### **Breaks**
+
+- The `updateModified: false` option, formerly supported only by `apos.doc.update`, has been renamed to `setModified: false` and is now supported by `apos.doc.insert` as well. If explicitly set to false, the insert and update methods will leave the `modified` property alone, rather than trying to detect or infer whether a change has been made to the draft relative to the published version.
+
 ### Adds
 
 - The new `afterAposScripts` nunjucks block allows for pushing markup after Apostrophe's asset bundle script tag, at the end of the body. This is a useful way to add a script tag for Webpack's hot reload capabilities in development while still ensuring that Apostrophe's utility methods are available first, like they are in production.
@@ -16,6 +20,7 @@
 ### Fixes
 
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
+- The home page and other parked pages should not immediately show as "pending changes." 
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
