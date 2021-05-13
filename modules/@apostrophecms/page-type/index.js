@@ -296,6 +296,10 @@ module.exports = {
           ...req,
           mode: 'draft'
         };
+        options = {
+          ...options,
+          setModified: false
+        };
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale
           return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft, options);
