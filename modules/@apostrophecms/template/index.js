@@ -29,6 +29,7 @@ const _ = require('lodash');
 const dayjs = require('dayjs');
 const qs = require('qs');
 const Promise = require('bluebird');
+const path = require('path');
 
 module.exports = {
   options: { alias: 'template' },
@@ -327,8 +328,12 @@ module.exports = {
         });
         // Final class should win
         dirs.reverse();
-        if (self.options.viewsFolderFallback) {
-          dirs.push(self.options.viewsFolderFallback);
+
+        const viewsFolderFallback = self.options.viewsFolderFallback ||
+          path.join(self.apos.rootDir, 'views');
+
+        if (viewsFolderFallback) {
+          dirs.push(viewsFolderFallback);
         }
         return dirs;
       },
