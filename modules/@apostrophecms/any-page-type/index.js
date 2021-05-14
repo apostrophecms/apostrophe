@@ -12,7 +12,11 @@ module.exports = {
   options: {
     pluralLabel: 'Pages'
   },
-
+  init(self) {
+    self.addManagerModal();
+    self.addEditorModal();
+    self.enableBrowserData();
+  },
   methods(self) {
     return {
       // Returns a string to represent the given `doc` in an
@@ -24,6 +28,60 @@ module.exports = {
       // the slug as well.
       getAutocompleteTitle(doc, query) {
         return doc.title + ' (' + doc.slug + ')';
+      },
+      getBrowserData(req) {
+        const browserOptions = _.pick(self, 'action', 'schema', 'types');
+        _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
+        _.defaults(browserOptions, {
+          label: 'Page',
+          pluralLabel: 'Pages',
+          components: {}
+        });
+        _.defaults(browserOptions.components, {
+          editorModal: 'AposDocEditor',
+          managerModal: 'AposPagesManager'
+        });
+
+        if (req.data.bestPage) {
+          browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
+        }
+        browserOptions.name = self.__meta.name;
+        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
+        return browserOptions;
+      },
+      // A limited subset of page properties are pushed to
+      // browser-side JavaScript when editing privileges exist.
+      pruneCurrentPageForBrowser(page) {
+        page = _.pick(page, 'title', 'slug', '_id', 'type', 'ancestors', '_url', 'aposDocId', 'aposLocale');
+        // Limit information about ancestors to avoid
+        // excessive amounts of data in the page
+        page.ancestors = _.map(page.ancestors, function (ancestor) {
+          return _.pick(ancestor, [
+            'title',
+            'slug',
+            '_id',
+            'type',
+            '_url',
+            'aposDocId',
+            'aposLocale'
+          ]);
+        });
+        return page;
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:manager`,
+          self.getComponentName('managerModal', 'AposPagesManager'),
+          { moduleName: self.__meta.name }
+        );
+      },
+      addEditorModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:editor`,
+          self.getComponentName('editorModal', 'AposDocEditor'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   },
