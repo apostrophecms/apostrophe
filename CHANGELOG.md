@@ -12,13 +12,14 @@
 
 ### Adds
 
+- Sets the project root-level `views` directory as the default fallback views directory. This is no longer a necessary configuration in projects unless they want to change it on the `@apostrophecms/template` option `viewsFolderFallback`.
 - The new `afterAposScripts` nunjucks block allows for pushing markup after Apostrophe's asset bundle script tag, at the end of the body. This is a useful way to add a script tag for Webpack's hot reload capabilities in development while still ensuring that Apostrophe's utility methods are available first, like they are in production.
 - An `uploadfs` option may be passed to the `@apostrophecms/asset` module, in order to pass options configuring a separate instance of `uploadfs` specifically for the static assets. The `@apostrophecms/uploadfs` module now exports a method to instantiate an uploadfs instance. The default behavior, in which user-uploaded attachments and static assets share a single instance of uploadfs, is unchanged. Note that asset builds never use uploadfs unless `APOS_UPLOADFS_ASSETS=1` is set in the environment.
 
 ### Fixes
 
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
-- The home page and other parked pages should not immediately show as "pending changes." 
+- The home page and other parked pages should not immediately show as "pending changes."
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
