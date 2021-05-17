@@ -4,12 +4,12 @@
 ### Features
 
 * When `enableAltField` option is set to `true`, we now copy the `alt` field from `apostrophe-images` schema to the `attachment` piece when using `apos.images.first` or `apos.attachments.first`.
+* Adds `autoCommitPageMoves` flag in workflow to commit only pages moves automatically, manages error notification.
 
 ## 2.118.0 (2021-05-05)
 
 ### Features
 * It's now possible to set the status code when redirecting using `req.redirect` by setting `req.statusCode`. When it it is not set, `apostrophe-pages` will fallback to 302 (Found) as previously. Thanks to Jonathan Garijo for contributing this feature.
-* Adds `autoCommitPageMoves` flag in workflow to commit only pages moves automatically, manages error notification.
 
 ## 2.117.1 (2021-04-07)
 
