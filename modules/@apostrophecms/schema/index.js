@@ -34,10 +34,10 @@ module.exports = {
 
     self.addFieldType({
       name: 'area',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const _id = self.apos.launder.id(data[field.name] && data[field.name]._id) || self.apos.util.generateId();
         if (typeof data[field.name] === 'string') {
-          object[field.name] = self.apos.area.fromPlaintext(data[field.name]);
+          destination[field.name] = self.apos.area.fromPlaintext(data[field.name]);
           return;
         }
         if (Array.isArray(data[field.name])) {
@@ -59,7 +59,7 @@ module.exports = {
           items = [];
         }
         items = await self.apos.area.sanitizeItems(req, items, field.options || {});
-        object[field.name] = {
+        destination[field.name] = {
           _id,
           items,
           metaType: 'area'
@@ -231,16 +231,16 @@ module.exports = {
 
     self.addFieldType({
       name: 'color',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], field.def);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        if (field.required && (_.isUndefined(object[field.name]) || !object[field.name].toString().length)) {
+        if (field.required && (_.isUndefined(destination[field.name]) || !destination[field.name].toString().length)) {
           throw self.apos.error('required');
         }
 
-        const test = tinycolor(object[field.name]);
+        const test = tinycolor(destination[field.name]);
         if (!tinycolor(test).isValid()) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       isEmpty: function (field, value) {
@@ -250,23 +250,23 @@ module.exports = {
 
     self.addFieldType({
       name: 'checkboxes',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         if (typeof data[field.name] === 'string') {
           data[field.name] = self.apos.launder.string(data[field.name]).split(',');
 
           if (!Array.isArray(data[field.name])) {
-            object[field.name] = [];
+            destination[field.name] = [];
             return;
           }
 
-          object[field.name] = _.filter(data[field.name], function (choice) {
+          destination[field.name] = _.filter(data[field.name], function (choice) {
             return _.includes(_.map(field.choices, 'value'), choice);
           });
         } else {
           if (!Array.isArray(data[field.name])) {
-            object[field.name] = [];
+            destination[field.name] = [];
           } else {
-            object[field.name] = _.filter(data[field.name], function (choice) {
+            destination[field.name] = _.filter(data[field.name], function (choice) {
               return _.includes(_.map(field.choices, 'value'), choice);
             });
           }
@@ -322,8 +322,8 @@ module.exports = {
 
     self.addFieldType({
       name: 'select',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
       },
       index: function (value, field, texts) {
         const silent = field.silent === undefined ? true : field.silent;
@@ -385,8 +385,8 @@ module.exports = {
     self.addFieldType({
       name: 'integer',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
         if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
@@ -397,7 +397,7 @@ module.exports = {
         // This allows the form to be saved and sets the value to null if no value was given by
         // the user.
         if (!data[field.name] && data[field.name] !== 0) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       addQueryBuilder(field, query) {
@@ -432,8 +432,8 @@ module.exports = {
     self.addFieldType({
       name: 'float',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
@@ -441,7 +441,7 @@ module.exports = {
           throw self.apos.error('invalid');
         }
         if (!data[field.name] && data[field.name] !== 0) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       addQueryBuilder(field, query) {
@@ -493,8 +493,8 @@ module.exports = {
     self.addFieldType({
       name: 'url',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.url(data[field.name], field.def, true);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
       },
       diffable: function (value) {
         // URLs are fine to diff and display
@@ -530,11 +530,11 @@ module.exports = {
     self.addFieldType({
       name: 'date',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const newDateVal = data[field.name];
-        if (!newDateVal && object[field.name]) {
+        if (!newDateVal && destination[field.name]) {
           // Allow date fields to be unset.
-          object[field.name] = null;
+          destination[field.name] = null;
           return;
         }
         if (field.min && newDateVal && (newDateVal < field.min)) {
@@ -546,7 +546,7 @@ module.exports = {
           return;
         }
 
-        object[field.name] = self.apos.launder.date(newDateVal, field.def);
+        destination[field.name] = self.apos.launder.date(newDateVal, field.def);
       },
       validate: function (field, options, warn, fail) {
         if (field.max && !field.max.match(dateRegex)) {
@@ -603,20 +603,20 @@ module.exports = {
     self.addFieldType({
       name: 'time',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.time(data[field.name], field.def);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.time(data[field.name], field.def);
       }
     });
 
     self.addFieldType({
       name: 'password',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         // This is the only field type that we never update unless
         // there is actually a new value — a blank password is not cool. -Tom
         if (data[field.name]) {
-          object[field.name] = self.apos.launder.string(data[field.name], field.def);
+          destination[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-          object[field.name] = checkStringLength(object[field.name], field.min, field.max);
+          destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
         }
       }
     });
@@ -628,8 +628,8 @@ module.exports = {
     self.addFieldType({
       name: 'range',
       vueComponent: 'AposInputRange',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
@@ -643,7 +643,7 @@ module.exports = {
           data[field.name] < field.min ||
           data[field.name] > field.max
         ) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       validate: function (field, options, warn, fail) {
@@ -670,7 +670,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'array',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const schema = field.schema;
         data = data[field.name];
         if (!Array.isArray(data)) {
@@ -700,7 +700,7 @@ module.exports = {
           }
           results.push(result);
         }
-        object[field.name] = results;
+        destination[field.name] = results;
         if (field.required && !results.length) {
           throw self.apos.error('required');
         }
@@ -754,7 +754,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'object',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const schema = field.schema;
         const errors = [];
         const result = {
@@ -773,7 +773,7 @@ module.exports = {
             });
           }
         }
-        object[field.name] = result;
+        destination[field.name] = result;
         if (errors.length) {
           throw errors;
         }
@@ -826,7 +826,7 @@ module.exports = {
       // properties is handled at a lower level in a beforeSave
       // handler of the doc-type module.
 
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const manager = self.apos.doc.getManager(field.withType);
         if (!manager) {
           throw Error('relationship with type ' + field.withType + ' unrecognized');
@@ -872,7 +872,7 @@ module.exports = {
           });
         }
         if (!clauses.length) {
-          object[field.name] = [];
+          destination[field.name] = [];
           return;
         }
         const results = await manager.find(req, { $or: clauses }).relationships(false).toArray();
@@ -897,7 +897,7 @@ module.exports = {
             }
           }
         }
-        object[field.name] = actualDocs;
+        destination[field.name] = actualDocs;
       },
 
       relate: async function (req, field, objects, options) {
@@ -1528,7 +1528,7 @@ module.exports = {
       },
 
       // Convert submitted `data` object according to `schema`, sanitizing it
-      // and populating the appropriate properties of `object` with it.
+      // and populating the appropriate properties of `destination` with it.
       //
       // Most field types may be converted as plaintext or in the format used for Apostrophe
       // schema forms, which in most cases is identical to that in which they will be stored
@@ -1997,9 +1997,9 @@ module.exports = {
       //
       // ### `convert`
       //
-      // Required. An `async` function which takes `(req, field, data, object)`. The value
+      // Required. An `async` function which takes `(req, field, data, destination)`. The value
       // of the field is drawn from the untrusted input object `data` and sanitized
-      // if possible, then copied to the appropriate property (or properties) of `object`.
+      // if possible, then copied to the appropriate property (or properties) of `destination`.
       //
       // `field` contains the schema field definition, useful to access
       // `def`, `min`, `max`, etc.
