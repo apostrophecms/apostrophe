@@ -20,6 +20,7 @@
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
 - The home page and other parked pages should not immediately show as "pending changes." 
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
+- The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
