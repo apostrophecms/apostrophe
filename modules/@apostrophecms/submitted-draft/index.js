@@ -12,7 +12,10 @@ module.exports = {
     canCreate: false,
     canDismissSubmission: true,
     canArchive: false,
-    canDiscardDraft: false
+    canDiscardDraft: false,
+    // Never mention this type at all in the permissions interface,
+    // not even on a list of typical piece types
+    showPermissions: false
   },
   columns: {
     add: {
