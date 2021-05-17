@@ -46,16 +46,10 @@
           }
         })"
       />
-      <!-- TODO later the :disabled will go away for most cases because options
-        like duplicate and share do not require that the draft be modified, but
-        right now we just have Discard Draft which requires a modified draft.
-
-        Use disabled, not v-if, to avoid jumpy repositioning of the icons when
-        toggling between context documents. -->
-
       <AposDocContextMenu
         :doc="context"
         :show-preview="false"
+        :show-edit="false"
       />
       <AposButton
         v-if="!hasCustomUi"

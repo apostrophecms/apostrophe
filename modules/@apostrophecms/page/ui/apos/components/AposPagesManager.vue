@@ -26,7 +26,7 @@
       />
       <AposButton
         v-else type="primary"
-        label="New Page" @click="openEditor(null)"
+        label="New Page" @click="create()"
       />
       <AposButton
         v-if="relationshipField"
@@ -223,26 +223,15 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     await this.getPages();
-    apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('content-changed', this.getPages);
   },
   destroyed() {
-    apos.bus.$off('content-changed', this.onContentChanged);
+    apos.bus.$off('content-changed', this.getPages);
   },
   methods: {
-    onContentChanged(e) {
-      if (this.relationshipField) {
-        if ((e.type === 'insert') && (e.doc.slug.startsWith('/'))) {
-          e.doc._fields = e.doc._fields || {};
-          // Must push to checked docs or it will try to do it for us
-          // and not include _fields
-          this.checkedDocs.push(e.doc);
-          this.checked.push(e.doc._id);
-        }
-      }
-    },
     moreMenuHandler(action) {
       if (action === 'new') {
-        this.openEditor(null);
+        this.create();
       }
     },
     async getPages () {
@@ -350,6 +339,27 @@ export default {
         this.checked.forEach((id) => {
           this.toggleRowCheck(id);
         });
+      }
+    },
+    archiveClick() {
+      // TODO: Trigger a confirmation modal and execute the deletion.
+      this.$emit('archive', this.selected);
+    },
+    async create() {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
+        moduleName: this.moduleName
+      });
+      if (!doc) {
+        // Cancel clicked
+        return;
+      }
+      await this.getPages();
+      if (this.relationshipField) {
+        doc._fields = doc._fields || {};
+        // Must push to checked docs or it will try to do it for us
+        // and not include _fields
+        this.checkedDocs.push(doc);
+        this.checked.push(doc._id);
       }
     },
     setCheckedDocs(checkedDocs) {

@@ -94,7 +94,7 @@ export default {
     },
     disabled: {
       type: Boolean,
-      default: true
+      default: false
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -106,7 +106,7 @@ export default {
   },
   computed: {
     menu() {
-      return [
+      const menu = [
         // TODO
         // ...(this.isModifiedFromPublished ? [
         //   {
@@ -160,6 +160,7 @@ export default {
           }
         ] : [])
       ];
+      return menu;
     },
     moduleName() {
       if (this.context.slug.startsWith('/')) {
@@ -172,7 +173,18 @@ export default {
       return apos.modules[this.moduleName];
     },
     canPublish() {
-      return apos.modules[this.context.type].canPublish;
+      if (this.context._id) {
+        return this.context._publish;
+      } else {
+        return this.moduleOptions.canPublish;
+      }
+    },
+    canEdit() {
+      if (this.context._id) {
+        return this.context._edit;
+      } else {
+        return true;
+      }
     },
     canDismissSubmission() {
       return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));

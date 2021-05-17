@@ -696,6 +696,8 @@ database.`);
         browserOptions.name = self.__meta.name;
         browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.localized = true;
+        browserOptions.autopublish = false;
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit

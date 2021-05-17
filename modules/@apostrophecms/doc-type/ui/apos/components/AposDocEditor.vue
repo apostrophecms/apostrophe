@@ -14,7 +14,7 @@
     <template #primaryControls>
       <AposDocContextMenu
         v-if="original"
-        :disabled="errorCount > 0"
+        :disabled="(errorCount > 0) || restoreOnly"
         :doc="original"
         :current="docFields.data"
         :published="published"
