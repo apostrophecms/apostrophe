@@ -194,7 +194,7 @@ export default {
         this.context._id &&
         (!this.context.lastPublishedAt) &&
         this.manuallyPublished
-      ) || this.isModifiedFromPublished;
+      ) || (this.isModifiedFromPublished && !this.moduleOptions.singleton);
     },
     canArchive() {
       return (
