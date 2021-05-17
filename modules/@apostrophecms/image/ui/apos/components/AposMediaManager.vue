@@ -106,12 +106,12 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
 
 export default {
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
+  mixins: [ AposModifiedMixin, AposDocsManagerMixin ],
   props: {
     moduleName: {
       type: String,

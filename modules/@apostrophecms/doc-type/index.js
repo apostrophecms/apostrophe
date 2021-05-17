@@ -690,7 +690,8 @@ module.exports = {
       // Publish the given draft. If `options.permissions` is explicitly
       // set to `false`, permissions checks are bypassed. If `options.autopublishing`
       // is true, then the `edit` permission is sufficient, otherwise the
-      // `publish` permission is checked for.
+      // `publish` permission is checked for. Returns the draft with its
+      // new `lastPublishedAt` value.
       async publish(req, draft, options = {}) {
         let firstTime = false;
         if (!self.isLocalized()) {
@@ -741,7 +742,8 @@ module.exports = {
             mode: 'published'
           }, published, options);
         }
-
+        draft.modified = false;
+        draft.lastPublishedAt = lastPublishedAt;
         await self.apos.doc.db.updateOne({
           _id: draft._id
         }, {
@@ -770,6 +772,7 @@ module.exports = {
           options,
           firstTime
         });
+        return draft;
       },
       // Reverts the given draft to the most recent publication.
       //

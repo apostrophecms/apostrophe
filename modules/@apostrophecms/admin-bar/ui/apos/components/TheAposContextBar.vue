@@ -27,8 +27,6 @@
         :custom-publish-label="customPublishLabel"
         :can-dismiss-submission="canDismissSubmission"
         @switchEditMode="switchEditMode"
-        @discard-draft="onDiscardDraft"
-        @dismiss-submission="onDismissSubmission"
         @publish="onPublish"
       />
     </template>
@@ -427,10 +425,12 @@ export default {
         this.save();
       }
     },
-    async onContentChanged() {
-      this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
-        busy: true
-      });
+    async onContentChanged(e) {
+      if (e.doc && (e.doc._id === this.context._id)) {
+        this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
+          busy: true
+        });
+      }
       await this.refresh();
     },
     async switchEditMode(editing) {
@@ -498,40 +498,14 @@ export default {
       }
       apos.bus.$emit('refreshed');
     },
-    async onDiscardDraft(e) {
-      const result = await this.discardDraft(this.context);
-      this.context = {
-        ...this.context,
-        modified: false
-      };
-      if (result.doc) {
-        if (this.contextStack.length) {
-          // Pushed contexts might edit any property of the doc
-          this.original = klona(result.doc);
-        } else {
-          // On-page we only edit areas
-          this.original = Object.fromEntries(
-            Object.entries(
-              result.doc
-            ).filter(
-              ([ key, value ]) => value && value.metaType === 'area'
-            ).map(
-              ([ key, value ]) => [ key, klona(value) ]
-            )
-          );
-        }
-      }
-      this.patchesSinceLoaded = [];
-      this.undone = [];
-      if (!this.contextStack.length) {
-        if (result.doc) {
-          this.refreshOrReload(result.doc._url);
-        } else {
+    async onContentDeleted(e) {
+      if (e._id === this.context._id) {
+        this.patchesSinceLoaded = [];
+        this.undone = [];
+        if (!this.contextStack.length) {
           // With the current page gone, we need to move to safe ground
           location.assign(`${window.apos.prefix}/`);
         }
-      } else {
-        apos.bus.$emit('context-history-changed', result && result.doc);
       }
     },
     async onDismissSubmission() {
@@ -628,7 +602,10 @@ export default {
         if (!this.contextStack.length) {
           await this.refresh();
         } else {
-          apos.bus.$emit('context-history-changed', updated);
+          apos.bus.$emit('content-changed', {
+            doc: updated,
+            action: 'history'
+          });
         }
       } catch (e) {
         console.error(e);

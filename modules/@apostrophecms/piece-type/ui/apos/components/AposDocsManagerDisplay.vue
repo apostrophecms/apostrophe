@@ -91,13 +91,6 @@
               component: 'AposCellContextMenu'
             }"
             :options="contextMenuOptions"
-            @edit="$emit('open', item._id)"
-            @preview="$emit('preview', item._id)"
-            @copy="$emit('copy', item._id)"
-            @discard-draft="$emit('discard-draft', item._id)"
-            @dismiss-submission="$emit('dismiss-submission', item._id)"
-            @archive="$emit('archive', item._id)"
-            @restore="$emit('restore', item._id)"
           />
         </td>
       </tr>

@@ -75,13 +75,6 @@
             v-model="checked"
             :options="treeOptions"
             @update="update"
-            @edit="openEditor"
-            @preview="onPreview"
-            @copy="copy"
-            @archive="onArchive"
-            @restore="onRestore"
-            @discard-draft="onDiscardDraft"
-            @dismiss-submission="onDismissSubmission"
           />
         </template>
       </AposModalBody>
@@ -90,7 +83,7 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
@@ -98,7 +91,7 @@ import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
+  mixins: [ AposModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
   emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
   data() {
 
@@ -230,48 +223,22 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     await this.getPages();
-    apos.bus.$on('content-changed', this.getPages);
+    apos.bus.$on('content-changed', this.onContentChanged);
   },
   destroyed() {
-    apos.bus.$off('content-changed', this.getPages);
+    apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
-    onPreview(id) {
-      this.preview(this.findDocById(this.pagesFlat, id));
-    },
-    async onArchive(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.archive(doc)) {
-        await this.getPages();
+    onContentChanged(e) {
+      if (this.relationshipField) {
+        if ((e.type === 'insert') && (e.doc.slug.startsWith('/'))) {
+          e.doc._fields = e.doc._fields || {};
+          // Must push to checked docs or it will try to do it for us
+          // and not include _fields
+          this.checkedDocs.push(e.doc);
+          this.checked.push(e.doc._id);
+        }
       }
-    },
-    async onRestore(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.restore(doc)) {
-        await this.getPages();
-      }
-    },
-    async onDiscardDraft(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.discardDraft(doc)) {
-        await this.getPages();
-      }
-    },
-    async onDismissSubmission(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.dismissSubmission(doc)) {
-        await this.getPages();
-      }
-    },
-    async copy(id) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName,
-        copyOf: this.findDocById(this.pagesFlat, id)
-      });
-      if (!doc) {
-        return;
-      }
-      await this.getPages();
     },
     moreMenuHandler(action) {
       if (action === 'new') {
@@ -383,28 +350,6 @@ export default {
         this.checked.forEach((id) => {
           this.toggleRowCheck(id);
         });
-      }
-    },
-    archiveClick() {
-      // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('archive', this.selected);
-    },
-    async openEditor(pageId) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName,
-        docId: pageId
-      });
-      if (!doc) {
-        // Cancel clicked
-        return;
-      }
-      await this.getPages();
-      if (this.relationshipField && (!pageId)) {
-        doc._fields = doc._fields || {};
-        // Must push to checked docs or it will try to do it for us
-        // and not include _fields
-        this.checkedDocs.push(doc);
-        this.checked.push(doc._id);
       }
     },
     setCheckedDocs(checkedDocs) {
