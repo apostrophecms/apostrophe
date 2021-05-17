@@ -423,9 +423,16 @@ export default {
     },
     async onContentChanged(e) {
       if (e.doc && (e.doc._id === this.context._id)) {
-        this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
-          busy: true
-        });
+        if (e.action === 'delete') {
+          if (!this.contextStack.length) {
+            // With the current page gone, we need to move to safe ground
+            location.assign(`${window.apos.prefix}/`);
+          }
+        } else {
+          this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
+            busy: true
+          });
+        }
       }
       await this.refresh();
     },

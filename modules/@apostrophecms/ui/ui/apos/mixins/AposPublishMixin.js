@@ -164,7 +164,7 @@ export default {
             });
             apos.bus.$emit('content-changed', {
               doc: newDoc,
-              change: 'revert-draft-to-published'
+              action: 'revert-draft-to-published'
             });
             return {
               doc: newDoc
@@ -180,7 +180,7 @@ export default {
             });
             apos.bus.$emit('content-changed', {
               doc,
-              change: 'delete'
+              action: 'delete'
             });
             return {};
           }
