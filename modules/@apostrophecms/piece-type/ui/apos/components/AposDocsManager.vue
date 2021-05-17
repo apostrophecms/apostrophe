@@ -203,7 +203,7 @@ export default {
   methods: {
     moreMenuHandler(action) {
       if (action === 'new') {
-        this.insert();
+        this.create();
       }
     },
     setCheckedDocs(checked) {
