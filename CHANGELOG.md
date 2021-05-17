@@ -21,6 +21,7 @@
 - The home page and other parked pages should not immediately show as "pending changes." 
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 - The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
+- Added additional retries when binding to the port in a dev environment.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
