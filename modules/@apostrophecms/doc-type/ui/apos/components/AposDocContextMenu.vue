@@ -133,7 +133,7 @@ export default {
             action: 'dismissSubmission'
           }
         ] : []),
-        ...(this.showCopy && this.canEdit ? [
+        ...(this.showCopy && this.canCopy ? [
           {
             label: 'Duplicate...',
             action: 'copy'
@@ -204,6 +204,9 @@ export default {
         !this.context.parked &&
         ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
       );
+    },
+    canCopy() {
+      return this.canEdit && !this.moduleOptions.singleton;
     },
     canRestore() {
       return (
