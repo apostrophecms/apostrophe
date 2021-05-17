@@ -501,16 +501,6 @@ export default {
       }
       apos.bus.$emit('refreshed');
     },
-    async onContentDeleted(e) {
-      if (e._id === this.context._id) {
-        this.patchesSinceLoaded = [];
-        this.undone = [];
-        if (!this.contextStack.length) {
-          // With the current page gone, we need to move to safe ground
-          location.assign(`${window.apos.prefix}/`);
-        }
-      }
-    },
     async onDismissSubmission() {
       if (await this.dismissSubmission(this.context)) {
         this.context = {
