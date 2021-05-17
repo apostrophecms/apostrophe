@@ -10,16 +10,24 @@ module.exports = (self) => {
     let i = 0;
     let kwparams = null;
     for (const param of info.params) {
+      const arg = info.args[i];
+
       // Grab kw param if available, it's the last one
       if (param && typeof param !== 'string' && param.__keywords === true) {
         kwparams = param;
         break;
       }
-      // loop through everything (because kwargs are always last) and don't assign if
-      // no argument is provided
-      if (typeof info.args[i] !== 'undefined') {
-        input[param] = info.args[i];
+
+      // Test argument, if it's kw arg -> skip the positional assignment
+      if (_.isPlainObject(arg) && arg.__keywords === true) {
+        continue;
       }
+
+      // don't assign if no argument is available
+      if (typeof arg !== 'undefined') {
+        input[param] = arg;
+      }
+
       i++;
     }
 
@@ -31,7 +39,7 @@ module.exports = (self) => {
       // and they are ALWAYS the last array item
       const kwargs = info.args[info.args.length - 1];
       // Be sure it's an object!
-      if (kwargs && _.isPlainObject(kwargs) && kwargs.__keywords === true) {
+      if (_.isPlainObject(kwargs) && kwargs.__keywords === true) {
         Object.assign(input, kwargs);
       }
     }
