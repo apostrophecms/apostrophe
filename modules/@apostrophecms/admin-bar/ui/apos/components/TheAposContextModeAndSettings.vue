@@ -89,8 +89,7 @@ export default {
     },
     editMode: Boolean,
     readyToPublish: Boolean,
-    canPublish: Boolean,
-    canDismissSubmission: Boolean
+    canPublish: Boolean
   },
   emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
   data() {

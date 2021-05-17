@@ -25,7 +25,6 @@
         :can-publish="canPublish"
         :ready-to-publish="readyToPublish"
         :custom-publish-label="customPublishLabel"
-        :can-dismiss-submission="canDismissSubmission"
         @switchEditMode="switchEditMode"
         @publish="onPublish"
       />
@@ -96,9 +95,6 @@ export default {
     },
     canPublish() {
       return apos.modules[this.context.type].canPublish;
-    },
-    canDismissSubmission() {
-      return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     readyToPublish() {
       if (this.canPublish) {
