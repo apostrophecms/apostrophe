@@ -22,6 +22,7 @@
 - When present, the `apos.http.addQueryToUrl` method preserves the `#` part of the URL intact.
 - The home page and other parked pages should not immediately show as "pending changes." 
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
+- Skipping positional arguments in fragments now works as expected.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
