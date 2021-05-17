@@ -1,4 +1,9 @@
-# Changelog
+
+## Unreleased
+
+### Features
+
+* When `enableAltField` option is set to `true`, we now copy the `alt` field from `apostrophe-images` schema to the `attachment` piece when using `apos.images.first` or `apos.attachments.first`.
 
 ## 2.118.0 (2021-05-05)
 
