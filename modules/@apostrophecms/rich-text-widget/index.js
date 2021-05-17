@@ -88,6 +88,35 @@ module.exports = {
         label: 'Ordered List',
         icon: 'format-list-numbered-icon'
       },
+      text_align: {
+        component: 'AposTiptapSubmenu',
+        label: 'Text Align',
+        icon: 'format-align-left',
+        editorOptions: {
+          items: [
+            {
+              name: 'alignLeft',
+              icon: 'format-align-left',
+              label: 'Text Align Left'
+            },
+            {
+              name: 'alignCenter',
+              icon: 'format-align-center',
+              label: 'Text Align Center'
+            },
+            {
+              name: 'alignRight',
+              icon: 'format-align-right',
+              label: 'Text Align Right'
+            },
+            {
+              name: 'alignJustify',
+              icon: 'format-align-justify',
+              label: 'Text Align Justify'
+            }
+          ]
+        }
+      },
       strike: {
         component: 'AposTiptapButton',
         label: 'Strike',
@@ -122,7 +151,11 @@ module.exports = {
     };
   },
   icons: {
-    'format-text-icon': 'FormatText'
+    'format-text-icon': 'FormatText',
+    'format-align-left': 'FormatAlignLeft',
+    'format-align-right': 'FormatAlignRight',
+    'format-align-center': 'FormatAlignCenter',
+    'format-align-justify': 'FormatAlignJustify'
   },
   methods(self) {
     return {
