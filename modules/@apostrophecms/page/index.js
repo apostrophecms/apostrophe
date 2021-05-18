@@ -87,7 +87,7 @@ module.exports = {
         const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
         if (autocomplete.length) {
-          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
             throw self.apos.error('forbidden');
           }
           return {
@@ -98,7 +98,7 @@ module.exports = {
         }
 
         if (all) {
-          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
             throw self.apos.error('forbidden');
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
@@ -201,7 +201,7 @@ module.exports = {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return;
           const parentPage = await self.findForEditing(req, { _id: targetId })
-            .permission('edit', '@apostrophecms/page').toObject();
+            .permission('edit', '@apostrophecms/any-page-type').toObject();
           return self.newChild(parentPage);
         }
 
@@ -694,8 +694,8 @@ database.`);
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
         browserOptions.name = self.__meta.name;
-        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/page');
-        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/page', 'draft');
+        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit

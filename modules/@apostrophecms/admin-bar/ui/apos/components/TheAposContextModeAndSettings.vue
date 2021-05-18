@@ -109,7 +109,6 @@ export default {
   emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
   data() {
     return {
-      hasBeenPublishedThisPageload: false,
       hasBeenPublishedButNotUpdated: false
     };
   },
@@ -150,7 +149,13 @@ export default {
           return 'Submit';
         }
       }
+    },
+    hasBeenPublishedThisPageload() {
+      return (this.context.lastPublishedAt > this.mountedAt) || ((this.context.submitted && this.context.submitted.at) > this.mountedAt);
     }
+  },
+  mounted() {
+    this.mountedAt = (new Date()).toISOString();
   },
   methods: {
     switchEditMode(mode) {
@@ -169,7 +174,6 @@ export default {
         this.hasBeenPublishedButNotUpdated = false;
       }
       this.$emit('publish');
-      this.hasBeenPublishedThisPageload = true;
     },
     emitEvent(name) {
       apos.bus.$emit('admin-menu-click', name);

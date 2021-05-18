@@ -50,7 +50,7 @@ export default {
     // If the URL references a draft, go into draft mode but then clean up the URL
     const draftMode = query['aposMode'] || 'published';
     if (draftMode === 'draft') {
-      delete query['aposMode'];
+      delete query.aposMode;
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
     }
     return {
@@ -453,13 +453,12 @@ export default {
       let url = window.location.href;
       const qs = {
         ...apos.http.parseQuery(window.location.search),
-        'aposRefresh': '1',
-        'aposMode': this.draftMode,
+        aposRefresh: '1',
+        aposMode: this.draftMode,
         ...(this.editMode ? {
-          'aposEdit': '1'
+          aposEdit: '1'
         } : {})
       };
-      url = url.replace(/\?.*$/, '');
       url = apos.http.addQueryToUrl(url, qs);
       const content = await apos.http.get(url, {
         qs,
