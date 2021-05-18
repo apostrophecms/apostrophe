@@ -44,13 +44,6 @@
           :data-col="col.property"
           :style="getCellStyles(col.property, index)"
           @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
-          @edit="$emit('edit', row._id)"
-          @preview="$emit('preview', row._id)"
-          @copy="$emit('copy', row._id)"
-          @discard-draft="$emit('discard-draft', row._id)"
-          @dismiss-submission="$emit('dismiss-submission', row._id)"
-          @archive="$emit('archive', row._id)"
-          @restore="$emit('restore', row._id)"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -112,14 +105,6 @@
         :style="{
           'max-height': options.startCollapsed ? '0' : null
         }"
-        @update="$emit('update', $event)"
-        @edit="$emit('edit', $event)"
-        @preview="$emit('preview', $event)"
-        @copy="$emit('copy', $event)"
-        @discard-draft="$emit('discard-draft', $event)"
-        @dismiss-submission="$emit('dismiss-submission', $event)"
-        @archive="$emit('archive', $event)"
-        @restore="$emit('restore', $event)"
         v-model="checkedProxy"
       />
     </li>
@@ -192,7 +177,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore' ],
+  emits: [ 'update', 'change' ],
   computed: {
     myRows() {
       return this.rows;

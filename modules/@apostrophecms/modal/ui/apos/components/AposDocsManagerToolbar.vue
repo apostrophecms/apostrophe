@@ -7,7 +7,11 @@
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')"
       />
-      <!-- TODO: Return this delete button when batch updates are added -->
+      <!-- TODO: Return this delete button when batch updates are added.
+        When we do that though, we should do it like we handle the other
+        batch operation events, not with extra event plumbing
+        percolating everywhere. We can still achieve a custom button
+        without that. -->
       <!-- <AposButton
         label="Delete" @click="$emit('archive-click')"
         :icon-only="true" icon="delete-icon"
@@ -97,7 +101,6 @@ export default {
     }
   },
   emits: [
-    'archive-click',
     'select-click',
     'filter',
     'search',

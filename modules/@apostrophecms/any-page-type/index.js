@@ -12,18 +12,41 @@ module.exports = {
   options: {
     pluralLabel: 'Pages'
   },
-
+  init(self) {
+    self.addManagerModal();
+    self.addEditorModal();
+    self.enableBrowserData();
+  },
   methods(self) {
     return {
-      // Returns a string to represent the given `doc` in an
-      // autocomplete menu. `doc` will contain only the fields returned
-      // by `getAutocompleteProjection`. `query.field` will contain
-      // the schema field definition for the relationship the user is attempting
-      // to match titles from. The default behavior is to return
-      // the `title` property, but since this is a page we are including
-      // the slug as well.
+      // Returns a string to represent the given `doc` in an autocomplete menu.
+      // `doc` will contain only the fields returned by
+      // `getAutocompleteProjection`. `query.field` will contain the schema
+      // field definition for the relationship the user is attempting to match
+      // titles from. The default behavior is to return the `title` property,
+      // but since this is a page we are including the slug as well.
       getAutocompleteTitle(doc, query) {
         return doc.title + ' (' + doc.slug + ')';
+      },
+      getBrowserData(req) {
+        const browserData = self.apos.page.getBrowserData(req);
+        browserData.name = self.__meta.name;
+
+        return browserData;
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:manager`,
+          self.getComponentName('managerModal', 'AposPagesManager'),
+          { moduleName: self.__meta.name }
+        );
+      },
+      addEditorModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:editor`,
+          self.getComponentName('editorModal', 'AposDocEditor'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   },

@@ -66,7 +66,6 @@
             :filter-values="filterValues"
             :labels="moduleLabels"
             @select-click="selectAll"
-            @archive-click="archiveClick"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
@@ -83,22 +82,12 @@
             :headers="headers"
             v-model="checked"
             @open="edit"
-            @preview="onPreview"
-            @copy="copy"
-            @discard-draft="onDiscardDraft"
-            @dismiss-submission="onDismissSubmission"
-            @archive="onArchive"
-            @restore="onRestore"
             :options="{
+              ...moduleOptions,
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
               disableUnpublished: !!relationshipField,
-              manuallyPublished: manuallyPublished,
-              canEdit: moduleOptions.canEdit,
-              canCreate: moduleOptions.canCreate,
-              canDismissSubmission: moduleOptions.canDismissSubmission,
-              canDiscardDraft: moduleOptions.canDiscardDraft,
-              canArchive: moduleOptions.canArchive
+              manuallyPublished: manuallyPublished
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -112,17 +101,13 @@
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
-import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 
 export default {
   name: 'AposDocsManager',
   mixins: [
-    AposDocsManagerMixin,
-    AposModalModifiedMixin,
-    AposPublishMixin,
-    AposArchiveMixin
+    AposDocsManagerMixin, AposModifiedMixin, AposPublishMixin
   ],
   props: {
     moduleName: {
@@ -227,8 +212,50 @@ export default {
         return item._id;
       });
     },
-    create() {
-      this.edit(null);
+    async create() {
+      await this.edit(null);
+    },
+    // If pieceOrId is null, a new piece is created
+    async edit(pieceOrId) {
+      let piece;
+      if ((typeof pieceOrId) === 'object') {
+        piece = pieceOrId;
+      } else if (pieceOrId) {
+        piece = this.items.find(item => item._id === pieceOrId);
+      } else {
+        piece = null;
+      }
+      let moduleName;
+      // Don't assume the piece has the type of the module,
+      // this could be a virtual piece type such as "submitted-draft"
+      // that manages docs of many types
+      if (piece) {
+        if (piece.slug.startsWith('/')) {
+          moduleName = '@apostrophecms/page';
+        } else {
+          moduleName = piece.type;
+        }
+      } else {
+        moduleName = this.moduleName;
+      }
+      const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
+        moduleName,
+        docId: piece && piece._id,
+        filterValues: this.filterValues
+      });
+      if (!doc) {
+        // Cancel clicked
+        return;
+      }
+      if (this.relationshipField) {
+        if (!this.checked.includes(doc._id)) {
+          doc._fields = doc._fields || {};
+          // Must push to checked docs or it will try to do it for us
+          // and not include _fields
+          this.checkedDocs.push(doc);
+          this.checked.push(doc._id);
+        }
+      }
     },
     async finishSaved() {
       await this.getPieces();
@@ -274,88 +301,6 @@ export default {
         this.currentPage = num;
         this.getPieces();
       }
-    },
-    onPreview(id) {
-      this.preview(this.findDocById(this.items, id));
-    },
-    async onArchive(id) {
-      const piece = this.findDocById(this.items, id);
-      if (await this.archive(piece)) {
-        apos.bus.$emit('content-changed');
-      }
-    },
-    async onRestore(id) {
-      const piece = this.findDocById(this.items, id);
-      if (await this.restore(piece)) {
-        apos.bus.$emit('content-changed');
-      }
-    },
-    async onDiscardDraft(id) {
-      const piece = this.findDocById(this.items, id);
-      if (await this.discardDraft(piece)) {
-        apos.bus.$emit('content-changed');
-      };
-    },
-    async onDismissSubmission(id) {
-      const piece = this.findDocById(this.items, id);
-      if (await this.dismissSubmission(piece)) {
-        apos.bus.$emit('content-changed');
-      };
-    },
-    async copy(id) {
-      apos.bus.$emit('admin-menu-click', {
-        itemName: `${this.moduleOptions.name}:editor`,
-        props: {
-          copyOf: this.findDocById(this.items, id)
-        }
-      });
-    },
-    // If pieceOrId is null, a new piece is created
-    async edit(pieceOrId) {
-      let piece;
-      if ((typeof pieceOrId) === 'object') {
-        piece = pieceOrId;
-      } else if (pieceOrId) {
-        piece = this.items.find(item => item._id === pieceOrId);
-      } else {
-        piece = null;
-      }
-      let moduleName;
-      // Don't assume the piece has the type of the module,
-      // this could be a virtual piece type such as "submitted-draft"
-      // that manages docs of many types
-      if (piece) {
-        if (piece.slug.startsWith('/')) {
-          moduleName = '@apostrophecms/page';
-        } else {
-          moduleName = piece.type;
-        }
-      } else {
-        moduleName = this.moduleName;
-      }
-      const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
-        moduleName,
-        docId: piece && piece._id,
-        filterValues: this.filterValues
-      });
-      if (!doc) {
-        // Cancel clicked
-        return;
-      }
-      if (this.relationshipField) {
-        if (!this.checked.includes(doc._id)) {
-          doc._fields = doc._fields || {};
-          // Must push to checked docs or it will try to do it for us
-          // and not include _fields
-          this.checkedDocs.push(doc);
-          this.checked.push(doc._id);
-        }
-      }
-    },
-    // Toolbar handlers
-    archiveClick() {
-      // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('archive', this.checked);
     },
     async search(query) {
       if (query) {

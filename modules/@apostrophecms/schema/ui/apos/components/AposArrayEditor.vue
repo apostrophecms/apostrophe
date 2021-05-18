@@ -83,7 +83,7 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import cuid from 'cuid';
 import { klona } from 'klona';
@@ -93,7 +93,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 export default {
   name: 'AposArrayEditor',
   mixins: [
-    AposModalModifiedMixin,
+    AposModifiedMixin,
     AposEditorMixin
   ],
   props: {
