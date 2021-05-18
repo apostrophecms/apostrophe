@@ -26,6 +26,7 @@
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 - The "Submit" button in the admin bar updates properly to "Submitted" if the submission happens in the page settings modal.
 - Skipping positional arguments in fragments now works as expected.
+- The rich text editor now supports specifying a `styles` array with no `p` tags properly. A newly added rich text widget initially contains an element with the first style, rather than always a paragraph. If no styles are configured, a `p` tag is assumed. Thanks to Stepan Jakl for reporting the issue.
 
 ### Changes
 - Editor modal's Save button (publish / save draft / submit) now updated to use the `AposSplitButton` component. Editors can choose from several follow-up actions that occur after save, including creating another piece of content of the same type, being taken to the in-context version of the document, or being returned to the manager. Editor's selection is saved in localstorage, creating a remembered preference per content type.
