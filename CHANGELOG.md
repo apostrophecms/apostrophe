@@ -16,19 +16,6 @@
 - An `uploadfs` option may be passed to the `@apostrophecms/asset` module, in order to pass options configuring a separate instance of `uploadfs` specifically for the static assets. The `@apostrophecms/uploadfs` module now exports a method to instantiate an uploadfs instance. The default behavior, in which user-uploaded attachments and static assets share a single instance of uploadfs, is unchanged. Note that asset builds never use uploadfs unless `APOS_UPLOADFS_ASSETS=1` is set in the environment.
 - `AposButtonSplit` is a new UI component that combines a button with a context menu. Users can act on a primary action or change the button's function via menu button to the right of the button itself.
 - Developers can now pass options to the `color` schema field by passing a `pickerOptions` object through your field. This allows for modifying/removing the default color palette, changing the resulting color format, and disabling various UI. For full set of options [https://github.com/xiaokaike/vue-color/blob/master/src/components/Sketch.vue] (see this example). Note that Apostrophe 3 currently only supports the Sketch component, which take different options than other components.
-Example schema field:
-```
-backgroundColor: {
-  type: 'color',
-  label: 'Background Color',
-  help: 'Background color of the container',
-  options: {
-    pickerOptions: {
-      presetColors: ['#ea433a', '#cc9300', '#b327bf', '#66f', '#00bf9a']
-    }
-  }
-}
-```
 
 ### Fixes
 
