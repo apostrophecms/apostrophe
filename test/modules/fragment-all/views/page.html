@@ -7,6 +7,7 @@
 {% render fragment.test('pos1', 'pos2') %}
 --endtest1--
 
+
 --test2--
 Above Fragment
 
@@ -14,6 +15,7 @@ Above Fragment
 
 Below Fragment
 --endtest2--
+
 
 --test3--
 Above Call Fragment
@@ -26,4 +28,14 @@ Above Call Fragment
 
 Below Call Fragment
 --endtest3--
+
+
+--issue_3056_1--
+{% render fragment.listNumbers(1, third = 9) %}
+--endissue_3056_1--
+
+--issue_3056_2--
+{% render fragment.listNumbers(third = 9, 1) %}
+--endissue_3056_2--
+
 {% endblock %}

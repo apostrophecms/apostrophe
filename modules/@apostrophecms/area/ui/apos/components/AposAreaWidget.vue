@@ -576,13 +576,13 @@ export default {
   .apos-area-widget-controls--add {
     top: 0;
     left: 50%;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
   }
 
   .apos-area-widget-controls--add--bottom {
     top: auto;
     bottom: 0;
-    transform: translateY(50%);
+    transform: translate(-50%, 50%);
   }
 
   .apos-area-widget-inner /deep/ .apos-context-menu__popup.is-visible {
