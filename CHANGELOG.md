@@ -15,6 +15,7 @@
 - The new `afterAposScripts` nunjucks block allows for pushing markup after Apostrophe's asset bundle script tag, at the end of the body. This is a useful way to add a script tag for Webpack's hot reload capabilities in development while still ensuring that Apostrophe's utility methods are available first, like they are in production.
 - An `uploadfs` option may be passed to the `@apostrophecms/asset` module, in order to pass options configuring a separate instance of `uploadfs` specifically for the static assets. The `@apostrophecms/uploadfs` module now exports a method to instantiate an uploadfs instance. The default behavior, in which user-uploaded attachments and static assets share a single instance of uploadfs, is unchanged. Note that asset builds never use uploadfs unless `APOS_UPLOADFS_ASSETS=1` is set in the environment.
 - `AposButtonSplit` is a new UI component that combines a button with a context menu. Users can act on a primary action or change the button's function via menu button to the right of the button itself.
+- `AposModal` now emits a `ready` event when it is fully painted and can be interacted with by users or code.
 
 ### Fixes
 
@@ -27,6 +28,7 @@
 - The "Submit" button in the admin bar updates properly to "Submitted" if the submission happens in the page settings modal.
 - Skipping positional arguments in fragments now works as expected.
 - Updates oembetter properties to `allowlist` and `suggestedAllowlist`.
+- The rich text editor now supports specifying a `styles` array with no `p` tags properly. A newly added rich text widget initially contains an element with the first style, rather than always a paragraph. If no styles are configured, a `p` tag is assumed. Thanks to Stepan Jakl for reporting the issue.
 
 ### Changes
 - Editor modal's Save button (publish / save draft / submit) now updated to use the `AposSplitButton` component. Editors can choose from several follow-up actions that occur after save, including creating another piece of content of the same type, being taken to the in-context version of the document, or being returned to the manager. Editor's selection is saved in localstorage, creating a remembered preference per content type.
