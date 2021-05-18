@@ -12,27 +12,14 @@
       />
     </template>
     <template #primaryControls>
-      <!-- TODO: these conditions will need adjusting when we get to the
-        "Duplicate" feature, but without them we would have an empty
-        menu in many cases because all of the operations
-        depend on modification from published -->
-      <AposDocMoreMenu
-        v-if="hasMoreMenu"
-        :disabled="errorCount > 0"
-        :is-modified="isModified"
-        :is-modified-from-published="isModifiedFromPublished"
-        :can-discard-draft="canDiscardDraft"
-        :can-archive="canArchive"
-        :can-copy="!!docId && !moduleOptions.singleton"
-        :can-preview="canPreview"
-        :is-published="!!published"
-        :can-save-draft="false"
-        :can-dismiss-submission="canDismissSubmission"
-        @preview="preview"
-        @discard-draft="onDiscardDraft"
-        @dismiss-submission="onDismissSubmission"
-        @archive="onArchive"
-        @copy="onCopy"
+      <AposDocContextMenu
+        v-if="original"
+        :disabled="(errorCount > 0) || restoreOnly"
+        :doc="original"
+        :current="docFields.data"
+        :published="published"
+        :show-edit="false"
+        @close="close"
       />
       <AposButton
         v-if="restoreOnly"
@@ -114,7 +101,7 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
@@ -128,7 +115,7 @@ export default {
   name: 'AposDocEditor',
   mixins: [
     AposModalTabsMixin,
-    AposModalModifiedMixin,
+    AposModifiedMixin,
     AposEditorMixin,
     AposPublishMixin,
     AposAdvisoryLockMixin,
@@ -336,51 +323,6 @@ export default {
       }
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
-    canPreviewDraft() {
-      return this.moduleOptions.previewDraft;
-    },
-    canPreview() {
-      if (this.original) {
-        return !!this.original._url;
-      } else {
-        return false;
-      }
-    },
-    canArchive() {
-      return !!(
-        !this.moduleOptions.singleton &&
-        this.docId &&
-        !(this.moduleName === '@apostrophecms/page') &&
-        !this.restoreOnly &&
-        ((this.moduleOptions.canPublish && this.published) || !this.manuallyPublished)
-      );
-    },
-    canDiscardDraft() {
-      return (
-        this.docId &&
-        (!this.published) &&
-        this.manuallyPublished
-      ) || this.isModifiedFromPublished;
-    },
-    canDismissSubmission() {
-      return this.original && this.original.submitted && (this.moduleOptions.canPublish || (this.original.submitted.byId === apos.login.user._id));
-    },
-    hasMoreMenu() {
-      const hasPublishUi = this.moduleOptions.localized && !this.moduleOptions.autopublish;
-      if (this.restoreOnly) {
-        return false;
-      } else if (this.canArchive) {
-        return true;
-      } else if (this.docId) {
-        // Copy is allowed
-        return true;
-        // All other scenarios apply only when the user needs publishing-related UI
-      } else if (hasPublishUi) {
-        return (this.copyOf || this.isModified || this.isModifiedFromPublished || this.canDiscardDraft);
-      } else {
-        return false;
-      }
-    },
     savePreferenceName() {
       return `apos-${this.moduleName}-save-pref`;
     },
@@ -470,6 +412,10 @@ export default {
         this.loadNewInstance();
       });
     }
+    apos.bus.$on('content-changed', this.onContentChanged);
+  },
+  destroyed() {
+    apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
     async saveHandler(action) {
@@ -678,7 +624,10 @@ export default {
         } else if (andPublish) {
           await this.publish(doc);
         }
-        apos.bus.$emit('content-changed', doc);
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: (requestMethod === apos.http.put) ? 'update' : 'insert'
+        });
       } catch (e) {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);
@@ -741,6 +690,14 @@ export default {
         this.docType = newInstance.type;
       }
       this.docFields.data = newInstance;
+      const slugField = this.schema.find(field => field.name === 'slug');
+      if (slugField) {
+        // As a matter of UI implementation, we know our slug input field will
+        // automatically change the empty string to the prefix, so to
+        // prevent a false positive for this being considered a change,
+        // do it earlier when creating a new user
+        this.original.slug = slugField.def || slugField.prefix;
+      }
       this.prepErrors();
       this.docReady = true;
     },
@@ -763,43 +720,6 @@ export default {
       } else {
         return this.$refs[field.group.name][0];
       }
-    },
-    async onArchive(e) {
-      if (await this.archive(this.original)) {
-        apos.bus.$emit('content-changed');
-        this.modal.showModal = false;
-      }
-    },
-    async onDiscardDraft(e) {
-      if (await this.discardDraft(this.original)) {
-        apos.bus.$emit('content-changed');
-        this.modal.showModal = false;
-      }
-    },
-    async onDismissSubmission() {
-      if (await this.dismissSubmission(this.original)) {
-        this.original = {
-          ...this.original,
-          submitted: null
-        };
-        apos.bus.$emit('content-changed');
-      }
-    },
-    async onCopy(e) {
-      // If there are changes warn the user before discarding them before
-      // the copy operation
-      if (!await this.confirmAndCancel()) {
-        return;
-      }
-      apos.bus.$emit('admin-menu-click', {
-        itemName: `${this.moduleName}:editor`,
-        props: {
-          copyOf: {
-            ...this.docFields.data,
-            _id: this.docId
-          }
-        }
-      });
     },
     filterOutParkedFields(fields) {
       return fields.filter(fieldName => {
@@ -878,6 +798,14 @@ export default {
     },
     setSavePreference(pref) {
       window.localStorage.setItem(this.savePreferenceName, pref);
+    },
+    onContentChanged(e) {
+      if ((e.action === 'archive') || (e.action === 'delete')) {
+        this.modal.showModal = false;
+      }
+    },
+    close() {
+      this.modal.showModal = false;
     }
   }
 };

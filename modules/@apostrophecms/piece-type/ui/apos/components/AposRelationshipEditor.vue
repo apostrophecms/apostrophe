@@ -38,13 +38,13 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
   name: 'AposRelationshipEditor',
   mixins: [
-    AposModalModifiedMixin
+    AposModifiedMixin
   ],
   props: {
     schema: {

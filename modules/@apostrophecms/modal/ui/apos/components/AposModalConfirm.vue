@@ -4,6 +4,7 @@
     v-on="mode !== 'alert' ? { 'esc': cancel } : null"
     @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    @ready="ready"
   >
     <template #main>
       <AposModalBody>
@@ -47,6 +48,7 @@
               @click="confirm"
               :type="content.theme || 'primary'"
               :disabled="isDisabled"
+              ref="confirm"
             />
           </div>
           <p
@@ -123,6 +125,9 @@ export default {
     }
   },
   methods: {
+    ready() {
+      this.$refs.confirm.$el.querySelector('button').focus();
+    },
     confirm() {
       this.modal.showModal = false;
       const result = this.content.form ? this.formValues : true;
@@ -166,7 +171,7 @@ export default {
 }
 
 /deep/ .apos-modal__body {
-  padding: 40px 60px;
+  padding: 60px;
 }
 
 /deep/ .apos-modal__body-main {

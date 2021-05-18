@@ -245,7 +245,7 @@ export default {
         return;
       }
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
-      await apos.http.patch(route, {
+      const patched = await apos.http.patch(route, {
         busy: true,
         body: {
           archived: true
@@ -253,7 +253,10 @@ export default {
         draft: true
         // Autopublish will take care of the published side
       });
-      apos.bus.$emit('content-changed');
+      apos.bus.$emit('content-changed', {
+        doc: patched,
+        action: 'archive'
+      });
       await this.cancel();
     },
     save() {
@@ -286,7 +289,10 @@ export default {
             body,
             draft: true
           });
-          apos.bus.$emit('content-changed', doc);
+          apos.bus.$emit('content-changed', {
+            doc,
+            action: 'update'
+          });
           this.original = klona(this.docFields.data);
           this.$emit('modified', false);
           this.$emit('saved');

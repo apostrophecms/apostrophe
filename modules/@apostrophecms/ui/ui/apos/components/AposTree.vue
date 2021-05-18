@@ -19,13 +19,6 @@
       :level="1"
       :nested="nested"
       @update="update"
-      @edit="$emit('edit', $event)"
-      @preview="$emit('preview', $event)"
-      @copy="$emit('copy', $event)"
-      @discard-draft="$emit('discard-draft', $event)"
-      @dismiss-submission="$emit('dismiss-submission', $event)"
-      @archive="$emit('archive', $event)"
-      @restore="$emit('restore', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -79,7 +72,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'change', 'edit', 'preview', 'copy', 'discard-draft', 'dismiss-submission', 'archive', 'restore' ],
+  emits: [ 'update', 'change' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.

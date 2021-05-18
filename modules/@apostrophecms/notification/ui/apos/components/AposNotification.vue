@@ -7,9 +7,19 @@
       />
     </span>
     <span
-      class="apos-notification__label" v-html="label"
+      class="apos-notification__label"
       ref="label"
-    />
+    >
+      {{ label }}
+      <!-- OK to use index as key because buttons are constant for the lifetime of the notification -->
+      <button
+        v-for="(button, i) in buttons"
+        :key="i"
+        :data-apos-bus-event="JSON.stringify({ name: button.name, data: button.data })"
+      >
+        {{ button.label }}
+      </button>
+    </span>
     <div
       class="apos-notification__progress"
       v-if="progress && progress.current"
@@ -65,6 +75,12 @@ export default {
     dismiss: {
       type: Number,
       default: 0
+    },
+    buttons: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'close' ],
