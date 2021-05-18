@@ -19,6 +19,7 @@
 - `AposButtonSplit` is a new UI component that combines a button with a context menu. Users can act on a primary action or change the button's function via menu button to the right of the button itself.
 - Developers can now pass options to the `color` schema field by passing a `pickerOptions` object through your field. This allows for modifying/removing the default color palette, changing the resulting color format, and disabling various UI. For full set of options [see this example](https://github.com/xiaokaike/vue-color/blob/master/src/components/Sketch.vue)
 - `AposModal` now emits a `ready` event when it is fully painted and can be interacted with by users or code.
+- The video widget is now compatible with vimeo private videos when the domain is on the allowlist in vimeo.
 
 ### Fixes
 
