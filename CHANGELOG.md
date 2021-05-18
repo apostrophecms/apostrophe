@@ -17,6 +17,7 @@
 
 ### Fixes
 
+- Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
 - The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
 - The home page and other parked pages should not immediately show as "pending changes." 
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
