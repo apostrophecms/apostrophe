@@ -332,9 +332,8 @@ module.exports = {
         const viewsFolderFallback = self.options.viewsFolderFallback ||
           path.join(self.apos.rootDir, 'views');
 
-        if (viewsFolderFallback) {
-          dirs.push(viewsFolderFallback);
-        }
+        dirs.push(viewsFolderFallback);
+
         return dirs;
       },
 
