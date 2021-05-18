@@ -20,23 +20,31 @@ export default {
       const previouslyPublished = !!doc.lastPublishedAt;
       const action = window.apos.modules[doc.type].action;
       try {
-        await apos.http.post(`${action}/${doc._id}/publish`, {
+        doc = await apos.http.post(`${action}/${doc._id}/publish`, {
           body: {},
           busy: true
         });
-        const event = {
-          name: previouslyPublished ? 'revert-published-to-previous' : 'unpublish',
-          data: {
-            action,
-            _id: doc._id
-          }
-        };
-        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</button>`, {
+        apos.notify('Your changes have been published.', {
           type: 'success',
           dismiss: true,
-          icon: 'check-all-icon'
+          icon: 'check-all-icon',
+          buttons: [
+            {
+              type: 'event',
+              label: 'Undo Publish',
+              name: previouslyPublished ? 'revert-published-to-previous' : 'unpublish',
+              data: {
+                action,
+                _id: doc._id
+              }
+            }
+          ]
         });
-        return true;
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'publish'
+        });
+        return doc;
       } catch (e) {
         if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
           if (await apos.confirm({
@@ -83,6 +91,10 @@ export default {
           icon: 'list-status-icon',
           dismiss: true
         });
+        apos.bus.$emit('content-changed', {
+          doc: submitted,
+          action: 'submit'
+        });
         return submitted;
       } catch (e) {
         await apos.alert({
@@ -106,7 +118,14 @@ export default {
           dismiss: true,
           icon: 'close-circle-icon'
         });
-        return true;
+        doc = {
+          ...doc,
+          submitted: null
+        };
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'dismiss-submission'
+        });
       } catch (e) {
         await apos.alert({
           heading: 'An Error Occurred While Dismissing',
@@ -147,7 +166,10 @@ export default {
               dismiss: true,
               icon: 'text-box-remove-icon'
             });
-            apos.bus.$emit('content-changed', newDoc);
+            apos.bus.$emit('content-changed', {
+              doc: newDoc,
+              action: 'revert-draft-to-published'
+            });
             return {
               doc: newDoc
             };
@@ -160,7 +182,10 @@ export default {
               type: 'success',
               dismiss: true
             });
-            apos.bus.$emit('content-changed');
+            apos.bus.$emit('content-changed', {
+              doc,
+              action: 'delete'
+            });
             return {};
           }
         }

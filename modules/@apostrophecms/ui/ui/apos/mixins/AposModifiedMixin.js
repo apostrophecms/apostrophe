@@ -2,10 +2,14 @@
  * Provides a `confirmAndCancel` method which prompts for confirmation if
  * `this.isModified` returns true. Your component must supply that method.
  *
+ * If your component has a `modal` property, which is normal for modals,
+ * it will close automatically on confirmation. If your component does not have a
+ * `modal` property then you must implement your own `close` method.
+ *
  * The labels can be overridden by overriding data properties as shown below.
  *
  * If the cancellation is confirmed, or if `this.modified` is not true,
- * the modal is closed.
+ * the component is closed.
  */
 
 export default {
@@ -40,7 +44,11 @@ export default {
         dismiss = true;
       }
       if (dismiss) {
-        this.modal.showModal = false;
+        if (this.modal) {
+          this.modal.showModal = false;
+        } else {
+          this.close();
+        }
       }
       return dismiss;
     }

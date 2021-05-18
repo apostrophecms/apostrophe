@@ -96,7 +96,14 @@ export default {
     const defaultOptions = moduleOptionsBody(this.type).defaultOptions;
     const toolbar = this.options.toolbar === false ? []
       : (this.options.toolbar || defaultOptions.toolbar);
-
+    let initial = this.stripPlaceholderBrs(this.value.content);
+    if (!initial.trim().length) {
+      const defaultStyle = (this.options.styles && this.options.styles[0]) || {
+        tag: 'p'
+      };
+      const defaultClass = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
+      initial = `<${defaultStyle.tag}${defaultClass}></${defaultStyle.tag}>`;
+    }
     return {
       tools: moduleOptionsBody(this.type).tools,
       toolbar,
@@ -116,7 +123,7 @@ export default {
         ].concat((apos.tiptapExtensions || []).map(C => new C(computeEditorOptions(this.type, this.options)))),
         autoFocus: true,
         onUpdate: this.editorUpdate,
-        content: this.stripPlaceholderBrs(this.value.content)
+        content: initial
       }),
       docFields: {
         data: {

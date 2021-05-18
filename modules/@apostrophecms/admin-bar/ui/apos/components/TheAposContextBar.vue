@@ -25,10 +25,7 @@
         :can-publish="canPublish"
         :ready-to-publish="readyToPublish"
         :custom-publish-label="customPublishLabel"
-        :can-dismiss-submission="canDismissSubmission"
         @switchEditMode="switchEditMode"
-        @discard-draft="onDiscardDraft"
-        @dismiss-submission="onDismissSubmission"
         @publish="onPublish"
       />
     </template>
@@ -50,7 +47,7 @@ export default {
     // If the URL references a draft, go into draft mode but then clean up the URL
     const draftMode = query['aposMode'] || 'published';
     if (draftMode === 'draft') {
-      delete query['aposMode'];
+      delete query.aposMode;
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
     }
     return {
@@ -98,9 +95,6 @@ export default {
     },
     canPublish() {
       return apos.modules[this.context.type].canPublish;
-    },
-    canDismissSubmission() {
-      return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     readyToPublish() {
       if (this.canPublish) {
@@ -427,10 +421,19 @@ export default {
         this.save();
       }
     },
-    async onContentChanged() {
-      this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
-        busy: true
-      });
+    async onContentChanged(e) {
+      if (e.doc && (e.doc._id === this.context._id)) {
+        if (e.action === 'delete') {
+          if (!this.contextStack.length) {
+            // With the current page gone, we need to move to safe ground
+            location.assign(`${window.apos.prefix}/`);
+          }
+        } else {
+          this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
+            busy: true
+          });
+        }
+      }
       await this.refresh();
     },
     async switchEditMode(editing) {
@@ -453,13 +456,12 @@ export default {
       let url = window.location.href;
       const qs = {
         ...apos.http.parseQuery(window.location.search),
-        'aposRefresh': '1',
-        'aposMode': this.draftMode,
+        aposRefresh: '1',
+        aposMode: this.draftMode,
         ...(this.editMode ? {
-          'aposEdit': '1'
+          aposEdit: '1'
         } : {})
       };
-      url = url.replace(/\?.*$/, '');
       url = apos.http.addQueryToUrl(url, qs);
       const content = await apos.http.get(url, {
         qs,
@@ -497,42 +499,6 @@ export default {
         }
       }
       apos.bus.$emit('refreshed');
-    },
-    async onDiscardDraft(e) {
-      const result = await this.discardDraft(this.context);
-      this.context = {
-        ...this.context,
-        modified: false
-      };
-      if (result.doc) {
-        if (this.contextStack.length) {
-          // Pushed contexts might edit any property of the doc
-          this.original = klona(result.doc);
-        } else {
-          // On-page we only edit areas
-          this.original = Object.fromEntries(
-            Object.entries(
-              result.doc
-            ).filter(
-              ([ key, value ]) => value && value.metaType === 'area'
-            ).map(
-              ([ key, value ]) => [ key, klona(value) ]
-            )
-          );
-        }
-      }
-      this.patchesSinceLoaded = [];
-      this.undone = [];
-      if (!this.contextStack.length) {
-        if (result.doc) {
-          this.refreshOrReload(result.doc._url);
-        } else {
-          // With the current page gone, we need to move to safe ground
-          location.assign(`${window.apos.prefix}/`);
-        }
-      } else {
-        apos.bus.$emit('context-history-changed', result && result.doc);
-      }
     },
     async onDismissSubmission() {
       if (await this.dismissSubmission(this.context)) {
@@ -628,7 +594,10 @@ export default {
         if (!this.contextStack.length) {
           await this.refresh();
         } else {
-          apos.bus.$emit('context-history-changed', updated);
+          apos.bus.$emit('content-changed', {
+            doc: updated,
+            action: 'history'
+          });
         }
       } catch (e) {
         console.error(e);
