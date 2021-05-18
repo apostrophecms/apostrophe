@@ -152,9 +152,6 @@ export default {
     }
   },
   methods: {
-    done() {
-      alert('hi stu');
-    },
     esc (e) {
       if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
         return;
