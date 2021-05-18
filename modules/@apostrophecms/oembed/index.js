@@ -12,11 +12,11 @@ const cheerio = require('cheerio');
 // Also see the [oembetter](https://www.npmjs.com/package/oembetter) npm module and
 // the [oembed](http://oembed.com/) documentation.
 //
-// Sites to be embedded need to be whitelisted, to avoid XSS attacks. Many
-// widely trusted sites are already whitelisted.
+// Sites to be embedded need to be allowlisted, to avoid XSS attacks. Many
+// widely trusted sites are already allowlisted.
 //
-// Your `whitelist` option is concatenated with `oembetter`'s standard
-// whitelist, plus wufoo.com, infogr.am, and slideshare.net.
+// Your `allowlist` option is concatenated with `oembetter`'s standard
+// allowlist, plus wufoo.com, infogr.am, and slideshare.net.
 //
 // Your `endpoints` option is concatenated with `oembetter`'s standard
 // endpoints list.
@@ -34,7 +34,7 @@ module.exports = {
   methods(self) {
     return {
 
-      // Creates an instance of the `oembetter` module and adds the standard whitelist.
+      // Creates an instance of the `oembetter` module and adds the standard allowlist.
       // Called by `afterConstruct`.
 
       createOembetter() {
@@ -42,7 +42,7 @@ module.exports = {
         // Don't permit oembed of untrusted sites, which could
         // lead to XSS attacks
 
-        self.oembetter.whitelist(self.oembetter.suggestedWhitelist.concat(self.options.whitelist || [], [
+        self.oembetter.allowlist(self.oembetter.suggestedAllowlist.concat(self.options.allowlist || [], [
           'wufoo.com',
           'infogr.am',
           'slideshare.net'
@@ -76,6 +76,21 @@ module.exports = {
       async query(req, url, options) {
         if (!options) {
           options = {};
+        }
+        if (!options.headers) {
+          options = {
+            ...options,
+            headers: {
+              // Enables access to vimeo private videos locked to this domain
+              Referer: req.baseUrlWithPrefix
+            }
+          };
+        }
+        if (!options.headers.Referer) {
+          options.headers = {
+            ...options.headers,
+            Referer: req.baseUrlWithPrefix
+          };
         }
         // Tolerant URL handling
         url = self.apos.launder.url(url, null, true);

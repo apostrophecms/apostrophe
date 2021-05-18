@@ -17,6 +17,7 @@
 - An `uploadfs` option may be passed to the `@apostrophecms/asset` module, in order to pass options configuring a separate instance of `uploadfs` specifically for the static assets. The `@apostrophecms/uploadfs` module now exports a method to instantiate an uploadfs instance. The default behavior, in which user-uploaded attachments and static assets share a single instance of uploadfs, is unchanged. Note that asset builds never use uploadfs unless `APOS_UPLOADFS_ASSETS=1` is set in the environment.
 - `AposButtonSplit` is a new UI component that combines a button with a context menu. Users can act on a primary action or change the button's function via menu button to the right of the button itself.
 - `AposModal` now emits a `ready` event when it is fully painted and can be interacted with by users or code.
+- The video widget is now compatible with vimeo private videos when the domain is on the allowlist in vimeo.
 
 ### Fixes
 
