@@ -102,6 +102,7 @@ module.exports = {
               value: 'admin'
             }
           ],
+          def: 'guest',
           required: true
         }
       },
