@@ -18,7 +18,7 @@
           >
             <Picker
               v-if="next"
-              v-bind="fieldOptions"
+              v-bind="pickerOptions"
               :value="next"
               @input="update"
             />
@@ -43,29 +43,21 @@ export default {
     Picker
   },
   mixins: [ AposInputMixin ],
-  props: {
-    // TODO need to work out field-level option overrides
-    fieldOptions: {
-      type: Object,
-      default() {
-        return {
-          presetColors: [
-            '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
-            '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
-            '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
-          ],
-          disableAlpha: false,
-          disableFields: false,
-          format: 'hex8'
-        };
-      }
-    }
-  },
   data() {
     return {
       active: false,
       tinyColorObj: null,
-      startsNull: false
+      startsNull: false,
+      defaultPickerOptions: {
+        presetColors: [
+          '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
+          '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
+          '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
+        ],
+        disableAlpha: false,
+        disableFields: false,
+        format: 'hex8'
+      }
     };
   },
   computed: {
@@ -75,6 +67,13 @@ export default {
         type: 'color',
         color: this.value.data || ''
       };
+    },
+    pickerOptions() {
+      let fieldOptions = {};
+      if (this.field.options && this.field.options.pickerOptions) {
+        fieldOptions = this.field.options.pickerOptions;
+      }
+      return Object.assign(this.defaultPickerOptions, fieldOptions);
     },
     valueLabel() {
       if (this.next) {
@@ -107,12 +106,12 @@ export default {
     },
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
-      this.next = this.tinyColorObj.toString(this.fieldOptions.format);
+      this.next = this.tinyColorObj.toString(this.pickerOptions.format);
 
       if (this.startsNull) {
         // As a basic UX courtesey make sure to reset the alpha value of an orginally null value back to 1
         // as it was previously set to 0 by us, not the user.
-        this.next = this.tinyColorObj.setAlpha(1).toString(this.fieldOptions.format);
+        this.next = this.tinyColorObj.setAlpha(1).toString(this.pickerOptions.format);
         this.startsNull = false;
       }
     },
