@@ -16,7 +16,7 @@ export default class Styles extends Node {
     return {
       attrs: {
         tag: {
-          default: defaultStyle.p
+          default: defaultStyle.tag
         },
         class: {
           default: defaultStyle.class
