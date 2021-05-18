@@ -15,8 +15,8 @@ const cheerio = require('cheerio');
 // Sites to be embedded need to be whitelisted, to avoid XSS attacks. Many
 // widely trusted sites are already whitelisted.
 //
-// Your `whitelist` option is concatenated with `oembetter`'s standard
-// whitelist, plus wufoo.com, infogr.am, and slideshare.net.
+// Your `allowlist` option is concatenated with `oembetter`'s standard
+// allowlist, plus wufoo.com, infogr.am, and slideshare.net.
 //
 // Your `endpoints` option is concatenated with `oembetter`'s standard
 // endpoints list.
@@ -34,7 +34,7 @@ module.exports = {
   methods(self) {
     return {
 
-      // Creates an instance of the `oembetter` module and adds the standard whitelist.
+      // Creates an instance of the `oembetter` module and adds the standard allowlist.
       // Called by `afterConstruct`.
 
       createOembetter() {
@@ -42,7 +42,7 @@ module.exports = {
         // Don't permit oembed of untrusted sites, which could
         // lead to XSS attacks
 
-        self.oembetter.whitelist(self.oembetter.suggestedWhitelist.concat(self.options.whitelist || [], [
+        self.oembetter.allowlist(self.oembetter.suggestedAllowlist.concat(self.options.allowlist || [], [
           'wufoo.com',
           'infogr.am',
           'slideshare.net'

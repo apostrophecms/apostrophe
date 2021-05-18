@@ -19,7 +19,7 @@ before_install:
   - mongod --dbpath=data/db > /dev/null 2>&1 &
   - sleep 3
 
-# whitelist
+# allowlist
 branches:
   only:
     - master
