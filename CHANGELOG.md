@@ -21,6 +21,7 @@
 - The home page and other parked pages should not immediately show as "pending changes." 
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 - Skipping positional arguments in fragments now works as expected.
+- The rich text editor now supports specifying a `styles` array with no `p` tags properly. A newly added rich text widget initially contains an element with the first style, rather than always a paragraph. If no styles are configured, a `p` tag is assumed. Thanks to Stepan Jakl for reporting the issue.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
