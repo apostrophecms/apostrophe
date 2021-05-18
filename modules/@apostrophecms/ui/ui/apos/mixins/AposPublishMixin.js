@@ -24,17 +24,21 @@ export default {
           body: {},
           busy: true
         });
-        const event = {
-          name: previouslyPublished ? 'revert-published-to-previous' : 'unpublish',
-          data: {
-            action,
-            _id: doc._id
-          }
-        };
-        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</button>`, {
+        apos.notify('Your changes have been published.', {
           type: 'success',
           dismiss: true,
-          icon: 'check-all-icon'
+          icon: 'check-all-icon',
+          buttons: [
+            {
+              type: 'event',
+              label: 'Undo Publish',
+              name: previouslyPublished ? 'revert-published-to-previous' : 'unpublish',
+              data: {
+                action,
+                _id: doc._id
+              }
+            }
+          ]
         });
         apos.bus.$emit('content-changed', {
           doc,

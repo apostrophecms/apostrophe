@@ -11,6 +11,7 @@
       :icon="notification.icon"
       :id="notification._id"
       :dismiss="notification.dismiss"
+      :buttons="notification.buttons"
       @close="dismiss"
     />
   </transition-group>
@@ -69,7 +70,8 @@ export default {
           strings,
           type: options.type,
           icon: options.icon,
-          dismiss: options.dismiss
+          dismiss: options.dismiss,
+          buttons: options.buttons
         }
       });
     };
