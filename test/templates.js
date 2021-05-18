@@ -13,6 +13,24 @@ describe('Templates', function() {
     return t.destroy(apos);
   });
 
+  /**
+   * Helper ofr grabbing output between --label-- ... --endlabel--, split it to lines
+   * and remove all whitespace
+   *
+   * @param {String} result page output
+   * @param {String} label a test case marker
+   * @returns {Array<String>} array of non-empty lines
+   */
+  const parseOutput = (result, label) => {
+    const regx = new RegExp(`--${label}--([\\S\\s]*?)--end${label}--`, 'g');
+    const m = result.match(regx);
+    const arr = m[0].split('\n');
+    return arr
+      .slice(1, arr.length - 1)
+      .filter(s => !!s.trim())
+      .map(s => s.trim());
+  };
+
   it('should have a templates property', async () => {
     apos = await t.create({
       root: module,
@@ -178,13 +196,7 @@ describe('Templates', function() {
       throw result;
     }
 
-    const m = result.match(/--test1--([\S\s]*?)--endtest1--/g);
-    const arr = m[0].split('\n');
-    const data = arr
-      .slice(1, arr.length - 1)
-      .filter(s => !!s.trim())
-      .map(s => s.trim());
-
+    const data = parseOutput(result, 'test1');
     assert.deepStrictEqual(data, [
       'pos1',
       'pos2',
@@ -201,13 +213,7 @@ describe('Templates', function() {
       throw result;
     }
 
-    const m = result.match(/--test2--([\S\s]*?)--endtest2--/g);
-    const arr = m[0].split('\n');
-    const data = arr
-      .slice(1, arr.length - 1)
-      .filter(s => !!s.trim())
-      .map(s => s.trim());
-
+    const data = parseOutput(result, 'test2');
     assert.deepStrictEqual(data, [
       'Above Fragment',
       'pos1',
@@ -227,13 +233,7 @@ describe('Templates', function() {
       throw result;
     }
 
-    const m = result.match(/--test3--([\S\s]*?)--endtest3--/g);
-    const arr = m[0].split('\n');
-    const data = arr
-      .slice(1, arr.length - 1)
-      .filter(s => !!s.trim())
-      .map(s => s.trim());
-
+    const data = parseOutput(result, 'test3');
     assert.deepStrictEqual(data, [
       'Above Call Fragment',
       'pos1',
@@ -247,6 +247,38 @@ describe('Templates', function() {
       'kw2',
       'kw3_default',
       'Below Call Fragment'
+    ]);
+  });
+
+  it('should skip positional arguments when there is keyword arguments (1)', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'issue_3056_1');
+    assert.deepStrictEqual(data, [
+      'val_1',
+      'val_',
+      'val_9',
+      'val_4'
+    ]);
+  });
+
+  it('should skip positional arguments when there is keyword arguments (2)', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'issue_3056_2');
+    assert.deepStrictEqual(data, [
+      'val_1',
+      'val_',
+      'val_9',
+      'val_4'
     ]);
   });
 
