@@ -69,7 +69,11 @@ export default {
       };
     },
     pickerOptions() {
-      return Object.assign(this.defaultPickerOptions, this.field.options?.pickerOptions || {});
+      let fieldOptions = {};
+      if (this.field.options && this.field.options.pickerOptions) {
+        fieldOptions = this.field.options.pickerOptions;
+      }
+      return Object.assign(this.defaultPickerOptions, fieldOptions);
     },
     valueLabel() {
       if (this.next) {
