@@ -11,6 +11,13 @@
   {{ m.print(kw3) }}
 {% endfragment %}
 
+{% fragment listNumbers(first, second, third = 3, fourth = 4) %}
+  val_{{ first }}
+  val_{{ second }}
+  val_{{ third }}
+  val_{{ fourth }}
+{% endfragment %}
+
 {% fragment _print(text) %}
   {{ text }}
 {% endfragment %}

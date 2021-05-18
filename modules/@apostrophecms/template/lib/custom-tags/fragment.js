@@ -8,7 +8,7 @@ module.exports = function(self) {
         const args = parser.parseSignature();
         args.addChild(primary);
         args.children = args.children.map(child => {
-          if (child.typename === 'KeywordArgs') {
+          if (child instanceof nodes.KeywordArgs) {
             // Keep the KeywordsArgs nodelist in order to enable keyword arguments support
             // https://mozilla.github.io/nunjucks/templating.html#keyword-arguments
             return child;
