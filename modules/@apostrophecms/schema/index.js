@@ -92,10 +92,10 @@ module.exports = {
 
     self.addFieldType({
       name: 'string',
-      convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], field.def);
+      convert: function (req, field, data, destination) {
+        destination[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        object[field.name] = checkStringLength(object[field.name], field.min, field.max);
+        destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
         // If field is required but empty (and client side didn't catch that)
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
@@ -140,21 +140,21 @@ module.exports = {
       // if field.page is true, expect a page slug (slashes allowed,
       // leading slash required). Otherwise, expect a object-style slug
       // (no slashes at all)
-      convert: function (req, field, data, object) {
+      convert: function (req, field, data, destination) {
         const options = {};
         if (field.page) {
           options.allow = '/';
         }
-        object[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
+        destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
         if (field.page) {
-          if (!(object[field.name].charAt(0) === '/')) {
-            object[field.name] = '/' + object[field.name];
+          if (!(destination[field.name].charAt(0) === '/')) {
+            destination[field.name] = '/' + destination[field.name];
           }
           // No runs of slashes
-          object[field.name] = object[field.name].replace(/\/+/g, '/');
+          destination[field.name] = destination[field.name].replace(/\/+/g, '/');
           // No trailing slashes (except for root)
-          if (object[field.name] !== '/') {
-            object[field.name] = object[field.name].replace(/\/$/, '');
+          if (destination[field.name] !== '/') {
+            destination[field.name] = destination[field.name].replace(/\/$/, '');
           }
         }
       },
@@ -180,8 +180,8 @@ module.exports = {
 
     self.addFieldType({
       name: 'boolean',
-      convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.boolean(data[field.name], field.def);
+      convert: function (req, field, data, destination) {
+        destination[field.name] = self.apos.launder.boolean(data[field.name], field.def);
       },
       isEmpty: function (field, value) {
         return !value;
@@ -473,8 +473,8 @@ module.exports = {
     self.addFieldType({
       name: 'email',
       vueComponent: 'AposInputString',
-      convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name]);
+      convert: function (req, field, data, destination) {
+        destination[field.name] = self.apos.launder.string(data[field.name]);
         if (!data[field.name]) {
           if (field.required) {
             throw self.apos.error('required');
@@ -486,7 +486,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
         }
-        object[field.name] = data[field.name];
+        destination[field.name] = data[field.name];
       }
     });
 
