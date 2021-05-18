@@ -46,24 +46,10 @@
           }
         })"
       />
-      <!-- TODO later the :disabled will go away for most cases because options
-        like duplicate and share do not require that the draft be modified, but
-        right now we just have Discard Draft which requires a modified draft.
-
-        Use disabled, not v-if, to avoid jumpy repositioning of the icons when
-        toggling between context documents. -->
-
-      <AposDocMoreMenu
-        :doc-id="context._id"
-        :disabled="!context.modified && !canDismissSubmission"
-        :is-modified="context.modified"
-        :can-discard-draft="context.modified"
-        :is-modified-from-published="context.modified"
-        :is-published="!!context.lastPublishedAt"
-        :can-save-draft="false"
-        :can-dismiss-submission="canDismissSubmission"
-        @discard-draft="onDiscardDraft"
-        @dismiss-submission="onDismissSubmission"
+      <AposDocContextMenu
+        :doc="context"
+        :show-preview="false"
+        :show-edit="false"
       />
       <AposButton
         v-if="!hasCustomUi"
@@ -103,8 +89,7 @@ export default {
     },
     editMode: Boolean,
     readyToPublish: Boolean,
-    canPublish: Boolean,
-    canDismissSubmission: Boolean
+    canPublish: Boolean
   },
   emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
   data() {
@@ -160,12 +145,6 @@ export default {
   methods: {
     switchEditMode(mode) {
       this.$emit('switchEditMode', mode);
-    },
-    onDiscardDraft() {
-      this.$emit('discard-draft');
-    },
-    onDismissSubmission() {
-      this.$emit('dismiss-submission');
     },
     onPublish() {
       if (!this.context.lastPublishedAt) {

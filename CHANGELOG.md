@@ -25,6 +25,8 @@
 - When present, the `apos.http.addQueryToUrl` method preserves the hash of the URL intact.
 - The home page and other parked pages should not immediately show as "pending changes." 
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
+- The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
+- Added additional retries when binding to the port in a dev environment.
 - The "Submit" button in the admin bar updates properly to "Submitted" if the submission happens in the page settings modal.
 - Skipping positional arguments in fragments now works as expected.
 - The rich text editor now supports specifying a `styles` array with no `p` tags properly. A newly added rich text widget initially contains an element with the first style, rather than always a paragraph. If no styles are configured, a `p` tag is assumed. Thanks to Stepan Jakl for reporting the issue.

@@ -20,7 +20,7 @@ export default {
       const previouslyPublished = !!doc.lastPublishedAt;
       const action = window.apos.modules[doc.type].action;
       try {
-        await apos.http.post(`${action}/${doc._id}/publish`, {
+        doc = await apos.http.post(`${action}/${doc._id}/publish`, {
           body: {},
           busy: true
         });
@@ -36,7 +36,11 @@ export default {
           dismiss: true,
           icon: 'check-all-icon'
         });
-        return true;
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'publish'
+        });
+        return doc;
       } catch (e) {
         if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
           if (await apos.confirm({
@@ -83,6 +87,10 @@ export default {
           icon: 'list-status-icon',
           dismiss: true
         });
+        apos.bus.$emit('content-changed', {
+          doc: submitted,
+          action: 'submit'
+        });
         return submitted;
       } catch (e) {
         await apos.alert({
@@ -106,7 +114,14 @@ export default {
           dismiss: true,
           icon: 'close-circle-icon'
         });
-        return true;
+        doc = {
+          ...doc,
+          submitted: null
+        };
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'dismiss-submission'
+        });
       } catch (e) {
         await apos.alert({
           heading: 'An Error Occurred While Dismissing',
@@ -147,7 +162,10 @@ export default {
               dismiss: true,
               icon: 'text-box-remove-icon'
             });
-            apos.bus.$emit('content-changed', newDoc);
+            apos.bus.$emit('content-changed', {
+              doc: newDoc,
+              action: 'revert-draft-to-published'
+            });
             return {
               doc: newDoc
             };
@@ -160,7 +178,10 @@ export default {
               type: 'success',
               dismiss: true
             });
-            apos.bus.$emit('content-changed');
+            apos.bus.$emit('content-changed', {
+              doc,
+              action: 'delete'
+            });
             return {};
           }
         }
