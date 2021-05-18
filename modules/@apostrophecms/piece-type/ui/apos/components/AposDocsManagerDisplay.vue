@@ -130,13 +130,7 @@ export default {
   emits: [
     'open',
     'change',
-    'updated',
-    'preview',
-    'copy',
-    'discard-draft',
-    'dismiss-submission',
-    'archive',
-    'restore'
+    'updated'
   ],
   data() {
     const state = {

@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';

@@ -83,7 +83,7 @@
 </template>
 
 <script>
-import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
@@ -340,10 +340,6 @@ export default {
           this.toggleRowCheck(id);
         });
       }
-    },
-    archiveClick() {
-      // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('archive', this.selected);
     },
     async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {

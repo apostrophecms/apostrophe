@@ -22,11 +22,12 @@
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import klona from 'klona';
 
 export default {
   name: 'AposDocContextMenu',
-  mixins: [ AposPublishMixin, AposArchiveMixin ],
+  mixins: [ AposPublishMixin, AposArchiveMixin, AposModifiedMixin ],
   props: {
     doc: {
       type: Object,
@@ -206,7 +207,7 @@ export default {
       );
     },
     canCopy() {
-      return this.canEdit && !this.moduleOptions.singleton;
+      return this.canEdit && !this.moduleOptions.singleton && this.context._id;
     },
     canRestore() {
       return (
@@ -217,6 +218,12 @@ export default {
     },
     manuallyPublished() {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+    },
+    isModified() {
+      if (!this.current) {
+        return false;
+      }
+      return detectDocChange(this.schema, this.context, this.current);
     },
     isModifiedFromPublished() {
       if (!this.context.lastPublishedAt) {
@@ -288,6 +295,9 @@ export default {
           }
         }
       });
+    },
+    close() {
+      this.$emit('close', this.doc);
     }
   }
 };

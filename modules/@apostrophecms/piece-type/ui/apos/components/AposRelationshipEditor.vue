@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {

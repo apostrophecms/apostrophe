@@ -66,7 +66,6 @@
             :filter-values="filterValues"
             :labels="moduleLabels"
             @select-click="selectAll"
-            @archive-click="archiveClick"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
@@ -82,6 +81,7 @@
             :items="items"
             :headers="headers"
             v-model="checked"
+            @open="edit"
             :options="{
               ...moduleOptions,
               disableUnchecked: maxReached(),
@@ -101,7 +101,7 @@
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 
 export default {
@@ -213,8 +213,34 @@ export default {
       });
     },
     async create() {
-      const doc = await apos.modal.execute(apos.modules[this.moduleName].components.editorModal, {
-        moduleName: this.moduleName,
+      await this.edit(null);
+    },
+    // If pieceOrId is null, a new piece is created
+    async edit(pieceOrId) {
+      let piece;
+      if ((typeof pieceOrId) === 'object') {
+        piece = pieceOrId;
+      } else if (pieceOrId) {
+        piece = this.items.find(item => item._id === pieceOrId);
+      } else {
+        piece = null;
+      }
+      let moduleName;
+      // Don't assume the piece has the type of the module,
+      // this could be a virtual piece type such as "submitted-draft"
+      // that manages docs of many types
+      if (piece) {
+        if (piece.slug.startsWith('/')) {
+          moduleName = '@apostrophecms/page';
+        } else {
+          moduleName = piece.type;
+        }
+      } else {
+        moduleName = this.moduleName;
+      }
+      const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
+        moduleName,
+        docId: piece && piece._id,
         filterValues: this.filterValues
       });
       if (!doc) {
@@ -275,11 +301,6 @@ export default {
         this.currentPage = num;
         this.getPieces();
       }
-    },
-    // Toolbar handlers
-    archiveClick() {
-      // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('archive', this.checked);
     },
     async search(query) {
       if (query) {

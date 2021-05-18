@@ -19,6 +19,7 @@
         :current="docFields.data"
         :published="published"
         :show-edit="false"
+        @close="close"
       />
       <AposButton
         v-if="restoreOnly"
@@ -100,7 +101,7 @@
 </template>
 
 <script>
-import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
@@ -411,6 +412,10 @@ export default {
         this.loadNewInstance();
       });
     }
+    apos.bus.$on('content-changed', this.onContentChanged);
+  },
+  destroyed() {
+    apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
     async saveHandler(action) {
@@ -785,6 +790,14 @@ export default {
     },
     setSavePreference(pref) {
       window.localStorage.setItem(this.savePreferenceName, pref);
+    },
+    onContentChanged(e) {
+      if ((e.action === 'archive') || (e.action === 'delete')) {
+        this.modal.showModal = false;
+      }
+    },
+    close() {
+      this.modal.showModal = false;
     }
   }
 };

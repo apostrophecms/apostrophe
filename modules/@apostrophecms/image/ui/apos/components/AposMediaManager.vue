@@ -51,7 +51,6 @@
             :options="{ hideSelectAll: !relationshipField }"
             @page-change="updatePage"
             @select-click="selectClick"
-            @archive-click="archiveClick"
             @search="search"
             @filter="filter"
           />
@@ -106,7 +105,7 @@
 </template>
 
 <script>
-import AposModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
 
