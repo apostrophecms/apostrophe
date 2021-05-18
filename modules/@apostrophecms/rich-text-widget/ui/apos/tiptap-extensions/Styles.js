@@ -10,13 +10,16 @@ export default class Styles extends Node {
   }
 
   get schema() {
+    const defaultStyle = (this.options.styles && this.options.styles[0]) || {
+      tag: 'p'
+    };
     return {
       attrs: {
         tag: {
-          default: 'p'
+          default: defaultStyle.tag
         },
         class: {
-          default: null
+          default: defaultStyle.class
         }
       },
       content: 'inline*',
