@@ -49,9 +49,7 @@ export default {
         return 'required';
       }
 
-      if (!this.field.choices.map(choice => {
-        return choice.value;
-      }).includes(value)) {
+      if (value && !this.field.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
 
