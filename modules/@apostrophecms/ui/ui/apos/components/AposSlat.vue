@@ -27,7 +27,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="item._fields"
+          v-if="hasFields"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -140,6 +140,21 @@ export default {
       } else {
         return `${(size / 1000000).toFixed(1)}MB`;
       }
+    },
+    hasFields() {
+      if (!this.item._fields) {
+        return false;
+      }
+
+      let ruling = false;
+
+      for (const key in this.item._fields) {
+        if (hasOwnProperty.call(this.item._fields, key)) {
+          ruling = true;
+        }
+      }
+
+      return ruling;
     }
   },
   methods: {
