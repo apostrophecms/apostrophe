@@ -164,7 +164,7 @@ export default {
       return menu;
     },
     moduleName() {
-      if (this.context.slug.startsWith('/')) {
+      if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
       } else {
         return this.context.type;
