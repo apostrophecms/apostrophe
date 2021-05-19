@@ -696,7 +696,7 @@ export default {
         // automatically change the empty string to the prefix, so to
         // prevent a false positive for this being considered a change,
         // do it earlier when creating a new user
-        this.original.slug = slugField.def || slugField.prefix;
+        this.original.slug = this.original.slug || slugField.def || slugField.prefix || '';
       }
       this.prepErrors();
       this.docReady = true;
