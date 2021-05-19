@@ -191,6 +191,36 @@ module.exports = {
             }).join('\n')); // TODO: use webpack just to minify at the end.
           }
 
+          async function buildSrcJsBundle() {
+            self.apos.util.log('🧑‍💻 Building the modern javascript bundle (ui/src)...');
+            const iconImports = getIcons();
+            const appImports = getImports('src', 'index.js', {
+              invokeApps: true
+            });
+            const importFile = `${buildDir}/import.js`;
+
+            fs.writeFileSync(importFile, stripIndent`
+              ${appImports.importCode}
+              setTimeout(() => {
+                ${appImports.invokeCode}
+              }, 0);
+            `);
+
+            await Promise.promisify(webpackModule)(require('./lib/webpack/src/webpack.config')(
+              {
+                importFile,
+                modulesDir,
+                outputPath: bundleDir,
+                outputFilename: APOS_ONLY_BUNDLE
+              },
+              self.apos
+            ));
+            self.apos.util.log('👍 Apostrophe UI build is complete!');
+
+            const now = Date.now().toString();
+            fs.writeFileSync(`${bundleDir}/${APOS_ONLY_TS}`, now);            
+          },
+
           async function buildAposBundle() {
             self.apos.util.log('🧑‍💻 Building the Apostrophe admin UI...');
             const iconImports = getIcons();
@@ -226,14 +256,7 @@ module.exports = {
               }, 0);
             `);
 
-            fs.writeFileSync(`${buildDir}/imports.json`, JSON.stringify({
-              icons: iconImports,
-              components: componentImports,
-              tiptapExtensions: tiptapExtensionImports,
-              apps: appImports
-            }));
-
-            await Promise.promisify(webpackModule)(require('./lib/webpack.config')(
+            await Promise.promisify(webpackModule)(require('./lib/webpack/ui/webpack.config')(
               {
                 importFile,
                 modulesDir,

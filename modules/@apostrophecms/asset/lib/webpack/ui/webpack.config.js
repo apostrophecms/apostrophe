@@ -45,8 +45,6 @@ module.exports = ({
         Modules: path.resolve(modulesDir)
       },
       modules: [
-        // TODO change this if we decide to namespace the
-        // apostrophe module itself
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`,
         `${apos.npmRootDir}/node_modules`
       ]
