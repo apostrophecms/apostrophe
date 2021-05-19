@@ -31,6 +31,7 @@ module.exports = {
       getBrowserData(req) {
         const browserData = self.apos.page.getBrowserData(req);
         browserData.name = self.__meta.name;
+        browserData.quickCreate = false;
 
         return browserData;
       },
