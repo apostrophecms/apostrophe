@@ -45,7 +45,7 @@ export default {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     validate(value) {
-      if (this.field.required && (!value || !value.length)) {
+      if (this.field.required && (value === '')) {
         return 'required';
       }
 

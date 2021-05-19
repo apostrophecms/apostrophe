@@ -70,7 +70,7 @@ export default {
   },
   methods: {
     validate(value) {
-      if (this.field.required && (!value || !value.length)) {
+      if (this.field.required && (value === null)) {
         return 'required';
       }
 
