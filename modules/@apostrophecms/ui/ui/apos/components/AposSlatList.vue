@@ -31,6 +31,7 @@
           :parent="listId"
           :slat-count="next.length"
           :removable="removable"
+          :has-relationship-schema="hasRelationshipSchema"
         />
       </transition-group>
     </draggable>
@@ -61,6 +62,10 @@ export default {
     selected: {
       type: String,
       default: null
+    },
+    hasRelationshipSchema: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'update', 'item-clicked', 'select', 'input' ],

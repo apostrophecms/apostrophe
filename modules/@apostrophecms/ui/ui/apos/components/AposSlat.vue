@@ -27,7 +27,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasFields"
+          v-if="hasRelationshipSchema"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -110,6 +110,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    hasRelationshipSchema: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'select' ],
@@ -140,21 +144,6 @@ export default {
       } else {
         return `${(size / 1000000).toFixed(1)}MB`;
       }
-    },
-    hasFields() {
-      if (!this.item._fields) {
-        return false;
-      }
-
-      let ruling = false;
-
-      for (const key in this.item._fields) {
-        if (hasOwnProperty.call(this.item._fields, key)) {
-          ruling = true;
-        }
-      }
-
-      return ruling;
     }
   },
   methods: {
