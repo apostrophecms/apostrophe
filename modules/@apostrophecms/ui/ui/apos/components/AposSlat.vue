@@ -27,7 +27,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="item._fields"
+          v-if="hasRelationshipSchema"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -108,6 +108,10 @@ export default {
       default: false
     },
     disabled: {
+      type: Boolean,
+      default: false
+    },
+    hasRelationshipSchema: {
       type: Boolean,
       default: false
     }

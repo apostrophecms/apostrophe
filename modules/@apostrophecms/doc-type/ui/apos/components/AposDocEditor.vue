@@ -181,26 +181,27 @@ export default {
         return true;
       }
       if (!this.docId) {
-        // If it is new you can always save it, even just to insert it with defaults is sometimes useful
+        // If it is new you can always save it, even just to insert it with
+        // defaults is sometimes useful
         return false;
       }
       if (this.isModified) {
         // If it has been modified in the modal you can always save it
         return false;
       }
-      // If it is not manually published this is a simple "save" operation, don't allow it
-      // since the doc is unmodified in the modal
+      // If it is not manually published this is a simple "save" operation,
+      // don't allow it since the doc is unmodified in the modal
       if (!this.manuallyPublished) {
         return true;
       }
       if (this.moduleOptions.canPublish) {
-        // Primary button is "publish". If it is previously published and the draft is not modified
-        // since then, don't allow it
+        // Primary button is "publish". If it is previously published and the
+        // draft is not modified since then, don't allow it
         return this.published && !this.isModifiedFromPublished;
       }
       if (!this.original) {
-        // There is an id but no original — that means we're still loading the original — block
-        // until ready
+        // There is an id but no original — that means we're still loading the
+        // original — block until ready
         return true;
       }
       // Contributor case. Button is "submit"
@@ -400,7 +401,10 @@ export default {
         newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
       }
       delete newInstance._id;
+      delete newInstance._url;
+
       this.original = newInstance;
+
       if (newInstance && newInstance.type !== this.docType) {
         this.docType = newInstance.type;
       }

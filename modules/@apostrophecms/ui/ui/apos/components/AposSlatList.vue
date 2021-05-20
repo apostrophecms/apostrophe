@@ -31,13 +31,10 @@
           :parent="listId"
           :slat-count="next.length"
           :removable="removable"
+          :has-relationship-schema="hasRelationshipSchema"
         />
       </transition-group>
     </draggable>
-
-    <div class="apos-slat-status">
-      {{ message }}
-    </div>
   </div>
 </template>
 
@@ -66,11 +63,9 @@ export default {
       type: String,
       default: null
     },
-    field: {
-      type: Object,
-      default() {
-        return {};
-      }
+    hasRelationshipSchema: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'update', 'item-clicked', 'select', 'input' ],
@@ -79,7 +74,6 @@ export default {
       isDragging: false,
       delayedDragging: false,
       engaged: null,
-      message: null,
       next: this.value.slice()
     };
   },
@@ -121,13 +115,9 @@ export default {
         equal = false;
       }
       if (!equal) {
-        this.updateMessage();
         this.$emit('input', this.next);
       }
     }
-  },
-  mounted() {
-    this.updateMessage();
   },
   methods: {
     engage(id) {
@@ -180,13 +170,6 @@ export default {
       return (
         (!relatedElement || !relatedElement.fixed) && !draggedElement.fixed
       );
-    },
-    updateMessage() {
-      if (this.field.max && this.field.max <= this.items.length) {
-        this.message = 'Limit reached!';
-      } else {
-        this.message = null;
-      }
     }
   }
 };
