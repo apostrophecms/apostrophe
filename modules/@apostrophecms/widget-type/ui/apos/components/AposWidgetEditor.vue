@@ -115,6 +115,9 @@ export default {
     },
     schema() {
       return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+    },
+    isModified() {
+      return detectDocChange(this.schema, this.original, this.docFields.data);
     }
   },
   async mounted() {
@@ -126,10 +129,6 @@ export default {
   methods: {
     updateDocFields(value) {
       this.docFields = value;
-    },
-    isModified() {
-      const result = detectDocChange(this.schema, this.original, this.docFields.data);
-      return result;
     },
     save() {
       this.triggerValidation = true;
