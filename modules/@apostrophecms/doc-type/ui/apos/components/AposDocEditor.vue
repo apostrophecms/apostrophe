@@ -149,7 +149,6 @@ export default {
       },
       triggerValidation: false,
       original: null,
-      live: null,
       published: null,
       errorCount: 0,
       restoreOnly: false,
@@ -473,27 +472,14 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
-          this.live = await this.loadLiveDoc();
           this.original = klona(docData);
           this.docFields.data = docData;
-          if (this.live) {
-            this.changed = detectDocChange(this.schema, this.original, this.live, { differences: true });
+          if (this.published) {
+            this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
           }
           this.docReady = true;
           this.prepErrors();
         }
-      }
-    },
-    async loadLiveDoc() {
-      try {
-        return await apos.http.get(this.getOnePath, {
-          busy: false,
-          draft: false
-        });
-      } catch (e) {
-        // non fatal
-        console.warn(e);
-        return null;
       }
     },
     async preview() {
@@ -804,7 +790,7 @@ export default {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
     onContentChanged(e) {
-      if ((e.action === 'archive') || (e.action === 'delete')) {
+      if ((e.action === 'archive') || (e.action === 'delete') || (e.action === 'revert-draft-to-published')) {
         this.modal.showModal = false;
       }
     },
