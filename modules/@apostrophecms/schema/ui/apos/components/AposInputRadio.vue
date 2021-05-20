@@ -45,13 +45,11 @@ export default {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     validate(value) {
-      if (this.field.required && (!value || !value.length)) {
+      if (this.field.required && (value === '')) {
         return 'required';
       }
 
-      if (!this.field.choices.map(choice => {
-        return choice.value;
-      }).includes(value)) {
+      if (value && !this.field.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
 
