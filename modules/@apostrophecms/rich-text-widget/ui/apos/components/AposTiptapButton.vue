@@ -32,12 +32,7 @@ export default {
   },
   computed: {
     active() {
-      const activeTester = this.editor.isActive[this.command()];
-      if (!activeTester) {
-        return false;
-      }
-      activeTester.bind(this.editor);
-      return activeTester(this.tool.commandParameters);
+      return this.editor.isActive(this.name, this.tool.commandParameters || {});
     }
   },
   methods: {
@@ -46,6 +41,7 @@ export default {
     },
     click() {
       this.editor.commands[this.command()](this.tool.commandParameters || {});
+      this.editor.chain().focus();
     }
   }
 };

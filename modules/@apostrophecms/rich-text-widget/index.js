@@ -83,7 +83,7 @@ module.exports = {
         icon: 'format-underline-icon',
         command: 'toggleUnderline'
       },
-      horizontal_rule: {
+      horizontalRule: {
         component: 'AposTiptapButton',
         label: 'Horizontal Rule',
         icon: 'minus-icon',
@@ -94,13 +94,13 @@ module.exports = {
         label: 'Link',
         icon: 'link-icon'
       },
-      bullet_list: {
+      bulletList: {
         component: 'AposTiptapButton',
         label: 'Bulleted List',
         icon: 'format-list-bulleted-icon',
         command: 'toggleBulletList'
       },
-      ordered_list: {
+      orderedList: {
         component: 'AposTiptapButton',
         label: 'Ordered List',
         icon: 'format-list-numbered-icon',
@@ -118,7 +118,7 @@ module.exports = {
         icon: 'format-quote-close-icon',
         command: 'toggleBlockquote'
       },
-      code_block: {
+      codeBlock: {
         component: 'AposTiptapButton',
         label: 'Code Block',
         icon: 'code-tags-icon',

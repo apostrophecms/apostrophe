@@ -42,7 +42,7 @@
       <AposContextMenuDialog
         v-if="editor"
         menu-placement="top"
-        class-list="apos-rich-text-toolbar is-active"
+        class-list="apos-rich-text-toolbar"
         :has-tip="false"
         :modifiers="['unpadded']"
       >
@@ -66,37 +66,15 @@
 </template>
 
 <script>
-// import {
-//   Editor,
-//   EditorContent,
-//   EditorMenuBar,
-//   EditorMenuBubble
-// } from 'tiptap';
 import {
   Editor,
   EditorContent,
   BubbleMenu
 } from '@tiptap/vue-2';
+
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
-
-// import {
-//   HardBreak,
-//   ListItem,
-//   OrderedList,
-//   BulletList,
-//   Bold,
-//   Italic,
-//   History,
-//   Strike,
-//   Blockquote,
-//   CodeBlock,
-//   HorizontalRule
-// } from 'tiptap-extensions';
-// import {
-
-// }
 
 // Here because we cannot access computed inside data
 
@@ -148,28 +126,26 @@ export default {
       const defaultClass = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       initial = `<${defaultStyle.tag}${defaultClass}></${defaultStyle.tag}>`;
     }
+    const aposLink = Link.extend({
+      defaultOptions: {
+        openOnClick: true,
+        linkOnPaste: true,
+        HTMLAttributes: {}
+      }
+    });
     return {
       tools: moduleOptionsBody(this.type).tools,
       toolbar,
-      // editor: new Editor({
-      //   extensions: [
-      //     new BulletList(),
-      //     new HardBreak(),
-      //     new ListItem(),
-      //     new OrderedList(),
-      //     new Bold(),
-      //     new Italic(),
-      //     new History(),
-      //     new Strike(),
-      //     new Blockquote(),
-      //     new CodeBlock(),
-      //     new HorizontalRule()
-      //   ].concat((apos.tiptapExtensions || []).map(C => new C(computeEditorOptions(this.type, this.options)))),
-      //   autoFocus: true,
-      //   onUpdate: this.editorUpdate,
-      //   content: initial
-      // }),
-      editor: null,
+      editor: new Editor({
+        content: initial,
+        autoFocus: true,
+        onUpdate: this.editorUpdate,
+        extensions: [
+          StarterKit,
+          Underline,
+          aposLink
+        ]
+      }),
       docFields: {
         data: {
           ...this.value
@@ -215,42 +191,10 @@ export default {
       }
     }
   },
-  mounted() {
-    const aposLink = Link.extend({
-      defaultOptions: {
-        openOnClick: true,
-        linkOnPaste: true,
-        HTMLAttributes: {}
-      }
-    });
-    this.editor = new Editor({
-      content: '<p>I’m running tiptap 2.x with Apostrophe 3.x 🎉</p>',
-      extensions: [
-        StarterKit,
-        Underline,
-        aposLink
-      ]
-    });
-  },
   beforeDestroy() {
     this.editor.destroy();
   },
   methods: {
-    extraClasses(menu, focused) {
-      const classes = [];
-
-      classes.push(this.menuType);
-
-      if (menu && menu.isActive) {
-        classes.push('is-active');
-      }
-
-      if (focused && !menu) {
-        classes.push('is-active');
-      }
-
-      return classes.join(' ');
-    },
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
@@ -317,11 +261,6 @@ function computeEditorOptions(type, explicitOptions) {
 
 <style lang="scss" scoped>
 
-  .apos-rich-text-toolbar {
-    opacity: 0;
-    pointer-events: none;
-  }
-
   .apos-rich-text-toolbar.editor-menu-bubble {
     z-index: $z-index-manager-toolbar;
     position: absolute;
@@ -331,11 +270,6 @@ function computeEditorOptions(type, explicitOptions) {
   .apos-rich-text-toolbar.editor-menu-bar {
     display: inline-block;
     margin-bottom: 10px;
-  }
-
-  .apos-rich-text-toolbar.is-active {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .apos-rich-text-toolbar__inner {
