@@ -105,6 +105,7 @@
         :style="{
           'max-height': options.startCollapsed ? '0' : null
         }"
+        @update="$emit('update', $event)"
         v-model="checkedProxy"
       />
     </li>
