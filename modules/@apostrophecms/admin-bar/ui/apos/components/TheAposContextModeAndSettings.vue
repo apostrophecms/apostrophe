@@ -48,6 +48,7 @@
       />
       <AposDocContextMenu
         :doc="context"
+        :published="published"
         :show-preview="false"
         :show-edit="false"
       />
@@ -86,6 +87,12 @@ export default {
     context: {
       type: Object,
       required: true
+    },
+    published: {
+      type: Object,
+      default() {
+        return null;
+      }
     },
     editMode: Boolean,
     readyToPublish: Boolean,
