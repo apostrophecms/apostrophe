@@ -1,5 +1,6 @@
+# Changelog
 
-## Unreleased
+## 2.119.0 (2021-05-20)
 
 ### Fixes
 
