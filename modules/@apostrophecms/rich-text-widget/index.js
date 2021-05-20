@@ -22,23 +22,35 @@ module.exports = {
         'ordered_list',
         'blockquote'
       ],
+      // TODO type, typeParameters, and command should get appeneded automatically
       styles: [
         // you may also use a `class` property with these
         {
           tag: 'p',
-          label: 'Paragraph (P)'
+          label: 'Paragraph (P)',
+          type: 'paragraph',
+          command: 'setParagraph'
         },
         {
           tag: 'h2',
-          label: 'Heading 2 (H2)'
+          label: 'Heading 2 (H2)',
+          type: 'heading',
+          typeParameters: { level: 2 },
+          command: 'toggleHeading'
         },
         {
           tag: 'h3',
-          label: 'Heading 3 (H3)'
+          label: 'Heading 3 (H3)',
+          type: 'heading',
+          typeParameters: { level: 3 },
+          command: 'toggleHeading'
         },
         {
           tag: 'h4',
-          label: 'Heading 4 (H4)'
+          label: 'Heading 4 (H4)',
+          type: 'heading',
+          typeParameters: { level: 4 },
+          command: 'toggleHeading'
         }
       ]
     },
@@ -56,22 +68,26 @@ module.exports = {
       bold: {
         component: 'AposTiptapButton',
         label: 'Bold',
-        icon: 'format-bold-icon'
+        icon: 'format-bold-icon',
+        command: 'toggleBold'
       },
       italic: {
         component: 'AposTiptapButton',
         label: 'Italic',
-        icon: 'format-italic-icon'
+        icon: 'format-italic-icon',
+        command: 'toggleItalic'
       },
       underline: {
         component: 'AposTiptapButton',
         label: 'Underline',
-        icon: 'format-underline-icon'
+        icon: 'format-underline-icon',
+        command: 'toggleUnderline'
       },
       horizontal_rule: {
         component: 'AposTiptapButton',
         label: 'Horizontal Rule',
-        icon: 'minus-icon'
+        icon: 'minus-icon',
+        command: 'setHorizontalRule'
       },
       link: {
         component: 'AposTiptapLink',
@@ -81,27 +97,32 @@ module.exports = {
       bullet_list: {
         component: 'AposTiptapButton',
         label: 'Bulleted List',
-        icon: 'format-list-bulleted-icon'
+        icon: 'format-list-bulleted-icon',
+        command: 'toggleBulletList'
       },
       ordered_list: {
         component: 'AposTiptapButton',
         label: 'Ordered List',
-        icon: 'format-list-numbered-icon'
+        icon: 'format-list-numbered-icon',
+        command: 'toggleOrderedList'
       },
       strike: {
         component: 'AposTiptapButton',
         label: 'Strike',
-        icon: 'format-strikethrough-variant-icon'
+        icon: 'format-strikethrough-variant-icon',
+        command: 'toggleStrike'
       },
       blockquote: {
         component: 'AposTiptapButton',
         label: 'Blockquote',
-        icon: 'format-quote-close-icon'
+        icon: 'format-quote-close-icon',
+        command: 'toggleBlockquote'
       },
       code_block: {
         component: 'AposTiptapButton',
         label: 'Code Block',
-        icon: 'code-tags-icon'
+        icon: 'code-tags-icon',
+        command: 'toggleCode'
       },
       undo: {
         component: 'AposTiptapButton',

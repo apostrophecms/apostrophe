@@ -54,7 +54,11 @@ export default {
           tag: style.tag,
           class: style.class || null
         };
-        if (this.editor.isActive.styles(attrs)) {
+        // if (this.editor.isActive.styles(attrs)) {
+        //   return i;
+        // }
+        // TODO still not passing classes, probably a bad match
+        if (this.editor.isActive(style.type, (style.typeParameters || {}))) {
           return i;
         }
       }
@@ -64,7 +68,9 @@ export default {
   methods: {
     setStyle($event) {
       const style = this.options.styles[$event.target.value];
-      this.editor.commands.styles(style);
+      console.log(style.typeParameters);
+      this.editor.commands[style.command](style.typeParameters || {});
+      // this.editor.commands.styles(style);
     }
   }
 };

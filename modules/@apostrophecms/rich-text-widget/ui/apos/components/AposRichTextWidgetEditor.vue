@@ -47,11 +47,15 @@
         :modifiers="['unpadded']"
       >
         <div class="apos-rich-text-toolbar__inner">
-          <button
-            @click="editor.chain().focus().toggleBold().run()"
-          >
-            bold
-          </button>
+          <component
+            v-for="(item, index) in toolbar"
+            :key="item + '-' + index"
+            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
+            :name="item"
+            :tool="tools[item]"
+            :options="editorOptions"
+            :editor="editor"
+          />
         </div>
       </AposContextMenuDialog>
     </bubble-menu>
@@ -74,6 +78,8 @@ import {
   BubbleMenu
 } from '@tiptap/vue-2';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
 
 // import {
 //   HardBreak,
@@ -210,10 +216,19 @@ export default {
     }
   },
   mounted() {
+    const aposLink = Link.extend({
+      defaultOptions: {
+        openOnClick: true,
+        linkOnPaste: true,
+        HTMLAttributes: {}
+      }
+    });
     this.editor = new Editor({
       content: '<p>I’m running tiptap 2.x with Apostrophe 3.x 🎉</p>',
       extensions: [
         StarterKit,
+        Underline,
+        aposLink
       ]
     });
   },

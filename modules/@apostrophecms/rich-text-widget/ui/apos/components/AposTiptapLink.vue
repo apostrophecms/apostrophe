@@ -3,7 +3,7 @@
     <AposButton
       type="rich-text"
       @click="click"
-      :class="{ 'apos-active': buttonActive }"
+      :class="{ 'is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
       :icon="tool.icon ? tool.icon : false"
@@ -15,7 +15,7 @@
       to use any of the editor configurations from the parent. - AB
      -->
     <div
-      v-if="active"
+      v-show="active"
       v-click-outside-element="close"
       class="apos-popover apos-link-control__dialog"
       x-placement="bottom"
@@ -26,7 +26,6 @@
     >
       <AposContextMenuDialog
         menu-placement="bottom-start"
-        v-if="active"
       >
         <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
           <AposButton
@@ -39,6 +38,7 @@
           :schema="schema"
           v-model="value"
           :modifiers="formModifiers"
+          :key="schemaKey"
         />
         <footer class="apos-link-control__footer">
           <AposButton
@@ -59,14 +59,10 @@
 
 <script>
 
-import { EditorMenuBubble } from 'tiptap';
 import { isEmpty } from 'lodash';
 
 export default {
   name: 'AposTiptapLink',
-  components: {
-    EditorMenuBubble
-  },
   props: {
     name: {
       type: String,
@@ -88,10 +84,11 @@ export default {
       target: null,
       active: false,
       hasLinkOnOpen: false,
+      schemaKey: 'ljwenf',
       value: {
         data: {}
       },
-      formModifiers: [ 'small' ],
+      formModifiers: [ 'small', 'margin-micro' ],
       schema: [
         {
           name: 'href',
@@ -114,10 +111,10 @@ export default {
   },
   computed: {
     buttonActive() {
-      return !isEmpty(this.value.data);
+      return this.value.data && this.value.data.href;
     },
     hasSelection() {
-      return this.editor.selection.from !== this.editor.selection.to;
+      return this.editor.view.state.selection.ranges[0].$from.pos !== this.editor.view.state.selection.ranges[0].$to.pos;
     },
     offset() {
       const selection = window.getSelection();
@@ -129,13 +126,14 @@ export default {
   watch: {
     active(newVal) {
       if (newVal) {
+        this.schemaKey = this.editor.view.lastSelectionTime;
         this.hasLinkOnOpen = !!(this.value.data.href);
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
     },
-    'editor.selection.from': {
+    'editor.view.lastSelectionTime': {
       handler(newVal, oldVal) {
         this.populateFields();
       }
@@ -149,7 +147,7 @@ export default {
   methods: {
     removeLink() {
       this.value.data = {};
-      this.save();
+      this.editor.commands.unsetLink();
       this.close();
     },
     click() {
@@ -160,14 +158,14 @@ export default {
     },
     close() {
       this.active = false;
-      this.editor.focus();
+      this.editor.chain().focus();
     },
     save() {
       // cleanup incomplete submissions
       if (this.value.data.target && !this.value.data.href) {
         delete this.value.data.target;
       }
-      this.editor.commands[this.name](this.value.data);
+      this.editor.commands.setLink(this.value.data);
       this.active = false;
     },
     keyboardHandler(e) {
@@ -185,12 +183,12 @@ export default {
       }
     },
     populateFields() {
-      const attrs = this.editor.getMarkAttrs('link');
+      const attrs = this.editor.getAttributes('link');
       this.value.data = {};
       this.schema.forEach((item) => {
-        if (attrs[item.name]) {
-          this.value.data[item.name] = attrs[item.name];
-        }
+        // if (attrs[item.name]) {
+        this.value.data[item.name] = attrs[item.name] || '';
+        // }
       });
     }
   }
@@ -218,8 +216,8 @@ export default {
     pointer-events: auto;
   }
 
-  .apos-active {
-    background-color: var(--a-brand-blue);
+  .is-active {
+    background-color: var(--a-base-7);
   }
 
   .apos-link-control__footer {
@@ -228,7 +226,7 @@ export default {
     margin-top: 10px;
   }
 
-  .apos-link-control__footer .apos-button {
+  .apos-link-control__footer .apos-button__wrapper {
     margin-left: 7.5px;
   }
 
