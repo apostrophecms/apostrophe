@@ -7,8 +7,7 @@ module.exports = {
     perPage: 10,
     quickCreate: true,
     previewDraft: true,
-    showCreate: true,
-    showDismissSubmission: false
+    showCreate: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {

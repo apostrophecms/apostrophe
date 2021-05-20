@@ -50,7 +50,6 @@
         :doc="context"
         :show-preview="false"
         :show-edit="false"
-        :show-dismiss-submission="false"
       />
       <AposButton
         v-if="!hasCustomUi"
