@@ -10,9 +10,9 @@ module.exports = {
     label: 'Submitted Draft',
     pluralLabel: 'Submitted Drafts',
     canCreate: false,
-    canDismissSubmission: true,
-    canArchive: false,
-    canDiscardDraft: false,
+    showDismissSubmission: true,
+    showArchive: false,
+    showDiscardDraft: false,
     // Never mention this type at all in the permissions interface,
     // not even on a list of typical piece types
     showPermissions: false

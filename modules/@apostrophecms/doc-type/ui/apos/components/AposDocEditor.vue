@@ -19,6 +19,7 @@
         :current="docFields.data"
         :published="published"
         :show-edit="false"
+        :show-dismiss-submission="false"
         @close="close"
       />
       <AposButton
