@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-rich-text-editor">
+  <!-- <div class="apos-rich-text-editor">
     <component
       :is="menuType"
       :editor="editor"
@@ -30,30 +30,67 @@
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
+  </div> -->
+  <div>
+    <bubble-menu
+      class="bubble-menu"
+      :tippy-options="{ duration: 100 }"
+      :editor="editor"
+      v-if="editor"
+    >
+      <!-- :class="extraClasses(menu, focused)" -->
+      <AposContextMenuDialog
+        v-if="editor"
+        menu-placement="top"
+        class-list="apos-rich-text-toolbar is-active"
+        :has-tip="false"
+        :modifiers="['unpadded']"
+      >
+        <div class="apos-rich-text-toolbar__inner">
+          <button
+            @click="editor.chain().focus().toggleBold().run()"
+          >
+            bold
+          </button>
+        </div>
+      </AposContextMenuDialog>
+    </bubble-menu>
+    <div class="apos-rich-text-editor__editor" :class="editorModifiers">
+      <editor-content :editor="editor" :class="moduleOptions.className" />
+    </div>
   </div>
 </template>
 
 <script>
+// import {
+//   Editor,
+//   EditorContent,
+//   EditorMenuBar,
+//   EditorMenuBubble
+// } from 'tiptap';
 import {
   Editor,
   EditorContent,
-  EditorMenuBar,
-  EditorMenuBubble
-} from 'tiptap';
+  BubbleMenu
+} from '@tiptap/vue-2';
+import StarterKit from '@tiptap/starter-kit';
 
-import {
-  HardBreak,
-  ListItem,
-  OrderedList,
-  BulletList,
-  Bold,
-  Italic,
-  History,
-  Strike,
-  Blockquote,
-  CodeBlock,
-  HorizontalRule
-} from 'tiptap-extensions';
+// import {
+//   HardBreak,
+//   ListItem,
+//   OrderedList,
+//   BulletList,
+//   Bold,
+//   Italic,
+//   History,
+//   Strike,
+//   Blockquote,
+//   CodeBlock,
+//   HorizontalRule
+// } from 'tiptap-extensions';
+// import {
+
+// }
 
 // Here because we cannot access computed inside data
 
@@ -64,9 +101,10 @@ function moduleOptionsBody(type) {
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
-    EditorMenuBar,
+    // EditorMenuBar,
     EditorContent,
-    EditorMenuBubble
+    BubbleMenu
+    // EditorMenuBubble
   },
   props: {
     type: {
@@ -107,24 +145,25 @@ export default {
     return {
       tools: moduleOptionsBody(this.type).tools,
       toolbar,
-      editor: new Editor({
-        extensions: [
-          new BulletList(),
-          new HardBreak(),
-          new ListItem(),
-          new OrderedList(),
-          new Bold(),
-          new Italic(),
-          new History(),
-          new Strike(),
-          new Blockquote(),
-          new CodeBlock(),
-          new HorizontalRule()
-        ].concat((apos.tiptapExtensions || []).map(C => new C(computeEditorOptions(this.type, this.options)))),
-        autoFocus: true,
-        onUpdate: this.editorUpdate,
-        content: initial
-      }),
+      // editor: new Editor({
+      //   extensions: [
+      //     new BulletList(),
+      //     new HardBreak(),
+      //     new ListItem(),
+      //     new OrderedList(),
+      //     new Bold(),
+      //     new Italic(),
+      //     new History(),
+      //     new Strike(),
+      //     new Blockquote(),
+      //     new CodeBlock(),
+      //     new HorizontalRule()
+      //   ].concat((apos.tiptapExtensions || []).map(C => new C(computeEditorOptions(this.type, this.options)))),
+      //   autoFocus: true,
+      //   onUpdate: this.editorUpdate,
+      //   content: initial
+      // }),
+      editor: null,
       docFields: {
         data: {
           ...this.value
@@ -160,6 +199,7 @@ export default {
       return classes;
     }
   },
+
   watch: {
     focused(newVal) {
       if (!newVal) {
@@ -168,6 +208,14 @@ export default {
         }
       }
     }
+  },
+  mounted() {
+    this.editor = new Editor({
+      content: '<p>I’m running tiptap 2.x with Apostrophe 3.x 🎉</p>',
+      extensions: [
+        StarterKit,
+      ]
+    });
   },
   beforeDestroy() {
     this.editor.destroy();
