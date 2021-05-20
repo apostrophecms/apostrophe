@@ -227,6 +227,12 @@ export default {
     manuallyPublished() {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     },
+    isModified() {
+      if (!this.current) {
+        return false;
+      }
+      return detectDocChange(this.schema, this.context, this.current);
+    },
     isModifiedFromPublished() {
       if (!this.context.lastPublishedAt) {
         return false;
