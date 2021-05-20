@@ -40,6 +40,7 @@
           @item-clicked="editRelationship"
           :value="next"
           :disabled="field.readOnly"
+          :has-relationship-schema="!!field.schema"
         />
         <AposSearchList
           :list="searchList"
