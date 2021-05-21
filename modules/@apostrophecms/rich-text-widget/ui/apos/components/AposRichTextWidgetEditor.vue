@@ -38,7 +38,6 @@
       :editor="editor"
       v-if="editor"
     >
-      <!-- :class="extraClasses(menu, focused)" -->
       <AposContextMenuDialog
         v-if="editor"
         menu-placement="top"
@@ -71,10 +70,12 @@ import {
   EditorContent,
   BubbleMenu
 } from '@tiptap/vue-2';
-
+import { mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import Heading from '@tiptap/extension-heading';
+import Paragraph from '@tiptap/extension-paragraph';
 
 // Here because we cannot access computed inside data
 
@@ -85,10 +86,8 @@ function moduleOptionsBody(type) {
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
-    // EditorMenuBar,
     EditorContent,
     BubbleMenu
-    // EditorMenuBubble
   },
   props: {
     type: {
@@ -126,11 +125,62 @@ export default {
       const defaultClass = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       initial = `<${defaultStyle.tag}${defaultClass}></${defaultStyle.tag}>`;
     }
+    // TODO Move module subclassing to the server?
     const aposLink = Link.extend({
       defaultOptions: {
         openOnClick: true,
         linkOnPaste: true,
         HTMLAttributes: {}
+      }
+    });
+    const aposHeading = Heading.extend({
+      addAttributes() {
+        return {
+          class: {
+            default: null,
+            parseHTML: element => {
+              return {
+                class: element.getAttribute('class')
+              };
+            }
+          }
+        };
+      },
+      parseHTML() {
+        console.log('PARSE!@');
+        const s = this.options.levels
+          .map((level) => ({
+            tag: `h${level}`,
+            attrs: { level }
+          }));
+        console.log(s);
+        return this.options.levels
+          .map((level) => ({
+            tag: `h${level}`,
+            attrs: { level }
+          }));
+      },
+      renderHTML({ node, HTMLAttributes }) {
+        console.log(node);
+        const hasLevel = this.options.levels.includes(node.attrs.level);
+        const level = hasLevel
+          ? node.attrs.level
+          : this.options.levels[0];
+
+        return [ `h${level}`, mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0 ]
+      }
+    });
+    const CustomParagraph = Paragraph.extend({
+      addAttributes() {
+        return {
+          class: {
+            default: 'pink'
+          }
+        };
+      },
+      renderHTML({ node, HTMLAttributes }) {
+        console.log(node);
+        return [ 'p', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0 ]
       }
     });
     return {
@@ -143,7 +193,10 @@ export default {
         extensions: [
           StarterKit,
           Underline,
-          aposLink
+          aposLink,
+          aposHeading,
+          CustomParagraph
+          // aposParagraph
         ]
       }),
       docFields: {

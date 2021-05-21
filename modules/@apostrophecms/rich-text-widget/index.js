@@ -134,6 +134,28 @@ module.exports = {
         label: 'Redo',
         icon: 'redo-icon'
       }
+    },
+    // Additional properties used in executing tiptap commands
+    // Will be mixed in automatically for developers
+    elementProperties: {
+      paragraph: {
+        tags: [ 'p' ],
+        settings: {
+          type: 'paragraph',
+          command: 'setParagraph',
+          typeParameters: {}
+        }
+      },
+      heading: {
+        tags: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
+        settings: {
+          type: 'heading',
+          command: 'toggleHeading',
+          typeParameters: {
+            level: 3
+          }
+        }
+      }
     }
   },
   beforeSuperClass(self) {
@@ -298,7 +320,8 @@ module.exports = {
           ...initialData,
           components: self.options.components,
           tools: self.options.editorTools,
-          defaultOptions: self.options.defaultOptions
+          defaultOptions: self.options.defaultOptions,
+          elementProperties: self.options.elementProperties
         };
         return finalData;
       }

@@ -6,7 +6,7 @@
       class="apos-tiptap-control apos-tiptap-control--select"
     >
       <option
-        v-for="(style, i) in options.styles"
+        v-for="(style, i) in styles"
         :value="i"
         :key="style.label"
       >
@@ -45,15 +45,20 @@ export default {
       }
     }
   },
+  data() {
+    return {
+
+    };
+  },
   computed: {
     active() {
-      const styles = this.options.styles || [];
+      const styles = this.styles || [];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
-        const attrs = {
-          tag: style.tag,
-          class: style.class || null
-        };
+        // const attrs = {
+        //   tag: style.tag,
+        //   class: style.class || null
+        // };
         // if (this.editor.isActive.styles(attrs)) {
         //   return i;
         // }
@@ -63,14 +68,50 @@ export default {
         }
       }
       return 0;
+    },
+    moduleOptions() {
+      return window.apos.modules['@apostrophecms/rich-text-widget'];
+    },
+    elementProperties() {
+      return this.moduleOptions.elementProperties;
+    },
+    styles() {
+      const self = this;
+      return this.options.styles.map(style => {
+        const settings = getSettings(style);
+        style = {
+          ...style,
+          ...settings
+        };
+        return style;
+      });
+
+      function getSettings(style) {
+        let settings;
+        for (const key in self.elementProperties) {
+          if (self.elementProperties[key].tags.includes(style.tag)) {
+            settings = { ...self.elementProperties[key].settings };
+          }
+        }
+
+        // final massaging
+        if (settings.type === 'heading') {
+          const level = parseInt(style.tag.split('h')[1]);
+          settings.typeParameters.level = level;
+        }
+
+        // Handle custom classes
+        if (style.class) {
+          settings.typeParameters.class = style.class;
+        }
+        return settings;
+      }
     }
   },
   methods: {
     setStyle($event) {
-      const style = this.options.styles[$event.target.value];
-      console.log(style.typeParameters);
+      const style = this.styles[$event.target.value];
       this.editor.commands[style.command](style.typeParameters || {});
-      // this.editor.commands.styles(style);
     }
   }
 };
