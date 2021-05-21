@@ -87,10 +87,12 @@ export default {
         return true;
       }
     },
+    // Unlike the others, this one defaults to false because it is
+    // generally only allowed in the Manage Submissions view.
     showDismissSubmission: {
       type: Boolean,
       default() {
-        return true;
+        return false;
       }
     },
     disabled: {

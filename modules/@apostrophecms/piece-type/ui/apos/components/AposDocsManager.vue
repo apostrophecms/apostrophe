@@ -32,7 +32,7 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else-if="moduleOptions.canEdit && moduleOptions.canCreate"
+        v-else-if="moduleOptions.canEdit && moduleOptions.showCreate"
         :label="`New ${ moduleOptions.label }`" type="primary"
         @click="create"
       />
