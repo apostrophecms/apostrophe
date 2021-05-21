@@ -144,7 +144,7 @@ export default {
         ] : []),
         ...((this.showDiscardDraft && this.canDiscardDraft) ? [
           {
-            label: this.isPublished ? 'Discard Draft' : 'Delete Draft',
+            label: this.context.lastPublishedAt ? 'Discard Draft' : 'Delete Draft',
             action: 'discardDraft',
             modifiers: [ 'danger' ]
           }
@@ -193,11 +193,19 @@ export default {
       return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     canDiscardDraft() {
+      if (!this.manuallyPublished) {
+        return false;
+      }
+      if (!this.context._id) {
+        return false;
+      }
       return (
-        this.context._id &&
         (!this.context.lastPublishedAt) &&
-        this.manuallyPublished
-      ) || (this.isModifiedFromPublished && !this.moduleOptions.singleton);
+        !this.moduleOptions.singleton
+      ) || (
+        this.context.lastPublishedAt &&
+        this.isModifiedFromPublished
+      );
     },
     canArchive() {
       return (
@@ -234,10 +242,13 @@ export default {
       if (!this.published) {
         return false;
       }
-      return detectDocChange(this.schema, this.published, this.current || this.context);
+      const result = detectDocChange(this.schema, this.published, this.context);
+      return result;
     },
     schema() {
-      let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      // moduleOptions gives us the action, etc. but here we need the schema
+      // which is always type specific, even for pages so get it ourselves
+      let schema = (apos.modules[this.context.type].schema || []).filter(field => apos.schema.components.fields[field.type]);
       if (this.restoreOnly) {
         schema = klona(schema);
         for (const field of schema) {

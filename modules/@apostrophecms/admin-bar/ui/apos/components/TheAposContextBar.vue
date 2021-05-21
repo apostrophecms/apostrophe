@@ -20,6 +20,7 @@
       />
       <TheAposContextModeAndSettings
         :context="context"
+        :published="published"
         :edit-mode="editMode"
         :has-custom-ui="hasCustomUi"
         :can-publish="canPublish"
@@ -45,7 +46,7 @@ export default {
   data() {
     const query = apos.http.parseQuery(location.search);
     // If the URL references a draft, go into draft mode but then clean up the URL
-    const draftMode = query['aposMode'] || 'published';
+    const draftMode = query.aposMode || 'published';
     if (draftMode === 'draft') {
       delete query.aposMode;
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
@@ -63,6 +64,7 @@ export default {
       retrying: false,
       saved: false,
       savingTimeout: null,
+      published: null,
       context: window.apos.adminBar.context ? {
         ...window.apos.adminBar.context
       } : {},
@@ -150,14 +152,15 @@ export default {
       }
       if (this.draftMode !== 'draft') {
         // Also refreshes
-        this.switchDraftMode('draft');
+        await this.switchDraftMode('draft');
       } else {
         // The page always initially loads with fully rendered content,
         // so refetch the content with the area placeholders and data instead
-        this.refresh();
+        await this.refresh();
       }
     }
     await this.updateDraftIsEditable();
+    this.published = await this.getPublished();
     this.$nextTick(() => {
       this.$emit('mounted');
     });
@@ -272,6 +275,7 @@ export default {
             lastPublishedAt: Date.now(),
             modified: false
           };
+          this.published = published;
         }
       }
     },
@@ -301,12 +305,7 @@ export default {
           const doc = await apos.http.patch(`${this.action}/${this.context._id}`, {
             body
           });
-          this.context = {
-            ...this.context,
-            modified: doc.modified,
-            submitted: doc.submitted,
-            updatedAt: doc.updatedAt
-          };
+          this.context = doc;
           this.retrying = false;
         } catch (e) {
           if (this.isLockedError(e)) {
@@ -358,6 +357,7 @@ export default {
         // Returns the doc as represented in the new locale and mode
         const action = window.apos.modules[doc.type].action;
         const modeDoc = await apos.http.get(`${action}/${doc._id}`, {
+          busy: true,
           qs: {
             aposMode: mode,
             aposLocale: locale
@@ -381,6 +381,7 @@ export default {
         window.apos.adminBar.context = modeDoc;
         window.apos.adminBar.contextId = modeDoc._id;
         this.context = modeDoc;
+        this.published = await this.getPublished();
         await this.updateDraftIsEditable();
         this.draftMode = mode;
         if (navigate) {
@@ -650,6 +651,21 @@ export default {
         });
         this.draftIsEditable = draftContext && draftContext._edit;
       }
+    },
+    async getPublished() {
+      const moduleOptions = window.apos.modules[this.context.type];
+      const manuallyPublished = moduleOptions.localized && !moduleOptions.autopublish;
+      if (manuallyPublished && this.context.lastPublishedAt) {
+        const action = window.apos.modules[this.context.type].action;
+        const doc = await apos.http.get(`${action}/${this.context._id}`, {
+          busy: true,
+          qs: {
+            aposMode: 'published'
+          }
+        });
+        return doc;
+      }
+      return null;
     }
   }
 };
