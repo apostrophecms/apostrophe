@@ -555,14 +555,20 @@ module.exports = {
           address = false;
         }
 
-        try {
-          await listen();
-        } catch (e) {
-          if (process.env.NODE_ENV !== 'production') {
-            // Retry once, working around a frequently seen timing issue in nodemon
-            await Promise.delay(500);
-            // If it fails again, let it throw
+        const attempts = (process.env.NODE_ENV === 'production') ? 1 : 5;
+        let attempt = 0;
+        while (true) {
+          try {
             await listen();
+            break;
+          } catch (e) {
+            attempt++;
+            if (attempt === attempts) {
+              throw e;
+            } else {
+              // Work around frequent issue with nodemon due to long polling
+              await Promise.delay(500);
+            }
           }
         }
         self.apos.util.log(`Listening at http://${self.address}:${self.port}`);

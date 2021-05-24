@@ -1,20 +1,12 @@
-import { get } from 'lodash';
-
 export default {
   props: {
     header: {
       type: Object,
       required: true
     },
-    item: {
-      type: Object,
-      required: true
-    },
     draft: {
       type: Object,
-      default() {
-        return null;
-      }
+      required: true
     },
     published: {
       type: Object,
@@ -35,7 +27,22 @@ export default {
         path = namespace;
         namespace = 'item';
       }
-      return get(this[namespace], path);
+      const components = path.split('.');
+      let value = this[namespace];
+      try {
+        for (const component of components) {
+          value = value[component];
+        }
+      } catch (e) {
+        // Intentionally tolerant, like _.get
+        return null;
+      }
+      return value;
+    }
+  },
+  computed: {
+    item() {
+      return this.published || this.draft;
     }
   }
 };

@@ -61,7 +61,6 @@ module.exports = {
           ]
         },
         utility: {
-
           fields: [
             'slug',
             'visibility'
@@ -691,7 +690,8 @@ module.exports = {
       // Publish the given draft. If `options.permissions` is explicitly
       // set to `false`, permissions checks are bypassed. If `options.autopublishing`
       // is true, then the `edit` permission is sufficient, otherwise the
-      // `publish` permission is checked for.
+      // `publish` permission is checked for. Returns the draft with its
+      // new `lastPublishedAt` value.
       async publish(req, draft, options = {}) {
         let firstTime = false;
         if (!self.isLocalized()) {
@@ -742,7 +742,8 @@ module.exports = {
             mode: 'published'
           }, published, options);
         }
-
+        draft.modified = false;
+        draft.lastPublishedAt = lastPublishedAt;
         await self.apos.doc.db.updateOne({
           _id: draft._id
         }, {
@@ -771,6 +772,7 @@ module.exports = {
           options,
           firstTime
         });
+        return draft;
       },
       // Reverts the given draft to the most recent publication.
       //
@@ -817,7 +819,7 @@ module.exports = {
           ...req,
           mode: 'draft'
         }, draft, {
-          updateModified: false
+          setModified: false
         });
         const result = {
           draft
@@ -2394,7 +2396,7 @@ module.exports = {
             // has a manager thanks to @apostrophecms/any-page-type. Use that as a default
             // so that we always get a manager object
 
-            const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/page');
+            const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/any-page-type');
             if (!(manager && manager.schema)) {
               return;
             }

@@ -91,9 +91,6 @@ export default {
     }
   },
   methods: {
-    preview(doc) {
-      window.open(doc._url, '_blank').focus();
-    },
     findDocById(docs, id) {
       return docs.find(p => p._id === id);
     },

@@ -47,14 +47,22 @@ export default {
       apos.bus.$emit('admin-menu-click', '@apostrophecms/submitted-draft:manager');
     },
     async updateCount() {
-      this.count = (await apos.http.get(apos.modules['@apostrophecms/submitted-draft'].action, {
-        qs: {
-          count: 1,
-          aposMode: 'draft'
+      try {
+        // If tab is visible
+        if (document.visibilityState !== 'hidden') {
+          this.count = (await apos.http.get(apos.modules['@apostrophecms/submitted-draft'].action, {
+            qs: {
+              count: 1,
+              aposMode: 'draft'
+            }
+          })).count;
         }
-      })).count;
-      // Not declared in data() because it is not reactive
-      this.timeout = setTimeout(this.updateCount, 10000);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        // Not declared in data() because it is not reactive
+        this.timeout = setTimeout(this.updateCount, 10000);
+      }
     }
   }
 };

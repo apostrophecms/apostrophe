@@ -26,7 +26,6 @@
           :widget-options="options.widgets"
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
-          :in-context="inContext"
         />
       </template>
     </div>
@@ -42,6 +41,7 @@
         :doc-id="docId"
         :context-menu-options="contextMenuOptions"
         :field-id="fieldId"
+        :disabled="field && field.readOnly"
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
@@ -109,12 +109,6 @@ export default {
       type: Object,
       default() {
         return {};
-      }
-    },
-    inContext: {
-      type: Boolean,
-      default() {
-        return true;
       }
     }
   },

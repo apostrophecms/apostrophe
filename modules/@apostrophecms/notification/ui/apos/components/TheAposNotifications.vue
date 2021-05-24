@@ -11,6 +11,7 @@
       :icon="notification.icon"
       :id="notification._id"
       :dismiss="notification.dismiss"
+      :buttons="notification.buttons"
       @close="dismiss"
     />
   </transition-group>
@@ -69,7 +70,8 @@ export default {
           strings,
           type: options.type,
           icon: options.icon,
-          dismiss: options.dismiss
+          dismiss: options.dismiss,
+          buttons: options.buttons
         }
       });
     };
@@ -92,37 +94,42 @@ export default {
     },
     async poll() {
       try {
-        const allNotifications = [ ...this.notifications, ...this.dismissed ];
-        const latestTimestamp = allNotifications
-          .map(notification => notification.updatedAt)
-          .sort()
-          .reverse()[0];
+        if (document.visibilityState === 'hidden') {
+          // Wait for tab to become visible
+          setTimeout(this.poll, 5000);
+        } else {
+          const allNotifications = [ ...this.notifications, ...this.dismissed ];
+          const latestTimestamp = allNotifications
+            .map(notification => notification.updatedAt)
+            .sort()
+            .reverse()[0];
 
-        const seenIds = allNotifications
-          .filter(notification => notification.updatedAt === latestTimestamp)
-          .map(notification => notification._id);
+          const seenIds = allNotifications
+            .filter(notification => notification.updatedAt === latestTimestamp)
+            .map(notification => notification._id);
 
-        const { notifications, dismissed } = await apos.http.get(apos.notification.action, {
-          ...(latestTimestamp && {
-            qs: {
-              modifiedOnOrSince: latestTimestamp,
-              seenIds
-            }
-          })
-        });
-
-        this.notifications = [ ...this.notifications, ...(notifications || []) ];
-        this.dismissed = [ ...this.dismissed, ...(dismissed || []) ];
-
-        if (dismissed.length) {
-          this.notifications = this.notifications.filter(notification => {
-            return !dismissed.some(element => notification._id === element._id);
+          const { notifications, dismissed } = await apos.http.get(apos.notification.action, {
+            ...(latestTimestamp && {
+              qs: {
+                modifiedOnOrSince: latestTimestamp,
+                seenIds
+              }
+            })
           });
+
+          this.notifications = [ ...this.notifications, ...(notifications || []) ];
+          this.dismissed = [ ...this.dismissed, ...(dismissed || []) ];
+
+          if (dismissed.length) {
+            this.notifications = this.notifications.filter(notification => {
+              return !dismissed.some(element => notification._id === element._id);
+            });
+          }
+          // Long polling, we should reconnect promptly, the server
+          // is responsible for keeping that request open for a reasonable
+          // amount of time if there are no new messages, not us
+          setTimeout(this.poll, 50);
         }
-        // Long polling, we should reconnect promptly, the server
-        // is responsible for keeping that request open for a reasonable
-        // amount of time if there are no new messages, not us
-        setTimeout(this.poll, 50);
       } catch (err) {
         console.error(err);
         setTimeout(this.poll, 5000);
@@ -133,6 +140,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-notifications {
+    z-index: $z-index-notifications;
+    pointer-events: none;
+    position: fixed;
+    bottom: 20px;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+  }
+
   .list-enter-active,
   .list-leave-active {
     @include apos-transition();
@@ -143,4 +161,5 @@ export default {
     opacity: 0;
     transform: translateY(5px);
   }
+
 </style>

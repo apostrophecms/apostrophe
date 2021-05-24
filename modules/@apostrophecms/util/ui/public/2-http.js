@@ -298,9 +298,9 @@
       var match;
       var parentKey = 'root';
       var context = data;
+      key = decodeURIComponent(key);
       var path = key.split('[');
       path.forEach(function(subKey) {
-        subKey = decodeURIComponent(subKey);
         if (subKey === ']') {
           if (!Array.isArray(context[parentKey])) {
             context[parentKey] = [];
@@ -337,10 +337,16 @@
   // Adds query string data to url. Supports nested structures with objects
   // and arrays, in a way compatible with qs and most other parsers including
   // those baked into PHP frameworks etc. If the URL already contains a query
-  // it is discarded and replaced with the new one. If `data` is an empty object
-  // no ? is added to the URL.
+  // it is discarded and replaced with the new one. All non-query parts of the
+  // URL remain unchanged.
 
   apos.http.addQueryToUrl = function(url, data) {
+    var hash = '';
+    var hashAt = url.indexOf('#');
+    if (hashAt !== -1) {
+      hash = url.substring(hashAt);
+      url = url.substring(0, hashAt);
+    }
     url = url.replace(/\?.*$/, '');
     var i;
     var flat;
@@ -362,7 +368,7 @@
         }
       }
     }
-    return url;
+    return url + hash;
     function flatten(path, data) {
       var flat = [];
       var keys;

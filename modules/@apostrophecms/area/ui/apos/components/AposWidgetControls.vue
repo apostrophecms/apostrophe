@@ -6,30 +6,33 @@
       <AposButton
         v-if="!foreign"
         v-bind="upButton"
-        :disabled="first"
+        :disabled="first || disabled"
         @click="$emit('up')"
       />
       <!-- TODO later -->
       <!-- <AposButton v-bind="dragButton" /> -->
       <AposButton
         v-bind="editButton"
+        :disabled="disabled"
         v-if="!foreign && !options.contextual"
         @click="$emit('edit')"
       />
       <AposButton
         v-if="!foreign"
+        :disabled="disabled || maxReached"
         v-bind="cloneButton"
         @click="$emit('clone')"
       />
       <AposButton
         v-if="!foreign"
+        :disabled="disabled"
         v-bind="removeButton"
         @click="$emit('remove')"
       />
       <AposButton
         v-if="!foreign"
         v-bind="downButton"
-        :disabled="last"
+        :disabled="last || disabled"
         @click="$emit('down')"
       />
     </AposButtonGroup>
@@ -57,6 +60,14 @@ export default {
     foreign: {
       type: Boolean,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    },
+    maxReached: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'remove', 'edit', 'clone', 'up', 'down' ],

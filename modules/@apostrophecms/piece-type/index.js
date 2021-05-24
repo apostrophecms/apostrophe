@@ -7,8 +7,7 @@ module.exports = {
     perPage: 10,
     quickCreate: true,
     previewDraft: true,
-    canCreate: true,
-    canDismissSubmission: false
+    showCreate: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -372,6 +371,10 @@ module.exports = {
       // per published document. `options` is passed on to the
       // insert operation.
       async insertDraftOf(req, doc, draft, options) {
+        options = {
+          ...options,
+          setModified: false
+        };
         const inserted = await self.insert({
           ...req,
           mode: 'draft'
@@ -769,8 +772,10 @@ module.exports = {
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.singleton = self.options.singleton;
-        browserOptions.canCreate = self.options.canCreate;
-        browserOptions.canDismissSubmission = self.options.canDismissSubmission;
+        browserOptions.showCreate = self.options.showCreate;
+        browserOptions.showDismissSubmission = self.options.showDismissSubmission;
+        browserOptions.showArchive = self.options.showArchive;
+        browserOptions.showDiscardDraft = self.options.showDiscardDraft;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
         _.defaults(browserOptions, {

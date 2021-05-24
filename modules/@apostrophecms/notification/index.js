@@ -100,10 +100,27 @@ module.exports = {
       const message = self.apos.launder.string(req.body.message);
       const strings = self.apos.launder.strings(req.body.strings);
       const dismiss = self.apos.launder.integer(req.body.dismiss);
+      let buttons = req.body.buttons;
+      if (!Array.isArray(buttons)) {
+        buttons = null;
+      } else {
+        buttons = buttons.filter(button => {
+          return (button.type === 'event') &&
+          ((typeof button.name) === 'string') &&
+          ((typeof button.label) === 'string') &&
+          ((button.data == null) || (((typeof button.data) === 'object') && (!Array.isArray(button.data))));
+        }).map(button => ({
+          name: button.name,
+          data: button.data,
+          label: button.label,
+          type: button.type
+        }));
+      }
       return self.trigger(req, message, ...strings, {
         dismiss,
         icon,
-        type
+        type,
+        buttons
       });
     },
     put(req, _id) {
@@ -149,6 +166,12 @@ module.exports = {
       //
       // The message is internationalized, which is why the use of
       // %s placeholders for any inserted titles, etc. is important.
+      //
+      // If `options.buttons` is present, it must be an array of objects
+      // with `type` and `label` properties. If `type` is `'event'` then the object must have
+      // `name` and `data` properties, and when clicked the button will trigger an
+      // apos bus event of the given `name` with the provided `data` object. Currently
+      // `'event'` is the only supported value for `type`.
       //
       // Throws an error if there is no `req.user`.
       //

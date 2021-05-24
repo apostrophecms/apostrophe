@@ -75,7 +75,6 @@
           <AposCellBasic
             v-else
             :header="header"
-            :item="item._publishedDoc || item"
             :draft="item"
             :published="item._publishedDoc"
           />
@@ -84,14 +83,14 @@
         <td v-if="options.canEdit" class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :item="item"
+            :draft="item"
+            :published="item._publishedDoc"
+            :header="{
+              columnHeader: '',
+              property: 'contextMenu',
+              component: 'AposCellContextMenu'
+            }"
             :options="contextMenuOptions"
-            @edit="$emit('open', item._id)"
-            @preview="$emit('preview', item._id)"
-            @copy="$emit('copy', item._id)"
-            @discard-draft="$emit('discard-draft', item._id)"
-            @dismiss-submission="$emit('dismiss-submission', item._id)"
-            @archive="$emit('archive', item._id)"
-            @restore="$emit('restore', item._id)"
           />
         </td>
       </tr>
@@ -131,13 +130,7 @@ export default {
   emits: [
     'open',
     'change',
-    'updated',
-    'preview',
-    'copy',
-    'discard-draft',
-    'dismiss-submission',
-    'archive',
-    'restore'
+    'updated'
   ],
   data() {
     const state = {

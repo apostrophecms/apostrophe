@@ -272,7 +272,7 @@ module.exports = {
       // be used very sparingly, and pretty much never in npm modules. The
       // only exceptions in apostrophe core are `apos.area` and `apos.singleton`.
       //
-      // The helper must be added first with `addHelpers` or `addHelper`.
+      // The template helper must be added first. [See the module configuration reference](https://a3.docs.apostrophecms.org/reference/module-api/module-overview.html#customization-functions) for more.
 
       addHelperShortcut(name) {
         self.apos.template.addHelperShortcutForModule(self, name);

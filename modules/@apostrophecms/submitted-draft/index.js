@@ -10,7 +10,12 @@ module.exports = {
     label: 'Submitted Draft',
     pluralLabel: 'Submitted Drafts',
     canCreate: false,
-    canDismissSubmission: true
+    showDismissSubmission: true,
+    showArchive: false,
+    showDiscardDraft: false,
+    // Never mention this type at all in the permissions interface,
+    // not even on a list of typical piece types
+    showPermissions: false
   },
   columns: {
     add: {
@@ -25,7 +30,7 @@ module.exports = {
       },
       'draft:submitted.at': {
         label: 'Submitted',
-        component: 'AposCellDate'
+        component: 'AposCellLastEdited'
       },
       'draft:submitted.by': {
         label: 'Proposed By',

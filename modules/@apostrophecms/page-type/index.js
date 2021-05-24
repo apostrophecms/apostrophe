@@ -37,6 +37,7 @@ module.exports = {
           fields: [
             'slug',
             'type',
+            'visibility',
             'orphan'
           ]
         }
@@ -94,7 +95,7 @@ module.exports = {
       },
       beforeMove: {
         checkPermissions(req, doc) {
-          if (doc.lastPublishedAt && !self.apos.permission.can(req, 'publish', '@apostrophecms/page')) {
+          if (doc.lastPublishedAt && !self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type')) {
             throw self.apos.error('forbidden', 'Contributors may only move unpublished pages.');
           }
         }
@@ -294,6 +295,10 @@ module.exports = {
         const _req = {
           ...req,
           mode: 'draft'
+        };
+        options = {
+          ...options,
+          setModified: false
         };
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale

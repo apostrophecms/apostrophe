@@ -87,7 +87,7 @@ module.exports = {
         const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
         if (autocomplete.length) {
-          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
             throw self.apos.error('forbidden');
           }
           return {
@@ -98,7 +98,7 @@ module.exports = {
         }
 
         if (all) {
-          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
             throw self.apos.error('forbidden');
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
@@ -201,7 +201,7 @@ module.exports = {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return;
           const parentPage = await self.findForEditing(req, { _id: targetId })
-            .permission('edit', '@apostrophecms/page').toObject();
+            .permission('edit', '@apostrophecms/any-page-type').toObject();
           return self.newChild(parentPage);
         }
 
@@ -539,7 +539,9 @@ database.`);
       'apostrophe:afterInit': {
         addServeRoute() {
           self.apos.app.get('*', self.serve);
-        },
+        }
+      },
+      '@apostrophecms/migration:after': {
         async implementParkAll() {
           const req = self.apos.task.getReq();
           for (const item of self.parked) {
@@ -692,8 +694,10 @@ database.`);
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
         browserOptions.name = self.__meta.name;
-        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/page');
-        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/page', 'draft');
+        browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.localized = true;
+        browserOptions.autopublish = false;
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
@@ -904,13 +908,6 @@ database.`);
         return page;
       },
       allowedChildTypes(page) {
-        if (!page && self.options.allowedHomepageTypes) {
-          return self.options.allowedHomepageTypes;
-        } else if (page && self.options.allowedSubpageTypes) {
-          if (self.options.allowedSubpageTypes[page.type]) {
-            return self.options.allowedSubpageTypes[page.type];
-          }
-        }
         // Default is to allow any type in the configured list
         return _.map(self.typeChoices, 'name');
       },
@@ -1992,7 +1989,7 @@ database.`);
           if (!label) {
             const manager = self.apos.doc.getManager(name);
             if (!manager) {
-              throw new Error('There is no page type ' + name + ' but it is configured in allowedHomepageTypes or allowedSubpageTypes or is the type of an existing page, I give up');
+              throw new Error(`There is no page type ${name} but it is configured in the types option`);
             }
             label = manager.label;
           }

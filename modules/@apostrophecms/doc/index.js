@@ -35,6 +35,7 @@ module.exports = {
     self.addDuplicateOrMissingWidgetIdMigration();
     self.addDraftPublishedMigration();
     self.addLastPublishedToAllDraftsMigration();
+    self.addLastPublishedToAllPublishedDocsMigration();
     self.addAposModeMigration();
   },
   restApiRoutes(self) {
@@ -596,7 +597,7 @@ module.exports = {
         if (manager.isLocalized(doc.type)) {
           // Performance hit now at write time is better than inaccurate
           // indicators of which docs are modified later (per Ben)
-          if (doc.aposLocale.endsWith(':draft') && (options.updateModified !== false)) {
+          if (doc.aposLocale.endsWith(':draft') && (options.setModified !== false)) {
             doc.modified = await manager.isModified(req, doc);
           }
         }
@@ -643,8 +644,17 @@ module.exports = {
         const manager = self.apos.doc.getManager(doc.type);
         if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
           // We are inserting the draft for the first time so it is always
-          // different from the published, which won't exist yet
-          doc.modified = true;
+          // different from the published, which won't exist yet. An exception
+          // is when the published doc is inserted first (like a parked page)
+          // in which case setModified: false will be passed in
+          if (options.setModified !== false) {
+            doc.modified = true;
+          }
+        }
+        if (!doc.visibility) {
+          // If the visibility property has been removed from the schema
+          // (images and files), make sure public queries can still match this type
+          doc.visibility = 'public';
         }
         return self.retryUntilUnique(req, doc, async function () {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
@@ -698,7 +708,7 @@ module.exports = {
       // pieces, the `data.global` doc, and page types registered
       // with `@apostrophecms/page` always have one).
       getManager(type) {
-        return self.managers[type];
+        return self.managers[self.normalizeType(type)];
       },
       // Lock the given doc to a given `tabId`, such
       // that other calls to `apos.doc.lock` for that doc id will
@@ -978,6 +988,27 @@ module.exports = {
           });
         });
       },
+      addLastPublishedToAllPublishedDocsMigration() {
+        return self.apos.migration.add('add-last-published-to-published-docs', async () => {
+          return self.apos.migration.eachDoc({
+            _id: /:published$/,
+            lastPublishedAt: null
+          }, async (doc) => {
+            const draft = await self.db.findOne({
+              _id: doc._id.replace(':published', ':draft')
+            });
+            if (draft) {
+              return self.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: {
+                  lastPublishedAt: draft.lastPublishedAt
+                }
+              });
+            }
+          });
+        });
+      },
       addAposModeMigration() {
         self.apos.migration.add('add-apos-mode', async () => {
           return self.apos.migration.eachDoc({
@@ -998,6 +1029,16 @@ module.exports = {
       },
       isDraft(doc) {
         return doc.aposLocale.endsWith(':draft');
+      },
+      // Given a type name, normalize for any backwards compatibility
+      // provisions such as accepting @apostrophecms/page for
+      // @apostrophecms/any-page-type
+      normalizeType(type) {
+        if (type === '@apostrophecms/page') {
+          // Backwards compatible
+          type = '@apostrophecms/any-page-type';
+        }
+        return type;
       }
     };
   }

@@ -26,7 +26,7 @@
       />
       <AposButton
         v-else type="primary"
-        label="New Page" @click="openEditor(null)"
+        label="New Page" @click="create()"
       />
       <AposButton
         v-if="relationshipField"
@@ -55,7 +55,7 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader>
+        <template #bodyHeader v-if="!relationshipField">
           <AposModalToolbar>
             <template #rightControls>
               <AposContextMenu
@@ -75,13 +75,6 @@
             v-model="checked"
             :options="treeOptions"
             @update="update"
-            @edit="openEditor"
-            @preview="onPreview"
-            @copy="copy"
-            @archive="onArchive"
-            @restore="onRestore"
-            @discard-draft="onDiscardDraft"
-            @dismiss-submission="onDismissSubmission"
           />
         </template>
       </AposModalBody>
@@ -90,7 +83,7 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
@@ -98,7 +91,7 @@ import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
+  mixins: [ AposModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
   emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
   data() {
 
@@ -236,46 +229,9 @@ export default {
     apos.bus.$off('content-changed', this.getPages);
   },
   methods: {
-    onPreview(id) {
-      this.preview(this.findDocById(this.pagesFlat, id));
-    },
-    async onArchive(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.archive(doc)) {
-        await this.getPages();
-      }
-    },
-    async onRestore(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.restore(doc)) {
-        await this.getPages();
-      }
-    },
-    async onDiscardDraft(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.discardDraft(doc)) {
-        await this.getPages();
-      }
-    },
-    async onDismissSubmission(id) {
-      const doc = this.findDocById(this.pagesFlat, id);
-      if (await this.dismissSubmission(doc)) {
-        await this.getPages();
-      }
-    },
-    async copy(id) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName,
-        copyOf: this.findDocById(this.pagesFlat, id)
-      });
-      if (!doc) {
-        return;
-      }
-      await this.getPages();
-    },
     moreMenuHandler(action) {
       if (action === 'new') {
-        this.openEditor(null);
+        this.create();
       }
     },
     async getPages () {
@@ -385,21 +341,16 @@ export default {
         });
       }
     },
-    archiveClick() {
-      // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('archive', this.selected);
-    },
-    async openEditor(pageId) {
+    async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName,
-        docId: pageId
+        moduleName: this.moduleName
       });
       if (!doc) {
         // Cancel clicked
         return;
       }
       await this.getPages();
-      if (this.relationshipField && (!pageId)) {
+      if (this.relationshipField) {
         doc._fields = doc._fields || {};
         // Must push to checked docs or it will try to do it for us
         // and not include _fields

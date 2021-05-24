@@ -26,7 +26,7 @@
         <div id="apos-notification"></div>
       {% endif %}
     {% endblock %}
-    <div class="apos-refreshable" data-apos-refreshable>
+    <div data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
       {% block mainAnchor %}<a name="main"></a>{% endblock %}
       {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
@@ -39,8 +39,10 @@
     {% if data.scene == 'apos' %}
       <div id="apos-modals"></div>
     {% endif %}
-    {# Scripts must load dead last so that apos-modals is always found, etc. #}
+    {# Scripts must load after apos-modal in the DOM #}
     {{ apos.asset.scripts(data.scene) }}
+    {# For project-level webpack injection in dev environments #}
+    {% block afterAposScripts %}{% endblock %}
     {# Automatically does nothing in production #}
     {{ apos.asset.refreshOnRestart() }}
   </body>

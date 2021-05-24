@@ -58,6 +58,7 @@
           :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="options.widgets"
+          :disabled="disabled"
         />
       </div>
       <div
@@ -69,6 +70,8 @@
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
           :foreign="foreign"
+          :disabled="disabled"
+          :max-reached="maxReached"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -118,6 +121,7 @@
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
+          :disabled="disabled"
           @menu-open="toggleMenuFocus($event, 'bottom', true)"
           @menu-close="toggleMenuFocus($event, 'bottom', false)"
         />
@@ -186,6 +190,10 @@ export default {
       default() {
         return null;
       }
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'add', 'changed' ],
@@ -568,13 +576,13 @@ export default {
   .apos-area-widget-controls--add {
     top: 0;
     left: 50%;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
   }
 
   .apos-area-widget-controls--add--bottom {
     top: auto;
     bottom: 0;
-    transform: translateY(50%);
+    transform: translate(-50%, 50%);
   }
 
   .apos-area-widget-inner /deep/ .apos-context-menu__popup.is-visible {

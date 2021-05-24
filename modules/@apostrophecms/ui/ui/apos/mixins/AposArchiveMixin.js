@@ -116,7 +116,7 @@ export default {
           }
 
           // Move doc in question
-          await apos.http.patch(`${action}/${doc._id}`, {
+          doc = await apos.http.patch(`${action}/${doc._id}`, {
             body,
             busy: true,
             draft: true
@@ -133,7 +133,10 @@ export default {
             location.assign(`${window.apos.prefix}/`);
             return;
           }
-          apos.bus.$emit('content-changed');
+          apos.bus.$emit('content-changed', {
+            doc,
+            action: 'archive'
+          });
           return true;
         }
       } catch (e) {
@@ -171,8 +174,7 @@ export default {
         return total;
       }
     },
-
-    async restore (doc) {
+    async restore(doc) {
       const moduleOptions = apos.modules[doc.type];
       const isPage = doc.slug.startsWith('/');
       const action = window.apos.modules[doc.type].action;
@@ -232,7 +234,7 @@ export default {
 
         AposAdvisoryLockMixin.methods.addLockToRequest(body);
 
-        await apos.http.patch(`${action}/${doc._id}`, {
+        doc = await apos.http.patch(`${action}/${doc._id}`, {
           body,
           busy: true,
           draft: true
@@ -244,9 +246,11 @@ export default {
           dismiss: true
         });
 
-        apos.bus.$emit('content-changed');
-        return true;
-
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'restore'
+        });
+        return doc;
       } catch (e) {
         if (AposAdvisoryLockMixin.methods.isLockedError(e)) {
           await this.showLockedError(e);
