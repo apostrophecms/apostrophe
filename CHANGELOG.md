@@ -2,6 +2,10 @@
 
 ## UNANNOUNCED
 
+### Changes
+
+- If you refresh the page while previewing or editing, you will be returned to that same state.
+
 ### Fixes
 
 - Updated dependencies on `sanitize-html` and `nodemailer` to new major versions, causing no bc breaks at the ApostropheCMS level. This resolved two critical vulnerabilities according to `npm audit`.
