@@ -137,12 +137,13 @@ module.exports = {
     },
     // Additional properties used in executing tiptap commands
     // Will be mixed in automatically for developers
+    // TODO need a robust way for adding/removing/modifying these settings
     elementProperties: {
       paragraph: {
         tags: [ 'p' ],
         settings: {
           type: 'paragraph',
-          command: 'setParagraph',
+          command: 'toggleParagraph',
           typeParameters: {}
         }
       },
@@ -154,6 +155,17 @@ module.exports = {
           typeParameters: {
             level: 3
           }
+        }
+      },
+      mark: {
+        tags: [
+          'b', 'strong', 'code', 'mark', 'em', 'i',
+          'a', 's', 'del', 'strike', 'span', 'u'
+        ],
+        settings: {
+          type: 'mark',
+          command: 'toggleMark',
+          typeParameters: {}
         }
       }
     }

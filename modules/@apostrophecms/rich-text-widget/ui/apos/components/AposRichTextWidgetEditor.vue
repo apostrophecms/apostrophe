@@ -70,12 +70,12 @@ import {
   EditorContent,
   BubbleMenu
 } from '@tiptap/vue-2';
-import { mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Heading from '@tiptap/extension-heading';
 import Paragraph from '@tiptap/extension-paragraph';
+import TextStyle from '@tiptap/extension-text-style';
 
 // Here because we cannot access computed inside data
 
@@ -114,17 +114,13 @@ export default {
   },
   emits: [ 'update' ],
   data() {
+    const defaultParagraphClass = this.options.styles.find(s => s.tag === 'p' && s.class)
+      ? this.options.styles.find(s => s.tag === 'p' && s.class).class
+      : null;
     const defaultOptions = moduleOptionsBody(this.type).defaultOptions;
     const toolbar = this.options.toolbar === false ? []
       : (this.options.toolbar || defaultOptions.toolbar);
-    let initial = this.stripPlaceholderBrs(this.value.content);
-    if (!initial.trim().length) {
-      const defaultStyle = (this.options.styles && this.options.styles[0]) || {
-        tag: 'p'
-      };
-      const defaultClass = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
-      initial = `<${defaultStyle.tag}${defaultClass}></${defaultStyle.tag}>`;
-    }
+    const initial = this.stripPlaceholderBrs(this.value.content);
     // TODO Move module subclassing to the server?
     const aposLink = Link.extend({
       defaultOptions: {
@@ -138,7 +134,21 @@ export default {
         return {
           class: {
             default: null,
-            parseHTML: element => {
+            parseHTML(element) {
+              return {
+                class: element.getAttribute('class')
+              };
+            }
+          }
+        };
+      }
+    });
+    const aposParagraph = Paragraph.extend({
+      addAttributes() {
+        return {
+          class: {
+            default: defaultParagraphClass,
+            parseHTML(element) {
               return {
                 class: element.getAttribute('class')
               };
@@ -146,41 +156,12 @@ export default {
           }
         };
       },
-      parseHTML() {
-        console.log('PARSE!@');
-        const s = this.options.levels
-          .map((level) => ({
-            tag: `h${level}`,
-            attrs: { level }
-          }));
-        console.log(s);
-        return this.options.levels
-          .map((level) => ({
-            tag: `h${level}`,
-            attrs: { level }
-          }));
-      },
-      renderHTML({ node, HTMLAttributes }) {
-        console.log(node);
-        const hasLevel = this.options.levels.includes(node.attrs.level);
-        const level = hasLevel
-          ? node.attrs.level
-          : this.options.levels[0];
-
-        return [ `h${level}`, mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0 ]
-      }
-    });
-    const CustomParagraph = Paragraph.extend({
-      addAttributes() {
+      addCommands() {
         return {
-          class: {
-            default: 'pink'
+          toggleParagraph: attributes => ({ commands }) => {
+            return commands.toggleNode('paragraph', 'paragraph', attributes);
           }
         };
-      },
-      renderHTML({ node, HTMLAttributes }) {
-        console.log(node);
-        return [ 'p', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0 ]
       }
     });
     return {
@@ -195,8 +176,8 @@ export default {
           Underline,
           aposLink,
           aposHeading,
-          CustomParagraph
-          // aposParagraph
+          aposParagraph,
+          TextStyle
         ]
       }),
       docFields: {
@@ -214,12 +195,6 @@ export default {
     },
     editorOptions() {
       return computeEditorOptions(this.type, this.options);
-    },
-    menuType() {
-      if (this.options.menuType && this.options.menuType === 'block') {
-        return 'editor-menu-bar';
-      }
-      return 'editor-menu-bubble';
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
@@ -277,9 +252,6 @@ export default {
       widget.content = content;
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });
-    },
-    command(name, options) {
-      this.commands[name](options);
     },
     // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
     // temporarily so the editing experience doesn't break due to contenteditable

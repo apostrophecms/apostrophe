@@ -1,10 +1,14 @@
 <template>
   <div class="apos-tiptap-select">
+    <!-- <button
+      @click="go"
+    >dooooooo</button> -->
     <select
       :value="active"
       @change="setStyle"
       class="apos-tiptap-control apos-tiptap-control--select"
     >
+      <!-- <option value="-1">Blank</option> -->
       <option
         v-for="(style, i) in styles"
         :value="i"
@@ -13,6 +17,10 @@
         {{ style.label }}
       </option>
     </select>
+    <button @click="editor.commands.toggleMark('textStyle')">ssssss</button>
+    <!-- <button v-for="style in styles" @click="go(style)">
+      check {{ style.label }}
+    </button> -->
     <chevron-down-icon
       :size="11"
       class="apos-tiptap-select__icon"
@@ -63,6 +71,7 @@ export default {
         //   return i;
         // }
         // TODO still not passing classes, probably a bad match
+
         if (this.editor.isActive(style.type, (style.typeParameters || {}))) {
           return i;
         }
@@ -77,40 +86,71 @@ export default {
     },
     styles() {
       const self = this;
-      return this.options.styles.map(style => {
+      const initial = this.options.styles.map(style => {
         const settings = getSettings(style);
         style = {
           ...style,
           ...settings
         };
+
+        // Remove unknown tags and warn user
+        if (!style.type) {
+          return null;
+        }
         return style;
       });
 
+      console.log(initial);
+
+      // filter nulls
+      return initial.filter(s => s);
+
       function getSettings(style) {
-        let settings;
+        let settings = {};
         for (const key in self.elementProperties) {
           if (self.elementProperties[key].tags.includes(style.tag)) {
             settings = { ...self.elementProperties[key].settings };
           }
         }
 
-        // final massaging
+        if (!settings.type) {
+          return settings;
+        }
+
+        // Set heading level
         if (settings.type === 'heading') {
           const level = parseInt(style.tag.split('h')[1]);
           settings.typeParameters.level = level;
         }
 
-        // Handle custom classes
+        // Set spans
+        if (style.tag === 'span') {
+          settings.type = 'textStyle';
+        }
+
+        // Set mark type
+        if (settings.type === 'mark') {
+          settings.type = style.tag;
+        }
+
+        // Handle custom attributes
         if (style.class) {
           settings.typeParameters.class = style.class;
         }
+
         return settings;
       }
     }
   },
   methods: {
+    go(style) {
+      // console.log(event);
+      console.log('go');
+      console.log(this.editor.isActive(style.type, style.typeParameters));
+    },
     setStyle($event) {
       const style = this.styles[$event.target.value];
+      this.editor.commands.focus();
       this.editor.commands[style.command](style.typeParameters || {});
     }
   }
