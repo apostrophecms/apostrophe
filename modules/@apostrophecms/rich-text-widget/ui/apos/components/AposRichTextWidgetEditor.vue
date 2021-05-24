@@ -1,36 +1,4 @@
 <template>
-  <!-- <div class="apos-rich-text-editor">
-    <component
-      :is="menuType"
-      :editor="editor"
-      :keep-in-bounds="false"
-      v-slot="{ menu, focused }"
-    >
-      <AposContextMenuDialog
-        menu-placement="top"
-        class-list="apos-rich-text-toolbar"
-        :has-tip="false"
-        :modifiers="['unpadded']"
-        :class="extraClasses(menu, focused)"
-        :style="`left: ${menu ? menu.left : 0}px; bottom: ${menu ? menu.bottom : 0}px;`"
-      >
-        <div class="apos-rich-text-toolbar__inner">
-          <component
-            v-for="(item, index) in toolbar"
-            :key="item + '-' + index"
-            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
-            :name="item"
-            :tool="tools[item]"
-            :options="editorOptions"
-            :editor="editor"
-          />
-        </div>
-      </AposContextMenuDialog>
-    </component>
-    <div class="apos-rich-text-editor__editor" :class="editorModifiers">
-      <editor-content :editor="editor" :class="moduleOptions.className" />
-    </div>
-  </div> -->
   <div>
     <bubble-menu
       class="bubble-menu"
@@ -121,7 +89,21 @@ export default {
     const toolbar = this.options.toolbar === false ? []
       : (this.options.toolbar || defaultOptions.toolbar);
     const initial = this.stripPlaceholderBrs(this.value.content);
-    // TODO Move module subclassing to the server?
+
+    // Tiptap module configuration
+    function addClass(def = null) {
+      return {
+        class: {
+          default: def,
+          parseHTML(element) {
+            return {
+              class: element.getAttribute('class')
+            };
+          }
+        }
+      };
+    };
+
     const aposLink = Link.extend({
       defaultOptions: {
         openOnClick: true,
@@ -132,35 +114,21 @@ export default {
     const aposHeading = Heading.extend({
       addAttributes() {
         return {
-          class: {
-            default: null,
-            parseHTML(element) {
-              return {
-                class: element.getAttribute('class')
-              };
-            }
-          }
+          ...addClass()
+        };
+      }
+    });
+    const aposTextStyle = TextStyle.extend({
+      addAttributes() {
+        return {
+          ...addClass()
         };
       }
     });
     const aposParagraph = Paragraph.extend({
       addAttributes() {
         return {
-          class: {
-            default: defaultParagraphClass,
-            parseHTML(element) {
-              return {
-                class: element.getAttribute('class')
-              };
-            }
-          }
-        };
-      },
-      addCommands() {
-        return {
-          toggleParagraph: attributes => ({ commands }) => {
-            return commands.toggleNode('paragraph', 'paragraph', attributes);
-          }
+          ...addClass(defaultParagraphClass)
         };
       }
     });
@@ -177,7 +145,7 @@ export default {
           aposLink,
           aposHeading,
           aposParagraph,
-          TextStyle
+          aposTextStyle
         ]
       }),
       docFields: {

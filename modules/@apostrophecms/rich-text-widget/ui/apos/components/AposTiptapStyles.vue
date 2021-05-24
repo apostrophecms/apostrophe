@@ -1,14 +1,10 @@
 <template>
   <div class="apos-tiptap-select">
-    <!-- <button
-      @click="go"
-    >dooooooo</button> -->
     <select
       :value="active"
       @change="setStyle"
       class="apos-tiptap-control apos-tiptap-control--select"
     >
-      <!-- <option value="-1">Blank</option> -->
       <option
         v-for="(style, i) in styles"
         :value="i"
@@ -17,10 +13,6 @@
         {{ style.label }}
       </option>
     </select>
-    <button @click="editor.commands.toggleMark('textStyle')">ssssss</button>
-    <!-- <button v-for="style in styles" @click="go(style)">
-      check {{ style.label }}
-    </button> -->
     <chevron-down-icon
       :size="11"
       class="apos-tiptap-select__icon"
@@ -55,7 +47,7 @@ export default {
   },
   data() {
     return {
-
+      // styles: null
     };
   },
   computed: {
@@ -63,15 +55,6 @@ export default {
       const styles = this.styles || [];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
-        // const attrs = {
-        //   tag: style.tag,
-        //   class: style.class || null
-        // };
-        // if (this.editor.isActive.styles(attrs)) {
-        //   return i;
-        // }
-        // TODO still not passing classes, probably a bad match
-
         if (this.editor.isActive(style.type, (style.typeParameters || {}))) {
           return i;
         }
@@ -81,77 +64,64 @@ export default {
     moduleOptions() {
       return window.apos.modules['@apostrophecms/rich-text-widget'];
     },
-    elementProperties() {
-      return this.moduleOptions.elementProperties;
+    tiptapCommands() {
+      return this.moduleOptions.tiptapCommands;
+    },
+    tiptapTypeMap() {
+      return this.moduleOptions.tiptapTypeMap;
     },
     styles() {
       const self = this;
-      const initial = this.options.styles.map(style => {
-        const settings = getSettings(style);
-        style = {
-          ...style,
-          ...settings
-        };
-
-        // Remove unknown tags and warn user
-        if (!style.type) {
-          return null;
+      const styles = [];
+      this.options.styles.forEach(style => {
+        style.options = {};
+        for (const key in self.tiptapCommands) {
+          if (self.tiptapCommands[key].includes(style.tag)) {
+            style.command = key;
+          }
         }
-        return style;
-      });
-
-      console.log(initial);
-
-      // filter nulls
-      return initial.filter(s => s);
-
-      function getSettings(style) {
-        let settings = {};
-        for (const key in self.elementProperties) {
-          if (self.elementProperties[key].tags.includes(style.tag)) {
-            settings = { ...self.elementProperties[key].settings };
+        for (const key in self.tiptapTypeMap) {
+          if (self.tiptapTypeMap[key].includes(style.tag)) {
+            style.type = key;
           }
         }
 
-        if (!settings.type) {
-          return settings;
-        }
-
         // Set heading level
-        if (settings.type === 'heading') {
+        if (style.type === 'heading') {
           const level = parseInt(style.tag.split('h')[1]);
-          settings.typeParameters.level = level;
-        }
-
-        // Set spans
-        if (style.tag === 'span') {
-          settings.type = 'textStyle';
-        }
-
-        // Set mark type
-        if (settings.type === 'mark') {
-          settings.type = style.tag;
+          style.options.level = level;
         }
 
         // Handle custom attributes
         if (style.class) {
-          settings.typeParameters.class = style.class;
+          style.options.class = style.class;
         }
 
-        return settings;
-      }
+        if (style.type) {
+          styles.push(style);
+        } else {
+          apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
+            type: 'warning',
+            dismiss: true,
+            icon: 'file-document-icon'
+          });
+        }
+      });
+
+      return styles;
     }
   },
+  mounted() {
+    // this.styles = this.computeSettings();
+  },
   methods: {
-    go(style) {
-      // console.log(event);
-      console.log('go');
-      console.log(this.editor.isActive(style.type, style.typeParameters));
-    },
     setStyle($event) {
       const style = this.styles[$event.target.value];
       this.editor.commands.focus();
-      this.editor.commands[style.command](style.typeParameters || {});
+      this.editor.commands[style.command](style.type, style.options || {});
+    },
+    async computeSettings() {
+
     }
   }
 };

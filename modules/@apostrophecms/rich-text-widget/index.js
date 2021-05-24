@@ -27,30 +27,19 @@ module.exports = {
         // you may also use a `class` property with these
         {
           tag: 'p',
-          label: 'Paragraph (P)',
-          type: 'paragraph',
-          command: 'setParagraph'
+          label: 'Paragraph (P)'
         },
         {
           tag: 'h2',
-          label: 'Heading 2 (H2)',
-          type: 'heading',
-          typeParameters: { level: 2 },
-          command: 'toggleHeading'
+          label: 'Heading 2 (H2)'
         },
         {
           tag: 'h3',
-          label: 'Heading 3 (H3)',
-          type: 'heading',
-          typeParameters: { level: 3 },
-          command: 'toggleHeading'
+          label: 'Heading 3 (H3)'
         },
         {
           tag: 'h4',
-          label: 'Heading 4 (H4)',
-          type: 'heading',
-          typeParameters: { level: 4 },
-          command: 'toggleHeading'
+          label: 'Heading 4 (H4)'
         }
       ]
     },
@@ -137,37 +126,24 @@ module.exports = {
     },
     // Additional properties used in executing tiptap commands
     // Will be mixed in automatically for developers
-    // TODO need a robust way for adding/removing/modifying these settings
-    elementProperties: {
-      paragraph: {
-        tags: [ 'p' ],
-        settings: {
-          type: 'paragraph',
-          command: 'toggleParagraph',
-          typeParameters: {}
-        }
-      },
-      heading: {
-        tags: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
-        settings: {
-          type: 'heading',
-          command: 'toggleHeading',
-          typeParameters: {
-            level: 3
-          }
-        }
-      },
-      mark: {
-        tags: [
-          'b', 'strong', 'code', 'mark', 'em', 'i',
-          'a', 's', 'del', 'strike', 'span', 'u'
-        ],
-        settings: {
-          type: 'mark',
-          command: 'toggleMark',
-          typeParameters: {}
-        }
-      }
+    tiptapCommands: {
+      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
+      setMark: [
+        'b', 'strong', 'code', 'mark', 'em', 'i',
+        'a', 's', 'del', 'strike', 'span', 'u'
+      ]
+    },
+    tiptapTypeMap: {
+      heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
+      paragraph: [ 'p' ],
+      textStyle: [ 'span' ],
+      code: [ 'code' ],
+      bold: [ 'strong', 'b' ],
+      strike: [ 's', 'del', 'strike' ],
+      italic: [ 'i', 'em' ],
+      highlight: [ 'mark' ],
+      link: [ 'a' ],
+      underline: [ 'u' ]
     }
   },
   beforeSuperClass(self) {
@@ -333,7 +309,8 @@ module.exports = {
           components: self.options.components,
           tools: self.options.editorTools,
           defaultOptions: self.options.defaultOptions,
-          elementProperties: self.options.elementProperties
+          tiptapCommands: self.options.tiptapCommands,
+          tiptapTypeMap: self.options.tiptapTypeMap
         };
         return finalData;
       }
