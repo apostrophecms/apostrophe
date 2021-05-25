@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block title %}404 - Page not found{% endblock %}
+
+{% block main %}
+  <section class="apos-not-found">
+    <div class="apos-not-found__container">
+      <div class="apos-not-found__content">
+        <p class="apos-not-found__error-code">{{ __("404") }}</p>
+        <h1 class="apos-not-found__message">
+          {{ __("We can't seem to find the page you're looking for.") }}
+          <a class="apos-not-found__home-link" href="/">Back to Home</a>
+        </h1>
+      </div>
+    </div>
+  </section>
+
+{% endblock %}
+
+{% block afterMain %}
+  <style>
+    .apos-not-found {
+      display: flex;
+      justify-content: center;
+      position: absolute;
+      width: 100%;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+    }
+
+    .apos-not-found__container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s ease;
+      transition-delay: 0.5s;
+      animation: fadeIn 1s;
+      -webkit-animation: fadeIn 1s;
+    }
+
+    .apos-not-found__home-link {
+      color: currentColor;
+    }
+
+    .apos-not-found__content {
+      display: flex;
+      font-size: 14px;
+      align-items: center;
+    }
+
+    .apos-not-found__error-code,
+    .apos-not-found__message,
+    .apos-not-found__home-link {
+      font-family: -apple-system, system-ui, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    }
+
+    .apos-not-found__error-code {
+      font-size: 24px;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      padding-right: 15px;
+      margin-right: 15px;
+    }
+
+    .apos-not-found__error-code:after {
+      display: block;
+      content: "";
+      height: 40px;
+      width: 1px;
+      background: currentColor;
+      position: absolute;
+      right: 0;
+    }
+
+    .apos-not-found__message {
+      font-weight: normal;
+      font-size: inherit;
+      letter-spacing: 0;
+    }
+
+    @keyframes fadeIn {
+      0% {opacity:0;}
+      100% {opacity:1;}
+    }
+
+    @-webkit-keyframes fadeIn {
+      0% {opacity:0;}
+      100% {opacity:1;}
+    }
+  </style>
+{% endblock %}
