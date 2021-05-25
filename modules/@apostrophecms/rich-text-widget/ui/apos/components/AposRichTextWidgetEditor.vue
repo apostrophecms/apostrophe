@@ -45,12 +45,6 @@ import Heading from '@tiptap/extension-heading';
 import Paragraph from '@tiptap/extension-paragraph';
 import TextStyle from '@tiptap/extension-text-style';
 
-// Here because we cannot access computed inside data
-
-function moduleOptionsBody(type) {
-  return apos.modules[apos.area.widgetManagers[type]];
-}
-
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -82,72 +76,50 @@ export default {
   },
   emits: [ 'update' ],
   data() {
-    const defaultParagraphClass = this.options.styles.find(s => s.tag === 'p' && s.class)
-      ? this.options.styles.find(s => s.tag === 'p' && s.class).class
-      : null;
-    const defaultOptions = moduleOptionsBody(this.type).defaultOptions;
-    const toolbar = this.options.toolbar === false ? []
-      : (this.options.toolbar || defaultOptions.toolbar);
-    const initial = this.stripPlaceholderBrs(this.value.content);
-
     // Tiptap module configuration
-    function addClass(def = null) {
-      return {
-        class: {
-          default: def,
-          parseHTML(element) {
-            return {
-              class: element.getAttribute('class')
-            };
-          }
-        }
-      };
-    };
+    // function addClass(def = null) {
+    //   return {
+    //     class: {
+    //       default: def,
+    //       parseHTML(element) {
+    //         return {
+    //           class: element.getAttribute('class')
+    //         };
+    //       }
+    //     }
+    //   };
+    // };
 
-    const aposLink = Link.extend({
-      defaultOptions: {
-        openOnClick: true,
-        linkOnPaste: true,
-        HTMLAttributes: {}
-      }
-    });
-    const aposHeading = Heading.extend({
-      addAttributes() {
-        return {
-          ...addClass()
-        };
-      }
-    });
-    const aposTextStyle = TextStyle.extend({
-      addAttributes() {
-        return {
-          ...addClass()
-        };
-      }
-    });
-    const aposParagraph = Paragraph.extend({
-      addAttributes() {
-        return {
-          ...addClass(defaultParagraphClass)
-        };
-      }
-    });
+    // const aposLink = Link.extend({
+    //   defaultOptions: {
+    //     openOnClick: true,
+    //     linkOnPaste: true,
+    //     HTMLAttributes: {}
+    //   }
+    // });
+    // const aposHeading = Heading.extend({
+    //   addAttributes() {
+    //     return {
+    //       ...addClass()
+    //     };
+    //   }
+    // });
+    // const aposTextStyle = TextStyle.extend({
+    //   addAttributes() {
+    //     return {
+    //       ...addClass()
+    //     };
+    //   }
+    // });
+    // const aposParagraph = Paragraph.extend({
+    //   addAttributes() {
+    //     return {
+    //       ...addClass(this.defaultParagraphClass)
+    //     };
+    //   }
+    // });
     return {
-      tools: moduleOptionsBody(this.type).tools,
-      toolbar,
-      editor: new Editor({
-        content: initial,
-        autoFocus: true,
-        onUpdate: this.editorUpdate,
-        extensions: [
-          StarterKit,
-          Underline,
-          aposLink,
-          aposHeading,
-          aposParagraph,
-          aposTextStyle
-        ]
-      }),
+      editor: null,
       docFields: {
         data: {
           ...this.value
@@ -159,10 +131,23 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return moduleOptionsBody(this.type);
+      return apos.modules[apos.area.widgetManagers[this.type]];
     },
     editorOptions() {
-      return computeEditorOptions(this.type, this.options);
+      return this.computeEditorOptions(this.type, this.options);
+    },
+    defaultOptions() {
+      return this.moduleOptions.defaultOptions;
+    },
+    initialContent() {
+      return this.stripPlaceholderBrs(this.value.content);
+    },
+    toolbar() {
+      return this.options.toolbar === false ? []
+        : (this.options.toolbar || this.defaultOptions.toolbar);
+    },
+    tools() {
+      return this.moduleOptions.tools;
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
@@ -175,9 +160,17 @@ export default {
         classes.push('is-visually-empty');
       }
       return classes;
+    },
+    aposTiptapExtensions() {
+      return (apos.tiptapExtensions || [])
+        .map(extension => extension(this.editorOptions));
+    },
+    defaultParagraphClass () {
+      return this.options.styles.find(s => s.tag === 'p' && s.class)
+        ? this.options.styles.find(s => s.tag === 'p' && s.class).class
+        : null;
     }
   },
-
   watch: {
     focused(newVal) {
       if (!newVal) {
@@ -187,6 +180,18 @@ export default {
       }
     }
   },
+  mounted() {
+    this.editor = new Editor({
+      content: this.initialContent,
+      autoFocus: true,
+      onUpdate: this.editorUpdate,
+      extensions: [
+        StarterKit,
+        Underline
+      ].concat(this.aposTiptapExtensions)
+    });
+  },
+
   beforeDestroy() {
     this.editor.destroy();
   },
@@ -233,23 +238,21 @@ export default {
     // Otherwise they get doubled by ProseMirror
     stripPlaceholderBrs(html) {
       return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
+    },
+    computeEditorOptions(type, explicitOptions) {
+      const activeOptions = Object.assign({}, explicitOptions);
+
+      // Allow toolbar option to pass through if `false`
+      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
+        ? activeOptions.toolbar : this.defaultOptions.toolbar;
+
+      activeOptions.styles = activeOptions.styles || this.defaultOptions.styles;
+
+      return activeOptions;
     }
   }
 };
 
-function computeEditorOptions(type, explicitOptions) {
-  const defaultOptions = moduleOptionsBody(type).defaultOptions;
-
-  const activeOptions = Object.assign({}, explicitOptions);
-
-  // Allow toolbar option to pass through if `false`
-  activeOptions.toolbar = (activeOptions.toolbar !== undefined)
-    ? activeOptions.toolbar : defaultOptions.toolbar;
-
-  activeOptions.styles = activeOptions.styles || defaultOptions.styles;
-
-  return activeOptions;
-}
 </script>
 
 <style lang="scss" scoped>

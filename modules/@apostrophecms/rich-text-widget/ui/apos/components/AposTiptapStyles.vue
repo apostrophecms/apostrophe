@@ -103,7 +103,7 @@ export default {
           apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
             type: 'warning',
             dismiss: true,
-            icon: 'file-document-icon'
+            icon: 'text-box-remove-icon'
           });
         }
       });
@@ -111,17 +111,11 @@ export default {
       return styles;
     }
   },
-  mounted() {
-    // this.styles = this.computeSettings();
-  },
   methods: {
     setStyle($event) {
       const style = this.styles[$event.target.value];
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
-    },
-    async computeSettings() {
-
     }
   }
 };
