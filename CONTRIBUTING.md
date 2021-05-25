@@ -72,6 +72,12 @@ PRs to resolve existing issues are fantastic. Two good places to start are the
 ["help wanted"](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 and ["good first issue"](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) issues.
 
+Please note that if you are using Windows for development, we strongly recommend
+using 
+[Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/windows-or-wsl)
+both for development on the core Apostrophe modules and developing your own
+applications.
+
 If you’ve perused our open issues labeled `bug` and decide to work to resolve
 one, or you’ve got a new feature that you’d like to commit to the core project,
 please keep these things in mind:

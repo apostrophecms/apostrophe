@@ -1,5 +1,16 @@
+# Changelog
 
 ## Unreleased
+
+### Fixes
+
+* Updates uses of "whitelist" to "allowlist" to follow project practices.
+
+## 2.119.0 (2021-05-20)
+
+### Fixes
+
+* Send the `Referer` header with oembed requests. This allows vimeo private videos locked down by domain name to be embedded.
 
 ### Features
 
