@@ -4,7 +4,7 @@
 
 ### Changes
 
-- Don't generate a warning about an unused module if it has "theme" in the name. This is a common pattern for modules that are not activated in all instances of the same codebase.
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
 
 ## 3.0.0-beta.2 - 2021-05-21
 

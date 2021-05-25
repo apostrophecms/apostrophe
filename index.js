@@ -352,7 +352,15 @@ module.exports = async function(options) {
       // Projects that have different theme modules activated at different times
       // are a frequent source of false positives for this warning, so ignore
       // seemingly unused modules with "theme" in the name
-      if (!validSteps.includes(name) || (!name.match(/theme/))) {
+      if (!validSteps.includes(name)) {
+        try {
+          const submodule = require(require('path').resolve(`${self.localModules}/${name}`));
+          if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
+            return;
+          }
+        } catch (e) {
+          // index.js might not exist, that's fine for our purposes
+        }
         if (name.match(/^apostrophe-/)) {
           warn('namespace-apostrophe-modules', `You have a ${self.localModules}/${name} folder. You are probably trying to configure an official Apostrophe module, but those are namespaced now. Your directory should be renamed ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}\n\nIf you get this warning for your own, original module, do not use the apostrophe- prefix. It is reserved.`);
         } else {
