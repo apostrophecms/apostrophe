@@ -22,6 +22,7 @@
             :tool="tools[item]"
             :options="editorOptions"
             :editor="editor"
+            :styles="styles"
           />
         </div>
       </AposContextMenuDialog>
@@ -161,9 +162,55 @@ export default {
       }
       return classes;
     },
+    tiptapCommands() {
+      return this.moduleOptions.tiptapCommands;
+    },
+    tiptapTypeMap() {
+      return this.moduleOptions.tiptapTypeMap;
+    },
+    styles() {
+      const self = this;
+      const styles = [];
+      this.options.styles.forEach(style => {
+        style.options = {};
+        for (const key in self.tiptapCommands) {
+          if (self.tiptapCommands[key].includes(style.tag)) {
+            style.command = key;
+          }
+        }
+        for (const key in self.tiptapTypeMap) {
+          if (self.tiptapTypeMap[key].includes(style.tag)) {
+            style.type = key;
+          }
+        }
+
+        // Set heading level
+        if (style.type === 'heading') {
+          const level = parseInt(style.tag.split('h')[1]);
+          style.options.level = level;
+        }
+
+        // Handle custom attributes
+        if (style.class) {
+          style.options.class = style.class;
+        }
+
+        if (style.type) {
+          styles.push(style);
+        } else {
+          apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
+            type: 'warning',
+            dismiss: true,
+            icon: 'text-box-remove-icon'
+          });
+        }
+      });
+
+      return styles;
+    },
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
-        .map(extension => extension(this.editorOptions));
+        .map(extension => extension(this.styles));
     },
     defaultParagraphClass () {
       return this.options.styles.find(s => s.tag === 'p' && s.class)
