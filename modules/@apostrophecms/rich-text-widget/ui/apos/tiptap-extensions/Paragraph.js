@@ -1,7 +1,7 @@
 import Paragraph from '@tiptap/extension-paragraph';
 export default (styles) => {
   const allow = styles
-    .filter(s => s.tag === 'p')
+    .filter(s => s.type === 'paragraph')
     .map(s => s.class);
   return Paragraph.extend({
     addAttributes() {
