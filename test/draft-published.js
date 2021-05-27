@@ -84,8 +84,8 @@ describe('Draft / Published', function() {
               _articles: {
                 type: 'relationship',
                 withType: 'article',
-                filters: {
-                  projection: {
+                builders: {
+                  project: {
                     _url: 1,
                     title: 1
                   }
