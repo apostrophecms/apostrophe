@@ -475,6 +475,34 @@ describe('Pieces', function() {
     assert(page.match(/logged in/));
   });
 
+  it('can attach a tool to a person via the REST API', async function() {
+    const person1 = await apos.http.get('/api/v1/person/person1:en:published');
+    assert(person1);
+    const thing1 = await apos.http.get('/api/v1/thing/thing1:en:published');
+    assert(thing1);
+    person1._tools = [
+      {
+        ...thing1,
+        _fields: {
+          skillLevel: 5
+        }
+      }
+    ];
+    await apos.http.put('/api/v1/person/person1:en:published', {
+      body: person1,
+      jar
+    });
+    const person1After = await apos.http.get('/api/v1/person/person1:en:published', {
+      jar
+    });
+    assert(person1After);
+    assert(person1After._tools);
+    assert(person1After._tools.length);
+    assert(person1After._tools[0].title === 'Red');
+    assert(person1After._tools[0]._fields);
+    assert(person1After._tools[0]._fields.skillLevel === 5);
+  });
+
   it('cannot POST a product without a session', async () => {
     try {
       await apos.http.post('/api/v1/product', {
