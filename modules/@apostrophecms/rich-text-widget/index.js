@@ -122,6 +122,34 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'Redo',
         icon: 'redo-icon'
+      },
+      alignLeft: {
+        component: 'AposTiptapButton',
+        label: 'Align Left',
+        icon: 'format-align-left-icon',
+        command: 'setTextAlign',
+        commandParameters: 'left'
+      },
+      alignCenter: {
+        component: 'AposTiptapButton',
+        label: 'Align Center',
+        icon: 'format-align-center-icon',
+        command: 'setTextAlign',
+        commandParameters: 'center'
+      },
+      alignRight: {
+        component: 'AposTiptapButton',
+        label: 'Align Right',
+        icon: 'format-align-right-icon',
+        command: 'setTextAlign',
+        commandParameters: 'right'
+      },
+      alignJustify: {
+        component: 'AposTiptapButton',
+        label: 'Align Justify',
+        icon: 'format-align-justify-icon',
+        command: 'setTextAlign',
+        commandParameters: 'justify'
       }
     },
     // Additional properties used in executing tiptap commands

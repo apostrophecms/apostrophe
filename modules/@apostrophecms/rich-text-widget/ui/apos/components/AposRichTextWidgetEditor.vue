@@ -40,6 +40,7 @@ import {
   BubbleMenu
 } from '@tiptap/vue-2';
 import StarterKit from '@tiptap/starter-kit';
+import TextAlign from '@tiptap/extension-text-align';
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -191,7 +192,8 @@ export default {
       autoFocus: true,
       onUpdate: this.editorUpdate,
       extensions: [
-        StarterKit
+        StarterKit,
+        TextAlign
       ].concat(this.aposTiptapExtensions)
     });
   },
