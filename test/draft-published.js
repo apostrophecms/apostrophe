@@ -209,6 +209,14 @@ describe('Draft / Published', function() {
     }), testDraftProduct);
   });
 
+  it('"previous published" should be deduplicated at this point', async () => {
+    const previous = await apos.doc.db.findOne({
+      _id: testDraftProduct._id.replace(':draft', ':previous')
+    });
+    assert(previous);
+    assert.strictEqual(previous.slug, `deduplicate-${previous.aposDocId}-test-product`);
+  });
+
   it('original product shows as modified if we make a third change to it', async () => {
     testDraftProduct.title = 'Title 4';
     testDraftProduct = await apos.product.update(apos.task.getReq({
@@ -236,6 +244,8 @@ describe('Draft / Published', function() {
     assert(published && published.aposLocale === 'en:published');
     published = await apos.product.revertPublishedToPrevious(req, published);
     assert(published);
+    // Make sure the slug is no longer deduplicated
+    assert(published.slug === 'test-product');
     assert(published.title === 'Test Product');
     testDraftProduct = await apos.product.findOneForEditing({
       ...req,

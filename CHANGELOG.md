@@ -6,6 +6,7 @@
 
 - Updated dependencies on `sanitize-html` and `nodemailer` to new major versions, causing no bc breaks at the ApostropheCMS level. This resolved two critical vulnerabilities according to `npm audit`.
 - Removed many unused dependencies.
+- The data retained for "Undo Publish" no longer causes slug conflicts in certain situations.
 
 ### Notices
 
