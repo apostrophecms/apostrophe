@@ -2,6 +2,10 @@
 
 ## UNANNOUNCED
 
+### Adds
+
+Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
+
 ### Fixes
 
 - Updated dependencies on `sanitize-html` and `nodemailer` to new major versions, causing no bc breaks at the ApostropheCMS level. This resolved two critical vulnerabilities according to `npm audit`.
