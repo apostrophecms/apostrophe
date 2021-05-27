@@ -41,6 +41,8 @@ import {
 } from '@tiptap/vue-2';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
+import TextStyle from '@tiptap/extension-text-style';
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -109,7 +111,15 @@ export default {
         : (this.options.toolbar || this.defaultOptions.toolbar);
     },
     tools() {
-      return this.moduleOptions.tools;
+      let tools = this.moduleOptions.tools;
+      if (this.editorOptions.tools) {
+        tools = {
+          ...tools,
+          ...this.editorOptions.tools
+        };
+      }
+      return tools;
+      // return this.moduleOptions.tools;
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
@@ -195,7 +205,9 @@ export default {
       onUpdate: this.editorUpdate,
       extensions: [
         StarterKit,
-        TextAlign
+        TextAlign,
+        Highlight,
+        TextStyle
       ].concat(this.aposTiptapExtensions)
     });
   },

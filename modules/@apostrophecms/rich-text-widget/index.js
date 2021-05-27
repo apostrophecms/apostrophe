@@ -153,6 +153,12 @@ module.exports = {
         command: 'setTextAlign',
         commandParameters: 'justify',
         isActive: { textAlign: 'justify' }
+      },
+      highlight: {
+        component: 'AposTiptapButton',
+        label: 'Mark',
+        icon: 'format-color-highlight-icon',
+        command: 'toggleHighlight'
       }
     },
     // Additional properties used in executing tiptap commands
@@ -187,7 +193,8 @@ module.exports = {
     };
   },
   icons: {
-    'format-text-icon': 'FormatText'
+    'format-text-icon': 'FormatText',
+    'format-color-highlight-icon': 'FormatColorHighlight'
   },
   methods(self) {
     return {
