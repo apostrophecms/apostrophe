@@ -40,12 +40,6 @@ import {
   BubbleMenu
 } from '@tiptap/vue-2';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
-import Heading from '@tiptap/extension-heading';
-import Paragraph from '@tiptap/extension-paragraph';
-import TextStyle from '@tiptap/extension-text-style';
-
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -77,48 +71,6 @@ export default {
   },
   emits: [ 'update' ],
   data() {
-    // Tiptap module configuration
-    // function addClass(def = null) {
-    //   return {
-    //     class: {
-    //       default: def,
-    //       parseHTML(element) {
-    //         return {
-    //           class: element.getAttribute('class')
-    //         };
-    //       }
-    //     }
-    //   };
-    // };
-
-    // const aposLink = Link.extend({
-    //   defaultOptions: {
-    //     openOnClick: true,
-    //     linkOnPaste: true,
-    //     HTMLAttributes: {}
-    //   }
-    // });
-    // const aposHeading = Heading.extend({
-    //   addAttributes() {
-    //     return {
-    //       ...addClass()
-    //     };
-    //   }
-    // });
-    // const aposTextStyle = TextStyle.extend({
-    //   addAttributes() {
-    //     return {
-    //       ...addClass()
-    //     };
-    //   }
-    // });
-    // const aposParagraph = Paragraph.extend({
-    //   addAttributes() {
-    //     return {
-    //       ...addClass(this.defaultParagraphClass)
-    //     };
-    //   }
-    // });
     return {
       editor: null,
       docFields: {
@@ -135,7 +87,15 @@ export default {
       return apos.modules[apos.area.widgetManagers[this.type]];
     },
     editorOptions() {
-      return this.computeEditorOptions(this.type, this.options);
+      const activeOptions = Object.assign({}, this.options);
+
+      // Allow toolbar option to pass through if `false`
+      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
+        ? activeOptions.toolbar : this.defaultOptions.toolbar;
+
+      activeOptions.styles = activeOptions.styles || this.defaultOptions.styles;
+
+      return activeOptions;
     },
     defaultOptions() {
       return this.moduleOptions.defaultOptions;
@@ -162,24 +122,24 @@ export default {
       }
       return classes;
     },
-    tiptapCommands() {
-      return this.moduleOptions.tiptapCommands;
+    tiptapTextCommands() {
+      return this.moduleOptions.tiptapTextCommands;
     },
-    tiptapTypeMap() {
-      return this.moduleOptions.tiptapTypeMap;
+    tiptapTypes() {
+      return this.moduleOptions.tiptapTypes;
     },
     styles() {
       const self = this;
       const styles = [];
       this.options.styles.forEach(style => {
         style.options = {};
-        for (const key in self.tiptapCommands) {
-          if (self.tiptapCommands[key].includes(style.tag)) {
+        for (const key in self.tiptapTextCommands) {
+          if (self.tiptapTextCommands[key].includes(style.tag)) {
             style.command = key;
           }
         }
-        for (const key in self.tiptapTypeMap) {
-          if (self.tiptapTypeMap[key].includes(style.tag)) {
+        for (const key in self.tiptapTypes) {
+          if (self.tiptapTypes[key].includes(style.tag)) {
             style.type = key;
           }
         }
@@ -210,12 +170,10 @@ export default {
     },
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
-        .map(extension => extension(this.styles));
-    },
-    defaultParagraphClass () {
-      return this.options.styles.find(s => s.tag === 'p' && s.class)
-        ? this.options.styles.find(s => s.tag === 'p' && s.class).class
-        : null;
+        .map(extension => extension({
+          styles: this.styles,
+          types: this.tiptapTypes
+        }));
     }
   },
   watch: {
@@ -233,8 +191,7 @@ export default {
       autoFocus: true,
       onUpdate: this.editorUpdate,
       extensions: [
-        StarterKit,
-        Underline
+        StarterKit
       ].concat(this.aposTiptapExtensions)
     });
   },
@@ -285,17 +242,6 @@ export default {
     // Otherwise they get doubled by ProseMirror
     stripPlaceholderBrs(html) {
       return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
-    },
-    computeEditorOptions(type, explicitOptions) {
-      const activeOptions = Object.assign({}, explicitOptions);
-
-      // Allow toolbar option to pass through if `false`
-      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
-        ? activeOptions.toolbar : this.defaultOptions.toolbar;
-
-      activeOptions.styles = activeOptions.styles || this.defaultOptions.styles;
-
-      return activeOptions;
     }
   }
 };

@@ -126,14 +126,15 @@ module.exports = {
     },
     // Additional properties used in executing tiptap commands
     // Will be mixed in automatically for developers
-    tiptapCommands: {
-      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
+    tiptapTextCommands: {
+      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
       setMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
         'a', 's', 'del', 'strike', 'span', 'u'
-      ]
+      ],
+      wrapIn: [ 'blockquote' ]
     },
-    tiptapTypeMap: {
+    tiptapTypes: {
       heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
       paragraph: [ 'p' ],
       textStyle: [ 'span' ],
@@ -143,7 +144,9 @@ module.exports = {
       italic: [ 'i', 'em' ],
       highlight: [ 'mark' ],
       link: [ 'a' ],
-      underline: [ 'u' ]
+      underline: [ 'u' ],
+      codeBlock: [ 'pre' ],
+      blockquote: [ 'blockquote' ]
     }
   },
   beforeSuperClass(self) {
@@ -309,8 +312,8 @@ module.exports = {
           components: self.options.components,
           tools: self.options.editorTools,
           defaultOptions: self.options.defaultOptions,
-          tiptapCommands: self.options.tiptapCommands,
-          tiptapTypeMap: self.options.tiptapTypeMap
+          tiptapTextCommands: self.options.tiptapTextCommands,
+          tiptapTypes: self.options.tiptapTypes
         };
         return finalData;
       }
