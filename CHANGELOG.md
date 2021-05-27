@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 2.119.1 (2021-05-27)
 
 ### Security Fixes
 
