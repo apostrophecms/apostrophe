@@ -1,3 +1,5 @@
+// Enhances common node/mark types to accept a class parameter
+// and filter out classes that don't match the list on paste/parse
 import { Extension } from '@tiptap/core';
 export default (options) => {
   // Create a class allowlist map for each element

@@ -77,7 +77,9 @@ export default {
       target: null,
       active: false,
       hasLinkOnOpen: false,
-      schemaKey: 'ljwenf',
+      // uses key hack to force refresh among selections
+      // so that schema values aren't erronously carried from selection to selection
+      schemaKey: 'apostrophe3whips',
       value: {
         data: {}
       },
@@ -179,9 +181,7 @@ export default {
       const attrs = this.editor.getAttributes('link');
       this.value.data = {};
       this.schema.forEach((item) => {
-        // if (attrs[item.name]) {
         this.value.data[item.name] = attrs[item.name] || '';
-        // }
       });
     }
   }

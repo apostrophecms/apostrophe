@@ -51,17 +51,12 @@ export default {
       }
     }
   },
-  data() {
-    return {
-      // styles: null
-    };
-  },
   computed: {
     active() {
       const styles = this.styles || [];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
-        if (this.editor.isActive(style.type, (style.typeParameters || {}))) {
+        if (this.editor.isActive(style.type, (style.options || {}))) {
           return i;
         }
       }

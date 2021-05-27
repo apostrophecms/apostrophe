@@ -129,6 +129,8 @@ export default {
     tiptapTypes() {
       return this.moduleOptions.tiptapTypes;
     },
+    // Enhances the dev-defined styles list with tiptap
+    // commands and parameters used internally.
     styles() {
       const self = this;
       const styles = [];

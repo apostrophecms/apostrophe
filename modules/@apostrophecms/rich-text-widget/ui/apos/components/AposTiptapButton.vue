@@ -32,7 +32,14 @@ export default {
   },
   computed: {
     active() {
-      return this.editor.isActive(this.name, this.tool.commandParameters || {});
+      // The parameters passed to isActive are unpredictable.
+      // If they do not follow the pattern isActive(NAME, OPTIONS)
+      // they should include their own helper
+      if (this.tool.isActive) {
+        return this.editor.isActive(this.tool.isActive);
+      } else {
+        return this.editor.isActive(this.name, this.tool.commandParameters || {});
+      }
     }
   },
   methods: {
@@ -41,7 +48,7 @@ export default {
     },
     click() {
       this.editor.commands[this.command()](this.tool.commandParameters || {});
-      this.editor.chain().focus();
+      this.editor.commands.focus();
     }
   }
 };

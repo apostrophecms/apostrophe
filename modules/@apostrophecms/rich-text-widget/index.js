@@ -22,7 +22,6 @@ module.exports = {
         'ordered_list',
         'blockquote'
       ],
-      // TODO type, typeParameters, and command should get appeneded automatically
       styles: [
         // you may also use a `class` property with these
         {
@@ -128,28 +127,32 @@ module.exports = {
         label: 'Align Left',
         icon: 'format-align-left-icon',
         command: 'setTextAlign',
-        commandParameters: 'left'
+        commandParameters: 'left',
+        isActive: { textAlign: 'left' }
       },
       alignCenter: {
         component: 'AposTiptapButton',
         label: 'Align Center',
         icon: 'format-align-center-icon',
         command: 'setTextAlign',
-        commandParameters: 'center'
+        commandParameters: 'center',
+        isActive: { textAlign: 'center' }
       },
       alignRight: {
         component: 'AposTiptapButton',
         label: 'Align Right',
         icon: 'format-align-right-icon',
         command: 'setTextAlign',
-        commandParameters: 'right'
+        commandParameters: 'right',
+        isActive: { textAlign: 'right' }
       },
       alignJustify: {
         component: 'AposTiptapButton',
         label: 'Align Justify',
         icon: 'format-align-justify-icon',
         command: 'setTextAlign',
-        commandParameters: 'justify'
+        commandParameters: 'justify',
+        isActive: { textAlign: 'justify' }
       }
     },
     // Additional properties used in executing tiptap commands
