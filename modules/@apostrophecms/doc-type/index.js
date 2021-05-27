@@ -186,8 +186,8 @@ module.exports = {
             self.emit('afterDelete', req, previous, { checkForChildren: false });
           }
         },
-        async deduplicateArchive(req, doc) {
-          const $set = await self.deduplicate(req, doc);
+        async deduplicate(req, doc) {
+          const $set = await self.getDeduplicationSet(req, doc);
           Object.assign(doc, $set);
           if (Object.keys($set).length) {
             return self.apos.doc.db.updateOne({ _id: doc._id }, { $set });
@@ -195,8 +195,8 @@ module.exports = {
         }
       },
       afterRescue: {
-        async reduplicateRescue(req, doc) {
-          const $set = await self.reduplicate(req, doc);
+        async revertDeduplication(req, doc) {
+          const $set = await self.getRevertDeduplicationSet(req, doc);
           if (Object.keys($set).length) {
             Object.assign(doc, $set);
             return self.apos.doc.db.updateOne({ _id: doc._id }, { $set });
@@ -681,7 +681,7 @@ module.exports = {
         if (previousPublished) {
           previousPublished._id = previousPublished._id.replace(':published', ':previous');
           previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
-          Object.assign(previousPublished, await self.deduplicate(req, previousPublished));
+          Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
           await self.apos.doc.db.replaceOne({
             _id: previousPublished._id
           }, previousPublished, {
@@ -767,7 +767,7 @@ module.exports = {
           // Feature has already been used
           throw self.apos.error('invalid');
         }
-        const $set = await self.reduplicate(req, previous);
+        const $set = await self.getRevertDeduplicationSet(req, previous);
         Object.assign(previous, $set);
         // We must load relationships as if we had done a regular find
         // because relationships are read/write in A3,
@@ -865,7 +865,7 @@ module.exports = {
       // can be passed to $set or Object.assign or both, depending on your
       // situation. `doc` is not changed.
 
-      async deduplicate(req, doc) {
+      async getDeduplicationSet(req, doc) {
         const deduplicateKey = doc.aposDocId;
         if (doc.parkedId === 'archive') {
           // The primary archive itself should not deduplicate
@@ -893,15 +893,12 @@ module.exports = {
             $set[name] = doc[name] + suffix;
           }
         });
-        if (_.isEmpty($set)) {
-          return {};
-        }
         return $set;
       },
 
       // Returns an object containing the properties of doc that
-      // require "reduplication" (restoration of the original slug and
-      // other potentially conflicting properties) when restored from the
+      // were formerly deduplicated (and require restoration of the original slug
+      // and other potentially conflicting properties) when restored from the
       // archive, used to "undo publish" or any other scenario where the slug
       // and similar properties should once again treated as "in conflict"
       // with content that is in play on the site. The returned object
@@ -911,7 +908,7 @@ module.exports = {
       // then those particular fields are left in their "deduplicated"
       // form for the user to fix manually. `doc` is not changed.
 
-      async reduplicate(req, doc) {
+      async getRevertDeduplicationSet(req, doc) {
         if (doc.parkedId === 'archive') {
           // The primary archive itself should not deduplicate
           return;
