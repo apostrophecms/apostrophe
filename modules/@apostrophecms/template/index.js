@@ -175,6 +175,19 @@ module.exports = {
         return new self.nunjucks.runtime.SafeString(s);
       },
 
+      // Escape any HTML markup in the given string and return a new Nunjucks safe string,
+      // unless it is already marked as safe by Nunjucks. If it is nullish treat it as an
+      // empty string. If it is not a string convert it with its `toString` method before
+      // escaping.
+
+      escapeIfNeeded(s) {
+        if (!(s instanceof self.nunjucks.runtime.SafeString)) {
+          return self.safe(self.apos.util.escapeHtml((s == null) ? '' : s.toString()));
+        } else {
+          return s;
+        }
+      },
+
       // Load and render a Nunjucks template, internationalized
       // by the given req object. The template with the name
       // specified is loaded from the views folder of the
@@ -481,21 +494,19 @@ module.exports = {
 
         // Convert newlines to <br /> tags.
         env.addFilter('nlbr', function (data) {
-          data = self.apos.util.globalReplace(data, '\n', '<br />\n');
-          return data;
+          data = self.escapeIfNeeded(data);
+          data = self.apos.util.globalReplace(data.toString(), '\n', '<br />\n');
+          return self.safe(data);
         });
 
         // Newlines to paragraphs, produces better spacing and semantics
         env.addFilter('nlp', function (data) {
-          if (data === null || data === undefined) {
-            // don't crash, nunjucks tolerates nulls
-            return '';
-          }
+          data = self.escapeIfNeeded(data);
           const parts = data.toString().split(/\n/);
           const output = _.map(parts, function (part) {
             return '<p>' + part + '</p>\n';
           }).join('');
-          return output;
+          return self.safe(output);
         });
 
         // Convert the camelCasedString s to a hyphenated-string,
