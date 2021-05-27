@@ -33,7 +33,7 @@ module.exports = {
         component: 'AposCellLastEdited'
       },
       'draft:submitted.by': {
-        label: 'Proposed By',
+        label: 'User',
         component: 'AposCellBasic'
       }
     },
