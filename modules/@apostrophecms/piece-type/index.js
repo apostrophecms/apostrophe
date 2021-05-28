@@ -7,7 +7,8 @@ module.exports = {
     perPage: 10,
     quickCreate: true,
     previewDraft: true,
-    showCreate: true
+    showCreate: true,
+    previewable: false
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -142,6 +143,7 @@ module.exports = {
     self.name = self.options.name;
     self.label = self.options.label;
     self.pluralLabel = self.options.pluralLabel;
+    self.previewable = self.options.previewable;
 
     self.composeFilters();
     self.composeColumns();
@@ -197,7 +199,10 @@ module.exports = {
     async post(req) {
       self.publicApiCheck(req);
       if (req.body._newInstance) {
-        return self.newInstance();
+        const newInstance = self.newInstance();
+        newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
+        delete newInstance._url;
+        return newInstance;
       }
       return await self.convertInsertAndRefresh(req, req.body);
     },
@@ -479,17 +484,21 @@ module.exports = {
         );
       },
       // Add `._url` properties to the given pieces, if possible.
-      // The default implementation does nothing, however
-      // [@apostrophecms/piece-page-type](../@apostrophecms/piece-page-type/index.html) will
-      // call `setAddUrls` to point to [its own `addUrlsToPieces` method](../@apostrophecms/piece-page-type/index.html#addUrlsToPieces).
       async addUrls(req, pieces) {
+        if (self.addUrlsViaModule) {
+          return self.addUrlsViaModule.addUrlsToPieces(req, pieces);
+        }
       },
-      // Called by [@apostrophecms/piece-page-type](../@apostrophecms/piece-page-type/index.html) to
-      // replace the default `addUrls` async method with one that assigns `._url`
-      // properties to pieces based on the most suitable pages of that type.
-      // See [the `addUrlsToPieces` method of `@apostrophecms/piece-page-type`](../@apostrophecms/piece-page-type/index.html#addUrlsToPieces).
-      setAddUrls(fn) {
-        self.addUrls = fn;
+      // Typically called by a piece-page-type to register itself as the
+      // module providing `_url` properties to this type of piece. The addUrls
+      // method will invoke the addUrlsToPieces method of that type.
+      //
+      // If previewable is true, then this means the pieces are potentially
+      // previewable ("save and preview" is a sensible operation to offer
+      // for them).
+      addUrlsVia(module, previewable) {
+        self.addUrlsViaModule = module;
+        self.previewable = previewable;
       },
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation, and
