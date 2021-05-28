@@ -20,17 +20,15 @@ module.exports = {
         _defaults: {
           title: 'Home',
           type: '@apostrophecms/home-page'
-        },
-        _children: [
-          {
-            slug: '/archive',
-            parkedId: 'archive',
-            type: '@apostrophecms/archive-page',
-            archived: true,
-            orphan: true,
-            title: 'Archive'
-          }
-        ]
+        }
+      },
+      {
+        slug: '/archive',
+        parkedId: 'archive',
+        type: '@apostrophecms/archive-page',
+        archived: true,
+        orphan: true,
+        title: 'Archive'
       }
     ]
   },
@@ -49,7 +47,11 @@ module.exports = {
   },
   async init(self) {
     self.typeChoices = self.options.types || [];
-    self.parked = self.options.minimumPark.concat(self.options.park || []);
+    // If "park" redeclares something with a parkedId present in "minimumPark",
+    // the later one should win
+    self.parked = self.options.minimumPark.concat(self.options.park || []).filter((page, i, parked) => {
+      return !parked.slice(i + 1).find(laterPage => page.parkedId === laterPage.parkedId);
+    });
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
