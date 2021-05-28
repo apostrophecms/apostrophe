@@ -78,12 +78,14 @@ module.exports = {
   filters: {
     remove: [ 'visibility' ]
   },
-  methods(self) {
+  handlers(self) {
     return {
-      addUrls(req, files) {
-        _.each(files, function (file) {
-          file._url = self.apos.attachment.url(file.attachment);
-        });
+      addUrls: {
+        addAttachmentUrls(req, files) {
+          for (const file of files) {
+            file._url = self.apos.attachment.url(file.attachment);
+          }
+        }
       }
     };
   }

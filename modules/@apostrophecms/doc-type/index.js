@@ -1533,20 +1533,15 @@ module.exports = {
           }
         },
 
-        // `.addUrls(true)`. Invokes the `addUrls` method of all doc type managers
-        // with relevant docs among the results, if they have one.
+        // `.addUrls(true)`. Emits the `addUrls` event for each piece type, which
+        // allows piece page types and possibly other modules to respond by setting
+        // the `_url` property of the pieces they deem relevant.
         //
-        // The `addUrls` method receives `(req, docs)`. All of the docs will be of
-        // the appropriate type for that manager.
+        // The event receives `(req, docs)`. All of the docs will be of
+        // the same type.
         //
-        // The `addUrls` method should add the `._url` property to each doc,
-        // if possible.
-        //
-        // If it is not possible (there is no corresponding pieces-page)
-        // it may be left unset.
-        //
-        // Defaults to `true`. If set to false, `addUrls` methods are
-        // not invoked.
+        // Defaults to `true`. If set to false, `addUrls` events are
+        // not emitted.
 
         addUrls: {
           def: true,
@@ -1558,17 +1553,15 @@ module.exports = {
             }
             const byType = {};
             for (const doc of results) {
-              byType[doc.type] = byType[doc.type] || [];
-              byType[doc.type].push(doc);
-            }
-            const interesting = Object.keys(byType).filter(type => {
               // Don't freak out if the projection was really conservative
-              // and the type is unknown, etc.
-              const manager = self.apos.doc.getManager(type);
-              return manager && manager.addUrls;
-            });
-            for (const type of interesting) {
-              await self.apos.doc.getManager(type).addUrls(req, byType[type]);
+              // and the type is unknown
+              if (self.apos.doc.getManager(doc.type)) {
+                byType[doc.type] = byType[doc.type] || [];
+                byType[doc.type].push(doc);
+              }
+            }
+            for (const [ type, docs ] of byType) {
+              await self.apos.doc.getManager(type).emit('addUrls', req, docs);
             }
           }
         },

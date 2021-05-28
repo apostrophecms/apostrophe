@@ -36,8 +36,6 @@ module.exports = {
     self.piecesCssName = self.apos.util.cssName(self.pieces.name);
 
     self.piecesFilters = self.options.piecesFilters || [];
-
-    self.enableAddUrlsToPieces();
   },
   methods(self) {
     return {
@@ -225,7 +223,7 @@ module.exports = {
 
       // Adds the `._url` property to all of the provided pieces,
       // which are assumed to be of the appropriate type for this module.
-      // Aliased as the `addUrls` method of [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html).
+      // Invoked by an addUrls handler
 
       async addUrlsToPieces(req, results) {
         const pieceName = self.pieces.name;
@@ -256,13 +254,6 @@ module.exports = {
 
       findForAddUrlsToPieces(req) {
         return self.find(req).areas(false).relationships(false);
-      },
-
-      // Configure our `addUrlsToPieces` method as the `addUrls` method
-      // of the related pieces module.
-
-      enableAddUrlsToPieces() {
-        self.pieces.setAddUrls(self.addUrlsToPieces);
       },
 
       // Populate `req.data.piecesFilters` with arrays of choice objects,
@@ -304,6 +295,15 @@ module.exports = {
           };
         } else {
           return data;
+        }
+      }
+    };
+  },
+  handlers(self) {
+    return {
+      [`${self.pieceModuleName}:addUrls`]: {
+        addUrlsToPieces(req, pieces) {
+          return self.addUrlsToPieces(req, pieces);
         }
       }
     };
