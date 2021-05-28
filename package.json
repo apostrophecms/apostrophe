@@ -27,8 +27,6 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
-    "@babel/core": "^7.13.16",
-    "@babel/preset-env": "^7.13.15",
     "@tiptap/extension-highlight": "*",
     "@tiptap/extension-link": "*",
     "@tiptap/extension-text-align": "*",

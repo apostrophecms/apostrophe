@@ -7,7 +7,6 @@
       v-if="editor"
     >
       <AposContextMenuDialog
-        v-if="editor"
         menu-placement="top"
         class-list="apos-rich-text-toolbar"
         :has-tip="false"
@@ -111,15 +110,7 @@ export default {
         : (this.options.toolbar || this.defaultOptions.toolbar);
     },
     tools() {
-      let tools = this.moduleOptions.tools;
-      if (this.editorOptions.tools) {
-        tools = {
-          ...tools,
-          ...this.editorOptions.tools
-        };
-      }
-      return tools;
-      // return this.moduleOptions.tools;
+      return this.moduleOptions.tools;
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
