@@ -12,6 +12,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 - Removed many unused dependencies.
 - The data retained for "Undo Publish" no longer causes slug conflicts in certain situations.
 - Custom piece types using `localized: false` or `autopublish: true,` as well as singleton types, now display the correct options on the "Save" dropdown.
+- The "Save and View," "Publish and View" and/or "Save Draft and Preview" options now appear only if an appropriate piece page actually exists for the piece type.
 
 ### Notices
 
