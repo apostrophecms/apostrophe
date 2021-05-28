@@ -7,8 +7,7 @@ module.exports = {
     perPage: 10,
     quickCreate: true,
     previewDraft: true,
-    showCreate: true,
-    previewable: false
+    showCreate: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -143,7 +142,6 @@ module.exports = {
     self.name = self.options.name;
     self.label = self.options.label;
     self.pluralLabel = self.options.pluralLabel;
-    self.previewable = self.options.previewable;
 
     self.composeFilters();
     self.composeColumns();
@@ -492,13 +490,8 @@ module.exports = {
       // Typically called by a piece-page-type to register itself as the
       // module providing `_url` properties to this type of piece. The addUrls
       // method will invoke the addUrlsToPieces method of that type.
-      //
-      // If previewable is true, then this means the pieces are potentially
-      // previewable ("save and preview" is a sensible operation to offer
-      // for them).
-      addUrlsVia(module, previewable) {
+      addUrlsVia(module) {
         self.addUrlsViaModule = module;
-        self.previewable = previewable;
       },
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation, and
