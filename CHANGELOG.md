@@ -39,6 +39,10 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 - `AposModal` now emits a `ready` event when it is fully painted and can be interacted with by users or code.
 - The video widget is now compatible with vimeo private videos when the domain is on the allowlist in vimeo.
 
+### Changes
+
+- You can now override the parked page definition for the home page without copying the entirety of `minimumPark` from the source code. Specifically, you will not lose the root archive page if you park the home page without explicitly parking the archive page as well. This makes it easier to choose your own type for the home page, in lieu of `@apostrophecms/home-page`.
+
 ### Fixes
 
 - Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
