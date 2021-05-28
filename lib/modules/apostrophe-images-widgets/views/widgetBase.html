@@ -46,7 +46,9 @@
           </div>
         {%- endfor -%}
       {%- elseif data.widget._edit -%}
-        <h4>No images are currently selected.</h4>
+        <div class="apos-ui apos-empty-image">
+          <p>No images are currently selected.</p>
+        </div>
       {%- endif -%}
     {%- endblock -%}
   </div>

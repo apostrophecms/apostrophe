@@ -25,9 +25,7 @@
   // Rich texts have an empty state with a min-height and a background color.
   &.apos-empty
   {
-    min-height: 100px;
-    background-color: @apos-light;
-    .apos-area-widget-controls { opacity: 1; }
+    .apos-empty-widget();
   }
   // A focus state for rich text widgets while editing.
   >[data-rich-text]:focus
