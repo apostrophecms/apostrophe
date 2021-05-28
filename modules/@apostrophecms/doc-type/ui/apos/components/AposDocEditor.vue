@@ -723,18 +723,9 @@ export default {
       const typeLabel = this.moduleOptions
         ? this.moduleOptions.label.toLowerCase()
         : 'document';
-      const newBlocklist = [ '@apostrophecms/global' ];
-      const previewBlocklist = [
-        '@apostrophecms/global',
-        '@apostrophecms/file',
-        '@apostrophecms/file-tag',
-        '@apostrophecms/image',
-        '@apostrophecms/image-tag',
-        '@apostrophecms/user'
-      ];
       const isNew = !this.docId;
-      const canPreview = !previewBlocklist.includes(this.moduleName);
-      const canNew = !newBlocklist.includes(this.moduleName);
+      const canPreview = this.manuallyPublished;
+      const canNew = this.moduleOptions.showCreate;
       const menu = [
         {
           label: this.saveLabel,
