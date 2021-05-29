@@ -211,7 +211,7 @@ module.exports = {
       // or email address has been claimed by another user in the meanwhile.
 
       addOurArchivedPrefixFields() {
-        self.addArchivedPrefixFields([
+        self.addDeduplicatePrefixFields([
           'username',
           'email'
         ]);
