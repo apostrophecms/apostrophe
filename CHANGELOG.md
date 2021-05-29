@@ -1,6 +1,10 @@
 # Changelog
 
-## UNANNOUNCED
+## UNRELEASED
+
+### Changes
+
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
 
 ### Security Fixes
 
