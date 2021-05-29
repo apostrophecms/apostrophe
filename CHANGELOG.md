@@ -1,10 +1,18 @@
 # Changelog
 
-## UNANNOUNCED
+## UNRELEASED
+
+### Changes
+
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
 
 ### Security Fixes
 
 The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve the tags that they added, without first escaping their input, creating a CSRF risk. These filters have been updated to escape their input unless it has already been marked safe. No code changes are required to templates whose input to the filter is intended as plaintext, however if you were intentionally leveraging this bug to output unescaped HTML markup you will need to make sure your input is free of CSRF risks and then use the `| safe` filter before the `| nlbr` or `| nlp` filter.
+
+### Changes
+
+- If you refresh the page while previewing or editing, you will be returned to that same state.
 
 ### Fixes
 
