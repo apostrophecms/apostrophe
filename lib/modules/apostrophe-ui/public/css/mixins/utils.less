@@ -110,3 +110,11 @@
   overflow: hidden;    
 }
 
+.apos-empty-widget(@minHeight: 100px) {
+    min-height: @minHeight;
+    background-color: @apos-light;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    .apos-area-widget-controls { opacity: 1; }
+}

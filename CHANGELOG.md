@@ -1,5 +1,6 @@
-
 ## Unreleased
+
+* Existing `apostrophe-images-widgets` that exist but have no images will now show a message asking the editor to select new images.
 
 ### Features
 
