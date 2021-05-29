@@ -84,8 +84,8 @@ module.exports = {
     //
     // For suffixes, @apostrophecms/page will take care of adding and removing
     // them from earlier components in the path or slug as required.
-    self.archivedPrefixFields = [ 'slug' ];
-    self.archivedSuffixFields = [];
+    self.deduplicatePrefixFields = [ 'slug' ];
+    self.deduplicateSuffixFields = [];
     self.composeSchema();
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
@@ -186,99 +186,20 @@ module.exports = {
             self.emit('afterDelete', req, previous, { checkForChildren: false });
           }
         },
-        deduplicateArchive(req, doc) {
-          const deduplicateKey = doc.aposDocId;
-          if (doc.parkedId === 'archive') {
-            // The primary archive itself should not deduplicate
-            return;
+        async deduplicate(req, doc) {
+          const $set = await self.getDeduplicationSet(req, doc);
+          Object.assign(doc, $set);
+          if (Object.keys($set).length) {
+            return self.apos.doc.db.updateOne({ _id: doc._id }, { $set });
           }
-          const prefix = 'deduplicate-' + deduplicateKey + '-';
-          const suffix = '-deduplicate-' + deduplicateKey;
-          const $set = {};
-          _.each(self.archivedPrefixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            if (doc[name].substr(0, prefix.length) !== prefix) {
-              $set[name] = prefix + doc[name];
-              // So methods called later, or extending this method, see the change in piece
-              doc[name] = $set[name];
-            }
-          });
-          _.each(self.archivedSuffixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            if (doc[name].substr(doc[name].length - suffix.length) !== suffix) {
-              $set[name] = doc[name] + suffix;
-              // So methods called later, or extending this method, see the change in piece
-              doc[name] = $set[name];
-            }
-          });
-          if (_.isEmpty($set)) {
-            return;
-          }
-          return self.apos.doc.db.updateOne({ _id: doc._id }, { $set: $set });
         }
       },
       afterRescue: {
-        async deduplicateRescue(req, doc) {
-          if (doc.parkedId === 'archive') {
-            // The primary archive itself should not deduplicate
-            return;
-          }
-          const deduplicateKey = doc.aposDocId;
-          const prefix = 'deduplicate-' + deduplicateKey + '-';
-          const suffix = '-deduplicate-' + deduplicateKey;
-          const $set = {};
-          _.each(self.archivedPrefixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            $set[name] = doc[name].replace(prefix, '');
-          });
-          _.each(self.archivedSuffixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            $set[name] = doc[name].replace(suffix, '');
-          });
-          for (const field of self.archivedPrefixFields.concat(self.archivedSuffixFields)) {
-            await checkOne(field);
-          }
-          await update();
-          async function checkOne(name) {
-            const query = {
-              type: self.name,
-              _id: { $ne: doc._id }
-            };
-            if (doc.aposLocale) {
-              query.aposLocale = doc.aposLocale;
-            }
-            query[name] = $set[name];
-            if ($set[name] === '') {
-              // Assume sparse index if empty strings are seen; don't
-              // generate lots of weird prefix-only email addresses
-              return;
-            }
-            const found = await self.apos.doc.db.findOne(query, { _id: 1 });
-            if (found) {
-              delete $set[name];
-            }
-          }
-          async function update() {
-            const action = { $set: $set };
-            // So methods called later, or extending this method, see the change in docs
-            _.assign(doc, $set);
-            if (_.isEmpty($set)) {
-              // Nothing to do
-              return;
-            }
-            return self.apos.doc.db.updateOne({ _id: doc._id }, action);
+        async revertDeduplication(req, doc) {
+          const $set = await self.getRevertDeduplicationSet(req, doc);
+          if (Object.keys($set).length) {
+            Object.assign(doc, $set);
+            return self.apos.doc.db.updateOne({ _id: doc._id }, { $set });
           }
         }
       },
@@ -323,17 +244,17 @@ module.exports = {
           return self.apos.launder.strings(choices);
         }
       },
-      addArchivedPrefixFields(fields) {
-        self.archivedPrefixFields = self.archivedPrefixFields.concat(fields);
+      addDeduplicatePrefixFields(fields) {
+        self.deduplicatePrefixFields = self.deduplicatePrefixFields.concat(fields);
       },
-      removeArchivedPrefixFields(fields) {
-        self.archivedPrefixFields = _.difference(self.archivedPrefixFields, fields);
+      removeDeduplicatePrefixFields(fields) {
+        self.deduplicatePrefixFields = _.difference(self.deduplicatePrefixFields, fields);
       },
-      addArchivedSuffixFields(fields) {
-        self.archivedSuffixFields = self.archivedSuffixFields.concat(fields);
+      addDeduplicateSuffixFields(fields) {
+        self.deduplicateSuffixFields = self.deduplicateSuffixFields.concat(fields);
       },
-      removeArchivedSuffixFields(fields) {
-        self.archivedSuffixFields = _.difference(self.archivedSuffixFields, fields);
+      removeDeduplicateSuffixFields(fields) {
+        self.deduplicateSuffixFields = _.difference(self.deduplicateSuffixFields, fields);
       },
       // Returns a query that will only yield docs of the appropriate type
       // as determined by the `name` option of the module.
@@ -760,6 +681,7 @@ module.exports = {
         if (previousPublished) {
           previousPublished._id = previousPublished._id.replace(':published', ':previous');
           previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
+          Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
           await self.apos.doc.db.replaceOne({
             _id: previousPublished._id
           }, previousPublished, {
@@ -845,7 +767,8 @@ module.exports = {
           // Feature has already been used
           throw self.apos.error('invalid');
         }
-
+        const $set = await self.getRevertDeduplicationSet(req, previous);
+        Object.assign(previous, $set);
         // We must load relationships as if we had done a regular find
         // because relationships are read/write in A3,
         // but we don't have to call widget loaders
@@ -930,6 +853,105 @@ module.exports = {
           return _id;
         } else {
           return self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        }
+      },
+
+      // Returns an object containing the properties of doc that
+      // require deduplication when archived, stored as
+      // "previous published" or any other scenario where the slug
+      // and similar properties should never be treated as "in conflict"
+      // with content that is in play on the site. The returned object
+      // contains values for those properties that have been deduplicated, and
+      // can be passed to $set or Object.assign or both, depending on your
+      // situation. `doc` is not changed.
+
+      async getDeduplicationSet(req, doc) {
+        const deduplicateKey = doc.aposDocId;
+        if (doc.parkedId === 'archive') {
+          // The primary archive itself should not deduplicate
+          // and is never "previous published", either
+          return {};
+        }
+        const prefix = 'deduplicate-' + deduplicateKey + '-';
+        const suffix = '-deduplicate-' + deduplicateKey;
+        const $set = {};
+        _.each(self.deduplicatePrefixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          if (doc[name].substr(0, prefix.length) !== prefix) {
+            $set[name] = prefix + doc[name];
+          }
+        });
+        _.each(self.deduplicateSuffixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          if (doc[name].substr(doc[name].length - suffix.length) !== suffix) {
+            $set[name] = doc[name] + suffix;
+          }
+        });
+        return $set;
+      },
+
+      // Returns an object containing the properties of doc that
+      // were formerly deduplicated (and require restoration of the original slug
+      // and other potentially conflicting properties) when restored from the
+      // archive, used to "undo publish" or any other scenario where the slug
+      // and similar properties should once again treated as "in conflict"
+      // with content that is in play on the site. The returned object
+      // contains values for those properties that have been reduplicated, and
+      // can be passed to $set or Object.assign or both, depending on your
+      // situation. If existing docs on the site would immediately conflict,
+      // then those particular fields are left in their "deduplicated"
+      // form for the user to fix manually. `doc` is not changed.
+
+      async getRevertDeduplicationSet(req, doc) {
+        if (doc.parkedId === 'archive') {
+          // The primary archive itself should not deduplicate
+          return;
+        }
+        const deduplicateKey = doc.aposDocId;
+        const prefix = 'deduplicate-' + deduplicateKey + '-';
+        const suffix = '-deduplicate-' + deduplicateKey;
+        const $set = {};
+        _.each(self.deduplicatePrefixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          $set[name] = doc[name].replace(prefix, '');
+        });
+        _.each(self.deduplicateSuffixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          $set[name] = doc[name].replace(suffix, '');
+        });
+        for (const field of self.deduplicatePrefixFields.concat(self.deduplicateSuffixFields)) {
+          await checkOne(field);
+        }
+        return $set;
+        async function checkOne(name) {
+          const query = {
+            _id: { $ne: doc._id }
+          };
+          if (doc.aposLocale) {
+            query.aposLocale = doc.aposLocale;
+          }
+          query[name] = $set[name];
+          if ($set[name] === '') {
+            // Assume sparse index if empty strings are seen; don't
+            // generate lots of weird prefix-only email addresses
+            return;
+          }
+          const found = await self.apos.doc.db.findOne(query, { _id: 1 });
+          if (found) {
+            delete $set[name];
+          }
         }
       }
     };
