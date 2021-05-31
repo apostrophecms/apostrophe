@@ -6,6 +6,16 @@
 
 * When `enableAltField` option is set to `true`, we now copy the `alt` field from `apostrophe-images` schema to the `attachment` piece when using `apos.images.first` or `apos.attachments.first`.
 
+## 2.119.1 (2021-05-27)
+
+### Security Fixes
+
+The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve the tags that they added, without first escaping their input, creating a CSRF risk. These filters have been updated to escape their input unless it has already been marked safe. No code changes are required to templates whose input to the filter is intended as plaintext, however if you were intentionally leveraging this bug to output unescaped HTML markup you will need to make sure your input is free of CSRF risks and then use the `| safe` filter before the `| nlbr` or `| nlp` filter.
+
+### Fixes
+
+* Updates uses of "whitelist" to "allowlist" to follow project practices.
+
 ## 2.119.0 (2021-05-20)
 
 ### Fixes

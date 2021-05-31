@@ -715,7 +715,7 @@ describe('Docs', function() {
     });
   });
 
-  it('should be able to execute a projection with both a key and its subkey regardless of mongodb version', async() => {
+  it('should be able to execute a projection with both a key and its subkey regardless of mongodb version', async function() {
 
     const manager = apos.docs.getManager('test-person');
     const person = await manager.find(apos.tasks.getAnonReq(), { slug: 'lori' }, {

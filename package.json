@@ -1,10 +1,10 @@
 {
   "name": "apostrophe",
-  "version": "2.119.0",
+  "version": "2.119.1",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "test": "npm run lint && npm run audit && mocha",
+    "test": "npm run lint && npm run audit && mocha --timeout 50000",
     "audit": "npm audit",
     "lint": "eslint ."
   },
