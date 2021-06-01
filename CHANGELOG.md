@@ -5,14 +5,21 @@
 ### Adds
 
 - Rich text editor adds support for text align controls as part of the upgrade to tiptap 2.x beta (see "changes").
+- Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
+- Field type `color` supports an option for what color format to save the value as. Supported formats are "rgb", "prgb", "hex6", "hex3", "hex8", "name", "hsl", "hsv". Pass the `format` string like:
+```js
+myColorField: {
+  type: 'color',
+  label: 'My Color',
+  options: {
+    format: 'hsl'
+  }
+}
+```
 
 ### Security Fixes
 
 The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve the tags that they added, without first escaping their input, creating a CSRF risk. These filters have been updated to escape their input unless it has already been marked safe. No code changes are required to templates whose input to the filter is intended as plaintext, however if you were intentionally leveraging this bug to output unescaped HTML markup you will need to make sure your input is free of CSRF risks and then use the `| safe` filter before the `| nlbr` or `| nlp` filter.
-
-### Adds
-
-Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
 
 ### Fixes
 

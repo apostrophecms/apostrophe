@@ -48,6 +48,7 @@ export default {
       active: false,
       tinyColorObj: null,
       startsNull: false,
+      defaultFormat: 'hex8',
       defaultPickerOptions: {
         presetColors: [
           '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
@@ -55,8 +56,7 @@ export default {
           '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
         ],
         disableAlpha: false,
-        disableFields: false,
-        format: 'hex8'
+        disableFields: false
       }
     };
   },
@@ -68,6 +68,11 @@ export default {
         color: this.value.data || ''
       };
     },
+    format() {
+      return this.field.options && this.field.options.format
+        ? this.field.options.format
+        : this.defaultFormat;
+    },
     pickerOptions() {
       let fieldOptions = {};
       if (this.field.options && this.field.options.pickerOptions) {
@@ -75,6 +80,7 @@ export default {
       }
       return Object.assign(this.defaultPickerOptions, fieldOptions);
     },
+
     valueLabel() {
       if (this.next) {
         return this.next;
@@ -106,12 +112,12 @@ export default {
     },
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
-      this.next = this.tinyColorObj.toString(this.pickerOptions.format);
+      this.next = this.tinyColorObj.toString(this.format);
 
       if (this.startsNull) {
         // As a basic UX courtesey make sure to reset the alpha value of an orginally null value back to 1
         // as it was previously set to 0 by us, not the user.
-        this.next = this.tinyColorObj.setAlpha(1).toString(this.pickerOptions.format);
+        this.next = this.tinyColorObj.setAlpha(1).toString(this.format);
         this.startsNull = false;
       }
     },
