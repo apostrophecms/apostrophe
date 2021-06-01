@@ -6,7 +6,7 @@
       class="apos-tiptap-control apos-tiptap-control--select"
     >
       <option
-        v-for="(style, i) in options.styles"
+        v-for="(style, i) in styles"
         :value="i"
         :key="style.label"
       >
@@ -43,28 +43,34 @@ export default {
       default() {
         return {};
       }
+    },
+    styles: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   computed: {
     active() {
-      const styles = this.options.styles || [];
+      const styles = this.styles || [];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
-        const attrs = {
-          tag: style.tag,
-          class: style.class || null
-        };
-        if (this.editor.isActive.styles(attrs)) {
+        if (this.editor.isActive(style.type, (style.options || {}))) {
           return i;
         }
       }
       return 0;
+    },
+    moduleOptions() {
+      return window.apos.modules['@apostrophecms/rich-text-widget'];
     }
   },
   methods: {
     setStyle($event) {
-      const style = this.options.styles[$event.target.value];
-      this.editor.commands.styles(style);
+      const style = this.styles[$event.target.value];
+      this.editor.commands.focus();
+      this.editor.commands[style.command](style.type, style.options || {});
     }
   }
 };

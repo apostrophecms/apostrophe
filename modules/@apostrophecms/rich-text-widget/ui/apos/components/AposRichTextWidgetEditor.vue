@@ -1,18 +1,16 @@
 <template>
-  <div class="apos-rich-text-editor">
-    <component
-      :is="menuType"
+  <div>
+    <bubble-menu
+      class="bubble-menu"
+      :tippy-options="{ duration: 100 }"
       :editor="editor"
-      :keep-in-bounds="false"
-      v-slot="{ menu, focused }"
+      v-if="editor"
     >
       <AposContextMenuDialog
         menu-placement="top"
         class-list="apos-rich-text-toolbar"
         :has-tip="false"
         :modifiers="['unpadded']"
-        :class="extraClasses(menu, focused)"
-        :style="`left: ${menu ? menu.left : 0}px; bottom: ${menu ? menu.bottom : 0}px;`"
       >
         <div class="apos-rich-text-toolbar__inner">
           <component
@@ -23,10 +21,11 @@
             :tool="tools[item]"
             :options="editorOptions"
             :editor="editor"
+            :styles="styles"
           />
         </div>
       </AposContextMenuDialog>
-    </component>
+    </bubble-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
@@ -37,36 +36,17 @@
 import {
   Editor,
   EditorContent,
-  EditorMenuBar,
-  EditorMenuBubble
-} from 'tiptap';
-
-import {
-  HardBreak,
-  ListItem,
-  OrderedList,
-  BulletList,
-  Bold,
-  Italic,
-  History,
-  Strike,
-  Blockquote,
-  CodeBlock,
-  HorizontalRule
-} from 'tiptap-extensions';
-
-// Here because we cannot access computed inside data
-
-function moduleOptionsBody(type) {
-  return apos.modules[apos.area.widgetManagers[type]];
-}
-
+  BubbleMenu
+} from '@tiptap/vue-2';
+import StarterKit from '@tiptap/starter-kit';
+import TextAlign from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
+import TextStyle from '@tiptap/extension-text-style';
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
-    EditorMenuBar,
     EditorContent,
-    EditorMenuBubble
+    BubbleMenu
   },
   props: {
     type: {
@@ -93,38 +73,8 @@ export default {
   },
   emits: [ 'update' ],
   data() {
-    const defaultOptions = moduleOptionsBody(this.type).defaultOptions;
-    const toolbar = this.options.toolbar === false ? []
-      : (this.options.toolbar || defaultOptions.toolbar);
-    let initial = this.stripPlaceholderBrs(this.value.content);
-    if (!initial.trim().length) {
-      const defaultStyle = (this.options.styles && this.options.styles[0]) || {
-        tag: 'p'
-      };
-      const defaultClass = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
-      initial = `<${defaultStyle.tag}${defaultClass}></${defaultStyle.tag}>`;
-    }
     return {
-      tools: moduleOptionsBody(this.type).tools,
-      toolbar,
-      editor: new Editor({
-        extensions: [
-          new BulletList(),
-          new HardBreak(),
-          new ListItem(),
-          new OrderedList(),
-          new Bold(),
-          new Italic(),
-          new History(),
-          new Strike(),
-          new Blockquote(),
-          new CodeBlock(),
-          new HorizontalRule()
-        ].concat((apos.tiptapExtensions || []).map(C => new C(computeEditorOptions(this.type, this.options)))),
-        autoFocus: true,
-        onUpdate: this.editorUpdate,
-        content: initial
-      }),
+      editor: null,
       docFields: {
         data: {
           ...this.value
@@ -136,16 +86,31 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return moduleOptionsBody(this.type);
+      return apos.modules[apos.area.widgetManagers[this.type]];
     },
     editorOptions() {
-      return computeEditorOptions(this.type, this.options);
+      const activeOptions = Object.assign({}, this.options);
+
+      // Allow toolbar option to pass through if `false`
+      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
+        ? activeOptions.toolbar : this.defaultOptions.toolbar;
+
+      activeOptions.styles = activeOptions.styles || this.defaultOptions.styles;
+
+      return activeOptions;
     },
-    menuType() {
-      if (this.options.menuType && this.options.menuType === 'block') {
-        return 'editor-menu-bar';
-      }
-      return 'editor-menu-bubble';
+    defaultOptions() {
+      return this.moduleOptions.defaultOptions;
+    },
+    initialContent() {
+      return this.stripPlaceholderBrs(this.value.content);
+    },
+    toolbar() {
+      return this.options.toolbar === false ? []
+        : (this.options.toolbar || this.defaultOptions.toolbar);
+    },
+    tools() {
+      return this.moduleOptions.tools;
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
@@ -158,6 +123,61 @@ export default {
         classes.push('is-visually-empty');
       }
       return classes;
+    },
+    tiptapTextCommands() {
+      return this.moduleOptions.tiptapTextCommands;
+    },
+    tiptapTypes() {
+      return this.moduleOptions.tiptapTypes;
+    },
+    // Enhances the dev-defined styles list with tiptap
+    // commands and parameters used internally.
+    styles() {
+      const self = this;
+      const styles = [];
+      this.options.styles.forEach(style => {
+        style.options = {};
+        for (const key in self.tiptapTextCommands) {
+          if (self.tiptapTextCommands[key].includes(style.tag)) {
+            style.command = key;
+          }
+        }
+        for (const key in self.tiptapTypes) {
+          if (self.tiptapTypes[key].includes(style.tag)) {
+            style.type = key;
+          }
+        }
+
+        // Set heading level
+        if (style.type === 'heading') {
+          const level = parseInt(style.tag.split('h')[1]);
+          style.options.level = level;
+        }
+
+        // Handle custom attributes
+        if (style.class) {
+          style.options.class = style.class;
+        }
+
+        if (style.type) {
+          styles.push(style);
+        } else {
+          apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
+            type: 'warning',
+            dismiss: true,
+            icon: 'text-box-remove-icon'
+          });
+        }
+      });
+
+      return styles;
+    },
+    aposTiptapExtensions() {
+      return (apos.tiptapExtensions || [])
+        .map(extension => extension({
+          styles: this.styles,
+          types: this.tiptapTypes
+        }));
     }
   },
   watch: {
@@ -169,25 +189,24 @@ export default {
       }
     }
   },
+  mounted() {
+    this.editor = new Editor({
+      content: this.initialContent,
+      autoFocus: true,
+      onUpdate: this.editorUpdate,
+      extensions: [
+        StarterKit,
+        TextAlign,
+        Highlight,
+        TextStyle
+      ].concat(this.aposTiptapExtensions)
+    });
+  },
+
   beforeDestroy() {
     this.editor.destroy();
   },
   methods: {
-    extraClasses(menu, focused) {
-      const classes = [];
-
-      classes.push(this.menuType);
-
-      if (menu && menu.isActive) {
-        classes.push('is-active');
-      }
-
-      if (focused && !menu) {
-        classes.push('is-active');
-      }
-
-      return classes.join(' ');
-    },
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
@@ -218,9 +237,6 @@ export default {
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });
     },
-    command(name, options) {
-      this.commands[name](options);
-    },
     // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
     // temporarily so the editing experience doesn't break due to contenteditable
     // issues with empty paragraphs, but strips them on save; however
@@ -237,27 +253,9 @@ export default {
   }
 };
 
-function computeEditorOptions(type, explicitOptions) {
-  const defaultOptions = moduleOptionsBody(type).defaultOptions;
-
-  const activeOptions = Object.assign({}, explicitOptions);
-
-  // Allow toolbar option to pass through if `false`
-  activeOptions.toolbar = (activeOptions.toolbar !== undefined)
-    ? activeOptions.toolbar : defaultOptions.toolbar;
-
-  activeOptions.styles = activeOptions.styles || defaultOptions.styles;
-
-  return activeOptions;
-}
 </script>
 
 <style lang="scss" scoped>
-
-  .apos-rich-text-toolbar {
-    opacity: 0;
-    pointer-events: none;
-  }
 
   .apos-rich-text-toolbar.editor-menu-bubble {
     z-index: $z-index-manager-toolbar;
@@ -268,11 +266,6 @@ function computeEditorOptions(type, explicitOptions) {
   .apos-rich-text-toolbar.editor-menu-bar {
     display: inline-block;
     margin-bottom: 10px;
-  }
-
-  .apos-rich-text-toolbar.is-active {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .apos-rich-text-toolbar__inner {
