@@ -199,10 +199,12 @@ module.exports = {
 
         if (req.body._newInstance) {
           // If we're looking for a fresh page instance and aren't saving yet,
-          // simply get a new page doc and return;
+          // simply get a new page doc and return it
           const parentPage = await self.findForEditing(req, { _id: targetId })
             .permission('edit', '@apostrophecms/any-page-type').toObject();
-          return self.newChild(parentPage);
+          const newChild = self.newChild(parentPage);
+          newChild._previewable = true;
+          return newChild;
         }
 
         return self.withLock(req, async () => {
