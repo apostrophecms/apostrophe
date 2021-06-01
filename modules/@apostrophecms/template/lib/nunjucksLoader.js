@@ -147,13 +147,13 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
             self.templates.apos.util.warnDevOnce('async-in-macros',
               stripIndent`The Nunjucks template:
 
-${fullpath}
+              ${fullpath}
 
-Attempts to use {% area %} or {% component %} inside {% macro %}.
+              attempts to use {% area %} or {% component %} inside {% macro %}.
 
-This will not work. Replace {% macro %}...{% endmacro %} with
-{% fragment %}...{% endfragment %}. Also replace every call to
-the macro with {% render fragmentName(arguments) %}.`
+              This will not work. Replace {% macro %}...{% endmacro %} with
+              {% fragment %}...{% endfragment %}. Also replace every call to
+              the macro with {% render fragmentName(arguments) %}.`
             );
           }
         }
