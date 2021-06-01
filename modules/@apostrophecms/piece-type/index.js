@@ -197,7 +197,10 @@ module.exports = {
     async post(req) {
       self.publicApiCheck(req);
       if (req.body._newInstance) {
-        return self.newInstance();
+        const newInstance = self.newInstance();
+        newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
+        delete newInstance._url;
+        return newInstance;
       }
       return await self.convertInsertAndRefresh(req, req.body);
     },
@@ -479,17 +482,16 @@ module.exports = {
         );
       },
       // Add `._url` properties to the given pieces, if possible.
-      // The default implementation does nothing, however
-      // [@apostrophecms/piece-page-type](../@apostrophecms/piece-page-type/index.html) will
-      // call `setAddUrls` to point to [its own `addUrlsToPieces` method](../@apostrophecms/piece-page-type/index.html#addUrlsToPieces).
       async addUrls(req, pieces) {
+        if (self.addUrlsViaModule) {
+          return self.addUrlsViaModule.addUrlsToPieces(req, pieces);
+        }
       },
-      // Called by [@apostrophecms/piece-page-type](../@apostrophecms/piece-page-type/index.html) to
-      // replace the default `addUrls` async method with one that assigns `._url`
-      // properties to pieces based on the most suitable pages of that type.
-      // See [the `addUrlsToPieces` method of `@apostrophecms/piece-page-type`](../@apostrophecms/piece-page-type/index.html#addUrlsToPieces).
-      setAddUrls(fn) {
-        self.addUrls = fn;
+      // Typically called by a piece-page-type to register itself as the
+      // module providing `_url` properties to this type of piece. The addUrls
+      // method will invoke the addUrlsToPieces method of that type.
+      addUrlsVia(module) {
+        self.addUrlsViaModule = module;
       },
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation, and
