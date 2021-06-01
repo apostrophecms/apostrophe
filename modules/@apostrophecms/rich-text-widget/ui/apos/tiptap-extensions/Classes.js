@@ -6,7 +6,7 @@ export default (options) => {
   const allow = {};
   options.styles.forEach(style => {
     const tag = style.tag.toLowerCase();
-    allow[tag] = (allow[tag] || []).concat(...(style.class ? style.class.split(' ') : []));
+    allow[tag] = (allow[tag] || []).concat(...(style.class ? style.class.split(' ') : [ null ]));
   });
   return Extension.create({
     addGlobalAttributes() {
@@ -33,8 +33,8 @@ export default (options) => {
                   .split(' ')
                   .filter(c => allow[tag].includes(c));
                 // If we have valid classes, join and return them.
-                // If no valid classes for this parse, but classes
-                // are defined for this element, default to the first.
+                // If no valid classes for this parse, default to the
+                // the first setting for this tag (including null for tags defined without classes).
                 // else, remove classes.
                 return {
                   class: classes.length

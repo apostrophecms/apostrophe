@@ -33,7 +33,7 @@
           :schema="schema"
           v-model="value"
           :modifiers="formModifiers"
-          :key="schemaKey"
+          :key="lastSelectionTime"
         />
         <footer class="apos-link-control__footer">
           <AposButton
@@ -77,9 +77,6 @@ export default {
       target: null,
       active: false,
       hasLinkOnOpen: false,
-      // uses key hack to force refresh among selections
-      // so that schema values aren't erronously carried from selection to selection
-      schemaKey: 'apostrophe3whips',
       value: {
         data: {}
       },
@@ -108,8 +105,15 @@ export default {
     buttonActive() {
       return this.value.data && this.value.data.href;
     },
+    lastSelectionTime() {
+      return this.editor.view.lastSelectionTime;
+    },
     hasSelection() {
-      return this.editor.view.state.selection.ranges[0].$from.pos !== this.editor.view.state.selection.ranges[0].$to.pos;
+      const { state } = this.editor;
+      const { selection } = this.editor.state;
+      const { from, to } = selection;
+      const text = state.doc.textBetween(from, to, '');
+      return text !== '';
     },
     offset() {
       const selection = window.getSelection();
@@ -121,7 +125,6 @@ export default {
   watch: {
     active(newVal) {
       if (newVal) {
-        this.schemaKey = this.editor.view.lastSelectionTime;
         this.hasLinkOnOpen = !!(this.value.data.href);
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
