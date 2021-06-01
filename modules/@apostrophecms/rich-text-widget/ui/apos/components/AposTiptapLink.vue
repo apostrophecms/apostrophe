@@ -10,7 +10,7 @@
       :modifiers="['no-border', 'no-motion']"
     />
     <div
-      v-show="active"
+      v-if="active"
       v-click-outside-element="close"
       class="apos-popover apos-link-control__dialog"
       x-placement="bottom"
@@ -155,8 +155,10 @@ export default {
       }
     },
     close() {
-      this.active = false;
-      this.editor.chain().focus();
+      if (this.active) {
+        this.active = false;
+        this.editor.chain().focus();
+      }
     },
     save() {
       // cleanup incomplete submissions
