@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+- Rich text editor adds support for text align controls as part of the upgrade to tiptap 2.x beta (see "changes").
+
 ### Security Fixes
 
 The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve the tags that they added, without first escaping their input, creating a CSRF risk. These filters have been updated to escape their input unless it has already been marked safe. No code changes are required to templates whose input to the filter is intended as plaintext, however if you were intentionally leveraging this bug to output unescaped HTML markup you will need to make sure your input is free of CSRF risks and then use the `| safe` filter before the `| nlbr` or `| nlp` filter.
@@ -15,8 +19,6 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 - The "Save and View," "Publish and View" and/or "Save Draft and Preview" options now appear only if an appropriate piece page actually exists for the piece type.
 - Duplicating a widget now properly assigns new IDs to all copied sub-widgets, sub-areas and array items as well.
 
-### Changes
-
 - Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
 - If you refresh the page while previewing or editing, you will be returned to that same state.
 
@@ -26,7 +28,11 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 
 ### Changes
 
-When logging out on a page that only exists in draft form, or a page with access controls, you are redirected to the home page rather than seeing a 404 message.
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
+
+- When logging out on a page that only exists in draft form, or a page with access controls, you are redirected to the home page rather than seeing a 404 message.
+
+- Rich text editor upgraded to [tiptap 2.x beta](https://www.tiptap.dev) :tada:. On the surface not a lot has changed with the upgrade, but tiptap 2 has big improvements in terms of speed, composability, and extension support. [See the technical differences of tiptap 1 and 2 here](https://www.tiptap.dev/overview/upgrade-guide#reasons-to-upgrade-to-tiptap-2x)
 
 ## 3.0.0-beta.2 - 2021-05-21
 

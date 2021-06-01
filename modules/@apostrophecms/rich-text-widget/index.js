@@ -56,52 +56,61 @@ module.exports = {
       bold: {
         component: 'AposTiptapButton',
         label: 'Bold',
-        icon: 'format-bold-icon'
+        icon: 'format-bold-icon',
+        command: 'toggleBold'
       },
       italic: {
         component: 'AposTiptapButton',
         label: 'Italic',
-        icon: 'format-italic-icon'
+        icon: 'format-italic-icon',
+        command: 'toggleItalic'
       },
       underline: {
         component: 'AposTiptapButton',
         label: 'Underline',
-        icon: 'format-underline-icon'
+        icon: 'format-underline-icon',
+        command: 'toggleUnderline'
       },
-      horizontal_rule: {
+      horizontalRule: {
         component: 'AposTiptapButton',
         label: 'Horizontal Rule',
-        icon: 'minus-icon'
+        icon: 'minus-icon',
+        command: 'setHorizontalRule'
       },
       link: {
         component: 'AposTiptapLink',
         label: 'Link',
         icon: 'link-icon'
       },
-      bullet_list: {
+      bulletList: {
         component: 'AposTiptapButton',
         label: 'Bulleted List',
-        icon: 'format-list-bulleted-icon'
+        icon: 'format-list-bulleted-icon',
+        command: 'toggleBulletList'
       },
-      ordered_list: {
+      orderedList: {
         component: 'AposTiptapButton',
         label: 'Ordered List',
-        icon: 'format-list-numbered-icon'
+        icon: 'format-list-numbered-icon',
+        command: 'toggleOrderedList'
       },
       strike: {
         component: 'AposTiptapButton',
         label: 'Strike',
-        icon: 'format-strikethrough-variant-icon'
+        icon: 'format-strikethrough-variant-icon',
+        command: 'toggleStrike'
       },
       blockquote: {
         component: 'AposTiptapButton',
         label: 'Blockquote',
-        icon: 'format-quote-close-icon'
+        icon: 'format-quote-close-icon',
+        command: 'toggleBlockquote'
       },
-      code_block: {
+      codeBlock: {
         component: 'AposTiptapButton',
         label: 'Code Block',
-        icon: 'code-tags-icon'
+        icon: 'code-tags-icon',
+        command: 'toggleCode'
       },
       undo: {
         component: 'AposTiptapButton',
@@ -112,7 +121,69 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'Redo',
         icon: 'redo-icon'
+      },
+      alignLeft: {
+        component: 'AposTiptapButton',
+        label: 'Align Left',
+        icon: 'format-align-left-icon',
+        command: 'setTextAlign',
+        commandParameters: 'left',
+        isActive: { textAlign: 'left' }
+      },
+      alignCenter: {
+        component: 'AposTiptapButton',
+        label: 'Align Center',
+        icon: 'format-align-center-icon',
+        command: 'setTextAlign',
+        commandParameters: 'center',
+        isActive: { textAlign: 'center' }
+      },
+      alignRight: {
+        component: 'AposTiptapButton',
+        label: 'Align Right',
+        icon: 'format-align-right-icon',
+        command: 'setTextAlign',
+        commandParameters: 'right',
+        isActive: { textAlign: 'right' }
+      },
+      alignJustify: {
+        component: 'AposTiptapButton',
+        label: 'Align Justify',
+        icon: 'format-align-justify-icon',
+        command: 'setTextAlign',
+        commandParameters: 'justify',
+        isActive: { textAlign: 'justify' }
+      },
+      highlight: {
+        component: 'AposTiptapButton',
+        label: 'Mark',
+        icon: 'format-color-highlight-icon',
+        command: 'toggleHighlight'
       }
+    },
+    // Additional properties used in executing tiptap commands
+    // Will be mixed in automatically for developers
+    tiptapTextCommands: {
+      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
+      toggleMark: [
+        'b', 'strong', 'code', 'mark', 'em', 'i',
+        'a', 's', 'del', 'strike', 'span', 'u'
+      ],
+      wrapIn: [ 'blockquote' ]
+    },
+    tiptapTypes: {
+      heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
+      paragraph: [ 'p' ],
+      textStyle: [ 'span' ],
+      code: [ 'code' ],
+      bold: [ 'strong', 'b' ],
+      strike: [ 's', 'del', 'strike' ],
+      italic: [ 'i', 'em' ],
+      highlight: [ 'mark' ],
+      link: [ 'a' ],
+      underline: [ 'u' ],
+      codeBlock: [ 'pre' ],
+      blockquote: [ 'blockquote' ]
     }
   },
   beforeSuperClass(self) {
@@ -122,7 +193,8 @@ module.exports = {
     };
   },
   icons: {
-    'format-text-icon': 'FormatText'
+    'format-text-icon': 'FormatText',
+    'format-color-highlight-icon': 'FormatColorHighlight'
   },
   methods(self) {
     return {
@@ -277,7 +349,9 @@ module.exports = {
           ...initialData,
           components: self.options.components,
           tools: self.options.editorTools,
-          defaultOptions: self.options.defaultOptions
+          defaultOptions: self.options.defaultOptions,
+          tiptapTextCommands: self.options.tiptapTextCommands,
+          tiptapTypes: self.options.tiptapTypes
         };
         return finalData;
       }
