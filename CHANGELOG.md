@@ -5,6 +5,8 @@
 ### Adds
 
 - Rich text editor adds support for text align controls as part of the upgrade to tiptap 2.x beta (see "changes").
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
+
 
 ### Security Fixes
 
@@ -16,6 +18,7 @@ Better explanation of how to replace macros with fragments, in particular how to
 
 ### Fixes
 
+- Temporarily pinned to Vue 2.6.12 to fix an issue where the "New" button in the piece manager modals disappeared. We think this is a bug in the newly released Vue 2.6.13 but we are continuing to research it.
 - Updated dependencies on `sanitize-html` and `nodemailer` to new major versions, causing no bc breaks at the ApostropheCMS level. This resolved two critical vulnerabilities according to `npm audit`.
 - Removed many unused dependencies.
 - The data retained for "Undo Publish" no longer causes slug conflicts in certain situations.
@@ -31,8 +34,6 @@ Better explanation of how to replace macros with fragments, in particular how to
 - Numerous `npm audit` vulnerabily warnings relating to `postcss` 7.x were examined, however it was determined that these are based on the idea of a malicious SASS coder attempting to cause a denial of service. Apostrophe developers would in any case be able to contribute JavaScript as well and so are already expected to be trusted parties. This issue must be resolved upstream in packages including both `stylelint` and `vue-loader` which have considerable work to do before supporting `postcss` 8.x, and in any case public access to write SASS is not part of the attack surface of Apostrophe.
 
 ### Changes
-
-- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
 
 - When logging out on a page that only exists in draft form, or a page with access controls, you are redirected to the home page rather than seeing a 404 message.
 
