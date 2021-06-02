@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.220.0 (2021-06-02)
+
+### Added
+
+* Adds `autoCommitPageMoves` flag in workflow to commit only pages moves automatically, manages error notification.
+
 ## 2.119.1 (2021-05-27)
 
 ### Security Fixes
@@ -16,14 +22,12 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 
 * Send the `Referer` header with oembed requests. This allows vimeo private videos locked down by domain name to be embedded.
 
-### Features
-
+### Added
 * When `enableAltField` option is set to `true`, we now copy the `alt` field from `apostrophe-images` schema to the `attachment` piece when using `apos.images.first` or `apos.attachments.first`.
-* Adds `autoCommitPageMoves` flag in workflow to commit only pages moves automatically, manages error notification.
 
 ## 2.118.0 (2021-05-05)
 
-### Features
+### Added
 * It's now possible to set the status code when redirecting using `req.redirect` by setting `req.statusCode`. When it it is not set, `apostrophe-pages` will fallback to 302 (Found) as previously. Thanks to Jonathan Garijo for contributing this feature.
 
 ## 2.117.1 (2021-04-07)
