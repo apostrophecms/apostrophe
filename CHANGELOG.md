@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Fixes
+- The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
+
+## UNRELEASED
+
 ### Adds
 
 - Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
@@ -66,7 +71,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 - The home page and other parked pages should not immediately show as "pending changes."
 - In-context editing works properly when the current browser URL has a hash (portion beginning with `#`), enabling the use of the hash for project-specific work. Thanks to [https://stepanjakl.com/](Štěpán Jákl) for reporting the issue.
 - When present, the `apos.http.addQueryToUrl` method preserves the hash of the URL intact.
-- The home page and other parked pages should not immediately show as "pending changes." 
+- The home page and other parked pages should not immediately show as "pending changes."
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 - The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
 - Added additional retries when binding to the port in a dev environment.

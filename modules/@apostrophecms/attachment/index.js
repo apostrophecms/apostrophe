@@ -285,7 +285,7 @@ module.exports = {
       // like jpeg. If none of these options are set, .accept is
       // set to an array of all accepted file extensions across
       // all groups
-      register(field) {
+      register(metaType, type, field) {
         let fileGroups = self.fileGroups;
         if (field.fileGroups) {
           fileGroups = fileGroups.filter(group => field.fileGroups.includes(group.name));
@@ -311,6 +311,7 @@ module.exports = {
           }
         });
         field.accept = extensions.map(extension => `.${extension}`).join(',');
+        console.info(field, field.accept);
       },
       // Checked a given attachment's file extension against the extensions
       // allowed by a particular schema field. If the attachment's file
