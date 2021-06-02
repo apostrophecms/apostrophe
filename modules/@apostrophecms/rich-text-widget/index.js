@@ -122,38 +122,38 @@ module.exports = {
         label: 'Redo',
         icon: 'redo-icon'
       },
-      alignLeft: {
-        component: 'AposTiptapButton',
-        label: 'Align Left',
-        icon: 'format-align-left-icon',
-        command: 'setTextAlign',
-        commandParameters: 'left',
-        isActive: { textAlign: 'left' }
-      },
-      alignCenter: {
-        component: 'AposTiptapButton',
-        label: 'Align Center',
-        icon: 'format-align-center-icon',
-        command: 'setTextAlign',
-        commandParameters: 'center',
-        isActive: { textAlign: 'center' }
-      },
-      alignRight: {
-        component: 'AposTiptapButton',
-        label: 'Align Right',
-        icon: 'format-align-right-icon',
-        command: 'setTextAlign',
-        commandParameters: 'right',
-        isActive: { textAlign: 'right' }
-      },
-      alignJustify: {
-        component: 'AposTiptapButton',
-        label: 'Align Justify',
-        icon: 'format-align-justify-icon',
-        command: 'setTextAlign',
-        commandParameters: 'justify',
-        isActive: { textAlign: 'justify' }
-      },
+      // alignLeft: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Left',
+      //   icon: 'format-align-left-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'left',
+      //   isActive: { textAlign: 'left' }
+      // },
+      // alignCenter: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Center',
+      //   icon: 'format-align-center-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'center',
+      //   isActive: { textAlign: 'center' }
+      // },
+      // alignRight: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Right',
+      //   icon: 'format-align-right-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'right',
+      //   isActive: { textAlign: 'right' }
+      // },
+      // alignJustify: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Justify',
+      //   icon: 'format-align-justify-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'justify',
+      //   isActive: { textAlign: 'justify' }
+      // },
       highlight: {
         component: 'AposTiptapButton',
         label: 'Mark',
