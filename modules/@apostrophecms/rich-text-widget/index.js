@@ -122,6 +122,8 @@ module.exports = {
         label: 'Redo',
         icon: 'redo-icon'
       },
+      // Disabled until sanitize-html is auto configured to save style properties
+      // when align controls are present
       // alignLeft: {
       //   component: 'AposTiptapButton',
       //   label: 'Align Left',
