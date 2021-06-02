@@ -311,7 +311,6 @@ module.exports = {
           }
         });
         field.accept = extensions.map(extension => `.${extension}`).join(',');
-        console.info(field, field.accept);
       },
       // Checked a given attachment's file extension against the extensions
       // allowed by a particular schema field. If the attachment's file
