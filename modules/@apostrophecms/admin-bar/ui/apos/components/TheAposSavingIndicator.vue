@@ -33,7 +33,7 @@ export default {
           1: {
             label: 'Document Saved',
             icon: 'database-check-icon',
-            class: 'is-success'
+            class: 'apos-is-success'
           },
           2: {
             label: 'Saving document...',
@@ -42,7 +42,7 @@ export default {
           3: {
             label: 'Retrying Save document...',
             component: 'AposSpinner',
-            class: 'is-warning'
+            class: 'apos-is-warning'
           }
         }
       }
@@ -100,14 +100,14 @@ export default {
     savingStep(newVal) {
       if (this.$refs.statusLabel) {
         const self = this;
-        apos.util.removeClass(self.$refs.statusLabel, 'is-hidden');
+        apos.util.removeClass(self.$refs.statusLabel, 'apos-is-hidden');
         if (this.savingTimeout) {
           clearTimeout(this.savingTimeout);
         }
         this.savingTimeout = setTimeout(() => {
           // Mind race conditions
           if (self.$refs.statusLabel) {
-            apos.util.addClass(self.$refs.statusLabel, 'is-hidden');
+            apos.util.addClass(self.$refs.statusLabel, 'apos-is-hidden');
           }
         }, 5000);
       }
@@ -125,14 +125,14 @@ export default {
   opacity: 1;
   color: var(--a-base-2);
   transition: opacity 150ms;
-  &.is-hidden {
+  &.apos-is-hidden {
     opacity: 0;
   }
-  .is-success {
+  .apos-is-success {
     color: var(--a-success);
   }
 
-  .is-warning {
+  .apos-is-warning {
     color: var(--a-warning);
   }
 }
@@ -155,7 +155,7 @@ export default {
 .apos-admin-bar__status__label {
   opacity: 1;
   transition: opacity 200ms ease;
-  &.is-hidden {
+  &.apos-is-hidden {
     opacity: 0;
   }
 }
