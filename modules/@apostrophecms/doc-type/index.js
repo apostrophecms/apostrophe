@@ -179,11 +179,11 @@ module.exports = {
           });
           if (published) {
             await self.apos.doc.db.remove({ _id: published._id });
-            self.emit('afterDelete', req, published, { checkForChildren: false });
+            await self.emit('afterDelete', req, published, { checkForChildren: false });
           }
           if (previous) {
             await self.apos.doc.db.remove({ _id: previous._id });
-            self.emit('afterDelete', req, previous, { checkForChildren: false });
+            await self.emit('afterDelete', req, previous, { checkForChildren: false });
           }
         },
         async deduplicate(req, doc) {
@@ -687,6 +687,7 @@ module.exports = {
           }, previousPublished, {
             upsert: true
           });
+          await self.apos.attachment.updateDocReferences(previousPublished);
         }
         await self.emit('afterPublish', req, {
           draft,
@@ -785,6 +786,7 @@ module.exports = {
         self.apos.doc.db.removeOne({
           _id: previousId
         });
+        await self.emit('afterDelete', req, previous, { checkForChildren: false });
         const result = {
           published
         };

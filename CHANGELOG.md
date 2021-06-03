@@ -1,5 +1,12 @@
 # Changelog
 
+## UNANNOUNCED
+
+### Fixes
+
+* Tracks references to attachments correctly, and introduces a migration to address any attachments previously tracked as part of documents that merely have a relationship to the proper document, i.e. pages containing widgets that reference an image piece.
+* Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
+
 ## 3.0.0-beta.3 - 2021-06-03
 
 ### Security Fixes

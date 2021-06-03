@@ -107,6 +107,7 @@ module.exports = {
     await self.db.createIndex({ docIds: 1 });
     await self.db.createIndex({ archivedDocIds: 1 });
     self.addFixLengthPropertyMigration();
+    self.addDocReferencesContainedMigration();
   },
 
   tasks(self) {
@@ -122,6 +123,10 @@ module.exports = {
       'migrate-from-disabled-file-key': {
         usage: 'Usage: node app @apostrophecms/attachment:migrate-from-disabled-file-key\n\nThis task should be run after removing the disabledFileKey option from uploadfs.\nIt should only be relevant for storage backends where\n' + 'that option is not mandatory, i.e. only local storage as of this writing.',
         task: self.migrateFromDisabledFileKeyTask
+      },
+      'recompute-all-doc-references': {
+        usage: 'Recompute mapping between attachments and docs,\nshould only be needed for rare repair situations',
+        task: self.recomputeAllDocReferences
       }
     };
   },
@@ -813,7 +818,7 @@ module.exports = {
       async updateDocReferences(doc, options = {
         deleted: false
       }) {
-        const attachments = self.all(doc);
+        const attachments = self.all(self.apos.util.clonePermanent(doc));
         const ids = _.uniq(_.map(attachments, '_id'));
         // Build an array of mongo commands to run. Each
         // entry in the array is a 2-element array. Element 0
@@ -1037,6 +1042,66 @@ module.exports = {
           });
         }
         next();
+      },
+      // This migration is needed because formerly,
+      // docs that only referenced this attachment via
+      // a join were counted as "owning" it, which is
+      // incorrect and leads to failure to make it
+      // unavailable at the proper time. The name was
+      // changed to ensure this migration would run
+      // again after that bug was discovered and fixed.
+      addDocReferencesContainedMigration() {
+        self.apos.migration.add(self.__meta.name + '.docReferencesContained', self.recomputeAllDocReferences);
+      },
+      // Recompute the `docIds` and `archivedDocIds` arrays
+      // from scratch. Should only be needed by the
+      // one-time migration that fixes these for older
+      // databases, but can be run at any time via the
+      // `apostrophe-attachments:recompute-doc-references`
+      // task, just in case the need arises or your site
+      // was affected by the very brief availability of 2.77.0
+      // which effectively marked all attachments as
+      // not in use.
+      async recomputeAllDocReferences() {
+        const attachmentUpdates = {};
+        await self.apos.migration.eachDoc({}, 5, addAttachmentUpdates);
+        await attachments();
+        await self.alterAttachments();
+
+        async function addAttachmentUpdates(doc) {
+          const attachments = self.all(doc);
+          const ids = _.uniq(_.map(attachments, '_id'));
+          _.each(ids, function(id) {
+            attachmentUpdates[id] = attachmentUpdates[id] || {
+              $set: {
+                docIds: [],
+                archivedDocIds: []
+              }
+            };
+            if (doc.archived) {
+              attachmentUpdates[id].$set.archivedDocIds.push(doc._id);
+            } else {
+              attachmentUpdates[id].$set.docIds.push(doc._id);
+            }
+            attachmentUpdates[id].$set.utilized = true;
+          });
+        }
+
+        async function attachments(callback) {
+          const bulk = self.db.initializeUnorderedBulkOp();
+          let count = 0;
+          _.each(attachmentUpdates, function(updates, id) {
+            const c = bulk.find({ _id: id });
+            _.each(updates, function(update) {
+              c.updateOne(attachmentUpdates[id]);
+              count++;
+            });
+          });
+          if (!count) {
+            return;
+          }
+          return bulk.execute();
+        }
       }
     };
   },
