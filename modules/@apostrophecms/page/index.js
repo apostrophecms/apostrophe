@@ -49,9 +49,7 @@ module.exports = {
     self.typeChoices = self.options.types || [];
     // If "park" redeclares something with a parkedId present in "minimumPark",
     // the later one should win
-    self.parked = self.options.minimumPark.concat(self.options.park || []).filter((page, i, parked) => {
-      return !parked.slice(i + 1).find(laterPage => page.parkedId === laterPage.parkedId);
-    });
+    self.composeParked();
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -1746,6 +1744,22 @@ database.`);
           for (const child of item._children) {
             child.parent = item.slug;
             await self.implementParkOne(req, child);
+          }
+        }
+      },
+      composeParked() {
+        // If a parkedId appears again in options.park, replace the
+        // original, repeatedly if necessary; otherwise append to the
+        // self.parked list
+        self.parked = [];
+        const indexByParkedId = {};
+        const candidates = self.options.minimumPark.concat(self.options.park || []);
+        for (const candidate of candidates) {
+          if (indexByParkedId[candidate.parkedId] === undefined) {
+            indexByParkedId[candidate.parkedId] = self.parked.length;
+            self.parked.push(candidate);
+          } else {
+            self.parked[indexByParkedId[candidate.parkedId]] = candidate;
           }
         }
       },
