@@ -1060,6 +1060,7 @@ module.exports = {
             subtype: otherModule.name
           });
           field.idsStorage = forwardRelationship.idsStorage;
+          field.fieldsStorage = forwardRelationship.fieldsStorage;
         }
         if (!field.idsStorage) {
           field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
@@ -1071,6 +1072,9 @@ module.exports = {
           });
           if (!forwardRelationship) {
             fail('idsStorage property does not match the idsStorage property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, your idsStorage must be the same to find the data there.');
+          }
+          if (forwardRelationship.fieldsStorage) {
+            field.fieldsStorage = forwardRelationship.fieldsStorage;
           }
         }
       }

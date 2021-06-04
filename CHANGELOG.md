@@ -1,3 +1,14 @@
+## UNANNOUNCED
+
+### Fixes
+
+* Reverse relationships work properly for published documents.
+* Relationship subfields are now available.
+
+### Changes
+
+* Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
+
 # Changelog
 
 ## 3.0.0-beta.3 - 2021-06-03
