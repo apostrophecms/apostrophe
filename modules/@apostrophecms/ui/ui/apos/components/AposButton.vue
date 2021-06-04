@@ -159,7 +159,7 @@ export default {
 
       if (this.state && this.state.length) {
         this.state.forEach((state) => {
-          modifiers.push(`is-${state}`);
+          modifiers.push(`apos-is-${state}`);
         });
       }
 
@@ -212,7 +212,7 @@ export default {
       background-color: var(--a-base-8);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-base-7);
     }
     &:focus {
@@ -306,7 +306,7 @@ export default {
     background-color: transparent;
     &:hover,
     &:active,
-    &.is-active,
+    &.apos-is-active,
     &:focus {
       background-color: transparent;
       text-decoration: underline;
@@ -398,7 +398,7 @@ export default {
       background-color: var(--a-base-9);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-base-8);
     }
     &:focus {
@@ -432,7 +432,7 @@ export default {
       background-color: var(--a-primary-button-hover);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-primary-button-active);
     }
     &:focus {
@@ -458,7 +458,7 @@ export default {
       background-color: var(--a-base-1);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-base-1);
     }
     &:focus {
@@ -481,7 +481,7 @@ export default {
       background-color: var(--a-danger-button-hover);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-danger-button-active);
     }
     &:focus {
