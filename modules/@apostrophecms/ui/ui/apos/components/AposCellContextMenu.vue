@@ -52,7 +52,7 @@ export default {
     classes() {
       const classes = [ ];
       if (!this.state || this.state.hover || this.menuOpen) {
-        classes.push('is-visible');
+        classes.push('apos-is-visible');
       }
       return classes;
     }
@@ -65,7 +65,7 @@ export default {
     @include apos-transition();
     display: inline-block;
     opacity: 0;
-    &.is-visible {
+    &.apos-is-visible {
       opacity: 1;
     }
   }

@@ -85,7 +85,7 @@ export default {
       return {
         animation: 0,
         disabled: this.disabled || this.next.length <= 1,
-        ghostClass: 'is-dragging'
+        ghostClass: 'apos-is-dragging'
       };
     }
   },
@@ -186,7 +186,7 @@ export default {
     opacity: 0;
   }
 
-  .is-dragging {
+  .apos-is-dragging {
     opacity: 0.5;
     background: var(--a-base-4);
   }

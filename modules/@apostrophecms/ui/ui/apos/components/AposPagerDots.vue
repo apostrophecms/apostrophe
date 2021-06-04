@@ -6,7 +6,7 @@
     >
       <button
         role="button"
-        :class="{'is-active': i === index }"
+        :class="{'apos-is-active': i === index }"
         class="apos-pager-dots__button"
         @click="click(i)"
       >
@@ -61,7 +61,7 @@ export default {
     transition: all 0.3s ease;
   }
 
-  .apos-pager-dots__button.is-active {
+  .apos-pager-dots__button.apos-is-active {
     background-color: var(--a-primary);
   }
 
