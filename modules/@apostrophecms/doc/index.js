@@ -37,6 +37,7 @@ module.exports = {
     self.addLastPublishedToAllDraftsMigration();
     self.addLastPublishedToAllPublishedDocsMigration();
     self.addAposModeMigration();
+    self.addStoreRelationshipIdsAsAposDocIdsMigration();
   },
   restApiRoutes(self) {
     return {
@@ -1029,10 +1030,10 @@ module.exports = {
       },
       addStoreRelationshipIdsAsAposDocIdsMigration() {
         self.apos.migration.add('store-relationship-ids-as-apos-doc-ids', async () => {
-          return self.apos.migration.eachDoc({}, async doc => {
+          return self.apos.migration.eachDoc({}, 5, async doc => {
             const needed = self.migrateRelationshipIds(doc);
             if (needed) {
-              return self.apos.doc.db.replaceOne(doc);
+              return self.apos.doc.db.replaceOne({ _id: doc._id }, doc);
             }
           });
         });
