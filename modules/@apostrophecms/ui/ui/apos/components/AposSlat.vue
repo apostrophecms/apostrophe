@@ -6,9 +6,9 @@
       :data-id="item._id"
       tabindex="0"
       :class="{
-        'is-engaged': engaged,
-        'is-only-child': slatCount === 1,
-        'is-selected': selected
+        'apos-is-engaged': engaged,
+        'apos-is-only-child': slatCount === 1,
+        'apos-is-selected': selected
       }"
       @keydown.prevent.space="toggleEngage"
       @keydown.prevent.enter="toggleEngage"
@@ -204,7 +204,7 @@ export default {
     }
 
     &.apos-slat-list__item--disabled,
-    &.is-only-child {
+    &.apos-is-only-child {
       &:hover,
       &:active {
         cursor: default;
@@ -217,12 +217,12 @@ export default {
     }
   }
 
-  .apos-slat.is-engaged,
-  .apos-slat.is-engaged:focus,
+  .apos-slat.apos-is-engaged,
+  .apos-slat.apos-is-engaged:focus,
   .apos-slat.sortable-chosen:focus,
-  .apos-slat.is-dragging:focus,
-  .apos-slat.is-selected,
-  .apos-slat.is-selected:focus {
+  .apos-slat.apos-is-dragging:focus,
+  .apos-slat.apos-is-selected,
+  .apos-slat.apos-is-selected:focus {
     background-color: var(--a-primary);
     &,
     /deep/ .apos-button {

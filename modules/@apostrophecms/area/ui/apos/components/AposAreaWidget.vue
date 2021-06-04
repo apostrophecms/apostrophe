@@ -85,7 +85,7 @@
       -->
       <div
         class="apos-area-widget-guard"
-        :class="{'is-disabled': focused}"
+        :class="{'apos-is-disabled': focused}"
       />
       <!-- Still used for contextual editing components -->
       <component
@@ -226,10 +226,10 @@ export default {
       highlightable: false,
       focused: false,
       classes: {
-        show: 'is-visible',
-        open: 'is-open',
-        focus: 'is-focused',
-        highlight: 'is-highlighted'
+        show: 'apos-is-visible',
+        open: 'apos-is-open',
+        focus: 'apos-is-focused',
+        highlight: 'apos-is-highlighted'
       },
       breadcrumbs: {
         $lastEl: null,
@@ -463,7 +463,7 @@ export default {
     height: 100%;
   }
 
-  .apos-area-widget-guard.is-disabled {
+  .apos-area-widget-guard.apos-is-disabled {
     pointer-events: none;
   }
 
@@ -492,12 +492,12 @@ export default {
     &:after {
       bottom: 0;
     }
-    &.is-highlighted {
+    &.apos-is-highlighted {
       &:before, &:after {
         opacity: 0.4;
       }
     }
-    &.is-focused {
+    &.apos-is-focused {
       &:before, &:after {
         opacity: 1;
         border-top: 1px solid var(--a-primary);
@@ -518,22 +518,22 @@ export default {
       background-color: var(--a-base-5);
       pointer-events: none;
     }
-    .apos-area-widget-inner &.is-focused:before,
-    .apos-area-widget-inner &.is-highlighted:before {
+    .apos-area-widget-inner &.apos-is-focused:before,
+    .apos-area-widget-inner &.apos-is-highlighted:before {
       z-index: $z-index-default;
     }
   }
 
   .apos-area-widget-inner .apos-area-widget-inner {
-    &.is-highlighted:before {
+    &.apos-is-highlighted:before {
       opacity: 0.1;
     }
-    &.is-focused:before {
+    &.apos-is-focused:before {
       opacity: 0.15;
     }
 
-    &.is-highlighted,
-    &.is-focused {
+    &.apos-is-highlighted,
+    &.apos-is-focused {
       outline-color: var(--a-secondary);
     }
   }
@@ -548,7 +548,7 @@ export default {
     &.apos-area-widget__label {
       z-index: $z-index-widget-label;
     }
-    &.is-focused {
+    &.apos-is-focused {
       z-index: $z-index-widget-focused-controls;
     }
   }
@@ -585,7 +585,7 @@ export default {
     transform: translate(-50%, 50%);
   }
 
-  .apos-area-widget-inner /deep/ .apos-context-menu__popup.is-visible {
+  .apos-area-widget-inner /deep/ .apos-context-menu__popup.apos-is-visible {
     top: calc(100% + 20px);
     left: 50%;
     transform: translate(-50%, 0);
@@ -651,8 +651,8 @@ export default {
     background-color: var(--a-secondary);
   }
 
-  .is-visible,
-  .is-focused {
+  .apos-is-visible,
+  .apos-is-focused {
     opacity: 1;
     pointer-events: auto;
   }

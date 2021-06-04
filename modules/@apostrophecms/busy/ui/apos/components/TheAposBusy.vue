@@ -22,7 +22,7 @@ export default {
     classes() {
       const classes = [];
       if (this.busy) {
-        classes.push('is-busy');
+        classes.push('apos-is-busy');
       }
       return classes.concat(this.themeClass);
     }
@@ -67,7 +67,7 @@ export default {
   pointer-events: none;
 }
 
-.apos-busy.is-busy {
+.apos-busy.apos-is-busy {
   opacity: 1;
   pointer-events: auto;
 }

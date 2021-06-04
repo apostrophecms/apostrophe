@@ -2,7 +2,7 @@
   <div
     class="apos-media-editor"
     :class="{
-      'is-replacing': showReplace
+      'apos-is-replacing': showReplace
     }"
   >
     <div class="apos-media-editor__inner" v-if="activeMedia">
@@ -385,7 +385,7 @@ export default {
   }
 
   /deep/ [data-apos-field='attachment'] {
-    .apos-media-editor:not(.is-replacing) & {
+    .apos-media-editor:not(.apos-is-replacing) & {
       position: absolute;
       left: -999rem;
       opacity: 0;
