@@ -278,7 +278,7 @@ module.exports = {
         const silent = field.silent === undefined ? true : field.silent;
         texts.push({
           weight: field.weight || 15,
-          text: value.title,
+          text: (value && value.title) || '',
           silent: silent
         });
       },
