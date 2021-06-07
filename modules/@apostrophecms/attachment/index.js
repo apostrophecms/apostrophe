@@ -1058,10 +1058,7 @@ module.exports = {
       // one-time migration that fixes these for older
       // databases, but can be run at any time via the
       // `apostrophe-attachments:recompute-doc-references`
-      // task, just in case the need arises or your site
-      // was affected by the very brief availability of 2.77.0
-      // which effectively marked all attachments as
-      // not in use.
+      // task.
       async recomputeAllDocReferences() {
         const attachmentUpdates = {};
         await self.apos.migration.eachDoc({}, 5, addAttachmentUpdates);
