@@ -646,10 +646,27 @@ module.exports = {
           });
           published = await self.insertPublishedOf(req, draft, published, options);
         } else {
+          const oldPreviousPublished = await self.apos.doc.db.findOne({
+            _id: published._id.replace(':published', ':previous')
+          });
           // As found in db, not with relationships etc.
           previousPublished = await self.apos.doc.db.findOne({
             _id: published._id
           });
+          // Update "previous" so we can revert the most recent publication if desired.
+          // Do this first so we don't mistakenly think all references to the
+          // attachments are already gone before we do it
+          if (previousPublished) {
+            previousPublished._id = previousPublished._id.replace(':published', ':previous');
+            previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
+            Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
+            await self.apos.doc.db.replaceOne({
+              _id: previousPublished._id
+            }, previousPublished, {
+              upsert: true
+            });
+            await self.apos.attachment.updateDocReferences(previousPublished);
+          }
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
             draft,
@@ -658,10 +675,20 @@ module.exports = {
             firstTime
           });
           published.lastPublishedAt = lastPublishedAt;
-          published = await self.update({
-            ...req,
-            mode: 'published'
-          }, published, options);
+          try {
+            published = await self.update({
+              ...req,
+              mode: 'published'
+            }, published, options);
+          } catch (e) {
+            if (oldPreviousPublished) {
+              await self.apos.doc.db.replaceOne({
+                _id: oldPreviousPublished._id
+              }, oldPreviousPublished);
+              await self.apos.attachment.updateDocReferences(oldPreviousPublished);
+            }
+            throw e;
+          }
         }
         draft.modified = false;
         draft.lastPublishedAt = lastPublishedAt;
@@ -676,19 +703,6 @@ module.exports = {
             submitted: 1
           }
         });
-        // Now that we're sure publication worked, update "previous" so we
-        // can revert the most recent publication if desired
-        if (previousPublished) {
-          previousPublished._id = previousPublished._id.replace(':published', ':previous');
-          previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
-          Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
-          await self.apos.doc.db.replaceOne({
-            _id: previousPublished._id
-          }, previousPublished, {
-            upsert: true
-          });
-          await self.apos.attachment.updateDocReferences(previousPublished);
-        }
         await self.emit('afterPublish', req, {
           draft,
           published,

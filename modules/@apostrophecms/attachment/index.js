@@ -804,11 +804,11 @@ module.exports = {
         }
         return extension;
       },
-      // When the last doc that contains this attachment goes to the
+      // When the last doc that contains an attachment goes to the
       // archive, its permissions should change to reflect that so
       // it is no longer web-accessible to those who know the URL.
       //
-      // If the doc has no more archived *or* live docs associated
+      // If an attachment has no more archived *or* live docs associated
       // with it, truly delete the attachment.
       //
       // This method is invoked after any doc is inserted, updated, archived
