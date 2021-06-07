@@ -120,7 +120,7 @@ export default {
     editorModifiers () {
       const classes = [];
       if (this.isVisuallyEmpty) {
-        classes.push('is-visually-empty');
+        classes.push('apos-is-visually-empty');
       }
       return classes;
     },
@@ -192,7 +192,7 @@ export default {
   mounted() {
     this.editor = new Editor({
       content: this.initialContent,
-      autoFocus: true,
+      autofocus: true,
       onUpdate: this.editorUpdate,
       extensions: [
         StarterKit,
@@ -277,7 +277,7 @@ export default {
     border-radius: var(--a-border-radius);
   }
 
-  .apos-rich-text-toolbar /deep/ .is-active {
+  .apos-rich-text-toolbar /deep/ .apos-is-active {
     background-color: var(--a-base-9);
   }
 
@@ -312,7 +312,7 @@ export default {
       text-align: center;
     }
   }
-  .apos-rich-text-editor__editor.is-visually-empty {
+  .apos-rich-text-editor__editor.apos-is-visually-empty {
     box-shadow: 0 0 0 1px var(--a-primary-50);
     &:after {
       opacity: 1;

@@ -101,7 +101,7 @@
         :list-id="row._id"
         :tree-id="treeId"
         :options="options"
-        :class="{ 'is-collapsed': options.startCollapsed }"
+        :class="{ 'apos-is-collapsed': options.startCollapsed }"
         :style="{
           'max-height': options.startCollapsed ? '0' : null
         }"
@@ -201,8 +201,8 @@ export default {
         dataListId: this.listId,
         disabled: !this.options.draggable,
         handle: '.apos-tree__row__icon--handle',
-        ghostClass: 'is-dragging',
-        filter: '.is-parked'
+        ghostClass: 'apos-is-dragging',
+        filter: '.apos-is-parked'
       };
     }
   },
@@ -245,11 +245,11 @@ export default {
       if (toggle.getAttribute('aria-expanded') !== 'true') {
         rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
         toggle.setAttribute('aria-expanded', true);
-        rowList.classList.remove('is-collapsed');
+        rowList.classList.remove('apos-is-collapsed');
       } else if (rowList) {
         rowList.style.maxHeight = 0;
         toggle.setAttribute('aria-expanded', false);
-        rowList.classList.add('is-collapsed');
+        rowList.classList.add('apos-is-collapsed');
       }
     },
     keydownRow(event) {
@@ -282,7 +282,7 @@ export default {
       const classes = [
         'apos-tree__row',
         {
-          'is-parked': !!row.parked,
+          'apos-is-parked': !!row.parked,
           'apos-tree__row--parent': row._children && row._children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
@@ -431,14 +431,14 @@ export default {
   }
 
   .apos-tree__row {
-    &.is-dragging {
+    &.apos-is-dragging {
       opacity: 0.5;
     }
   }
   .apos-tree__list {
     transition: max-height 0.3s ease;
 
-    &.is-collapsed {
+    &.apos-is-collapsed {
       overflow-y: auto;
     }
   }
@@ -467,7 +467,7 @@ export default {
       transition: background-color 0.3s ease;
     }
 
-    &.is-collapsed::before {
+    &.apos-is-collapsed::before {
       background-color: transparent;
     }
   }
@@ -548,7 +548,7 @@ export default {
     align-self: center;
   }
 
-  .apos-tree__cell.is-published /deep/ .apos-tree__cell__icon {
+  .apos-tree__cell.apos-is-published /deep/ .apos-tree__cell__icon {
     color: var(--a-success);
   }
 

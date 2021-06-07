@@ -3,7 +3,7 @@
     type="rich-text"
     @click="click"
     class="apos-rich-text-editor__control"
-    :class="{ 'is-active': active }"
+    :class="{ 'apos-is-active': active }"
     :label="tool.label"
     :icon-only="!!tool.icon"
     :icon="tool.icon ? tool.icon : false"
