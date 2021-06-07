@@ -37,6 +37,7 @@ module.exports = {
     self.addLastPublishedToAllDraftsMigration();
     self.addLastPublishedToAllPublishedDocsMigration();
     self.addAposModeMigration();
+    self.addStoreRelationshipIdsAsAposDocIdsMigration();
   },
   restApiRoutes(self) {
     return {
@@ -1027,6 +1028,65 @@ module.exports = {
           });
         });
       },
+      addStoreRelationshipIdsAsAposDocIdsMigration() {
+        self.apos.migration.add('store-relationship-ids-as-apos-doc-ids', async () => {
+          return self.apos.migration.eachDoc({}, 5, async doc => {
+            const needed = self.migrateRelationshipIds(doc);
+            if (needed) {
+              return self.apos.doc.db.replaceOne({ _id: doc._id }, doc);
+            }
+          });
+        });
+      },
+      migrateRelationshipIds(doc) {
+        if (doc.metaType === 'doc') {
+          const manager = self.apos.doc.getManager(doc.type);
+          if (!manager) {
+            return false;
+          }
+          return forSchema(manager.schema, doc);
+        } else if (doc.metaType === 'widget') {
+          const manager = self.apos.area.getWidgetManager(doc.type);
+          if (!manager) {
+            return false;
+          }
+          return forSchema(manager.schema, doc);
+        }
+        function forSchema(schema, doc) {
+          let needed = false;
+          for (const field of schema) {
+            if (field.type === 'area') {
+              if (doc[field.name] && doc[field.name].items) {
+                for (const widget of doc[field.name].items) {
+                  self.migrateRelationshipIds(widget);
+                }
+              }
+            } else if (field.type === 'array') {
+              if (doc[field.name]) {
+                doc[field.name].forEach(item => {
+                  item.metaType = 'arrayItem';
+                  item.scopedArrayName = field.scopedArrayName;
+                  forSchema(field.schema, item);
+                });
+              }
+            } else if (field.type === 'object') {
+              const value = doc[field.name];
+              if (value) {
+                value.metaType = 'object';
+                value.scopedObjectName = field.scopedObjectName;
+                forSchema(field.schema, value);
+              }
+            } else if (field.type === 'relationship') {
+              doc[field.idsStorage] = (doc[field.idsStorage] || []).map(self.apos.doc.toAposDocId);
+              if (field.fieldsStorage) {
+                doc[field.fieldsStorage] = Object.fromEntries(Object.entries(doc[field.fieldsStorage] || {}).map(([ key, value ]) => [ self.apos.doc.toAposDocId(key), value ]));
+              }
+              needed = true;
+            }
+          }
+          return needed;
+        }
+      },
       isDraft(doc) {
         return doc.aposLocale.endsWith(':draft');
       },
@@ -1039,6 +1099,21 @@ module.exports = {
           type = '@apostrophecms/any-page-type';
         }
         return type;
+      },
+      // Given a doc, an _id, or an aposDocId, this method
+      // will return the aposDocId (the _id without the
+      // mode and locale parts). This will work on a doc
+      // even if the projection did not include aposDocId
+      toAposDocId(input) {
+        if (typeof input === 'object') {
+          return input.aposDocId || self.toAposDocId(input._id);
+        }
+        const index = input.indexOf(':');
+        if (index > -1) {
+          return input.substring(0, index);
+        } else {
+          return input;
+        }
       }
     };
   }

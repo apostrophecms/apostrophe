@@ -2078,6 +2078,9 @@ module.exports = {
           const field = _.find(schema, { name: key });
           if (field) {
             add.push('type', field.idsStorage);
+            if (field.fieldsStorage) {
+              add.push(field.fieldsStorage);
+            }
             return true;
           }
           return false;
