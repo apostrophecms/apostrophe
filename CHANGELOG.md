@@ -7,6 +7,7 @@
 -- `bullet_list` -> `bulletList`
 -- `ordered_list` -> `orderedList`
 -- `code_block` -> `codeBlock`
+-- `horizontal_rule` -> `horizontalRule`
 
 ### Fixes
 
