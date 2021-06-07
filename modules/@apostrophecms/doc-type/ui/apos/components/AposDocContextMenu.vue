@@ -236,6 +236,11 @@ export default {
       return detectDocChange(this.schema, this.context, this.current);
     },
     isModifiedFromPublished() {
+      if (this.context.modified) {
+        // In a list context, we won't have every area property to
+        // compare, but we will have this previously set flag
+        return true;
+      }
       if (!this.context.lastPublishedAt) {
         return false;
       }
