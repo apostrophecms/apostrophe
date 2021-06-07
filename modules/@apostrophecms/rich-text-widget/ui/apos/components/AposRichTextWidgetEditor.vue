@@ -99,10 +99,6 @@ export default {
 
       activeOptions.styles = this.enhanceStyles(activeOptions.styles || this.defaultOptions.styles);
 
-      if (activeOptions.styles.length && !activeOptions.toolbar.includes('styles')) {
-        activeOptions.toolbar.unshift('styles');
-      }
-
       return activeOptions;
     },
 
