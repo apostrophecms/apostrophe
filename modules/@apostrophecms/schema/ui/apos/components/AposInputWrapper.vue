@@ -27,7 +27,7 @@
           <span v-if="displayOptions.changed" class="apos-field__changed">
             <AposLabel
               label="Changed" class="apos-field__changed__label"
-              :modifiers="[ 'is-warning', 'is-filled' ]"
+              :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
               tooltip="This field has unpublished changes"
             />
           </span>
