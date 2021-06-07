@@ -737,11 +737,16 @@ module.exports = {
         if (options.overrides) {
           Object.assign(draft, options.overrides);
         }
+        // Setting it this way rather than setting it to published.updatedAt
+        // guarantees no small discrepancy breaking equality comparisons
+        draft.updatedAt = draft.lastPublishedAt;
+        draft.updatedBy = published.updatedBy;
         draft = await self.update({
           ...req,
           mode: 'draft'
         }, draft, {
-          setModified: false
+          setModified: false,
+          setUpdatedAtAndBy: false
         });
         const result = {
           draft

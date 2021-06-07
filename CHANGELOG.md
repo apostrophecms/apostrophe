@@ -7,6 +7,7 @@
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
 * "Discard Draft" is available when appropriate in "Manage Pages" and "Manage Pieces."
+* "Discard Draft" disables the "Submit Updates" button when working as a contributor.
 
 ### Changes
 
