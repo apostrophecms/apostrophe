@@ -330,8 +330,8 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--a-base-1);
-    border: 1px solid var(--a-base-9);
+    background-color: var(--a-background-primary);
+    border: 1px solid var( --a-base-8);
   }
 
   .apos-slat__media {

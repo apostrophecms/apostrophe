@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+- SVG files in the Media Library are permitted by default.
+
 ## 3.0.0-beta.3 - 2021-06-03
 
 ### Security Fixes

@@ -51,8 +51,9 @@ module.exports = {
         extensions: [
           'gif',
           'jpg',
-          'png'
-        ].concat(self.options.svgImages ? [ 'svg' ] : []),
+          'png',
+          'svg'
+        ],
         extensionMaps: { jpeg: 'jpg' },
         // uploadfs should treat this as an image and create scaled versions
         image: true
