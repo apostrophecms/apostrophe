@@ -10,7 +10,7 @@
           class="apos-input-wrapper apos-attachment-dropzone"
           :class="{
             'apos-attachment-dropzone--dragover': dragging,
-            'is-disabled': disabled || limitReached
+            'apos-is-disabled': disabled || limitReached
           }"
           @drop.prevent="uploadMedia"
           @dragover="dragHandler"
@@ -205,7 +205,7 @@ export default {
     &:focus {
       border: 2px solid var(--a-primary);
     }
-    &.is-disabled {
+    &.apos-is-disabled {
       color: var(--a-base-4);
       background-color: var(--a-base-7);
       border-color: var(--a-base-4);

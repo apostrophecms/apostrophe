@@ -69,7 +69,7 @@ export default {
         'apos-media-manager-display__cell',
         'apos-media-uploader',
         {
-          'is-dragging': this.dragover
+          'apos-is-dragging': this.dragover
         }
       ].concat(this.disabled ? [] : [ 'apos-media-uploader--enabled' ]);
     }
@@ -249,7 +249,7 @@ export default {
     &:hover,
     &:active,
     &:focus,
-    &.is-dragging {
+    &.apos-is-dragging {
       border-width: 0;
 
       &::after {
