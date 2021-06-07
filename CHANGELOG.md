@@ -2,10 +2,19 @@
 
 ## UNRELEASED
 
+### Breaks
+- The following Rich Text tool names have been updated to match Tiptap2's convention:
+-- `bullet_list` -> `bulletList`
+-- `ordered_list` -> `orderedList`
+-- `code_block` -> `codeBlock`
+-- `horizontal_rule` -> `horizontalRule`
+
 ### Fixes
 
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
+* Rich Text default tool names updated, no longer broken.
+* Fix Rich Text's tool cascade to properly account for core defaults, project level defaults, and area-specific options.
 
 ### Changes
 
