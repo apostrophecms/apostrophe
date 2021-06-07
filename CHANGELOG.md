@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.0-beta.3.1 - 2021-06-07
+
+### Breaks
+- The following Rich Text tool names have been updated to match Tiptap2's convention:
+-- `bullet_list` -> `bulletList`
+-- `ordered_list` -> `orderedList`
+-- `code_block` -> `codeBlock`
+
+### Fixes
+
+* Rich Text default tool names updated, no longer broken.
+* Fixed Rich Text's tool cascade to properly account for core defaults, project level defaults, and area-specific options.
+
 ## 3.0.0-beta.3 - 2021-06-03
 
 ### Security Fixes
