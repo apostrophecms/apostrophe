@@ -19,6 +19,7 @@ module.exports = {
     builds: {
       src: {
         scenes: [ 'public', 'user' ],
+        webpack: true,
         outputs: [ 'css', 'js' ],
         label: 'public-facing modern JavaScript and SASS',
         // Load only in browsers that support ES6 modules
@@ -27,6 +28,7 @@ module.exports = {
       'src-ie11': {
         // An alternative build from the same sources
         source: 'src',
+        webpack: true,
         scenes: [ 'public', 'user' ],
         outputs: [ 'css', 'js' ],
         label: 'public-facing modern JavaScript and SASS',
@@ -53,6 +55,7 @@ module.exports = {
       apos: {
         scenes: [ 'user' ],
         outputs: [ 'js' ],
+        webpack: true,
         label: 'Apostrophe admin UI',
         // Only rebuilt on npm updates unless CORE_DEV is set in the environment
         core: true,
@@ -163,8 +166,8 @@ module.exports = {
             }
           }
 
-          const scenes = Object.values(self.options.builds).map(options => options.scenes).flatten();
-          const bundles = [];
+          const scenes = Object.values(self.options.builds).map(options => options.scenes).flat();
+          let bundles = [];
           for (const scene of scenes) {
             bundles = [ ...bundles, ...merge(scene) ];
           }
@@ -238,6 +241,7 @@ module.exports = {
             }
 
             if (options.webpack) {
+              console.log('** invoking webpack');
               const importFile = `${buildDir}/import.js`;
 
               fs.writeFileSync(importFile, (options.prologue || '') + stripIndent`
@@ -264,7 +268,7 @@ module.exports = {
                 ` : '')
               );
 
-              await Promise.promisify(webpackModule)(require('./lib/webpack.config')(
+              await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
                 {
                   importFile,
                   modulesDir,
@@ -278,6 +282,7 @@ module.exports = {
               const now = Date.now().toString();
               fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
             } else {
+              console.log('not invoking webpack');
               if (options.outputs.includes('js')) {
                 // We do not use an import file here because import is not
                 // an ES5 feature and it is contrary to the spirit of ES5 code
