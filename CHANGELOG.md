@@ -2,6 +2,15 @@
 
 ## UNRELEASED
 
+### Adds
+
+- Support for automatic inline style attribute sanitization for Rich Text widgets.
+- Adds text align controls for Rich Text widgets. The following tools are now supported as part of a rich text widget's `toolbar` property:
+-- `alignLeft`
+-- `alignRight`
+-- `alignCenter`
+-- `alignJustify`
+
 ### Fixes
 
 * Reverse relationships work properly for published documents.
