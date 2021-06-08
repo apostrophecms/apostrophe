@@ -1,11 +1,36 @@
 # Changelog
 
-## UNANNOUNCED
+## UNRELEASED
 
 ### Fixes
 
 * Tracks references to attachments correctly, and introduces a migration to address any attachments previously tracked as part of documents that merely have a relationship to the proper document, i.e. pages containing widgets that reference an image piece.
 * Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
+* Reverse relationships work properly for published documents.
+* Relationship subfields are now loaded properly when `reverseOf` is used.
+
+### Adds
+- Adds browser-side `editMode` flag that tracks the state of the current view (edit or preview), located at `window.apos.adminBar.editMode`
+
+### Changes
+
+* Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
+- The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
+- Uploading SVG files is permitted in the Media Library by default.
+
+## 3.0.0-beta.3.1 - 2021-06-07
+
+### Breaks
+- This backwards compatibility break actually occurred in 3.0.0-beta.3 and was not documented at that time, but it is important to know that the following Rich Text tool names have been updated to match Tiptap2's convention:
+-- `bullet_list` -> `bulletList`
+-- `ordered_list` -> `orderedList`
+-- `code_block` -> `codeBlock`
+-- `horizontal_rule` -> `horizontalRule`
+
+### Fixes
+
+- Rich Text default tool names updated, no longer broken. Bug introduced in 3.0.0-beta.3.
+- Fixed Rich Text's tool cascade to properly account for core defaults, project level defaults, and area-specific options.
 
 ## 3.0.0-beta.3 - 2021-06-03
 
@@ -73,7 +98,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 - The home page and other parked pages should not immediately show as "pending changes."
 - In-context editing works properly when the current browser URL has a hash (portion beginning with `#`), enabling the use of the hash for project-specific work. Thanks to [https://stepanjakl.com/](Štěpán Jákl) for reporting the issue.
 - When present, the `apos.http.addQueryToUrl` method preserves the hash of the URL intact.
-- The home page and other parked pages should not immediately show as "pending changes." 
+- The home page and other parked pages should not immediately show as "pending changes."
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 - The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
 - Added additional retries when binding to the port in a dev environment.

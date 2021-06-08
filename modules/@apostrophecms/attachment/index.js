@@ -51,8 +51,9 @@ module.exports = {
         extensions: [
           'gif',
           'jpg',
-          'png'
-        ].concat(self.options.svgImages ? [ 'svg' ] : []),
+          'png',
+          'svg'
+        ],
         extensionMaps: { jpeg: 'jpg' },
         // uploadfs should treat this as an image and create scaled versions
         image: true
@@ -290,7 +291,7 @@ module.exports = {
       // like jpeg. If none of these options are set, .accept is
       // set to an array of all accepted file extensions across
       // all groups
-      register(field) {
+      register(metaType, type, field) {
         let fileGroups = self.fileGroups;
         if (field.fileGroups) {
           fileGroups = fileGroups.filter(group => field.fileGroups.includes(group.name));
