@@ -135,6 +135,13 @@
 // Use the `middleware` section in your module. That function should
 // return an object containing named middleware functions. These are
 // activated for all requests.
+//
+// ### trustProxy
+//
+// Enables the ["trust proxy" option for Express](https://expressjs.com/en/api.html#trust.proxy.options.table).
+// Set to `true` to tell the Express app to  respect `X-Forwarded-* ` headers.
+// This is helpful when Apostrophe is generating `http:` URLs even though a
+// proxy like nginx is being used to serve it over `https:`.
 
 const fs = require('fs');
 const _ = require('lodash');
@@ -153,6 +160,7 @@ module.exports = {
   init(self) {
     self.createApp();
     self.prefix();
+    self.trustProxy();
     if (self.options.baseUrl && !self.apos.baseUrl) {
       self.apos.util.error('WARNING: you have baseUrl set as an option to the `@apostrophecms/express` module.');
       self.apos.util.error('Set it as a global option (a property of the main object passed to apostrophe).');
@@ -380,6 +388,13 @@ module.exports = {
           });
           self.apos.baseApp = express();
           self.apos.baseApp.use(self.apos.prefix, self.apos.app);
+        }
+      },
+
+      // Implement the trustProxy option
+      trustProxy() {
+        if (self.options.trustProxy) {
+          self.apos.app.set('trust proxy', true);
         }
       },
 
