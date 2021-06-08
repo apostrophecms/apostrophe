@@ -2,6 +2,9 @@
 
 ## UNRELEASED
 
+### Adds
+- Adds browser-side `editMode` flag that tracks the state of the current view (edit or preview), located at `window.apos.adminBar.editMode`
+
 ### Fixes
 
 * Reverse relationships work properly for published documents.
