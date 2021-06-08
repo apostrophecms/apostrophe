@@ -36,10 +36,10 @@ describe('Pieces', function() {
             }
           }
         },
-        things: {
+        thing: {
           extend: '@apostrophecms/piece-type',
           options: {
-            alias: 'things',
+            alias: 'thing',
             name: 'thing',
             label: 'Thing',
             publicApiProjection: {
@@ -56,10 +56,10 @@ describe('Pieces', function() {
             }
           }
         },
-        people: {
+        person: {
           extend: '@apostrophecms/piece-type',
           options: {
-            alias: 'people',
+            alias: 'person',
             name: 'person',
             label: 'Person',
             publicApiProjection: {
@@ -71,6 +71,17 @@ describe('Pieces', function() {
             add: {
               _things: {
                 type: 'relationship'
+              },
+              _tools: {
+                type: 'relationship',
+                withType: 'thing',
+                fields: {
+                  add: {
+                    skillLevel: {
+                      type: 'integer'
+                    }
+                  }
+                }
               }
             }
           }
@@ -125,8 +136,8 @@ describe('Pieces', function() {
               _articles: {
                 type: 'relationship',
                 withType: 'article',
-                filters: {
-                  projection: {
+                builders: {
+                  project: {
                     _url: 1,
                     title: 1
                   }
@@ -195,13 +206,13 @@ describe('Pieces', function() {
         }
       }
     });
-    assert(apos.modules.things);
-    assert(apos.modules.things.schema);
+    assert(apos.modules.thing);
+    assert(apos.modules.thing.schema);
   });
 
   // little test-helper function to get piece by id regardless of archive status
   async function findPiece(req, id) {
-    const piece = apos.modules.things.find(req, { _id: id })
+    const piece = apos.modules.thing.find(req, { _id: id })
       .permission('edit')
       .archived(null)
       .toObject();
@@ -245,22 +256,22 @@ describe('Pieces', function() {
 
   // Test pieces.newInstance()
   it('should be able to create a new piece', function() {
-    assert(apos.modules.things.newInstance);
-    const thing = apos.modules.things.newInstance();
+    assert(apos.modules.thing.newInstance);
+    const thing = apos.modules.thing.newInstance();
     assert(thing);
     assert(thing.type === 'thing');
   });
 
   // Test pieces.insert()
   it('should be able to insert a piece into the database', async () => {
-    assert(apos.modules.things.insert);
-    await apos.modules.things.insert(apos.task.getReq(), testThing);
+    assert(apos.modules.thing.insert);
+    await apos.modules.thing.insert(apos.task.getReq(), testThing);
   });
 
   it('should be able to retrieve a piece by id from the database', async () => {
-    assert(apos.modules.things.requireOneForEditing);
+    assert(apos.modules.thing.requireOneForEditing);
     const req = apos.task.getReq();
-    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing:en:published' });
+    req.piece = await apos.modules.thing.requireOneForEditing(req, { _id: 'testThing:en:published' });
     assert(req.piece);
     assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.title === 'hello');
@@ -269,13 +280,13 @@ describe('Pieces', function() {
 
   // Test pieces.update()
   it('should be able to update a piece in the database', async () => {
-    assert(apos.modules.things.update);
+    assert(apos.modules.thing.update);
     testThing.foo = 'moo';
-    const piece = await apos.modules.things.update(apos.task.getReq(), testThing);
+    const piece = await apos.modules.thing.update(apos.task.getReq(), testThing);
     assert(testThing === piece);
     // Now let's get the piece and check if it was updated
     const req = apos.task.getReq();
-    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing:en:published' });
+    req.piece = await apos.modules.thing.requireOneForEditing(req, { _id: 'testThing:en:published' });
     assert(req.piece);
     assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.foo === 'moo');
@@ -328,7 +339,7 @@ describe('Pieces', function() {
   });
 
   it('should be able to archive a piece with proper deduplication', async () => {
-    assert(apos.modules.things.requireOneForEditing);
+    assert(apos.modules.thing.requireOneForEditing);
     const req = apos.task.getReq();
     const id = 'testThing:en:published';
     req.body = { _id: id };
@@ -336,7 +347,7 @@ describe('Pieces', function() {
     const piece = await findPiece(req, id);
     assert(!piece.archived);
     piece.archived = true;
-    await apos.modules.things.update(req, piece);
+    await apos.modules.thing.update(req, piece);
     // let's get the piece to make sure it is archived
     const piece2 = await findPiece(req, id);
     assert(piece2);
@@ -355,7 +366,7 @@ describe('Pieces', function() {
     const piece = await findPiece(req, id);
     assert(piece.archived === true);
     piece.archived = false;
-    await apos.modules.things.update(req, piece);
+    await apos.modules.thing.update(req, piece);
     const piece2 = await findPiece(req, id);
     assert(piece2);
     assert(!piece2.archived);
@@ -390,10 +401,10 @@ describe('Pieces', function() {
   it('people can find things via a relationship', async () => {
     const req = apos.task.getReq();
     for (const person of testPeople) {
-      await apos.people.insert(req, person);
+      await apos.person.insert(req, person);
     }
     for (const thing of additionalThings) {
-      await apos.things.insert(req, thing);
+      await apos.thing.insert(req, thing);
     }
     const person = await apos.doc.getManager('person').find(req, {}).toObject();
     assert(person);
@@ -462,6 +473,34 @@ describe('Pieces', function() {
     });
 
     assert(page.match(/logged in/));
+  });
+
+  it('can attach a tool to a person via the REST API', async function() {
+    const person1 = await apos.http.get('/api/v1/person/person1:en:published');
+    assert(person1);
+    const thing1 = await apos.http.get('/api/v1/thing/thing1:en:published');
+    assert(thing1);
+    person1._tools = [
+      {
+        ...thing1,
+        _fields: {
+          skillLevel: 5
+        }
+      }
+    ];
+    await apos.http.put('/api/v1/person/person1:en:published', {
+      body: person1,
+      jar
+    });
+    const person1After = await apos.http.get('/api/v1/person/person1:en:published', {
+      jar
+    });
+    assert(person1After);
+    assert(person1After._tools);
+    assert(person1After._tools.length);
+    assert(person1After._tools[0].title === 'Red');
+    assert(person1After._tools[0]._fields);
+    assert(person1After._tools[0]._fields.skillLevel === 5);
   });
 
   it('cannot POST a product without a session', async () => {
@@ -654,8 +693,8 @@ describe('Pieces', function() {
       jar
     });
     assert(response._id);
-    assert(response.articlesIds[0] === article._id);
-    assert(response.articlesFields[article._id].relevance === 'The very first article that was ever published about this product');
+    assert(response.articlesIds[0] === article.aposDocId);
+    assert(response.articlesFields[article.aposDocId].relevance === 'The very first article that was ever published about this product');
     relatedProductId = response._id;
   });
 
@@ -666,6 +705,8 @@ describe('Pieces', function() {
     const product = _.find(response.results, { slug: 'product-key-product-with-relationship' });
     assert(Array.isArray(product._articles));
     assert(product._articles.length === 1);
+    assert(product._articles[0]._fields);
+    assert.strictEqual(product._articles[0]._fields.relevance, 'The very first article that was ever published about this product');
   });
 
   let relatedArticleId;
@@ -684,6 +725,16 @@ describe('Pieces', function() {
     assert(response._products);
     assert(response._products.length === 1);
     assert(response._products[0]._id === relatedProductId);
+  });
+
+  it('can GET a single article with reverse relationships in draft mode', async () => {
+    const draftRelatedArticleId = relatedArticleId.replace(':published', ':draft');
+    const draftRelatedProductId = relatedProductId.replace(':published', ':draft');
+    const response = await apos.http.get(`/api/v1/article/${draftRelatedArticleId}`, { jar });
+    assert(response);
+    assert(response._products);
+    assert(response._products.length === 1);
+    assert(response._products[0]._id === draftRelatedProductId);
   });
 
   it('can GET results plus filter choices', async () => {
@@ -771,7 +822,7 @@ describe('Pieces', function() {
     });
     assert(response.title === 'Initially No Relationship Value');
     assert(response.articlesIds);
-    assert(response.articlesIds[0] === article._id);
+    assert(response.articlesIds[0] === article.aposDocId);
     assert(response._articles);
     assert(response._articles[0]._id === article._id);
   });

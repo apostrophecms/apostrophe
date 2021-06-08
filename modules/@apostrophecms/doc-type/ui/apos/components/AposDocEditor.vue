@@ -350,6 +350,9 @@ export default {
     manuallyPublished() {
       this.saveMenu = this.computeSaveMenu();
     },
+    original() {
+      this.saveMenu = this.computeSaveMenu();
+    },
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
         this.currentTab = this.tabs[0] && this.tabs[0].name;
@@ -637,7 +640,7 @@ export default {
           window.location = doc._url;
         } else {
           const subject = andPublish ? 'Document published' : 'Draft saved';
-          await apos.notify(`${subject} but could not navigate to a preview. Try creating a ${(this.moduleOptions.label || '')} index page`, {
+          await apos.notify(`${subject} but could not navigate to a preview.`, {
             type: 'warning',
             icon: 'alert-circle-icon'
           });
@@ -723,18 +726,10 @@ export default {
       const typeLabel = this.moduleOptions
         ? this.moduleOptions.label.toLowerCase()
         : 'document';
-      const newBlocklist = [ '@apostrophecms/global' ];
-      const previewBlocklist = [
-        '@apostrophecms/global',
-        '@apostrophecms/file',
-        '@apostrophecms/file-tag',
-        '@apostrophecms/image',
-        '@apostrophecms/image-tag',
-        '@apostrophecms/user'
-      ];
       const isNew = !this.docId;
-      const canPreview = !previewBlocklist.includes(this.moduleName);
-      const canNew = !newBlocklist.includes(this.moduleName);
+      // this.original takes a moment to populate, don't crash
+      const canPreview = this.original && (this.original._id ? this.original._url : this.original._previewable);
+      const canNew = this.moduleOptions.showCreate;
       const menu = [
         {
           label: this.saveLabel,

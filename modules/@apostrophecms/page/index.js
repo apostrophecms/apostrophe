@@ -20,17 +20,15 @@ module.exports = {
         _defaults: {
           title: 'Home',
           type: '@apostrophecms/home-page'
-        },
-        _children: [
-          {
-            slug: '/archive',
-            parkedId: 'archive',
-            type: '@apostrophecms/archive-page',
-            archived: true,
-            orphan: true,
-            title: 'Archive'
-          }
-        ]
+        }
+      },
+      {
+        slug: '/archive',
+        parkedId: 'archive',
+        type: '@apostrophecms/archive-page',
+        archived: true,
+        orphan: true,
+        title: 'Archive'
       }
     ]
   },
@@ -49,7 +47,9 @@ module.exports = {
   },
   async init(self) {
     self.typeChoices = self.options.types || [];
-    self.parked = self.options.minimumPark.concat(self.options.park || []);
+    // If "park" redeclares something with a parkedId present in "minimumPark",
+    // the later one should win
+    self.composeParked();
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -199,10 +199,12 @@ module.exports = {
 
         if (req.body._newInstance) {
           // If we're looking for a fresh page instance and aren't saving yet,
-          // simply get a new page doc and return;
+          // simply get a new page doc and return it
           const parentPage = await self.findForEditing(req, { _id: targetId })
             .permission('edit', '@apostrophecms/any-page-type').toObject();
-          return self.newChild(parentPage);
+          const newChild = self.newChild(parentPage);
+          newChild._previewable = true;
+          return newChild;
         }
 
         return self.withLock(req, async () => {
@@ -1742,6 +1744,22 @@ database.`);
           for (const child of item._children) {
             child.parent = item.slug;
             await self.implementParkOne(req, child);
+          }
+        }
+      },
+      composeParked() {
+        // If a parkedId appears again in options.park, replace the
+        // original, repeatedly if necessary; otherwise append to the
+        // self.parked list
+        self.parked = [];
+        const indexByParkedId = {};
+        const candidates = self.options.minimumPark.concat(self.options.park || []);
+        for (const candidate of candidates) {
+          if (indexByParkedId[candidate.parkedId] === undefined) {
+            indexByParkedId[candidate.parkedId] = self.parked.length;
+            self.parked.push(candidate);
+          } else {
+            self.parked[indexByParkedId[candidate.parkedId]] = candidate;
           }
         }
       },

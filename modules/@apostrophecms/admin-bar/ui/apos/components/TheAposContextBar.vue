@@ -148,24 +148,17 @@ export default {
     }
     window.apos.adminBar.tabId = tabId;
     window.apos.adminBar.editMode = false;
-
-    if (this.editMode) {
-      // Watch out for legacy situations where edit mode is active
-      // but we are not in draft
-      if (!await this.lock(`${this.action}/${this.context._id}`)) {
-        this.lockNotAvailable();
-        return;
+    const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
+    if (lastBaseContext.aposDocId === this.context.aposDocId) {
+      if (lastBaseContext.draftMode !== this.draftMode) {
+        await this.setContext({ mode: lastBaseContext.draftMode });
       }
-      if (this.draftMode !== 'draft') {
-        // Also refreshes
-        await this.switchDraftMode('draft');
-      } else {
-        // The page always initially loads with fully rendered content,
-        // so refetch the content with the area placeholders and data instead
-        await this.refresh();
+      if (this.editMode !== lastBaseContext.editMode) {
+        await this.switchEditMode(true);
       }
     }
     await this.updateDraftIsEditable();
+    this.rememberLastBaseContext();
     this.published = await this.getPublished();
     this.$nextTick(() => {
       this.$emit('mounted');
@@ -419,6 +412,7 @@ export default {
           });
         }
       }
+      this.rememberLastBaseContext();
     },
     onContextEdited(patch) {
       this.patchesSinceLoaded.push(patch);
@@ -506,6 +500,7 @@ export default {
         }
       }
       apos.bus.$emit('refreshed');
+      this.rememberLastBaseContext();
     },
     async onDismissSubmission() {
       if (await this.dismissSubmission(this.context)) {
@@ -672,6 +667,13 @@ export default {
         return doc;
       }
       return null;
+    },
+    rememberLastBaseContext() {
+      sessionStorage.setItem('aposLastBaseContext', JSON.stringify({
+        aposDocId: this.context.aposDocId,
+        draftMode: this.draftMode,
+        editMode: this.editMode
+      }));
     }
   }
 };

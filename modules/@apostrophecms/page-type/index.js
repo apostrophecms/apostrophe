@@ -45,8 +45,8 @@ module.exports = {
     };
   },
   init(self) {
-    self.removeArchivedPrefixFields([ 'slug' ]);
-    self.addArchivedSuffixFields([
+    self.removeDeduplicatePrefixFields([ 'slug' ]);
+    self.addDeduplicateSuffixFields([
       'slug'
     ]);
     self.rules = {};

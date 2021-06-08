@@ -8,14 +8,14 @@
     </span>
     <span
       v-if="minLabel"
-      :class="minError ? 'has-error' : ''"
+      :class="minError ? 'apos-has-error' : ''"
       class="apos-min-max-count__label"
     >
       {{ minLabel }}
     </span>
     <span
       v-if="maxLabel"
-      :class="maxError ? 'has-error' : ''"
+      :class="maxError ? 'apos-has-error' : ''"
       class="apos-min-max-count__label"
     >
       {{ maxLabel }}
@@ -102,7 +102,7 @@ export default {
     margin-bottom: $spacing-base;
   }
 
-  .has-error {
+  .apos-has-error {
     color: var(--a-danger);
   }
 
