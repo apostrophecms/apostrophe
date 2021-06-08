@@ -9,6 +9,7 @@
 * Relationship subfields can now be edited when selecting in the full "manage view" browser, as well as in the compact relationship field view which worked previously.
 * A console warning when editing subfields for a new relationship was fixed.
 * Relationship subfields now respect the `def` property.
+* Relationship subfields are restored if you deselect a document and then reselect it within a single editing experience, i.e. accidentally deselect and immediately reselect, for instance.
 
 ### Changes
 
