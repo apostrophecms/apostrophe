@@ -249,15 +249,6 @@ export default {
         // Cancel clicked
         return;
       }
-      if (this.relationshipField) {
-        if (!this.checked.includes(doc._id)) {
-          doc._fields = doc._fields || {};
-          // Must push to checked docs or it will try to do it for us
-          // and not include _fields
-          this.checkedDocs.push(doc);
-          this.checked.push(doc._id);
-        }
-      }
     },
     async finishSaved() {
       await this.getPieces();
