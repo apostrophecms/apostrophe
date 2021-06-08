@@ -693,8 +693,8 @@ describe('Pieces', function() {
       jar
     });
     assert(response._id);
-    assert(response.articlesIds[0] === article._id);
-    assert(response.articlesFields[article._id].relevance === 'The very first article that was ever published about this product');
+    assert(response.articlesIds[0] === article.aposDocId);
+    assert(response.articlesFields[article.aposDocId].relevance === 'The very first article that was ever published about this product');
     relatedProductId = response._id;
   });
 
@@ -705,6 +705,8 @@ describe('Pieces', function() {
     const product = _.find(response.results, { slug: 'product-key-product-with-relationship' });
     assert(Array.isArray(product._articles));
     assert(product._articles.length === 1);
+    assert(product._articles[0]._fields);
+    assert.strictEqual(product._articles[0]._fields.relevance, 'The very first article that was ever published about this product');
   });
 
   let relatedArticleId;
@@ -723,6 +725,16 @@ describe('Pieces', function() {
     assert(response._products);
     assert(response._products.length === 1);
     assert(response._products[0]._id === relatedProductId);
+  });
+
+  it('can GET a single article with reverse relationships in draft mode', async () => {
+    const draftRelatedArticleId = relatedArticleId.replace(':published', ':draft');
+    const draftRelatedProductId = relatedProductId.replace(':published', ':draft');
+    const response = await apos.http.get(`/api/v1/article/${draftRelatedArticleId}`, { jar });
+    assert(response);
+    assert(response._products);
+    assert(response._products.length === 1);
+    assert(response._products[0]._id === draftRelatedProductId);
   });
 
   it('can GET results plus filter choices', async () => {
@@ -810,7 +822,7 @@ describe('Pieces', function() {
     });
     assert(response.title === 'Initially No Relationship Value');
     assert(response.articlesIds);
-    assert(response.articlesIds[0] === article._id);
+    assert(response.articlesIds[0] === article.aposDocId);
     assert(response._articles);
     assert(response._articles[0]._id === article._id);
   });

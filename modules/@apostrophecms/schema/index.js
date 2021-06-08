@@ -1060,6 +1060,7 @@ module.exports = {
             subtype: otherModule.name
           });
           field.idsStorage = forwardRelationship.idsStorage;
+          field.fieldsStorage = forwardRelationship.fieldsStorage;
         }
         if (!field.idsStorage) {
           field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
@@ -1071,6 +1072,9 @@ module.exports = {
           });
           if (!forwardRelationship) {
             fail('idsStorage property does not match the idsStorage property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, your idsStorage must be the same to find the data there.');
+          }
+          if (forwardRelationship.fieldsStorage) {
+            field.fieldsStorage = forwardRelationship.fieldsStorage;
           }
         }
       }
@@ -1658,7 +1662,7 @@ module.exports = {
           if (reverse) {
             idsCriteria[idsStorage] = { $in: ids };
           } else {
-            idsCriteria._id = { $in: ids };
+            idsCriteria.aposDocId = { $in: ids };
           }
           const criteria = {
             $and: [
@@ -1673,14 +1677,7 @@ module.exports = {
           // Hints, on the other hand, must be sanitized
           query.applyBuildersSafely(hints);
           return query.toArray();
-        }, _id => {
-          const index = _id.indexOf(':');
-          const locale = `${req.locale}:${req.mode}`;
-          if (index > -1) {
-            return `${_id.substring(0, index)}:${locale}`;
-          }
-          return `${_id}:${locale}`;
-        });
+        }, self.apos.doc.toAposDocId);
       },
 
       // Fetch all the relationships in the schema on the specified object or array
@@ -1972,12 +1969,12 @@ module.exports = {
               }
             } else if (field.type === 'relationship') {
               if (Array.isArray(doc[field.name])) {
-                doc[field.idsStorage] = doc[field.name].map(relatedDoc => relatedDoc._id);
+                doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
                 if (field.fieldsStorage) {
                   const fieldsById = doc[field.fieldsStorage] || {};
                   for (const relatedDoc of doc[field.name]) {
                     if (relatedDoc._fields) {
-                      fieldsById[relatedDoc._id] = relatedDoc._fields;
+                      fieldsById[self.apos.doc.toAposDocId(relatedDoc)] = relatedDoc._fields;
                     }
                   }
                   doc[field.fieldsStorage] = fieldsById;
@@ -2095,7 +2092,7 @@ module.exports = {
           const idsStorage = field.idsStorage;
           const ids = await query.toDistinct(idsStorage);
           const manager = self.apos.doc.getManager(field.withType);
-          const relationshipQuery = manager.find(query.req, { _id: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
+          const relationshipQuery = manager.find(query.req, { aposDocId: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
           if (field.builders) {
             relationshipQuery.applyBuilders(field.builders);
           }

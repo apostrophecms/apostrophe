@@ -2,14 +2,41 @@
 
 ## UNRELEASED
 
-### Adds
+### Fixes
 
-- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
-- Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
+* Reverse relationships work properly for published documents.
+* Relationship subfields are now loaded properly when `reverseOf` is used.
+
+### Changes
+
+* Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
+- The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
+- Uploading SVG files is permitted in the Media Library by default.
+
+## 3.0.0-beta.3.1 - 2021-06-07
+
+### Breaks
+- This backwards compatibility break actually occurred in 3.0.0-beta.3 and was not documented at that time, but it is important to know that the following Rich Text tool names have been updated to match Tiptap2's convention:
+-- `bullet_list` -> `bulletList`
+-- `ordered_list` -> `orderedList`
+-- `code_block` -> `codeBlock`
+-- `horizontal_rule` -> `horizontalRule`
+
+### Fixes
+
+- Rich Text default tool names updated, no longer broken. Bug introduced in 3.0.0-beta.3.
+- Fixed Rich Text's tool cascade to properly account for core defaults, project level defaults, and area-specific options.
+
+## 3.0.0-beta.3 - 2021-06-03
 
 ### Security Fixes
 
 The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve the tags that they added, without first escaping their input, creating a CSRF risk. These filters have been updated to escape their input unless it has already been marked safe. No code changes are required to templates whose input to the filter is intended as plaintext, however if you were intentionally leveraging this bug to output unescaped HTML markup you will need to make sure your input is free of CSRF risks and then use the `| safe` filter before the `| nlbr` or `| nlp` filter.
+
+### Adds
+
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
+- Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
 
 ### Fixes
 
@@ -66,7 +93,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 - The home page and other parked pages should not immediately show as "pending changes."
 - In-context editing works properly when the current browser URL has a hash (portion beginning with `#`), enabling the use of the hash for project-specific work. Thanks to [https://stepanjakl.com/](Štěpán Jákl) for reporting the issue.
 - When present, the `apos.http.addQueryToUrl` method preserves the hash of the URL intact.
-- The home page and other parked pages should not immediately show as "pending changes." 
+- The home page and other parked pages should not immediately show as "pending changes."
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 - The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
 - Added additional retries when binding to the port in a dev environment.

@@ -18,8 +18,8 @@ module.exports = {
         'italic',
         'strike',
         'link',
-        'bullet_list',
-        'ordered_list',
+        'bulletList',
+        'orderedList',
         'blockquote'
       ],
       styles: [
@@ -237,17 +237,17 @@ module.exports = {
           ],
           strike: [ 's' ],
           link: [ 'a' ],
-          horizontal_rule: [ 'hr' ],
-          bullet_list: [
+          horizontalRule: [ 'hr' ],
+          bulletList: [
             'ul',
             'li'
           ],
-          ordered_list: [
+          orderedList: [
             'ol',
             'li'
           ],
           blockquote: [ 'blockquote' ],
-          code_block: [
+          codeBlock: [
             'pre',
             'code'
           ]
