@@ -3,20 +3,20 @@
     <AposButton
       type="rich-text"
       @click="click"
-      :class="{ 'is-active': buttonActive }"
+      :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
       :icon="tool.icon ? tool.icon : false"
       :modifiers="['no-border', 'no-motion']"
     />
     <div
-      v-show="active"
+      v-if="active"
       v-click-outside-element="close"
       class="apos-popover apos-link-control__dialog"
       x-placement="bottom"
       :class="{
-        'is-triggered': active,
-        'has-selection': hasSelection
+        'apos-is-triggered': active,
+        'apos-has-selection': hasSelection
       }"
     >
       <AposContextMenuDialog
@@ -155,8 +155,10 @@ export default {
       }
     },
     close() {
-      this.active = false;
-      this.editor.chain().focus();
+      if (this.active) {
+        this.active = false;
+        this.editor.chain().focus();
+      }
     },
     save() {
       // cleanup incomplete submissions
@@ -207,12 +209,12 @@ export default {
     pointer-events: none;
   }
 
-  .apos-link-control__dialog.is-triggered.has-selection {
+  .apos-link-control__dialog.apos-is-triggered.apos-has-selection {
     opacity: 1;
     pointer-events: auto;
   }
 
-  .is-active {
+  .apos-is-active {
     background-color: var(--a-base-7);
   }
 

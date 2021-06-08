@@ -21,7 +21,6 @@
             :tool="tools[item]"
             :options="editorOptions"
             :editor="editor"
-            :styles="styles"
           />
         </div>
       </AposContextMenuDialog>
@@ -88,6 +87,9 @@ export default {
     moduleOptions() {
       return apos.modules[apos.area.widgetManagers[this.type]];
     },
+    defaultOptions() {
+      return this.moduleOptions.defaultOptions;
+    },
     editorOptions() {
       const activeOptions = Object.assign({}, this.options);
 
@@ -95,19 +97,16 @@ export default {
       activeOptions.toolbar = (activeOptions.toolbar !== undefined)
         ? activeOptions.toolbar : this.defaultOptions.toolbar;
 
-      activeOptions.styles = activeOptions.styles || this.defaultOptions.styles;
+      activeOptions.styles = this.enhanceStyles(activeOptions.styles || this.defaultOptions.styles);
 
       return activeOptions;
     },
-    defaultOptions() {
-      return this.moduleOptions.defaultOptions;
-    },
+
     initialContent() {
       return this.stripPlaceholderBrs(this.value.content);
     },
     toolbar() {
-      return this.options.toolbar === false ? []
-        : (this.options.toolbar || this.defaultOptions.toolbar);
+      return this.editorOptions.toolbar;
     },
     tools() {
       return this.moduleOptions.tools;
@@ -120,7 +119,7 @@ export default {
     editorModifiers () {
       const classes = [];
       if (this.isVisuallyEmpty) {
-        classes.push('is-visually-empty');
+        classes.push('apos-is-visually-empty');
       }
       return classes;
     },
@@ -130,52 +129,10 @@ export default {
     tiptapTypes() {
       return this.moduleOptions.tiptapTypes;
     },
-    // Enhances the dev-defined styles list with tiptap
-    // commands and parameters used internally.
-    styles() {
-      const self = this;
-      const styles = [];
-      this.options.styles.forEach(style => {
-        style.options = {};
-        for (const key in self.tiptapTextCommands) {
-          if (self.tiptapTextCommands[key].includes(style.tag)) {
-            style.command = key;
-          }
-        }
-        for (const key in self.tiptapTypes) {
-          if (self.tiptapTypes[key].includes(style.tag)) {
-            style.type = key;
-          }
-        }
-
-        // Set heading level
-        if (style.type === 'heading') {
-          const level = parseInt(style.tag.split('h')[1]);
-          style.options.level = level;
-        }
-
-        // Handle custom attributes
-        if (style.class) {
-          style.options.class = style.class;
-        }
-
-        if (style.type) {
-          styles.push(style);
-        } else {
-          apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
-            type: 'warning',
-            dismiss: true,
-            icon: 'text-box-remove-icon'
-          });
-        }
-      });
-
-      return styles;
-    },
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
-          styles: this.styles,
+          styles: this.editorOptions.styles,
           types: this.tiptapTypes
         }));
     }
@@ -192,7 +149,7 @@ export default {
   mounted() {
     this.editor = new Editor({
       content: this.initialContent,
-      autoFocus: true,
+      autofocus: true,
       onUpdate: this.editorUpdate,
       extensions: [
         StarterKit,
@@ -249,6 +206,47 @@ export default {
     // Otherwise they get doubled by ProseMirror
     stripPlaceholderBrs(html) {
       return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
+    },
+    // Enhances the dev-defined styles list with tiptap
+    // commands and parameters used internally.
+    enhanceStyles(styles) {
+      const self = this;
+      const enhanced = [];
+      (styles || []).forEach(style => {
+        style.options = {};
+        for (const key in self.tiptapTextCommands) {
+          if (self.tiptapTextCommands[key].includes(style.tag)) {
+            style.command = key;
+          }
+        }
+        for (const key in self.tiptapTypes) {
+          if (self.tiptapTypes[key].includes(style.tag)) {
+            style.type = key;
+          }
+        }
+
+        // Set heading level
+        if (style.type === 'heading') {
+          const level = parseInt(style.tag.split('h')[1]);
+          style.options.level = level;
+        }
+
+        // Handle custom attributes
+        if (style.class) {
+          style.options.class = style.class;
+        }
+
+        if (style.type) {
+          enhanced.push(style);
+        } else {
+          apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
+            type: 'warning',
+            dismiss: true,
+            icon: 'text-box-remove-icon'
+          });
+        }
+      });
+      return styles;
     }
   }
 };
@@ -277,7 +275,7 @@ export default {
     border-radius: var(--a-border-radius);
   }
 
-  .apos-rich-text-toolbar /deep/ .is-active {
+  .apos-rich-text-toolbar /deep/ .apos-is-active {
     background-color: var(--a-base-9);
   }
 
@@ -312,7 +310,7 @@ export default {
       text-align: center;
     }
   }
-  .apos-rich-text-editor__editor.is-visually-empty {
+  .apos-rich-text-editor__editor.apos-is-visually-empty {
     box-shadow: 0 0 0 1px var(--a-primary-50);
     &:after {
       opacity: 1;

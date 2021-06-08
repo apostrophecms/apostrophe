@@ -9,7 +9,7 @@
       <!-- data-apos-schema-area lets all the child areas know that this area is in a schema (which is in a modal)
        and that we should position the z-index of context menus appropriately high -->
       <div
-        class="apos-input-wrapper" :class="!next.items.length ? 'is-empty' : null"
+        class="apos-input-wrapper" :class="!next.items.length ? 'apos-is-empty' : null"
         data-apos-schema-area
       >
         <!-- We do not pass docId here because it is solely for
@@ -97,7 +97,7 @@ export default {
 <style lang="scss" scoped>
   .apos-field--area {
     max-width: $input-max-width;
-    .apos-input-wrapper:not(.is-empty) {
+    .apos-input-wrapper:not(.apos-is-empty) {
       padding: $spacing-base;
       border: 1px solid var(--a-base-8);
       border-radius: var(--a-border-radius);

@@ -18,8 +18,8 @@ module.exports = {
         'italic',
         'strike',
         'link',
-        'bullet_list',
-        'ordered_list',
+        'bulletList',
+        'orderedList',
         'blockquote'
       ],
       styles: [
@@ -122,38 +122,40 @@ module.exports = {
         label: 'Redo',
         icon: 'redo-icon'
       },
-      alignLeft: {
-        component: 'AposTiptapButton',
-        label: 'Align Left',
-        icon: 'format-align-left-icon',
-        command: 'setTextAlign',
-        commandParameters: 'left',
-        isActive: { textAlign: 'left' }
-      },
-      alignCenter: {
-        component: 'AposTiptapButton',
-        label: 'Align Center',
-        icon: 'format-align-center-icon',
-        command: 'setTextAlign',
-        commandParameters: 'center',
-        isActive: { textAlign: 'center' }
-      },
-      alignRight: {
-        component: 'AposTiptapButton',
-        label: 'Align Right',
-        icon: 'format-align-right-icon',
-        command: 'setTextAlign',
-        commandParameters: 'right',
-        isActive: { textAlign: 'right' }
-      },
-      alignJustify: {
-        component: 'AposTiptapButton',
-        label: 'Align Justify',
-        icon: 'format-align-justify-icon',
-        command: 'setTextAlign',
-        commandParameters: 'justify',
-        isActive: { textAlign: 'justify' }
-      },
+      // Disabled until sanitize-html is auto configured to save style properties
+      // when align controls are present
+      // alignLeft: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Left',
+      //   icon: 'format-align-left-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'left',
+      //   isActive: { textAlign: 'left' }
+      // },
+      // alignCenter: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Center',
+      //   icon: 'format-align-center-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'center',
+      //   isActive: { textAlign: 'center' }
+      // },
+      // alignRight: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Right',
+      //   icon: 'format-align-right-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'right',
+      //   isActive: { textAlign: 'right' }
+      // },
+      // alignJustify: {
+      //   component: 'AposTiptapButton',
+      //   label: 'Align Justify',
+      //   icon: 'format-align-justify-icon',
+      //   command: 'setTextAlign',
+      //   commandParameters: 'justify',
+      //   isActive: { textAlign: 'justify' }
+      // },
       highlight: {
         component: 'AposTiptapButton',
         label: 'Mark',
@@ -236,17 +238,17 @@ module.exports = {
           ],
           strike: [ 's' ],
           link: [ 'a' ],
-          horizontal_rule: [ 'hr' ],
-          bullet_list: [
+          horizontalRule: [ 'hr' ],
+          bulletList: [
             'ul',
             'li'
           ],
-          ordered_list: [
+          orderedList: [
             'ol',
             'li'
           ],
           blockquote: [ 'blockquote' ],
-          code_block: [
+          codeBlock: [
             'pre',
             'code'
           ]

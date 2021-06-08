@@ -35,7 +35,7 @@
         <div
           class="apos-range__value"
           aria-hidden="true"
-          :class="{'is-unset': !isSet}"
+          :class="{'apos-is-unset': !isSet}"
         >
           {{ valueLabel }}
           <AposButton
@@ -121,7 +121,7 @@ export default {
   .apos-range__value {
     padding-top: 7px;
     min-width: 100px;
-    &.is-unset {
+    &.apos-is-unset {
       opacity: 0;
       pointer-events: none;
     }
