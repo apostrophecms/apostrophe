@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Added
+
+- Adds documentation on allowing admins to publish user pieces.
+
 ## 2.220.0 (2021-06-02)
 
 ### Added
