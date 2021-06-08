@@ -6,6 +6,9 @@
 
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
+* Relationship subfields can now be edited when selecting in the full "manage view" browser, as well as in the compact relationship field view which worked previously.
+* A console warning when editing subfields for a new relationship was fixed.
+* Relationship subfields now respect the `def` property.
 
 ### Changes
 
