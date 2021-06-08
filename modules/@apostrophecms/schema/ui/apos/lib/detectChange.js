@@ -25,7 +25,7 @@ export function detectDocChange(schema, v1, v2, options = {}) {
     return differences;
   } else {
     return schema.some(field => {
-      return (!v1 !== !v2) || detectFieldChange(field, v1[field.name], v2[field.name]);
+      return detectFieldChange(field, v1[field.name], v2[field.name]);
     });
   }
 }
