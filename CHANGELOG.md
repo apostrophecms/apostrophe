@@ -10,6 +10,16 @@
 
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
+* Field type `color`'s `format` option moved out of the UI options and into the general options object. Supported formats are "rgb", "prgb", "hex6", "hex3", "hex8", "name", "hsl", "hsv". Pass the `format` string like:
+```js
+myColorField: {
+  type: 'color',
+  label: 'My Color',
+  options: {
+    format: 'hsl'
+  }
+}
+```
 
 ### Changes
 
