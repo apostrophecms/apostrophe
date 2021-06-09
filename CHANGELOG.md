@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.220.1 (2021-06-09)
+
+### Fixes
+
+* Simply a version bump.
+
 ## 2.220.0 (2021-06-02)
 
 ### Added
