@@ -133,6 +133,11 @@ export default {
             result = false;
             break;
           }
+          if (Array.isArray(self.getFieldValue(key))) {
+            if (self.getFieldValue(key).includes(val)) {
+              break;
+            }
+          }
           if (val !== self.getFieldValue(key)) {
             result = false;
             break;

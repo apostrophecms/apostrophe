@@ -8,6 +8,7 @@
 
 ### Fixes
 
+* Checkbox field types can now be used as conditional fields.
 * Tracks references to attachments correctly, and introduces a migration to address any attachments previously tracked as part of documents that merely have a relationship to the proper document, i.e. pages containing widgets that reference an image piece.
 * Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
 * Reverse relationships work properly for published documents.
