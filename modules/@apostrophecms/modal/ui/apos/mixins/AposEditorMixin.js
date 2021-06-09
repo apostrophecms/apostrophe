@@ -134,10 +134,8 @@ export default {
             break;
           }
           if (Array.isArray(self.getFieldValue(key))) {
-            if (self.getFieldValue(key).includes(val)) {
-              result = true;
-              break;
-            }
+            result = self.getFieldValue(key).includes(val);
+            break;
           }
           if (val !== self.getFieldValue(key)) {
             result = false;
