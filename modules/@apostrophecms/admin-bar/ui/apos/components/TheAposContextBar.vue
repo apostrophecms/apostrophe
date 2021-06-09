@@ -122,6 +122,11 @@ export default {
       return (this.hasCustomUi && apos.modules[this.context.type].publishLabel) || null;
     }
   },
+  watch: {
+    editMode(newVal) {
+      window.apos.adminBar.editMode = newVal;
+    }
+  },
   async mounted() {
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('unpublish', this.onUnpublish);
@@ -142,6 +147,7 @@ export default {
       sessionStorage.setItem('aposTabId', tabId);
     }
     window.apos.adminBar.tabId = tabId;
+    window.apos.adminBar.editMode = false;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
     if (lastBaseContext.aposDocId === this.context.aposDocId) {
       if (lastBaseContext.draftMode !== this.draftMode) {

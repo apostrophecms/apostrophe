@@ -10,11 +10,25 @@
 -- `alignRight`
 -- `alignCenter`
 -- `alignJustify`
+- Adds browser-side `editMode` flag that tracks the state of the current view (edit or preview), located at `window.apos.adminBar.editMode`
+- `@apostrophecms/express` module now supports the `trustProxy: true` option, allowing your reverse proxy server (such as nginx) to pass on the original hostname, protocol and client IP address.
 
 ### Fixes
 
+* Tracks references to attachments correctly, and introduces a migration to address any attachments previously tracked as part of documents that merely have a relationship to the proper document, i.e. pages containing widgets that reference an image piece.
+* Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
+* Field type `color`'s `format` option moved out of the UI options and into the general options object. Supported formats are "rgb", "prgb", "hex6", "hex3", "hex8", "name", "hsl", "hsv". Pass the `format` string like:
+```js
+myColorField: {
+  type: 'color',
+  label: 'My Color',
+  options: {
+    format: 'hsl'
+  }
+}
+```
 
 ### Changes
 
