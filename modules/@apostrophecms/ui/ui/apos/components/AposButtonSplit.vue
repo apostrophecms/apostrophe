@@ -25,7 +25,7 @@
         <button
           v-for="item in menu" :key="item.action"
           class="apos-button-split__menu__dialog-item"
-          :class="{ 'is-selected': item.action === action }"
+          :class="{ 'apos-is-selected': item.action === action }"
           @click="selectionHandler(item.action)"
           :aria-checked="item.action === action ? 'true' : 'false'"
           role="menuitemradio"
@@ -162,7 +162,7 @@ export default {
     &:hover,
     &:focus,
     &:active,
-    &.is-selected {
+    &.apos-is-selected {
       background-color: var(--a-base-9);
     }
     &:focus,

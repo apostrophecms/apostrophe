@@ -1,26 +1,20 @@
-const StyleLintPlugin = require('stylelint-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+console.log('configuring with the extract plugin');
 
 module.exports = (options, apos) => {
   return {
+    target: 'web',
     module: {
       rules: [
         {
-          test: /\.css$/,
-          use: [
-            // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
-            {
-              loader: 'css-loader',
-              options: {
-                esModule: false,
-                sourceMap: true
-              }
-            }
-          ]
-        },
-        // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
-        {
           test: /\.s[ac]ss$/,
           use: [
+            // Instead of style-loader, to avoid FOUC
+            MiniCssExtractPlugin.loader,
+            // Parses CSS imports
+            'css-loader',
+            // Provides autoprefixing
             {
               loader: 'postcss-loader',
               options: {
@@ -35,23 +29,18 @@ module.exports = (options, apos) => {
                 }
               }
             },
-            {
-              loader: 'sass-loader',
-              options: {
-                sourceMap: false,
-                implementation: require('node-sass'),
-                additionalData: `
-@import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";
-              `
-              }
-            }
-          ]
+            // Parses SASS imports
+            'sass-loader'
+          ],
+          // https://stackoverflow.com/a/60482491/389684
+          sideEffects: true
         }
       ]
     },
     plugins: [
-      new StyleLintPlugin({
-        files: [ './node_modules/apostrophe/modules/**/*.{scss,vue}' ]
+      new MiniCssExtractPlugin({
+        // Should be automatic but we wind up with main.css if we try to go with that
+        filename: options.outputFilename.replace('.js', '.css')
       })
     ]
   };

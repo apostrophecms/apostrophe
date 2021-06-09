@@ -15,13 +15,14 @@ module.exports = ({
     task(
       {
         importFile,
-        modulesDir
+        modulesDir,
+        outputFilename
       },
       apos
     )
   );
 
-  const config = {
+  let config = {
     entry: importFile,
     mode: process.env.NODE_ENV || 'development',
     optimization: {
@@ -50,5 +51,7 @@ module.exports = ({
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
   };
 
-  return merge(config, ...tasks);
+  config = merge(config, ...tasks);
+  console.log(config.plugins);
+  return config;
 };

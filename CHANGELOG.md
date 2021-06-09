@@ -1,5 +1,69 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+- Adds browser-side `editMode` flag that tracks the state of the current view (edit or preview), located at `window.apos.adminBar.editMode`
+
+### Fixes
+
+* Reverse relationships work properly for published documents.
+* Relationship subfields are now loaded properly when `reverseOf` is used.
+
+### Changes
+
+* Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
+- The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
+- Uploading SVG files is permitted in the Media Library by default.
+
+## 3.0.0-beta.3.1 - 2021-06-07
+
+### Breaks
+- This backwards compatibility break actually occurred in 3.0.0-beta.3 and was not documented at that time, but it is important to know that the following Rich Text tool names have been updated to match Tiptap2's convention:
+-- `bullet_list` -> `bulletList`
+-- `ordered_list` -> `orderedList`
+-- `code_block` -> `codeBlock`
+-- `horizontal_rule` -> `horizontalRule`
+
+### Fixes
+
+- Rich Text default tool names updated, no longer broken. Bug introduced in 3.0.0-beta.3.
+- Fixed Rich Text's tool cascade to properly account for core defaults, project level defaults, and area-specific options.
+
+## 3.0.0-beta.3 - 2021-06-03
+
+### Security Fixes
+
+The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve the tags that they added, without first escaping their input, creating a CSRF risk. These filters have been updated to escape their input unless it has already been marked safe. No code changes are required to templates whose input to the filter is intended as plaintext, however if you were intentionally leveraging this bug to output unescaped HTML markup you will need to make sure your input is free of CSRF risks and then use the `| safe` filter before the `| nlbr` or `| nlp` filter.
+
+### Adds
+
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
+- Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
+
+### Fixes
+
+- Temporarily pinned to Vue 2.6.12 to fix an issue where the "New" button in the piece manager modals disappeared. We think this is a bug in the newly released Vue 2.6.13 but we are continuing to research it.
+- Updated dependencies on `sanitize-html` and `nodemailer` to new major versions, causing no bc breaks at the ApostropheCMS level. This resolved two critical vulnerabilities according to `npm audit`.
+- Removed many unused dependencies.
+- The data retained for "Undo Publish" no longer causes slug conflicts in certain situations.
+- Custom piece types using `localized: false` or `autopublish: true,` as well as singleton types, now display the correct options on the "Save" dropdown.
+- The "Save and View," "Publish and View" and/or "Save Draft and Preview" options now appear only if an appropriate piece page actually exists for the piece type.
+- Duplicating a widget now properly assigns new IDs to all copied sub-widgets, sub-areas and array items as well.
+
+- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
+- If you refresh the page while previewing or editing, you will be returned to that same state.
+
+### Notices
+
+- Numerous `npm audit` vulnerabily warnings relating to `postcss` 7.x were examined, however it was determined that these are based on the idea of a malicious SASS coder attempting to cause a denial of service. Apostrophe developers would in any case be able to contribute JavaScript as well and so are already expected to be trusted parties. This issue must be resolved upstream in packages including both `stylelint` and `vue-loader` which have considerable work to do before supporting `postcss` 8.x, and in any case public access to write SASS is not part of the attack surface of Apostrophe.
+
+### Changes
+
+- When logging out on a page that only exists in draft form, or a page with access controls, you are redirected to the home page rather than seeing a 404 message.
+
+- Rich text editor upgraded to [tiptap 2.x beta](https://www.tiptap.dev) :tada:. On the surface not a lot has changed with the upgrade, but tiptap 2 has big improvements in terms of speed, composability, and extension support. [See the technical differences of tiptap 1 and 2 here](https://www.tiptap.dev/overview/upgrade-guide#reasons-to-upgrade-to-tiptap-2x)
+
 ## 3.0.0-beta.2 - 2021-05-21
 
 ### **Breaks**
@@ -21,6 +85,10 @@
 - `AposModal` now emits a `ready` event when it is fully painted and can be interacted with by users or code.
 - The video widget is now compatible with vimeo private videos when the domain is on the allowlist in vimeo.
 
+### Changes
+
+- You can now override the parked page definition for the home page without copying the entirety of `minimumPark` from the source code. Specifically, you will not lose the root archive page if you park the home page without explicitly parking the archive page as well. This makes it easier to choose your own type for the home page, in lieu of `@apostrophecms/home-page`.
+
 ### Fixes
 
 - Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
@@ -28,7 +96,7 @@
 - The home page and other parked pages should not immediately show as "pending changes."
 - In-context editing works properly when the current browser URL has a hash (portion beginning with `#`), enabling the use of the hash for project-specific work. Thanks to [https://stepanjakl.com/](Štěpán Jákl) for reporting the issue.
 - When present, the `apos.http.addQueryToUrl` method preserves the hash of the URL intact.
-- The home page and other parked pages should not immediately show as "pending changes." 
+- The home page and other parked pages should not immediately show as "pending changes."
 - The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
 - The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
 - Added additional retries when binding to the port in a dev environment.

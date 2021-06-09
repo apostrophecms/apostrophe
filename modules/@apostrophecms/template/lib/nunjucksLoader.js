@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
+const { stripIndent } = require('common-tags');
 
 module.exports = function(moduleName, searchPaths, noWatch, templates, options) {
 
@@ -144,7 +145,15 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
           const macro = matches[0];
           if (macro.match(/{%\s*area|{%\s*component/)) {
             self.templates.apos.util.warnDevOnce('async-in-macros',
-              `The Nunjucks template:\n\n${fullpath}\n\nAttempts to use {% area %} or {% component %} inside {% macro %}.\nThis will not work. Replace {% macro %}...{% endmacro %} with\n{% fragment %}...{% endfragment %}.`
+              stripIndent`The Nunjucks template:
+
+              ${fullpath}
+
+              attempts to use {% area %} or {% component %} inside {% macro %}.
+
+              This will not work. Replace {% macro %}...{% endmacro %} with
+              {% fragment %}...{% endfragment %}. Also replace every call to
+              the macro with {% render fragmentName(arguments) %}.`
             );
           }
         }

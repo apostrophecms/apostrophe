@@ -21,7 +21,7 @@
         />
         <div
           v-if="!error && oembedResult.html" v-html="oembedResult.html"
-          class="apos-input__embed" :class="{ 'is-dynamic': !!dynamicRatio }"
+          class="apos-input__embed" :class="{ 'apos-is-dynamic': !!dynamicRatio }"
           :style="{ paddingTop: dynamicRatio && `${(dynamicRatio * 100)}%` }"
         />
       </div>
@@ -139,7 +139,7 @@ export default {
       max-width: 100%;
     }
 
-    &.is-dynamic {
+    &.apos-is-dynamic {
       position: relative;
       width: 100%;
       height: 0;

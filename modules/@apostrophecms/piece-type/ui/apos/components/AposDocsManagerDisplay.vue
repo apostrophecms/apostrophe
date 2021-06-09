@@ -36,7 +36,7 @@
         class="apos-table__row"
         v-for="item in items"
         :key="item._id"
-        :class="{'is-selected': false }"
+        :class="{'apos-is-selected': false }"
         @mouseover="over(item._id)" @mouseout="out(item._id)"
       >
         <td

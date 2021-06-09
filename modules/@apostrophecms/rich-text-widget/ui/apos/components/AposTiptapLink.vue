@@ -3,30 +3,24 @@
     <AposButton
       type="rich-text"
       @click="click"
-      :class="{ 'apos-active': buttonActive }"
+      :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
       :icon="tool.icon ? tool.icon : false"
       :modifiers="['no-border', 'no-motion']"
     />
-    <!--
-      TODO: Confirm if the `editor` object passed into this `editor-menu-bubble`
-      should be the same one from the parent, or a fresh one. It does not seem
-      to use any of the editor configurations from the parent. - AB
-     -->
     <div
       v-if="active"
       v-click-outside-element="close"
       class="apos-popover apos-link-control__dialog"
       x-placement="bottom"
       :class="{
-        'is-triggered': active,
-        'has-selection': hasSelection
+        'apos-is-triggered': active,
+        'apos-has-selection': hasSelection
       }"
     >
       <AposContextMenuDialog
         menu-placement="bottom-start"
-        v-if="active"
       >
         <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
           <AposButton
@@ -39,6 +33,7 @@
           :schema="schema"
           v-model="value"
           :modifiers="formModifiers"
+          :key="lastSelectionTime"
         />
         <footer class="apos-link-control__footer">
           <AposButton
@@ -59,14 +54,8 @@
 
 <script>
 
-import { EditorMenuBubble } from 'tiptap';
-import { isEmpty } from 'lodash';
-
 export default {
   name: 'AposTiptapLink',
-  components: {
-    EditorMenuBubble
-  },
   props: {
     name: {
       type: String,
@@ -91,7 +80,7 @@ export default {
       value: {
         data: {}
       },
-      formModifiers: [ 'small' ],
+      formModifiers: [ 'small', 'margin-micro' ],
       schema: [
         {
           name: 'href',
@@ -114,10 +103,17 @@ export default {
   },
   computed: {
     buttonActive() {
-      return !isEmpty(this.value.data);
+      return this.value.data && this.value.data.href;
+    },
+    lastSelectionTime() {
+      return this.editor.view.lastSelectionTime;
     },
     hasSelection() {
-      return this.editor.selection.from !== this.editor.selection.to;
+      const { state } = this.editor;
+      const { selection } = this.editor.state;
+      const { from, to } = selection;
+      const text = state.doc.textBetween(from, to, '');
+      return text !== '';
     },
     offset() {
       const selection = window.getSelection();
@@ -135,7 +131,7 @@ export default {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
     },
-    'editor.selection.from': {
+    'editor.view.lastSelectionTime': {
       handler(newVal, oldVal) {
         this.populateFields();
       }
@@ -149,7 +145,7 @@ export default {
   methods: {
     removeLink() {
       this.value.data = {};
-      this.save();
+      this.editor.commands.unsetLink();
       this.close();
     },
     click() {
@@ -159,15 +155,17 @@ export default {
       }
     },
     close() {
-      this.active = false;
-      this.editor.focus();
+      if (this.active) {
+        this.active = false;
+        this.editor.chain().focus();
+      }
     },
     save() {
       // cleanup incomplete submissions
       if (this.value.data.target && !this.value.data.href) {
         delete this.value.data.target;
       }
-      this.editor.commands[this.name](this.value.data);
+      this.editor.commands.setLink(this.value.data);
       this.active = false;
     },
     keyboardHandler(e) {
@@ -185,12 +183,10 @@ export default {
       }
     },
     populateFields() {
-      const attrs = this.editor.getMarkAttrs('link');
+      const attrs = this.editor.getAttributes('link');
       this.value.data = {};
       this.schema.forEach((item) => {
-        if (attrs[item.name]) {
-          this.value.data[item.name] = attrs[item.name];
-        }
+        this.value.data[item.name] = attrs[item.name] || '';
       });
     }
   }
@@ -213,13 +209,13 @@ export default {
     pointer-events: none;
   }
 
-  .apos-link-control__dialog.is-triggered.has-selection {
+  .apos-link-control__dialog.apos-is-triggered.apos-has-selection {
     opacity: 1;
     pointer-events: auto;
   }
 
-  .apos-active {
-    background-color: var(--a-brand-blue);
+  .apos-is-active {
+    background-color: var(--a-base-7);
   }
 
   .apos-link-control__footer {
@@ -228,7 +224,7 @@ export default {
     margin-top: 10px;
   }
 
-  .apos-link-control__footer .apos-button {
+  .apos-link-control__footer .apos-button__wrapper {
     margin-left: 7.5px;
   }
 

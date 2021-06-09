@@ -258,11 +258,21 @@ module.exports = {
         return self.find(req).areas(false).relationships(false);
       },
 
-      // Configure our `addUrlsToPieces` method as the `addUrls` method
-      // of the related pieces module.
+      // Associates this module with the relevant piece type module
+      // so that it knows to invoke our `addUrlsToPieces` method.
+      // Also marks the piece type as previewable.
 
       enableAddUrlsToPieces() {
-        self.pieces.setAddUrls(self.addUrlsToPieces);
+        self.pieces.addUrlsVia(self, true);
+      },
+
+      // Default implementation: we are ready to add URLs to pieces when we have
+      // at least one reachable piece page. pieceTypeName is guaranteed to always
+      // be our corresponding piece module name right now, however it is provided
+      // in case a subclass chooses to invoke `addUrlsVia` for multiple
+      // piece types
+      async readyToAddUrlsToPieces(req, pieceTypeName) {
+        return !!(await self.find(req, {}).areas(false).relationships(false).toObject());
       },
 
       // Populate `req.data.piecesFilters` with arrays of choice objects,

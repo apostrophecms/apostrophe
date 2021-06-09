@@ -329,10 +329,34 @@ export default {
     clone(index) {
       const widget = klona(this.next[index]);
       delete widget._id;
+      this.regenerateIds(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
       this.insert({
         widget,
         index
       });
+    },
+    // Regenerate all array item, area and widget ids so they are considered
+    // new. Useful when copying a widget with nested content.
+    regenerateIds(schema, object) {
+      for (const field of schema) {
+        if (field.type === 'array') {
+          for (const item of (object[field.name] || [])) {
+            item._id = cuid();
+            this.regenerateIds(field.schema, item);
+          }
+        } else if (field.type === 'area') {
+          if (object[field.name]) {
+            object[field.name]._id = cuid();
+            for (const item of (object[field.name].items || [])) {
+              item._id = cuid();
+              const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
+              this.regenerateIds(schema, item);
+            }
+          }
+        }
+        // We don't want to regenerate attachment ids. They correspond to
+        // actual files, and the reference count will update automatically
+      }
     },
     async update(widget) {
       if (this.docId === window.apos.adminBar.contextId) {

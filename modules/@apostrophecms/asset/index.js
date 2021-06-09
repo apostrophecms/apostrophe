@@ -22,19 +22,23 @@ module.exports = {
         webpack: true,
         outputs: [ 'css', 'js' ],
         label: 'public-facing modern JavaScript and SASS',
+        // Load index.js and index.scss from each module
+        index: true,
         // Load only in browsers that support ES6 modules
         condition: 'modules'
       },
-      'src-ie11': {
-        // An alternative build from the same sources
-        source: 'src',
-        webpack: true,
-        scenes: [ 'public', 'user' ],
-        outputs: [ 'css', 'js' ],
-        label: 'public-facing modern JavaScript and SASS',
-        // Load only in browsers that do not support ES6 modules
-        condition: 'nomodules'
-      },
+      // 'src-ie11': {
+      //   // An alternative build from the same sources
+      //   source: 'src',
+      //   webpack: true,
+      //   scenes: [ 'public', 'user' ],
+      //   outputs: [ 'css', 'js' ],
+      //   label: 'public-facing modern JavaScript and SASS',
+      //   // Load index.js and index.scss from each module
+      //   index: true,
+      //   // Load only in browsers that do not support ES6 modules
+      //   condition: 'nomodules'
+      // },
       public: {
         scenes: [ 'public', 'user' ],
         outputs: [ 'css', 'js' ],
@@ -59,6 +63,10 @@ module.exports = {
         label: 'Apostrophe admin UI',
         // Only rebuilt on npm updates unless CORE_DEV is set in the environment
         core: true,
+        icons: true,
+        components: true,
+        tiptapExtensions: true,
+        apps: true,
         prologue: stripIndent`
           import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
           import Vue from 'Modules/@apostrophecms/ui/lib/vue';
@@ -123,15 +131,10 @@ module.exports = {
         async task(argv) {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
-          const modulesDir = `${buildDir}/modules`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
-          await fs.remove(modulesDir);
-          await fs.mkdirp(modulesDir);
-
-          await moduleOverrides();
 
           for (const [ name, options ] of Object.entries(self.options.builds)) {
             let rebuild = argv && !argv['check-ui-build'];
@@ -162,6 +165,7 @@ module.exports = {
 
             if (rebuild) {
               await fs.mkdirp(bundleDir);
+              console.log(`** created ${bundleDir}`);
               await build(name, options);
             }
           }
@@ -181,8 +185,9 @@ module.exports = {
             });
           }
 
-          // For now this is specific to ui/apos
-          async function moduleOverrides() {
+          async function moduleOverrides(modulesDir, source) {
+            await fs.remove(modulesDir);
+            await fs.mkdirp(modulesDir);
             let names = {};
             const directories = {};
             // Most other modules are not actually instantiated yet, but
@@ -206,7 +211,7 @@ module.exports = {
             for (const name of names) {
               const moduleDir = `${modulesDir}/${name}`;
               for (const dir of directories[name]) {
-                const srcDir = `${dir}/ui/apos`;
+                const srcDir = `${dir}/ui/${source}`;
                 if (fs.existsSync(srcDir)) {
                   await fs.copy(srcDir, moduleDir);
                 }
@@ -216,8 +221,13 @@ module.exports = {
 
           async function build(name, options) {
             self.apos.util.log(`🧑‍💻 Building the ${options.label}...`);
+            const modulesDir = `${buildDir}/${name}/modules`;
             const source = options.source || name;
-            let iconImports, componentImports, tiptapExtensionImports, appImports, indexImports;
+            console.log('***', fs.existsSync(bundleDir));
+            await moduleOverrides(modulesDir, source);
+
+            console.log('***', fs.existsSync(bundleDir));
+            let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.icons) {
               iconImports = getIcons();
             }
@@ -234,51 +244,55 @@ module.exports = {
               });
             }
             if (options.index) {
-              indexImports = getImports(source, 'index.js', {
+              indexJsImports = getImports(source, 'index.js', {
                 invokeApps: true,
                 importSuffix: 'App'
+              });
+              indexSassImports = getImports(source, 'index.scss', {
+                importSuffix: 'Stylesheet'
               });
             }
 
             if (options.webpack) {
               console.log('** invoking webpack');
-              const importFile = `${buildDir}/import.js`;
+              const importFile = `${buildDir}/${name}-import.js`;
 
               fs.writeFileSync(importFile, (options.prologue || '') + stripIndent`
-                ${iconImports && iconImports.importCode}
-                ${iconImports && iconImports.registerCode}
-                ${componentImports && componentImports.importCode}
-                ${tiptapExtensionImports && tiptapExtensionImports.importCode}
-                ${appImports && appImports.importCode}
-                ${indexImports && indexImports.importCode}
-                ${iconImports && iconImports.registerCode}
-                ${componentImports && componentImports.registerCode}
-                ${tiptapExtensionImports && tiptapExtensionImports.registerCode}
-                ${indexImports && indexImports.registerCode}
+                ${(iconImports && iconImports.importCode) || ''}
+                ${(iconImports && iconImports.registerCode) || ''}
+                ${(componentImports && componentImports.importCode) || ''}
+                ${(tiptapExtensionImports && tiptapExtensionImports.importCode) || ''}
+                ${(appImports && appImports.importCode) || ''}
+                ${(indexJsImports && indexJsImports.importCode) || ''}
+                ${(indexSassImports && indexSassImports.importCode) || ''}
+                ${(iconImports && iconImports.registerCode) || ''}
+                ${(componentImports && componentImports.registerCode) || ''}
+                ${(tiptapExtensionImports && tiptapExtensionImports.registerCode) || ''}
               ` +
                 (appImports ? stripIndent`
                   setTimeout(() => {
                     ${appImports.invokeCode}
                   }, 0);
                 ` : '') +
-                (indexImports ? stripIndent`
+                (indexJsImports ? stripIndent`
                   setTimeout(() => {
-                    ${indexImports.invokeCode}
+                    ${indexJsImports.invokeCode}
                   }, 0);
                 ` : '')
               );
 
+              const outputFilename = `${name}-build.js`;
               await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
                 {
                   importFile,
                   modulesDir,
                   outputPath: bundleDir,
-                  outputFilename: `${name}-build.js`
+                  outputFilename
                 },
                 self.apos
               ));
               self.apos.util.log(`👍 ${options.label} is complete!`);
-
+              console.log(`${bundleDir}/${outputFilename}`);
               const now = Date.now().toString();
               fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
             } else {
