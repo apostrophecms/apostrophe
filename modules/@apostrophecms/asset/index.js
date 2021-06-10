@@ -526,8 +526,8 @@ module.exports = {
         const base = self.getAssetBaseUrl();
         if (self.options.es5) {
           return self.apos.template.safe(stripIndent`
-            <script module src="${base}/${when}-module-bundle.js"></script>
             <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
+            <script type="module" src="${base}/${when}-module-bundle.js"></script>
           `);
         } else {
           return self.apos.template.safe(stripIndent`
