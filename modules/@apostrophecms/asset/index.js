@@ -11,6 +11,11 @@ module.exports = {
 
   options: {
     alias: 'asset',
+    // If true, create both modern JavaScript and ES5 (IE11) compatibility
+    // builds of the ui/src browser code in each module, and serve them
+    // to the appropriate browsers without overhead for modern browsers.
+    // This does not attempt to compile the admin UI (ui/apos) for ES5.
+    es5: false,
     // If this option is true and process.env.NODE_ENV is not `production`,
     // the browser will refresh when the Apostrophe application
     // restarts. A useful companion to `nodemon`.
@@ -22,6 +27,7 @@ module.exports = {
     self.iconMap = {
       ...globalIcons
     };
+    self.configureBuilds();
     self.initUploadfs();
   },
   handlers (self) {
@@ -37,9 +43,9 @@ module.exports = {
             self.apos.options.autoBuild !== false
           ) {
             // If starting up normally, run the build task, checking if we
-            // really need to update the core UI build.
+            // really need to update the apos build
             await self.apos.task.invoke('@apostrophecms/asset:build', {
-              'check-ui-build': true
+              'check-apos-build': true
             });
           }
         }
@@ -56,65 +62,72 @@ module.exports = {
   tasks(self) {
     return {
       build: {
-        usage: 'Build Apostrophe frontend javascript master import files',
+        usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
         async task(argv) {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
-          const modulesDir = `${buildDir}/modules`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
-          await fs.remove(modulesDir);
-          await fs.mkdirp(modulesDir);
 
-          let rebuildAposUi = argv && !argv['check-ui-build'];
+          for (const [ name, options ] of Object.entries(self.builds)) {
+            // If the option is not present always rebuild everything
+            let rebuild = argv && !argv['check-apos-build'];
 
-          const APOS_MERGED_BUNDLE = 'apos-bundle.js';
-          const APOS_ONLY_BUNDLE = 'apos-only-bundle.js';
-          const APOS_ONLY_TS = '.apos-only-timestamp.txt';
-          const PUBLIC_BUNDLE_CSS = 'public-bundle.css';
-          const PUBLIC_BUNDLE_JS = 'public-bundle.js';
-          let checkTimestamp = false;
+            if (!rebuild) {
+              let checkTimestamp = false;
 
-          const bundleExists = await fs.pathExists(bundleDir);
+              // Only builds contributing to the apos admin UI (currently just "apos")
+              // are candidates to skip the build simply because package-lock.json is
+              // older than the bundle. All other builds frequently contain
+              // project level code
+              if (options.apos) {
+                const bundleExists = await fs.pathExists(bundleDir);
 
-          if (!bundleExists) {
-            rebuildAposUi = true;
-            await fs.mkdirp(bundleDir);
-          } else {
-            await fs.remove(`${bundleDir}/${APOS_MERGED_BUNDLE}`);
-            await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`);
-            await fs.remove(`${bundleDir}/${PUBLIC_BUNDLE_JS}`);
-          }
+                if (!bundleExists) {
+                  rebuild = true;
+                }
 
-          if (!process.env.CORE_DEV) {
-            checkTimestamp = await fs.pathExists(`${bundleDir}/${APOS_ONLY_TS}`);
-          }
+                if (!process.env.APOS_DEV) {
+                  checkTimestamp = await fs.pathExists(`${bundleDir}/${name}-only-timestamp.txt`);
+                }
 
-          if (!rebuildAposUi && checkTimestamp) {
-            // If we have a UI build timestamp file compare against the app's
-            // package.json modified time.
-            if (await lockFileNewerThanUi()) {
-              rebuildAposUi = true;
-              await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
+                if (checkTimestamp) {
+                  // If we have a UI build timestamp file compare against the app's
+                  // package.json modified time.
+                  if (await lockFileIsNewer(name)) {
+                    rebuild = true;
+                  }
+                } else {
+                  rebuild = true;
+                }
+              } else {
+                // Always redo the other builds,
+                // which are quick and typically contain
+                // project level code not detectable by
+                // comparing package-lock timestamps
+                rebuild = true;
+              }
             }
-          } else {
-            rebuildAposUi = true;
-            await fs.remove(`${bundleDir}/${APOS_ONLY_BUNDLE}`);
+
+            if (rebuild) {
+              await fs.mkdirp(bundleDir);
+              await build(name, options);
+            }
           }
 
-          await moduleOverrides();
-          await buildPublicCssBundle();
-          buildPublicJsBundle();
-
-          if (rebuildAposUi) {
-            await buildAposBundle();
+          // Discover the set of unique asset scenes that exist (currently
+          // just `public` and `apos`) by examining those specified as
+          // targets for the various builds
+          const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
+          let bundles = [];
+          for (const scene of scenes) {
+            bundles = [ ...bundles, ...merge(scene) ];
           }
 
-          merge();
-          await deploy();
+          await deploy(bundles);
 
           if (process.env.APOS_BUNDLE_ANALYZER) {
             return new Promise((resolve, reject) => {
@@ -123,7 +136,9 @@ module.exports = {
             });
           }
 
-          async function moduleOverrides() {
+          async function moduleOverrides(modulesDir, source) {
+            await fs.remove(modulesDir);
+            await fs.mkdirp(modulesDir);
             let names = {};
             const directories = {};
             // Most other modules are not actually instantiated yet, but
@@ -147,7 +162,7 @@ module.exports = {
             for (const name of names) {
               const moduleDir = `${modulesDir}/${name}`;
               for (const dir of directories[name]) {
-                const srcDir = `${dir}/ui/apos`;
+                const srcDir = `${dir}/ui/${source}`;
                 if (fs.existsSync(srcDir)) {
                   await fs.copy(srcDir, moduleDir);
                 }
@@ -155,97 +170,101 @@ module.exports = {
             }
           }
 
-          async function buildPublicCssBundle() {
-            const publicImports = getImports('public', '*.css', { });
+          async function build(name, options) {
+            self.apos.util.log(`🧑‍💻 Building the ${options.label}...`);
+            const modulesDir = `${buildDir}/${name}/modules`;
+            const source = options.source || name;
+            await moduleOverrides(modulesDir, source);
 
-            fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_CSS}`,
-              publicImports.paths.map(path => {
-                return fs.readFileSync(path);
-              }).join('\n')
-            ); // TODO: use webpack just to minify at the end.
-          }
+            let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
+            if (options.apos) {
+              iconImports = getIcons();
+              componentImports = getImports(`${source}/components`, '*.vue', { registerComponents: true });
+              tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
+              appImports = getImports(`${source}/apps`, '*.js', {
+                invokeApps: true,
+                importSuffix: 'App'
+              });
+            }
+            if (options.index) {
+              indexJsImports = getImports(source, 'index.js', {
+                invokeApps: true,
+                importSuffix: 'App'
+              });
+              indexSassImports = getImports(source, 'index.scss', {
+                importSuffix: 'Stylesheet'
+              });
+            }
 
-          function buildPublicJsBundle() {
-            // We do not use an import file here because import is not
-            // an ES5 feature and it is contrary to the spirit of ES5 code
-            // to force-fit that type of code. We do not mandate ES6 in
-            // "public" code (loaded for logged-out users who might have
-            // old browsers).
-            //
-            // Of course, developers can push an "public" asset that is
-            // the output of an ES6 pipeline.
-            const publicImports = getImports('public', '*.js', { });
+            if (options.webpack) {
+              const importFile = `${buildDir}/${name}-import.js`;
 
-            fs.writeFileSync(`${bundleDir}/${PUBLIC_BUNDLE_JS}`, stripIndent`
-              (function() {
-                window.apos = window.apos || {};
-                var data = document.body && document.body.getAttribute('data-apos');
-                Object.assign(window.apos, JSON.parse(data || '{}'));
-                if (data) {
-                  document.body.removeAttribute('data-apos');
-                }
-              })();
-            ` + '\n' +
-            publicImports.paths.map(path => {
-              return fs.readFileSync(path);
-            }).join('\n')); // TODO: use webpack just to minify at the end.
-          }
+              fs.writeFileSync(importFile, (options.prologue || '') + stripIndent`
+                ${(iconImports && iconImports.importCode) || ''}
+                ${(iconImports && iconImports.registerCode) || ''}
+                ${(componentImports && componentImports.importCode) || ''}
+                ${(tiptapExtensionImports && tiptapExtensionImports.importCode) || ''}
+                ${(appImports && appImports.importCode) || ''}
+                ${(indexJsImports && indexJsImports.importCode) || ''}
+                ${(indexSassImports && indexSassImports.importCode) || ''}
+                ${(iconImports && iconImports.registerCode) || ''}
+                ${(componentImports && componentImports.registerCode) || ''}
+                ${(tiptapExtensionImports && tiptapExtensionImports.registerCode) || ''}
+              ` +
+                (appImports ? stripIndent`
+                  setTimeout(() => {
+                    ${appImports.invokeCode}
+                  }, 0);
+                ` : '') +
+                (indexJsImports ? stripIndent`
+                  setTimeout(() => {
+                    ${indexJsImports.invokeCode}
+                  }, 0);
+                ` : '')
+              );
 
-          async function buildAposBundle() {
-            self.apos.util.log('🧑‍💻 Building the Apostrophe admin UI...');
-            const iconImports = getIcons();
-            const componentImports = getImports('apos/components', '*.vue', { registerComponents: true });
-            const tiptapExtensionImports = getImports('apos/tiptap-extensions', '*.js', { registerTiptapExtensions: true });
-            const appImports = getImports('apos/apps', '*.js', {
-              invokeApps: true,
-              importSuffix: 'App'
-            });
-            const importFile = `${buildDir}/import.js`;
-
-            fs.writeFileSync(importFile, stripIndent`
-              import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-              import Vue from 'Modules/@apostrophecms/ui/lib/vue';
-              if (window.apos.modules) {
-                for (const module of Object.values(window.apos.modules)) {
-                  if (module.alias) {
-                    window.apos[module.alias] = module;
-                  }
-                }
+              const outputFilename = `${name}-build.js`;
+              await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
+                {
+                  importFile,
+                  modulesDir,
+                  outputPath: bundleDir,
+                  outputFilename
+                },
+                self.apos
+              ));
+              if (options.apos) {
+                const now = Date.now().toString();
+                fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
               }
-              window.apos.bus = new Vue();
-              ${iconImports.importCode}
-              ${iconImports.registerCode}
-              ${componentImports.importCode}
-              ${tiptapExtensionImports.importCode}
-              ${appImports.importCode}
-              ${iconImports.registerCode}
-              ${componentImports.registerCode}
-              ${tiptapExtensionImports.registerCode}
-              setTimeout(() => {
-                ${appImports.invokeCode}
-              }, 0);
-            `);
-
-            fs.writeFileSync(`${buildDir}/imports.json`, JSON.stringify({
-              icons: iconImports,
-              components: componentImports,
-              tiptapExtensions: tiptapExtensionImports,
-              apps: appImports
-            }));
-
-            await Promise.promisify(webpackModule)(require('./lib/webpack.config')(
-              {
-                importFile,
-                modulesDir,
-                outputPath: bundleDir,
-                outputFilename: APOS_ONLY_BUNDLE
-              },
-              self.apos
-            ));
-            self.apos.util.log('👍 Apostrophe UI build is complete!');
-
-            const now = Date.now().toString();
-            fs.writeFileSync(`${bundleDir}/${APOS_ONLY_TS}`, now);
+            } else {
+              if (options.outputs.includes('js')) {
+                // We do not use an import file here because import is not
+                // an ES5 feature and it is contrary to the spirit of ES5 code
+                // to force-fit that type of code. We do not mandate ES6 in
+                // "public" code (loaded for logged-out users who might have
+                // old browsers).
+                //
+                // Of course, developers can push an "public" asset that is
+                // the output of an ES6 pipeline.
+                const publicImports = getImports(name, '*.js', { });
+                fs.writeFileSync(`${bundleDir}/${name}-build.js`,
+                  ((options.prologue + '\n') || '') +
+                  publicImports.paths.map(path => {
+                    return fs.readFileSync(path);
+                  }).join('\n')
+                );
+              }
+              if (options.outputs.includes('css')) {
+                const publicImports = getImports(name, '*.css', { });
+                fs.writeFileSync(`${bundleDir}/${name}-build.css`,
+                  publicImports.paths.map(path => {
+                    return fs.readFileSync(path);
+                  }).join('\n')
+                );
+              }
+            }
+            self.apos.util.log(`👍 ${options.label} is complete!`);
           }
 
           function getIcons() {
@@ -286,15 +305,43 @@ module.exports = {
             return output;
           }
 
-          function merge() {
+          function merge(scene) {
+            const jsModules = `${scene}-module-bundle.js`;
+            const jsNoModules = `${scene}-nomodule-bundle.js`;
+            const css = `${scene}-bundle.css`;
             fs.writeFileSync(
-              `${bundleDir}/${APOS_MERGED_BUNDLE}`,
-              fs.readFileSync(`${bundleDir}/public-bundle.js`) +
-                fs.readFileSync(`${bundleDir}/apos-only-bundle.js`)
+              `${bundleDir}/${jsModules}`,
+              Object.entries(self.builds).filter(
+                ([ name, options ]) => options.scenes.includes(scene) &&
+                options.outputs.includes('js') &&
+                (!options.condition || options.condition === 'module')
+              ).map(([ name, options ]) => {
+                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
+              }).join('\n')
             );
+            fs.writeFileSync(
+              `${bundleDir}/${jsNoModules}`,
+              Object.entries(self.builds).filter(
+                ([ name, options ]) => options.scenes.includes(scene) &&
+                options.outputs.includes('js') &&
+                (!options.condition || options.condition === 'nomodule')
+              ).map(([ name, options ]) => {
+                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
+              }).join('\n')
+            );
+            fs.writeFileSync(
+              `${bundleDir}/${css}`,
+              Object.entries(self.builds).filter(
+                ([ name, options ]) => options.scenes.includes(scene) &&
+                options.outputs.includes('css')
+              ).map(([ name, options ]) => {
+                return `/* BUILD: ${name} */\n` + fs.readFileSync(`${bundleDir}/${name}-build.css`, 'utf8');
+              }).join('\n')
+            );
+            return [ jsModules, jsNoModules, css ];
           }
 
-          async function deploy() {
+          async function deploy(bundles) {
             if (process.env.NODE_ENV !== 'production') {
               return;
             }
@@ -313,9 +360,9 @@ module.exports = {
               releaseDir = `${self.apos.rootDir}/public/apos-frontend/releases/${releaseId}/${namespace}`;
               await fs.mkdirp(releaseDir);
             }
-            for (const file of [ 'apos-bundle.js', 'public-bundle.js', 'public-bundle.css' ]) {
-              const src = `${bundleDir}/${file}`;
-              await copyIn(src, `${releaseDir}/${file}`);
+            for (const bundle of bundles) {
+              const src = `${bundleDir}/${bundle}`;
+              await copyIn(src, `${releaseDir}/${bundle}`);
               await fs.remove(src);
             }
           }
@@ -367,8 +414,8 @@ module.exports = {
             return output;
           }
 
-          async function lockFileNewerThanUi() {
-            const timestamp = fs.readFileSync(`${bundleDir}/${APOS_ONLY_TS}`, 'utf8');
+          async function lockFileIsNewer(name) {
+            const timestamp = fs.readFileSync(`${bundleDir}/${name}-only-timestamp.txt`, 'utf8');
             let pkgStats;
 
             if (await fs.pathExists(`${self.apos.rootDir}/package-lock.json`)) {
@@ -404,20 +451,21 @@ module.exports = {
       },
       stylesheetsHelper(when) {
         const base = self.getAssetBaseUrl();
-        // The styles for apostrophe admin UI are baked into the JS bundle. But
-        // for public styles we break them out separately to avoid a FOUC.
-        const bundle = `<link href="${base}/public-bundle.css" rel="stylesheet" />`;
+        const bundle = `<link href="${base}/${when}-bundle.css" rel="stylesheet" />`;
         return self.apos.template.safe(bundle);
       },
       scriptsHelper(when) {
         const base = self.getAssetBaseUrl();
-        let bundle;
-        if (when === 'apos') {
-          bundle = `<script src="${base}/apos-bundle.js"></script>`;
+        if (self.options.es5) {
+          return self.apos.template.safe(stripIndent`
+            <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
+            <script type="module" src="${base}/${when}-module-bundle.js"></script>
+          `);
         } else {
-          bundle = `<script src="${base}/public-bundle.js"></script>`;
+          return self.apos.template.safe(stripIndent`
+            <script src="${base}/${when}-module-bundle.js"></script>
+          `);
         }
-        return self.apos.template.safe(bundle);
       },
       shouldRefreshOnRestart() {
         return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
@@ -491,6 +539,88 @@ module.exports = {
         } else {
           return `/apos-frontend/${namespace}`;
         }
+      },
+      // An implementation method that you should not need to call.
+      // Sets a predetermined configuration for the frontend builds.
+      // If you are trying to enable IE11 support for ui/src, use the
+      // `es5: true` option (es5 builds are disabled by default).
+      configureBuilds() {
+        self.builds = {
+          src: {
+            scenes: [ 'public', 'apos' ],
+            webpack: true,
+            outputs: [ 'css', 'js' ],
+            label: 'public-facing modern JavaScript and Sass',
+            // Load index.js and index.scss from each module
+            index: true,
+            // Load only in browsers that support ES6 modules
+            condition: 'module'
+          },
+          'src-es5': {
+            // An alternative build from the same sources for IE11
+            source: 'src',
+            webpack: true,
+            scenes: [ 'public', 'apos' ],
+            // The CSS from the src build is identical, do not duplicate it
+            outputs: [ 'js' ],
+            label: 'public-facing modern JavaScript and Sass (IE11 build)',
+            // Load index.js and index.scss from each module
+            index: true,
+            // The polyfills babel will be expecting
+            prologue: stripIndent`
+              import "core-js/stable";
+              import "regenerator-runtime/runtime";
+            `,
+            // Load only in browsers that do not support ES6 modules
+            condition: 'nomodule'
+          },
+          public: {
+            scenes: [ 'public', 'apos' ],
+            outputs: [ 'css', 'js' ],
+            label: 'raw CSS and JS',
+            // Just concatenates
+            webpack: false,
+            prologue: stripIndent`
+              (function() {
+                window.apos = window.apos || {};
+                var data = document.body && document.body.getAttribute('data-apos');
+                Object.assign(window.apos, JSON.parse(data || '{}'));
+                if (data) {
+                  document.body.removeAttribute('data-apos');
+                }
+              })();
+            `
+          },
+          apos: {
+            scenes: [ 'apos' ],
+            outputs: [ 'js' ],
+            webpack: true,
+            label: 'Apostrophe admin UI',
+            // Only rebuilt on npm updates unless APOS_DEV is set in the environment
+            // to indicate that the dev writes project level or npm linked admin UI
+            // code of their own which might be newer than package-lock.json
+            apos: true,
+            prologue: stripIndent`
+              import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
+              import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+              if (window.apos.modules) {
+                for (const module of Object.values(window.apos.modules)) {
+                  if (module.alias) {
+                    window.apos[module.alias] = module;
+                  }
+                }
+              }
+              window.apos.bus = new Vue();
+            `,
+            // Load only in browsers that support ES6 modules
+            condition: 'module'
+          }
+          // We could add an apos-ie11 bundle that just pushes a "sorry charlie" prologue,
+          // if we chose
+        };
+        if (!self.options.es5) {
+          delete self.builds['src-es5'];
+        }
       }
     };
   },
@@ -516,7 +646,8 @@ module.exports = {
       return;
     }
     return {
-      get: {
+      // Use a POST route so IE11 doesn't cache it
+      post: {
         async restartId(req) {
           // Long polling: keep the logs quiet by responding slowly, except the
           // first time. If we restart, the request will fail immediately,
