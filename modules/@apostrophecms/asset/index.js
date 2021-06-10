@@ -233,7 +233,6 @@ module.exports = {
                 },
                 self.apos
               ));
-              self.apos.util.log(`👍 ${options.label} is complete!`);
               if (options.apos) {
                 const now = Date.now().toString();
                 fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
@@ -265,6 +264,7 @@ module.exports = {
                 );
               }
             }
+            self.apos.util.log(`👍 ${options.label} is complete!`);
           }
 
           function getIcons() {
