@@ -122,40 +122,38 @@ module.exports = {
         label: 'Redo',
         icon: 'redo-icon'
       },
-      // Disabled until sanitize-html is auto configured to save style properties
-      // when align controls are present
-      // alignLeft: {
-      //   component: 'AposTiptapButton',
-      //   label: 'Align Left',
-      //   icon: 'format-align-left-icon',
-      //   command: 'setTextAlign',
-      //   commandParameters: 'left',
-      //   isActive: { textAlign: 'left' }
-      // },
-      // alignCenter: {
-      //   component: 'AposTiptapButton',
-      //   label: 'Align Center',
-      //   icon: 'format-align-center-icon',
-      //   command: 'setTextAlign',
-      //   commandParameters: 'center',
-      //   isActive: { textAlign: 'center' }
-      // },
-      // alignRight: {
-      //   component: 'AposTiptapButton',
-      //   label: 'Align Right',
-      //   icon: 'format-align-right-icon',
-      //   command: 'setTextAlign',
-      //   commandParameters: 'right',
-      //   isActive: { textAlign: 'right' }
-      // },
-      // alignJustify: {
-      //   component: 'AposTiptapButton',
-      //   label: 'Align Justify',
-      //   icon: 'format-align-justify-icon',
-      //   command: 'setTextAlign',
-      //   commandParameters: 'justify',
-      //   isActive: { textAlign: 'justify' }
-      // },
+      alignLeft: {
+        component: 'AposTiptapButton',
+        label: 'Align Left',
+        icon: 'format-align-left-icon',
+        command: 'setTextAlign',
+        commandParameters: 'left',
+        isActive: { textAlign: 'left' }
+      },
+      alignCenter: {
+        component: 'AposTiptapButton',
+        label: 'Align Center',
+        icon: 'format-align-center-icon',
+        command: 'setTextAlign',
+        commandParameters: 'center',
+        isActive: { textAlign: 'center' }
+      },
+      alignRight: {
+        component: 'AposTiptapButton',
+        label: 'Align Right',
+        icon: 'format-align-right-icon',
+        command: 'setTextAlign',
+        commandParameters: 'right',
+        isActive: { textAlign: 'right' }
+      },
+      alignJustify: {
+        component: 'AposTiptapButton',
+        label: 'Align Justify',
+        icon: 'format-align-justify-icon',
+        command: 'setTextAlign',
+        commandParameters: 'justify',
+        isActive: { textAlign: 'justify' }
+      },
       highlight: {
         component: 'AposTiptapButton',
         label: 'Mark',
@@ -218,7 +216,8 @@ module.exports = {
           ...sanitizeHtml.defaultOptions,
           allowedTags: self.toolbarToAllowedTags(options),
           allowedAttributes: self.toolbarToAllowedAttributes(options),
-          allowedClasses: self.toolbarToAllowedClasses(options)
+          allowedClasses: self.toolbarToAllowedClasses(options),
+          allowedStyles: self.toolbarToAllowedStyles(options)
         };
       },
 
@@ -279,6 +278,22 @@ module.exports = {
               'name',
               'target'
             ]
+          },
+          alignLeft: {
+            tag: '*',
+            attributes: [ 'style' ]
+          },
+          alignCenter: {
+            tag: '*',
+            attributes: [ 'style' ]
+          },
+          alignRight: {
+            tag: '*',
+            attributes: [ 'style' ]
+          },
+          alignJustify: {
+            tag: '*',
+            attributes: [ 'style' ]
           }
         };
         for (const item of options.toolbar || []) {
@@ -286,10 +301,54 @@ module.exports = {
             for (const attribute of simple[item].attributes) {
               allowedAttributes[simple[item].tag] = allowedAttributes[simple[item].tag] || [];
               allowedAttributes[simple[item].tag].push(attribute);
+              allowedAttributes[simple[item].tag] = [ ...new Set(allowedAttributes[simple[item].tag]) ];
             }
           }
         }
         return allowedAttributes;
+      },
+
+      toolbarToAllowedStyles(options) {
+        const allowedStyles = {};
+        const simple = {
+          alignLeft: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^left$/ ]
+            }
+          },
+          alignCenter: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^center$/ ]
+            }
+          },
+          alignRight: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^right$/ ]
+            }
+          },
+          alignJustify: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^justify$/ ]
+            }
+          }
+        };
+        for (const item of options.toolbar || []) {
+          if (simple[item]) {
+            if (!allowedStyles[simple[item].selector]) {
+              allowedStyles[simple[item].selector] = {};
+            }
+            for (const property in simple[item].properties) {
+              if (!allowedStyles[simple[item].selector][property]) {
+                allowedStyles[simple[item].selector][property] = [];
+              }
+              allowedStyles[simple[item].selector][property].push(...simple[item].properties[property]);
+            }
+          }
+        }
       },
 
       toolbarToAllowedClasses(options) {
