@@ -11,11 +11,18 @@ module.exports = {
 
   options: {
     alias: 'asset',
+    // If true, create both modern JavaScript and ES5 (IE11) compatibility
+    // builds of the ui/src browser code in each module, and serve them
+    // to the appropriate browsers without overhead for modern browsers.
+    // This does not attempt to compile the admin UI (ui/apos) for ES5.
+    es5: false,
     // If this option is true and process.env.NODE_ENV is not `production`,
     // the browser will refresh when the Apostrophe application
     // restarts. A useful companion to `nodemon`.
     refreshOnRestart: false,
-    // Frontend builds
+    // Frontend builds. Changing these settings is not recommended
+    // except as part of development of the Apostrophe core. To enable
+    // the src-es5 build just set the `es5: true` option of this module.
     builds: {
       src: {
         scenes: [ 'public', 'apos' ],
@@ -37,6 +44,7 @@ module.exports = {
         label: 'public-facing modern JavaScript and SASS (IE11 build)',
         // Load index.js and index.scss from each module
         index: true,
+        // The polyfills babel will be expecting
         prologue: stripIndent`
           import "core-js/stable";
           import "regenerator-runtime/runtime";
@@ -97,6 +105,9 @@ module.exports = {
     self.iconMap = {
       ...globalIcons
     };
+    if (!self.options.es5) {
+      delete self.options.builds['src-es5'];
+    }
     self.initUploadfs();
   },
   handlers (self) {
@@ -513,10 +524,16 @@ module.exports = {
       },
       scriptsHelper(when) {
         const base = self.getAssetBaseUrl();
-        return self.apos.template.safe(stripIndent`
-          <script module src="${base}/${when}-module-bundle.js"></script>
-          <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
-        `);
+        if (self.options.es5) {
+          return self.apos.template.safe(stripIndent`
+            <script module src="${base}/${when}-module-bundle.js"></script>
+            <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
+          `);
+        } else {
+          return self.apos.template.safe(stripIndent`
+            <script src="${base}/${when}-module-bundle.js"></script>
+          `);
+        }
       },
       shouldRefreshOnRestart() {
         return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
