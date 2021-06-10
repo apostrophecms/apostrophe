@@ -60,7 +60,7 @@ module.exports = (options, apos) => {
     },
     plugins: [
       new StyleLintPlugin({
-        files: [ './node_modules/apostrophe/modules/*/ui/apos/**/*.scss' ]
+        files: [ './node_modules/apostrophe/modules/**/*.{scss,vue}' ]
       })
     ]
   };
