@@ -37,7 +37,7 @@ module.exports = (options, apos) => {
     plugins: [
       new MiniCssExtractPlugin({
         // Should be automatic but we wind up with main.css if we try to go with that
-        filename: options.outputFilename.replace('.js', '.css'),
+        filename: options.outputFilename.replace('.js', '.css')
       })
     ]
   };

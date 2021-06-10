@@ -94,7 +94,7 @@ module.exports = {
                   checkTimestamp = await fs.pathExists(`${bundleDir}/${name}-only-timestamp.txt`);
                 }
 
-                if (!rebuild && checkTimestamp) {
+                if (checkTimestamp) {
                   // If we have a UI build timestamp file compare against the app's
                   // package.json modified time.
                   if (await lockFileIsNewer(name)) {
@@ -600,10 +600,6 @@ module.exports = {
             // to indicate that the dev writes project level or npm linked admin UI
             // code of their own which might be newer than package-lock.json
             apos: true,
-            icons: true,
-            components: true,
-            tiptapExtensions: true,
-            apps: true,
             prologue: stripIndent`
               import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
               import Vue from 'Modules/@apostrophecms/ui/lib/vue';
