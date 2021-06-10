@@ -14,7 +14,14 @@ export default {
       // as initially checked.
       checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
         : [],
-      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : []
+      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : [],
+      // Remember relationship subfield values even if a document
+      // is temporarily deselected, easing the user's pain if they
+      // inadvertently deselect something for a moment
+      subfields: Object.fromEntries((this.chosen || [])
+        .filter(doc => doc._fields)
+        .map(doc => [ doc._id, doc._fields ])
+      )
     };
   },
   props: {
@@ -86,7 +93,17 @@ export default {
         this.generateUi();
       }
     },
-    checked () {
+    checkedDocs(after, before) {
+      for (const doc of before) {
+        this.subfields[doc._id] = doc._fields;
+      }
+      for (const doc of after) {
+        if (this.subfields[doc._id] && !Object.keys(doc._fields || {}).length) {
+          doc._fields = this.subfields[doc._id];
+        }
+      }
+    },
+    checked() {
       this.updateCheckedDocs();
     }
   },

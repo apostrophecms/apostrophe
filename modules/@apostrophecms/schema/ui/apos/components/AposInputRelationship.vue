@@ -60,11 +60,19 @@ export default {
   mixins: [ AposInputMixin ],
   emits: [ 'input' ],
   data () {
+    const next = (this.value && Array.isArray(this.value.data))
+        ? this.value.data : (this.field.def || []);
     return {
       searchTerm: '',
       searchList: [],
-      next: (this.value && Array.isArray(this.value.data))
-        ? this.value.data : (this.field.def || []),
+      next,
+      // Remember relationship subfield values even if a document
+      // is temporarily deselected, easing the user's pain if they
+      // inadvertently deselect something for a moment
+      subfields: Object.fromEntries((this.next || [])
+        .filter(doc => doc._fields)
+        .map(doc => [ doc._id, doc._fields ])
+      ),
       disabled: false,
       searching: false,
       choosing: false,
@@ -88,6 +96,18 @@ export default {
     },
     chooserComponent () {
       return apos.modules[this.field.withType].components.managerModal;
+    }
+  },
+  watch: {
+    next(after, before) {
+      for (const doc of before) {
+        this.subfields[doc._id] = doc._fields;
+      }
+      for (const doc of after) {
+        if (this.subfields[doc._id] && !Object.keys(doc._fields || {}).length) {
+          doc._fields = this.subfields[doc._id];
+        }
+      }
     }
   },
   methods: {
