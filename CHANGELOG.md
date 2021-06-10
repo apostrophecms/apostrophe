@@ -35,6 +35,7 @@ myColorField: {
 
 ### Changes
 
+* The `CORE_DEV=1` environment setting has been changed to `APOS_DEV=1` because it is appropriate for anyone who is actively developing custom Apostrophe admin UI using `ui/apos` folders in their own modules.
 * Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
 - The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
 - Uploading SVG files is permitted in the Media Library by default.
