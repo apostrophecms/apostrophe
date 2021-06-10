@@ -19,85 +19,7 @@ module.exports = {
     // If this option is true and process.env.NODE_ENV is not `production`,
     // the browser will refresh when the Apostrophe application
     // restarts. A useful companion to `nodemon`.
-    refreshOnRestart: false,
-    // Frontend builds. Changing these settings is not recommended
-    // except as part of development of the Apostrophe core. To enable
-    // the src-es5 build just set the `es5: true` option of this module.
-    builds: {
-      src: {
-        scenes: [ 'public', 'apos' ],
-        webpack: true,
-        outputs: [ 'css', 'js' ],
-        label: 'public-facing modern JavaScript and SASS',
-        // Load index.js and index.scss from each module
-        index: true,
-        // Load only in browsers that support ES6 modules
-        condition: 'module'
-      },
-      'src-es5': {
-        // An alternative build from the same sources for IE11
-        source: 'src',
-        webpack: true,
-        scenes: [ 'public', 'apos' ],
-        // The CSS from the src build is identical, do not duplicate it
-        outputs: [ 'js' ],
-        label: 'public-facing modern JavaScript and SASS (IE11 build)',
-        // Load index.js and index.scss from each module
-        index: true,
-        // The polyfills babel will be expecting
-        prologue: stripIndent`
-          import "core-js/stable";
-          import "regenerator-runtime/runtime";
-        `,
-        // Load only in browsers that do not support ES6 modules
-        condition: 'nomodule'
-      },
-      public: {
-        scenes: [ 'public', 'apos' ],
-        outputs: [ 'css', 'js' ],
-        label: 'raw CSS and JS',
-        // Just concatenates
-        webpack: false,
-        prologue: stripIndent`
-          (function() {
-            window.apos = window.apos || {};
-            var data = document.body && document.body.getAttribute('data-apos');
-            Object.assign(window.apos, JSON.parse(data || '{}'));
-            if (data) {
-              document.body.removeAttribute('data-apos');
-            }
-          })();
-        `
-      },
-      apos: {
-        scenes: [ 'apos' ],
-        outputs: [ 'js' ],
-        webpack: true,
-        label: 'Apostrophe admin UI',
-        // Only rebuilt on npm updates unless CORE_DEV is set in the environment
-        core: true,
-        icons: true,
-        components: true,
-        tiptapExtensions: true,
-        apps: true,
-        prologue: stripIndent`
-          import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-          import Vue from 'Modules/@apostrophecms/ui/lib/vue';
-          if (window.apos.modules) {
-            for (const module of Object.values(window.apos.modules)) {
-              if (module.alias) {
-                window.apos[module.alias] = module;
-              }
-            }
-          }
-          window.apos.bus = new Vue();
-        `,
-        // Load only in browsers that support ES6 modules
-        condition: 'module'
-      }
-      // We could add an apos-ie11 bundle that just pushes a "sorry charlie" prologue,
-      // if we chose
-    }
+    refreshOnRestart: false
   },
 
   init(self) {
@@ -105,9 +27,7 @@ module.exports = {
     self.iconMap = {
       ...globalIcons
     };
-    if (!self.options.es5) {
-      delete self.options.builds['src-es5'];
-    }
+    self.configureBuilds();
     self.initUploadfs();
   },
   handlers (self) {
@@ -123,9 +43,9 @@ module.exports = {
             self.apos.options.autoBuild !== false
           ) {
             // If starting up normally, run the build task, checking if we
-            // really need to update each build
+            // really need to update the apos build
             await self.apos.task.invoke('@apostrophecms/asset:build', {
-              'check-frontend-build': true
+              'check-apos-build': true
             });
           }
         }
@@ -152,29 +72,42 @@ module.exports = {
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
 
-          for (const [ name, options ] of Object.entries(self.options.builds)) {
-            let rebuild = argv && !argv['check-ui-build'];
+          for (const [ name, options ] of Object.entries(self.builds)) {
+            // If the option is not present always rebuild everything
+            let rebuild = argv && !argv['check-apos-build'];
 
-            let checkTimestamp = false;
+            if (!rebuild) {
+              let checkTimestamp = false;
 
-            if (options.core) {
-              const bundleExists = await fs.pathExists(bundleDir);
+              // Only builds contributing to the apos admin UI (currently just "apos")
+              // are candidates to skip the build simply because package-lock.json is
+              // older than the bundle. All other builds frequently contain
+              // project level code
+              if (options.apos) {
+                const bundleExists = await fs.pathExists(bundleDir);
 
-              if (!bundleExists) {
-                rebuild = true;
-              }
+                if (!bundleExists) {
+                  rebuild = true;
+                }
 
-              if (!process.env.CORE_DEV) {
-                checkTimestamp = await fs.pathExists(`${bundleDir}/${name}-only-timestamp.txt`);
-              }
+                if (!process.env.APOS_DEV) {
+                  checkTimestamp = await fs.pathExists(`${bundleDir}/${name}-only-timestamp.txt`);
+                }
 
-              if (!rebuild && checkTimestamp) {
-                // If we have a UI build timestamp file compare against the app's
-                // package.json modified time.
-                if (await lockFileIsNewer(name)) {
+                if (!rebuild && checkTimestamp) {
+                  // If we have a UI build timestamp file compare against the app's
+                  // package.json modified time.
+                  if (await lockFileIsNewer(name)) {
+                    rebuild = true;
+                  }
+                } else {
                   rebuild = true;
                 }
               } else {
+                // Always redo the other builds,
+                // which are quick and typically contain
+                // project level code not detectable by
+                // comparing package-lock timestamps
                 rebuild = true;
               }
             }
@@ -185,7 +118,10 @@ module.exports = {
             }
           }
 
-          const scenes = [...new Set(Object.values(self.options.builds).map(options => options.scenes).flat()) ];
+          // Discover the set of unique asset scenes that exist (currently
+          // just `public` and `apos`) by examining those specified as
+          // targets for the various builds
+          const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
           let bundles = [];
           for (const scene of scenes) {
             bundles = [ ...bundles, ...merge(scene) ];
@@ -241,16 +177,10 @@ module.exports = {
             await moduleOverrides(modulesDir, source);
 
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
-            if (options.icons) {
+            if (options.apos) {
               iconImports = getIcons();
-            }
-            if (options.components) {
               componentImports = getImports(`${source}/components`, '*.vue', { registerComponents: true });
-            }
-            if (options.tiptapExtensions) {
               tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
-            }
-            if (options.apps) {
               appImports = getImports(`${source}/apps`, '*.js', {
                 invokeApps: true,
                 importSuffix: 'App'
@@ -304,8 +234,10 @@ module.exports = {
                 self.apos
               ));
               self.apos.util.log(`👍 ${options.label} is complete!`);
-              const now = Date.now().toString();
-              fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
+              if (options.apos) {
+                const now = Date.now().toString();
+                fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
+              }
             } else {
               if (options.outputs.includes('js')) {
                 // We do not use an import file here because import is not
@@ -379,7 +311,7 @@ module.exports = {
             const css = `${scene}-bundle.css`;
             fs.writeFileSync(
               `${bundleDir}/${jsModules}`,
-              Object.entries(self.options.builds).filter(
+              Object.entries(self.builds).filter(
                 ([ name, options ]) => options.scenes.includes(scene) &&
                 options.outputs.includes('js') &&
                 (!options.condition || options.condition === 'module')
@@ -389,7 +321,7 @@ module.exports = {
             );
             fs.writeFileSync(
               `${bundleDir}/${jsNoModules}`,
-              Object.entries(self.options.builds).filter(
+              Object.entries(self.builds).filter(
                 ([ name, options ]) => options.scenes.includes(scene) &&
                 options.outputs.includes('js') &&
                 (!options.condition || options.condition === 'nomodule')
@@ -399,7 +331,7 @@ module.exports = {
             );
             fs.writeFileSync(
               `${bundleDir}/${css}`,
-              Object.entries(self.options.builds).filter(
+              Object.entries(self.builds).filter(
                 ([ name, options ]) => options.scenes.includes(scene) &&
                 options.outputs.includes('css')
               ).map(([ name, options ]) => {
@@ -606,6 +538,92 @@ module.exports = {
           }
         } else {
           return `/apos-frontend/${namespace}`;
+        }
+      },
+      // An implementation method that you should not need to call.
+      // Sets a predetermined configuration for the frontend builds.
+      // If you are trying to enable IE11 support for ui/src, use the
+      // `es5: true` option (es5 builds are disabled by default).
+      configureBuilds() {
+        self.builds = {
+          src: {
+            scenes: [ 'public', 'apos' ],
+            webpack: true,
+            outputs: [ 'css', 'js' ],
+            label: 'public-facing modern JavaScript and Sass',
+            // Load index.js and index.scss from each module
+            index: true,
+            // Load only in browsers that support ES6 modules
+            condition: 'module'
+          },
+          'src-es5': {
+            // An alternative build from the same sources for IE11
+            source: 'src',
+            webpack: true,
+            scenes: [ 'public', 'apos' ],
+            // The CSS from the src build is identical, do not duplicate it
+            outputs: [ 'js' ],
+            label: 'public-facing modern JavaScript and Sass (IE11 build)',
+            // Load index.js and index.scss from each module
+            index: true,
+            // The polyfills babel will be expecting
+            prologue: stripIndent`
+              import "core-js/stable";
+              import "regenerator-runtime/runtime";
+            `,
+            // Load only in browsers that do not support ES6 modules
+            condition: 'nomodule'
+          },
+          public: {
+            scenes: [ 'public', 'apos' ],
+            outputs: [ 'css', 'js' ],
+            label: 'raw CSS and JS',
+            // Just concatenates
+            webpack: false,
+            prologue: stripIndent`
+              (function() {
+                window.apos = window.apos || {};
+                var data = document.body && document.body.getAttribute('data-apos');
+                Object.assign(window.apos, JSON.parse(data || '{}'));
+                if (data) {
+                  document.body.removeAttribute('data-apos');
+                }
+              })();
+            `
+          },
+          apos: {
+            scenes: [ 'apos' ],
+            outputs: [ 'js' ],
+            webpack: true,
+            label: 'Apostrophe admin UI',
+            // Only rebuilt on npm updates unless APOS_DEV is set in the environment
+            // to indicate that the dev writes project level or npm linked admin UI
+            // code of their own which might be newer than package-lock.json
+            apos: true,
+            icons: true,
+            components: true,
+            tiptapExtensions: true,
+            apps: true,
+            prologue: stripIndent`
+              import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
+              import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+              if (window.apos.modules) {
+                for (const module of Object.values(window.apos.modules)) {
+                  if (module.alias) {
+                    window.apos[module.alias] = module;
+                  }
+                }
+              }
+              window.apos.bus = new Vue();
+            `,
+            // Load only in browsers that support ES6 modules
+            condition: 'module'
+          }
+          // We could add an apos-ie11 bundle that just pushes a "sorry charlie" prologue,
+          // if we chose
+        };
+        if (!self.options.es5) {
+          delete self.builds['src-es5'];
         }
       }
     };
