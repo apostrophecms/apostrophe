@@ -185,7 +185,7 @@ module.exports = {
             }
           }
 
-          const scenes = Object.values(self.options.builds).map(options => options.scenes).flat();
+          const scenes = [...new Set(Object.values(self.options.builds).map(options => options.scenes).flat()) ];
           let bundles = [];
           for (const scene of scenes) {
             bundles = [ ...bundles, ...merge(scene) ];
