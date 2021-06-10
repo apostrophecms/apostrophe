@@ -40,6 +40,7 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import { klona } from 'klona';
 
 export default {
   name: 'AposRelationshipEditor',
@@ -55,7 +56,9 @@ export default {
     },
     value: {
       type: Object,
-      required: true
+      default() {
+        return null;
+      }
     },
     title: {
       type: String,
@@ -69,7 +72,13 @@ export default {
       original: this.value,
       docFields: {
         data: {
-          ...this.value
+          ...((this.value != null) ? this.value :
+            Object.fromEntries(
+              this.schema.map(field =>
+                [ field.name, (field.def !== undefined) ? klona(field.def) : null ]
+              )
+            )
+          )
         },
         hasErrors: false
       },

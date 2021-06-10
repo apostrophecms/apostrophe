@@ -49,7 +49,9 @@
           <AposSlatList
             class="apos-pieces-manager__relationship__items"
             @input="setCheckedDocs"
+            @item-clicked="editRelationship"
             :value="checkedDocs"
+            :has-relationship-schema="!!(relationshipField && relationshipField.schema)"
           />
         </div>
       </AposModalRail>
@@ -247,15 +249,6 @@ export default {
         // Cancel clicked
         return;
       }
-      if (this.relationshipField) {
-        if (!this.checked.includes(doc._id)) {
-          doc._fields = doc._fields || {};
-          // Must push to checked docs or it will try to do it for us
-          // and not include _fields
-          this.checkedDocs.push(doc);
-          this.checked.push(doc._id);
-        }
-      }
     },
     async finishSaved() {
       await this.getPieces();
@@ -351,6 +344,20 @@ export default {
         headers = headers.filter(h => h.component !== 'AposCellLabels');
       }
       return headers;
+    },
+    async editRelationship(item) {
+      const result = await apos.modal.execute('AposRelationshipEditor', {
+        schema: this.relationshipField.schema,
+        title: item.title,
+        value: item._fields
+      });
+      if (result) {
+        const index = this.checkedDocs.findIndex(_item => _item._id === item._id);
+        this.$set(this.checkedDocs, index, {
+          ...this.checkedDocs[index],
+          _fields: result
+        });
+      }
     }
   }
 };

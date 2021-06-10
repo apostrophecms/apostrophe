@@ -6,6 +6,15 @@
 import { isEqual } from 'lodash';
 
 export function detectDocChange(schema, v1, v2, options = {}) {
+  // Handle null docs
+  if (!v1) {
+    // If there is no v1 then it's a change if there is a v2
+    return !!v2;
+  }
+  if (!v2) {
+    // If there is no v2 then it's a change if there was a v1
+    return !!v1;
+  }
   if (options.differences) {
     const differences = [];
     schema.forEach(field => {
