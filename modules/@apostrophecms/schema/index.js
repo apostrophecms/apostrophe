@@ -925,7 +925,7 @@ module.exports = {
               // sanitizer (which doesn't apply to programmatic use) accepts these
               if (Array.isArray(value)) {
                 criteria[field.idsStorage] = {};
-                criteria[field.idsStorage][operator] = value;
+                criteria[field.idsStorage][operator] = value.map(self.apos.doc.toAposDocId);
               } else if (value === 'none') {
                 criteria.$or = [];
                 let clause = {};
@@ -938,7 +938,7 @@ module.exports = {
                 clause[field.idsStorage + '.0'] = { $exists: 0 };
                 criteria.$or.push(clause);
               } else {
-                criteria[field.idsStorage] = { $in: [ value ] };
+                criteria[field.idsStorage] = { $in: [ self.apos.doc.toAposDocId(value) ] };
               }
               query.and(criteria);
             },
