@@ -1,6 +1,7 @@
 const path = require('path');
 const merge = require('webpack-merge').merge;
-const scss = require('./webpack.scss');
+const scssTask = require('./webpack.scss');
+const es5Task = require('./webpack.es5');
 
 let BundleAnalyzerPlugin;
 
@@ -9,9 +10,13 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename
+  importFile, modulesDir, outputPath, outputFilename, es5
 }, apos) => {
-  const tasks = [ scss ].map(task =>
+  const taskFns = [ scssTask ];
+  if (es5) {
+    taskFns.push(es5Task);
+  }
+  const tasks = taskFns.map(task =>
     task(
       {
         importFile,
@@ -24,6 +29,7 @@ module.exports = ({
 
   let config = {
     entry: importFile,
+    target: es5 ? 'es5' : 'web',
     mode: process.env.NODE_ENV || 'development',
     optimization: {
       minimize: process.env.NODE_ENV === 'production'
@@ -44,7 +50,10 @@ module.exports = ({
         Modules: path.resolve(modulesDir)
       },
       modules: [
-        `${apos.npmRootDir}/node_modules`
+        `${apos.npmRootDir}/node_modules`,
+        // Make sure core-js and regenerator-runtime can always be found, even
+        // if npm didn't hoist them
+        `${apos.npmRootDir}/node_modules/apostrophe/node_modules`
       ]
     },
     stats: 'verbose',
@@ -52,6 +61,5 @@ module.exports = ({
   };
 
   config = merge(config, ...tasks);
-  console.log(config.plugins);
   return config;
 };

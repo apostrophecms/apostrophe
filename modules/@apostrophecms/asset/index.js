@@ -18,29 +18,34 @@ module.exports = {
     // Frontend builds
     builds: {
       src: {
-        scenes: [ 'public', 'user' ],
+        scenes: [ 'public', 'apos' ],
         webpack: true,
         outputs: [ 'css', 'js' ],
         label: 'public-facing modern JavaScript and SASS',
         // Load index.js and index.scss from each module
         index: true,
         // Load only in browsers that support ES6 modules
-        condition: 'modules'
+        condition: 'module'
       },
-      // 'src-ie11': {
-      //   // An alternative build from the same sources
-      //   source: 'src',
-      //   webpack: true,
-      //   scenes: [ 'public', 'user' ],
-      //   outputs: [ 'css', 'js' ],
-      //   label: 'public-facing modern JavaScript and SASS',
-      //   // Load index.js and index.scss from each module
-      //   index: true,
-      //   // Load only in browsers that do not support ES6 modules
-      //   condition: 'nomodules'
-      // },
+      'src-es5': {
+        // An alternative build from the same sources for IE11
+        source: 'src',
+        webpack: true,
+        scenes: [ 'public', 'apos' ],
+        // The CSS from the src build is identical, do not duplicate it
+        outputs: [ 'js' ],
+        label: 'public-facing modern JavaScript and SASS (IE11 build)',
+        // Load index.js and index.scss from each module
+        index: true,
+        prologue: stripIndent`
+          import "core-js/stable";
+          import "regenerator-runtime/runtime";
+        `,
+        // Load only in browsers that do not support ES6 modules
+        condition: 'nomodule'
+      },
       public: {
-        scenes: [ 'public', 'user' ],
+        scenes: [ 'public', 'apos' ],
         outputs: [ 'css', 'js' ],
         label: 'raw CSS and JS',
         // Just concatenates
@@ -57,7 +62,7 @@ module.exports = {
         `
       },
       apos: {
-        scenes: [ 'user' ],
+        scenes: [ 'apos' ],
         outputs: [ 'js' ],
         webpack: true,
         label: 'Apostrophe admin UI',
@@ -80,7 +85,7 @@ module.exports = {
           window.apos.bus = new Vue();
         `,
         // Load only in browsers that support ES6 modules
-        condition: 'modules'
+        condition: 'module'
       }
       // We could add an apos-ie11 bundle that just pushes a "sorry charlie" prologue,
       // if we chose
@@ -165,7 +170,6 @@ module.exports = {
 
             if (rebuild) {
               await fs.mkdirp(bundleDir);
-              console.log(`** created ${bundleDir}`);
               await build(name, options);
             }
           }
@@ -223,10 +227,8 @@ module.exports = {
             self.apos.util.log(`🧑‍💻 Building the ${options.label}...`);
             const modulesDir = `${buildDir}/${name}/modules`;
             const source = options.source || name;
-            console.log('***', fs.existsSync(bundleDir));
             await moduleOverrides(modulesDir, source);
 
-            console.log('***', fs.existsSync(bundleDir));
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.icons) {
               iconImports = getIcons();
@@ -254,7 +256,6 @@ module.exports = {
             }
 
             if (options.webpack) {
-              console.log('** invoking webpack');
               const importFile = `${buildDir}/${name}-import.js`;
 
               fs.writeFileSync(importFile, (options.prologue || '') + stripIndent`
@@ -292,11 +293,9 @@ module.exports = {
                 self.apos
               ));
               self.apos.util.log(`👍 ${options.label} is complete!`);
-              console.log(`${bundleDir}/${outputFilename}`);
               const now = Date.now().toString();
               fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
             } else {
-              console.log('not invoking webpack');
               if (options.outputs.includes('js')) {
                 // We do not use an import file here because import is not
                 // an ES5 feature and it is contrary to the spirit of ES5 code
@@ -372,9 +371,9 @@ module.exports = {
               Object.entries(self.options.builds).filter(
                 ([ name, options ]) => options.scenes.includes(scene) &&
                 options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'modules')
+                (!options.condition || options.condition === 'module')
               ).map(([ name, options ]) => {
-                return fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
+                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
               }).join('\n')
             );
             fs.writeFileSync(
@@ -382,9 +381,9 @@ module.exports = {
               Object.entries(self.options.builds).filter(
                 ([ name, options ]) => options.scenes.includes(scene) &&
                 options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'nomodules')
+                (!options.condition || options.condition === 'nomodule')
               ).map(([ name, options ]) => {
-                return fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
+                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
               }).join('\n')
             );
             fs.writeFileSync(
@@ -393,7 +392,7 @@ module.exports = {
                 ([ name, options ]) => options.scenes.includes(scene) &&
                 options.outputs.includes('css')
               ).map(([ name, options ]) => {
-                return fs.readFileSync(`${bundleDir}/${name}-build.css`, 'utf8');
+                return `/* BUILD: ${name} */\n` + fs.readFileSync(`${bundleDir}/${name}-build.css`, 'utf8');
               }).join('\n')
             );
             return [ jsModules, jsNoModules, css ];
@@ -515,7 +514,7 @@ module.exports = {
       scriptsHelper(when) {
         const base = self.getAssetBaseUrl();
         return self.apos.template.safe(stripIndent`
-          <script type="module" src="${base}/${when}-module-bundle.js"></script>
+          <script module src="${base}/${when}-module-bundle.js"></script>
           <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
         `);
       },
@@ -616,7 +615,8 @@ module.exports = {
       return;
     }
     return {
-      get: {
+      // Use a POST route so IE11 doesn't cache it
+      post: {
         async restartId(req) {
           // Long polling: keep the logs quiet by responding slowly, except the
           // first time. If we restart, the request will fail immediately,

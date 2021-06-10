@@ -1,10 +1,7 @@
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-console.log('configuring with the extract plugin');
-
 module.exports = (options, apos) => {
   return {
-    target: 'web',
     module: {
       rules: [
         {
