@@ -2,6 +2,16 @@
 
 ## UNRELEASED
 
+### Breaks
+
+* Previously our `a3-boilerplate` project came with a webpack build that pushed code to the `ui/public` folder of an `asset` module. Now the webpack build is not needed because Apostrophe takes care of compiling `ui/src` for us. This is good! However, **if you are transitioning your project to this new strategy, you will need to remove the `modules/asset/ui/public` folder from your project manually** to ensure that webpack-generated code originally intended for webpack-dev-server does not fail with a `publicPath` error in the console.
+* The `CORE_DEV=1` environment setting has been changed to `APOS_DEV=1` because it is appropriate for anyone who is actively developing custom Apostrophe admin UI using `ui/apos` folders in their own modules.
+
+### Changes
+* Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
+- The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
+- Uploading SVG files is permitted in the Media Library by default.
+
 ### Adds
 - Apostrophe now enables you to ship frontend JavaScript and Sass (using the SCSS syntax) without your own webpack configuration.
 - Any module may contain modern JavaScript in a `ui/src/index.js` file, which may use `import` to bring in other files in the standard way. Note that **`ui/src/index.js must export a function`**. These functions are called for you in the order modules are initialized.
@@ -32,13 +42,6 @@ myColorField: {
   }
 }
 ```
-
-### Changes
-
-* The `CORE_DEV=1` environment setting has been changed to `APOS_DEV=1` because it is appropriate for anyone who is actively developing custom Apostrophe admin UI using `ui/apos` folders in their own modules.
-* Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
-- The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
-- Uploading SVG files is permitted in the Media Library by default.
 
 ## 3.0.0-beta.3.1 - 2021-06-07
 
