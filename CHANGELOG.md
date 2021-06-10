@@ -19,10 +19,18 @@
 - Any project that requires IE11 support for `ui/src` JavaScript code can enable it by setting the `es5: true` option to the `@apostrophecms/asset` module. Apostrophe produces separate builds for IE11 and modern browsers, so there is no loss of performance in modern browsers. Code is automatically compiled for IE11 using `babel` and missing language features are polyfilled using `core-js` so you can use promises, `async/await` and other standard modern JavaScript features.
 - `ui/public` is still available for raw JavaScript and CSS files that should be pushed *as-is* to the browser. The best use of this feature is to deliver the output of your own custom webpack build, if you have one.
 - Adds browser-side `editMode` flag that tracks the state of the current view (edit or preview), located at `window.apos.adminBar.editMode`.
+- Support for automatic inline style attribute sanitization for Rich Text widgets.
+- Adds text align controls for Rich Text widgets. The following tools are now supported as part of a rich text widget's `toolbar` property:
+-- `alignLeft`
+-- `alignRight`
+-- `alignCenter`
+-- `alignJustify`
 - `@apostrophecms/express` module now supports the `trustProxy: true` option, allowing your reverse proxy server (such as nginx) to pass on the original hostname, protocol and client IP address.
 
 ### Fixes
 
+* Unit tests passing again. Temporarily disabled npm audit checks as a source of critical failures owing to upstream issues with third-party packages which are not actually a concern in our use case.
+* Fixed issues with the query builder code for relationships. These issues were introduced in beta 3 but did not break typical applications, except for displaying distinct choices for existing values of a relationship field.
 * Checkbox field types can now be used as conditional fields.
 * Tracks references to attachments correctly, and introduces a migration to address any attachments previously tracked as part of documents that merely have a relationship to the proper document, i.e. pages containing widgets that reference an image piece.
 * Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
@@ -42,6 +50,7 @@ myColorField: {
   }
 }
 ```
+* Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
 
 ## 3.0.0-beta.3.1 - 2021-06-07
 

@@ -89,31 +89,32 @@ describe('Schema builders', function() {
       cats[i].title = 'Cat ' + i;
       cats[i].i = i;
       people[i] = {};
-      people[i].title = 'Person ' + i;
       people[i].i = i;
+      people[i].title = 'Person ' + i;
     }
     cats[0].flavor = 'cherry';
     cats[1].flavor = 'mint';
     cats[4].flavor = 'mint';
     const req = apos.task.getReq();
     await apos.doc.db.deleteMany({ type: 'cat' });
-    for (const cat of cats) {
-      await apos.cats.insert(req, cat);
+    for (i = 0; (i < cats.length); i++) {
+      cats[i] = await apos.cats.insert(req, cats[i]);
     }
-    for (const person of people) {
+    for (i = 0; (i < people.length); i++) {
+      const person = people[i];
       // person 10 has no favorite cat
-      if (person.i < 10) {
-        person.favoriteIds = [ cats[person.i]._id ];
+      if (i < 10) {
+        person.favoriteIds = [ cats[i].aposDocId ];
       }
       person.catsIds = [];
-      let i;
+      let j;
       // person 10 is allergic to cats
-      if (person.i < 10) {
-        for (i = 0; (i < person.i); i++) {
-          person.catsIds.push(cats[i]._id);
+      if (i < 10) {
+        for (j = 0; (j < i); j++) {
+          person.catsIds.push(cats[j].aposDocId);
         }
       }
-      await apos.people.insert(req, person);
+      people[i] = await apos.people.insert(req, person);
     }
   });
 
@@ -128,7 +129,7 @@ describe('Schema builders', function() {
     const query = apos.people.find(req);
     // Four people should have cat 5 (because their i is greater than 5, see
     // the sample data generator above)
-    query._cats(cats[5]._id);
+    query._cats(cats[5].aposDocId);
     const people = await query.toArray();
     assert(people.length === 4);
   });

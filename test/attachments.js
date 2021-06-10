@@ -203,7 +203,8 @@ describe('Attachment', function() {
       assert(attachment);
       assert(attachment.archived === false);
       assert(attachment.docIds);
-      assert(attachment.docIds.length === 2);
+      // Should be 3 because of "previous"
+      assert(attachment.docIds.length === 3);
       assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:draft`));
       assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:published`));
       assert(attachment.archivedDocIds);
@@ -219,7 +220,8 @@ describe('Attachment', function() {
       await apos.image.update(req, image);
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(!attachment.archived);
-      assert(attachment.docIds.length === 1);
+      // Because "draft" and "previous" both have it, unarchived
+      assert(attachment.docIds.length === 2);
       assert(attachment.archivedDocIds.length === 1);
       // Should still be accessible at this point because the draft still uses it
       const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
@@ -240,7 +242,7 @@ describe('Attachment', function() {
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(attachment.archived);
       assert(attachment.docIds.length === 0);
-      assert(attachment.archivedDocIds.length === 2);
+      assert(attachment.archivedDocIds.length === 3);
       let good = false;
       try {
         fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
@@ -256,7 +258,8 @@ describe('Attachment', function() {
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(!attachment.archived);
       assert(attachment.docIds.length === 1);
-      assert(attachment.archivedDocIds.length === 1);
+      // Don't forget "previous"
+      assert(attachment.archivedDocIds.length === 2);
       try {
         const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
         assert(fd);
