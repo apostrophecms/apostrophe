@@ -27,6 +27,7 @@ myColorField: {
   }
 }
 ```
+* Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
 
 ### Changes
 
