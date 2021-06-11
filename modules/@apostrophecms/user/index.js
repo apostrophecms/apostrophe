@@ -168,6 +168,11 @@ module.exports = {
   handlers(self) {
     return {
       beforeInsert: {
+        async ensurePassword(req, doc, options) {
+          if (!doc.password) {
+            doc.password = self.apos.util.generateId();
+          }
+        },
         async insertSafe(req, doc, options) {
           return self.insertOrUpdateSafe(req, doc, 'insert');
         }

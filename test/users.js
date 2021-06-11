@@ -235,4 +235,30 @@ describe('Users', function() {
     await apos.user.verifyPassword(user2, 'password123');
   });
 
+  it('should be able to insert a user with no password (but see next test...)', async () => {
+    const user = apos.user.newInstance();
+
+    user.title = 'Oops No Password';
+    user.username = 'oopsnopassword';
+    user.email = 'oopsnopassword@example.com';
+    user.role = 'admin';
+
+    assert(user.type === '@apostrophecms/user');
+    assert(apos.user.insert);
+    await apos.user.insert(apos.task.getAdminReq(), user);
+  });
+
+  it('should not be able to verify a blank password because a random password was set for us', async () => {
+    const user = await apos.user.find(apos.task.getReq(), { username: 'oopsnopassword' }).toObject();
+    assert(user && user.username === 'oopsnopassword');
+    let good = false;
+    try {
+      // We want this to fail
+      await apos.user.verifyPassword(user, '');
+    } catch (e) {
+      good = true;
+    }
+    assert(good);
+  });
+
 });
