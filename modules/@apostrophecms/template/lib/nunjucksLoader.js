@@ -21,6 +21,7 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
   const extensions = options.extensions || [ 'njk', 'html' ];
   self.moduleName = moduleName;
   self.templates = templates;
+  self.watches = [];
 
   self.init = function(searchPaths, noWatch) {
     self.pathsToNames = {};
@@ -46,9 +47,10 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
             self.watches.push(watcher);
           } catch (e) {
             if (!self.firstWatchFailure) {
-              // Don't crash in broken environments like the Linux subsystem for Windows
+              // Don't crash in broken environments (not sure if any are left thanks
+              // to chokidar, but still a useful warning to have if it comes up)
               self.firstWatchFailure = true;
-              self.templates.apos.util.warn('WARNING: fs.watch does not really work on this system. That is OK but you\n' +
+              self.templates.apos.util.warn('WARNING: fs.watch does not work on this system. That is OK but you\n' +
                 'will have to restart to see any template changes take effect.');
             }
             self.templates.apos.util.error(e);
