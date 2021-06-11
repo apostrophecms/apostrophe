@@ -224,6 +224,10 @@ module.exports = {
               );
 
               const outputFilename = `${name}-build.js`;
+              // Remove previous build artifacts, as some pipelines won't build all artifacts
+              // if there is no input, and we don't want stale output in the bundle
+              fs.removeSync(`${bundleDir}/${outputFilename}`);
+              fs.removeSync(`${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css'));
               await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
                 {
                   importFile,
@@ -251,7 +255,7 @@ module.exports = {
                 fs.writeFileSync(`${bundleDir}/${name}-build.js`,
                   ((options.prologue + '\n') || '') +
                   publicImports.paths.map(path => {
-                    return fs.readFileSync(path);
+                    return fs.readFileSync(path, 'utf8');
                   }).join('\n')
                 );
               }
@@ -259,7 +263,7 @@ module.exports = {
                 const publicImports = getImports(name, '*.css', { });
                 fs.writeFileSync(`${bundleDir}/${name}-build.css`,
                   publicImports.paths.map(path => {
-                    return fs.readFileSync(path);
+                    return fs.readFileSync(path, 'utf8');
                   }).join('\n')
                 );
               }
@@ -335,7 +339,12 @@ module.exports = {
                 ([ name, options ]) => options.scenes.includes(scene) &&
                 options.outputs.includes('css')
               ).map(([ name, options ]) => {
-                return `/* BUILD: ${name} */\n` + fs.readFileSync(`${bundleDir}/${name}-build.css`, 'utf8');
+                const file = `${bundleDir}/${name}-build.css`;
+                if (fs.existsSync(file)) {
+                  return `/* BUILD: ${name} */\n` + fs.readFileSync(file, 'utf8');
+                } else {
+                  return '';
+                }
               }).join('\n')
             );
             return [ jsModules, jsNoModules, css ];
