@@ -113,7 +113,6 @@ module.exports = {
       'apostrophe:destroy': {
         async nunjucksLoaderCleanup() {
           for (const loader of Object.values(self.loaders)) {
-            console.log('destroying loader');
             await loader.destroy();
           }
         }
