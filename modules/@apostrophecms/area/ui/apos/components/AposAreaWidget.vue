@@ -585,13 +585,13 @@ export default {
     transform: translate(-50%, 50%);
   }
 
-  .apos-area-widget-inner /deep/ .apos-context-menu__popup.apos-is-visible {
+  .apos-area-widget-inner ::v-deep .apos-context-menu__popup.apos-is-visible {
     top: calc(100% + 20px);
     left: 50%;
     transform: translate(-50%, 0);
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn .apos-button {
+  .apos-area-widget-inner .apos-area-widget-inner ::v-deep .apos-context-menu__btn .apos-button {
     background-color: var(--a-secondary);
     border-color: var(--a-secondary);
   }
@@ -627,7 +627,7 @@ export default {
   }
 
   .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumb /deep/ .apos-button__content {
+  .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
     @include type-help;
     padding: 2px;
     color: var(--a-white);
@@ -641,7 +641,7 @@ export default {
     padding: 2px;
   }
 
-  .apos-area-widget__breadcrumb /deep/ .apos-button {
+  .apos-area-widget__breadcrumb ::v-deep .apos-button {
     &:hover, &:active, &:focus {
       text-decoration: none;
     }

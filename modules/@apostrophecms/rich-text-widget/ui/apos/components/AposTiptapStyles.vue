@@ -91,7 +91,7 @@ export default {
     position: relative;
   }
 
-  .apos-tiptap-select /deep/ .apos-tiptap-select__icon {
+  .apos-tiptap-select ::v-deep .apos-tiptap-select__icon {
     position: absolute;
     top: 50%;
     right: 5px;

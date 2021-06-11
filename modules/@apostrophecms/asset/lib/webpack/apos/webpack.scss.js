@@ -48,8 +48,9 @@ module.exports = (options, apos) => {
               loader: 'sass-loader',
               options: {
                 sourceMap: false,
-                implementation: require('node-sass'),
+                // "use" rules must come first or sass throws an error
                 additionalData: `
+@use 'sass:math';
 @import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";
               `
               }
