@@ -224,6 +224,10 @@ module.exports = {
               );
 
               const outputFilename = `${name}-build.js`;
+              // Remove previous build artifacts, as some pipelines won't build all artifacts
+              // if there is no input, and we don't want stale output in the bundle
+              fs.removeSync(`${bundleDir}/${outputFilename}`);
+              fs.removeSync(`${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css'));
               await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
                 {
                   importFile,
