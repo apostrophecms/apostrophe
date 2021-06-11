@@ -51,6 +51,8 @@ myColorField: {
 }
 ```
 * Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
+* Nunjucks template loader is fully compatible with Linux in a development environment.
+* Improved template performance by reusing template loaders.
 
 ## 3.0.0-beta.3.1 - 2021-06-07
 

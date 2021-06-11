@@ -17,11 +17,11 @@ const chokidar = require('chokidar');
 module.exports = function(moduleName, searchPaths, noWatch, templates, options) {
 
   const self = this;
+  self.watches = [];
   options = options || {};
   const extensions = options.extensions || [ 'njk', 'html' ];
   self.moduleName = moduleName;
   self.templates = templates;
-  self.watches = [];
 
   self.init = function(searchPaths, noWatch) {
     self.pathsToNames = {};
@@ -181,11 +181,9 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
     }
   };
 
-  self.destroy = function() {
+  self.destroy = async () => {
     for (const watch of self.watches) {
-      // Returns a promise but we don't actually need to wait for it;
-      // resolve it to avoid any anxiety on Node's part about this
-      watch.close().then(() => {});
+      await watch.close();
     }
   };
 
