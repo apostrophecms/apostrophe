@@ -1353,6 +1353,11 @@ database.`);
         // in the path, so look for %20, not ' '.
         req.slug = req.slug.trim();
         req.slug = self.removeTrailingSlugSlashes(req, req.slug);
+
+        // Prevent open redirect attacks based on escaped paths
+        // (stomp double slashes)
+        req.slug = req.slug.replace(/\/+/g, '/');
+
         if (!req.slug.length || req.slug.charAt(0) !== '/') {
           req.slug = '/' + req.slug;
         }
