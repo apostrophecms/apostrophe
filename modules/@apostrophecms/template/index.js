@@ -363,7 +363,7 @@ module.exports = {
 
       newEnv(req, moduleName, dirs) {
 
-        const loader = self.getLoader(moduleName, dirs, undefined, self);
+        const loader = self.getLoader(moduleName, dirs);
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
