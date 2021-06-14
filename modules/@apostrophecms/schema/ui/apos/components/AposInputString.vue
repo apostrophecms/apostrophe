@@ -16,7 +16,7 @@
         />
         <input
           v-else :class="classes"
-          :value="next" @change="change" :type="type"
+          v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
           :disabled="field.readOnly || field.disabled"
@@ -42,11 +42,10 @@ export default {
   name: 'AposInputString',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
-  data ({ value }) {
+  data () {
     return {
       step: undefined,
-      wasPopulated: false,
-      entry: value.data
+      wasPopulated: false
     };
   },
   computed: {
@@ -109,13 +108,6 @@ export default {
     this.wasPopulated = this.next && this.next.length;
   },
   methods: {
-    // Don't use v-model because if we continuously convert
-    // between strings and numbers as you type, momentary
-    // states like "-" or "3." get rejected, and you can't
-    // type negative or decimal numbers easily
-    change(e) {
-      this.next = e.target.value;
-    },
     enterEmit() {
       if (this.field.enterSubmittable) {
         // Include the validated results in cases where an Enter keydown should
@@ -132,12 +124,15 @@ export default {
       if (value == null) {
         value = '';
       }
-      if (this.field.required) {
-        if (typeof value === 'string' && !value.length) {
+      if (typeof value === 'string' && !value.length) {
+        // Also correct for float and integer because Vue coerces
+        // number fields to either a number or the empty string
+        if (this.field.required) {
           return 'required';
+        } else {
+          return false;
         }
       }
-
       const minMaxFields = [
         'integer',
         'float',
@@ -172,9 +167,17 @@ export default {
     },
     convert(s) {
       if (this.field.type === 'integer') {
-        return parseInt(s);
+        if ((s == null) || (s === '')) {
+          return s;
+        } else {
+          return parseInt(s);
+        }
       } else if (this.field.type === 'float') {
-        return parseFloat(s);
+        if ((s == null) || (s === '')) {
+          return s;
+        } else {
+          return parseFloat(s);
+        }
       } else {
         if (s == null) {
           return '';
@@ -185,9 +188,11 @@ export default {
     },
     minMaxComparable(s) {
       const converted = this.convert(s);
-      if ((this.field.type === 'integer') || (this.field.type === 'float')) {
+      if ((this.field.type === 'integer') || (this.field.type === 'float') || (this.field.type === 'date') || (this.field.type === 'range') || (this.field.type === 'time')) {
+        // Compare the actual values for these types
         return converted;
       } else {
+        // Compare the length for other types, like string or password or url
         return converted.length;
       }
     }
