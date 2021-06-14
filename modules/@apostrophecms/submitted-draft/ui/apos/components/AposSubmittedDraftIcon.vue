@@ -69,7 +69,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  /deep/ .apos-submitted-drafts__counter {
+  ::v-deep .apos-submitted-drafts__counter {
     display: inline-flex;
     margin-left: $spacing-half;
     padding: 3px;

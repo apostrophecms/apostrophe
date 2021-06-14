@@ -352,7 +352,7 @@ export default {
     max-height: 100%;
   }
 
-  .apos-media-editor /deep/ .apos-field {
+  .apos-media-editor ::v-deep .apos-field {
     margin-bottom: $spacing-double;
   }
 
@@ -372,7 +372,7 @@ export default {
     display: flex;
     margin-bottom: $spacing-triple;
 
-    /deep/ .apos-button--quiet {
+    ::v-deep .apos-button--quiet {
       display: inline;
     }
   }
@@ -384,7 +384,7 @@ export default {
     }
   }
 
-  /deep/ [data-apos-field='attachment'] {
+  ::v-deep [data-apos-field='attachment'] {
     .apos-media-editor:not(.apos-is-replacing) & {
       position: absolute;
       left: -999rem;

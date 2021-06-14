@@ -1,3 +1,5 @@
+@use 'sass:math';
+
 $brand-red: #ea433a;
 $brand-gold: #cc9300;
 $brand-magenta: #b327bf;
@@ -5,8 +7,8 @@ $brand-blue: #66f;
 $brand-green: #00bf9a;
 
 $spacing-base: 10px;
-$spacing-half: $spacing-base / 2;
-$spacing-three-quarters: ($spacing-base / 2) + (($spacing-base / 4));
+$spacing-half: math.div($spacing-base, 2);
+$spacing-three-quarters: math.div($spacing-base, 4) * 3;
 $spacing-double: $spacing-base * 2;
 $spacing-triple: $spacing-base * 3;
 $spacing-quadruple: $spacing-base * 4;
