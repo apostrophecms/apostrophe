@@ -52,6 +52,7 @@ myColorField: {
 ```
 * Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
 * If a user is inadvertently inserted with no password, set a random password on the backend for safety. In tests it appears that login with a blank password was already forbidden, but this provides an additional level of certainty.
+* The global doc respects the `def` property of schema fields when first inserted at site creation time.
 
 ## 3.0.0-beta.3.1 - 2021-06-07
 
