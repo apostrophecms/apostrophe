@@ -51,6 +51,7 @@ myColorField: {
 }
 ```
 * Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
+* `data.page` and `data.contextOptions` are now available in `widget.html` templates even when the widget has just been inserted or has just been edited in a dialog box and saved back to the page. Note however that they are never available when a widget is rendered directly inside a dialog box. Your widget templates should still be written to tolerate the absence of context information from the page template.
 
 ## 3.0.0-beta.3.1 - 2021-06-07
 
