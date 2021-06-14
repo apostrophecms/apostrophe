@@ -14,6 +14,16 @@ describe('Global', function() {
     apos = await t.create({
       root: module,
       modules: {
+        '@apostrophecms/global': {
+          fields: {
+            add: {
+              spiffiness: {
+                type: 'integer',
+                def: 100
+              }
+            }
+          }
+        },
         'global-tests': {
           apiRoutes(self) {
             return {
@@ -46,6 +56,8 @@ describe('Global', function() {
     assert(req.data.global);
     assert(req.data.global.type === '@apostrophecms/global');
     assert(req.data.global.test === 'test');
+    // def is respected
+    assert(req.data.global.spiffiness === 100);
   });
 
   it('should populate via middleware', async function() {
