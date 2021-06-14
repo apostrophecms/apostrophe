@@ -16,7 +16,7 @@
         />
         <input
           v-else :class="classes"
-          v-model="next" :type="type"
+          :value="next" @change="change" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
           :disabled="field.readOnly || field.disabled"
@@ -42,10 +42,11 @@ export default {
   name: 'AposInputString',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
-  data () {
+  data ({ value }) {
     return {
       step: undefined,
-      wasPopulated: false
+      wasPopulated: false,
+      entry: value.data
     };
   },
   computed: {
@@ -108,6 +109,13 @@ export default {
     this.wasPopulated = this.next && this.next.length;
   },
   methods: {
+    // Don't use v-model because if we continuously convert
+    // between strings and numbers as you type, momentary
+    // states like "-" or "3." get rejected, and you can't
+    // type negative or decimal numbers easily
+    change(e) {
+      this.next = e.target.value;
+    },
     enterEmit() {
       if (this.field.enterSubmittable) {
         // Include the validated results in cases where an Enter keydown should
@@ -139,12 +147,12 @@ export default {
       ];
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {
-        if (value.length && (this.convert(value) < this.field.min)) {
+        if ((value != null) && value.length && (this.minMaxComparable(value) < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max && minMaxFields.includes(this.field.type)) {
-        if (value.length && (this.convert(value) > this.field.max)) {
+        if ((value != null) && value.length && (this.minMaxComparable(value) > this.field.max)) {
           return 'max';
         }
       }
@@ -168,7 +176,19 @@ export default {
       } else if (this.field.type === 'float') {
         return parseFloat(s);
       } else {
-        return s;
+        if (s == null) {
+          return '';
+        } else {
+          return s.toString();
+        }
+      }
+    },
+    minMaxComparable(s) {
+      const converted = this.convert(s);
+      if ((this.field.type === 'integer') || (this.field.type === 'float')) {
+        return converted;
+      } else {
+        return converted.length;
       }
     }
   }
