@@ -54,7 +54,7 @@ export default {
   background: var(--a-background-primary);
 }
 
-/deep/ .apos-admin-bar__row {
+::v-deep .apos-admin-bar__row {
   display: flex;
   align-items: center;
   height: 35px;
@@ -68,7 +68,7 @@ export default {
   margin-right: 10px;
 }
 
-/deep/ .apos-admin-bar__control-set {
+::v-deep .apos-admin-bar__control-set {
   @include type-base;
   display: flex;
   width: 100%;
@@ -79,27 +79,27 @@ export default {
   margin-left: auto;
 }
 
-/deep/ .apos-context-menu__pane {
+::v-deep .apos-context-menu__pane {
   min-width: 150px;
 }
-/deep/ .flip-enter { // to the ground
+::v-deep .flip-enter { // to the ground
   transform: translateY(-20%);
   opacity: 0;
 }
-/deep/ .flip-leave { // in the frame
+::v-deep .flip-leave { // in the frame
   transform: translateY(0);
   opacity: 1;
 }
-/deep/ .flip-enter-to { // from the ground
+::v-deep .flip-enter-to { // from the ground
   transform: translateY(0);
   opacity: 1;
 }
-/deep/ .flip-leave-to { // to the sky
+::v-deep .flip-leave-to { // to the sky
   transform: translateY(20%);
   opacity: 0;
 }
 
-/deep/ .flip-enter-active, /deep/ .flip-leave-active {
+::v-deep .flip-enter-active, ::v-deep .flip-leave-active {
   transition: all 150ms;
   &.apos-admin-bar__control-set__group {
     position: absolute;

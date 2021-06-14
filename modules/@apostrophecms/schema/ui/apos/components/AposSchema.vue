@@ -258,16 +258,16 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-schema /deep/ .apos-field__wrapper {
+  .apos-schema ::v-deep .apos-field__wrapper {
     max-width: $input-max-width;
   }
 
-  .apos-schema /deep/ img {
+  .apos-schema ::v-deep img {
     max-width: 100%;
   }
 
   .apos-field {
-    .apos-schema /deep/ & {
+    .apos-schema ::v-deep & {
       margin-bottom: $spacing-quadruple;
       &.apos-field--micro,
       &.apos-field--margin-micro {
@@ -275,7 +275,7 @@ export default {
       }
     }
 
-    .apos-schema /deep/ .apos-toolbar & {
+    .apos-schema ::v-deep .apos-toolbar & {
       margin-bottom: 0;
     }
   }
