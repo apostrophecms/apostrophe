@@ -1,6 +1,4 @@
 const util = require('util');
-const _ = require('lodash');
-
 module.exports = (self) => {
   // Create the render input object, used to parse the fragment source
   function createRenderInput(info) {
@@ -8,20 +6,28 @@ module.exports = (self) => {
       ...info.context.ctx
     };
     let i = 0;
-    let kwparams = null;
-    for (const param of info.params) {
-      const arg = info.args[i];
+    let params = info.params;
+    let args = info.args;
 
-      // Grab kw param if available, it's the last one
-      if (param && typeof param !== 'string' && param.__keywords === true) {
-        kwparams = param;
-        break;
-      }
+    // test for kw parameters and arguments
+    let kwparams = info.params.slice(-1)[0] || {};
+    let kwargs = info.args.slice(-1)[0] || {};
 
-      // Test argument, if it's kw arg -> skip the positional assignment
-      if (_.isPlainObject(arg) && arg.__keywords === true) {
-        continue;
-      }
+    // remove kw from the equation
+    if (isKwObject(kwparams)) {
+      params = info.params.slice(0, -1);
+    } else {
+      kwparams = {};
+    }
+    if (isKwObject(kwargs)) {
+      args = info.args.slice(0, -1);
+    } else {
+      kwargs = {};
+    }
+
+    // assign positional
+    for (const param of params) {
+      const arg = args[i];
 
       // don't assign if no argument is available
       if (typeof arg !== 'undefined') {
@@ -31,20 +37,20 @@ module.exports = (self) => {
       i++;
     }
 
-    // Deal with kwargs
-    if (kwparams) {
-      // Those are the defaults
-      Object.assign(input, kwparams);
-      // Those are the passed arguments
-      // and they are ALWAYS the last array item
-      const kwargs = info.args[info.args.length - 1];
-      // Be sure it's an object!
-      if (_.isPlainObject(kwargs) && kwargs.__keywords === true) {
-        Object.assign(input, kwargs);
+    // assign kwparams (defaults) and filter kwargs
+    Object.assign(input, kwparams);
+    Object.keys(kwparams).forEach((key) => {
+      if (typeof kwargs[key] !== 'undefined') {
+        input[key] = kwargs[key];
       }
-    }
+    });
+
     return input;
   };
+
+  function isKwObject(obj) {
+    return obj && typeof obj === 'object' && obj.__keywords === true;
+  }
 
   // `parse` factory for `render` and `rendercall`
   const parseRenderFactory = (hasBody = false) => function parse(parser, nodes, lexer) {
