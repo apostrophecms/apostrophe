@@ -162,14 +162,16 @@ module.exports = {
               doc[field.name + 'Sortified'] = self.apos.util.sortify(doc[field.name] ? doc[field.name] : '');
             }
           });
-          doc.updatedAt = new Date();
-          doc.updatedBy = req.user ? {
-            _id: req.user._id,
-            title: req.user.title || null,
-            username: req.user.username
-          } : {
-            username: 'ApostropheCMS'
-          };
+          if (options.setUpdatedAtAndBy !== false) {
+            doc.updatedAt = new Date();
+            doc.updatedBy = req.user ? {
+              _id: req.user._id,
+              title: req.user.title || null,
+              username: req.user.username
+            } : {
+              username: 'ApostropheCMS'
+            };
+          }
         }
       },
       '@apostrophecms/doc-type:afterInsert': {

@@ -37,6 +37,8 @@
 * Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
+* "Discard Draft" is available when appropriate in "Manage Pages" and "Manage Pieces."
+* "Discard Draft" disables the "Submit Updates" button when working as a contributor.
 * Relationship subfields can now be edited when selecting in the full "manage view" browser, as well as in the compact relationship field view which worked previously.
 * Relationship subfields now respect the `def` property.
 * Relationship subfields are restored if you deselect a document and then reselect it within a single editing experience, i.e. accidentally deselect and immediately reselect, for instance.
