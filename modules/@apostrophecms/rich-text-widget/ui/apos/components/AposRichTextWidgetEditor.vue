@@ -275,11 +275,11 @@ export default {
     border-radius: var(--a-border-radius);
   }
 
-  .apos-rich-text-toolbar /deep/ .apos-is-active {
+  .apos-rich-text-toolbar ::v-deep .apos-is-active {
     background-color: var(--a-base-9);
   }
 
-  .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
     outline: none;
   }
 
@@ -318,7 +318,7 @@ export default {
     }
   }
 
-  .apos-rich-text-toolbar__inner /deep/ > .apos-rich-text-editor__control {
+  .apos-rich-text-toolbar__inner ::v-deep > .apos-rich-text-editor__control {
     /* Addresses a Safari-only situation where it inherits the
       `::-webkit-scrollbar-button` 2px margin. */
     margin: 0;

@@ -228,7 +228,7 @@ export default {
     justify-content: center;
     pointer-events: none;
     // v-html goofiness
-    & /deep/ .apos-attachment-highlight {
+    & ::v-deep .apos-attachment-highlight {
       color: var(--a-primary);
       font-weight: var(--a-weight-bold);
     }

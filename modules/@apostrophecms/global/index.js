@@ -60,16 +60,14 @@ module.exports = {
       'apostrophe:modulesReady': {
         async initGlobal() {
           const req = self.apos.task.getReq();
-          // Existence test must not load widgets etc. as this can lead
-          // to chicken and egg problems if widgets relationship with page types
-          // not yet registered
           const existing = await self.apos.doc.db.findOne({ slug: self.slug });
           if (!existing) {
-            const _new = {
+            const _new = self.newInstance();
+            Object.assign(_new, {
               slug: self.slug,
               type: self.name
-            };
-            await self.apos.doc.insert(req, _new);
+            });
+            await self.insert(req, _new);
           }
         }
       }

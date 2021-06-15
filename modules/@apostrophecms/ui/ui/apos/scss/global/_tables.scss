@@ -43,7 +43,7 @@ span.apos-table__header-label:hover {
   cursor: auto;
 }
 
-.apos-table /deep/ .apos-choice-label {
+.apos-table ::v-deep .apos-choice-label {
   margin-top: 0;
 }
 

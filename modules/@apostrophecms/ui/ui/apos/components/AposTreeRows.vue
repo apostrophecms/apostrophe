@@ -459,7 +459,7 @@ export default {
       position: absolute;
       top: 24px;
       bottom: 0;
-      left: $row-nested-h-padding / 2;
+      left: math.div($row-nested-h-padding, 2);
       display: block;
       content: '';
       background-color: var(--a-base-8);
@@ -476,7 +476,7 @@ export default {
     @include apos-button-reset();
     position: absolute;
     top: 50%;
-    left: -$row-nested-h-padding / 2;
+    left: -(math.div($row-nested-h-padding, 2));
     background-color: var(--a-background-primary);
     transform: translate(-50%, -50%);
   }
@@ -494,7 +494,7 @@ export default {
   .apos-tree__row__icon {
     margin-right: 0.25em;
 
-    /deep/ .material-design-icon__svg {
+    ::v-deep .material-design-icon__svg {
       transition: fill 0.2s ease;
       fill: var(--a-base-5);
     }
@@ -505,8 +505,8 @@ export default {
     &:active {
       cursor: grabbing;
     }
-    .sortable-chosen & /deep/ .material-design-icon__svg,
-    &:hover /deep/ .material-design-icon__svg {
+    .sortable-chosen & ::v-deep .material-design-icon__svg,
+    &:hover ::v-deep .material-design-icon__svg {
       fill: var(--a-base-2);
     }
   }
@@ -548,7 +548,7 @@ export default {
     align-self: center;
   }
 
-  .apos-tree__cell.apos-is-published /deep/ .apos-tree__cell__icon {
+  .apos-tree__cell.apos-is-published ::v-deep .apos-tree__cell__icon {
     color: var(--a-success);
   }
 
