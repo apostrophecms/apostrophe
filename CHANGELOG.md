@@ -55,6 +55,7 @@ myColorField: {
 * `data.page` and `data.contextOptions` are now available in `widget.html` templates in most cases. Specifically, they are available when loading the page, (2) when a widget has just been inserted on the page, and (3) when a widget has just been edited and saved back to the page. However, bear in mind that these parameters are never available when a widget is being edited "out of context" via "Page Settings", via the "Edit Piece" dialog box, via a dialog box for a parent widget, etc. Your templates should be written to tolerate the absence of these parameters.
 * Double slashes in the slug cannot be used to trick Apostrophe into serving as an open redirect (fix ported to 3.x from 2.92.0).
 * The global doc respects the `def` property of schema fields when first inserted at site creation time.
+* Fixed fragment keyword arguments being available when not a part of the fragment signature.
 
 ## 3.0.0-beta.3.1 - 2021-06-07
 
