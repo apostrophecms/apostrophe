@@ -112,7 +112,7 @@ module.exports = {
       },
       'apostrophe:destroy': {
         async nunjucksLoaderCleanup() {
-          for (const loader of Object.values(self.loaders)) {
+          for (const loader of Object.values(self.loaders || {})) {
             await loader.destroy();
           }
         }
