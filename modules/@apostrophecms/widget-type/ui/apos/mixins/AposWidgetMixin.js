@@ -51,11 +51,17 @@ export default {
           this.rendered = this.rendering.html;
           this.runPlayer();
         } else {
-          this.rendered = '...';
-          this.rendered = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=draft`, {
-            busy: true,
-            body: parameters
-          });
+          if (!this.docId || apos.area.widgetIsContextual[this.type]) {
+            this.rendered = '...';
+            this.rendered = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=draft`, {
+              busy: true,
+              body: parameters
+            });
+          } else {
+            // Let TheAposContextBar re-render the entire refreshable zone
+            // for noncontextual widgets as they may rely on data.page
+            // or "with" parameters from the page template
+          }
         }
         // Wait for reactivity to populate v-html so the
         // AposAreas manager can spot any new area divs.
