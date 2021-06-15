@@ -262,11 +262,11 @@ export default {
 
 <style lang="scss" scoped>
 
-.apos-area-menu.apos-is-focused /deep/ .apos-context-menu__inner {
+.apos-area-menu.apos-is-focused ::v-deep .apos-context-menu__inner {
   border: 1px solid var(--a-base-4);
 }
 
-.apos-area-menu.apos-is-focused /deep/ .apos-context-menu__tip-outline {
+.apos-area-menu.apos-is-focused ::v-deep .apos-context-menu__tip-outline {
   stroke: var(--a-base-4);
 }
 
@@ -291,7 +291,7 @@ export default {
 
   &:hover,
   &:focus {
-    & /deep/ .apos-area-menu__item-icon {
+    & ::v-deep .apos-area-menu__item-icon {
       color: var(--a-primary);
     }
   }

@@ -225,7 +225,7 @@ export default {
   .apos-slat.apos-is-selected:focus {
     background-color: var(--a-primary);
     &,
-    /deep/ .apos-button {
+    ::v-deep .apos-button {
       color: var(--a-white);
     }
     &:hover {
@@ -243,7 +243,7 @@ export default {
   .apos-slat__main {
     display: flex;
     align-items: center;
-    & /deep/ .trigger {
+    & ::v-deep .trigger {
       /* This gets inline positioned and has doesn't provide an extra class to beef up, sorry */
       /* stylelint-disable-next-line declaration-no-important */
       display: flex !important;

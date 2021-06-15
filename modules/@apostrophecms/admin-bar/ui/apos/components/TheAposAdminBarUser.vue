@@ -58,12 +58,12 @@ export default {
   display: inline-flex;
   align-items: center;
 
-  /deep/ .apos-button {
+  ::v-deep .apos-button {
     @include type-base;
     color: var(--a-text-primary);
   }
 
-  /deep/ .apos-context-menu__popup {
+  ::v-deep .apos-context-menu__popup {
     right: 0;
     transform: translatex(10px);
   }

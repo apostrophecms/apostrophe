@@ -300,4 +300,20 @@ describe('Templates', function() {
     ]);
   });
 
+  it('should filter out unknown keyword arguments', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'issue_3102');
+    assert.deepStrictEqual(data, [
+      'val_',
+      'val_1',
+      'val_2',
+      'val_'
+    ]);
+  });
+
 });
