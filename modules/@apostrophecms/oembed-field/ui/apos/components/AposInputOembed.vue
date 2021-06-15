@@ -135,7 +135,7 @@ export default {
     margin-bottom: $spacing-double;
   }
   .apos-input__embed {
-    /deep/ iframe {
+    ::v-deep iframe {
       max-width: 100%;
     }
 
@@ -144,7 +144,7 @@ export default {
       width: 100%;
       height: 0;
 
-      /deep/ iframe {
+      ::v-deep iframe {
         position: absolute;
         top: 0;
         left: 0;

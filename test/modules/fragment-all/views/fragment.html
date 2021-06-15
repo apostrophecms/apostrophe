@@ -18,6 +18,13 @@
   val_{{ fourth }}
 {% endfragment %}
 
+{% fragment printNumbers(number, one = 1, two = 2) %}
+  val_{{ number }}
+  val_{{ one }}
+  val_{{ two }}
+  val_{{ three }}
+{% endfragment %}
+
 {% fragment _print(text) %}
   {{ text }}
 {% endfragment %}
