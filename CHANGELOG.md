@@ -54,6 +54,8 @@ myColorField: {
 }
 ```
 * Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
+* Nunjucks template loader is fully compatible with Linux in a development environment.
+* Improved template performance by reusing template loaders.
 * `min` and `max` work properly for both string-like and number-like fields.
 * Negative numbers, leading minus and plus signs, and trailing periods are accepted in the right ways by appropriate field types.
 * If a user is inadvertently inserted with no password, set a random password on the backend for safety. In tests it appears that login with a blank password was already forbidden, but this provides an additional level of certainty.
