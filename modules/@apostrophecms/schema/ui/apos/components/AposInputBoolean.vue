@@ -108,7 +108,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: ($boolean-padding / 2) $boolean-padding;
+    padding: math.div($boolean-padding, 2) $boolean-padding;
 
     &:first-of-type {
       border-top-right-radius: 0;

@@ -7,11 +7,15 @@
   var fast = '1';
   check();
   function check() {
+    if (!window.apos) {
+      // Wait for the js bundle to evaluate
+      return setTimeout(check, 100);
+    }
     if (document.visibilityState === 'hidden') {
       // No requests when tab is not active
       setTimeout(check, 5000);
     } else {
-      apos.http.get(document.querySelector('[data-apos-refresh-on-restart]').getAttribute('data-apos-refresh-on-restart'), {
+      apos.http.post(document.querySelector('[data-apos-refresh-on-restart]').getAttribute('data-apos-refresh-on-restart'), {
         qs: {
           fast: fast
         }

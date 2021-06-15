@@ -6,7 +6,7 @@
       class="apos-tiptap-control apos-tiptap-control--select"
     >
       <option
-        v-for="(style, i) in styles"
+        v-for="(style, i) in options.styles"
         :value="i"
         :key="style.label"
       >
@@ -43,17 +43,11 @@ export default {
       default() {
         return {};
       }
-    },
-    styles: {
-      type: Array,
-      default() {
-        return [];
-      }
     }
   },
   computed: {
     active() {
-      const styles = this.styles || [];
+      const styles = this.options.styles || [];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
         if (this.editor.isActive(style.type, (style.options || {}))) {
@@ -68,7 +62,7 @@ export default {
   },
   methods: {
     setStyle($event) {
-      const style = this.styles[$event.target.value];
+      const style = this.options.styles[$event.target.value];
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
     }
@@ -97,7 +91,7 @@ export default {
     position: relative;
   }
 
-  .apos-tiptap-select /deep/ .apos-tiptap-select__icon {
+  .apos-tiptap-select ::v-deep .apos-tiptap-select__icon {
     position: absolute;
     top: 50%;
     right: 5px;

@@ -25,7 +25,9 @@ module.exports = ({
   const config = {
     entry: importFile,
     mode: process.env.NODE_ENV || 'development',
-    optimization: { minimize: false },
+    optimization: {
+      minimize: process.env.NODE_ENV === 'production'
+    },
     devtool: 'eval-source-map',
     output: {
       path: outputPath,

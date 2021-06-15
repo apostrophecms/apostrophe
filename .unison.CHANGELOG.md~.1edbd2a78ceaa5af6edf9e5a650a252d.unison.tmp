@@ -6,7 +6,7 @@
 
 * Previously our `a3-boilerplate` project came with a webpack build that pushed code to the `ui/public` folder of an `asset` module. Now the webpack build is not needed because Apostrophe takes care of compiling `ui/src` for us. This is good! However, **if you are transitioning your project to this new strategy, you will need to remove the `modules/asset/ui/public` folder from your project manually** to ensure that webpack-generated code originally intended for webpack-dev-server does not fail with a `publicPath` error in the console.
 * The `CORE_DEV=1` environment setting has been changed to `APOS_DEV=1` because it is appropriate for anyone who is actively developing custom Apostrophe admin UI using `ui/apos` folders in their own modules.
-* Apostrophe now uses Dart Sass, aka the `sass` npm module. The `node-sass` npm module has been deprecated by its authors for some time now. Most existing projects will be unaffected, but those writing their own Apostrophe UI components will need to change any `/deep/` selectors to `::v-deep` and consider making other Dart Sass updates as well. For more information see the [Dart Sass documentation](https://sass-lang.com/dart-sass). Those embracing the new `ui/src` feature should also bear in mind that Dart Sass is being used.
+* Apostrophe now uses Dart Sass, aka the `sass` npm module. The `node-sass` npm module has been deprecated by its authors for some time now. Most existing projects will be unaffected, but those writing their own Apostrophe UI components will need to change any `/deep/` selectors to `::v-deep` and consider making other Dart Sass updates as well. For more information see the [Dart Sass documentation](https://sass-lang.com/dart-sass).
 
 ### Changes
 * Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
@@ -37,8 +37,6 @@
 * Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
-* "Discard Draft" is available when appropriate in "Manage Pages" and "Manage Pieces."
-* "Discard Draft" disables the "Submit Updates" button when working as a contributor.
 * Relationship subfields can now be edited when selecting in the full "manage view" browser, as well as in the compact relationship field view which worked previously.
 * Relationship subfields now respect the `def` property.
 * Relationship subfields are restored if you deselect a document and then reselect it within a single editing experience, i.e. accidentally deselect and immediately reselect, for instance.
@@ -54,9 +52,6 @@ myColorField: {
 }
 ```
 * Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
-* `data.page` and `data.contextOptions` are now available in `widget.html` templates in most cases. Specifically, they are available when loading the page, (2) when a widget has just been inserted on the page, and (3) when a widget has just been edited and saved back to the page. However, bear in mind that these parameters are never available when a widget is being edited "out of context" via "Page Settings", via the "Edit Piece" dialog box, via a dialog box for a parent widget, etc. Your templates should be written to tolerate the absence of these parameters.
-* Double slashes in the slug cannot be used to trick Apostrophe into serving as an open redirect (fix ported to 3.x from 2.92.0).
-* The global doc respects the `def` property of schema fields when first inserted at site creation time.
 
 ## 3.0.0-beta.3.1 - 2021-06-07
 
