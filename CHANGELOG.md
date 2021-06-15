@@ -37,6 +37,8 @@
 * Tracks the "previously published" version of a document as a legitimate reference to any attachments, so that they are not discarded and can be brought back as expected if "Undo Publish" is clicked.
 * Reverse relationships work properly for published documents.
 * Relationship subfields are now loaded properly when `reverseOf` is used.
+* "Discard Draft" is available when appropriate in "Manage Pages" and "Manage Pieces."
+* "Discard Draft" disables the "Submit Updates" button when working as a contributor.
 * Relationship subfields can now be edited when selecting in the full "manage view" browser, as well as in the compact relationship field view which worked previously.
 * Relationship subfields now respect the `def` property.
 * Relationship subfields are restored if you deselect a document and then reselect it within a single editing experience, i.e. accidentally deselect and immediately reselect, for instance.
@@ -54,6 +56,8 @@ myColorField: {
 * Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
 * Nunjucks template loader is fully compatible with Linux in a development environment.
 * Improved template performance by reusing template loaders.
+* `min` and `max` work properly for both string-like and number-like fields.
+* Negative numbers, leading minus and plus signs, and trailing periods are accepted in the right ways by appropriate field types.
 * If a user is inadvertently inserted with no password, set a random password on the backend for safety. In tests it appears that login with a blank password was already forbidden, but this provides an additional level of certainty.
 * `data.page` and `data.contextOptions` are now available in `widget.html` templates in most cases. Specifically, they are available when loading the page, (2) when a widget has just been inserted on the page, and (3) when a widget has just been edited and saved back to the page. However, bear in mind that these parameters are never available when a widget is being edited "out of context" via "Page Settings", via the "Edit Piece" dialog box, via a dialog box for a parent widget, etc. Your templates should be written to tolerate the absence of these parameters.
 * Double slashes in the slug cannot be used to trick Apostrophe into serving as an open redirect (fix ported to 3.x from 2.92.0).

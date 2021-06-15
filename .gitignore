@@ -1,5 +1,7 @@
 # Ignore MacOS X metadata forks (fusefs)
 ._*
+# Ignore unison sync files
+.unison*
 package-lock.json
 test/public/modules/*
 test/public/css/master-*
