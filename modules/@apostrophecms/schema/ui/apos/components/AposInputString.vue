@@ -124,12 +124,15 @@ export default {
       if (value == null) {
         value = '';
       }
-      if (this.field.required) {
-        if (typeof value === 'string' && !value.length) {
+      if (typeof value === 'string' && !value.length) {
+        // Also correct for float and integer because Vue coerces
+        // number fields to either a number or the empty string
+        if (this.field.required) {
           return 'required';
+        } else {
+          return false;
         }
       }
-
       const minMaxFields = [
         'integer',
         'float',
@@ -139,12 +142,12 @@ export default {
       ];
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {
-        if (value.length && (this.convert(value) < this.field.min)) {
+        if ((value != null) && value.length && (this.minMaxComparable(value) < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max && minMaxFields.includes(this.field.type)) {
-        if (value.length && (this.convert(value) > this.field.max)) {
+        if ((value != null) && value.length && (this.minMaxComparable(value) > this.field.max)) {
           return 'max';
         }
       }
@@ -164,11 +167,33 @@ export default {
     },
     convert(s) {
       if (this.field.type === 'integer') {
-        return parseInt(s);
+        if ((s == null) || (s === '')) {
+          return s;
+        } else {
+          return parseInt(s);
+        }
       } else if (this.field.type === 'float') {
-        return parseFloat(s);
+        if ((s == null) || (s === '')) {
+          return s;
+        } else {
+          return parseFloat(s);
+        }
       } else {
-        return s;
+        if (s == null) {
+          return '';
+        } else {
+          return s.toString();
+        }
+      }
+    },
+    minMaxComparable(s) {
+      const converted = this.convert(s);
+      if ((this.field.type === 'integer') || (this.field.type === 'float') || (this.field.type === 'date') || (this.field.type === 'range') || (this.field.type === 'time')) {
+        // Compare the actual values for these types
+        return converted;
+      } else {
+        // Compare the length for other types, like string or password or url
+        return converted.length;
       }
     }
   }

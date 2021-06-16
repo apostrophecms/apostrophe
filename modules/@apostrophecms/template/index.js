@@ -65,8 +65,6 @@ module.exports = {
 
     self.nunjucks = self.options.language || require('nunjucks');
 
-    self.envs = {};
-
     self.insertions = {};
   },
   handlers(self) {
@@ -109,6 +107,13 @@ module.exports = {
                 };
               }
             });
+          }
+        }
+      },
+      'apostrophe:destroy': {
+        async nunjucksLoaderCleanup() {
+          for (const loader of Object.values(self.loaders || {})) {
+            await loader.destroy();
           }
         }
       }
@@ -358,7 +363,7 @@ module.exports = {
 
       newEnv(req, moduleName, dirs) {
 
-        const loader = self.newLoader(moduleName, dirs, undefined, self);
+        const loader = self.getLoader(moduleName, dirs);
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
@@ -449,6 +454,23 @@ module.exports = {
       newLoader(moduleName, dirs) {
         const NunjucksLoader = require('./lib/nunjucksLoader.js');
         return new NunjucksLoader(moduleName, dirs, undefined, self, self.options.loader);
+      },
+
+      // Wrapper for newLoader with caching. You will not need
+      // to call this directly.
+
+      getLoader(moduleName, dirs) {
+        const key = JSON.stringify({
+          moduleName,
+          dirs
+        });
+        if (!self.loaders) {
+          self.loaders = {};
+        }
+        if (!self.loaders[key]) {
+          self.loaders[key] = self.newLoader(moduleName, dirs);
+        }
+        return self.loaders[key];
       },
 
       addStandardFilters(env) {
