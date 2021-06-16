@@ -128,7 +128,6 @@ export default {
     }
   },
   async mounted() {
-    this.saveResolvers = [];
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('unpublish', this.onUnpublish);
     apos.bus.$on('set-context', this.onSetContext);
@@ -287,14 +286,7 @@ export default {
         e.returnValue = '';
       }
     },
-    // Can be awaited if you are interested in knowing when the operation
-    // completed.
     async save() {
-      if (this.saving) {
-        return new Promise((resolve, reject) => {
-          this.saveResolvers.push(resolve);
-        });
-      }
       // More patches could get pushed during the async call to
       // send the previous batch, so keep going until we clear
       // the queue
@@ -329,10 +321,6 @@ export default {
       }
       this.saving = false;
       this.saved = true;
-      for (const resolver of this.saveResolvers) {
-        resolver();
-      }
-      this.saveResolvers = [];
     },
     // Switch the mode to 'published' or 'draft'.
     //
@@ -426,32 +414,12 @@ export default {
       }
       this.rememberLastBaseContext();
     },
-    async onContextEdited(patch) {
+    onContextEdited(patch) {
       this.patchesSinceLoaded.push(patch);
       this.patchesSinceSave.push(patch);
       this.undone = [];
-      const noncontextual = findNoncontextualWidget(patch);
-      if (noncontextual) {
-        apos.bus.$emit('busy', {
-          active: true,
-          name: 'busy'
-        });
-      }
-      await this.save();
-      if (noncontextual) {
-        await this.refresh();
-        apos.bus.$emit('busy', {
-          active: false,
-          name: 'busy'
-        });
-      }
-      function findNoncontextualWidget(o) {
-        if (o.type && !apos.area.widgetIsContextual[o.type]) {
-          return true;
-        }
-        if (o && ((typeof o) === 'object')) {
-          return Object.values(o).some(findNoncontextualWidget);
-        }
+      if (!this.saving) {
+        this.save();
       }
     },
     async onContentChanged(e) {
