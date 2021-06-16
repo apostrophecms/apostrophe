@@ -1,0 +1,16 @@
+{% extends data.outerLayout %}
+{% block title %}{{ __("Login") }}{% endblock %}
+
+{% block bodyClass %}apos-login-page{% endblock %}
+
+{% block beforeMain %}
+  {# Hush up project level styles while login loads #}
+  <style>
+    body {
+      background-color: var(--a-background-primary) !important;
+    }
+  </style>
+{% endblock%}
+{% block main %}
+  <div id="apos-login"></div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends data.outerLayout %}
+
+{% import "fragment.html" as fragment %}
+
+{% block main %}
+Above Fragment
+
+{% render fragment.test({
+  before: 'Before Component',
+  after: 'After Component',
+  component: {
+    text: 'Component Text'
+  }
+}) %}
+
+Below Fragment
+{% endblock %}

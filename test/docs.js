@@ -1,106 +1,93 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('@sailshq/lodash');
-var async = require('async');
-var apos;
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
+let apos;
 
 describe('Docs', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(function() {
+    return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should be a property of the apos object', function(done) {
-    apos = require('../index.js')({
+  it('should be a property of the apos object', async function() {
+    apos = await t.create({
       root: module,
-      shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
-        },
         'test-people': {
-          extend: 'apostrophe-doc-type-manager',
-          name: 'test-person',
-          addFields: [
-            {
-              name: '_friend',
-              type: 'joinByOne',
-              withType: 'test-person',
-              idField: 'friendId',
-              label: 'Friend'
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              _friends: {
+                type: 'relationship',
+                max: 1,
+                withType: 'test-people',
+                label: 'Friends'
+              }
             }
-          ]
+          }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.docs);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+
+    assert(apos.doc);
+
   });
 
   it('should have a db property', function() {
-    assert(apos.docs.db);
+    assert(apos.doc.db);
   });
 
   /// ///
   // SETUP
   /// ///
 
-  it('should make sure all of the expected indexes are configured', function(done) {
-    var expectedIndexes = ['type', 'slug', 'titleSortified', 'tags', 'published'];
-    var actualIndexes = [];
+  it('should make sure all of the expected indexes are configured', async function() {
+    const expectedIndexes = [
+      'type',
+      'slug',
+      'titleSortified'
+    ];
+    const actualIndexes = [];
 
-    apos.docs.db.indexInformation(function(err, info) {
-      assert(!err);
-
-      // Extract the actual index info we care about
-      _.each(info, function(index) {
-        actualIndexes.push(index[0][0]);
-      });
-
-      // Now make sure everything in expectedIndexes is in actualIndexes
-      _.each(expectedIndexes, function(index) {
-        assert(_.contains(actualIndexes, index));
-      });
-
-      // Lastly, make sure there is a text index present
-      assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
-      done();
+    const info = await apos.doc.db.indexInformation();
+    // Extract the actual index info we care about.
+    _.forEach(info, function(index) {
+      actualIndexes.push(index[0][0]);
     });
+
+    // Now make sure everything in expectedIndexes is in actualIndexes.
+    _.forEach(expectedIndexes, function(index) {
+      assert(_.includes(actualIndexes, index));
+    });
+
+    // Lastly, make sure there is a text index present
+    assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
   });
 
-  it('should make sure there is no test data hanging around from last time', function(done) {
+  it('should make sure there is no test data hanging around from last time', async function() {
     // Attempt to purge the entire aposDocs collection
-    apos.docs.db.remove({}, function(err) {
-      assert(!err);
-      // Make sure it went away
-      apos.docs.db.findWithProjection({ slug: 'larry' }).toArray(function(err, docs) {
-        assert(!err);
-        assert(docs.length === 0);
-        done();
-      });
-    });
+    await apos.doc.db.deleteMany({});
+
+    // Make sure it went away
+    const docs = await apos.doc.db.find({ slug: 'larry' }).toArray();
+
+    assert(docs.length === 0);
   });
 
-  it('should be able to use db to insert documents', function(done) {
-    var testItems = [
+  it('should be able to use db to insert documents', async function() {
+    const testItems = [
       {
-        _id: 'lori',
+        _id: 'lori:en:published',
+        aposDocId: 'lori',
+        aposLocale: 'en:published',
         slug: 'lori',
-        published: true,
-        type: 'test-person',
+        visibility: 'public',
+        type: 'test-people',
         firstName: 'Lori',
         lastName: 'Pizzaroni',
         age: 32,
@@ -110,609 +97,531 @@ describe('Docs', function() {
         }
       },
       {
-        _id: 'larry',
+        _id: 'larry:en:published',
+        aposDocId: 'larry',
+        aposLocale: 'en:published',
         slug: 'larry',
-        published: true,
-        type: 'test-person',
+        visibility: 'public',
+        type: 'test-people',
         firstName: 'Larry',
         lastName: 'Cherber',
         age: 28
       },
       {
-        _id: 'carl',
+        _id: 'carl:en:published',
+        aposDocId: 'carl',
+        aposLocale: 'en:published',
         slug: 'carl',
-        published: true,
-        type: 'test-person',
+        visibility: 'public',
+        type: 'test-people',
         firstName: 'Carl',
         lastName: 'Sagan',
         age: 62,
         alive: false,
-        friendId: 'larry'
+        friendsIds: [ 'larry' ]
       }
     ];
 
-    apos.docs.db.insert(testItems, function(err) {
-      assert(!err);
-      done();
-    });
+    const response = await apos.doc.db.insertMany(testItems);
+
+    assert(response.result.ok === 1);
+    assert(response.insertedCount === 3);
   });
 
-  it('should be able to carry out schema joins', function(done) {
-
-    var manager = apos.docs.getManager('test-person');
+  it('should be able to fetch schema relationships', async function() {
+    const manager = apos.doc.getManager('test-people');
+    const req = apos.task.getAnonReq();
 
     assert(manager);
     assert(manager.find);
     assert(manager.schema);
 
-    var cursor = manager.find(apos.tasks.getAnonReq(), { slug: 'carl' });
+    const cursor = await manager.find(req, { slug: 'carl' });
     assert(cursor);
-    cursor.toObject(function(err, person) {
-      assert(!err);
-      assert(person);
-      assert(person.slug === 'carl');
-      assert(person._friend);
-      assert(person._friend.slug === 'larry');
-      done();
-    });
+
+    const person = await cursor.toObject();
+    assert(person);
+    assert(person.slug === 'carl');
+    assert(person._friends);
+    assert(person._friends[0].slug === 'larry');
   });
 
   /// ///
   // UNIQUENESS
   /// ///
 
-  it('should fail if you try to insert a document with the same unique key twice', function(done) {
-    apos.docs.db.insert([
-      {
-        type: 'test-person',
-        published: false,
-        age: 70,
-        slug: 'peter'
-      },
-      {
-        type: 'test-person',
-        published: false,
-        age: 70,
-        slug: 'peter'
-      }
-    ], function(err) {
-      assert(err);
-      done();
-    });
+  it('should fail if you try to insert a document with the same unique key twice', async function() {
+    try {
+      await apos.doc.db.insertMany([
+        {
+          _id: 'peter:en:published',
+          aposDocId: 'peter',
+          aposLocale: 'en:published',
+          type: 'test-people',
+          visibility: 'loginRequired',
+          age: 70,
+          slug: 'peter'
+        },
+        // ids will not conflict, but slug will
+        {
+          _id: 'peter2:en:published',
+          aposDocId: 'peter2',
+          aposLocale: 'en:published',
+          type: 'test-people',
+          visibility: 'loginRequired',
+          age: 70,
+          slug: 'peter'
+        }
+      ]);
+      assert(false);
+    } catch (e) {
+      assert(e);
+      assert(e.code === 11000);
+    }
   });
 
   /// ///
   // FINDING
   /// ///
 
-  it('should have a find method on docs that returns a cursor', function() {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq());
-    assert(cursor);
+  it('should have a find method on docs that returns a query', function() {
+    const query = apos.doc.find(apos.task.getAnonReq());
+    assert(query);
+    assert(query.toArray);
   });
 
-  it('should be able to find all PUBLISHED test documents and output them as an array', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' });
+  it('should be able to find all test documents and output them as an array', async function () {
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' });
 
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      // There should be only 3 results.
-      assert(docs.length === 3);
-      // They should all have a type of test-person
-      assert(docs[0].type === 'test-person');
-      done();
-    });
-  });
+    const docs = await cursor.toArray();
 
-  it('same thing, but with promises', function(done) {
-    apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).toArray().then(function(docs) {
-      // There should be only 3 results.
-      assert(docs.length === 3);
-      // They should all have a type of test-person
-      assert(docs[0].type === 'test-person');
-      done();
-    }).catch(function(err) {
-      assert(!err);
-    });
+    // There should be only 3 results.
+    assert(docs.length === 3);
+    // They should all have a type of test-people
+    assert(docs[0].type === 'test-people');
   });
 
   /// ///
   // PROJECTIONS
   /// ///
 
-  it('should be able to specify which fields to get by passing a projection object', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }, { age: 1 });
-    cursor.toArray(function(err, docs) {
-
-      assert(!err);
-      // There SHOULD be an age
-      assert(docs[0].age);
-
-      // There SHOULD NOT be a firstName
-      assert(!docs[0].firstName);
-      done();
+  it('should be able to specify which fields to get by passing a projection object', async function() {
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }, {
+      project: {
+        age: 1
+      }
     });
-  });
+    const docs = await cursor.toArray();
 
-  /// ///
-  // PUBLISHED vs UNPUBLISHED
-  /// ///
-
-  it('should be that non-admins DO NOT get unpublished docs by default', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' });
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      _.each(docs, function(doc) {
-        // There SHOULD NOT be a firstName
-        assert(doc.published);
-      });
-
-      done();
-    });
-  });
-
-  it('should be that non-admins do not get unpublished docs, even if they ask for them', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).published(false);
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      assert(docs.length === 0);
-      done();
-    });
-  });
-
-  it('should be that admins can get unpublished docs if they ask for them', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).published(false);
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      assert(!docs[0].published);
-      done();
-    });
-  });
-
-  it('should be that admins can get a mixture of unpublished docs and published docs if they ask', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).published(null);
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      assert(docs.length === 4);
-      done();
-    });
+    // There SHOULD be an age
+    assert(docs[0].age);
+    // There SHOULD NOT be a firstName
+    assert(!docs[0].firstName);
   });
 
   /// ///
   // SORTING
   /// ///
 
-  it('should be able to sort', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ age: 1 });
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      assert(docs[0].slug === 'larry');
-      done();
-    });
+  it('should be able to sort', async function () {
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({ age: 1 });
+    const docs = await cursor.toArray();
+
+    assert(docs[0].slug === 'larry');
   });
 
-  it('should be able to sort by multiple keys', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ firstName: 1, age: 1 });
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      assert(docs[0].slug === 'carl');
-      assert(docs[1].slug === 'larry');
-      done();
+  it('should be able to sort by multiple keys', async function () {
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({
+      firstName: 1,
+      age: 1
     });
+    const docs = await cursor.toArray();
+
+    assert(docs[0].slug === 'carl');
+    assert(docs[1].slug === 'larry');
   });
 
   /// ///
   // INSERTING
   /// ///
 
-  it('should have an "insert" method that returns a new database object', function(done) {
-    var object = {
+  it('should have an "insert" method that returns a new database object', async function() {
+    const object = {
       slug: 'one',
-      published: true,
-      type: 'test-person',
+      visibility: 'public',
+      type: 'test-people',
       firstName: 'Lori',
       lastName: 'Ferber',
       age: 15,
       alive: true
     };
 
-    apos.docs.insert(apos.tasks.getReq(), object, function(err, object) {
-      assert(!err);
-      assert(object);
-      assert(object._id);
-      done();
+    const response = await apos.doc.insert(apos.task.getReq(), object);
+
+    assert(response);
+    assert(response._id);
+    assert(response._id.endsWith(':en:published'));
+    assert(response._id === `${response.aposDocId}:${response.aposLocale}`);
+    // Direct insertion in published locale should autocreate
+    // a corresponding draft for internal consistency
+    const draft = await apos.doc.db.findOne({
+      _id: `${response.aposDocId}:en:draft`
     });
+    assert(draft);
+    // Unique index allows for duplicates across locales
+    assert(object.slug === draft.slug);
+    // Content properties coming through
+    assert(draft.firstName === response.firstName);
   });
 
-  it('should be able to insert a new object into the docs collection in the database', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'one' });
-    cursor.toArray(function(err, docs) {
-      assert(!err);
-      assert(docs[0].slug === 'one');
-      done();
+  it('should be able to insert a new object into the docs collection in the database', async function() {
+    const cursor = apos.doc.find(apos.task.getReq(), {
+      type: 'test-people',
+      slug: 'one'
     });
+    const docs = await cursor.toArray();
+
+    assert(docs[0].slug === 'one');
   });
 
-  it('should append the slug property with a numeral if inserting an object whose slug already exists in the database', function(done) {
-    var object = {
+  it('should append the slug property with a numeral if inserting an object whose slug already exists in the database', async function() {
+    const object = {
       slug: 'one',
-      published: true,
-      type: 'test-person',
-      firstName: 'Lilith',
-      lastName: 'Iyapo',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Harry',
+      lastName: 'Gerber',
       age: 29,
       alive: true
     };
 
-    apos.docs.insert(apos.tasks.getReq(), object, function(err, object) {
-      assert(!err);
-      assert(object);
-      assert(object.slug.match(/^one\d+$/));
-      done();
-    });
+    const doc = await apos.doc.insert(apos.task.getReq(), object);
+
+    assert(doc);
+    assert(doc.slug.match(/^one\d+$/));
   });
 
-  it('should not allow you to call the insert method if you are not an admin', function(done) {
-    var object = {
+  it('should not allow you to call the insert method if you are not an admin', async function() {
+    const object = {
       slug: 'not-for-you',
-      published: false,
-      type: 'test-person',
+      visibility: 'loginRequired',
+      type: 'test-people',
       firstName: 'Darry',
       lastName: 'Derrber',
       age: 5,
       alive: true
     };
 
-    apos.docs.insert(apos.tasks.getAnonReq(), object, function(err, object) {
-      // did it return an error?
-      assert(err);
-      done();
-    });
+    try {
+      await apos.doc.insert(apos.task.getAnonReq(), object);
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
   });
 
   /// ///
   // UPDATING
   /// ///
 
-  it('should have an "update" method on docs that updates an existing database object based on the "_id" porperty', function(done) {
-    apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toArray(function(err, docs) {
-      assert(!err);
-      // we should have a document
-      assert(docs);
-      // there should be only one document in our results
-      assert(docs.length === 1);
+  it('should have an "update" method on docs that updates an existing database object', async function() {
+    const req = apos.task.getReq();
+    const docs = await apos.doc.find(req, { slug: 'one' }).toArray();
 
-      // grab the object
-      var object = docs[0];
-      // we want update the alive property
-      object.alive = false;
+    // We should have one document in our results.
+    assert(docs);
+    assert(docs.length === 1);
 
-      apos.docs.update(apos.tasks.getReq(), object, function(err, object) {
-        assert(!err);
-        assert(object);
-        // has the property been updated?
-        assert(object.alive === false);
-        done();
-      });
+    // Grab the object and update the `alive` property.
+    const object = docs[0];
+    object.alive = false;
+
+    const updated = await apos.doc.update(apos.task.getReq(), object);
+
+    // Has the property been updated?
+    assert(updated);
+    assert(updated.alive === false);
+  });
+
+  it('should append an updated slug with a numeral if the updated slug already exists', async function() {
+    const req = apos.task.getReq();
+    const cursor = apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'one'
     });
+    const doc = await cursor.toObject();
+
+    assert(doc);
+
+    doc.slug = 'peter';
+
+    const updated = await apos.doc.update(req, doc);
+    assert(updated);
+    // Has the updated slug been appended?
+    assert(updated.slug.match(/^peter\d+$/));
+  });
+  it('should be able to fetch all unique firstNames with toDistinct', async function() {
+    const firstNames = await apos.doc.find(apos.task.getReq(), {
+      type: 'test-people'
+    }).toDistinct('firstName');
+
+    assert(Array.isArray(firstNames));
+    assert(firstNames.length === 4);
+    assert(_.includes(firstNames, 'Larry'));
   });
 
-  it('should append an updated slug with a numeral if the updated slug already exists', function(done) {
+  it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
+    const req = apos.task.getReq();
+    const cursor = apos.doc.find(req, {
+      type: 'test-people'
+    }).distinctCounts(true);
+    const firstNames = await cursor.toDistinct('firstName');
 
-    var cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'one' });
-    cursor.toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
+    assert(Array.isArray(firstNames));
+    assert(firstNames.length === 4);
+    assert(_.includes(firstNames, 'Larry'));
 
-      doc.slug = 'peter';
+    const counts = await cursor.get('distinctCounts');
 
-      apos.docs.update(apos.tasks.getReq(), doc, function(err, doc) {
-        assert(!err);
-        assert(doc);
-        // has the updated slug been appended?
-        assert(doc.slug.match(/^peter\d+$/));
-        done();
-      });
+    assert(counts.Larry === 1);
+    assert(counts.Lori === 2);
+  });
+
+  it('should not allow you to call the update method if you are not an admin', async function() {
+    const cursor = apos.doc.find(apos.task.getAnonReq(), {
+      type: 'test-people',
+      slug: 'lori'
     });
-  });
 
-  it('same thing, but with promises', function(done) {
+    const doc = cursor.toObject();
 
-    // We need to insert another, we used 'one' up
-    var object = {
-      slug: 'two',
-      published: true,
-      type: 'test-person',
-      firstName: 'Twofy',
-      lastName: 'Twofer',
-      age: 15,
-      alive: true
-    };
+    assert(doc);
+    doc.slug = 'laurie';
 
-    apos.docs.insert(apos.tasks.getReq(), object)
-      .then(function(doc) {
-        var cursor;
-        assert(doc);
-        assert(doc._id);
-        cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'two' });
-        return cursor.toObject();
-      })
-      .then(function(doc) {
-        assert(doc);
-        doc.slug = 'peter';
-        return apos.docs.update(apos.tasks.getReq(), doc);
-      })
-      .then(function(doc) {
-        assert(doc);
-        // has the updated slug been appended?
-        assert(doc.slug.match(/^peter\d+$/));
-        done();
-      })
-      .catch(function(err) {
-        assert(!err);
-      });
-  });
-
-  it('should be able to fetch all unique firstNames with toDistinct', function() {
-    return apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).toDistinct('firstName')
-      .then(function(firstNames) {
-        assert(Array.isArray(firstNames));
-        assert(firstNames.length === 5);
-        assert(_.contains(firstNames, 'Larry'));
-      });
-  });
-
-  it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', function() {
-    var cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).distinctCounts(true);
-    return cursor.toDistinct('firstName')
-      .then(function(firstNames) {
-        assert(Array.isArray(firstNames));
-        assert(firstNames.length === 5);
-        assert(_.contains(firstNames, 'Larry'));
-        var counts = cursor.get('distinctCounts');
-        assert(counts['Larry'] === 1);
-        assert(counts['Lori'] === 2);
-      });
-  });
-
-  it('should not allow you to call the update method if you are not an admin', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person', slug: 'lori' });
-    cursor.toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-
-      doc.slug = 'laurie';
-
-      apos.docs.update(apos.tasks.getAnonReq(), doc, function(err, doc) {
-        // did it return an error?
-        assert(err);
-        done();
-      });
-    });
+    try {
+      await apos.doc.update(apos.task.getAnonReq(), doc);
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
   });
 
   /// ///
-  // TRASH
+  // ARCHIVE
   /// ///
 
-  it('should have a "trash" method on docs', function(done) {
-    apos.docs.trash(apos.tasks.getReq(), { slug: 'carl' }, function(err) {
-      assert(!err);
-      done();
+  it('should archive docs by updating them', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+    const archived = await apos.doc.update(req, {
+      ...doc,
+      archived: true
     });
+
+    assert(archived.archived === true);
   });
 
-  it('should not be able to find the trashed object', function(done) {
-    apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).toObject(function(err, doc) {
-      assert(!err);
-      // we should not have a document
-      assert(!doc);
-      done();
-    });
+  it('should not be able to find the archived object', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.find(req, {
+      slug: 'carl'
+    }).toObject();
+
+    assert(!doc);
   });
 
-  it('should not allow you to call the trash method if you are not an admin', function(done) {
-    apos.docs.trash(apos.tasks.getAnonReq(), { slug: 'lori' }, function(err) {
-      assert(err);
-      done();
-    });
+  it('should not allow you to call the archive method if you are not an admin', async function() {
+    try {
+      await apos.doc.archived(apos.task.getAnonReq(), {
+        slug: 'lori'
+      });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
   });
 
-  it('should be able to find the trashed object when using the "trash" method on find()', function(done) {
-    apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
-      assert(!err);
-      // we should have a document
-      assert(doc);
-      done();
-    });
+  it('should be able to find the archived object when using the "archived" method on find()', async function() {
+    // Look for the archived doc with the `deduplicate-` + its `_id` + its `name` properties.
+    const doc = await apos.doc.find(apos.task.getReq(), {
+      slug: 'deduplicate-carl-carl'
+    }).archived(true).toObject();
+
+    assert(doc);
+    assert(doc.archived);
   });
 
   /// ///
   // RESCUE
   /// ///
 
-  it('should have a "rescue" method on docs that removes the "trash" property from an object', function(done) {
-    apos.docs.rescue(apos.tasks.getReq(), { slug: 'carl' }, function(err) {
-      assert(!err);
-      apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).toObject(function(err, doc) {
-        assert(!err);
-        // we should have a document
-        assert(doc);
-        done();
-      });
+  it('should rescue a doc by updating the "archived" property from an object', async function() {
+    const req = apos.task.getReq();
+
+    const doc = await apos.doc.find(req, {
+      slug: 'deduplicate-carl-carl'
+    }).archived(null).toObject();
+
+    await apos.doc.update(req, {
+      ...doc,
+      archived: false
     });
+    const newDoc = await apos.doc.find(req, { slug: 'carl' }).toObject();
+
+    // We should have a document.
+    assert(newDoc);
+    assert(newDoc.slug === 'carl');
+    assert(newDoc.archived === false);
   });
 
-  it('should not allow you to call the rescue method if you are not an admin', function(done) {
-    apos.docs.rescue(apos.tasks.getAnonReq(), { slug: 'carl' }, function(err) {
-      // was there an error?
-      assert(err);
-      done();
-    });
-  });
-
-  /// ///
-  // EMPTY TRASH
-  /// ///
-
-  it('should have an "deleteFromTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
-
-    return async.series({
-      trashCarl: function(callback) {
-        return apos.docs.trash(apos.tasks.getReq(), { slug: 'carl' }, function(err) {
-          assert(!err);
-          return callback(null);
-        });
-      },
-      deleteFromTrash: function(callback) {
-        return apos.docs.deleteFromTrash(apos.tasks.getReq(), {}, function(err) {
-          assert(!err);
-          return callback(null);
-        });
-      },
-      find: function(callback) {
-        return apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
-          assert(!err);
-          // we should not have a document
-          assert(!doc);
-          return callback(null);
-        });
-      }
-    }, done);
-  });
-
-  it('should not allow you to call the deleteFromTrash method if you are not an admin', function(done) {
-    return async.series({
-      trashLarry: function(callback) {
-        return apos.docs.trash(apos.tasks.getReq(), { slug: 'larry' }, function(err) {
-          assert(!err);
-          return callback(null);
-        });
-      },
-      deleteFromTrash: function(callback) {
-        apos.docs.deleteFromTrash(apos.tasks.getAnonReq(), {}, function(err) {
-          assert(!err);
-          return callback(null);
-        });
-      },
-      find: function(callback) {
-        return apos.docs.find(apos.tasks.getReq(), { slug: 'larry' }).trash(true).toObject(function(err, doc) {
-          assert(!err);
-          // we should have a document
-          assert(doc);
-          callback(null);
-        });
-      }
-    }, done);
-  });
-
-  it('should throw an exception on find() if you fail to pass req as the first argument', function() {
-    var exception;
+  it('should not allow you to call the rescue method if you are not an admin', async function() {
     try {
-      apos.docs.find({ slug: 'larry' });
+      await apos.doc.rescue(apos.task.getAnonReq(), {
+        slug: 'carl'
+      });
+      assert(false);
     } catch (e) {
-      exception = e;
+      assert(e);
     }
-    assert(exception);
   });
 
-  it('should respect explicitOrder()', function(done) {
+  it('should throw an exception on find() if you fail to pass req as the first argument', async function() {
+    try {
+      await apos.doc.find({ slug: 'larry' });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
 
-    var testItems = [];
-    var i;
+  it('should respect _ids()', async function() {
+    const testItems = [];
+    let i;
+
     for (i = 0; (i < 100); i++) {
       testItems.push({
-        _id: 'i' + i,
-        slug: 'i' + i,
-        published: true,
+        _id: `i${i}:en:published`,
+        aposDocId: `i${i}`,
+        aposLocale: 'en:published',
+        slug: `i${i}`,
+        visibility: 'public',
         type: 'test',
         title: 'title: ' + i
       });
     }
 
-    return apos.docs.db.insert(testItems, function(err) {
-      assert(!err);
-      return apos.docs.find(apos.tasks.getAnonReq(), {}).explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray(function(err, docs) {
-        assert(!err);
-        assert(docs[0]._id === 'i7');
-        assert(docs[1]._id === 'i3');
-        assert(docs[2]._id === 'i27');
-        assert(docs[3]._id === 'i9');
-        assert(!docs[4]);
-        return done();
-      });
-    });
+    await apos.doc.db.insertMany(testItems);
 
+    const docs = await apos.doc.find(apos.task.getAnonReq(), {})
+      ._ids([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).toArray();
+    assert(docs[0]._id === 'i7:en:published');
+    assert(docs[0].aposDocId === 'i7');
+    assert(docs[0].aposLocale === 'en:published');
+    assert(docs[1]._id === 'i3:en:published');
+    assert(docs[2]._id === 'i27:en:published');
+    assert(docs[3]._id === 'i9:en:published');
+    assert(!docs[4]);
   });
 
-  it('should respect explicitOrder with skip and limit', function(done) {
-
+  it('should respect _ids with skip and limit', async function() {
     // Relies on test data of previous test
-    return apos.docs.find(apos.tasks.getAnonReq(), {}).explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).skip(2).limit(2).toArray(function(err, docs) {
-      assert(!err);
-      assert(docs[0]._id === 'i27');
-      assert(docs[1]._id === 'i9');
-      assert(!docs[2]);
-      return done();
-    });
+    const docs = await apos.doc.find(apos.task.getAnonReq(), {})
+      ._ids([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).skip(2).limit(2).toArray();
 
+    assert(docs[0]._id === 'i27:en:published');
+    assert(docs[1]._id === 'i9:en:published');
+    assert(!docs[2]);
   });
 
-  it('should be able to lock a document', function(done) {
-    var req = apos.tasks.getReq();
-    apos.docs.lock(req, 'i27', 'abc', function(err) {
-      assert(!err);
-      done();
-    });
+  it('should be able to lock a document', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+    try {
+      await apos.doc.lock(req, doc, 'abc');
+    } catch (e) {
+      assert(!e);
+    }
   });
 
-  it('should not be able to lock a document with a different contextId', function(done) {
-    var req = apos.tasks.getReq();
-    apos.docs.lock(req, 'i27', 'def', function(err) {
-      assert(err);
-      assert(err === 'locked');
-      done();
-    });
+  it('should not be able to lock a document with a different tabId', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+
+    try {
+      await apos.doc.lock(req, doc, 'def');
+    } catch (e) {
+      assert(e);
+      assert(e.name === 'locked');
+    }
   });
 
-  it('should be able to unlock a document', function(done) {
-    var req = apos.tasks.getReq();
-    apos.docs.unlock(req, 'i27', 'abc', function(err) {
-      assert(!err);
-      done();
-    });
+  it('should be able to refresh the lock with the same tabId', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+
+    try {
+      await apos.doc.lock(req, doc, 'abc');
+    } catch (e) {
+      assert(!e);
+    }
   });
 
-  it('should be able to re-lock an unlocked document', function(done) {
-    var req = apos.tasks.getReq();
-    apos.docs.lock(req, 'i27', 'def', function(err) {
-      assert(!err);
-      done();
-    });
+  it('should be able to unlock a document', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+
+    try {
+      await apos.doc.unlock(req, doc, 'abc');
+    } catch (e) {
+      assert(false);
+    }
   });
 
-  it('should be able to lock a locked document with force: true', function(done) {
-    var req = apos.tasks.getReq();
-    apos.docs.lock(req, 'i27', 'abc', { force: true }, function(err) {
-      assert(!err);
-      done();
-    });
+  it('should be able to re-lock an unlocked document', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+
+    try {
+      await apos.doc.lock(req, doc, 'def');
+    } catch (e) {
+      assert(false);
+    }
   });
 
-  it('should be able to unlock all documents locked with the same contextId', function(done) {
-    var req = apos.tasks.getReq();
-    apos.docs.lock(req, 'i26', 'abc', function(err) {
-      assert(!err);
-      apos.docs.lock(req, 'i25', 'abc', function(err) {
-        assert(!err);
-        apos.docs.unlockAll(req, 'abc', function(err) {
-          assert(!err);
-          apos.docs.lock(req, 'i26', 'def', function(err) {
-            assert(!err);
-            done();
-          });
-        });
-      });
+  it('should be able to lock a locked document with force: true', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+
+    try {
+      await apos.doc.lock(req, doc, 'abc', { force: true });
+    } catch (e) {
+      assert(false);
+    }
+  });
+
+  it('should be able to recover if the text index weights are mysteriously wrong at startup', async function() {
+    await apos.doc.db.dropIndex('highSearchText_text_lowSearchText_text_title_text_searchBoost_text');
+    await apos.doc.db.createIndex({
+      highSearchText: 'text',
+      lowSearchText: 'text',
+      title: 'text',
+      searchBoost: 'text'
+    }, {
+      default_language: 'none',
+      weights: {
+        // These are the weird weights we've seen when this
+        // mystery bug crops up, flunking createIndex on a
+        // later startup
+        title: 1,
+        searchBoost: 1,
+        highSearchText: 1,
+        lowSearchText: 1
+      }
     });
+    await apos.doc.createTextIndex();
   });
 
   it('should be able to execute a projection with both a key and its subkey regardless of mongodb version', async function() {

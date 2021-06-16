@@ -1,25 +1,22 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 
 describe('Launder', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(function() {
+    return t.destroy(apos);
   });
 
-  var apos;
+  let apos;
 
-  it('should exist on the apos object', function(done) {
-    apos = require('../index.js')({
-      root: module,
-      shortName: 'test',
-      afterInit: function(callback) {
-        assert(apos.launder);
-        return done();
-      }
+  it('should exist on the apos object', async function() {
+    apos = await t.create({
+      root: module
     });
+
+    assert(apos.launder);
   });
 
   // Launder has plenty of unit tests of its own. All we're

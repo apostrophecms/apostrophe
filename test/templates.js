@@ -1,186 +1,319 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const cheerio = require('cheerio');
+const Promise = require('bluebird');
 
-var apos;
+let apos;
 
 describe('Templates', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async () => {
+    return t.destroy(apos);
   });
 
-  it('should have a templates property', function(done) {
-    apos = require('../index.js')({
-      root: module,
-      shortName: 'test',
+  /**
+   * Helper ofr grabbing output between --label-- ... --endlabel--, split it to lines
+   * and remove all whitespace
+   *
+   * @param {String} result page output
+   * @param {String} label a test case marker
+   * @returns {Array<String>} array of non-empty lines
+   */
+  const parseOutput = (result, label) => {
+    const regx = new RegExp(`--${label}--([\\S\\s]*?)--end${label}--`, 'g');
+    const m = result.match(regx);
+    const arr = m[0].split('\n');
+    return arr
+      .slice(1, arr.length - 1)
+      .filter(s => !!s.trim())
+      .map(s => s.trim());
+  };
 
+  it('should have a templates property', async () => {
+    apos = await t.create({
+      root: module,
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+        'express-test': {},
+        'template-test': {},
+        'template-subclass-test': {},
+        'template-options-test': {},
+        'inject-test': {},
+        'with-layout-page': {
+          extend: '@apostrophecms/page-type'
         },
-        'express-test': {
-          ignoreNoCodeWarning: true
+        'fragment-page': {
+          components(self) {
+            return {
+              async test(req, input) {
+                // Be very async
+                await Promise.delay(100);
+                input.afterDelay = true;
+                return input;
+              }
+            };
+          }
         },
-        'templates-test': {
-          ignoreNoCodeWarning: true
-        },
-        'templates-subclass-test': {
-          ignoreNoCodeWarning: true
-        },
-        'templates-options-test': {
-          ignoreNoCodeWarning: true
-        },
-        'apostrophe-pages': {
-          park: [
-            {
-              title: 'With Layout',
-              slug: '/with-layout',
-              type: 'withLayout'
-            }
-          ]
+        'fragment-all': {
+          components(self) {
+            return {
+              async test(req, input) {
+                // Be very async
+                await Promise.delay(100);
+                input.afterDelay = true;
+                return input;
+              }
+            };
+          }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.templates);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
   });
 
-  it('should be able to render a template relative to a module', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].render(req, 'test', { age: 50 });
+  it('should be able to render a template relative to a module', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-test'].render(req, 'test', { age: 50 });
     assert(result === '<h1>50</h1>\n');
   });
 
-  it('should respect templateData at module level', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].render(req, 'test');
+  it('should respect templateData at module level', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-test'].render(req, 'test');
     assert(result === '<h1>30</h1>\n');
   });
 
-  it('should respect template overrides', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-subclass-test'].render(req, 'override-test');
+  it('should respect template overrides', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-subclass-test'].render(req, 'override-test');
     assert(result === '<h1>I am overridden</h1>\n');
   });
 
-  it('should inherit in the absence of overrides', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-subclass-test'].render(req, 'inherit-test');
+  it('should inherit in the absence of overrides', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-subclass-test'].render(req, 'inherit-test');
     assert(result === '<h1>I am inherited</h1>\n');
   });
 
-  it('should be able to see the options of the module via module.options', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-options-test'].render(req, 'options-test');
+  it('should be able to see the options of the module via module.options', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-options-test'].render(req, 'options-test');
     assert(result.match(/nifty/));
   });
 
-  it('should be able to call helpers on the modules object', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-options-test'].render(req, 'options-test');
+  it('should be able to call helpers on the modules object', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-options-test'].render(req, 'options-test');
     assert(result.match(/4/));
   });
 
-  it('should render pages successfully with outerLayout', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].renderPage(req, 'page');
+  it('should render pages successfully with outerLayout, with core data-apos attribute', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-test'].renderPage(req, 'page');
+    const $ = cheerio.load(result);
+    const $body = $('body');
+    assert($body.length);
+    const aposData = JSON.parse($body.attr('data-apos'));
+    assert(aposData);
+    assert(aposData.csrfCookieName);
+    assert(!aposData.modules['@apostrophecms/admin-bar']);
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
   });
 
-  it('cross-module-included files should be able to include/extend other files relative to their own module', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].renderPage(req, 'pageWithLayout');
+  it('should render pages successfully with outerLayout for admin user, with expanded data-apos attribute', async function() {
+    const req = apos.task.getReq();
+    const result = await apos.modules['template-test'].renderPage(req, 'page');
+    const $ = cheerio.load(result);
+    const $body = $('body');
+    assert($body.length);
+    const aposData = JSON.parse($body.attr('data-apos'));
+    assert(aposData);
+    assert(aposData.modules['@apostrophecms/admin-bar'].items.length);
+    assert(result.indexOf('<title>I am the title</title>') !== -1);
+    assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
+  });
+
+  it('cross-module-included files should be able to include/extend other files relative to their own module', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-test'].renderPage(req, 'pageWithLayout');
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h2>I am the inner content</h2>') !== -1);
     assert(result.indexOf('<h3>I am in the layout</h3>') !== -1);
     assert(result.indexOf('<p>I am included</p>') !== -1);
   });
 
-  it('should render pages successfully with prepend and append to locations', function() {
-    var req = apos.tasks.getReq();
-    // Otherwise there is no context menu (we need a page or a piece)
-    req.data.page = {
-      _id: 'imadethisup',
-      _edit: true
-    };
-    apos.templates.prepend('head', function(req) {
-      assert(req.res);
-      return '<meta name="before-test" />';
-    });
-    apos.templates.append('head', function(req) {
-      assert(req.res);
-      return '<meta name="after-test" />';
-    });
-    apos.pages.addAfterContextMenu(function(req) {
-      assert(req.res);
-      return '<h4>After the Context Menu</h4>';
-    });
-    var result = apos.pages.renderPage(req, 'pages/withLayout');
-    var titleIndex = result.indexOf('<title>');
-    var beforeTestIndex = result.indexOf('<meta name="before-test" />');
-    var afterTestIndex = result.indexOf('<meta name="after-test" />');
-    var bodyIndex = result.indexOf('<body');
-    var afterContextMenu = result.indexOf('<h4>After the Context Menu</h4>');
+  it('should render pages successfully with prepend and append to locations', async function() {
+    const req = apos.task.getReq();
+    const result = await apos.modules['with-layout-page'].renderPage(req, 'page');
+    const titleIndex = result.indexOf('<title>');
+    const beforeTestIndex = result.indexOf('<meta name="prepend-head-test" />');
+    const afterTestIndex = result.indexOf('<meta name="append-head-test" />');
+    const bodyIndex = result.indexOf('<body');
+    const appendBody = result.indexOf('<h4>append-body-test</h4>');
     assert(titleIndex !== -1);
     assert(beforeTestIndex !== -1);
     assert(afterTestIndex !== -1);
     assert(bodyIndex !== -1);
-    assert(afterContextMenu !== -1);
+    assert(appendBody !== -1);
     assert(beforeTestIndex < titleIndex);
     assert(afterTestIndex > titleIndex);
     assert(afterTestIndex < bodyIndex);
   });
 
-  it('should not escape <br /> generated by the nlbr filter, but should escape tags in its input', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].render(req, 'testWithNlbrFilter');
+  it('should not escape <br /> generated by the nlbr filter, but should escape tags in its input', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-test'].render(req, 'testWithNlbrFilter');
     assert.strictEqual(result, '<p>first line<br />\nsecond line<br />\n&lt;a href=&#34;javascript:alert(\'oh no\')&#34;&gt;CSRF attempt&lt;/a&gt;</p>\n');
   });
 
-  it('should not escape <br /> generated by the nlp filter, but should escape tags in its input', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].render(req, 'testWithNlpFilter');
+  it('should not escape <br /> generated by the nlp filter, but should escape tags in its input', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-test'].render(req, 'testWithNlpFilter');
     assert.strictEqual(result, '<p>first line</p>\n<p>second line</p>\n<p>&lt;a href=&#34;javascript:alert(\'oh no\')&#34;&gt;CSRF attempt&lt;/a&gt;</p>\n');
   });
 
-  it('should not escape <br /> generated by the nlbr filter or markup in the test input', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].render(req, 'testWithNlbrFilterSafe');
-
+  it('should not escape <br /> generated by the nlbr filter or markup in the test input', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['template-test'].render(req, 'testWithNlbrFilterSafe');
     assert.strictEqual(result, '<p>first line<br />\nsecond line<br />\n<a href="http://niceurl.com">This is okay</a></p>\n');
   });
 
-  it('should format dates', function() {
-    var req = apos.tasks.getAnonReq();
-    // default locale
-    var result = apos.modules['templates-test'].renderString(req, '{{ data.now | date(\'LLLL\') }}', {
-      now: new Date(2018, 11, 1)
-    });
-    assert.equal(result, 'Saturday, December 1, 2018 12:00 AM');
-    // locale parameter is respected
-    result = apos.modules['templates-test'].renderString(req, '{{ data.now | date(\'LLLL\', \'en-gb\') }}', {
-      now: new Date(2018, 11, 1)
-    });
-    assert.equal(result, 'Saturday, 1 December 2018 00:00');
-    // Use of a locale does not persistently alter behavior for next call with no locale
-    result = apos.modules['templates-test'].renderString(req, '{{ data.now | date(\'LLLL\') }}', {
-      now: new Date(2018, 11, 1)
-    });
-    assert.equal(result, 'Saturday, December 1, 2018 12:00 AM');
+  it('should render fragments containing async components correctly', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-page'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const aboveFragment = result.indexOf('Above Fragment');
+    const beforeComponent = result.indexOf('Before Component');
+    const componentText = result.indexOf('Component Text');
+    const afterDelay = result.indexOf('After Delay');
+    const afterComponent = result.indexOf('After Component');
+    const belowFragment = result.indexOf('Below Fragment');
+
+    assert(aboveFragment !== -1);
+    assert(beforeComponent !== -1);
+    assert(componentText !== -1);
+    assert(afterDelay !== -1);
+    assert(afterComponent !== -1);
+    assert(belowFragment !== -1);
+
+    assert(aboveFragment < beforeComponent);
+    assert(beforeComponent < componentText);
+    assert(componentText < afterDelay);
+    assert(afterDelay < afterComponent);
+    assert(afterComponent < belowFragment);
+  });
+
+  it('should render fragment without passing any keyword arguments', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'test1');
+    assert.deepStrictEqual(data, [
+      'pos1',
+      'pos2',
+      'kw1_default',
+      'kw2_default',
+      'kw3_default'
+    ]);
+  });
+
+  it('should support keyword arguments and render macros and fragments from other fragments', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'test2');
+    assert.deepStrictEqual(data, [
+      'Above Fragment',
+      'pos1',
+      'pos2',
+      'pos3',
+      'kw1_default',
+      'kw2',
+      'kw3_default',
+      'Below Fragment'
+    ]);
+  });
+
+  it('should render rendercall blocks', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'test3');
+    assert.deepStrictEqual(data, [
+      'Above Call Fragment',
+      'pos1',
+      'pos2',
+      'pos3',
+      'Start Call Body',
+      'Text is called',
+      'After Delay',
+      'End Call Body',
+      'kw1_default',
+      'kw2',
+      'kw3_default',
+      'Below Call Fragment'
+    ]);
+  });
+
+  it('should skip positional arguments when there is keyword arguments (1)', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'issue_3056_1');
+    assert.deepStrictEqual(data, [
+      'val_1',
+      'val_',
+      'val_9',
+      'val_4'
+    ]);
+  });
+
+  it('should skip positional arguments when there is keyword arguments (2)', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'issue_3056_2');
+    assert.deepStrictEqual(data, [
+      'val_1',
+      'val_',
+      'val_9',
+      'val_4'
+    ]);
+  });
+
+  it('should filter out unknown keyword arguments', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'page');
+    if (result.match(/error/)) {
+      throw result;
+    }
+
+    const data = parseOutput(result, 'issue_3102');
+    assert.deepStrictEqual(data, [
+      'val_',
+      'val_1',
+      'val_2',
+      'val_'
+    ]);
   });
 
 });

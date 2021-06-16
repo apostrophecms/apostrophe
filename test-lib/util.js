@@ -1,54 +1,63 @@
-var async = require('async');
+const cuid = require('cuid');
 
 // Properly clean up an apostrophe instance and drop its
 // database collections to create a sane environment for the next test.
 // Drops the collections, not the entire database, to avoid problems
 // when testing something like a mongodb hosting environment with
 // credentials per database.
+//
+// If `apos` is null, no work is done.
 
-function destroy(apos, done) {
-  if (!apos) {
-    done();
-    return;
+async function destroy(apos) {
+  const dbName = apos.db && apos.db.databaseName;
+  if (apos) {
+    await apos.destroy();
   }
-  return async.series([
-    drop,
-    destroy
-  ], function(err) {
-    if (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      process.exit(1);
-    }
-    return done();
-  });
-  function drop(callback) {
-    if (!(apos.db && apos.db.collections)) {
-      return callback(null);
-    }
-    return apos.db.collections(function(err, collections) {
-      if (err) {
-        return callback(err);
-      }
-
-      // drop the collections
-      return async.eachSeries(collections, function(collection, callback) {
-        if (!collection.collectionName.match(/^system\./)) {
-          return collection.drop(callback);
-        }
-        return setImmediate(callback);
-      }, callback);
+  // TODO at some point accommodate nonsense like testing remote databases
+  // that won't let us use dropDatabase, no shell available etc., but the
+  // important principle here is that we should not have to have an apos
+  // object to clean up the database, otherwise we have to get hold of one
+  // when initialization failed and that's really not apostrophe's concern
+  if (dbName) {
+    const mongo = require('mongodb');
+    const client = await mongo.MongoClient.connect(`mongodb://localhost:27017/${dbName}`, {
+      useUnifiedTopology: true,
+      useNewUrlParser: true
     });
-  }
-  function destroy(callback) {
-    if (!apos.destroy) {
-      return callback(null);
-    }
-    return apos.destroy(callback);
+    const db = client.db(dbName);
+    await db.dropDatabase();
+    await client.close();
   }
 };
 
+async function create(options) {
+  const config = {
+    shortName: `test-${cuid()}`,
+    argv: {
+      _: [],
+      'ignore-orphan-modules': true
+    },
+    autoBuild: false,
+    ...options
+  };
+  // Automatically configure Express, but not if we're in a special
+  // environment where the default apostrophe modules don't initialize
+  if (!config.__testDefaults) {
+    config.modules = config.modules || {};
+    const express = config.modules['@apostrophecms/express'] || {};
+    express.options = express.options || {};
+    // Allow OS to choose open port
+    express.options.port = null;
+    express.options.address = express.options.address || 'localhost';
+    express.options.session = express.options.session || {};
+    express.options.session.secret = express.options.session.secret || 'test';
+    config.modules['@apostrophecms/express'] = express;
+  }
+  return require('../index.js')(config);
+}
+
 module.exports = {
-  destroy: destroy,
+  destroy,
+  create,
   timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };

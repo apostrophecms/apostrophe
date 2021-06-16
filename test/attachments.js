@@ -1,29 +1,31 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
-var apos;
+let apos;
 
 describe('Attachment', function() {
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
   this.timeout(t.timeout);
 
-  var uploadSource = __dirname + "/data/upload_tests/";
-  var uploadTarget = __dirname + "/public/uploads/attachments/";
-  var collectionName = 'aposAttachments';
+  const uploadSource = path.join(__dirname, '/data/upload_tests/');
+  const uploadTarget = path.join(__dirname, '/public/uploads/attachments/');
+  const collectionName = 'aposAttachments';
 
-  function wipeIt(callback) {
-    deleteFolderRecursive(__dirname + '/public/uploads');
+  async function wipeIt() {
+    deleteFolderRecursive(path.join(__dirname, '/public/uploads'));
 
     function deleteFolderRecursive (path) {
-      var files = [];
+      let files = [];
       if (fs.existsSync(path)) {
         files = fs.readdirSync(path);
         files.forEach(function(file, index) {
-          var curPath = path + "/" + file;
+          const curPath = path + '/' + file;
           if (fs.lstatSync(curPath).isDirectory()) { // recurse
             deleteFolderRecursive(curPath);
           } else { // delete file
@@ -34,154 +36,115 @@ describe('Attachment', function() {
       }
     }
 
-    apos.db.collection(collectionName, function(err, collection) {
-      assert(!err);
-      assert(collection);
-      collection.remove({}, callback);
-    });
-
+    return apos.db.collection(collectionName).removeMany({});
   }
 
-  // after(wipeIt);
-
-  it('should be a property of the apos object', function(done) {
+  it('should be a property of the apos object', async function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = require('../index.js')({
-      root: module,
-      shortName: 'test',
-
-      modules: {
-        'apostrophe-express': {
-          port: 7900
-        }
-      },
-      afterInit: function(callback) {
-        assert(apos.attachments);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
-      }
+    apos = await t.create({
+      root: module
     });
+    assert(apos.attachment);
   });
 
   describe('wipe', function() {
-    it('should clear previous material if any', function(done) {
-      wipeIt(done);
+    it('should clear previous material if any', async function() {
+      return wipeIt();
     });
   });
+  let imageOne;
 
-  var fs = require('fs');
+  describe('insert', async function() {
 
-  describe('accept', function() {
-
-    function accept(filename, callback) {
-      return apos.attachments.insert(apos.tasks.getReq(), {
+    async function insert(filename) {
+      const info = await apos.attachment.insert(apos.task.getReq(), {
         name: filename,
         path: uploadSource + filename
-      }, function(err, info) {
-        assert(!err);
-        var t = uploadTarget + info._id + '-' + info.name + '.' + info.extension;
-        // file should be uploaded
-        assert(fs.existsSync(t));
-
-        // make sure it exists in mongo
-        apos.db.collection(collectionName).findOne({
-          _id: info._id
-        }, function(err, result) {
-          assert(!err);
-          assert(result);
-
-          return callback(result);
-        });
       });
+      const t = uploadTarget + info._id + '-' + info.name + '.' + info.extension;
+      // file should be uploaded
+      assert(fs.existsSync(t));
+
+      // make sure it exists in mongo
+      const result = await apos.db.collection(collectionName).findOne({
+        _id: info._id
+      });
+      assert(result);
+      return result;
     }
 
-    it('should upload a text file using the attachments api when user', function(done) {
-      return accept('upload_apos_api.txt', function(result) {
-        done();
-      });
+    it('should upload a text file using the attachments api when user', async function() {
+      return insert('upload_apos_api.txt');
     });
 
-    it('should upload an image file using the attachments api when user', function(done) {
-      return accept('upload_image.png', function(result) {
-        done();
-      });
+    it('should upload an image file using the attachments api when user', async function () {
+      imageOne = await insert('upload_image.png');
+      assert(imageOne && imageOne._id);
     });
 
-    it('should not upload an exe file', function(done) {
-      var filename = 'bad_file.exe';
-
-      return apos.attachments.insert(apos.tasks.getReq(), {
-        name: filename,
-        path: uploadSource + filename
-      }, function(err, info) {
-        assert(err);
-        assert(!info);
-        done();
-      });
-    });
-
-    it('should crop an image file when user', function(done) {
-      return accept('crop_image.png', function(result) {
-        var crop = { top: 10, left: 10, width: 80, height: 80 };
-
-        return apos.attachments.crop(
-          apos.tasks.getReq(),
-          result._id,
-          crop,
-          function(err) {
-            assert(!err);
-
-            // make sure it exists in mongo
-            apos.db.collection(collectionName).findOne({
-              _id: result._id
-            }, function(err, result) {
-              assert(!err);
-              assert(result);
-              assert(result.crops.length);
-              var t = uploadTarget + result._id + '-' + result.name + '.' + result.crops[0].left + '.' + result.crops[0].top + '.' + result.crops[0].width + '.' + result.crops[0].height + '.' + result.extension;
-              assert(fs.existsSync(t));
-
-              done();
-
-            });
-          }
-        );
-      });
-    });
-
-    it('should clone an attachment', function(done) {
-      return accept('clone.txt', function(result) {
-
-        return apos.attachments.clone(apos.tasks.getReq(), result, function(err, targetInfo) {
-          assert(!err);
-          assert(targetInfo._id !== result._id);
-
-          // make sure it exists in mongo
-          apos.db.collection(collectionName).findOne({
-            _id: result._id
-          }, function(err, result) {
-            assert(!err);
-            assert(result);
-            var t = uploadTarget + result._id + '-' + result.name + '.' + result.extension;
-            assert(fs.existsSync(t));
-
-            done();
-          });
+    it('should not upload an exe file', async function() {
+      const filename = 'bad_file.exe';
+      let good = false;
+      try {
+        await apos.attachment.insert(apos.task.getReq(), {
+          name: filename,
+          path: uploadSource + filename
         });
+      } catch (e) {
+        good = true;
+      }
+      assert(good);
+    });
+
+    it('should crop an image file when requested', async function() {
+      let result = await insert('crop_image.png');
+      const crop = {
+        top: 10,
+        left: 10,
+        width: 80,
+        height: 80
+      };
+      await apos.attachment.crop(
+        apos.task.getReq(),
+        result._id,
+        crop
+      );
+      result = await apos.db.collection(collectionName).findOne({
+        _id: result._id
       });
+      assert(result);
+      assert(result.crops.length);
+      const t = uploadTarget + result._id + '-' + result.name + '.' + result.crops[0].left + '.' + result.crops[0].top + '.' + result.crops[0].width + '.' + result.crops[0].height + '.' + result.extension;
+      assert(fs.existsSync(t));
+    });
+
+    it('should handle a file with a jpeg extension properly and set extension to jpg', async function() {
+      let result = await insert('crop_image.jpeg');
+      const crop = {
+        top: 10,
+        left: 10,
+        width: 80,
+        height: 80
+      };
+      await apos.attachment.crop(
+        apos.task.getReq(),
+        result._id,
+        crop
+      );
+      result = await apos.db.collection(collectionName).findOne({
+        _id: result._id
+      });
+      assert(result);
+      assert(result.crops.length);
+      const t = uploadTarget + result._id + '-' + result.name + '.' + result.crops[0].left + '.' + result.crops[0].top + '.' + result.crops[0].width + '.' + result.crops[0].height + '.jpg';
+      assert(fs.existsSync(t));
+      assert(result.extension === 'jpg');
     });
 
     it('should generate the "full" URL when no size specified for image', function() {
-      var url = apos.attachments.url({
+      const url = apos.attachment.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -191,7 +154,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the "one-half" URL when one-half size specified for image', function() {
-      var url = apos.attachments.url({
+      const url = apos.attachment.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -203,7 +166,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the original URL when "original" size specified for image', function() {
-      var url = apos.attachments.url({
+      const url = apos.attachment.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -215,7 +178,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the original URL when no size specified for pdf', function() {
-      var url = apos.attachments.url({
+      const url = apos.attachment.url({
         group: 'office',
         name: 'test',
         extension: 'pdf',
@@ -224,73 +187,98 @@ describe('Attachment', function() {
       assert(url === '/uploads/attachments/test-test.pdf');
     });
 
-    it('should save and track docIds properly as part of an apostrophe-image', function() {
-      var image = apos.images.newInstance();
-      var req = apos.tasks.getReq();
-      return apos.attachments.insert(apos.tasks.getReq(), {
+    it('should save and track docIds properly as part of an @apostrophecms/image', async function() {
+      let image = apos.image.newInstance();
+      const req = apos.task.getReq();
+      let attachment = await apos.attachment.insert(apos.task.getReq(), {
         name: 'upload_image.png',
         path: uploadSource + 'upload_image.png'
-      })
-        .then(function(attachment) {
-          assert(attachment);
-          image.title = 'Test Image';
-          image.attachment = attachment;
-          return apos.images.insert(req, image);
-        })
-        .then(function(image) {
-          assert(image);
-          return apos.attachments.db.findOne({ _id: image.attachment._id });
-        })
-        .then(function(attachment) {
-          assert(attachment.trash === false);
-          assert(attachment.docIds);
-          assert(attachment.docIds.length === 1);
-          assert(attachment.docIds[0] === image._id);
-          assert(attachment.trashDocIds);
-          assert(attachment.trashDocIds.length === 0);
-          try {
-            var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
-            assert(fd);
-            fs.closeSync(fd);
-          } catch (e) {
-            assert(false);
-          }
-          return apos.images.trash(req, image._id);
-        })
-        .then(function() {
-          return apos.attachments.db.findOne({ _id: image.attachment._id });
-        })
-        .then(function(attachment) {
-          assert(attachment.trash);
-          assert(attachment.docIds.length === 0);
-          assert(attachment.trashDocIds.length === 1);
-          try {
-            fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
-          } catch (e) {
-            return true;
-          }
-          throw new Error('should not have been accessible');
-        })
-        .then(function() {
-          return apos.images.rescue(req, image._id);
-        })
-        .then(function() {
-          return apos.attachments.db.findOne({ _id: image.attachment._id });
-        })
-        .then(function(attachment) {
-          assert(!attachment.trash);
-          assert(attachment.docIds.length === 1);
-          assert(attachment.trashDocIds.length === 0);
-          try {
-            var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
-            assert(fd);
-            fs.closeSync(fd);
-          } catch (e) {
-            assert(false);
-          }
-        });
+      });
+      assert(attachment);
+      image.title = 'Test Image';
+      image.attachment = attachment;
+      image = await apos.image.insert(req, image);
+      assert(image);
+      attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
+      assert(attachment);
+      assert(attachment.archived === false);
+      assert(attachment.docIds);
+      // Should be 3 because of "previous"
+      assert(attachment.docIds.length === 3);
+      assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:draft`));
+      assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:published`));
+      assert(attachment.archivedDocIds);
+      assert(attachment.archivedDocIds.length === 0);
+      try {
+        const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
+        assert(fd);
+        fs.closeSync(fd);
+      } catch (e) {
+        assert(false);
+      }
+      image.archived = true;
+      await apos.image.update(req, image);
+      attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
+      assert(!attachment.archived);
+      // Because "draft" and "previous" both have it, unarchived
+      assert(attachment.docIds.length === 2);
+      assert(attachment.archivedDocIds.length === 1);
+      // Should still be accessible at this point because the draft still uses it
+      const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
+      assert(fd);
+      fs.closeSync(fd);
+      // Now archive the draft
+      const draftReq = apos.task.getReq({
+        mode: 'draft'
+      });
+      const draft = await apos.image.find(draftReq, {
+        aposDocId: image.aposDocId
+      }).toObject();
+      assert(draft);
+      assert(draft.aposLocale === 'en:draft');
+      draft.archived = true;
+      await apos.image.update(req, draft);
+      // Now it should be inaccessible
+      attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
+      assert(attachment.archived);
+      assert(attachment.docIds.length === 0);
+      assert(attachment.archivedDocIds.length === 3);
+      let good = false;
+      try {
+        fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
+      } catch (e) {
+        good = true;
+      }
+      if (!good) {
+        throw new Error('should not have been accessible');
+      }
+      // Now rescue the published version from the archive
+      image.archived = false;
+      await apos.image.update(req, image);
+      attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
+      assert(!attachment.archived);
+      assert(attachment.docIds.length === 1);
+      // Don't forget "previous"
+      assert(attachment.archivedDocIds.length === 2);
+      try {
+        const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
+        assert(fd);
+        fs.closeSync(fd);
+      } catch (e) {
+        assert(false);
+      }
     });
+  });
 
+  describe('api', async function () {
+
+    it('should annotate images with URLs using .all method', async function () {
+      assert(!imageOne._urls);
+
+      apos.attachment.all({ imageOne }, { annotate: true });
+
+      assert(imageOne._urls);
+    });
   });
 
 });

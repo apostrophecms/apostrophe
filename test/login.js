@@ -1,163 +1,164 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var request = require('request');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 
-var apos, apos2;
+let apos;
 
 describe('Login', function() {
 
   this.timeout(20000);
 
-  after(function(done) {
-    return t.destroy(apos, function() {
-      return t.destroy(apos2, done);
-    });
+  after(function() {
+    return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should initialize', function(done) {
-    apos = require('../index.js')({
-      root: module,
-      shortName: 'test',
-      modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          port: 7901,
-          csrf: false
-        },
-        'apostrophe-users': {
-          groups: [
-            {
-              title: 'guest',
-              permissions: ['guest']
-            },
-            {
-              title: 'admin',
-              permissions: ['admin']
-            }
-          ],
-          disableInactiveAccounts: {
-            inactivityDuration: 0
-          }
-        }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-login']);
-        apos.argv._ = [];
-        assert(apos.users.safe.remove);
-        return apos.users.safe.remove({}, callback);
-        // return callback(null);
-      },
-      afterListen: function(err) {
-        if (err) {
-          console.error('* * * caught error ', err);
-        }
-        assert(!err);
-        done();
-      }
+  it('should initialize', async function() {
+    apos = await t.create({
+      root: module
     });
+
+    assert(apos.modules['@apostrophecms/login']);
+    assert(apos.user.safe.remove);
+    const response = await apos.user.safe.removeMany({});
+    assert(response.result.ok === 1);
   });
 
-  it('should be able to insert test user', function(done) {
-    assert(apos.users.newInstance);
-    var user = apos.users.newInstance();
+  it('should be able to insert test user', async function() {
+    assert(apos.user.newInstance);
+    const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'Lilith';
-    user.lastName = 'Iyapo';
-    user.title = 'Lilith Iyapo';
-    user.username = 'LilithIyapo';
-    user.password = 'nikanj';
-    user.email = 'liyapo@example.com';
-    user.groupIds = [ apos.users.options.groups[1]._id ];
+    user.title = 'Harry Putter';
+    user.username = 'HarryPutter';
+    user.password = 'crookshanks';
+    user.email = 'hputter@aol.com';
+    user.role = 'admin';
 
-    assert(user.type === 'apostrophe-user');
-    assert(apos.users.insert);
-    apos.users.insert(apos.tasks.getReq(), user, function(err) {
-      assert(!err);
-      done();
-    });
+    assert(user.type === '@apostrophecms/user');
+    assert(apos.user.insert);
+    const doc = await apos.user.insert(apos.task.getReq(), user);
+    assert(doc._id);
   });
 
-  it('should not see logout link yet', function(done) {
-    // otherwise logins are not remembered in a session
-    request.jar();
-    return request('http://localhost:7901/', function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Did we get our page back?
-      assert(body.match(/login/));
-      assert(!body.match(/logout/));
-      return done();
-    });
+  it('should be able to login a user with their username', async function() {
 
+    const jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'crookshanks',
+          session: true
+        },
+        jar
+      }
+    );
+
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged in/));
+
+    // otherwise logins are not remembered in a session
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/logout',
+      {
+        body: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks',
+          session: true
+        },
+        jar
+      }
+    );
+
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    // are we back to being able to log in?
+    assert(page.match(/logged out/));
   });
 
-  var loginLogoutJar = request.jar();
-  var loginEmailLogoutJar = request.jar();
+  it('should be able to login a user with their email', async function() {
 
-  it('should be able to login a user', function(done) {
-    // otherwise logins are not remembered in a session
-    return request.post('http://localhost:7901/login', {
-      form: { username: 'LilithIyapo', password: 'nikanj' },
-      followAllRedirects: true,
-      jar: loginLogoutJar
-    }, function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Did we get our page back?
-      assert(body.match(/logout/));
-      return done();
-    });
-  });
+    const jar = apos.http.jar();
 
-  it('should be able to login a user with their email', function(done) {
-    // otherwise logins are not remembered in a session
-    return request.post('http://localhost:7901/login', {
-      form: { username: 'liyapo@example.com', password: 'nikanj' },
-      followAllRedirects: true,
-      jar: loginEmailLogoutJar
-    }, function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Did we get our page back?
-      assert(body.match(/logout/));
-      return done();
-    });
-  });
+    // establish session
+    let page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
 
-  it('should be able to log out', function(done) {
-    // otherwise logins are not remembered in a session
-    return request('http://localhost:7901/logout', {
-      followAllRedirects: true,
-      jar: loginLogoutJar
-    }, function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // are we back to being able to log in?
-      assert(body.match(/login/));
-      return done();
-    });
-  });
+    assert(page.match(/logged out/));
 
-  it('should be able to log out after having logged in with email', function(done) {
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        body: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks',
+          session: true
+        },
+        jar
+      }
+    );
+
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    // Did we get our page back?
+    assert(page.match(/logged in/));
+
     // otherwise logins are not remembered in a session
-    return request('http://localhost:7901/logout', {
-      followAllRedirects: true,
-      jar: loginEmailLogoutJar
-    }, function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // are we back to being able to log in?
-      assert(body.match(/login/));
-      return done();
-    });
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/logout',
+      {
+        body: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks',
+          session: true
+        },
+        jar
+      }
+    );
+
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    // are we back to being able to log in?
+    assert(page.match(/logged out/));
   });
 
   it('should disable an inactive user', function(done) {

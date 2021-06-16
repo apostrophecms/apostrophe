@@ -1,0 +1,20 @@
+{% if data.options.className %}
+  {% set className = data.options.className %}
+{% elif data.manager.options.className %}
+  {% set className = data.manager.options.className %}
+{% endif %}
+
+{# oembed repopulates me #}
+{% if data.widget.video %}
+  <div
+    {% if className %} class="{{ className }}"{% endif %}
+    data-apos-video-widget
+    data-apos-video-url={{ data.widget.video.url }}
+  >
+    {% if data.widget.video.thumbnail %}
+    <img src="{{ data.widget.video.thumbnail }}" alt="{{ data.widget.video.thumbnail }}"/>
+    {% endif %}
+  </div>
+{% elif data.user %}
+  <p {% if data.manager.options.className %} class="{{ data.manager.options.className }} {{ data.manager.options.className }}--error"{% endif %}>No video selected</p>
+{% endif %}

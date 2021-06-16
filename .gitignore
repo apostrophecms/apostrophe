@@ -1,21 +1,27 @@
-*.swp
+# Ignore MacOS X metadata forks (fusefs)
+._*
+# Ignore unison sync files
+.unison*
 package-lock.json
 test/public/modules/*
 test/public/css/master-*
+test/locales
 npm-debug.log
 *.DS_Store
 *.npmignore
+.nyc_output
+.vscode
+.out
+coverage
 node_modules
+test/package.json
 test/node_modules
 
 # We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
 */public/css/*.css
-lib/modules/*/public/css/*.css
+modules/*/public/css/*.css
 */public/css/*.css
-lib/modules/*/public/css/*.css
-lib/modules/apostrophe-assets/public/css/vendor/cropper.css
-lib/modules/apostrophe-assets/public/css/vendor/pikaday.css
-lib/modules/apostrophe-ui/public/css/vendor/font-awesome/font-awesome.css
+modules/*/public/css/*.css
 # Never commit a CSS map file, anywhere
 *.css.map
 

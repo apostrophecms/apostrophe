@@ -1,243 +1,315 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('@sailshq/lodash');
-var async = require('async');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
+const cuid = require('cuid');
+const fs = require('fs');
+const path = require('path');
+const FormData = require('form-data');
 
-var apos;
+let apos;
+let jar;
+const apiKey = 'this is a test api key';
 
 describe('Pieces', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function () {
+    return t.destroy(apos);
   });
 
   /// ///
   // EXISTENCE
   /// ///
 
-  it('should initialize with a schema', function(done) {
-    apos = require('../index.js')({
+  it('should initialize with a schema', async () => {
+    apos = await t.create({
       root: module,
-      shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
-        },
-        'things': {
-          extend: 'apostrophe-pieces',
-          name: 'thing',
-          label: 'Thing',
-          addFields: {
-            name: 'foo',
-            label: 'Foo',
-            type: 'string'
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              [apiKey]: {
+                role: 'admin'
+              }
+            }
           }
         },
-        'people': {
-          extend: 'apostrophe-pieces',
-          name: 'person',
-          label: 'Person',
-          addFields: {
-            name: '_things',
-            type: 'joinByArray'
+        thing: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'thing',
+            name: 'thing',
+            label: 'Thing',
+            publicApiProjection: {
+              title: 1,
+              _url: 1
+            }
+          },
+          fields: {
+            add: {
+              foo: {
+                label: 'Foo',
+                type: 'string'
+              }
+            }
+          }
+        },
+        person: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'person',
+            name: 'person',
+            label: 'Person',
+            publicApiProjection: {
+              title: 1,
+              _url: 1
+            }
+          },
+          fields: {
+            add: {
+              _things: {
+                type: 'relationship'
+              },
+              _tools: {
+                type: 'relationship',
+                withType: 'thing',
+                fields: {
+                  add: {
+                    skillLevel: {
+                      type: 'integer'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        product: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            publicApiProjection: {
+              title: 1,
+              _url: 1,
+              _articles: 1
+            }
+          },
+          fields: {
+            add: {
+              body: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {},
+                    '@apostrophecms/image': {}
+                  }
+                }
+              },
+              color: {
+                type: 'select',
+                choices: [
+                  {
+                    label: 'Red',
+                    value: 'red'
+                  },
+                  {
+                    label: 'Blue',
+                    value: 'blue'
+                  }
+                ]
+              },
+              photo: {
+                type: 'attachment',
+                group: 'images'
+              },
+              addresses: {
+                type: 'array',
+                fields: {
+                  add: {
+                    street: {
+                      type: 'string'
+                    }
+                  }
+                }
+              },
+              _articles: {
+                type: 'relationship',
+                withType: 'article',
+                builders: {
+                  project: {
+                    _url: 1,
+                    title: 1
+                  }
+                },
+                fields: {
+                  add: {
+                    relevance: {
+                      // Explains the relevance of the article to the
+                      // product in 1 sentence
+                      type: 'string'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        article: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            publicApiProjection: {
+              title: 1,
+              _url: 1
+            }
+          },
+          fields: {
+            add: {
+              name: {
+                type: 'string'
+              },
+              _products: {
+                type: 'relationshipReverse',
+                withType: 'product'
+              }
+            }
+          }
+        },
+        constrained: {
+          options: {
+            alias: 'constrained'
+          },
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              description: {
+                type: 'string',
+                min: 5,
+                max: 10
+              }
+            }
+          }
+        },
+        resume: {
+          options: {
+            alias: 'resume'
+          },
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              attachment: {
+                type: 'attachment',
+                required: true
+              }
+            }
           }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['things']);
-        assert(apos.modules['things'].schema);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.modules.thing);
+    assert(apos.modules.thing.schema);
   });
 
-  // little test-helper function to get piece by id regardless of trash status
-  function findPiece(req, id, callback) {
-    return apos.modules['things'].find(req, { _id: id })
+  // little test-helper function to get piece by id regardless of archive status
+  async function findPiece(req, id) {
+    const piece = apos.modules.thing.find(req, { _id: id })
       .permission('edit')
-      .published(null)
-      .trash(null)
-      .toObject(function(err, piece) {
-        if (err) {
-          return callback(err);
-        }
-        if (!piece) {
-          return callback('notfound');
-        }
-        return callback(err, piece);
-      }
-      );
-  };
+      .archived(null)
+      .toObject();
+    if (!piece) {
+      throw apos.error('notfound');
+    }
+    return piece;
+  }
 
-  var testThing = {
-    _id: 'testThing',
+  const testThing = {
+    _id: 'testThing:en:published',
+    aposDocId: 'testThing',
+    aposLocale: 'en:published',
     title: 'hello',
     foo: 'bar'
   };
 
-  var testThing2 = {
-    _id: 'testThing2',
-    title: 'hello2',
-    foo: 'bar2'
-  };
-
-  var additionalThings = [
+  const additionalThings = [
     {
-      _id: 'thing1',
+      _id: 'thing1:en:published',
       title: 'Red'
     },
     {
-      _id: 'thing2',
-      title: 'Blue',
-      published: true
+      _id: 'thing2:en:published',
+      title: 'Blue'
     },
     {
-      _id: 'thing3',
-      title: 'Green',
-      published: true
+      _id: 'thing3:en:published',
+      title: 'Green'
     }
   ];
 
-  var testPeople = [
+  const testPeople = [
     {
-      _id: 'person1',
+      _id: 'person1:en:published',
       title: 'Bob',
       type: 'person',
-      thingsIds: [ 'thing2', 'thing3' ],
-      published: true
+      thingsIds: [ 'thing2', 'thing3' ]
     }
   ];
-
-  // Wipe the database so we can run this test suite independent of bootstrap
-  it('should make sure there is no test data hanging around from last time', function(done) {
-    // Attempt to purge the entire aposDocs collection
-    apos.docs.db.remove({}, function(err) {
-      assert(!err);
-      // Make sure it went away
-      apos.docs.db.findWithProjection({ _id: 'testThing' }).toArray(function(err, docs) {
-        assert(!err);
-        assert(docs.length === 0);
-        done();
-      });
-    });
-  });
 
   // Test pieces.newInstance()
   it('should be able to create a new piece', function() {
-    assert(apos.modules['things'].newInstance);
-    var thing = apos.modules['things'].newInstance();
+    assert(apos.modules.thing.newInstance);
+    const thing = apos.modules.thing.newInstance();
     assert(thing);
     assert(thing.type === 'thing');
   });
 
   // Test pieces.insert()
-  it('should be able to insert a piece into the database', function(done) {
-    assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(apos.tasks.getReq(), testThing, function(err, piece) {
-      assert(!err);
-      assert(testThing === piece);
-      done();
-    });
+  it('should be able to insert a piece into the database', async () => {
+    assert(apos.modules.thing.insert);
+    await apos.modules.thing.insert(apos.task.getReq(), testThing);
   });
 
-  it('same thing with promises', function(done) {
-    assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(apos.tasks.getReq(), testThing2)
-      .then(function(piece2) {
-        assert(testThing2 === piece2);
-        done();
-      })
-      .catch(function(err) {
-        assert(!err);
-      });
-  });
-
-  // Test pieces.requirePiece()
-  it('should be able to retrieve a piece by id from the database', function(done) {
-    assert(apos.modules['things'].requirePiece);
-    var req = apos.tasks.getReq();
-    req.body = {};
-    req.body._id = "testThing";
-    apos.modules['things'].requirePiece(req, req.res, function() {
-      assert(req.piece);
-      assert(req.piece._id === 'testThing');
-      assert(req.piece.title === 'hello');
-      assert(req.piece.foo === 'bar');
-      done();
-    });
+  it('should be able to retrieve a piece by id from the database', async () => {
+    assert(apos.modules.thing.requireOneForEditing);
+    const req = apos.task.getReq();
+    req.piece = await apos.modules.thing.requireOneForEditing(req, { _id: 'testThing:en:published' });
+    assert(req.piece);
+    assert(req.piece._id === 'testThing:en:published');
+    assert(req.piece.title === 'hello');
+    assert(req.piece.foo === 'bar');
   });
 
   // Test pieces.update()
-  it('should be able to update a piece in the database', function(done) {
-    assert(apos.modules['things'].update);
+  it('should be able to update a piece in the database', async () => {
+    assert(apos.modules.thing.update);
     testThing.foo = 'moo';
-    apos.modules['things'].update(apos.tasks.getReq(), testThing, function(err, piece) {
-      assert(!err);
-      assert(testThing === piece);
-      // Now let's get the piece and check if it was updated
-      var req = apos.tasks.getReq();
-      req.body = {};
-      req.body._id = "testThing";
-      apos.modules['things'].requirePiece(req, req.res, function() {
-        assert(req.piece);
-        assert(req.piece._id === 'testThing');
-        assert(req.piece.foo === 'moo');
-        done();
-      });
-    });
-  });
-
-  it('same thing with promises', function(done) {
-    assert(apos.modules['things'].update);
-    testThing.foo = 'goo';
-    apos.modules['things'].update(apos.tasks.getReq(), testThing)
-      .then(function(piece) {
-        assert(testThing === piece);
-        // Now let's get the piece and check if it was updated
-        var req = apos.tasks.getReq();
-        req.body = {};
-        req.body._id = "testThing";
-        apos.modules['things'].requirePiece(req, req.res, function() {
-          assert(req.piece);
-          assert(req.piece._id === 'testThing');
-          assert(req.piece.foo === 'goo');
-          done();
-        });
-      })
-      .catch(function(err) {
-        assert(!err);
-      });
+    const piece = await apos.modules.thing.update(apos.task.getReq(), testThing);
+    assert(testThing === piece);
+    // Now let's get the piece and check if it was updated
+    const req = apos.task.getReq();
+    req.piece = await apos.modules.thing.requireOneForEditing(req, { _id: 'testThing:en:published' });
+    assert(req.piece);
+    assert(req.piece._id === 'testThing:en:published');
+    assert(req.piece.foo === 'moo');
   });
 
   // Test pieces.addListFilters()
   it('should only execute filters that are safe and have a launder method', function() {
-    var publicTest = false;
-    var manageTest = false;
+    let publicTest = false;
+    let manageTest = false;
     // addListFilters should execute launder and filters for filter
     // definitions that are safe for 'public' or 'manage' contexts
-    var mockCursor = apos.docs.find(apos.tasks.getAnonReq());
+    const mockCursor = apos.doc.find(apos.task.getAnonReq());
     _.merge(mockCursor, {
-      filters: {
+      builders: {
         publicTest: {
           launder: function(s) {
             return 'laundered';
-          },
-          safeFor: 'public'
+          }
         },
         manageTest: {
           launder: function(s) {
             return 'laundered';
-          },
-          safeFor: 'manage'
+          }
         },
         unsafeTest: {}
       },
@@ -254,315 +326,875 @@ describe('Pieces', function() {
       }
     });
 
-    var filters = {
+    const filters = {
       publicTest: 'foo',
       manageTest: 'bar',
       unsafeTest: 'nope',
       fakeTest: 'notEvenReal'
     };
 
-    mockCursor.queryToFilters(filters);
+    mockCursor.applyBuildersSafely(filters);
     assert(publicTest === true);
     assert(manageTest === true);
   });
 
-  // Test pieces.list()
-  it('should add some more things for testing', function(done) {
-    assert(apos.modules['things'].insert);
-    async.each(additionalThings, function(thing, callback) {
-      apos.modules['things'].insert(apos.tasks.getReq(), thing, function(err) {
-        callback(err);
-      });
-    }, function(err) {
-      assert(!err);
-      done();
-    });
+  it('should be able to archive a piece with proper deduplication', async () => {
+    assert(apos.modules.thing.requireOneForEditing);
+    const req = apos.task.getReq();
+    const id = 'testThing:en:published';
+    req.body = { _id: id };
+    // let's make sure the piece is not archived to start
+    const piece = await findPiece(req, id);
+    assert(!piece.archived);
+    piece.archived = true;
+    await apos.modules.thing.update(req, piece);
+    // let's get the piece to make sure it is archived
+    const piece2 = await findPiece(req, id);
+    assert(piece2);
+    assert(piece2.archived === true);
+    assert(piece2.aposWasArchived === true);
+    assert.equal(piece2.slug, 'deduplicate-testThing-hello');
   });
 
-  it('should list all the pieces if skip and limit are set to large enough values', function(done) {
-    assert(apos.modules['things'].list);
-    var req = apos.tasks.getReq();
-    var filters = {
-      limit: 10,
-      skip: 0
+  it('should be able to rescue a archived piece with proper deduplication', async () => {
+    const req = apos.task.getReq();
+    const id = 'testThing:en:published';
+    req.body = {
+      _id: id
     };
-    apos.modules['things'].list(req, filters, function(err, results) {
-      assert(!err);
-      assert(results.total === 5);
-      assert(results.limit === 10);
-      assert(results.skip === 0);
-      assert(results.pieces.length === 5);
-      done();
-    });
+    // let's make sure the piece is archived to start
+    const piece = await findPiece(req, id);
+    assert(piece.archived === true);
+    piece.archived = false;
+    await apos.modules.thing.update(req, piece);
+    const piece2 = await findPiece(req, id);
+    assert(piece2);
+    assert(!piece2.archived);
+    assert(!piece2.aposWasArchived);
+    assert(piece2.slug === 'hello');
   });
 
-  // pieces.trash()
-  it('should be able to trash a piece', function(done) {
-    assert(apos.modules['things'].trash);
-    assert(apos.modules['things'].requirePiece);
-    var req = apos.tasks.getReq();
-    var id = 'testThing';
-    req.body = {_id: id};
-    // let's make sure the piece is not trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(!piece.trash);
-      apos.modules['things'].trash(req, id, function(err) {
-        assert(!err);
-        // let's get the piece to make sure it is trashed
-        findPiece(req, id, function(err, piece) {
-          assert(!err);
-          assert(piece);
-          assert(piece.trash === true);
-          done();
-        });
-      });
-    });
-  });
+  it('should be able to insert test users', async function() {
+    assert(apos.user.newInstance);
+    const user = apos.user.newInstance();
+    assert(user);
 
-  // pieces.rescue()
-  it('should be able to rescue a trashed piece', function(done) {
-    assert(apos.modules['things'].rescue);
-    var req = apos.tasks.getReq();
-    var id = 'testThing';
-    req.body = {_id: id};
-    // let's make sure the piece is trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(piece.trash === true);
-      apos.modules['things'].rescue(req, id, function(err) {
-        assert(!err);
-        // let's get the piece to make sure it is rescued
-        findPiece(req, id, function(err, piece) {
-          assert(!err);
-          assert(piece);
-          assert(!piece.trash);
-          done();
-        });
-      });
-    });
-  });
+    user.title = 'admin';
+    user.username = 'admin';
+    user.password = 'admin';
+    user.email = 'ad@min.com';
+    user.role = 'admin';
 
-  // pieces.apiResponse()
-  it('should pass through an error message if the error is passed as a string', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    var res = apos.tasks.getAnonReq().res;
-    var errMsg = "Test Error";
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === errMsg);
-      assert(!response.data);
-      done();
-    };
+    await apos.user.insert(apos.task.getReq(), user);
 
-    apos.modules['things'].apiResponse(res, errMsg, { foo: 'bar' });
-  });
+    const user2 = apos.user.newInstance();
+    user2.title = 'admin2';
+    user2.username = 'admin2';
+    user2.password = 'admin2';
+    user2.email = 'ad@min2.com';
+    user2.role = 'admin';
 
-  it('should not pass through an error message if the error is not passed as a string', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    var res = apos.tasks.getAnonReq().res;
-    var errMsg = new Error('it is good to see this error in the log');
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === 'error');
-      assert(!response.data);
-      done();
-    };
-
-    apos.modules['things'].apiResponse(res, errMsg, { foo: 'bar' });
-  });
-
-  it('should properly pass a result as a json if there is no error', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    var res = apos.tasks.getAnonReq().res;
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === 'ok');
-      assert(response.data);
-      assert(response.data.foo === 'bar');
-      done();
-    };
-
-    apos.modules['things'].apiResponse(res, null, { foo: 'bar' });
-  });
-
-  // done with api.js tests, now let's test routes
-  var routeThing = {
-    title: 'purple',
-    foo: 'bar'
-  };
-
-  var insertedRouteThing;
-
-  // routes.insert
-  it('should insert an item from the routes.insert method', function(done) {
-    assert(apos.modules['things'].routes.insert);
-
-    var req = apos.tasks.getReq();
-    req.body = routeThing;
-    var res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data);
-      assert(result.data._id);
-      insertedRouteThing = result.data;
-      done();
-    };
-
-    return apos.modules['things'].routes.insert(req, res);
-  });
-
-  // routes.retrieve
-  it('should get an item from the routes.retrieve method', function(done) {
-    assert(apos.modules['things'].routes.retrieve);
-
-    var req = apos.tasks.getReq();
-    // note we set the req.piece here, because the middleware would do the query nd supply the piece
-    req.piece = insertedRouteThing;
-    var res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.title === 'purple');
-      done();
-    };
-
-    return apos.modules['things'].routes.retrieve(req, res);
-  });
-
-  // routes.list
-  it('should get a list of all the items from routes.list', function(done) {
-    assert(apos.modules['things'].routes.list);
-
-    var req = apos.tasks.getReq();
-    // note we set the req.piece here, because the middleware would do the query nd supply the piece
-    req.body = { limit: 10, skip: 0 };
-    var res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.total === 6);
-      assert(result.data.skip === 0);
-      assert(result.data.limit === 10);
-      assert(result.data.pieces.length === 6);
-      done();
-    };
-
-    return apos.modules['things'].routes.list(req, res);
-  });
-
-  // routes.update
-  it('should update an item in the database from route.update', function(done) {
-    assert(apos.modules['things'].routes.update);
-
-    // simulate that middleware first
-    assert(apos.modules['things'].requirePiece);
-    var req = apos.tasks.getReq();
-    req.body = insertedRouteThing;
-    // make a change to the thing we are inserting
-    req.body.title = "blue";
-    var res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.title === 'blue');
-      done();
-    };
-    apos.modules['things'].requirePiece(req, res, function() {
-      return apos.modules['things'].routes.update(req, res);
-    });
-  });
-
-  // routes.trash
-  it('should trash an item in the database from route.trash', function(done) {
-    assert(apos.modules['things'].routes.trash);
-    assert(apos.modules['things'].requirePiece);
-
-    var req = apos.tasks.getReq();
-    var id = insertedRouteThing._id;
-    req.body = {_id: id};
-    var res = req.res;
-    res.send = function(response) {
-      assert(response.status === 'ok');
-      // let's get the piece to make sure it is trashed
-      findPiece(req, id, function(err, piece) {
-        assert(!err);
-        assert(piece);
-        assert(piece.trash === true);
-        done();
-      });
-    };
-    // let's make sure the piece is not trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(!piece.trash);
-      apos.modules['things'].routes.trash(req, res);
-    });
+    return apos.user.insert(apos.task.getReq(), user2);
 
   });
 
-  // routes.rescue
-  it('should rescue an item in the database from route.rescue', function(done) {
-    assert(apos.modules['things'].routes.rescue);
-    assert(apos.modules['things'].requirePiece);
-
-    var req = apos.tasks.getReq();
-    var id = insertedRouteThing._id;
-    req.body = {_id: id};
-    var res = req.res;
-    res.send = function(response) {
-      assert(response.status === 'ok');
-      // let's get the piece to make sure it no longer trashed
-      findPiece(req, id, function(err, piece) {
-        assert(!err);
-        assert(piece);
-        assert(!piece.trash);
-        done();
-      });
-    };
-    // let's make sure the piece trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(piece.trash === true);
-      apos.modules['things'].routes.rescue(req, res);
-    });
-
+  it('people can find things via a relationship', async () => {
+    const req = apos.task.getReq();
+    for (const person of testPeople) {
+      await apos.person.insert(req, person);
+    }
+    for (const thing of additionalThings) {
+      await apos.thing.insert(req, thing);
+    }
+    const person = await apos.doc.getManager('person').find(req, {}).toObject();
+    assert(person);
+    assert(person.title === 'Bob');
+    assert(person._things);
+    assert(person._things.length === 2);
   });
 
-  it('people can find things via a join', function() {
-    var req = apos.tasks.getReq();
-    return apos.docs.db.insert(testPeople)
-      .then(function() {
-        return apos.docs.getManager('person').find(req, {}).toObject();
-      })
+  it('people cannot find things via a relationship with an inadequate projection', function() {
+    const req = apos.task.getReq();
+    return apos.doc.getManager('person').find(req, {}, {
+      // Use the options object rather than a chainable method
+      project: {
+        title: 1
+      }
+    }).toObject()
       .then(function(person) {
         assert(person);
         assert(person.title === 'Bob');
-        assert(person._things);
-        assert(person._things.length === 2);
-      });
-  });
-
-  it('people cannot find things via a join with an inadequate projection', function() {
-    var req = apos.tasks.getReq();
-    return apos.docs.getManager('person').find(req, {}, {title: 1}).toObject()
-      .then(function(person) {
-        assert(person);
-        assert(person.title === 'Bob');
+        // Verify projection
+        assert(!person.slug);
         assert((!person._things) || (person._things.length === 0));
       });
   });
 
-  it('people can find things via a join with a "projection" of the join name', function() {
-    var req = apos.tasks.getReq();
-    return apos.docs.getManager('person').find(req, {}, {title: 1, _things: 1}).toObject()
+  it('people can find things via a relationship with a "projection" of the relationship name', function() {
+    const req = apos.task.getReq();
+    return apos.doc.getManager('person').find(req, {}, {
+      project: {
+        title: 1,
+        _things: 1
+      }
+    }).toObject()
       .then(function(person) {
         assert(person);
         assert(person.title === 'Bob');
         assert(person._things);
         assert(person._things.length === 2);
       });
+  });
+
+  it('should be able to log in as admin', async () => {
+    jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get('/', {
+      jar
+    });
+
+    assert(page.match(/logged out/));
+
+    // Log in
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin',
+        session: true
+      },
+      jar
+    });
+
+    // Confirm login
+    page = await apos.http.get('/', {
+      jar
+    });
+
+    assert(page.match(/logged in/));
+  });
+
+  it('can attach a tool to a person via the REST API', async function() {
+    const person1 = await apos.http.get('/api/v1/person/person1:en:published');
+    assert(person1);
+    const thing1 = await apos.http.get('/api/v1/thing/thing1:en:published');
+    assert(thing1);
+    person1._tools = [
+      {
+        ...thing1,
+        _fields: {
+          skillLevel: 5
+        }
+      }
+    ];
+    await apos.http.put('/api/v1/person/person1:en:published', {
+      body: person1,
+      jar
+    });
+    const person1After = await apos.http.get('/api/v1/person/person1:en:published', {
+      jar
+    });
+    assert(person1After);
+    assert(person1After._tools);
+    assert(person1After._tools.length);
+    assert(person1After._tools[0].title === 'Red');
+    assert(person1After._tools[0]._fields);
+    assert(person1After._tools[0]._fields.skillLevel === 5);
+  });
+
+  it('cannot POST a product without a session', async () => {
+    try {
+      await apos.http.post('/api/v1/product', {
+        body: {
+          title: 'Fake Product',
+          body: {
+            metaType: 'area',
+            items: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                id: cuid(),
+                content: '<p>This is fake</p>'
+              }
+            ]
+          }
+        }
+      });
+      // Should not get here
+      assert(false);
+    } catch (e) {
+      assert(e.status === 403);
+    }
+  });
+
+  let updateProduct;
+
+  it('can POST products with a session, some visible', async () => {
+    // range is exclusive at the top end, I want 10 things
+    for (let i = 1; (i <= 10); i++) {
+      const response = await apos.http.post('/api/v1/product', {
+        body: {
+          title: 'Cool Product #' + i,
+          visibility: (i & 1) ? 'loginRequired' : 'public',
+          body: {
+            metaType: 'area',
+            items: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                id: cuid(),
+                content: '<p>This is thing ' + i + '</p>'
+              }
+            ]
+          }
+        },
+        jar
+      });
+      assert(response);
+      assert(response._id);
+      assert(response.body);
+      assert(response.title === 'Cool Product #' + i);
+      assert(response.slug === 'cool-product-' + i);
+      assert(response.type === 'product');
+      if (i === 1) {
+        updateProduct = response;
+      }
+    }
+  });
+
+  it('can GET five of those products without the user session', async () => {
+    const response = await apos.http.get('/api/v1/product');
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
+
+  it('can GET all of those products with a user session', async () => {
+    const response = await apos.http.get('/api/v1/product', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 10);
+  });
+
+  let firstId;
+
+  it('can GET only 5 if perPage is 5', async () => {
+    const response = await apos.http.get('/api/v1/product?perPage=5', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    firstId = response.results[0]._id;
+    assert(response.pages === 2);
+  });
+
+  it('can GET a different 5 on page 2', async () => {
+    const response = await apos.http.get('/api/v1/product?perPage=5&page=2', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    assert(response.results[0]._id !== firstId);
+    assert(response.pages === 2);
+  });
+
+  it('can update a product with PUT', async () => {
+    const args = {
+      body: {
+        ...updateProduct,
+        title: 'I like cheese',
+        _id: 'should-not-change:en:published'
+      },
+      jar
+    };
+    const response = await apos.http.put(`/api/v1/product/${updateProduct._id}`, args);
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    assert(response.body.items.length);
+  });
+
+  it('fetch of updated product shows updated content', async () => {
+    const response = await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
+      jar
+    });
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    assert(response.body.items.length);
+  });
+
+  it('can archive a product', async () => {
+    return apos.http.patch(`/api/v1/product/${updateProduct._id}`, {
+      body: {
+        archived: true
+      },
+      jar
+    });
+  });
+
+  it('cannot fetch a archived product', async () => {
+    try {
+      await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
+        jar
+      });
+      // Should have been a 404, 200 = test fails
+      assert(false);
+    } catch (e) {
+      assert(e.status === 404);
+    }
+  });
+
+  it('can fetch archived product with archived=any and the right user', async () => {
+    const product = await apos.http.get(`/api/v1/product/${updateProduct._id}?archived=any`, {
+      jar
+    });
+    // Should have been a 404, 200 = test fails
+    assert(product.archived);
+  });
+
+  let relatedProductId;
+
+  it('can insert a product with relationships', async () => {
+    let response = await apos.http.post('/api/v1/article', {
+      body: {
+        title: 'First Article',
+        name: 'first-article'
+      },
+      jar
+    });
+    const article = response;
+    assert(article);
+    assert(article.title === 'First Article');
+    article._fields = {
+      relevance: 'The very first article that was ever published about this product'
+    };
+    response = await apos.http.post('/api/v1/product', {
+      body: {
+        title: 'Product Key Product With Relationship',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product with relationship</p>'
+            }
+          ]
+        },
+        _articles: [ article ]
+      },
+      jar
+    });
+    assert(response._id);
+    assert(response.articlesIds[0] === article.aposDocId);
+    assert(response.articlesFields[article.aposDocId].relevance === 'The very first article that was ever published about this product');
+    relatedProductId = response._id;
+  });
+
+  it('can GET a product with relationships', async () => {
+    const response = await apos.http.get('/api/v1/product');
+    assert(response);
+    assert(response.results);
+    const product = _.find(response.results, { slug: 'product-key-product-with-relationship' });
+    assert(Array.isArray(product._articles));
+    assert(product._articles.length === 1);
+    assert(product._articles[0]._fields);
+    assert.strictEqual(product._articles[0]._fields.relevance, 'The very first article that was ever published about this product');
+  });
+
+  let relatedArticleId;
+
+  it('can GET a single product with relationships', async () => {
+    const response = await apos.http.get(`/api/v1/product/${relatedProductId}`);
+    assert(response);
+    assert(response._articles);
+    assert(response._articles.length === 1);
+    relatedArticleId = response._articles[0]._id;
+  });
+
+  it('can GET a single article with reverse relationships', async () => {
+    const response = await apos.http.get(`/api/v1/article/${relatedArticleId}`);
+    assert(response);
+    assert(response._products);
+    assert(response._products.length === 1);
+    assert(response._products[0]._id === relatedProductId);
+  });
+
+  it('can GET a single article with reverse relationships in draft mode', async () => {
+    const draftRelatedArticleId = relatedArticleId.replace(':published', ':draft');
+    const draftRelatedProductId = relatedProductId.replace(':published', ':draft');
+    const response = await apos.http.get(`/api/v1/article/${draftRelatedArticleId}`, { jar });
+    assert(response);
+    assert(response._products);
+    assert(response._products.length === 1);
+    assert(response._products[0]._id === draftRelatedProductId);
+  });
+
+  it('can GET results plus filter choices', async () => {
+    const response = await apos.http.get('/api/v1/product?choices=title,visibility,_articles,articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.choices.title);
+    assert(response.choices.title[0].label.match(/Cool Product/));
+    assert(response.choices.visibility);
+    assert(response.choices.visibility.length === 2);
+    assert(response.choices.visibility.find(item => item.value === 'loginRequired'));
+    assert(response.choices.visibility.find(item => item.value === 'public'));
+    assert(response.choices._articles);
+    assert(response.choices._articles[0].label === 'First Article');
+    // an _id
+    assert(response.choices._articles[0].value.match(/^c/));
+    assert(response.choices.articles[0].label === 'First Article');
+    // a slug
+    assert(response.choices.articles[0].value === 'first-article');
+  });
+
+  it('can GET results plus filter counts', async () => {
+    const response = await apos.http.get('/api/v1/product?_edit=1&counts=title,visibility,_articles,articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.counts);
+    assert(response.counts.title);
+    assert(response.counts.title[0].label.match(/Cool Product/));
+    // Doesn't work for every field type, but does for this
+    assert(response.counts.title[0].count === 1);
+    assert(response.counts.visibility);
+    assert(response.counts.visibility.length === 2);
+    assert(response.counts.visibility.find(item => item.value === 'loginRequired'));
+    assert(response.counts.visibility.find(item => item.value === 'public'));
+    assert(response.counts._articles);
+    assert(response.counts._articles[0].label === 'First Article');
+    // an _id
+    assert(response.counts._articles[0].value.match(/^c/));
+    assert(response.counts.articles[0].label === 'First Article');
+    // a slug
+    assert(response.counts.articles[0].value === 'first-article');
+  });
+
+  it('can patch a relationship', async () => {
+    let response = await apos.http.post('/api/v1/article', {
+      jar,
+      body: {
+        title: 'Relationship Article',
+        name: 'relationship-article'
+      }
+    });
+    const article = response;
+    assert(article);
+    assert(article.title === 'Relationship Article');
+
+    response = await apos.http.post('/api/v1/product', {
+      jar,
+      body: {
+        title: 'Initially No Relationship Value',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product without initial relationship</p>'
+            }
+          ]
+        }
+      }
+    });
+
+    const product = response;
+    assert(product._id);
+    response = await apos.http.patch(`/api/v1/product/${product._id}`, {
+      body: {
+        _articles: [ article ]
+      },
+      jar
+    });
+    assert(response.title === 'Initially No Relationship Value');
+    assert(response.articlesIds);
+    assert(response.articlesIds[0] === article.aposDocId);
+    assert(response._articles);
+    assert(response._articles[0]._id === article._id);
+  });
+
+  it('can insert a constrained piece that validates', async () => {
+    const constrained = await apos.http.post('/api/v1/constrained', {
+      body: {
+        title: 'First Constrained',
+        description: 'longenough'
+      },
+      jar
+    });
+    assert(constrained);
+    assert(constrained.title === 'First Constrained');
+    assert(constrained.description === 'longenough');
+  });
+
+  it('cannot insert a constrained piece that does not validate', async () => {
+    try {
+      await apos.http.post('/api/v1/constrained', {
+        body: {
+          title: 'Second Constrained',
+          description: 'shrt'
+        },
+        jar
+      });
+      // Getting here is bad
+      assert(false);
+    } catch (e) {
+      assert(e);
+      assert(e.status === 400);
+      assert(e.body.data.errors);
+      assert(e.body.data.errors.length === 1);
+      assert(e.body.data.errors[0].path === 'description');
+      assert(e.body.data.errors[0].name === 'min');
+      assert(e.body.data.errors[0].code === 400);
+    }
+  });
+
+  let advisoryLockTestId;
+
+  it('can insert a product for advisory lock testing', async () => {
+    const response = await apos.http.post('/api/v1/product', {
+      body: {
+        title: 'Advisory Test',
+        name: 'advisory-test'
+      },
+      jar
+    });
+    const article = response;
+    assert(article);
+    assert(article.title === 'Advisory Test');
+    advisoryLockTestId = article._id;
+  });
+
+  it('can get an advisory lock on a product while patching a property', async () => {
+    const product = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          tabId: 'xyz',
+          lock: true
+        },
+        title: 'Advisory Test Patched'
+      }
+    });
+    assert(product.title === 'Advisory Test Patched');
+  });
+
+  it('cannot get an advisory lock with a different context id', async () => {
+    try {
+      await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
+        jar,
+        body: {
+          _advisoryLock: {
+            tabId: 'pdq',
+            lock: true
+          }
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 409);
+      assert(e.body.name === 'locked');
+      assert(e.body.data.me);
+    }
+  });
+
+  it('can get an advisory lock with a different context id if forcing', async () => {
+    await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          tabId: 'pdq',
+          lock: true,
+          force: true
+        }
+      }
+    });
+  });
+
+  it('can renew the advisory lock with the second context id after forcing', async () => {
+    await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          tabId: 'pdq',
+          lock: true
+        }
+      }
+    });
+  });
+
+  it('can unlock the advisory lock while patching a property', async () => {
+    const product = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          tabId: 'pdq',
+          lock: false
+        },
+        title: 'Advisory Test Patched Again'
+      }
+    });
+    assert(product.title === 'Advisory Test Patched Again');
+  });
+
+  it('can relock with the first context id after unlocking', async () => {
+    const doc = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          tabId: 'xyz',
+          lock: true
+        }
+      }
+    });
+    assert(doc.title === 'Advisory Test Patched Again');
+  });
+
+  let jar2;
+
+  it('should be able to log in as second user', async () => {
+    jar2 = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get('/', {
+      jar: jar2
+    });
+
+    assert(page.match(/logged out/));
+
+    // Log in
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin2',
+        password: 'admin2',
+        session: true
+      },
+      jar: jar2
+    });
+
+    // Confirm login
+    page = await apos.http.get('/', {
+      jar: jar2
+    });
+
+    assert(page.match(/logged in/));
+  });
+
+  it('second user with a distinct tabId gets an appropriate error specifying who has the lock', async () => {
+    try {
+      await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
+        jar: jar2,
+        body: {
+          _advisoryLock: {
+            tabId: 'nbc',
+            lock: true
+          }
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 409);
+      assert(e.body.name === 'locked');
+      assert(!e.body.data.me);
+      assert(e.body.data.username === 'admin');
+    }
+  });
+
+  it('can log out to destroy a session', async () => {
+    await apos.http.post('/api/v1/@apostrophecms/login/logout', {
+      followAllRedirects: true,
+      jar
+    });
+    await apos.http.post('/api/v1/@apostrophecms/login/logout', {
+      followAllRedirects: true,
+      jar: jar2
+    });
+  });
+
+  it('cannot POST a product with a logged-out cookie jar', async () => {
+    try {
+      await apos.http.post('/api/v1/product', {
+        body: {
+          title: 'Fake Product After Logout',
+          body: {
+            metaType: 'area',
+            items: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                id: cuid(),
+                content: '<p>This is fake</p>'
+              }
+            ]
+          }
+        },
+        jar
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 403);
+    }
+  });
+
+  let token;
+  let bearerProductId;
+
+  it('should be able to log in as admin and get a bearer token', async () => {
+    // Log in
+    const response = await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin'
+      }
+    });
+    assert(response.token);
+    token = response.token;
+  });
+
+  it('can POST a product with the bearer token', async () => {
+    const response = await apos.http.post('/api/v1/product', {
+      body: {
+        title: 'Bearer Token Product',
+        visibility: 'loginRequired',
+        slug: 'bearer-token-product',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is a bearer token thing</p>'
+            }
+          ]
+        }
+      },
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    assert(response);
+    assert(response._id);
+    assert(response.body);
+    assert(response.title === 'Bearer Token Product');
+    assert(response.slug === 'bearer-token-product');
+    assert(response.type === 'product');
+    bearerProductId = response._id;
+  });
+
+  it('can GET a loginRequired product with the bearer token', async () => {
+    const response = await apos.http.get(`/api/v1/product/${bearerProductId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    assert(response);
+    assert(response.title === 'Bearer Token Product');
+  });
+
+  it('can log out to destroy a bearer token', async () => {
+    return apos.http.post('/api/v1/@apostrophecms/login/logout', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  });
+
+  it('cannot GET a loginRequired product with a destroyed bearer token', async () => {
+    try {
+      await apos.http.get(`/api/v1/product/${bearerProductId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 401);
+    }
+  });
+
+  let apiKeyProductId;
+
+  it('can POST a product with the api key', async () => {
+    const response = await apos.http.post('/api/v1/product', {
+      body: {
+        title: 'API Key Product',
+        visibility: 'loginRequired',
+        slug: 'api-key-product',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is an api key thing</p>'
+            }
+          ]
+        }
+      },
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      }
+    });
+    assert(response);
+    assert(response._id);
+    assert(response.body);
+    assert(response.title === 'API Key Product');
+    assert(response.slug === 'api-key-product');
+    assert(response.type === 'product');
+    apiKeyProductId = response._id;
+  });
+
+  it('can GET a loginRequired product with the api key', async () => {
+    const response = await apos.http.get(`/api/v1/product/${apiKeyProductId}`, {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      }
+    });
+    assert(response);
+    assert(response.title === 'API Key Product');
+  });
+
+  it('can insert a resume with an attachment', async () => {
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(path.join(__dirname, '/public/static-test.txt')));
+
+    // Make an async request to upload the image.
+    const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      },
+      body: formData
+    });
+
+    const resume = await apos.http.post('/api/v1/resume', {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      },
+      body: {
+        title: 'Jane Doe',
+        attachment
+      }
+    });
+    assert(resume);
+    assert(resume.title === 'Jane Doe');
+    assert(resume.attachment._url);
+    assert(fs.readFileSync(path.join(__dirname, 'public', resume.attachment._url), 'utf8') === fs.readFileSync(path.join(__dirname, '/public/static-test.txt'), 'utf8'));
   });
 
 });
