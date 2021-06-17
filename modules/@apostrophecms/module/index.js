@@ -374,7 +374,7 @@ module.exports = {
 
       async renderPage(req, template, data) {
         // TODO Remove in next major version.
-        self.utils.warnDevOnce(
+        self.apos.util.warnDevOnce(
           'deprecate-renderPage',
           'self.renderPage() is deprecated. Use self.sendPage() instead.'
         );
