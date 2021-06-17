@@ -1,10 +1,8 @@
 export default () => {
-  console.log('registering player');
   apos.util.widgetPlayers['@apostrophecms/video'] = {
     selector: '[data-apos-video-widget]',
     player: function(el) {
       const videoUrl = el.getAttribute('data-apos-video-url');
-      console.log(videoUrl);
       let queryResult;
 
       if (!videoUrl) {
