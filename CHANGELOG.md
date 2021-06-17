@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.1 - 2021-06-17
+
+### Fixes
+
+* Fixes an error observed in the browser console when using more than one `ui/src/index.js` file in the same project. Using more than one is a good practice as it allows you to group frontend code with an appropriate module, or ship frontend code in an npm module that extends Apostrophe.
+* Migrates all of our own frontend players and utilities from `ui/public` to `ui/src`, which provides a robust functional test of the above.
+* Executes `ui/src` imports without waiting for next tick, which is appropriate as we have positioned it as an alternative to `ui/public` which is run without delay.
+
 ## 3.0.0 - 2021-06-16
 
 ### Breaks

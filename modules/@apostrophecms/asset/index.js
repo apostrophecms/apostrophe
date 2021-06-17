@@ -216,10 +216,10 @@ module.exports = {
                     ${appImports.invokeCode}
                   }, 0);
                 ` : '') +
+                // No delay on these, they expect to run early like ui/public code
+                // and the first ones invoked set up expected stuff like apos.http
                 (indexJsImports ? stripIndent`
-                  setTimeout(() => {
-                    ${indexJsImports.invokeCode}
-                  }, 0);
+                  ${indexJsImports.invokeCode}
                 ` : '')
               );
 
@@ -253,7 +253,7 @@ module.exports = {
                 // the output of an ES6 pipeline.
                 const publicImports = getImports(name, '*.js', { });
                 fs.writeFileSync(`${bundleDir}/${name}-build.js`,
-                  ((options.prologue + '\n') || '') +
+                  (((options.prologue || '') + '\n') || '') +
                   publicImports.paths.map(path => {
                     return fs.readFileSync(path, 'utf8');
                   }).join('\n')
@@ -396,9 +396,9 @@ module.exports = {
               paths: []
             };
 
-            components.forEach(component => {
+            components.forEach((component, i) => {
               const jsFilename = JSON.stringify(component);
-              const name = require('path').basename(component).replace(/\.\w+/, '');
+              const name = require('path').basename(component).replace(/\.\w+/, '') + (options.invokeApps ? `_${i}` : '');
               const jsName = JSON.stringify(name);
               output.paths.push(component);
               const importCode = `
@@ -554,6 +554,16 @@ module.exports = {
       // If you are trying to enable IE11 support for ui/src, use the
       // `es5: true` option (es5 builds are disabled by default).
       configureBuilds() {
+        const srcPrologue = stripIndent`
+          (function() {
+            window.apos = window.apos || {};
+            var data = document.body && document.body.getAttribute('data-apos');
+            Object.assign(window.apos, JSON.parse(data || '{}'));
+            if (data) {
+              document.body.removeAttribute('data-apos');
+            }
+          })();
+        `;
         self.builds = {
           src: {
             scenes: [ 'public', 'apos' ],
@@ -563,7 +573,8 @@ module.exports = {
             // Load index.js and index.scss from each module
             index: true,
             // Load only in browsers that support ES6 modules
-            condition: 'module'
+            condition: 'module',
+            prologue: srcPrologue
           },
           'src-es5': {
             // An alternative build from the same sources for IE11
@@ -579,6 +590,7 @@ module.exports = {
             prologue: stripIndent`
               import "core-js/stable";
               import "regenerator-runtime/runtime";
+              ${srcPrologue}
             `,
             // Load only in browsers that do not support ES6 modules
             condition: 'nomodule'
@@ -588,17 +600,7 @@ module.exports = {
             outputs: [ 'css', 'js' ],
             label: 'raw CSS and JS',
             // Just concatenates
-            webpack: false,
-            prologue: stripIndent`
-              (function() {
-                window.apos = window.apos || {};
-                var data = document.body && document.body.getAttribute('data-apos');
-                Object.assign(window.apos, JSON.parse(data || '{}'));
-                if (data) {
-                  document.body.removeAttribute('data-apos');
-                }
-              })();
-            `
+            webpack: false
           },
           apos: {
             scenes: [ 'apos' ],
