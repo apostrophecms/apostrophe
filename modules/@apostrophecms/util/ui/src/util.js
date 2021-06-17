@@ -10,9 +10,9 @@
 //
 // This is a lean, IE11-friendly implementation.
 
-(function() {
+export default () => {
 
-  var apos = window.apos;
+  const apos = window.apos;
   apos.util = {};
 
   // emit a custom event on the specified DOM element in a cross-browser way.
@@ -24,7 +24,7 @@
   // standard.
 
   apos.util.emit = function(el, name, data) {
-    var event;
+    let event;
     try {
       // Modern. We can't sniff for this, we can only try it. IE11
       // has it but it's not a constructor and throws an exception
@@ -40,7 +40,7 @@
 
   // Fetch the cookie by the given name
   apos.util.getCookie = function(name) {
-    var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
     return match && match[2];
   };
 
@@ -81,7 +81,7 @@
         Element.prototype.webkitMatchesSelector;
     }
     Element.prototype.closest = function(s) {
-      var el = this;
+      let el = this;
       if (!document.documentElement.contains(el)) {
         return null;
       }
@@ -103,7 +103,7 @@
     if (Object.assign) {
       return Object.assign.apply(Object, arguments);
     }
-    var i, j, keys, key;
+    let i, j, keys, key;
     for (i = 1; (i < arguments.length); i++) {
       keys = Object.keys(arguments[i]);
       for (j = 0; (j < keys.length); j++) {
@@ -221,7 +221,7 @@
   // You can also pass a crop object (the crop must already exist).
 
   apos.util.attachmentUrl = function(file, options) {
-    var path = apos.uploadsUrl + '/attachments/' + file._id + '-' + file.name;
+    let path = apos.uploadsUrl + '/attachments/' + file._id + '-' + file.name;
     if (!options) {
       options = {};
     }
@@ -229,7 +229,7 @@
     // browser-side without the crop API ever having come into play. If the
     // width is 0 the user hit save in the cropper without cropping, use
     // the regular version
-    var crop;
+    let crop;
     if (options.crop && options.crop.width) {
       crop = options.crop;
     } else if (file.crop && file.crop.width) {
@@ -238,7 +238,7 @@
     if (crop) {
       path += '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height;
     }
-    var effectiveSize;
+    let effectiveSize;
     if ((!options.size) || (options.size === 'original')) {
       effectiveSize = false;
     } else {
@@ -257,11 +257,11 @@
   // which is generally the case.
 
   apos.util.sameSite = function(uri) {
-    var matches = uri.match(/^(https?:)?\/\/([^/]+)/);
+    const matches = uri.match(/^(https?:)?\/\/([^/]+)/);
     if (!matches) {
       // If URI is not absolute or protocol-relative then it is always same-origin
       return true;
     }
     return window.location.host === matches[2];
   };
-})();
+};
