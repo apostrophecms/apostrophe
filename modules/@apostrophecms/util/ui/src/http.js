@@ -1,11 +1,11 @@
-// Adds the apos.http client, which has the same API
-// as the server-side apos.http client, although it may
-// not have exactly the same features available.
-// This is a lean, IE11-friendly implementation.
+export default () => {
+  // Adds the apos.http client, which has the same API
+  // as the server-side apos.http client, although it may
+  // not have exactly the same features available.
+  // This is a lean, IE11-friendly implementation.
 
-(function() {
-  var busyActive = {};
-  var apos = window.apos;
+  const busyActive = {};
+  const apos = window.apos;
   apos.http = {};
 
   // Send a POST request. Note that POST body data should be in
@@ -111,8 +111,8 @@
       }
     }
 
-    var query;
-    var qat;
+    let query;
+    let qat;
 
     // Intentional true / falsey check for determining
     // what set of docs the request is interested in
@@ -136,12 +136,12 @@
       }
     }
 
-    var busyName = options.busy === true ? 'busy' : options.busy;
-    var xmlhttp = new XMLHttpRequest();
-    var csrfToken = apos.csrfCookieName ? apos.util.getCookie(apos.csrfCookieName) : 'csrf-fallback';
-    var data = options.body;
-    var keys;
-    var i;
+    const busyName = options.busy === true ? 'busy' : options.busy;
+    const xmlhttp = new XMLHttpRequest();
+    const csrfToken = apos.csrfCookieName ? apos.util.getCookie(apos.csrfCookieName) : 'csrf-fallback';
+    let data = options.body;
+    let keys;
+    let i;
     if (options.qs) {
       url = apos.http.addQueryToUrl(url, options.qs);
     }
@@ -157,8 +157,8 @@
       busyActive[busyName]++;
     }
     xmlhttp.open(method, url);
-    var formData = window.FormData && (data instanceof window.FormData);
-    var sendJson = (options.send === 'json') || (options.body && ((typeof options.body) === 'object') && !formData);
+    const formData = window.FormData && (data instanceof window.FormData);
+    const sendJson = (options.send === 'json') || (options.body && ((typeof options.body) === 'object') && !formData);
     if (sendJson) {
       xmlhttp.setRequestHeader('Content-Type', 'application/json');
     }
@@ -184,8 +184,8 @@
       data = options.body;
     }
     xmlhttp.addEventListener('load', function() {
-      var data = null;
-      var responseHeader = this.getResponseHeader('Content-Type');
+      let data = null;
+      const responseHeader = this.getResponseHeader('Content-Type');
       if (responseHeader || (options.parse === 'json')) {
         if ((options.parse === 'json') || (responseHeader.match(/^application\/json/))) {
           try {
@@ -248,21 +248,21 @@
     xmlhttp.send(data);
 
     function getHeaders() {
-      var headers = xmlhttp.getAllResponseHeaders();
+      const headers = xmlhttp.getAllResponseHeaders();
       if (!headers) {
         return {};
       }
       // Per MDN
-      var arr = headers.trim().split(/[\r\n]+/);
+      const arr = headers.trim().split(/[\r\n]+/);
       // Create a map of header names to values
-      var headerMap = {};
+      const headerMap = {};
       arr.forEach(function (line) {
-        var parts = line.split(': ');
-        var header = parts.shift();
+        const parts = line.split(': ');
+        const header = parts.shift();
         if (!header) {
           return;
         }
-        var value = parts.shift();
+        const value = parts.shift();
         // Optional support for fetching arrays of headers with the same name
         // could be added at a later time if anyone really cares. Usually
         // just a source of bugs
@@ -280,10 +280,10 @@
 
   apos.http.parseQuery = function(query) {
     query = query.replace(/^\?/, '');
-    var data = {};
-    var pairs = query.split('&');
+    const data = {};
+    const pairs = query.split('&');
     pairs.forEach(function(pair) {
-      var parts;
+      let parts;
       if (pair.indexOf('=') === -1) {
         patch(pair, null);
       } else {
@@ -295,11 +295,11 @@
     });
     return data.root || {};
     function patch(key, value) {
-      var match;
-      var parentKey = 'root';
-      var context = data;
+      let match;
+      let parentKey = 'root';
+      let context = data;
       key = decodeURIComponent(key);
-      var path = key.split('[');
+      const path = key.split('[');
       path.forEach(function(subKey) {
         if (subKey === ']') {
           if (!Array.isArray(context[parentKey])) {
@@ -341,20 +341,20 @@
   // URL remain unchanged.
 
   apos.http.addQueryToUrl = function(url, data) {
-    var hash = '';
-    var hashAt = url.indexOf('#');
+    let hash = '';
+    const hashAt = url.indexOf('#');
     if (hashAt !== -1) {
       hash = url.substring(hashAt);
       url = url.substring(0, hashAt);
     }
     url = url.replace(/\?.*$/, '');
-    var i;
-    var flat;
+    let i;
+    let flat;
     if ((data != null) && ((typeof data) === 'object')) {
       flat = flatten('', data);
       for (i = 0; (i < flat.length); i++) {
-        var key = flat[i][0];
-        var val = flat[i][1];
+        const key = flat[i][0];
+        const val = flat[i][1];
         if (i > 0) {
           url += '&';
         } else {
@@ -370,9 +370,9 @@
     }
     return url + hash;
     function flatten(path, data) {
-      var flat = [];
-      var keys;
-      var i;
+      let flat = [];
+      let keys;
+      let i;
       if (Array.isArray(data)) {
         for (i = 0; (i < data.length); i++) {
           insert(i, data[i]);
@@ -393,5 +393,4 @@
       }
     }
   };
-
-})();
+};
