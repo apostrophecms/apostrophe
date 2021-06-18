@@ -321,12 +321,10 @@ module.exports = {
         return result;
       },
 
-      // Fetch a nunjucks environment in which `include`,
-      // `extends`, etc. search the views directories of the
-      // specified module and its ancestors. Typically you
-      // will call `self.render`, `self.renderPage` or
-      // `self.partial` on your module object rather than calling
-      // this directly.
+      // Fetch a nunjucks environment in which `include`, `extends`, etc. search
+      // the views directories of the specified module and its ancestors.
+      // Typically you will call `self.render` or `self.partial` on your module
+      // object rather than calling this directly.
 
       getEnv(req, module) {
         const name = module.__meta.name;

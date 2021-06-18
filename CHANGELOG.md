@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Deprecates `self.renderPage` method for removal in next major version.
+
 ## 3.0.1 - 2021-06-17
 
 ### Fixes
