@@ -75,7 +75,6 @@ module.exports = {
           for (const [ name, options ] of Object.entries(self.builds)) {
             // If the option is not present always rebuild everything
             let rebuild = argv && !argv['check-apos-build'];
-
             if (!rebuild) {
               let checkTimestamp = false;
 
@@ -91,7 +90,7 @@ module.exports = {
                 }
 
                 if (!process.env.APOS_DEV) {
-                  checkTimestamp = await fs.pathExists(`${bundleDir}/${name}-only-timestamp.txt`);
+                  checkTimestamp = await fs.pathExists(`${bundleDir}/${name}-build-timestamp.txt`);
                 }
 
                 if (checkTimestamp) {
@@ -424,7 +423,7 @@ module.exports = {
           }
 
           async function lockFileIsNewer(name) {
-            const timestamp = fs.readFileSync(`${bundleDir}/${name}-only-timestamp.txt`, 'utf8');
+            const timestamp = fs.readFileSync(`${bundleDir}/${name}-build-timestamp.txt`, 'utf8');
             let pkgStats;
 
             if (await fs.pathExists(`${self.apos.rootDir}/package-lock.json`)) {
