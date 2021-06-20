@@ -373,6 +373,11 @@ module.exports = {
       // This method is async in 3.x and must be awaited.
 
       async renderPage(req, template, data) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-renderPage',
+          'self.renderPage() is deprecated. Use self.sendPage() instead.'
+        );
         return self.apos.template.renderPageForModule(req, template, data, self);
       },
 
