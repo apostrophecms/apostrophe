@@ -1,10 +1,21 @@
 # Changelog
 
-## 2.220.1 (2021-06-24)
+## Unreleased
+
 ### Security Fixes
 * Adds a rate limit on the POST login-totp route to protect against brute force attacks. Also avoid that servers breaks if we call this route without any user in req.
 
-## 2.220.0 (2021-06-02)
+### Fixes
+
+* Fixes Changelog typos
+
+## 2.120.1 (2021-06-09)
+
+### Fixes
+
+* Simply a version bump.
+
+## 2.120.0 (2021-06-02)
 
 ### Added
 
