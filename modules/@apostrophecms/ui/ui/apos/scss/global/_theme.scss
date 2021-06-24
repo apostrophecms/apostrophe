@@ -83,7 +83,6 @@
 .apos-theme-dark {
   .apos-theme--primary-blue {
     @include apos-primary-mixin(#0062ff);
-    --a-secondary: #00b075;
   }
   --a-base-1: #d1d3d5;
   --a-base-2: #6b7c92;
@@ -105,7 +104,6 @@
 }
 .apos-theme--primary-default {
   @include apos-primary-mixin(#6516dd);
-  --a-secondary: #e65100;
 }
 .apos-theme--primary-blue {
   @include apos-primary-mixin(#0062ff);

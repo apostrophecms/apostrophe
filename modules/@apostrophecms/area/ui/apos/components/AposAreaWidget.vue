@@ -531,11 +531,6 @@ export default {
     &.apos-is-focused:before {
       opacity: 0.15;
     }
-
-    &.apos-is-highlighted,
-    &.apos-is-focused {
-      outline-color: var(--a-secondary);
-    }
   }
 
   .apos-area-widget-controls {
@@ -591,11 +586,6 @@ export default {
     transform: translate(-50%, 0);
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner ::v-deep .apos-context-menu__btn .apos-button {
-    background-color: var(--a-secondary);
-    border-color: var(--a-secondary);
-  }
-
   .apos-area-widget__label {
     position: absolute;
     top: 0;
@@ -615,11 +605,8 @@ export default {
     align-items: center;
     margin: 0;
     padding: 2px;
-    background-color: var(--a-primary);
-  }
-
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-secondary);
+    background-color: var(--a-background-primary);
+    border: 1px solid var(--a-primary-button-hover);
   }
 
   .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
@@ -630,7 +617,6 @@ export default {
   .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
     @include type-help;
     padding: 2px;
-    color: var(--a-white);
     white-space: nowrap;
     &:hover {
       cursor: pointer;
@@ -642,13 +628,10 @@ export default {
   }
 
   .apos-area-widget__breadcrumb ::v-deep .apos-button {
+    color: var(--a-primary-button-hover);
     &:hover, &:active, &:focus {
       text-decoration: none;
     }
-  }
-
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__type {
-    background-color: var(--a-secondary);
   }
 
   .apos-is-visible,
