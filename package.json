@@ -42,6 +42,7 @@
     "diff": "^4.0.1",
     "emulate-mongo-2-driver": "^1.2.3",
     "express": "^4.17.1",
+    "express-rate-limit": "^5.2.6",
     "express-session": "^1.17.0",
     "glob": "^5.0.15",
     "he": "^0.5.0",
