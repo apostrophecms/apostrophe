@@ -1,6 +1,6 @@
 <template>
   <AposModal
-    :modal="modal" modal-title="Manage Page Tree"
+    :modal="modal" modal-title="Manage Pages"
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
