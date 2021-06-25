@@ -54,7 +54,7 @@ module.exports = {
       add: {
         title: {
           type: 'string',
-          label: 'Dislay Name',
+          label: 'Display Name',
           required: true
         },
         slug: {
