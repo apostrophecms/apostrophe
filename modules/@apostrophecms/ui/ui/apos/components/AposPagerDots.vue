@@ -56,7 +56,7 @@ export default {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background-color: var(--a-primary-button-disabled);
+    background-color: var(--a-primary-light-40);
     margin-right: 20px;
     transition: all 0.3s ease;
   }
@@ -66,10 +66,10 @@ export default {
   }
 
   .apos-pager-dots__button:hover {
-    background-color: var(--a-primary-button-hover);
+    background-color: var(--a-primary-dark-10);
   }
 
   .apos-pager-dots__button:active {
-    background-color: var(--a-primary-button-active);
+    background-color: var(--a-primary-dark-15);
   }
 </style>

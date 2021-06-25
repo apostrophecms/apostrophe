@@ -73,7 +73,7 @@ export default {
     display: inline-flex;
     margin-left: $spacing-half;
     padding: 3px;
-    background-color: var(--a-primary-10);
+    background-color: var(--a-primary-transparent-10);
     border-radius: var(--a-border-radius);
     color: var(--a-primary);
     min-width: 15px;

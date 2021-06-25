@@ -45,7 +45,7 @@ export default {
 <style lang="scss" scoped>
   .apos-button-group {
     background-color: var(--a-background-primary);
-    border-radius: 3px;
+    border-radius: var(--a-border-radius);
     display: inline-flex;
   }
 
@@ -63,7 +63,7 @@ export default {
   .apos-button-group__inner {
     display: flex;
     overflow: hidden;
-    border: 1px solid var(--a-base-5);
+    border: 1px solid var(--a-background-inverted);
     border-radius: var(--a-border-radius);
     color: var(--a-text-primary);
     background-color: var(--a-background-primary);
@@ -105,6 +105,24 @@ export default {
       }
       &:focus {
         background-color: var(--a-base-3);
+      }
+    }
+  }
+
+  .apos-button-group--theme {
+    .apos-button-group__inner {
+      background-color: var(--a-background-primary);
+      border: 1px solid var(--a-primary-dark-10);
+      color: var(--a-primary-dark-10);
+    }
+    & ::v-deep .apos-button {
+      background-color: var(--a-background-primary);
+      color: var(--a-primary-dark-10);
+      &:hover {
+        background-color: var(--a-base-8);
+      }
+      &:focus {
+        background-color: var(--a-base-9);
       }
     }
   }

@@ -181,14 +181,14 @@ export default {
   }
 
   .apos-range__input[disabled]::-webkit-progress-value {
-    background: var(--a-primary-button-disabled);
+    background: var(--a-primary-light-40);
   }
 
   .apos-range__input::-webkit-slider-thumb {
     margin-top: -6px;
     width: 15px;
     height: 15px;
-    border: 1px solid var(--a-primary-button-active);
+    border: 1px solid var(--a-primary-dark-15);
     border-radius: 50%;
     background: var(--a-primary);
     cursor: pointer;
@@ -196,7 +196,7 @@ export default {
     -webkit-appearance: none;
   }
   .apos-range__input[disabled]::-webkit-slider-thumb {
-    background: var(--a-primary-button-disabled);
+    background: var(--a-primary-light-40);
   }
 
   .apos-range__input:focus::-webkit-slider-runnable-track {
@@ -216,14 +216,14 @@ export default {
   .apos-range__input::-moz-range-thumb {
     width: 15px;
     height: 15px;
-    border: 1px solid var(--a-primary-button-active);
+    border: 1px solid var(--a-primary-dark-15);
     background: var(--a-primary);
     border-radius: 50%;
     cursor: pointer;
   }
 
   .apos-range__input[disabled]::moz-range-thumb {
-    background: var(--a-primary-button-disabled);
+    background: var(--a-primary-light-40);
     cursor: not-allowed;
   }
 
@@ -252,7 +252,7 @@ export default {
   .apos-range__input::-ms-thumb {
     width: 15px;
     height: 15px;
-    border: 1px solid var(--a-primary-button-active);
+    border: 1px solid var(--a-primary-dark-15);
     border-radius: 1px;
     background: var(--a-primary);
     cursor: pointer;
@@ -260,7 +260,7 @@ export default {
   }
 
   .apos-range__input[disabled]::-ms-thumb {
-    background: var(--a-primary-button-disabled);
+    background: var(--a-primary-light-40);
     cursor: not-allowed;
   }
 

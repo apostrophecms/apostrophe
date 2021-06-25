@@ -3,10 +3,10 @@
 
   &:hover,
   &:focus {
-    color: var(--a-primary-button-hover);
+    color: var(--a-primary-dark-10);
   }
 
   &:active {
-    color: var(--a-primary-button-active);
+    color: var(--a-primary-dark-15);
   }
 }

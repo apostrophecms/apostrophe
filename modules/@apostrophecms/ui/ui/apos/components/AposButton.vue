@@ -310,7 +310,7 @@ export default {
     &:focus {
       background-color: transparent;
       text-decoration: underline;
-      color: var(--a-primary-button-hover);
+      color: var(--a-primary-dark-10);
     }
     &:focus {
       box-shadow: none;
@@ -425,28 +425,28 @@ export default {
   }
 
   .apos-button--primary {
-    border: 1px solid var(--a-primary-button-hover);
+    border: 1px solid var(--a-primary-dark-10);
     color: var(--a-white);
     background: var(--a-primary);
     &:hover {
-      background-color: var(--a-primary-button-hover);
+      background-color: var(--a-primary-dark-10);
     }
     &:active,
     &.apos-is-active {
-      background-color: var(--a-primary-button-active);
+      background-color: var(--a-primary-dark-15);
     }
     &:focus {
       box-shadow: 0 0 0 1px var(--a-base-7),
-        0 0 0 3px var(--a-primary-button-disabled);
+        0 0 0 3px var(--a-primary-light-40);
     }
     &[disabled],
     &.apos-button--disabled {
-      border: 1px solid var(--a-primary-button-disabled);
+      border: 1px solid var(--a-primary-light-40);
       color: var(--a-white);
-      background-color: var(--a-primary-button-disabled);
+      background-color: var(--a-primary-light-40);
     }
     &[disabled].apos-button--busy {
-      border: 1px solid var(--a-primary-button-disabled);
+      border: 1px solid var(--a-primary-light-40);
     }
   }
 

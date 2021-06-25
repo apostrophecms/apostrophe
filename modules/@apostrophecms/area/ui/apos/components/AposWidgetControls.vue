@@ -84,7 +84,7 @@ export default {
   },
   computed: {
     groupModifiers() {
-      const mods = [ 'vertical' ];
+      const mods = [ 'vertical', 'theme' ];
 
       if (this.foreign) {
         mods.push('invert');

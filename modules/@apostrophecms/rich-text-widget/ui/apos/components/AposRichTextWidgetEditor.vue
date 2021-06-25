@@ -311,7 +311,7 @@ export default {
     }
   }
   .apos-rich-text-editor__editor.apos-is-visually-empty {
-    box-shadow: 0 0 0 1px var(--a-primary-50);
+    box-shadow: 0 0 0 1px var(--a-primary-transparent-50);
     &:after {
       opacity: 1;
       visibility: visible;
