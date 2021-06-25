@@ -77,7 +77,7 @@ export default {
   }
   &:focus {
     outline: none;
-    color: var(--a-primary-button-active);
+    color: var(--a-primary-dark-15);
   }
 }
 

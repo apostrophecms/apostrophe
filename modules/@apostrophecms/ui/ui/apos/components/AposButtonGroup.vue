@@ -112,12 +112,12 @@ export default {
   .apos-button-group--theme {
     .apos-button-group__inner {
       background-color: var(--a-background-primary);
-      border: 1px solid var(--a-primary-button-hover);
-      color: var(--a-primary-button-hover);
+      border: 1px solid var(--a-primary-dark-10);
+      color: var(--a-primary-dark-10);
     }
     & ::v-deep .apos-button {
       background-color: var(--a-background-primary);
-      color: var(--a-primary-button-hover);
+      color: var(--a-primary-dark-10);
       &:hover {
         background-color: var(--a-base-8);
       }

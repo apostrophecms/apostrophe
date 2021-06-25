@@ -588,7 +588,7 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
-    top: 0;
+    top: 1px;
     right: 0;
     display: flex;
     transform: translateY(-100%);
@@ -606,7 +606,7 @@ export default {
     margin: 0;
     padding: 2px;
     background-color: var(--a-background-primary);
-    border: 1px solid var(--a-primary-button-hover);
+    border: 1px solid var(--a-primary-dark-10);
   }
 
   .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
@@ -628,7 +628,7 @@ export default {
   }
 
   .apos-area-widget__breadcrumb ::v-deep .apos-button {
-    color: var(--a-primary-button-hover);
+    color: var(--a-primary-dark-10);
     &:hover, &:active, &:focus {
       text-decoration: none;
     }

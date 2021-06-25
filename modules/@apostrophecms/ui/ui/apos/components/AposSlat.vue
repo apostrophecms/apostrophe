@@ -229,7 +229,7 @@ export default {
       color: var(--a-white);
     }
     &:hover {
-      background-color: var(--a-primary-button-hover);
+      background-color: var(--a-primary-dark-10);
     }
   }
 
