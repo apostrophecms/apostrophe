@@ -4,7 +4,7 @@
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "pretest": "npm run lint",
+    "pretest": "npm run lint && npm audit",
     "test": "nyc --reporter=html mocha",
     "lint": "eslint ."
   },
@@ -42,7 +42,7 @@
     "body-parser": "^1.18.2",
     "boring": "^1.1.1",
     "broadband": "^1.1.0",
-    "cheerio": "^0.22.0",
+    "cheerio": "^1.0.0-rc.10",
     "common-tags": "^1.8.0",
     "connect-mongo": "^3.0.0",
     "connect-multiparty": "^2.1.1",
@@ -77,7 +77,7 @@
     "node-fetch": "^2.6.1",
     "nodemailer": "^6.6.1",
     "nunjucks": "^3.2.1",
-    "oembetter": "^1.0.0",
+    "oembetter": "^1.0.1",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "path-to-regexp": "^1.8.0",
