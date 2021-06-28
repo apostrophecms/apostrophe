@@ -5,6 +5,7 @@
 ### Fixes
 
 * Fixes Changelog typos
+* Updates cheerio, oembetter, sanitize-html, and nodemailer for vulnerability warnings.
 
 ## 2.120.1 (2021-06-09)
 
