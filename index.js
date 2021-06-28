@@ -418,7 +418,7 @@ module.exports = async function(options) {
       if (code) {
         return true;
       }
-      if (d.__meta.dirname && (fs.existsSync(`${d.__meta.dirname}/ui/apos`) || fs.existsSync(`${d.__meta.dirname}/ui/public`))) {
+      if (d.__meta.dirname && (fs.existsSync(`${d.__meta.dirname}/ui/apos`) || fs.existsSync(`${d.__meta.dirname}/ui/src`) || fs.existsSync(`${d.__meta.dirname}/ui/public`))) {
         // Assets that will be bundled, instead of server code
         return true;
       }
