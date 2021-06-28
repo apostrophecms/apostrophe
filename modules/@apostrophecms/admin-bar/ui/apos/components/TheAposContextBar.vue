@@ -225,6 +225,7 @@ export default {
       this.undone = [];
       await this.setContext({
         doc,
+        mode: 'draft',
         navigate: false
       });
       // So that on-page areas react like foreign areas while

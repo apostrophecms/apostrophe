@@ -6,6 +6,7 @@
 
 * Corrects a bug that caused Apostrophe to rebuild the admin UI on every nodemon restart, which led to excessive wait times to test new code. Now this happens only when `package-lock.json` has been modified (i.e. you installed a new module that might contain new Apostrophe admin UI code). If you are actively developing Apostrophe admin UI code, you can opt into rebuilding all the time with the `APOS_DEV=1` environment variable. In any case, `ui/src` is always rebuilt in a dev environment.
 * Modules with a `ui/src` folder, but no other content, are no longer considered "empty" and do not generate a warning.
+* Pushing a secondary context document now always results in entry to draft mode, as intended.
 
 ### Changes
 
