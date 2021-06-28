@@ -77,7 +77,7 @@
     "node-fetch": "^2.6.1",
     "nodemailer": "^6.6.1",
     "nunjucks": "^3.2.1",
-    "oembetter": "github:apostrophecms/oembetter",
+    "oembetter": "^1.0.1",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "path-to-regexp": "^1.8.0",
