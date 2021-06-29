@@ -13,6 +13,7 @@
 ### Changes
 
 * Deprecates `self.renderPage` method for removal in next major version.
+* Since `ui/src/index.js` files must export a function to avoid a browser error in production which breaks the website experience, we now detect this at startup and throw a more helpful error to prevent a last-minute discovery in production.
 
 ## 3.0.1 - 2021-06-17
 

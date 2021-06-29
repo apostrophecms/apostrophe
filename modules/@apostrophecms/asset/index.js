@@ -188,7 +188,8 @@ module.exports = {
             if (options.index) {
               indexJsImports = getImports(source, 'index.js', {
                 invokeApps: true,
-                importSuffix: 'App'
+                importSuffix: 'App',
+                requireDefaultExport: true
               });
               indexSassImports = getImports(source, 'index.scss', {
                 importSuffix: 'Stylesheet'
@@ -396,6 +397,16 @@ module.exports = {
             };
 
             components.forEach((component, i) => {
+              if (options.requireDefaultExport) {
+                if (!fs.readFileSync(component, 'utf8').match(/export[\s\n]+default/)) {
+                  throw new Error(stripIndent`
+                    The file ${component} does not have a default export.
+
+                    Any ui/src/index.js file that does not have a function as
+                    its default export will cause the build to fail in production.
+                  `);
+                }
+              }
               const jsFilename = JSON.stringify(component);
               const name = require('path').basename(component).replace(/\.\w+/, '') + (options.invokeApps ? `_${i}` : '');
               const jsName = JSON.stringify(name);
