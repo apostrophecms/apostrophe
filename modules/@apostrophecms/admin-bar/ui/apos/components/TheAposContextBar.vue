@@ -327,9 +327,9 @@ export default {
     //
     // May refresh or navigate to another URL if needed, depending on whether
     // _url differs between draft and published. May do nothing if the mode
-    // matches the existing one
-    switchDraftMode(mode) {
-      apos.bus.$emit('set-context', {
+    // matches the existing one.
+    async switchDraftMode(mode) {
+      await this.setContext({
         mode
       });
     },

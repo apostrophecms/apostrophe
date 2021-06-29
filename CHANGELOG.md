@@ -8,6 +8,7 @@
 * Updates `cheerio`, `deep-get-set`, and `oembetter` versions to resolve vulnerability warnings.
 * Modules with a `ui/src` folder, but no other content, are no longer considered "empty" and do not generate a warning.
 * Pushing a secondary context document now always results in entry to draft mode, as intended.
+* Pushing a secondary context document works reliably, correcting a race condition that could cause the primary document to remain in context in some cases if the user was not already in edit mode.
 
 ### Changes
 
