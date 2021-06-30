@@ -38,7 +38,7 @@ export default {
   emits: [ 'return' ],
   data () {
     return {
-      next: (this.value && this.value.data !== undefined)
+      next: (this.value && this.value.data)
         ? this.value.data : {},
       oembedResult: {},
       dynamicRatio: '',
@@ -69,6 +69,11 @@ export default {
     validate(value) {
       if (value == null || value.url === null) {
         value = {};
+      }
+
+      if (!value.url && !this.field.required) {
+        // field is now empty and not required, not an error
+        return false;
       }
 
       if (
