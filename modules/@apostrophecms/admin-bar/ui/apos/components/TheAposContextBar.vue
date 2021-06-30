@@ -334,6 +334,7 @@ export default {
       });
     },
     // Implementation detail of onSetContext and onPushContext.
+    // Carries out a refresh if not leaving the page.
     async setContext({
       mode,
       locale,
@@ -398,6 +399,11 @@ export default {
               this.lockNotAvailable();
             }
           }
+          if (!this.contextStack.length) {
+            // Refresh the context document on the page, if it is not a pushed
+            // special case with its own rendering, like the palette
+            await this.refresh();
+          }
         }
       } catch (e) {
         if (e.status === 404) {
@@ -447,10 +453,12 @@ export default {
         }
       }
       if (this.draftMode !== 'draft') {
-        // Entering edit mode implies entering draft mode.
+        // Entering edit mode implies entering draft mode and
+        // a refresh.
         await this.switchDraftMode('draft');
+      } else {
+        await this.refresh();
       }
-      await this.refresh();
     },
     async refresh() {
       let url = window.location.href;
