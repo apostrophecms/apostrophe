@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Security Fixes
-* Adds a rate limit on the POST login-totp route to protect against brute force attacks. Also avoid that servers breaks if we call this route without any user in req.
+* Extract throttle logic from the POST login route to apply it to the POST login totp route.
 
 ### Fixes
 
