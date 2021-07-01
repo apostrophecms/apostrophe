@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.1.0 - 2021-06-30
 
 ### Fixes
 
