@@ -136,9 +136,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-input--oembed {
-    margin-bottom: $spacing-double;
-  }
   .apos-input__embed {
     ::v-deep iframe {
       max-width: 100%;
