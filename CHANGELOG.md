@@ -5,6 +5,7 @@
 ### Changes
 
 * Removes an unused method, `mapMongoIdToJqtreeId`, that was used in A2 but is no longer relevant.
+* Removes deprecated and non-functional steps from the `edit` method in the `AposDocsManager.vue` component.
 
 ## 3.1.0 - 2021-06-30
 
