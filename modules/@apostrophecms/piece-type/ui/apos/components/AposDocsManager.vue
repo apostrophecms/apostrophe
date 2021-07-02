@@ -247,7 +247,6 @@ export default {
       });
       if (!doc) {
         // Cancel clicked
-        return;
       }
     },
     async finishSaved() {
