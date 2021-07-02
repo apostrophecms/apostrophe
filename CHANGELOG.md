@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+* Removes an unused method, `mapMongoIdToJqtreeId`, that was used in A2 but is no longer relevant.
+
 ## 3.1.0 - 2021-06-30
 
 ### Fixes
