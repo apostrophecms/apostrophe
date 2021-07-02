@@ -1,10 +1,23 @@
 # Changelog
 
-## 2.220.1 (2021-06-30)
-
-### Fixed
+## Unreleased
 
 * Fix server crash due to oembed error when invalid url is passed.
+
+## 2.220.2 (2021-06-30)
+
+### Fixes
+
+* Fixes Changelog typos
+* Updates cheerio, oembetter, sanitize-html, and nodemailer for vulnerability warnings.
+
+> **Please note:** Version `2.220.0` accidentally skipped from `2.119` to `2.220`. To make sure your `package.json` rules work as expected and fixes are installed automatically via `npm update`, we are continuing from this point in the numbering.
+
+## 2.220.1 (2021-06-09)
+
+### Fixes
+
+* Simply a version bump.
 
 ## 2.220.0 (2021-06-02)
 
