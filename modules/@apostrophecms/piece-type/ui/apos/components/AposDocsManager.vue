@@ -240,14 +240,12 @@ export default {
       } else {
         moduleName = this.moduleName;
       }
-      const doc = await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
+
+      await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
         docId: piece && piece._id,
         filterValues: this.filterValues
       });
-      if (!doc) {
-        // Cancel clicked
-      }
     },
     async finishSaved() {
       await this.getPieces();
