@@ -27,6 +27,7 @@ const fs = require('fs');
 const now = require('performance-now');
 const Promise = require('bluebird');
 const util = require('util');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
   options: {
@@ -750,7 +751,25 @@ module.exports = {
       async recursionGuard(req, label, fn) {
         req.aposStack.push(label);
         if (req.aposStack.length === self.options.stackLimit) {
-          self.apos.util.warn(`WARNING: reached the maximum depth of Apostrophe's asynchronous stack.\nThis is usually because widget loaders, async components, and/or relationships\nare causing an infinite loop.\n\nPlease review the stack to find the problem:\n\n${req.aposStack.join('\n')}\n\nSuggested fixes:\n\n* For each relationship, set "areas: false" or configure a projection with\n"project".\n* Use the "neverLoad" option in your widget modules to block them from loading\nparticular widget types recursively.\n* Do not use "neverLoadSelf: false" for any widget type unless you can\nguarantee it will never cause an infinite loop.\n* Make sure your async components do not call themselves recursively in a way that will never terminate.\n\n`);
+          self.apos.util.warn(stripIndent`
+            WARNING: reached the maximum depth of Apostrophe's asynchronous stack.
+            This is usually because widget loaders, async components, and/or relationships
+            are causing an infinite loop.
+
+            Please review the stack to find the problem:
+
+            ${req.aposStack.join('\n')}
+
+            Suggested fixes:
+            * For each relationship, set "areas: false" or configure a projection with
+              "project".
+            * Use the "neverLoad" option in your widget modules to block them from loading
+              particular widget types recursively.
+            * Do not use "neverLoadSelf: false" for any widget type unless you can guarantee
+              it will never cause an infinite loop.
+            * Make sure your async components do not call themselves recursively in a way
+              that will never terminate.
+          `);
           req.aposStack.pop();
           return;
         }
