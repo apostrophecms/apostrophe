@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.1.0 - 2021-07-07
+
+### Fixes
+
+* Two distinct modules may each have their own `ui/src/index.scss` file, similar to the fix already applied to allow multiple `ui/src/index.js` files.
+
 ## 3.1.0 - 2021-06-30
 
 ### Fixes
