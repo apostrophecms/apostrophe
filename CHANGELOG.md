@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+* Two distinct modules may each have their own `ui/src/index.scss` file, similar to the fix already applied to allow multiple `ui/src/index.js` files.
+
 ### Changes
 
 * Removes an unused method, `mapMongoIdToJqtreeId`, that was used in A2 but is no longer relevant.
