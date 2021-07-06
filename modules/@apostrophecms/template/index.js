@@ -301,7 +301,7 @@ module.exports = {
         const env = self.getEnv(req, module);
 
         args.apos = self.templateApos;
-        args.__ = req.res.__;
+        args.__t = req.t;
 
         if (type === 'file') {
           let finalName = s;

@@ -150,9 +150,10 @@ module.exports = {
           action: self.action
         };
       },
-      // Call with `req`, then a message, followed by any interpolated strings
-      // which must correspond to %s placeholders in `message` (variable number
-      // of arguments), followed by an `options` object if desired.
+      // Call with `req`, then a message key as found in the localization files,
+      // followed by an `options` object if desired. Per the i18next convention,
+      // the options object may contain a mix of i18next-style interpolation
+      // values and options as documented below.
       //
       // If you do not have a `req` it is acceptable to pass a user `_id` string
       // in place of `req`. Someone must be the recipient.
@@ -163,9 +164,6 @@ module.exports = {
       // If `options.dismiss` is set to `true`, the message will auto-dismiss after 5 seconds.
       // If it is set to a number of seconds, it will dismiss after that number of seconds.
       // Otherwise it will not dismiss unless clicked.
-      //
-      // The message is internationalized, which is why the use of
-      // %s placeholders for any inserted titles, etc. is important.
       //
       // If `options.buttons` is present, it must be an array of objects
       // with `type` and `label` properties. If `type` is `'event'` then the object must have
@@ -182,7 +180,7 @@ module.exports = {
       // It is a good idea when triggering a notification just before exiting
       // the application, as in a command line task.
 
-      async trigger(req, message, options) {
+      async trigger(req, message, options = {}) {
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
           req = { user: { _id: req } };
@@ -193,32 +191,7 @@ module.exports = {
         if (!message) {
           throw self.apos.error('required');
         }
-        const strings = [];
-        let i = 2;
-        let index = 0;
-        while (true) {
-          index = message.indexOf('%s', index);
-          if (index === -1) {
-            break;
-          }
-          // Don't match the same one over and over
-          index += 2;
-          if (i >= arguments.length || typeof arguments[i] === 'object') {
-            throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
-          }
-          strings.push(arguments[i++]);
-        }
-        // i18n and apply the strings
-        message = req.__(message, ...strings);
-        if (i === arguments.length - 1 && typeof arguments[i] === 'object') {
-          options = arguments[i++];
-        } else {
-          options = {};
-        }
-
-        if (i !== arguments.length) {
-          throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
-        }
+        message = req.t(message, options.interpolate || {});
 
         const notification = {
           _id: self.apos.util.generateId(),

@@ -1,7 +1,7 @@
 {%- if data.render == 'safeMode' -%}
-  {{ __at('safeModeActive') }}
+  {{ __t('apostrophe:safeModeActive') }}
 {%- elif data.render -%}
   {{ data.code | safe }}
 {% else %}
-  {{ __at('refreshForRawHtml') }}
+  {{ __t('apostrophe:refreshForRawHtml') }}
 {%- endif -%}

@@ -191,7 +191,7 @@ module.exports = {
                 site: site
               }, {
                 to: user.email,
-                subject: req.__('Your request to reset your password on ' + site)
+                subject: req.t('passwordResetRequest', { site })
               });
             } catch (err) {
               throw self.apos.error('email');

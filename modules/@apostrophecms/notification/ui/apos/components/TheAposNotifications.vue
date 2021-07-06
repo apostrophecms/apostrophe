@@ -19,6 +19,8 @@
 
 <script>
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import { omit } from 'lodash';
+
 export default {
   name: 'TheAposNotifications',
   mixins: [ AposThemeMixin ],
@@ -30,30 +32,6 @@ export default {
   },
   async mounted() {
     apos.notify = async function(message, options) {
-      const strings = [];
-      let i = 1;
-      let index = 0;
-      while (true) {
-        index = message.indexOf('%s', index);
-        if (index === -1) {
-          break;
-        }
-        // Don't match the same one over and over
-        index += 2;
-        if ((i >= arguments.length) || ((typeof (arguments[i]) === 'object'))) {
-          throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
-        }
-        strings.push(arguments[i++]);
-      }
-      if ((i === (arguments.length - 1)) && (typeof (arguments[i]) === 'object')) {
-        options = arguments[i++];
-      } else {
-        options = {};
-      }
-
-      if (i !== arguments.length) {
-        throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
-      }
 
       if (options.dismiss === true) {
         options.dismiss = 5;
@@ -67,7 +45,7 @@ export default {
       await apos.http.post(apos.notification.action, {
         body: {
           message,
-          strings,
+          interpolate: omit(options, 'type', 'icon', 'dismiss', 'buttons'),
           type: options.type,
           icon: options.icon,
           dismiss: options.dismiss,

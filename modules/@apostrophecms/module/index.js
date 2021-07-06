@@ -564,7 +564,7 @@ module.exports = {
       // to this module.
       //
       // If you need to localize `options.subject`, you can call
-      // `self.apos.i18n.__(subject)`.
+      // `self.apos.i18n.i18next.t(subject)`.
       //
       // This method returns `info`, per the Nodemailer documentation.
       // With most transports, a successful return indicates the message was

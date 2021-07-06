@@ -1,4 +1,5 @@
 {
+  "listJoiner": ", ",
   "safeModeActive": "Running in safe mode, not showing raw HTML.",
   "refreshForRawHtml": "Refresh the page to view raw HTML.",
   "loginPageTitle": "Login",
@@ -11,5 +12,9 @@
   "tryOneOfTheseSuggestions": "Try one of these suggestions:",
   "errorPageTitle": "An error has occurred",
   "errorPageStatusCode": "500",
-  "anErrorHasOccurred": "An error has occurred"
+  "anErrorHasOccurred": "An error has occurred",
+  "fileTypeNotAccepted": "File type was not accepted.",
+  "allowedExtensions": "Allowed extensions: {{ extensions }}",
+  "uploadForbidden": "You do not have permission to upload a file",
+  "passwordResetRequest": "Your request to reset your password on {{ site }}"
 }

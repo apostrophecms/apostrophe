@@ -1,19 +1,9 @@
-// TODO: replace i18n npm module with i18n-next. Careful, the middleware for apostrophe editing
-// locales is also in here.
+// This module makes an instance of the [i18next](https://npmjs.org/package/i18next) npm module available
+// in Nunjucks templates via the `__t()` helper function. That function is also available on `req` objects
+// as `req.t()`. Any options passed to this module are passed on to `i18next`.
 //
-// This module makes an instance of the [i18n](https://npmjs.org/package/i18n) npm module available
-// in Nunjucks templates via the usual `__()` helper function. That function and its relatives are
-// also available on `req` objects. Any options passed to this module are passed on to `i18n`.
-//
-// `apos.i18n.i18n` can be used to directly access the `i18n` npm module instance if necessary.
-// It usually is a bad idea. Use `req.__` if you need to localize in a route.
-//
-// By default i18n locale files are generated in the `locales` subdirectory of the project.
-//
-// ## Options
-//
-// `localesDir`: if specified, the locale `.json` files are stored here, otherwise they
-// are stored in the `locales` subdirectory of the project root.
+// `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance if necessary.
+// It usually is not necessary. Use `req.t` if you need to localize in a route.
 
 const i18next = require('i18next').i18next;
 const i18nextHttpMiddleware = require('i18next-http-middleware');
@@ -28,9 +18,7 @@ module.exports = {
     self.defaultLocale = self.options.defaultLocale || self.locales[0];
     // Make sure we have our own instance to avoid conflicts with other apos objects
     self.i18next = i18next.use(i18nextHttpMiddleware.LanguageDetector).createInstance({
-      fallbackLng: 'en',
-      // Remove in favor of language detector
-      lng: 'en',
+      fallbackLng: self.options.fallbackLocale || 'en',
       debug: (process.env.NODE_ENV !== 'production'),
       preload: self.locales,
       resources: {
@@ -39,6 +27,10 @@ module.exports = {
             "key": "hello world"
           }
         }
+      },
+      interpolation: {
+        // Nunjucks will already do this
+        escapeValue: false
       }
     });
     await self.i18next.init();
