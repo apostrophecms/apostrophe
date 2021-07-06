@@ -1,0 +1,15 @@
+{
+  "safeModeActive": "Running in safe mode, not showing raw HTML.",
+  "refreshForRawHtml": "Refresh the page to view raw HTML.",
+  "loginPageTitle": "Login",
+  "notFoundPageTitle": "404 - Page not found",
+  "notFoundPageStatusCode": "404",
+  "notFoundPageMessage": "We can't seem to find the page you're looking for.",
+  "backToHome": "Back to Home",
+  "filterResultsByType": "Filter Results By Type",
+  "newSearch": "New Search",
+  "tryOneOfTheseSuggestions": "Try one of these suggestions:",
+  "errorPageTitle": "An error has occurred",
+  "errorPageStatusCode": "500",
+  "anErrorHasOccurred": "An error has occurred"
+}

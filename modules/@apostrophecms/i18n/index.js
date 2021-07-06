@@ -15,24 +15,34 @@
 // `localesDir`: if specified, the locale `.json` files are stored here, otherwise they
 // are stored in the `locales` subdirectory of the project root.
 
-const _ = require('lodash');
-const i18n = require('i18n');
+const i18next = require('i18next').i18next;
+const i18nextHttpMiddleware = require('i18next-http-middleware');
+i18next.init({});
 
 module.exports = {
   options: {
     alias: 'i18n'
   },
-  init(self) {
-    const i18nOptions = self.options || {};
-    _.defaults(i18nOptions, {
-      locales: [ 'en' ],
-      cookie: 'apos_language',
-      directory: self.options.localesDir || self.apos.rootDir + '/locales'
-    });
-    self.locales = (i18nOptions.options && i18nOptions.options.locales[0]) || [ 'en' ];
+  async init(self) {
+    self.locales = self.options.locales || [ 'en' ];
     self.defaultLocale = self.options.defaultLocale || self.locales[0];
-    i18n.configure(i18nOptions);
-    self.i18n = i18n;
+    // Make sure we have our own instance to avoid conflicts with other apos objects
+    self.i18next = i18next.use(i18nextHttpMiddleware.LanguageDetector).createInstance({
+      fallbackLng: 'en',
+      // Remove in favor of language detector
+      lng: 'en',
+      debug: (process.env.NODE_ENV !== 'production'),
+      preload: self.locales,
+      resources: {
+        en: {
+          translation: {
+            "key": "hello world"
+          }
+        }
+      }
+    });
+    await self.i18next.init();
+    self.i18next = i18next;
   },
   middleware(self) {
     return {
@@ -67,7 +77,8 @@ module.exports = {
           });
         }
         return self.i18n.init(req, res, next);
-      }
+      },
+      i18nextHttpMiddleware: i18nextHttpMiddleware.handle(self.i18next, {})
     };
   },
   methods(self) {
