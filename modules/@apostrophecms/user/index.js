@@ -146,7 +146,7 @@ module.exports = {
     self.initializeCredential();
     self.addOurArchivedPrefixFields();
     self.enableSecrets();
-    self.addRoleMigration();
+    self.addLegacyMigrations();
     await self.ensureSafe();
   },
   apiRoutes(self) {
@@ -495,21 +495,7 @@ module.exports = {
         user.password = password;
         return self.update(req, user);
       },
-
-      addRoleMigration() {
-        self.apos.migration.add('add-role-to-user', async () => {
-          return self.apos.doc.db.updateMany({
-            type: '@apostrophecms/user',
-            role: {
-              $exists: 0
-            }
-          }, {
-            $set: {
-              role: 'admin'
-            }
-          });
-        });
-      }
+      ...require('./lib/legacy-migrations')(self)
     };
   },
   tasks(self) {
