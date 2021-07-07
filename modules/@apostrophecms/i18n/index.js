@@ -86,9 +86,9 @@ module.exports = {
           if (!fs.existsSync(localizationsDir)) {
             continue;
           }
-          for (const langFile of fs.readdirSync(localizationsDir)) {
-            const data = JSON.parse(fs.readFileSync(`${localizationsDir}/${langFile}`));
-            const locale = langFile.replace('.json', '');
+          for (const localizationFile of fs.readdirSync(localizationsDir)) {
+            const data = JSON.parse(fs.readFileSync(`${localizationsDir}/${localizationFile}`));
+            const locale = localizationFile.replace('.json', '');
             self.i18next.addResourceBundle(locale, ns, data, true, true);
           }
         }
