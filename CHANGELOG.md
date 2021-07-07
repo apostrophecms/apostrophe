@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+### Fixes
 * Fix server crash due to oembed error when invalid url is passed.
+
+### Security Fixes
+* Extract throttle logic from the POST login route to apply it to the POST login totp route.
 
 ## 2.220.2 (2021-06-30)
 
