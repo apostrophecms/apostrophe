@@ -3,6 +3,8 @@
   "safeModeActive": "Running in safe mode, not showing raw HTML.",
   "refreshForRawHtml": "Refresh the page to view raw HTML.",
   "loginPageTitle": "Login",
+  "loginPageBothRequired": "Both the username and the password are required.",
+  "loginPageIncorrectOrNoSuchUser": "Your credentials are incorrect, or there is no such user.",
   "notFoundPageTitle": "404 - Page not found",
   "notFoundPageStatusCode": "404",
   "notFoundPageMessage": "We can't seem to find the page you're looking for.",
@@ -16,5 +18,16 @@
   "fileTypeNotAccepted": "File type was not accepted.",
   "allowedExtensions": "Allowed extensions: {{ extensions }}",
   "uploadForbidden": "You do not have permission to upload a file",
-  "passwordResetRequest": "Your request to reset your password on {{ site }}"
+  "passwordResetRequest": "Your request to reset your password on {{ site }}",
+  "logoutNotLoggedIn": "You were not logged in.",
+  "restoredPrevious": "Restored previously published version.",
+  "noLongerPublished": "No longer published.",
+  "undoFailed": "The operation could not be undone.",
+  "redoFailed": "The operation could not be redone.",
+  "notFound": "Not found.",
+  "leavePageHeading": "Leave {{ oldTitle }} to edit {{ newTitle }}?",
+  "leavePageDescription": "The content you're trying to edit belongs to another document and must be edited there.\nChanges made to {{ oldTitle }} are saved automatically.",
+  "fetchPublishedVersionFailed": "An error occurred fetching the published version of the document.",
+  "resolveErrorsBeforeSaving": "Resolve errors before saving.",
+  "loadDocFailed": "The requested document was not found."
 }

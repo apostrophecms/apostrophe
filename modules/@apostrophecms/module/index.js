@@ -50,6 +50,12 @@ module.exports = {
     self.enableAction();
     // Routes in their final ready-to-add-to-Express form
     self._routes = [];
+
+    // Add i18next phrases if we started up after the i18n module,
+    // which will call this for us if we start up before it
+    if (self.apos.i18n && (self.apos.i18n !== self)) {
+      self.apos.i18n.addResourcesForModule(self);
+    }
   },
 
   async afterAllSections(self) {

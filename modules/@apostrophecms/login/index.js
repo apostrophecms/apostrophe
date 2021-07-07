@@ -112,12 +112,12 @@ module.exports = {
           const password = self.apos.launder.string(req.body.password);
           const session = self.apos.launder.boolean(req.body.session);
           if (!(username && password)) {
-            throw self.apos.error('invalid', 'Both the username and the password are required.');
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
           }
           const user = await self.apos.login.verifyLogin(username, password);
           if (!user) {
             // For security reasons we may not tell the user which case applies
-            throw self.apos.error('invalid', 'Your credentials are incorrect, or there is no such user.');
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageIncorrectOrNoSuchUser'));
           }
           if (session) {
             const passportLogin = (user) => {
@@ -140,7 +140,7 @@ module.exports = {
         },
         async logout(req) {
           if (!req.user) {
-            throw self.apos.error('forbidden', 'You were not logged in.');
+            throw self.apos.error('forbidden', req.t('logoutNotLoggedIn'));
           }
           if (req.token) {
             await self.bearerTokens.remove({
