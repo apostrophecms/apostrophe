@@ -6,7 +6,7 @@
     <AposNotification
       v-for="notification in notifications"
       :key="notification._id"
-      :label="notification.message"
+      :label="localize(notification)"
       :type="notification.type"
       :icon="notification.icon"
       :id="notification._id"
@@ -19,7 +19,6 @@
 
 <script>
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
-import { omit } from 'lodash';
 
 export default {
   name: 'TheAposNotifications',
@@ -31,7 +30,7 @@ export default {
     };
   },
   async mounted() {
-    apos.notify = async function(message, options) {
+    apos.notify = async function(message, options, interpolate) {
 
       if (options.dismiss === true) {
         options.dismiss = 5;
@@ -45,11 +44,12 @@ export default {
       await apos.http.post(apos.notification.action, {
         body: {
           message,
-          interpolate: omit(options, 'type', 'icon', 'dismiss', 'buttons'),
+          interpolate: interpolate || options.interpolate || {},
           type: options.type,
           icon: options.icon,
           dismiss: options.dismiss,
-          buttons: options.buttons
+          buttons: options.buttons,
+          localize: options.localize
         }
       });
     };
@@ -111,6 +111,14 @@ export default {
       } catch (err) {
         console.error(err);
         setTimeout(this.poll, 5000);
+      }
+    },
+    localize(notification) {
+      if (notification.localize !== false) {
+        return this.$t(notification.message, notification.interpolate);
+      } else {
+        // Any interpolation was done before insertion
+        return notification.message;
       }
     }
   }

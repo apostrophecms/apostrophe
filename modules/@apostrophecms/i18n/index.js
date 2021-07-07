@@ -24,11 +24,13 @@ module.exports = {
       fallbackLng: self.options.fallbackLocale || 'en',
       // Quite noisy even for debug mode, use an environment variable
       debug: !!process.env.APOS_DEBUG_I18N,
+      // Added later, but required here
       resources: {},
       interpolation: {
-        // Nunjucks will already do this
+        // Nunjucks and Vue will already do this
         escapeValue: false
-      }
+      },
+      defaultNS: 'default'
     });
     await self.i18next.init();
     self.addInitialResources();

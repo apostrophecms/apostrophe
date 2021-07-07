@@ -285,8 +285,13 @@ export default {
           if (doc._url) {
             const contextTitle = window.apos.adminBar.context.title;
             if (await apos.confirm({
-              heading: `Leave ${contextTitle} to edit ${doc.title}?`,
-              description: `The content you're trying to edit belongs to another document and must be edited there.\nChanges made to ${contextTitle} are saved automatically.`
+              heading: this.$t('apostrophe:leavePageHeading', {
+                oldTitle: contextTitle,
+                newTitle: doc.title
+              }),
+              description: this.$t('apostrophe:leavePageDescription', {
+                oldTitle: contextTitle
+              })
             })) {
               location.assign(doc._url);
             }
@@ -301,7 +306,7 @@ export default {
           return;
         } catch (e) {
           if (e.status === 404) {
-            apos.notify('Not found.', { type: 'error' });
+            apos.notify('apostrophe:notFound', { type: 'error' });
             return;
           } else {
             throw e;

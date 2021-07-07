@@ -523,7 +523,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('Restored previously published version.', {
+        apos.notify('apostrophe:restoredPrevious', {
           type: 'success',
           dismiss: true
         });
@@ -556,7 +556,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('No longer published.', {
+        apos.notify('apostrophe:noLongerPublished', {
           type: 'success',
           dismiss: true
         });
@@ -582,11 +582,11 @@ export default {
     },
     async undo() {
       this.undone.push(this.patchesSinceLoaded.pop());
-      await this.refreshAfterHistoryChange('The operation could not be undone.');
+      await this.refreshAfterHistoryChange('apostrophe:undoFailed');
     },
     async redo() {
       this.patchesSinceLoaded.push(this.undone.pop());
-      await this.refreshAfterHistoryChange('The operation could not be redone.');
+      await this.refreshAfterHistoryChange('redoFailed');
     },
     async refreshAfterHistoryChange(errorMessage) {
       this.saving = true;
