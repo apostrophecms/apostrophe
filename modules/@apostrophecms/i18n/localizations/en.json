@@ -4,7 +4,7 @@
   "refreshForRawHtml": "Refresh the page to view raw HTML.",
   "loginPageTitle": "Login",
   "loginPageBothRequired": "Both the username and the password are required.",
-  "loginPageIncorrectOrNoSuchUser": "Your credentials are incorrect, or there is no such user.",
+  "loginPageIncorrectOrNoSuchUser": "Your credentials are incorrect, or there is no such user",
   "notFoundPageTitle": "404 - Page not found",
   "notFoundPageStatusCode": "404",
   "notFoundPageMessage": "We can't seem to find the page you're looking for.",
