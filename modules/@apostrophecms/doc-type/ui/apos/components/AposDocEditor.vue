@@ -521,7 +521,11 @@ export default {
             field = this.schema.filter(item => {
               return item.name === tabKey;
             })[0];
-            this.switchPane(field.group.name);
+
+            if (field.group.name !== 'utility') {
+              this.switchPane(field.group.name);
+            }
+
             this.getAposSchema(field).scrollFieldIntoView(field.name);
           }
         }

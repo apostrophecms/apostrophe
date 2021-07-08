@@ -57,7 +57,8 @@ export default () => {
           if (result.width && result.height) {
             inner.style.width = '100%';
             resizeVideo(inner);
-            // If we need to iniitally size the video, also resize it on window resize.
+            // If we need to initially size the video, also resize it on window
+            // resize.
             window.addEventListener('resize', resizeHandler);
           } else {
             // No, so assume the oembed HTML code is responsive.
