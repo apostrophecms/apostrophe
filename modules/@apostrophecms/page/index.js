@@ -90,7 +90,8 @@ module.exports = {
           return {
             // For consistency with the pieces REST API we
             // use a results property when returning a flat list
-            results: await self.getRestQuery(req).limit(10).relationships(false).areas(false).toArray()
+            results: await self.getRestQuery(req).limit(10).relationships(false)
+              .areas(false).toArray()
           };
         }
 
@@ -1774,15 +1775,6 @@ database.`);
         if (!count) {
           throw 'No page with that slug was found.';
         }
-      },
-      // Routes use this to convert _id to id for the
-      // convenience of jqtree
-      mapMongoIdToJqtreeId(changed) {
-        return _.map(changed, function (change) {
-          change.id = change._id;
-          delete change._id;
-          return change;
-        });
       },
       // Invoked by the @apostrophecms/version module.
       //
