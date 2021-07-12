@@ -33,7 +33,7 @@
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
-            X {{ $t(label) }}
+            {{ $t(label) }}
           </span>
         </slot>
       </div>

@@ -27,7 +27,7 @@ for (const [ ns, phrases ] of Object.entries(i18n.l10n)) {
 }
 
 Vue.prototype.$t = (phrase, options) => {
-  return '* ' + i18next.t(phrase, {
+  return i18next.t(phrase, {
     lng: i18n.locale,
     ...options
   });
