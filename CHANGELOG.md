@@ -8,7 +8,6 @@
 * Removes deprecated and non-functional steps from the `edit` method in the `AposDocsManager.vue` component.
 * The `apostrophe-i18n` module now uses `i18next` to implement static localization.
 * The `i18next-http-middleware` locale guesser is installed.
-* There is no locale switcher UI yet.
 
 ## 3.1.0 - 2021-06-30
 
