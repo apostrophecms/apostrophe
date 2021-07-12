@@ -5,28 +5,28 @@
   >
     <span v-if="manuallyPublished && draft.modified && draft.lastPublishedAt">
       <AposLabel
-        label="Pending Updates" class="apos-table__cell-field__label"
-        tooltip="There are active changes to this document."
+        label="apostrophe:pendingUpdates" class="apos-table__cell-field__label"
+        tooltip="apostrophe:thereAreActiveChanges"
         :modifiers="[ 'apos-is-success', 'apos-is-filled' ]"
       />
     </span>
     <span v-else-if="draft.submitted">
       <AposLabel
-        label="Pending" class="apos-table__cell-field__label"
-        tooltip="Changes to this document are awaiting approval by an admin or editor."
+        label="apostrophe:pending" class="apos-table__cell-field__label"
+        tooltip="apostrophe:changesAwaitingApproval"
         :modifiers="[ 'apos-is-filled' ]"
       />
     </span>
     <span v-if="manuallyPublished && !draft.lastPublishedAt">
       <AposLabel
-        label="Draft" class="apos-table__cell-field__label"
+        label="apostrophe:draft" class="apos-table__cell-field__label"
         :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
-        tooltip="This document hasn't been published yet."
+        tooltip="apostrophe:notYetPublished"
       />
     </span>
     <span v-if="draft.archived">
       <AposLabel
-        label="Archived" class="apos-table__cell-field__label"
+        label="apostrophe:archived" class="apos-table__cell-field__label"
         :modifiers="[ 'apos-is-filled', 'apos-is-danger' ]"
       />
     </span>

@@ -1,7 +1,7 @@
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
-    label: 'Image Tag',
+    label: 'apostrophe:imageTag',
     quickCreate: false,
     autopublish: true,
     editRole: 'editor',

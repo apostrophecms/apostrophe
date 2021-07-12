@@ -7,7 +7,7 @@
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
-    label: 'Raw HTML',
+    label: 'apostrophe:rawHtml',
     className: false,
     icon: 'code-tags-icon'
   },
@@ -15,9 +15,9 @@ module.exports = {
     add: {
       code: {
         type: 'string',
-        label: 'Raw HTML (Code)',
+        label: 'apostrophe:rawHtmlCode',
         textarea: true,
-        help: 'Be careful when embedding third-party code, as it can break the website editing functionality. If a page becomes unusable, add "?safe_mode=1" to the URL to make it work temporarily without the problem code being rendered.'
+        help: 'apostrophe:rawHtmlCodeHelp'
       }
     }
   },

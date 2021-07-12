@@ -19,7 +19,7 @@ module.exports = {
     add: {
       slug: {
         type: 'slug',
-        label: 'Slug',
+        label: 'apostrophe:slug',
         required: true,
         following: 'title'
       }
@@ -29,7 +29,7 @@ module.exports = {
     return {
       add: {
         title: {
-          label: 'Title',
+          label: 'apostrophe:title',
           name: 'title',
           component: 'AposCellButton'
         },
@@ -40,7 +40,7 @@ module.exports = {
         },
         updatedAt: {
           name: 'updatedAt',
-          label: 'Last Edited',
+          label: 'apostrophe:lastEdited',
           component: 'AposCellLastEdited'
         }
       }
@@ -49,20 +49,20 @@ module.exports = {
   filters: {
     add: {
       visibility: {
-        label: 'Visibility',
+        label: 'apostrophe:visibility',
         inputType: 'radio',
         choices: [
           {
             value: 'public',
-            label: 'Public'
+            label: 'apostrophe:public'
           },
           {
             value: 'loginRequired',
-            label: 'Login Required'
+            label: 'apostrophe:loginRequired'
           },
           {
             value: null,
-            label: 'Any'
+            label: 'apostrophe:any'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
@@ -70,16 +70,16 @@ module.exports = {
         def: true
       },
       archived: {
-        label: 'Archive',
+        label: 'apostrophe:archive',
         inputType: 'radio',
         choices: [
           {
             value: false,
-            label: 'Live'
+            label: 'apostrophe:live'
           },
           {
             value: true,
-            label: 'Archive'
+            label: 'apostrophe:archive'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
@@ -92,35 +92,35 @@ module.exports = {
   batchOperations: {
     add: {
       archive: {
-        label: 'Archive',
+        label: 'apostrophe:archive',
         inputType: 'radio',
         unlessFilter: {
           archived: true
         }
       },
       rescue: {
-        label: 'Rescue',
+        label: 'apostrophe:rescue',
         unlessFilter: {
           archived: false
         }
       },
       visibility: {
-        label: 'Visibility',
+        label: 'apostrophe:visibility',
         requiredField: 'visibility',
         fields: {
           add: {
             visibility: {
               type: 'select',
-              label: 'Who can view this?',
+              label: 'apostrophe:whoCanViewThis',
               def: 'public',
               choices: [
                 {
                   value: 'public',
-                  label: 'Public'
+                  label: 'apostrophe:public'
                 },
                 {
                   value: 'loginRequired',
-                  label: 'Login Required'
+                  label: 'apostrophe:loginRequired'
                 }
               ]
             }
@@ -435,7 +435,7 @@ module.exports = {
               filter.def = null;
               filter.choices.push({
                 value: null,
-                label: 'None'
+                label: 'apostrophe:none'
               });
             }
           } else {

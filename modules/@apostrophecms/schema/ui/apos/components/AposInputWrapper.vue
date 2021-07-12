@@ -8,7 +8,7 @@
           class="apos-field__label"
           :is="labelEl" :for="uid"
         >
-          {{ field.label }}
+          {{ $t(field.label) }}
           <span v-if="field.required" class="apos-field__required">
             *
           </span>
@@ -19,7 +19,7 @@
             <AposIndicator
               icon="help-circle-icon"
               class="apos-field__help-tooltip__icon"
-              :tooltip="(field.help || field.htmlHelp)"
+              :tooltip="$t(field.help || field.htmlHelp)"
               :icon-size="11"
               icon-color="var(--a-base-4)"
             />
@@ -28,7 +28,7 @@
             <AposLabel
               label="Changed" class="apos-field__changed__label"
               :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
-              tooltip="This field has unpublished changes"
+              :tooltip="$t('apostrophe:fieldHasUnpublishedChanges')"
             />
           </span>
         </component>
@@ -36,14 +36,13 @@
         <p
           v-if="(field.help || field.htmlHelp) && !displayOptions.helpTooltip"
           class="apos-field__help"
-          v-html="(field.help || field.htmlHelp)"
+          v-html="$t(field.help || field.htmlHelp)"
         />
         <slot name="additional" />
       </div>
       <slot name="body" />
-      <!-- TODO i18n -->
       <div v-if="errorMessage" class="apos-field__error">
-        {{ errorMessage }}
+        {{ $t(errorMessage) }}
       </div>
     </component>
     <!-- CSS Escape hatch for additional interfaces like relatipnship managers -->

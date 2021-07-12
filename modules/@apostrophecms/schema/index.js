@@ -214,13 +214,13 @@ module.exports = {
             if (_.includes(values, true)) {
               choices.push({
                 value: '1',
-                label: 'Yes'
+                label: 'apostrophe:yes'
               });
             }
             if (_.includes(values, true)) {
               choices.push({
                 value: '0',
-                label: 'No'
+                label: 'apostrophe:no'
               });
             }
             return choices;
@@ -1113,7 +1113,7 @@ module.exports = {
   methods(self) {
     const defaultGroup = self.options.defaultGroup || {
       name: 'ungrouped',
-      label: 'Ungrouped'
+      label: 'apostrophe:ungrouped'
     };
 
     return {

@@ -19,7 +19,8 @@ const i18n = apos.modules['@apostrophecms/i18n'];
 i18next.init({
   lng: i18n.locale,
   fallbackLng: i18n.locale,
-  resources: {}
+  resources: {},
+  debug: true
 });
 
 for (const [ ns, phrases ] of Object.entries(i18n.l10n)) {

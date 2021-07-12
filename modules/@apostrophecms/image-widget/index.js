@@ -1,7 +1,7 @@
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
-    label: 'Image',
+    label: 'apostrophe:image',
     className: false,
     icon: 'image-icon'
   },
@@ -9,7 +9,7 @@ module.exports = {
     add: {
       _image: {
         type: 'relationship',
-        label: 'Image',
+        label: 'apostrophe:image',
         max: 1,
         required: true,
         withType: '@apostrophecms/image'

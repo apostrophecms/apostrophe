@@ -54,51 +54,51 @@ module.exports = {
       add: {
         title: {
           type: 'string',
-          label: 'Display Name',
+          label: 'apostrophe:displayName',
           required: true
         },
         slug: {
           type: 'slug',
-          label: 'Slug',
+          label: 'apostrophe:slug',
           following: 'title',
           required: true
         },
         disabled: {
           type: 'boolean',
-          label: 'Login Disabled',
+          label: 'apostrophe:loginDisabled',
           def: false
         },
         username: {
           type: 'string',
-          label: 'Username',
+          label: 'apostrophe:username',
           required: true,
           following: 'title'
         },
         email: {
           type: 'string',
-          label: 'Email'
+          label: 'apostrophe:email'
         },
         password: {
           type: 'password',
-          label: 'Password'
+          label: 'apostrophe:password'
         },
         role: {
           type: 'role',
           choices: [
             {
-              label: 'Guest',
+              label: 'apostrophe:guest',
               value: 'guest'
             },
             {
-              label: 'Contributor',
+              label: 'apostrophe:contributor',
               value: 'contributor'
             },
             {
-              label: 'Editor',
+              label: 'apostrophe:editor',
               value: 'editor'
             },
             {
-              label: 'Admin',
+              label: 'apostrophe:admin',
               value: 'admin'
             }
           ],
@@ -109,7 +109,7 @@ module.exports = {
       remove: [ 'visibility' ],
       group: {
         basics: {
-          label: 'Basics',
+          label: 'apostrophe:basics',
           fields: [
             'title',
             'slug'
@@ -124,7 +124,7 @@ module.exports = {
           ]
         },
         permissions: {
-          label: 'Permissions',
+          label: 'apostrophe:permissions',
           fields: [
             'disabled',
             'role'

@@ -32,40 +32,40 @@ module.exports = {
     add: {
       slug: {
         type: 'slug',
-        label: 'Slug',
+        label: 'apostrophe:slug',
         prefix: 'image',
         required: true,
         following: 'title'
       },
       attachment: {
         type: 'attachment',
-        label: 'Image File',
+        label: 'apostrophe:imageFile',
         fileGroup: 'images',
         required: true
       },
       alt: {
         type: 'string',
-        label: 'Alt Text',
-        help: 'Image description used for accessibility'
+        label: 'apostrophe:altText',
+        help: 'apostrophe:altTextHelp'
       },
       credit: {
         type: 'string',
-        label: 'Credit'
+        label: 'apostrophe:credit'
       },
       creditUrl: {
         type: 'url',
-        label: 'Credit URL'
+        label: 'apostrophe:creditUrl'
       },
       _tags: {
         type: 'relationship',
-        label: 'Tags',
+        label: 'apostrophe:tags',
         withType: '@apostrophecms/image-tag'
       }
     },
     group: {
       // The image editor has only one group.
       basics: {
-        label: 'Basics',
+        label: 'apostrophe:basics',
         fields: [
           'attachment',
           'title',
@@ -83,7 +83,7 @@ module.exports = {
     remove: [ 'visibility' ],
     add: {
       _tags: {
-        label: 'Tags'
+        label: 'apostrophe:tags'
       }
     }
   },
