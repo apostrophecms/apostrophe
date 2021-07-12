@@ -13,6 +13,14 @@
 //
 // `csrfExceptions` can be set to an array of URLs or route names
 // to be excluded from CSRF protection.
+//
+// `i18n` can be set to an object. If so the project is expected to contain
+// translation JSON files in a `localizations` subdirectory. This object
+// may have an `ns` property. If so those translations are considered to
+// be part of the given namespace, otherwise they are considered to be
+// part of the default namespace. npm modules should always declare a
+// namespace, and use it via the `:` i18next syntax when localizing their phrases.
+// Multiple modules may contribute phrases to the same namespace.
 
 const _ = require('lodash');
 
@@ -50,6 +58,12 @@ module.exports = {
     self.enableAction();
     // Routes in their final ready-to-add-to-Express form
     self._routes = [];
+
+    // Add i18next phrases if we started up after the i18n module,
+    // which will call this for us if we start up before it
+    if (self.apos.i18n && (self.apos.i18n !== self)) {
+      self.apos.i18n.addResourcesForModule(self);
+    }
   },
 
   async afterAllSections(self) {
@@ -564,7 +578,7 @@ module.exports = {
       // to this module.
       //
       // If you need to localize `options.subject`, you can call
-      // `self.apos.i18n.__(subject)`.
+      // `req.t(subject)`.
       //
       // This method returns `info`, per the Nodemailer documentation.
       // With most transports, a successful return indicates the message was

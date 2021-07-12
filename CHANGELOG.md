@@ -6,6 +6,8 @@
 
 * Removes an unused method, `mapMongoIdToJqtreeId`, that was used in A2 but is no longer relevant.
 * Removes deprecated and non-functional steps from the `edit` method in the `AposDocsManager.vue` component.
+* The `apostrophe-i18n` module now uses `i18next` to implement static localization.
+* The `i18next-http-middleware` locale guesser is installed.
 
 ## 3.1.0 - 2021-06-30
 

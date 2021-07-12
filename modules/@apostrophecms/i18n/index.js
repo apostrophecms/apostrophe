@@ -1,38 +1,38 @@
-// TODO: replace i18n npm module with i18n-next. Careful, the middleware for apostrophe editing
-// locales is also in here.
+// This module makes an instance of the [i18next](https://npmjs.org/package/i18next) npm module available
+// in Nunjucks templates via the `__t()` helper function. That function is also available on `req` objects
+// as `req.t()`. Any options passed to this module are passed on to `i18next`.
 //
-// This module makes an instance of the [i18n](https://npmjs.org/package/i18n) npm module available
-// in Nunjucks templates via the usual `__()` helper function. That function and its relatives are
-// also available on `req` objects. Any options passed to this module are passed on to `i18n`.
-//
-// `apos.i18n.i18n` can be used to directly access the `i18n` npm module instance if necessary.
-// It usually is a bad idea. Use `req.__` if you need to localize in a route.
-//
-// By default i18n locale files are generated in the `locales` subdirectory of the project.
-//
-// ## Options
-//
-// `localesDir`: if specified, the locale `.json` files are stored here, otherwise they
-// are stored in the `locales` subdirectory of the project root.
+// `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance if necessary.
+// It usually is not necessary. Use `req.t` if you need to localize in a route.
 
-const _ = require('lodash');
-const i18n = require('i18n');
+const i18next = require('i18next');
+const i18nextHttpMiddleware = require('i18next-http-middleware');
+const fs = require('fs');
 
 module.exports = {
   options: {
-    alias: 'i18n'
+    alias: 'i18n',
+    i18n: {
+      ns: 'apostrophe'
+    }
   },
-  init(self) {
-    const i18nOptions = self.options || {};
-    _.defaults(i18nOptions, {
-      locales: [ 'en' ],
-      cookie: 'apos_language',
-      directory: self.options.localesDir || self.apos.rootDir + '/locales'
-    });
-    self.locales = (i18nOptions.options && i18nOptions.options.locales[0]) || [ 'en' ];
+  async init(self) {
+    self.locales = self.options.locales || [ 'en' ];
     self.defaultLocale = self.options.defaultLocale || self.locales[0];
-    i18n.configure(i18nOptions);
-    self.i18n = i18n;
+    // Make sure we have our own instance to avoid conflicts with other apos objects
+    self.i18next = i18next.use(i18nextHttpMiddleware.LanguageDetector).createInstance({
+      fallbackLng: self.options.fallbackLocale || 'en',
+      // Quite noisy even for debug mode, use an environment variable
+      debug: !!process.env.APOS_DEBUG_I18N,
+      resources: {},
+      interpolation: {
+        // Nunjucks will already do this
+        escapeValue: false
+      },
+      defaultNS: 'default'
+    });
+    await self.i18next.init();
+    self.addInitialResources();
   },
   middleware(self) {
     return {
@@ -66,12 +66,40 @@ module.exports = {
             name: 'forbidden'
           });
         }
-        return self.i18n.init(req, res, next);
-      }
+        return next();
+      },
+      i18nextHttpMiddleware: i18nextHttpMiddleware.handle(self.i18next, {})
     };
   },
   methods(self) {
     return {
+      // Add the i18next resources provided by the specified module,
+      // merging with any existing phrases for the same locales and namespaces
+      addResourcesForModule(module) {
+        if (!module.options.i18n) {
+          return;
+        }
+        const ns = module.options.i18n.ns || 'default';
+        for (const entry of module.__meta.chain) {
+          const localizationsDir = `${entry.dirname}/localizations`;
+          if (!fs.existsSync(localizationsDir)) {
+            continue;
+          }
+          for (const localizationFile of fs.readdirSync(localizationsDir)) {
+            const data = JSON.parse(fs.readFileSync(`${localizationsDir}/${localizationFile}`));
+            const locale = localizationFile.replace('.json', '');
+            self.i18next.addResourceBundle(locale, ns, data, true, true);
+          }
+        }
+      },
+      // Adds i18next resources for modules initialized before the i18n module
+      // itself, called by init. Later modules call addResourcesForModule(self),
+      // making phrases available gradually as Apostrophe starts up
+      addInitialResources() {
+        for (const module of Object.values(self.apos.modules)) {
+          self.addResourcesForModule(module);
+        }
+      },
       isValidLocale(locale) {
         return locale && self.locales.includes(locale);
       },

@@ -256,9 +256,12 @@ module.exports = {
         const correctedExtensions = self.checkExtension(field, info);
 
         if (correctedExtensions) {
-          let message = req.__('File type was not accepted.');
+          let message = req.t('apostrophe:fileTypeNotAccepted');
           if (correctedExtensions.length) {
-            message += ` ${req.__('Allowed extensions:')} ${correctedExtensions.join(', ')}`;
+            message += req.t('apostrophe:allowedExtensions', {
+              // i18next has no built-in support for interpolating an array argument
+              extensions: correctedExtensions.join(req.t('apostrophe:listJoiner'))
+            });
           }
           throw self.apos.error('invalid', message);
         }
@@ -382,8 +385,7 @@ module.exports = {
         if (!group) {
           // Uncomment the next line for all possibly acceptable file types.
           // const accepted = _.union(_.map(self.fileGroups, 'extensions'));
-
-          throw self.apos.error('invalid', req.__('File type was not accepted'));
+          throw self.apos.error('invalid', req.t('apostrophe:fileTypeNotAccepted'));
         }
         const info = {
           _id: self.apos.util.generateId(),
@@ -1039,7 +1041,7 @@ module.exports = {
           res.statusCode = 403;
           return res.send({
             type: 'forbidden',
-            message: req.__('You do not have permission to upload a file')
+            message: req.t('apostrophe:uploadForbidden')
           });
         }
         next();
