@@ -13,6 +13,14 @@
 //
 // `csrfExceptions` can be set to an array of URLs or route names
 // to be excluded from CSRF protection.
+//
+// `i18n` can be set to an object. If so the project is expected to contain
+// translation JSON files in a `localizations` subdirectory. This object
+// may have an `ns` property. If so those translations are considered to
+// be part of the given namespace, otherwise they are considered to be
+// part of the default namespace. npm modules should always declare a
+// namespace, and use it via the `:` i18next syntax when localizing their phrases.
+// Multiple modules may contribute phrases to the same namespace.
 
 const _ = require('lodash');
 
