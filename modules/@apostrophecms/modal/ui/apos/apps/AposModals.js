@@ -9,16 +9,18 @@ export default function() {
       }
     },
     methods: {
-      async confirm(content) {
+      async confirm(content, options = {}) {
         return this.execute(apos.modal.components.confirm, {
           content,
-          mode: 'confirm'
+          mode: 'confirm',
+          options
         });
       },
-      async alert(alertContent) {
+      async alert(alertContent, options = {}) {
         return this.execute(apos.modal.components.confirm, {
           content: alertContent,
-          mode: 'alert'
+          mode: 'alert',
+          options
         });
       },
       execute(componentName, props) {

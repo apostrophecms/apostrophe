@@ -305,10 +305,11 @@ export default {
           draft: true
         });
       } catch (error) {
-        await apos.notify(error.body.message || 'An error occurred while updating the page tree.', {
+        await apos.notify(error.body.message || this.$t('apostrophe:treeError'), {
           type: 'danger',
           icon: 'alert-circle-icon',
-          dismiss: true
+          dismiss: true,
+          localize: false
         });
       }
 

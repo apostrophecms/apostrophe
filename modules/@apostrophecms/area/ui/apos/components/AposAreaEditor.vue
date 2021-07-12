@@ -291,7 +291,8 @@ export default {
               }),
               description: this.$t('apostrophe:leavePageDescription', {
                 oldTitle: contextTitle
-              })
+              }),
+              localize: false
             })) {
               location.assign(doc._url);
             }

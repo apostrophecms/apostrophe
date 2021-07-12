@@ -239,10 +239,14 @@ export default {
         if (style.type) {
           enhanced.push(style);
         } else {
-          apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
+          apos.notify('apostrophe:misconfiguredRichTextStyle', {
             type: 'warning',
             dismiss: true,
-            icon: 'text-box-remove-icon'
+            icon: 'text-box-remove-icon',
+            interpolate: {
+              label: style.label,
+              tag: style.tag
+            }
           });
         }
       });

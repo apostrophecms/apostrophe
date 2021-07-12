@@ -6,12 +6,7 @@
     <AposNotification
       v-for="notification in notifications"
       :key="notification._id"
-      :label="localize(notification)"
-      :type="notification.type"
-      :icon="notification.icon"
-      :id="notification._id"
-      :dismiss="notification.dismiss"
-      :buttons="notification.buttons"
+      :notification="notification"
       @close="dismiss"
     />
   </transition-group>
@@ -111,14 +106,6 @@ export default {
       } catch (err) {
         console.error(err);
         setTimeout(this.poll, 5000);
-      }
-    },
-    localize(notification) {
-      if (notification.localize !== false) {
-        return this.$t(notification.message, notification.interpolate);
-      } else {
-        // Any interpolation was done before insertion
-        return notification.message;
       }
     }
   }

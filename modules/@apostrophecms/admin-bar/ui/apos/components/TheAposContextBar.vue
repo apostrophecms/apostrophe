@@ -366,8 +366,12 @@ export default {
         });
         if (navigate && (!modeDoc._url)) {
           await apos.alert({
-            heading: 'Page Does Not Exist Yet',
-            description: `The page that provides a listing for this type of piece is not yet available as ${mode} in the ${locale} locale.`
+            heading: 'apostrophe:pageDoesNotExistYet',
+            description: 'apostrophe:pageDoesNotExistYetDescription',
+            interpolate: {
+              mode,
+              locale
+            }
           });
           return;
         }
@@ -409,13 +413,13 @@ export default {
         if (e.status === 404) {
           // TODO don't get this far, check this in advance and disable it in the UI
           await apos.alert({
-            heading: 'Does Not Exist Yet',
-            description: `That document is not yet available as ${mode} in the ${locale} locale.`
+            heading: 'apostrophe:doesNotExistYet',
+            description: 'apostrophe:doesNotExistYetDescription'
           });
         } else {
           await apos.alert({
-            heading: 'An Error Occurred',
-            description: 'Unable to switch modes.'
+            heading: 'apostrophe:error',
+            description: 'apostrophe:unableToSwitchModes'
           });
         }
       }
@@ -545,8 +549,9 @@ export default {
         }
       } catch (e) {
         await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while restoring the previously published version.'
+          heading: this.$t('apostrophe:error'),
+          description: e.message || this.$t('apostrophe:errorOccurredWhileRestoring'),
+          localize: false
         });
       }
     },
@@ -575,8 +580,9 @@ export default {
         }
       } catch (e) {
         await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while unpublishing the document.'
+          heading: this.$t('apostrophe:error'),
+          description: e.message || this.$t('apostrophe:errorOccurredWhileUnpublishing'),
+          localize: false
         });
       }
     },

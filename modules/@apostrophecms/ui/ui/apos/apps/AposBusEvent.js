@@ -20,7 +20,7 @@ export default function() {
         apos.bus.$emit(name, json.data || null);
       } else {
         console.error('Apostrophe bus events require a name');
-        apos.notify('Something went wrong', { type: 'error' });
+        apos.notify('apostrophe:error', { type: 'error' });
       }
     }
   }, false);

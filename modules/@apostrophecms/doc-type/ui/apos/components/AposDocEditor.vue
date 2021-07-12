@@ -575,7 +575,7 @@ export default {
         andPublish: false,
         navigate
       });
-      await apos.notify('Draft saved', {
+      await apos.notify('apostrophe:draftSaved', {
         type: 'success',
         dismiss: true,
         icon: 'file-document-icon'
@@ -641,8 +641,7 @@ export default {
         if (doc._url) {
           window.location = doc._url;
         } else {
-          const subject = andPublish ? 'Document published' : 'Draft saved';
-          await apos.notify(`${subject} but could not navigate to a preview.`, {
+          await apos.notify(andPublish ? 'apostrophe:documentPublishedButNoPreview' : 'apostrophe:draftSavedButNoPreview', {
             type: 'warning',
             icon: 'alert-circle-icon'
           });
@@ -666,7 +665,7 @@ export default {
         });
         return newDoc;
       } catch (error) {
-        await apos.notify('Error while creating new, empty content.', {
+        await apos.notify('apostrophe:errorCreatingNewContent', {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true
