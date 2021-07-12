@@ -189,13 +189,13 @@ module.exports = {
               role: options.role
             }
           }),
-          res: {
-            __: function (s) {
-              return s;
-            }
-          },
-          __: function (s) {
-            return s;
+          res: {},
+          t(key, options = {}) {
+            return self.apos.i18n.i18next.t(key, {
+              ...options,
+              // Ignore mode if present
+              lng: req.locale.split(':')[0]
+            });
           },
           data: {},
           protocol: 'http',
@@ -204,7 +204,7 @@ module.exports = {
           },
           query: {},
           url: '/',
-          locale: self.apos.modules['@apostrophecms/i18n'].defaultLocale,
+          locale: self.apos.argv.locale || self.apos.modules['@apostrophecms/i18n'].defaultLocale,
           mode: 'published',
           aposNeverLoad: {},
           aposStack: []
