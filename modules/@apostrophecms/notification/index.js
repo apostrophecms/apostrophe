@@ -216,7 +216,7 @@ module.exports = {
           message,
           interpolate: interpolate || options.interpolate || {},
           // Defaults to true, otherwise launder as boolean
-          localize: req.body.localize.length ? self.apos.launder.boolean(req.body.localize) : true
+          localize: (req.body.localize && req.body.localize.length) ? self.apos.launder.boolean(req.body.localize) : true
         };
 
         if (options.dismiss === true) {

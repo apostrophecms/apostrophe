@@ -12,11 +12,13 @@ const fs = require('fs');
 module.exports = {
   options: {
     alias: 'i18n',
-    i18n: {
-      ns: 'apostrophe'
+    l10n: {
+      ns: 'apostrophe',
+      browser: true
     }
   },
   async init(self) {
+    self.namespaces = {};
     self.locales = self.options.locales || [ 'en' ];
     self.defaultLocale = self.options.defaultLocale || self.locales[0];
     // Make sure we have our own instance to avoid conflicts with other apos objects
@@ -34,6 +36,7 @@ module.exports = {
     });
     await self.i18next.init();
     self.addInitialResources();
+    self.enableBrowserData();
   },
   middleware(self) {
     return {
@@ -77,12 +80,14 @@ module.exports = {
       // Add the i18next resources provided by the specified module,
       // merging with any existing phrases for the same locales and namespaces
       addResourcesForModule(module) {
-        if (!module.options.i18n) {
+        if (!module.options.l10n) {
           return;
         }
-        const ns = module.options.i18n.ns || 'default';
+        const ns = module.options.l10n.ns || 'default';
+        self.namespaces[ns] = self.namespaces[ns] || {};
+        self.namespaces[ns].browser = !!module.options.l10n.browser;
         for (const entry of module.__meta.chain) {
-          const localizationsDir = `${entry.dirname}/localizations`;
+          const localizationsDir = `${entry.dirname}/l10n`;
           if (!fs.existsSync(localizationsDir)) {
             continue;
           }
@@ -137,6 +142,18 @@ module.exports = {
         } else {
           return `${cuid}:${locale}:${mode}`;
         }
+      },
+      getBrowserData(req) {
+        const l10n = {};
+        for (const [ name, options ] of Object.entries(self.namespaces)) {
+          if (options.browser) {
+            l10n[name] = self.i18next.getResourceBundle(req.locale, name);
+          }
+        }
+        return {
+          l10n,
+          locale: req.locale
+        };
       }
     };
   }

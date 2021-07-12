@@ -3,7 +3,7 @@
     <span class="apos-notification__indicator">
       <AposIndicator
         :icon="iconComponent" class="apos-notification__indicator__icon"
-        :icon-size="icon ? 16 : 12"
+        :icon-size="notification.icon ? 16 : 12"
       />
     </span>
     <span
