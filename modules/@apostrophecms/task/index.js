@@ -193,8 +193,7 @@ module.exports = {
           t(key, options = {}) {
             return self.apos.i18n.i18next.t(key, {
               ...options,
-              // Ignore mode if present
-              lng: req.locale.split(':')[0]
+              lng: req.locale
             });
           },
           data: {},
