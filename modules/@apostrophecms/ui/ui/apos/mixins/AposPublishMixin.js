@@ -153,14 +153,17 @@ export default {
       try {
         if (await apos.confirm({
           heading: isPublished
-            ? 'Discard Draft'
-            : 'Delete Draft',
+            ? 'apostrophe:discardDraft'
+            : 'apostrophe:deleteDraft',
           description: isPublished
-            ? 'This will discard all changes since the document was last published.'
-            : `Since "${doc.title}" has never been published, this will completely delete the document.`,
+            ? 'apostrophe:discardDraftDescription'
+            : 'apostrophe:deleteDraftDescription',
           affirmativeLabel: isPublished
-            ? 'Yes, discard changes'
-            : 'Yes, delete document'
+            ? 'apostrophe:discardDraftAffirmativeLabel'
+            : 'apostrophe:deleteDraftAffirmativeLabel',
+          interpolate: {
+            title: doc.title
+          }
         })) {
           const action = window.apos.modules[doc.type].action;
           if (isPublished) {

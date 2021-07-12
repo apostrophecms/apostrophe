@@ -101,5 +101,11 @@
   "restoreOnlyThisPage": "Restore only this page",
   "restoreThisPageAndSubpages": "Restore this page and subpages",
   "unpublishedParent": "One or more parent pages have not been published",
-  "unpublishedParentDescription": "To publish this page, you must also publish the following pages: {{ unpublishedParents }}.\nDo you want to do that now?"
+  "unpublishedParentDescription": "To publish this page, you must also publish the following pages: {{ unpublishedParents }}.\nDo you want to do that now?",
+  "discardDraft": "Discard Draft",
+  "deleteDraft": "Delete Draft",
+  "discardDraftDescription": "This will discard all changes since the document was last published.",
+  "deleteDraftDescription": "Since {{ title }} has never been published, this will completely delete the document.",
+  "discardDraftAffirmativeLabel": "Yes, discard changes",
+  "deleteDraftAffirmativeLabel": "Yes, delete document"
 }

@@ -594,7 +594,7 @@ export default {
       this.patchesSinceLoaded.push(this.undone.pop());
       await this.refreshAfterHistoryChange('redoFailed');
     },
-    async refreshAfterHistoryChange(errorMessage) {
+    async refreshAfterHistoryChange(errorMessageKey) {
       this.saving = true;
       try {
         const updated = await apos.http.patch(`${this.action}/${this.context._id}`, {
@@ -616,7 +616,7 @@ export default {
         }
       } catch (e) {
         console.error(e);
-        apos.notify(errorMessage, { type: 'error' });
+        apos.notify(errorMessageKey, { type: 'error' });
       } finally {
         this.saving = false;
       }
