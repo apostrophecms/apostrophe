@@ -10,6 +10,7 @@
 
 * Removes an unused method, `mapMongoIdToJqtreeId`, that was used in A2 but is no longer relevant.
 * Removes deprecated and non-functional steps from the `edit` method in the `AposDocsManager.vue` component.
+* Legacy migrations to update 3.0 alpha and 3.0 beta sites to 3.0 stable are still in place, with no functional changes, but have been relocated to separate source files for ease of maintenance. Note that this is not a migration path for 2.x databases. Tools for that are forthcoming.
 
 ## 3.1.0 - 2021-06-30
 
