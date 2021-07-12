@@ -10,7 +10,7 @@ module.exports = {
   extend: '@apostrophecms/doc-type',
 
   options: {
-    pluralLabel: 'Pages'
+    pluralLabel: 'apostrophe:pages'
   },
   init(self) {
     self.addManagerModal();

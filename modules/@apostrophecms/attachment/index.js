@@ -47,7 +47,7 @@ module.exports = {
     self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
-        label: 'Images',
+        label: 'apostrophe:images',
         extensions: [
           'gif',
           'jpg',
@@ -60,7 +60,7 @@ module.exports = {
       },
       {
         name: 'office',
-        label: 'Office',
+        label: 'apostrophe:office',
         extensions: [
           'txt',
           'rtf',

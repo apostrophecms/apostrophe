@@ -13,7 +13,8 @@ module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
     name: '@apostrophecms/image',
-    label: 'Image',
+    label: 'apostrophe:image',
+    pluralLabel: 'apostrophe:images',
     alias: 'image',
     perPage: 31,
     sort: { createdAt: -1 },

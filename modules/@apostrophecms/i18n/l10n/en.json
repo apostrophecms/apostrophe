@@ -107,5 +107,17 @@
   "discardDraftDescription": "This will discard all changes since the document was last published.",
   "deleteDraftDescription": "Since {{ title }} has never been published, this will completely delete the document.",
   "discardDraftAffirmativeLabel": "Yes, discard changes",
-  "deleteDraftAffirmativeLabel": "Yes, delete document"
+  "deleteDraftAffirmativeLabel": "Yes, delete document",
+  "user": "User",
+  "users": "Users",
+  "pages": "Pages",
+  "image": "Image",
+  "images": "Images",
+  "file": "File",
+  "files": "Files",
+  "globalContent": "Global Content",
+  "office": "Office",
+  "title": "Title",
+  
+  "autocompleteTitle": "{{ doc.title }} ({{ doc.slug }})"
 }

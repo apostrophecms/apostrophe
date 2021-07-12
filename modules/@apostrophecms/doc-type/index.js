@@ -16,7 +16,7 @@ module.exports = {
       add: {
         title: {
           type: 'string',
-          label: 'Title',
+          label: 'apostrophe:title',
           required: true,
           // Generate a titleSort property which can be sorted
           // in a human-friendly way (case insensitive, ignores the

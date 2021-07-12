@@ -38,8 +38,8 @@ module.exports = {
   options: {
     alias: 'user',
     name: '@apostrophecms/user',
-    label: 'User',
-    pluralLabel: 'Users',
+    label: 'apostrophe:user',
+    pluralLabel: 'apostrophe:users',
     quickCreate: false,
     searchable: false,
     slugPrefix: 'user-',

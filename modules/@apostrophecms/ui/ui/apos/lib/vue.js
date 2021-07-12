@@ -19,11 +19,18 @@ const i18n = apos.modules['@apostrophecms/i18n'];
 i18next.init({
   lng: i18n.locale,
   fallbackLng: i18n.locale,
-  resources: i18n.l10n
+  resources: {}
 });
 
+for (const [ ns, phrases ] of Object.entries(i18n.l10n)) {
+  i18next.addResourceBundle(i18n.locale, ns, phrases, true, true);
+}
+
 Vue.prototype.$t = (phrase, options) => {
-  return i18next.t(phrase, options);
+  return '* ' + i18next.t(phrase, {
+    lng: i18n.locale,
+    ...options
+  });
 };
 
 export default Vue;
