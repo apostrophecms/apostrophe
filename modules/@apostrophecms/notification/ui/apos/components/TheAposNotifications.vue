@@ -25,7 +25,7 @@ export default {
     };
   },
   async mounted() {
-    apos.notify = async function(message, options, interpolate) {
+    apos.notify = async function(message, options) {
 
       if (options.dismiss === true) {
         options.dismiss = 5;
@@ -39,7 +39,7 @@ export default {
       await apos.http.post(apos.notification.action, {
         body: {
           message,
-          interpolate: interpolate || options.interpolate || {},
+          interpolate: options.interpolate || {},
           type: options.type,
           icon: options.icon,
           dismiss: options.dismiss,
