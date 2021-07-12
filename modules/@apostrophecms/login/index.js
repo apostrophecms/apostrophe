@@ -140,7 +140,7 @@ module.exports = {
         },
         async logout(req) {
           if (!req.user) {
-            throw self.apos.error('forbidden', req.t('logoutNotLoggedIn'));
+            throw self.apos.error('forbidden', req.t('apostrophe:logoutNotLoggedIn'));
           }
           if (req.token) {
             await self.bearerTokens.remove({
@@ -191,7 +191,7 @@ module.exports = {
                 site: site
               }, {
                 to: user.email,
-                subject: req.t('passwordResetRequest', { site })
+                subject: req.t('apostrophe:passwordResetRequest', { site })
               });
             } catch (err) {
               throw self.apos.error('email');
