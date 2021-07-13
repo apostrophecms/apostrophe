@@ -6,7 +6,7 @@
       @click="click"
       :tabindex="tabindex"
     >
-      {{ label }}
+      {{ $t(label) }}
     </button>
   </li>
 </template>

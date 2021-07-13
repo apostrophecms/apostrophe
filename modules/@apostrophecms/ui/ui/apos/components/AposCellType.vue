@@ -3,7 +3,7 @@
     class="apos-table__cell-field"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    {{ label(get(header.name)) }}
+    {{ $t(label(get(header.name))) }}
   </p>
 </template>
 

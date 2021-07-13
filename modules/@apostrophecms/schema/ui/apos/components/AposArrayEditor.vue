@@ -317,7 +317,7 @@ export default {
         (validateLength && (this.minError || this.maxError)) ||
         (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
       ) {
-        await apos.notify('Resolve errors first.', {
+        await apos.notify('apostrophe:resolveErrorsFirst', {
           type: 'warning',
           icon: 'alert-circle-icon',
           dismiss: true

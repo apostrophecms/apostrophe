@@ -30,44 +30,54 @@ export default {
         const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
-        const plainType = isPage ? 'page' : (moduleOptions.label || 'document');
-        const pluralPlainType = isPage ? 'pages' : (moduleOptions.pluralLabel || (moduleOptions.label && `${moduleOptions.label}s`) || 'documents');
-        let description = `You are going to archive the ${plainType} "${doc.title}"`;
+        const plainType = isPage ? this.$t('apostrophe:page') : (moduleOptions.label || this.$t('apostrophe:document'));
+
+        const sentences = [];
+
+        sentences.push(this.$t('apostrophe:confirmArchive', {
+          type: plainType,
+          title: doc.title
+        }));
 
         if (descendants > 0) {
-          description += `, which has ${descendants} child ${pluralPlainType}`;
+          sentences.push(this.$t('apostrophe:pageHasDescendants', {
+            count: descendants
+          }));
         }
 
         if (draftDescendants > 0) {
-          description += `, ${draftDescendants} of which have never been published`;
+          sentences.push(this.$t('apostrophe:descendantsNeverPublished', {
+            count: draftDescendants
+          }));
         }
 
         if (isPublished) {
-          description += `. This will also un-publish the ${plainType}`;
+          sentences.push(this.$t('apostrophe:willAlsoUnpublish', {
+            type: plainType
+          }));
         }
 
         if (draftDescendants > 0) {
-          description += '. Child pages that have never been published will be permanently deleted';
+          sentences.push(this.$t('apostrophe:descendantsNeverPublishedWillBeDeleted'));
         }
 
         if (isModified) {
           if (isPage) {
-            description += '. Also, unpublished draft changes to this document and/or its children will be permanently deleted';
+            sentences.push(this.$t('apostrophe:unpublishedChangesToPageAndDescendantsWillBeLost'));
           } else {
-            description += '. Also, unpublished draft changes to this document will be permanently deleted';
+            sentences.push(this.$t('apostrophe:unpublishedChangesWillBeLost'));
           }
         }
 
-        description += '.';
-
         // Confirm archiving
         const confirm = await apos.confirm({
-          heading: `Archive ${plainType}`,
-          description,
-          affirmativeLabel: `Yes, archive ${plainType}`,
+          heading: this.$t('apostrophe:archiveType', { type: plainType }),
+          description: sentences.join(sentences.map(this.$t), this.$t('apostrophe:sentenceJoiner')),
+          affirmativeLabel: this.$t('apostrophe:archiveTypeAffirmativeLabel', { type: plainType }),
           note: isCurrentContext
-            ? 'You are currently viewing the page you want to archive. When it is archived you will be returned to the home page.'
+            ? this.$t('apostrophe:archiveTypeNote', { type: plainType })
             : null,
+          localize: false,
           form: descendants > 0
             ? {
               schema: [ {
@@ -75,10 +85,10 @@ export default {
                 name: 'choice',
                 required: true,
                 choices: [ {
-                  label: `Archive only this ${plainType}`,
+                  label: this.$t('apostrophe:archiveOnlyThisPage'),
                   value: 'this'
                 }, {
-                  label: `Archive this ${plainType} and all child ${pluralPlainType}`,
+                  label: this.$t('apostrophe:archivePageAndSubpages'),
                   value: 'all'
                 } ]
               } ],
@@ -122,7 +132,7 @@ export default {
             draft: true
           });
 
-          apos.notify('Content Archived', {
+          apos.notify('apostrophe:contentArchived', {
             type: 'success',
             icon: 'archive-arrow-down-icon',
             dismiss: true
@@ -141,8 +151,9 @@ export default {
         }
       } catch (e) {
         await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while moving the document to the archive.'
+          heading: this.$t('apostrophe:error'),
+          description: e.message || this.$t('errorOccurredWhileArchiving'),
+          localize: false
         });
       }
       function findModified(doc) {
@@ -187,25 +198,31 @@ export default {
           const childLength = doc._children.length;
           const description = `You are going to restore the ${plainType} “${doc.title}”, which has ${childLength} child ${plainType}${doc._children.length > 1 ? 's' : ''}.`;
           confirm = await apos.confirm({
-            heading: `Restore ${plainType}`,
+            heading: 'apostrophe:restoreType',
             description,
-            affirmativeLabel: `Yes, restore ${plainType}`,
+            affirmativeLabel: 'apostrophe:restoreTypeAffirmativeLabel',
             form: {
               schema: [ {
                 type: 'radio',
                 name: 'choice',
                 required: true,
                 choices: [ {
-                  label: 'Restore only this page',
+                  // Form labels don't normally localize on the client side
+                  // because schemas are almost always localized before
+                  // pushing to the client side
+                  label: 'apostrophe:restoreOnlyThisPage',
                   value: 'this'
                 }, {
-                  label: 'Restore this page and subpages',
+                  label: 'apostrophe:restoreThisPageAndSubpages',
                   value: 'all'
                 } ]
               } ],
               value: {
                 data: {}
               }
+            },
+            interpolate: {
+              type: plainType
             }
           });
         }
@@ -240,7 +257,7 @@ export default {
           draft: true
         });
 
-        apos.notify('Content Restored', {
+        apos.notify('apostrophe:contentRestored', {
           type: 'success',
           icon: 'archive-arrow-up-icon',
           dismiss: true
@@ -256,8 +273,9 @@ export default {
           await this.showLockedError(e);
         } else {
           await apos.alert({
-            heading: 'An Error Occurred',
-            description: e.message || 'An error occurred while restoring the document from the archive.'
+            heading: this.$t('apostrophe:error'),
+            description: e.message || this.$t('apostrophe:errorOccurredWhileRestoring'),
+            localize: false
           });
         }
       }

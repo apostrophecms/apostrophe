@@ -12,7 +12,7 @@
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
-    label: 'Video',
+    label: 'apostrophe:video',
     className: false,
     icon: 'play-box-icon'
   },
@@ -22,8 +22,8 @@ module.exports = {
         type: 'oembed',
         name: 'video',
         oembedType: 'video',
-        label: 'Video URL',
-        help: 'Enter the URL for a media source you wish to embed (e.g., YouTube, Vimeo, or other hosted video URL).',
+        label: 'apostrophe:videoUrl',
+        help: 'apostrophe:videoUrlHelp',
         required: true
       }
     }

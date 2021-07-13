@@ -16,7 +16,7 @@ module.exports = {
       add: {
         title: {
           type: 'string',
-          label: 'Title',
+          label: 'apostrophe:title',
           required: true,
           // Generate a titleSort property which can be sorted
           // in a human-friendly way (case insensitive, ignores the
@@ -25,37 +25,37 @@ module.exports = {
         },
         slug: {
           type: 'slug',
-          label: 'Slug',
+          label: 'apostrophe:slug',
           following: 'title',
           required: true
         },
         archived: {
           type: 'boolean',
-          label: 'Archived',
+          label: 'apostrophe:archived',
           contextual: true,
           def: false
         },
         visibility: {
           type: 'select',
-          label: 'Visibility',
-          help: 'Select whether this content is public or private',
+          label: 'apostrophe:visibility',
+          help: 'apostrophe:selectVisibility',
           def: 'public',
           required: true,
           choices: [
             {
               value: 'public',
-              label: 'Public'
+              label: 'apostrophe:public'
             },
             {
               value: 'loginRequired',
-              label: 'Login Required'
+              label: 'apostrophe:loginRequired'
             }
           ]
         }
       },
       group: {
         basics: {
-          label: 'Basics',
+          label: 'apostrophe:basics',
           fields: [
             'title'
           ]
@@ -1403,11 +1403,11 @@ module.exports = {
             return [
               {
                 value: '0',
-                label: 'No'
+                label: 'apostrophe:no'
               },
               {
                 value: '1',
-                label: 'Yes'
+                label: 'apostrophe:yes'
               }
             ];
           }
@@ -1941,12 +1941,12 @@ module.exports = {
             results = results.map(result => {
               if (result === true) {
                 return {
-                  label: 'Yes',
+                  label: 'apostrophe:yes',
                   value: true
                 };
               } else if (result === false) {
                 return {
-                  label: 'No',
+                  label: 'apostrophe:no',
                   value: false
                 };
               } else {

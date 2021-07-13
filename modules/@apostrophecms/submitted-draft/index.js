@@ -7,7 +7,7 @@ module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
     quickCreate: false,
-    label: 'Submitted Draft',
+    label: 'apostrophe:submittedDraft',
     pluralLabel: 'Submitted Drafts',
     canCreate: false,
     showDismissSubmission: true,
@@ -20,20 +20,20 @@ module.exports = {
   columns: {
     add: {
       title: {
-        label: 'Title',
+        label: 'apostrophe:title',
         component: 'AposCellButton'
       },
       type: {
-        label: 'Type',
+        label: 'apostrophe:type',
         // TODO need to push the choices somehow
         component: 'AposCellType'
       },
       'draft:submitted.at': {
-        label: 'Submitted',
+        label: 'apostrophe:submitted',
         component: 'AposCellLastEdited'
       },
       'draft:submitted.by': {
-        label: 'User',
+        label: 'apostrophe:user',
         component: 'AposCellBasic'
       }
     },
@@ -44,7 +44,7 @@ module.exports = {
   fields: {
     add: {
       _type: {
-        label: 'Type',
+        label: 'apostrophe:type',
         type: 'select',
         // Patched later
         choices: []
@@ -55,7 +55,7 @@ module.exports = {
   filters: {
     add: {
       _type: {
-        label: 'Type'
+        label: 'apostrophe:type'
       }
     }
   },

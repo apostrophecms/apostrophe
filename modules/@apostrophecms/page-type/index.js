@@ -9,14 +9,14 @@ module.exports = {
       add: {
         slug: {
           type: 'slug',
-          label: 'Slug',
+          label: 'apostrophe:slug',
           required: true,
           page: true,
           following: 'title'
         },
         type: {
           type: 'select',
-          label: 'Type',
+          label: 'apostrophe:type',
           required: true,
           choices: self.options.apos.page.typeChoices.map(function (type) {
             return {
@@ -27,7 +27,7 @@ module.exports = {
         },
         orphan: {
           type: 'boolean',
-          label: 'Hide in Navigation',
+          label: 'apostrophe:hideInNavigation',
           def: false
         }
       },

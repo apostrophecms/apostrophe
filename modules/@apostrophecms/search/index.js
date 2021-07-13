@@ -141,7 +141,7 @@ module.exports = {
           self.filters = self.options.filters;
           if (!_.find(self.filters, { name: '__else' })) {
             self.filters = self.options.filters.concat([ {
-              label: 'Everything Else',
+              label: 'apostrophe:everythingElse',
               name: '__else'
             } ]);
           }

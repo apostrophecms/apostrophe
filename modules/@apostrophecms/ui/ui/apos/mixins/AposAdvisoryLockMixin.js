@@ -45,17 +45,12 @@ export default {
         return true;
       } catch (e) {
         if (this.isLockedError(e)) {
-          // We do not ask before busting our own advisory lock.
-          // We used to do this in A2 but end users told us they hated it and
-          // were constantly confused by it. This is because there is no
-          // way to guarantee a lock is dropped when leaving the page
-          // in edit mode. However, in the rare case where the "other tab"
-          // getting its lock busted really is another tab, we do notify
-          // the user there.
           if (await apos.confirm({
-            heading: e.body.data.me ? 'Editing in Another Tab or Window' : 'Another User Is Editing',
-            description: e.body.data.me ? 'You are editing that document in another tab or window. Do you want to take control in this tab?'
-              : `${e.body.data.title} is editing that document. Do you want to take control?`
+            heading: e.body.data.me ? 'apostrophe:editingInAnotherTab' : 'apostrophe:anotherUserIsEditing',
+            description: e.body.data.me ? 'apostrophe:takeControlFromSelf' : 'apostrophe:takeControlFromOther',
+            interpolate: {
+              who: e.body.data.title
+            }
           })) {
             try {
               await apos.http.patch(this.lockApiUrl, {
@@ -73,7 +68,8 @@ export default {
               return true;
             } catch (e) {
               await apos.notify(e.message, {
-                type: 'error'
+                type: 'error',
+                localize: false
               });
               return false;
             }
@@ -93,8 +89,11 @@ export default {
     // it is called for you.
     async showLockedError(e) {
       await apos.alert({
-        heading: 'Multiple Editors',
-        description: `${e.body.data.me ? 'You' : e.body.data.title} took control of this document in another tab or window. A document can only be edited in one place at a time.`
+        heading: 'apostrophe:multipleEditors',
+        description: e.body.data.me ? 'apostrophe:youTookControl' : 'someoneElseTookControl',
+        interpolate: {
+          who: e.body.data.title
+        }
       });
     },
 

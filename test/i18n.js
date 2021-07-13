@@ -5,6 +5,7 @@ let apos;
 describe('static i18n', function() {
 
   after(async function() {
+    this.timeout(t.timeout);
     return t.destroy(apos);
   });
 
@@ -16,7 +17,7 @@ describe('static i18n', function() {
       modules: {
         example: {
           options: {
-            i18n: {}
+            l10n: {}
           }
         }
       }

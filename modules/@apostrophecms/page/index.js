@@ -9,7 +9,7 @@ module.exports = {
       {
         // So that the minimum parked pages don't result in an error when home has no manager. -Tom
         name: '@apostrophecms/home-page',
-        label: 'Home'
+        label: 'apostrophe:home'
       }
     ],
     quickCreate: true,
@@ -35,13 +35,13 @@ module.exports = {
   batchOperations: {
     add: {
       archive: {
-        label: 'Archive'
+        label: 'apostrophe:archive'
       },
       publish: {
-        label: 'Publish'
+        label: 'apostrophe:publish'
       },
       unpublish: {
-        label: 'Unpublish'
+        label: 'apostrophe:unpublish'
       }
     }
   },
@@ -684,7 +684,7 @@ database.`);
         const browserOptions = _.pick(self, 'action', 'schema', 'types');
         _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
         _.defaults(browserOptions, {
-          label: 'Page',
+          label: 'apostrophe:page',
           pluralLabel: 'Pages',
           components: {}
         });
@@ -1848,7 +1848,7 @@ database.`);
           schema.splice(index + 1, 0, {
             type: 'boolean',
             name: 'applyVisibilityToSubpages',
-            label: 'Apply to Subpages',
+            label: 'apostrophe:applyToSubpages',
             group: schema[index].group
           });
         }

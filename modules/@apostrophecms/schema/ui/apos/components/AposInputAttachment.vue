@@ -128,9 +128,13 @@ export default {
           const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
 
           if (!this.checkFileGroup(file.name)) {
-            await apos.notify(`File type was not accepted. Allowed extensions: ${this.allowedExtensions.join(', ')}`, {
+            const joined = this.allowedExtensions.join(this.$t('apostrophe:listJoiner'));
+            await apos.notify('apostrophe:fileTypeNotAccepted', {
               type: 'warning',
-              icon: 'alert-circle-icon'
+              icon: 'alert-circle-icon',
+              interpolate: {
+                extensions: joined
+              }
             });
 
             this.disabled = false;
@@ -139,9 +143,12 @@ export default {
             return;
           }
 
-          await apos.notify(`Uploading ${file.name}`, {
+          await apos.notify('apostrophe:uploading', {
             dismiss: true,
-            icon: 'cloud-upload-icon'
+            icon: 'cloud-upload-icon',
+            interpolate: {
+              name: file.name
+            }
           });
 
           const formData = new window.FormData();
@@ -150,21 +157,25 @@ export default {
             body: formData
           });
 
-          await apos.notify(`Successfully uploaded ${file.name}`, {
+          await apos.notify('apostrophe:uploaded', {
             type: 'success',
             dismiss: true,
-            icon: 'check-all-icon'
+            icon: 'check-all-icon',
+            interpolate: {
+              name: file.name
+            }
           });
 
           this.$emit('upload-complete');
           this.value.data = attachment;
         } catch (error) {
           console.error('Error uploading file.', error);
-          const msg = error.body && error.body.message ? error.body.message : 'Upload error';
+          const msg = error.body && error.body.message ? error.body.message : this.$t('apostrophe:uploadError');
           await apos.notify(msg, {
             type: 'danger',
             icon: 'alert-circle-icon',
-            dismiss: true
+            dismiss: true,
+            localize: false
           });
         } finally {
           this.disabled = false;

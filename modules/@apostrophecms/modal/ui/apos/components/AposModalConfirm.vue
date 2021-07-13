@@ -20,13 +20,13 @@
             v-if="content.heading"
             class="apos-confirm__heading"
           >
-            {{ content.heading }}
+            {{ localize(content.heading) }}
           </h2>
           <p
             class="apos-confirm__description"
             v-if="content.description"
           >
-            {{ content.description }}
+            {{ localize(content.description) }}
           </p>
           <div v-if="content.form" class="apos-confirm__schema">
             <AposSchema
@@ -55,7 +55,7 @@
             class="apos-confirm__note"
             v-if="content.note"
           >
-            {{ content.note }}
+            {{ localize(content.note) }}
           </p>
         </template>
       </AposModalBody>
@@ -78,6 +78,12 @@ export default {
     callbackName: {
       type: String,
       default: ''
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'safe-close', 'confirm-response', 'modal-result' ],
@@ -97,9 +103,9 @@ export default {
   computed: {
     affirmativeLabel() {
       if (this.mode === 'confirm') {
-        return this.content.affirmativeLabel || 'Confirm';
+        return this.localize(this.content.affirmativeLabel) || this.$t('Confirm');
       } else {
-        return this.content.affirmativeLabel || 'OK';
+        return this.localize(this.content.affirmativeLabel) || this.$t('OK');
       }
     },
     isDisabled() {
@@ -136,6 +142,13 @@ export default {
     async cancel() {
       this.modal.showModal = false;
       this.$emit('modal-result', false);
+    },
+    localize(s) {
+      if (this.options.localize === false) {
+        return s;
+      } else {
+        return this.$t(s, this.options.interpolate || {});
+      }
     }
   }
 };

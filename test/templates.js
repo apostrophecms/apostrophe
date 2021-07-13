@@ -182,9 +182,6 @@ describe('Templates', function() {
   it('should render fragments containing async components correctly', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-page'].renderPage(req, 'page');
-    if (result.match(/error/)) {
-      throw result;
-    }
 
     const aboveFragment = result.indexOf('Above Fragment');
     const beforeComponent = result.indexOf('Before Component');
@@ -210,9 +207,6 @@ describe('Templates', function() {
   it('should render fragment without passing any keyword arguments', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
-    if (result.match(/error/)) {
-      throw result;
-    }
 
     const data = parseOutput(result, 'test1');
     assert.deepStrictEqual(data, [
@@ -227,9 +221,6 @@ describe('Templates', function() {
   it('should support keyword arguments and render macros and fragments from other fragments', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
-    if (result.match(/error/)) {
-      throw result;
-    }
 
     const data = parseOutput(result, 'test2');
     assert.deepStrictEqual(data, [
@@ -247,9 +238,6 @@ describe('Templates', function() {
   it('should render rendercall blocks', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
-    if (result.match(/error/)) {
-      throw result;
-    }
 
     const data = parseOutput(result, 'test3');
     assert.deepStrictEqual(data, [
@@ -271,9 +259,6 @@ describe('Templates', function() {
   it('should skip positional arguments when there is keyword arguments (1)', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
-    if (result.match(/error/)) {
-      throw result;
-    }
 
     const data = parseOutput(result, 'issue_3056_1');
     assert.deepStrictEqual(data, [
@@ -287,9 +272,6 @@ describe('Templates', function() {
   it('should skip positional arguments when there is keyword arguments (2)', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
-    if (result.match(/error/)) {
-      throw result;
-    }
 
     const data = parseOutput(result, 'issue_3056_2');
     assert.deepStrictEqual(data, [
@@ -303,9 +285,6 @@ describe('Templates', function() {
   it('should filter out unknown keyword arguments', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
-    if (result.match(/error/)) {
-      throw result;
-    }
 
     const data = parseOutput(result, 'issue_3102');
     assert.deepStrictEqual(data, [

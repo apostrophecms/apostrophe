@@ -15,10 +15,10 @@
 export default {
   data() {
     return {
-      cancelHeading: 'Unsaved Changes',
-      cancelDescription: 'Do you want to discard changes?',
-      cancelNegativeLabel: 'Resume Editing',
-      cancelAffirmativeLabel: 'Discard Changes'
+      cancelHeading: 'apostrophe:unsavedChanges',
+      cancelDescription: 'apostrophe:discardChangesPrompt',
+      cancelNegativeLabel: 'apostrophe:resumeEditing',
+      cancelAffirmativeLabel: 'apostrophe:discardChanges'
     };
   },
   methods: {
@@ -33,7 +33,7 @@ export default {
           affirmativeLabel: this.cancelAffirmativeLabel
         });
         if (discard) {
-          await apos.notify('Changes discarded', {
+          await apos.notify('apostrophe:changesDiscarded', {
             dismiss: true
           });
           dismiss = true;

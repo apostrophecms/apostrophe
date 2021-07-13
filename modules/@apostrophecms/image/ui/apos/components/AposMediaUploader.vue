@@ -127,20 +127,23 @@ export default {
             const img = await this.insertImage(file, emptyDoc);
             imageIds.push(img._id);
           } catch (e) {
-            const msg = e.body && e.body.message ? e.body.message : 'Upload error';
+            const msg = e.body && e.body.message ? e.body.message : this.$t('Upload error');
             await apos.notify(msg, {
               type: 'danger',
               icon: 'alert-circle-icon',
-              dismiss: true
+              dismiss: true,
+              localize: false
             });
             return;
           }
         }
 
-        // TODO: i18n
-        await apos.notify(`Successfully uploaded ${fileCount} image${fileCount > 1 ? 's' : ''}`, {
+        await apos.notify('apostrophe:uploadedCount', {
           type: 'success',
-          dismiss: true
+          dismiss: true,
+          interpolate: {
+            count: fileCount
+          }
         });
 
         // When complete, refresh the image grid, with the new images at top.
@@ -193,7 +196,7 @@ export default {
 
         return imgPiece;
       } catch (error) {
-        await this.notifyErrors(error, 'Upload Error');
+        await this.notifyErrors(error, this.$t('apostrophe:uploadError'));
         return {};
       }
     },
@@ -203,7 +206,8 @@ export default {
           await apos.notify(err.message || err.name || fallback, {
             type: 'danger',
             icon: 'alert-circle-icon',
-            dismiss: true
+            dismiss: true,
+            localize: false
           });
         }
       }

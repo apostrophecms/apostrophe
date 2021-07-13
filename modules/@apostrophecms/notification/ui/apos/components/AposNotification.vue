@@ -3,31 +3,31 @@
     <span class="apos-notification__indicator">
       <AposIndicator
         :icon="iconComponent" class="apos-notification__indicator__icon"
-        :icon-size="icon ? 16 : 12"
+        :icon-size="notification.icon ? 16 : 12"
       />
     </span>
     <span
       class="apos-notification__label"
       ref="label"
     >
-      {{ label }}
+      {{ localize(notification.message) }}
       <!-- OK to use index as key because buttons are constant for the lifetime of the notification -->
       <button
-        v-for="(button, i) in buttons"
+        v-for="(button, i) in notification.buttons"
         :key="i"
         :data-apos-bus-event="JSON.stringify({ name: button.name, data: button.data })"
       >
-        {{ button.label }}
+        {{ localize(button.label) }}
       </button>
     </span>
     <div
       class="apos-notification__progress"
-      v-if="progress && progress.current"
+      v-if="notification.progress && notification.progress.current"
     >
       <div class="apos-notification__progress-bar">
         <div
           class="apos-notification__progress-now" role="progressbar"
-          :aria-valuenow="progress.current" :style="`width: ${progressPercent}`"
+          :aria-valuenow="notification.progress.current" :style="`width: ${progressPercent}`"
           aria-valuemin="0" :aria-valuemax="100"
         />
       </div>
@@ -52,53 +52,27 @@ export default {
   name: 'AposNotification',
   components: { Close },
   props: {
-    id: {
-      type: String,
-      default: null
-    },
-    type: {
-      type: String,
-      default: null
-    },
-    icon: {
-      type: String,
-      default: null
-    },
-    label: {
-      default: 'Set a label',
-      type: String
-    },
-    progress: {
+    notification: {
       type: Object,
-      default: null
-    },
-    dismiss: {
-      type: Number,
-      default: 0
-    },
-    buttons: {
-      type: Array,
-      default() {
-        return [];
-      }
+      required: true
     }
   },
   emits: [ 'close' ],
   computed: {
     classList() {
       const classes = [ 'apos-notification' ];
-      if (this.type && this.type !== 'none') {
-        classes.push(`apos-notification--${this.type}`);
+      if (this.notification.type && this.notification.type !== 'none') {
+        classes.push(`apos-notification--${this.notification.type}`);
       }
 
-      if (this.progress && this.progress.current) {
+      if (this.notification.progress && this.notification.progress.notification.current) {
         classes.push('apos-notification--progress');
       }
 
       // long notifications look funky, but reading the label's length doesn't account for html.
       // Throw the string into a fake element to get its text content
       const div = document.createElement('div');
-      div.innerHTML = this.label;
+      div.innerHTML = this.localize(this.notification.message);
       const textContent = div.textContent || div.innerText || '';
       if (textContent.length > 160) {
         classes.push('apos-notification--long');
@@ -107,21 +81,21 @@ export default {
       return classes.join(' ');
     },
     iconComponent () {
-      if (this.icon) {
-        return this.icon;
+      if (this.notification.icon) {
+        return this.notification.icon;
       } else {
         return 'circle-icon';
       }
     },
     progressPercent () {
-      return `${Math.floor((this.progress.current / 100) * 100)}%`;
+      return `${Math.floor((this.notification.progress.current / 100) * 100)}%`;
     }
   },
   async mounted() {
-    if (this.dismiss) {
+    if (this.notification.dismiss) {
       setTimeout(() => {
-        this.$emit('close', this.id);
-      }, 1000 * this.dismiss);
+        this.$emit('close', this.notification._id);
+      }, 1000 * this.notification.dismiss);
     }
     this.$refs.label.addEventListener('click', (e) => {
       if (e.target.hasAttribute('data-apos-bus-event')) {
@@ -130,8 +104,16 @@ export default {
     });
   },
   methods: {
-    close () {
-      this.$emit('close', this.id);
+    close() {
+      this.$emit('close', this.notification._id);
+    },
+    localize(s) {
+      if (this.notification.localize !== false) {
+        return this.$t(s, this.notification.interpolate || {});
+      } else {
+        // Any interpolation was done before insertion
+        return s;
+      }
     }
   }
 };

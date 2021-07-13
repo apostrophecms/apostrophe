@@ -239,8 +239,8 @@ export default {
     },
     async archive() {
       if (!await apos.confirm({
-        heading: 'Are You Sure?',
-        description: 'This will move the image to the archive.'
+        heading: 'apostrophe:areYouSure',
+        description: 'apostrophe:willMoveImageToArchive'
       })) {
         return;
       }
@@ -267,7 +267,7 @@ export default {
 
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
-          await apos.notify('Resolve errors before saving.', {
+          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
             type: 'warning',
             icon: 'alert-circle-icon',
             dismiss: true

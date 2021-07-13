@@ -38,8 +38,9 @@ module.exports = {
   options: {
     name: '@apostrophecms/global',
     alias: 'global',
-    label: 'Global Content',
-    pluralLabel: 'Global Content',
+    label: 'apostrophe:globalContent',
+    // Intentionally the same
+    pluralLabel: 'apostrophe:globalContent',
     searchable: false,
     singleton: true,
     showPermissions: true

@@ -47,7 +47,7 @@ module.exports = {
     self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
-        label: 'Images',
+        label: 'apostrophe:images',
         extensions: [
           'gif',
           'jpg',
@@ -60,7 +60,7 @@ module.exports = {
       },
       {
         name: 'office',
-        label: 'Office',
+        label: 'apostrophe:office',
         extensions: [
           'txt',
           'rtf',
@@ -252,17 +252,14 @@ module.exports = {
         }
         _.assign(info, _.omit(dbInfo, 'crop'));
 
-        // Check if the file type is acceptable of if there are
+        // Check if the file type is acceptable
         const correctedExtensions = self.checkExtension(field, info);
 
         if (correctedExtensions) {
-          let message = req.t('apostrophe:fileTypeNotAccepted');
-          if (correctedExtensions.length) {
-            message += req.t('apostrophe:allowedExtensions', {
-              // i18next has no built-in support for interpolating an array argument
-              extensions: correctedExtensions.join(req.t('apostrophe:listJoiner'))
-            });
-          }
+          const message = req.t('apostrophe:fileTypeNotAccepted', {
+            // i18next has no built-in support for interpolating an array argument
+            extensions: correctedExtensions.join(req.t('apostrophe:listJoiner'))
+          });
           throw self.apos.error('invalid', message);
         }
 
