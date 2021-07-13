@@ -1,8 +1,6 @@
 // Migrations relevant only to those who used early alpha and beta versions of 3.x
 // are kept here for tidiness
 
-const _ = require('lodash');
-
 module.exports = (self) => {
   return {
     addLegacyMigrations() {
@@ -37,7 +35,7 @@ module.exports = (self) => {
               if (!item) {
                 continue;
               }
-              if ((!item._id) || _.has(widgetIds, item._id)) {
+              if ((!item._id) || widgetIds[item._id]) {
                 patches[`${dotPath}.items.${i}._id`] = self.apos.util.generateId();
               }
               if (item._id) {
