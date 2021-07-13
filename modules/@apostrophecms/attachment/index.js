@@ -107,8 +107,7 @@ module.exports = {
     self.db = await self.apos.db.collection('aposAttachments');
     await self.db.createIndex({ docIds: 1 });
     await self.db.createIndex({ archivedDocIds: 1 });
-    self.addFixLengthPropertyMigration();
-    self.addDocReferencesContainedMigration();
+    self.addLegacyMigrations();
   },
 
   tasks(self) {
@@ -720,25 +719,6 @@ module.exports = {
           }
         }
       },
-      addFixLengthPropertyMigration() {
-        self.apos.migration.add('fix-length-property', async () => {
-          return self.each({
-            'length.size': {
-              $exists: 1
-            }
-          }, 5, attachment => {
-            if (attachment.length && attachment.length.size) {
-              return self.db.updateOne({
-                _id: attachment._id
-              }, {
-                $set: {
-                  length: attachment.length.size
-                }
-              });
-            }
-          });
-        });
-      },
       // Returns true if, based on the provided attachment object,
       // a valid focal point has been specified. Useful to avoid
       // the default of `background-position: center center` if
@@ -1044,16 +1024,6 @@ module.exports = {
         }
         next();
       },
-      // This migration is needed because formerly,
-      // docs that only referenced this attachment via
-      // a join were counted as "owning" it, which is
-      // incorrect and leads to failure to make it
-      // unavailable at the proper time. The name was
-      // changed to ensure this migration would run
-      // again after that bug was discovered and fixed.
-      addDocReferencesContainedMigration() {
-        self.apos.migration.add(self.__meta.name + '.docReferencesContained', self.recomputeAllDocReferences);
-      },
       // Recompute the `docIds` and `archivedDocIds` arrays
       // from scratch. Should only be needed by the
       // one-time migration that fixes these for older
@@ -1100,7 +1070,8 @@ module.exports = {
           }
           return bulk.execute();
         }
-      }
+      },
+      ...require('./lib/legacy-migrations')(self)
     };
   },
   helpers: [
