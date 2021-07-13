@@ -71,7 +71,7 @@ export default {
 
         // Confirm archiving
         const confirm = await apos.confirm({
-          heading: this.$t('apostrophe:archiveType'),
+          heading: this.$t('apostrophe:archiveType', { type: plainType }),
           description: sentences.join(sentences.map(this.$t), this.$t('apostrophe:sentenceJoiner')),
           affirmativeLabel: this.$t('apostrophe:archiveTypeAffirmativeLabel', { type: plainType }),
           note: isCurrentContext
