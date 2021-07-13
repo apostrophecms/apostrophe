@@ -3,7 +3,7 @@
     class="apos-table__cell-field"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    {{ label(get(header.name)) }}
+    {{ $t(label(get(header.name))) }}
   </p>
 </template>
 
@@ -15,7 +15,7 @@ export default {
   mixins: [ AposCellMixin ],
   methods: {
     label(typeName) {
-      return this.$t((apos.modules[typeName] && apos.modules[typeName].label) || typeName);
+      return (apos.modules[typeName] && apos.modules[typeName].label) || typeName;
     }
   }
 };
