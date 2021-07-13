@@ -13,7 +13,8 @@ export default {
     i18next.init({
       lng: i18n.locale,
       fallbackLng: i18n.locale,
-      resources: {}
+      resources: {},
+      debug: i18n.debug
     });
 
     for (const [ ns, phrases ] of Object.entries(i18n.l10n)) {
@@ -21,7 +22,7 @@ export default {
     }
 
     Vue.prototype.$t = (phrase, options) => {
-      return i18next.t(phrase, {
+      return (i18n.debug ? '* ' : '') + i18next.t(phrase, {
         lng: i18n.locale,
         ...options
       });
