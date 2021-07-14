@@ -22,7 +22,7 @@ export default {
     }
 
     Vue.prototype.$t = (phrase, options) => {
-      return (i18n.debug ? '* ' : '') + i18next.t(phrase, {
+      return (i18n.show ? '🌍 ' : '') + i18next.t(phrase, {
         lng: i18n.locale,
         ...options
       });

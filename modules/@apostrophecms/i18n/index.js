@@ -15,7 +15,7 @@ const apostropheI18nDebugPlugin = {
   process(value, key, options, translator) {
     // For ease of tracking down which phrases were
     // actually passed through i18next
-    return `* ${value}`;
+    return `🌍 ${value}`;
   }
 };
 
@@ -30,11 +30,15 @@ module.exports = {
   async init(self) {
     self.namespaces = {};
     self.debug = process.env.APOS_DEBUG_I18N ? true : self.options.debug;
+    self.show = process.env.APOS_SHOW_I18N ? true : self.options.show;
     self.locales = self.options.locales || [ 'en' ];
     self.defaultLocale = self.options.defaultLocale || self.locales[0];
     // Make sure we have our own instance to avoid conflicts with other apos objects
     self.i18next = i18next.use(i18nextHttpMiddleware.LanguageDetector).createInstance({
-      fallbackLng: self.options.fallbackLocale || 'en',
+      lng: self.defaultLocale,
+      fallbackLng: self.defaultLocale,
+      // Required to prevent the debugger from complaining
+      languages: self.locales,
       // Added later, but required here
       resources: {},
       interpolation: {
@@ -44,7 +48,7 @@ module.exports = {
       defaultNS: 'default',
       debug: self.debug
     });
-    if (self.debug) {
+    if (self.show) {
       self.i18next.use(apostropheI18nDebugPlugin);
     }
     await self.i18next.init();
@@ -166,7 +170,8 @@ module.exports = {
         return {
           l10n,
           locale: req.locale,
-          debug: self.debug
+          debug: self.debug,
+          show: self.show
         };
       }
     };
