@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.220.3 (2021-07-14)
 
 ### Fixes
 * Fix server crash due to oembed error when invalid url is passed.
