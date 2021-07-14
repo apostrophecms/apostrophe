@@ -1,8 +1,35 @@
 {
-  "name": "apostrophe",
-  "version": "0.5.392",
-  "description": "Apostrophe is a user-friendly content management system. You'll need more than this core module. See apostrophenow.org to get started.",
-  "main": "./lib/apostrophe.js",
+  "_from": "apostrophe@0.5",
+  "_id": "apostrophe@0.5.393",
+  "_inBundle": false,
+  "_integrity": "sha512-VtuAXJeyX3lD5Pk1b6RpHEt2q+2dVWZ4zNt9hEItzLjKAcYNIv59ZD1FcZ+mv6D9wtvsqnZwoS7/fp2rjvFjAQ==",
+  "_location": "/apostrophe",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "apostrophe@0.5",
+    "name": "apostrophe",
+    "escapedName": "apostrophe",
+    "rawSpec": "0.5",
+    "saveSpec": null,
+    "fetchSpec": "0.5"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/apostrophe/-/apostrophe-0.5.393.tgz",
+  "_shasum": "6bf0ebd7b861d65dcc9b35b4d20b9bc28f10b912",
+  "_spec": "apostrophe@0.5",
+  "_where": "/Users/boutell/tmp/test",
+  "author": {
+    "name": "P'unk Avenue"
+  },
+  "bugs": {
+    "url": "https://github.com/punkave/apostrophe/issues"
+  },
+  "bundleDependencies": false,
   "dependencies": {
     "async": "0.8.x",
     "bless": "^3.0.3",
@@ -41,14 +68,10 @@
     "wrench": "^1.5.8",
     "xregexp": "2.0.0"
   },
+  "deprecated": false,
+  "description": "Apostrophe is a user-friendly content management system. You'll need more than this core module. See apostrophenow.org to get started.",
   "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/punkave/apostrophe.git"
-  },
+  "homepage": "https://github.com/punkave/apostrophe#readme",
   "keywords": [
     "apostrophe",
     "rich",
@@ -72,6 +95,15 @@
     "editor",
     "jot"
   ],
-  "author": "P'unk Avenue",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "./lib/apostrophe.js",
+  "name": "apostrophe",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/punkave/apostrophe.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "0.5.393"
 }
