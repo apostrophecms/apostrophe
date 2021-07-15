@@ -53,7 +53,7 @@
                 (options.disableUnchecked && !checkProxy.includes(item._id)) ||
                 (options.disableUnpublished && !item.lastPublishedAt)
             }"
-            v-tooltip="options.disableUnpublished && !item.lastPublishedAt ? 'Publish this content before using it in a relationship' : null"
+            v-tooltip="options.disableUnpublished && !item.lastPublishedAt ? 'apostrophe:publishBeforeUsingTooltip' : null"
             :choice="{ value: item._id }"
             v-model="checkProxy"
             @updated="emitUpdated(item._id)"

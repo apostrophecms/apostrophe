@@ -12,7 +12,7 @@
       <AposButton
         :disabled="patchesSinceLoaded.length === 0"
         type="subtle" :modifiers="['small', 'no-motion']"
-        label="Undo" class="apos-admin-bar__context-button"
+        label="apostrophe:undo" class="apos-admin-bar__context-button"
         icon="undo-icon" :icon-only="true"
         @click="undo"
       />
@@ -24,7 +24,7 @@
       <AposButton
         :disabled="undone.length === 0"
         type="subtle" :modifiers="['small', 'no-motion']"
-        label="Redo" class="apos-admin-bar__context-button"
+        label="apostrophe:redo" class="apos-admin-bar__context-button"
         icon="redo-icon" :icon-only="true"
         @click="redo"
       />
@@ -65,16 +65,16 @@ export default {
   computed: {
     undoTooltips() {
       const tooltips = {
-        undo: 'Undo Change',
-        redo: 'Redo Change'
+        undo: 'apostrophe:undoTooltip',
+        redo: 'apostrophe:redoTooltip'
       };
 
       if (this.patchesSinceLoaded.length === 0) {
-        tooltips.undo = 'No changes to undo';
+        tooltips.undo = 'apostrophe:undoTooltipNoChanges';
       }
 
       if (this.undone.length === 0) {
-        tooltips.redo = 'No changes to redo';
+        tooltips.redo = 'apostrophe:redoTooltipNoChanges';
       }
 
       return tooltips;

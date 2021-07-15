@@ -13,20 +13,21 @@
   >
     <template v-if="relationshipField" #secondaryControls>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template v-else #secondaryControls>
       <AposButton
-        type="default" label="Exit"
+        type="default" label="apostrophe:exit"
         @click="confirmAndCancel"
       />
     </template>
     <template v-if="relationshipField" #primaryControls>
       <AposButton
         type="primary"
-        :label="`Select ${moduleLabels.pluralLabel || ''}`"
+        label="apostrophe:selectLabel"
+        :interpolate="{ typeLabel: moduleLabels.pluralLabel || moduleLabels.label }"
         :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
@@ -34,7 +35,7 @@
     <template #leftRail>
       <AposModalRail>
         <AposTagList
-          title="Filter by Tag"
+          title="apostrophe:filterByTag"
           :tags="tagList"
           @update="filter('_tags', $event)"
         />

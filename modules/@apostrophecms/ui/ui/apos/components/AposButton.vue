@@ -33,7 +33,7 @@
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
-            {{ $t(label) }}
+            {{ $t(label, interpolate) }}
           </span>
         </slot>
       </div>
@@ -50,6 +50,12 @@ export default {
     label: {
       type: String,
       default: 'Provide a Button Label'
+    },
+    interpolate: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     modifiers: {
       type: Array,
