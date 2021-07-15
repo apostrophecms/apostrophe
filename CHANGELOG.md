@@ -1,13 +1,27 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
+
+### Adds
+
+* The `@apostrophecms/i18n` module now uses `i18next` to implement static localization. All phrases in the Vue-based admin UI are passed through `i18next` via `this.$t`, and `i18next` is also available via `req.t()` in routes and `__t()` in templates. Apostrophe's own admin UI phrases are in the `apostrophe` namespace for a clean separation. An array of locale codes, such as `en` or `fr` or `en-au`, can be specified using the `locales` option to the `@apostrophecms/i18n` module. The first locale is the default, unless the `defaultLocale` option is set. If no locales are set, the locale defaults to `en`. The `i18next-http-middleware` locale guesser is installed and will select an available locale if possible, otherwise it will fall back to the default.
+* `i18next` localization JSON files can be added to the `l10n` subdirectory of *any* module, as long as its `i18n` option is set. The `i18n` object may specify `ns` to give an `i18next` namespace, otherwise phrases are in the default namespace, used when no namespace is specified with a `:` in an `i18next` call. The default namespace is yours for use at project level. Multiple modules may contribute to the same namespace.
+* If `APOS_DEBUG_I18N=1` is set in the environment, the `i18next` debug flag is activated. For server-side translations, i.e. `req.t()` and `__t()`, debugging output will appear on the server console. For browser-side translations in the Vue admin UI, debugging output will appear in the browser console.
+* If `APOS_SHOW_I18N=1` is set in the environment, all phrases passed through `i18next` are visually marked, to make it easier to find those that didn't go through `i18next`. This does not mean translations actually exist in the JSON files. For that, review the output of `APOS_DEBUG_I18N=1`.
+
+## 3.1.2 - 2021-07-14
 
 ### Changes
 
 * Removes an unused method, `mapMongoIdToJqtreeId`, that was used in A2 but is no longer relevant.
 * Removes deprecated and non-functional steps from the `edit` method in the `AposDocsManager.vue` component.
-* The `apostrophe-i18n` module now uses `i18next` to implement static localization.
-* The `i18next-http-middleware` locale guesser is installed.
+* Legacy migrations to update 3.0 alpha and 3.0 beta sites to 3.0 stable are still in place, with no functional changes, but have been relocated to separate source files for ease of maintenance. Note that this is not a migration path for 2.x databases. Tools for that are forthcoming.
+
+## 3.1.1 - 2021-07-08
+
+### Fixes
+
+* Two distinct modules may each have their own `ui/src/index.scss` file, similar to the fix already applied to allow multiple `ui/src/index.js` files.
 
 ## 3.1.0 - 2021-06-30
 

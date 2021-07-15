@@ -592,7 +592,7 @@ export default {
     },
     async redo() {
       this.patchesSinceLoaded.push(this.undone.pop());
-      await this.refreshAfterHistoryChange('redoFailed');
+      await this.refreshAfterHistoryChange('apostrophe:redoFailed');
     },
     async refreshAfterHistoryChange(errorMessageKey) {
       this.saving = true;

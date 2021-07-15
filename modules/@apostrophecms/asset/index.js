@@ -185,17 +185,20 @@ module.exports = {
               tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
               appImports = getImports(`${source}/apps`, '*.js', {
                 invokeApps: true,
+                enumerateImports: true,
                 importSuffix: 'App'
               });
             }
             if (options.index) {
               indexJsImports = getImports(source, 'index.js', {
                 invokeApps: true,
+                enumerateImports: true,
                 importSuffix: 'App',
                 requireDefaultExport: true
               });
               indexSassImports = getImports(source, 'index.scss', {
-                importSuffix: 'Stylesheet'
+                importSuffix: 'Stylesheet',
+                enumerateImports: true
               });
             }
 
@@ -413,7 +416,7 @@ module.exports = {
                 }
               }
               const jsFilename = JSON.stringify(component);
-              const name = require('path').basename(component).replace(/\.\w+/, '') + (options.invokeApps ? `_${i}` : '');
+              const name = require('path').basename(component).replace(/\.\w+/, '') + (options.enumerateImports ? `_${i}` : '');
               const jsName = JSON.stringify(name);
               output.paths.push(component);
               const importCode = `
