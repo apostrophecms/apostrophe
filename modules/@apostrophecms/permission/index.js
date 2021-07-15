@@ -23,7 +23,7 @@ module.exports = {
   },
   init(self) {
     self.permissionPattern = /^([^-]+)-(.*)$/;
-    self.addRetirePublishedFieldMigration();
+    self.addLegacyMigrations();
     self.addRoleFieldType();
     self.enableBrowserData();
   },
@@ -213,21 +213,6 @@ module.exports = {
           extend: 'select'
         });
       },
-      addRetirePublishedFieldMigration() {
-        self.apos.migration.add('retire-published-field', async () => {
-          await self.apos.migration.eachDoc({}, 5, async (doc) => {
-            if (doc.published === true) {
-              doc.visibility = 'public';
-            } else if (doc.published === false) {
-              doc.visibility = 'loginRequired';
-            }
-            delete doc.published;
-            return self.apos.doc.db.replaceOne({
-              _id: doc._id
-            }, doc);
-          });
-        });
-      },
       // Returns an object with properties describing the permissions associated
       // with the given module, which should be a piece type or the `@apostrophecms/any-page-type`
       // module. Used to populate the permission grid on the front end
@@ -291,7 +276,8 @@ module.exports = {
       matchInterestingType(permissionSet) {
         const manager = self.apos.doc.getManager(permissionSet.name);
         return manager.options.showPermissions;
-      }
+      },
+      ...require('./lib/legacy-migrations')(self)
     };
   },
   apiRoutes(self) {
