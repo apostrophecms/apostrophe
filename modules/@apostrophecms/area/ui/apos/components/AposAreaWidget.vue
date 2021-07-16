@@ -610,7 +610,10 @@ export default {
   }
 
   .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-background-inverted);
+    background-color: var(--a-primary);
+    & ::v-deep .apos-button {
+      color: var(--a-text-inverted);
+    }
   }
 
   .apos-area-widget__breadcrumb,
