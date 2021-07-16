@@ -17,7 +17,6 @@
             :tooltip="tooltip"
           >
             <Picker
-              v-if="next"
               v-bind="pickerOptions"
               :value="next"
               @input="update"
@@ -26,6 +25,13 @@
         </div>
         <div class="apos-color__info">
           {{ valueLabel }}
+          <AposButton
+            v-if="next"
+            type="quiet" label="Clear"
+            class="apos-color__clear"
+            :modifiers="['no-motion']"
+            @click="clear"
+          />
         </div>
       </div>
     </template>
@@ -97,10 +103,7 @@ export default {
   },
   mounted() {
     if (!this.next) {
-      // vue-color does not support null values
-      // If a color begins null, set it to a transparent black and flag it
-      this.next = '#00000000';
-      this.startsNull = true;
+      this.next = null;
     }
   },
   methods: {
@@ -113,13 +116,6 @@ export default {
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
       this.next = this.tinyColorObj.toString(this.format);
-
-      if (this.startsNull) {
-        // As a basic UX courtesey make sure to reset the alpha value of an orginally null value back to 1
-        // as it was previously set to 0 by us, not the user.
-        this.next = this.tinyColorObj.setAlpha(1).toString(this.format);
-        this.startsNull = false;
-      }
     },
     validate(value) {
       if (this.field.required) {
@@ -134,6 +130,9 @@ export default {
 
       const color = tinycolor(value);
       return color.isValid() ? false : 'Error';
+    },
+    clear() {
+      this.next = null;
     }
   }
 };
@@ -143,6 +142,10 @@ export default {
   .apos-color {
     display: flex;
     align-items: center;
+  }
+
+  .apos-color__clear {
+    margin-left: 10px;
   }
 
   .apos-color__info {
