@@ -268,16 +268,6 @@ module.exports = {
         });
       },
 
-      // Add a nunjucks template helper to the global namespace. This should
-      // be used very sparingly, and pretty much never in npm modules. The
-      // only exceptions in apostrophe core are `apos.area` and `apos.singleton`.
-      //
-      // The template helper must be added first. [See the module configuration reference](https://a3.docs.apostrophecms.org/reference/module-api/module-overview.html#customization-functions) for more.
-
-      addHelperShortcut(name) {
-        self.apos.template.addHelperShortcutForModule(self, name);
-      },
-
       // Render a template. Template overrides are respected; the
       // project level modules/modulename/views folder wins if
       // it has such a template, followed by the npm module,
