@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.1.3 - 2021-07-16
+
+### Fixes
+
+* Hotfix for an incompatibility between `vue-loader` and `webpack` 5.45.0 which causes a crash at startup in development, or asset build time in production. We have temporarily pinned our dependency to `webpack` 5.44.x. We are [contributing to the discussion around the best long-term fix for vue-loader](https://github.com/vuejs/vue-loader/issues/1854).
+
 ## 3.1.2 - 2021-07-14
 
 ### Changes
