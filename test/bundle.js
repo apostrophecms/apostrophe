@@ -13,9 +13,9 @@ describe('Bundle', function() {
     if (!fs.existsSync(path.join(__dirname, '/node_modules/test-bundle'))) {
       fs.symlinkSync(path.join(__dirname, '/test-bundle'), path.join(__dirname, '/node_modules/test-bundle'), 'dir');
     }
-    // Simulate presence of a transitive dependency (a dependency of a dependency)
-    // in node_modules that has the same name as a project level module. This can
-    // happen due to npm flattening
+    // Simulate presence of a transitive dependency (a dependency of a
+    // dependency) in node_modules that has the same name as a project level
+    // module. This can happen due to npm/yarn flattening.
     const same = path.join(__dirname, '/node_modules/same-name-as-transitive-dependency');
     fs.removeSync(same);
     fs.mkdirSync(same);
