@@ -11,7 +11,6 @@
         <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __ns('apostrophe', 'Log in with Google Authenticator or a compatible app (TOTP)') }}{% endblock %}</div>
         {% block form %}
           <form action="{% block action %}{{ apos.prefix }}/login-totp{% endblock %}" method="post">
-            {{ apos.log(data.error) }}
             {% if data.error %}<div class="apos-login-warning">{{ data.error }}</div>{% endif %}
             {% block fields %}
               <div class="apos-field apos-login-code">
