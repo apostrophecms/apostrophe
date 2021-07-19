@@ -1,5 +1,5 @@
 // Implements {% widget item, { options ...} %}
-// Usually not called directly, see {% singleton %} and {% area %}
+// Usually not called directly, see {% area %}
 
 module.exports = function(self) {
 
