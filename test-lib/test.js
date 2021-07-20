@@ -1,6 +1,5 @@
 const fs = require('fs-extra');
 const path = require('path');
-const { stripIndent } = require('common-tags');
 
 fs.removeSync(path.join(__dirname, '/../test/node_modules'));
 fs.mkdirSync(path.join(__dirname, '/../test/node_modules'));
@@ -13,7 +12,7 @@ const packageJson = path.join(__dirname, '/../test/package.json');
 // Remove it first, in case it's the old-style symlink to the main package.json,
 // which would break
 fs.removeSync(packageJson);
-fs.writeFileSync(packageJson, stripIndent`
+fs.writeFileSync(packageJson, `
 {
   "name": "test",
   "dependencies": {
