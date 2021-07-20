@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Fixes
+
+* Removes stray debugging log in `login-totp.html` template.
+
 ## Adds
 
 * Adds list of video providers supported in the video field for documentation.
