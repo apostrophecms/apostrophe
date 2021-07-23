@@ -1,7 +1,7 @@
 <template>
   <span
     class="apos-indicator"
-    v-tooltip="tooltip"
+    v-apos-tooltip="tooltip"
     :aria-hidden="decorative"
   >
     <component

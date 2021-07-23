@@ -1,7 +1,7 @@
 <template>
   <div class="apos-tag-list">
     <div v-if="tags && tags.length" class="apos-tag-list__inner">
-      <h3 class="apos-tag-list__title">{{ title }}</h3>
+      <h3 class="apos-tag-list__title">{{ $t(title) }}</h3>
       <ul class="apos-tag-list__items">
         <AposTagListItem
           v-for="tag in tags"

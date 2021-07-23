@@ -19,7 +19,7 @@
             <AposIndicator
               icon="help-circle-icon"
               class="apos-field__help-tooltip__icon"
-              :tooltip="$t(field.help || field.htmlHelp)"
+              :tooltip="field.help || field.htmlHelp"
               :icon-size="11"
               icon-color="var(--a-base-4)"
             />
@@ -28,7 +28,7 @@
             <AposLabel
               label="Changed" class="apos-field__changed__label"
               :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
-              :tooltip="$t('apostrophe:fieldHasUnpublishedChanges')"
+              tooltip="apostrophe:fieldHasUnpublishedChanges"
             />
           </span>
         </component>

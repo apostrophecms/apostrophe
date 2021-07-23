@@ -1,11 +1,10 @@
 import Vue from 'vue';
 import VueClickOutsideElement from 'vue-click-outside-element';
-import { VTooltip } from 'v-tooltip';
-import tooltipConfig from './tooltip';
+import LocalizedVTooltip from './localized-v-tooltip';
+import tooltipOptions from './tooltip-options';
 import VueAposI18Next from './i18next';
 
-tooltipConfig.updateOptions(VTooltip);
-Vue.directive('tooltip', VTooltip);
+Vue.use(LocalizedVTooltip, tooltipOptions);
 Vue.use(VueClickOutsideElement);
 Vue.use(VueAposI18Next, {
   // Module aliases are not available yet when this code executes

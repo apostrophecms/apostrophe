@@ -1,6 +1,6 @@
 <template>
   <AposModal
-    :modal="modal" modal-title="Manage Pages"
+    :modal="modal" modal-title="apostrophe:managePages"
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >

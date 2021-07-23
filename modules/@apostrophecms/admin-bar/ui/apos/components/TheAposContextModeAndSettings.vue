@@ -16,7 +16,7 @@
     >
       <AposButton
         class="apos-admin-bar__context-button"
-        label="Edit" type="subtle"
+        label="apostrophe:edit" type="subtle"
         :modifiers="['small', 'no-motion']"
         :tooltip="{
           content: 'Toggle Edit Mode',
@@ -33,8 +33,8 @@
       <AposButton
         v-if="context._id && !hasCustomUi"
         class="apos-admin-bar__context-button"
-        label="Page Settings" :tooltip="{
-          content: 'Page Settings',
+        label="apostrophe:pageSettings" :tooltip="{
+          content: 'apostrophe:pageSettingsTooltip',
           placement: 'bottom'
         }"
         type="subtle" :modifiers="['small', 'no-motion']"
@@ -55,8 +55,8 @@
       <AposButton
         v-if="!hasCustomUi"
         class="apos-admin-bar__context-button"
-        label="Preview" :tooltip="{
-          content: 'Toggle Preview Mode',
+        label="apostrophe:preview" :tooltip="{
+          content: 'apostrophe:previewTooltip',
           placement: 'bottom'
         }"
         type="subtle" :modifiers="['small', 'no-motion']"
