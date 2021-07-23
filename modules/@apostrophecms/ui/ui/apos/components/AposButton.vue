@@ -1,5 +1,5 @@
 <template>
-  <span v-tooltip="tooltip" class="apos-button__wrapper">
+  <span v-apos-tooltip="tooltip" class="apos-button__wrapper">
     <component
       :is="href ? 'a' : 'button'"
       v-on="href ? {} : {click: click}"

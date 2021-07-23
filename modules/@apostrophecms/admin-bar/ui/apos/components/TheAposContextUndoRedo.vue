@@ -7,7 +7,7 @@
     <!-- need a tooltip even on a disabled button -->
     <div
       :key="'undo'"
-      v-tooltip="undoTooltips.undo"
+      v-apos-tooltip="undoTooltips.undo"
     >
       <AposButton
         :disabled="patchesSinceLoaded.length === 0"
@@ -19,7 +19,7 @@
     </div>
     <div
       :key="'redo'"
-      v-tooltip="undoTooltips.redo"
+      v-apos-tooltip="undoTooltips.redo"
     >
       <AposButton
         :disabled="undone.length === 0"

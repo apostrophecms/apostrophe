@@ -18,7 +18,7 @@ export default {
     extendHandler('componentUpdated');
     extendHandler('unbind');
 
-    Vue.directive('tooltip', directive);
+    Vue.directive('apos-tooltip', directive);
 
     function extendHandler(name) {
       if (VTooltip[name]) {
