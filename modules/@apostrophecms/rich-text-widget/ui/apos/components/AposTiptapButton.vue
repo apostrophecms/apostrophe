@@ -44,10 +44,12 @@ export default {
   },
   methods: {
     command() {
+      console.log(this.tool.command, this.name, this.tool.commandParameters);
       return this.tool.command || this.name;
     },
     click() {
-      this.editor.commands[this.command()](this.tool.commandParameters || {});
+      const result = this.editor.commands[this.command()](this.tool.commandParameters || {});
+      console.info(result);
       this.editor.commands.focus();
     }
   }
