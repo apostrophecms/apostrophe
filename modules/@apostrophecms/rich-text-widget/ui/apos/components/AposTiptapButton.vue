@@ -47,8 +47,7 @@ export default {
       return this.tool.command || this.name;
     },
     click() {
-      this.editor.commands[this.command()](this.tool.commandParameters ||
- {});
+      this.editor.commands[this.command()](this.tool.commandParameters || {});
       this.editor.commands.focus();
     }
   }
