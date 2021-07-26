@@ -16,9 +16,11 @@ fs.writeFileSync(packageJson, `
 {
   "name": "test",
   "dependencies": {
-    "apostrophe": "^3.0.0",
+    "apostrophe": "^3.0.0"
+  },
+  "devDependencies": {
     "test-bundle": {}
-  }
+    }
 }`);
 
 module.exports = require('./util.js');
