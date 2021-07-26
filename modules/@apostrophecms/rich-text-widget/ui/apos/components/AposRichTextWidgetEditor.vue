@@ -153,7 +153,9 @@ export default {
       onUpdate: this.editorUpdate,
       extensions: [
         StarterKit,
-        TextAlign,
+        TextAlign.configure({
+          types: [ 'heading', 'paragraph' ]
+        }),
         Highlight,
         TextStyle
       ].concat(this.aposTiptapExtensions)

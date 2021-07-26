@@ -403,7 +403,9 @@ module.exports = {
         };
 
         const output = await _super(req, input, rteOptions);
-        output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(rteOptions));
+        const finalOptions = self.optionsToSanitizeHtml(rteOptions);
+
+        output.content = sanitizeHtml(input.content, finalOptions);
         return output;
       },
       // Add on the core default options to use, if needed.
