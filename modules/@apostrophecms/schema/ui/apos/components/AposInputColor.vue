@@ -40,7 +40,7 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import Picker from 'vue-color-nullable/src/components/Sketch';
+import Picker from '@apostrophecms/vue-color/src/components/Sketch';
 import tinycolor from 'tinycolor2';
 
 export default {

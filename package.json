@@ -27,6 +27,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
+    "@apostrophecms/vue-color": "^2.8.2",
     "@babel/core": "^7.14.3",
     "@babel/preset-env": "^7.14.4",
     "@tiptap/extension-highlight": "^2.0.0-beta.13",
@@ -106,7 +107,6 @@
     "v-tooltip": "^2.0.3",
     "vue": "^2.6.14",
     "vue-click-outside-element": "^1.0.13",
-    "vue-color-nullable": "^2.8.2",
     "vue-loader": "^15.9.6",
     "vue-material-design-icons": "^4.9.0",
     "vue-style-loader": "^4.1.2",
