@@ -5,6 +5,9 @@
 ### Fixes
 
 * Apostrophe loads modules from npm if they exist there and are configured in the `modules` section of `app.js`. This was always intended only as a way to load direct, intentional dependencies of your project. However, since npm "flattens" the dependency tree, dependencies of dependencies that happen to have the same name as a project-level Apostrophe module could be loaded by default, crashing the site or causing unexpected behavior. So beginning with this release, Apostrophe scans `package.json` to verify an npm module is actually a dependency of the project itself before attempting to load it as an Apostrophe module.
+* Fixes the reference to sanitize-html defaults in the rich text widget.
+* Fixes the `toolbarToAllowedStyles` method in the rich text widget, which was not returning any configuration.
+* Fixes the broken text alignment in rich text widgets.
 
 ## 3.1.3 - 2021-07-16
 
