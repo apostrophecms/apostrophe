@@ -44,6 +44,7 @@
     "boring": "^1.1.1",
     "broadband": "^1.1.0",
     "cheerio": "^1.0.0-rc.10",
+    "chokidar": "^3.5.2",
     "common-tags": "^1.8.0",
     "connect-mongo": "^3.0.0",
     "connect-multiparty": "^2.1.1",
