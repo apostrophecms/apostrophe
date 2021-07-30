@@ -223,5 +223,7 @@
   "willAlsoUnpublish": "This will also un-publish the {{ type }}.",
   "willMoveImageToArchive": "This will move the image to the archive.",
   "yes": "Yes",
-  "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time."
+  "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time.",
+  "localizeContent": "Localize Content",
+  "localize": "Localize"
 }
