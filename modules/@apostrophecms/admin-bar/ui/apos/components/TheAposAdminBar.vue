@@ -5,6 +5,7 @@
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <TheAposAdminBarMenu :items="items" />
+        <TheAposAdminBarLocale />
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
       <TheAposContextBar @mounted="setSpacer" />

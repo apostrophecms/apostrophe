@@ -6,7 +6,6 @@
 // It usually is not necessary. Use `req.t` if you need to localize in a route.
 
 const i18next = require('i18next');
-const i18nextHttpMiddleware = require('i18next-http-middleware');
 const fs = require('fs');
 
 const apostropheI18nDebugPlugin = {
@@ -31,14 +30,13 @@ module.exports = {
     self.namespaces = {};
     self.debug = process.env.APOS_DEBUG_I18N ? true : self.options.debug;
     self.show = process.env.APOS_SHOW_I18N ? true : self.options.show;
-    self.locales = self.options.locales || [ 'en' ];
-    self.defaultLocale = self.options.defaultLocale || self.locales[0];
+    self.locales = self.getLocales();
+    self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
     // Make sure we have our own instance to avoid conflicts with other apos objects
-    self.i18next = i18next.use(i18nextHttpMiddleware.LanguageDetector).createInstance({
-      lng: self.defaultLocale,
+    self.i18next = i18next.createInstance({
       fallbackLng: self.defaultLocale,
       // Required to prevent the debugger from complaining
-      languages: self.locales,
+      languages: Object.keys(self.locales),
       // Added later, but required here
       resources: {},
       interpolation: {
@@ -72,7 +70,7 @@ module.exports = {
         if (self.isValidLocale(req.query.aposLocale)) {
           locale = req.query.aposLocale;
         } else {
-          locale = self.defaultLocale;
+          locale = self.sanitizeLocaleName(req.session.aposLocale) || self.defaultLocale;
         }
         let mode;
         if (validModes.includes(req.query.aposMode)) {
@@ -89,7 +87,29 @@ module.exports = {
         }
         return next();
       },
-      i18nextHttpMiddleware: i18nextHttpMiddleware.handle(self.i18next, {})
+      localize(req, res, next) {
+        req.t = (key, options = {}) => {
+          return self.i18next.t(key, {
+            ...options,
+            lng: req.locale
+          });
+        };
+        return next();
+      }
+    };
+  },
+  apiRoutes(self) {
+    return {
+      post: {
+        async locale(req) {
+          const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
+          if (!sanitizedLocale) {
+            throw self.apos.error('invalid');
+          }
+          req.session.aposLocale = sanitizedLocale;
+          return {};
+        }
+      }
     };
   },
   methods(self) {
@@ -102,7 +122,7 @@ module.exports = {
         }
         const ns = module.options.l10n.ns || 'default';
         self.namespaces[ns] = self.namespaces[ns] || {};
-        self.namespaces[ns].browser = !!module.options.l10n.browser;
+        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.l10n.browser;
         for (const entry of module.__meta.chain) {
           const localizationsDir = `${entry.dirname}/l10n`;
           if (!fs.existsSync(localizationsDir)) {
@@ -124,7 +144,7 @@ module.exports = {
         }
       },
       isValidLocale(locale) {
-        return locale && self.locales.includes(locale);
+        return locale && has(self.locales, locale);
       },
       // Infer `req.locale` and `req.mode` from `_id` if they were
       // not set already by explicit query parameters. Conversely,
@@ -167,13 +187,34 @@ module.exports = {
             l10n[name] = self.i18next.getResourceBundle(req.locale, name);
           }
         }
-        return {
+        const result = {
           l10n,
           locale: req.locale,
+          locales: self.locales,
           debug: self.debug,
-          show: self.show
+          show: self.show,
+          action: self.action
         };
+        return result;
+      },
+      getLocales() {
+        return self.options.locales || {
+          en: {
+            label: 'English'
+          }
+        };
+      },
+      sanitizeLocaleName(locale) {
+        locale = self.apos.launder.string(locale);
+        if (!has(self.locales, locale)) {
+          return null;
+        }
+        return locale;
       }
     };
   }
 };
+
+function has(o, k) {
+  return Object.prototype.hasOwnProperty.call(o, k);
+}

@@ -9,6 +9,9 @@
 * `i18next` localization JSON files can be added to the `l10n` subdirectory of *any* module, as long as its `i18n` option is set. The `i18n` object may specify `ns` to give an `i18next` namespace, otherwise phrases are in the default namespace, used when no namespace is specified with a `:` in an `i18next` call. The default namespace is yours for use at project level. Multiple modules may contribute to the same namespace.
 * If `APOS_DEBUG_I18N=1` is set in the environment, the `i18next` debug flag is activated. For server-side translations, i.e. `req.t()` and `__t()`, debugging output will appear on the server console. For browser-side translations in the Vue admin UI, debugging output will appear in the browser console.
 * If `APOS_SHOW_I18N=1` is set in the environment, all phrases passed through `i18next` are visually marked, to make it easier to find those that didn't go through `i18next`. This does not mean translations actually exist in the JSON files. For that, review the output of `APOS_DEBUG_I18N=1`.
+* There is a bare bones, unstyled locale switcher (so far, will update this entry).
+* There is a backend route to accept a new locale on switch, on refresh you currently have a 404, but we'll fix this when we do replication in content localization.
+* We ditched the i18next middleware in favor of simpler i18next-based middleware better for our needs.
 
 ## 3.1.2 - 2021-07-14
 
