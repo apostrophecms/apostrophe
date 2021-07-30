@@ -11,9 +11,6 @@
         :class="localeClasses(locale)"
         @click="switchLocale(locale)"
       >
-        <span class="state">
-          ✓
-        </span>
         <span class="label">
           {{ locale.label }}
         </span>
@@ -56,8 +53,19 @@ export default {
         return {};
       }
     },
-    switchLocale(locale) {
-      console.log('Switch to', locale);
+    async switchLocale(locale) {
+      const { name } = locale;
+      const result = await apos.http.post(`${apos.i18n.action}/locale`, {
+        body: {
+          contextDocId: apos.adminBar.context && apos.adminBar.context._id,
+          locale: name
+        }
+      });
+      if (result.redirectTo) {
+        window.location.assign(result.redirectTo);
+      } else {
+        window.location.reload();
+      }
     }
   }
 };
