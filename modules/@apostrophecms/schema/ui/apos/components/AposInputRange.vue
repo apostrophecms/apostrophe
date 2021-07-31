@@ -265,10 +265,10 @@ export default {
   }
 
   .apos-range__input:focus::-ms-fill-lower {
-    background: var(--a-base-7);;
+    background: var(--a-base-7);
   }
 
   .apos-range__input:focus::-ms-fill-upper {
-    background: var(--a-base-7);;
+    background: var(--a-base-7);
   }
 </style>
