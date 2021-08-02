@@ -199,6 +199,7 @@ module.exports = {
         const result = {
           l10n,
           locale: req.locale,
+          defaultLocale: self.defaultLocale,
           locales: self.locales,
           debug: self.debug,
           show: self.show,
