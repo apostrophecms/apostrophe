@@ -711,6 +711,69 @@ module.exports = {
         });
         return draft;
       },
+      // Localize (export) the given draft to another locale, creating the document in the
+      // other locale if necessary.
+      async localize(req, draft, toLocale) {
+        if (!self.isLocalized()) {
+          throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
+        }
+        const toReq = {
+          ...req,
+          locale: toLocale
+        };
+        const toId = draft._id.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
+        const actionModule = self.apos.page.isPage(draft) ? self.apos.page : self;
+        const existing = await actionModule.findForEditing(toReq, {
+          _id: toId
+        }).toObject();
+        // We only want to copy schema properties, leave non-schema
+        // properties of the source document alone
+        const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
+        // We need a slug even if removed from the schema for editing purposes
+        data.slug = draft.slug;
+        if (draft.parkedId) {
+          data.parkedId = draft.parkedId;
+        }
+        if (!existing) {
+          if (self.apos.page.isPage(draft)) {
+            if (!draft.level) {
+              // Replicating the home page for the first time
+              return self.apos.doc.insert(toReq, {
+                ...data,
+                aposDocId: draft.aposDocId,
+                aposLocale: `${toLocale}:draft`,
+                _id: toId,
+                path: draft.aposDocId
+              });
+            } else {
+              // A page that is not the home page, being replicated for the first time
+              return actionModule.insert(toReq,
+                draft.aposLastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`),
+                draft.aposLastPosition,
+                {
+                  ...data,
+                  aposLocale: `${toLocale}:draft`,
+                  _id: toId
+                }
+              );
+            }
+          } else {
+            return actionModule.insert(toReq, {
+              ...data,
+              aposDocId: draft.aposDocId,
+              aposLocale: `${toLocale}:draft`,
+              _id: toId
+            });
+          }
+        } else {
+          return actionModule.update(toReq, {
+            ...data,
+            aposDocId: draft.aposDocId,
+            aposLocale: `${toLocale}:draft`,
+            _id: toId
+          });
+        }
+      },
       // Reverts the given draft to the most recent publication.
       //
       // Returns the draft's new value, or `false` if the draft
