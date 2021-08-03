@@ -30,27 +30,10 @@
       :key="'switchToPreviewMode'"
       class="apos-admin-bar__control-set__group"
     >
-      <AposButton
-        v-if="context._id && !hasCustomUi"
-        class="apos-admin-bar__context-button"
-        label="Page Settings" :tooltip="{
-          content: 'Page Settings',
-          placement: 'bottom'
-        }"
-        type="subtle" :modifiers="['small', 'no-motion']"
-        icon="cog-icon" :icon-only="true"
-        @click="emitEvent({
-          itemName: contextEditorName,
-          props: {
-            docId: context._id
-          }
-        })"
-      />
       <AposDocContextMenu
         :doc="context"
         :published="published"
         :show-preview="false"
-        :show-edit="false"
       />
       <AposButton
         v-if="!hasCustomUi"
@@ -98,7 +81,7 @@ export default {
     readyToPublish: Boolean,
     canPublish: Boolean
   },
-  emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
+  emits: [ 'switch-edit-mode', 'discard-draft', 'publish', 'dismiss-submission' ],
   data() {
     return {
       hasBeenPublishedButNotUpdated: false
@@ -151,7 +134,7 @@ export default {
   },
   methods: {
     switchEditMode(mode) {
-      this.$emit('switchEditMode', mode);
+      this.$emit('switch-edit-mode', mode);
     },
     onPublish() {
       if (!this.context.lastPublishedAt) {
@@ -160,9 +143,6 @@ export default {
         this.hasBeenPublishedButNotUpdated = false;
       }
       this.$emit('publish');
-    },
-    emitEvent(name) {
-      apos.bus.$emit('admin-menu-click', name);
     }
   }
 };

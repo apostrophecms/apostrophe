@@ -16,7 +16,7 @@
         v-if="!hasCustomUi"
         :context="context"
         :draft-mode="draftMode"
-        @switchDraftMode="switchDraftMode"
+        @switch-draft-mode="switchDraftMode"
       />
       <TheAposContextModeAndSettings
         :context="context"
@@ -26,7 +26,7 @@
         :can-publish="canPublish"
         :ready-to-publish="readyToPublish"
         :custom-publish-label="customPublishLabel"
-        @switchEditMode="switchEditMode"
+        @switch-edit-mode="switchEditMode"
         @publish="onPublish"
       />
     </template>
