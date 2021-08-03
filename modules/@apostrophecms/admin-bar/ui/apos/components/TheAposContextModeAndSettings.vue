@@ -160,6 +160,9 @@ export default {
         this.hasBeenPublishedButNotUpdated = false;
       }
       this.$emit('publish');
+    },
+    emitEvent(name) {
+      apos.bus.$emit('admin-menu-click', name);
     }
   }
 };
