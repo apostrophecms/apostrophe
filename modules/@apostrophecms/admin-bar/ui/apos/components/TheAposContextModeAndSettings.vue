@@ -98,7 +98,7 @@ export default {
     readyToPublish: Boolean,
     canPublish: Boolean
   },
-  emits: [ 'switchEditMode', 'discard-draft', 'publish', 'dismiss-submission' ],
+  emits: [ 'switch-edit-mode', 'discard-draft', 'publish', 'dismiss-submission' ],
   data() {
     return {
       hasBeenPublishedButNotUpdated: false
@@ -151,7 +151,7 @@ export default {
   },
   methods: {
     switchEditMode(mode) {
-      this.$emit('switchEditMode', mode);
+      this.$emit('switch-edit-mode', mode);
     },
     onPublish() {
       if (!this.context.lastPublishedAt) {
