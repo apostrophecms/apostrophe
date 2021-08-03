@@ -769,7 +769,7 @@ export default {
           description: 'Save as a draft to publish later.'
         });
       }
-      if (this.canPreviewDraft && canPreview) {
+      if (this.manuallyPublished && canPreview) {
         menu.push({
           label: 'Save Draft and Preview',
           action: 'onSaveDraftAndView',
