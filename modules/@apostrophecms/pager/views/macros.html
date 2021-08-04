@@ -1,10 +1,4 @@
-{# Output an easily styled classic pager, if needed #}
-{# ACHTUNG: the math was done pretty carefully to accommodate 5 links in the pager. #}
-{# If you want more you'll have to hunt down the right changes. This would be easier #}
-{# if 'let' statements really worked in nunjucks. TODO: when they update nunjucks, #}
-{# rework this. Also note apos.pager.pageRange which is only necessary because range() seems #}
-{# busted in this release of nunjucks #}
-
+{# Render an easily styled classic pager #}
 {% macro render(options, url) %}
   {% if ((options.page > 1) or (options.total > 1)) %}
     {% set pagerClass = options.class %}
@@ -43,8 +37,7 @@
   {% if (page <= options.total) %}
     <span class="{{ pageClass }}{% if page == 1 %}  is-first{% endif %}{% if page == options.total %} is-last{% endif %}{% if page == options.page %} is-active{% endif %}">
       {%- if (options.page != page) -%}
-        {# Dual markup for javascript applications and plain old links #}
-        <a href="{{ url | build({ page: page, append: 1 }) }}">
+        <a href="{{ url | build({ page: page }) }}">
       {%- endif -%}
       {{ page }}
       {%- if (options.page != page) -%}

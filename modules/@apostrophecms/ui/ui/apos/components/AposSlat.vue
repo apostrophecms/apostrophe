@@ -6,9 +6,9 @@
       :data-id="item._id"
       tabindex="0"
       :class="{
-        'is-engaged': engaged,
-        'is-only-child': slatCount === 1,
-        'is-selected': selected
+        'apos-is-engaged': engaged,
+        'apos-is-only-child': slatCount === 1,
+        'apos-is-selected': selected
       }"
       @keydown.prevent.space="toggleEngage"
       @keydown.prevent.enter="toggleEngage"
@@ -27,7 +27,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="item._fields"
+          v-if="hasRelationshipSchema"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -65,10 +65,12 @@
         <AposButton
           v-if="removable"
           @click="remove"
+          class="apos-slat__control apos-slat__control--remove"
           icon="close-icon"
           :icon-only="true"
           :modifiers="['inline']"
           label="Remove Item"
+          :disabled="disabled"
         />
       </div>
     </li>
@@ -102,6 +104,14 @@ export default {
       default: true
     },
     selected: {
+      type: Boolean,
+      default: false
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    },
+    hasRelationshipSchema: {
       type: Boolean,
       default: false
     }
@@ -194,7 +204,7 @@ export default {
     }
 
     &.apos-slat-list__item--disabled,
-    &.is-only-child {
+    &.apos-is-only-child {
       &:hover,
       &:active {
         cursor: default;
@@ -207,19 +217,19 @@ export default {
     }
   }
 
-  .apos-slat.is-engaged,
-  .apos-slat.is-engaged:focus,
+  .apos-slat.apos-is-engaged,
+  .apos-slat.apos-is-engaged:focus,
   .apos-slat.sortable-chosen:focus,
-  .apos-slat.is-dragging:focus,
-  .apos-slat.is-selected,
-  .apos-slat.is-selected:focus {
+  .apos-slat.apos-is-dragging:focus,
+  .apos-slat.apos-is-selected,
+  .apos-slat.apos-is-selected:focus {
     background-color: var(--a-primary);
     &,
-    /deep/ .apos-button {
+    ::v-deep .apos-button {
       color: var(--a-white);
     }
     &:hover {
-      background-color: var(--a-primary-button-hover);
+      background-color: var(--a-primary-dark-10);
     }
   }
 
@@ -233,7 +243,7 @@ export default {
   .apos-slat__main {
     display: flex;
     align-items: center;
-    & /deep/ .trigger {
+    & ::v-deep .trigger {
       /* This gets inline positioned and has doesn't provide an extra class to beef up, sorry */
       /* stylelint-disable-next-line declaration-no-important */
       display: flex !important;
@@ -253,6 +263,7 @@ export default {
     display: flex;
     align-content: center;
     margin-right: 5px;
+    line-height: 0;
   }
 
   .apos-slat__control--remove:hover {
@@ -319,8 +330,8 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--a-base-1);
-    border: 1px solid var(--a-base-9);
+    background-color: var(--a-background-primary);
+    border: 1px solid var( --a-base-8);
   }
 
   .apos-slat__media {

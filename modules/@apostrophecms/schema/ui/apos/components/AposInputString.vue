@@ -11,7 +11,7 @@
           v-if="field.textarea && field.type === 'string'" rows="5"
           v-model="next" :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         />
         <input
@@ -19,7 +19,8 @@
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="enterEmit"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly || field.disabled"
+          :required="field.required"
           :id="uid" :tabindex="tabindex"
           :step="step"
         >
@@ -43,7 +44,8 @@ export default {
   emits: [ 'return' ],
   data () {
     return {
-      step: undefined
+      step: undefined,
+      wasPopulated: false
     };
   },
   computed: {
@@ -90,14 +92,20 @@ export default {
         // previous value matched the previous value of the other field(s)
         oldValue = Object.values(oldValue).join(' ').trim();
         newValue = Object.values(newValue).join(' ').trim();
-        if (((this.next == null) || (!this.next.length)) || (this.next === oldValue)) {
+        if ((!this.wasPopulated && ((this.next == null) || (!this.next.length))) || (this.next === oldValue)) {
           this.next = newValue;
         }
+      }
+    },
+    next() {
+      if (this.next && this.next.length) {
+        this.wasPopulated = true;
       }
     }
   },
   mounted() {
     this.defineStep();
+    this.wasPopulated = this.next && this.next.length;
   },
   methods: {
     enterEmit() {
@@ -116,12 +124,15 @@ export default {
       if (value == null) {
         value = '';
       }
-      if (this.field.required) {
-        if (typeof value === 'string' && !value.length) {
+      if (typeof value === 'string' && !value.length) {
+        // Also correct for float and integer because Vue coerces
+        // number fields to either a number or the empty string
+        if (this.field.required) {
           return 'required';
+        } else {
+          return false;
         }
       }
-
       const minMaxFields = [
         'integer',
         'float',
@@ -131,12 +142,12 @@ export default {
       ];
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {
-        if (value.length && (this.convert(value) < this.field.min)) {
+        if ((value != null) && value.length && (this.minMaxComparable(value) < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max && minMaxFields.includes(this.field.type)) {
-        if (value.length && (this.convert(value) > this.field.max)) {
+        if ((value != null) && value.length && (this.minMaxComparable(value) > this.field.max)) {
           return 'max';
         }
       }
@@ -156,11 +167,33 @@ export default {
     },
     convert(s) {
       if (this.field.type === 'integer') {
-        return parseInt(s);
+        if ((s == null) || (s === '')) {
+          return s;
+        } else {
+          return parseInt(s);
+        }
       } else if (this.field.type === 'float') {
-        return parseFloat(s);
+        if ((s == null) || (s === '')) {
+          return s;
+        } else {
+          return parseFloat(s);
+        }
       } else {
-        return s;
+        if (s == null) {
+          return '';
+        } else {
+          return s.toString();
+        }
+      }
+    },
+    minMaxComparable(s) {
+      const converted = this.convert(s);
+      if ((this.field.type === 'integer') || (this.field.type === 'float') || (this.field.type === 'date') || (this.field.type === 'range') || (this.field.type === 'time')) {
+        // Compare the actual values for these types
+        return converted;
+      } else {
+        // Compare the length for other types, like string or password or url
+        return converted.length;
       }
     }
   }
@@ -173,18 +206,16 @@ export default {
     // lame magic number ..
     // height of date/time input is slightly larger than others due to the browser spinner ui
     height: 46px;
+    padding-right: 40px;
+    &::-webkit-calendar-picker-indicator {
+      background: none;
+    }
   }
   .apos-input--date {
-    // padding is lessend to overlap with calendar UI
-    padding-right: $input-padding * 1.4;
-    &::-webkit-calendar-picker-indicator { opacity: 0; }
     &::-webkit-clear-button {
       position: relative;
       right: 5px;
     }
-  }
-  .apos-input--time {
-    padding-right: calc(#{$input-padding} - 2px);
   }
 
   .apos-field--small .apos-input--date,

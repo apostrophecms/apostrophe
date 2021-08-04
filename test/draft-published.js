@@ -84,8 +84,8 @@ describe('Draft / Published', function() {
               _articles: {
                 type: 'relationship',
                 withType: 'article',
-                filters: {
-                  projection: {
+                builders: {
+                  project: {
                     _url: 1,
                     title: 1
                   }
@@ -209,6 +209,14 @@ describe('Draft / Published', function() {
     }), testDraftProduct);
   });
 
+  it('"previous published" should be deduplicated at this point', async () => {
+    const previous = await apos.doc.db.findOne({
+      _id: testDraftProduct._id.replace(':draft', ':previous')
+    });
+    assert(previous);
+    assert.strictEqual(previous.slug, `deduplicate-${previous.aposDocId}-test-product`);
+  });
+
   it('original product shows as modified if we make a third change to it', async () => {
     testDraftProduct.title = 'Title 4';
     testDraftProduct = await apos.product.update(apos.task.getReq({
@@ -236,6 +244,8 @@ describe('Draft / Published', function() {
     assert(published && published.aposLocale === 'en:published');
     published = await apos.product.revertPublishedToPrevious(req, published);
     assert(published);
+    // Make sure the slug is no longer deduplicated
+    assert(published.slug === 'test-product');
     assert(published.title === 'Test Product');
     testDraftProduct = await apos.product.findOneForEditing({
       ...req,
@@ -458,6 +468,7 @@ describe('Draft / Published', function() {
     }), parent._id, 'lastChild', grandchild);
     assert(grandchild.modified);
     assert.strictEqual(grandchild.path, `${parent.path}/${grandchild.aposDocId}`);
+    assert.strictEqual(grandchild.slug, '/parent/grandchild');
   });
 
   it('published grandchild should not exist yet', async () => {
@@ -472,6 +483,15 @@ describe('Draft / Published', function() {
     await apos.page.publish(apos.task.getReq({
       mode: 'draft'
     }), grandchild);
+    const published = await apos.page.find(apos.task.getReq({
+      mode: 'published'
+    }), {
+      aposDocId: grandchild.aposDocId
+    }).toObject();
+    assert(published);
+    assert.strictEqual(published.aposMode, 'published');
+    assert.strictEqual(published.path, `${parent.path}/${grandchild.aposDocId}`);
+    assert.strictEqual(published.slug, '/parent/grandchild');
   });
 
   it('should be able to move the grandchild page beneath the sibling page', async () => {

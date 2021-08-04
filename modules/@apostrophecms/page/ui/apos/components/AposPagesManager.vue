@@ -1,6 +1,6 @@
 <template>
   <AposModal
-    :modal="modal" modal-title="Manage Page Tree"
+    :modal="modal" modal-title="Manage Pages"
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
@@ -12,37 +12,60 @@
       />
       <AposButton
         v-else
-        type="default" label="Finished"
+        type="default" label="Exit"
         @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
+      <AposContextMenu
+        v-if="relationshipField"
+        :menu="moreMenu"
+        menu-placement="bottom-end"
+        @item-clicked="moreMenuHandler"
+        :button="moreMenuButton"
+      />
       <AposButton
-        :type="relationshipField ? 'secondary' : 'primary'"
-        label="New Page"
-        @click="openEditor(null)"
+        v-else type="primary"
+        label="New Page" @click="create()"
       />
       <AposButton
         v-if="relationshipField"
         type="primary"
-        label="Select Pages"
-        :disabled="relationshipErrors === 'min'"
+        :label="saveRelationshipLabel"
+        :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
     </template>
+    <template v-if="relationshipField" #leftRail>
+      <AposModalRail>
+        <div class="apos-pages-manager__relationship__rail">
+          <div class="apos-pages-manager__relationship__counts">
+            <AposMinMaxCount
+              :field="relationshipField"
+              :value="checkedDocs"
+            />
+          </div>
+          <AposSlatList
+            class="apos-pages-manager__relationship__items"
+            @input="setCheckedDocs"
+            :value="checkedDocs"
+          />
+        </div>
+      </AposModalRail>
+    </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader>
-          <AposDocsManagerToolbar
-            :selected-state="selectAllState"
-            @select-click="selectAll"
-            @trash-click="trashClick"
-            :options="{
-              noSearch: true,
-              noPager: true,
-              hideSelectAll: !relationshipField
-            }"
-          />
+        <template #bodyHeader v-if="!relationshipField">
+          <AposModalToolbar>
+            <template #rightControls>
+              <AposContextMenu
+                :menu="pageSetMenu"
+                menu-placement="bottom-end"
+                @item-clicked="pageSetMenuSelection = $event"
+                :button="pageSetMenuButton"
+              />
+            </template>
+          </AposModalToolbar>
         </template>
         <template #bodyMain>
           <AposTree
@@ -52,7 +75,6 @@
             v-model="checked"
             :options="treeOptions"
             @update="update"
-            @edit="openEditor"
           />
         </template>
       </AposModalBody>
@@ -61,21 +83,25 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
-  emits: [ 'trash', 'search', 'safe-close' ],
+  mixins: [ AposModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
+  emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
   data() {
+
     return {
       moduleName: '@apostrophecms/page',
       modal: {
         active: false,
-        type: 'overlay',
-        showModal: false
+        type: 'slide',
+        showModal: false,
+        width: 'two-thirds'
       },
       pages: [],
       pagesFlat: [],
@@ -87,38 +113,20 @@ export default {
             cellValue: 'title'
           },
           {
-            columnHeader: 'Published',
-            property: 'lastPublishedAt',
-            cellValue: {
-              true: {
-                icon: 'circle',
-                iconSize: 10,
-                label: 'Yes',
-                class: 'is-published'
-              },
-              false: {
-                icon: 'circle',
-                iconSize: 10,
-                label: 'No'
-              }
-            }
+            name: 'labels',
+            columnHeader: '',
+            component: 'AposCellLabels'
           },
           {
-            columnHeader: 'Edit',
-            property: '_id',
-            type: 'button',
-            action: 'edit',
-            cellValue: {
-              icon: 'pencil'
-            }
+            columnHeader: 'Last Edited',
+            property: 'updatedAt',
+            component: 'AposCellLastEdited',
+            cellValue: 'updatedAt'
           },
           {
-            columnHeader: 'Link',
-            property: '_url',
-            type: 'link',
-            cellValue: {
-              icon: 'link'
-            }
+            columnHeader: '',
+            property: 'contextMenu',
+            component: 'AposCellContextMenu'
           }
         ]
       },
@@ -126,7 +134,25 @@ export default {
         bulkSelect: !!this.relationshipField,
         draggable: true,
         ghostUnpublished: true
-      }
+      },
+      moreMenu: [
+        {
+          label: 'New Page',
+          action: 'new'
+        }
+      ],
+      moreMenuButton: {
+        tooltip: {
+          content: 'More Options',
+          placement: 'bottom'
+        },
+        label: 'More Options',
+        icon: 'dots-vertical-icon',
+        iconOnly: true,
+        type: 'subtle',
+        modifiers: [ 'small', 'no-motion' ]
+      },
+      pageSetMenuSelection: 'live'
     };
   },
   computed: {
@@ -134,25 +160,10 @@ export default {
       return apos.page;
     },
     items() {
-      const items = [];
       if (!this.pages || !this.headers.length) {
         return [];
       }
-
-      const pagesSet = klona(this.pages);
-
-      pagesSet.forEach(page => {
-        const data = {};
-
-        this.headers.forEach(column => {
-          data[column.property] = page[column.property];
-          data._id = page._id;
-          data.children = page.children;
-          data.parked = page.parked;
-        });
-        items.push(data);
-      });
-      return items;
+      return klona(this.pages);
     },
     selectAllChoice() {
       const checkLen = this.checked.length;
@@ -164,43 +175,119 @@ export default {
       } : {
         value: 'checked'
       };
+    },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return 'Select Page';
+      } else {
+        return 'Select Pages';
+      }
+    },
+    headers() {
+      let headers = this.options.columns || [];
+      if (!this.pageSetMenuSelectionIsLive) {
+        headers = headers.filter(h => h.component !== 'AposCellLabels');
+      }
+      return headers;
+    },
+    pageSetMenu() {
+      return [ {
+        label: 'Live',
+        action: 'live',
+        modifiers: this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
+      }, {
+        label: 'Archive',
+        action: 'archive',
+        modifiers: !this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
+      } ];
+    },
+    pageSetMenuButton() {
+      const button = {
+        label: this.pageSetMenuSelectionIsLive ? 'Live' : 'Archive',
+        icon: 'chevron-down-icon',
+        modifiers: [ 'no-motion', 'outline', 'icon-right' ],
+        class: 'apos-pages-manager__page-set-menu-button'
+      };
+      return button;
+    },
+    pageSetMenuSelectionIsLive() {
+      return this.pageSetMenuSelection === 'live';
+    }
+  },
+  watch: {
+    async pageSetMenuSelection() {
+      await this.getPages();
     }
   },
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-
     await this.getPages();
+    apos.bus.$on('content-changed', this.getPages);
+  },
+  destroyed() {
+    apos.bus.$off('content-changed', this.getPages);
   },
   methods: {
+    moreMenuHandler(action) {
+      if (action === 'new') {
+        this.create();
+      }
+    },
     async getPages () {
-      this.pages = [];
-      this.pagesFlat = [];
       const self = this;
+      if (this.gettingPages) {
+        // Avoid race conditions by trying again later if already in progress
+        setTimeout(this.getPages, 100);
+        return;
+      }
+      // Not reactive, so not in data()
+      this.gettingPages = true;
+      try {
+        this.pages = [];
+        this.pagesFlat = [];
 
-      const pageTree = (await apos.http.get(
-        '/api/v1/@apostrophecms/page', {
-          busy: true,
-          qs: {
-            all: 1,
-            trash: null
-          },
-          draft: true
+        let pageTree = (await apos.http.get(
+          '/api/v1/@apostrophecms/page', {
+            busy: true,
+            qs: {
+              all: '1',
+              archived: this.relationshipField || this.pageSetMenuSelectionIsLive ? '0' : 'any',
+              // Also fetch published docs as _publishedDoc subproperties
+              withPublished: 1
+            },
+            draft: true
+          }
+        ));
+
+        // If editor is looking at the archive tree, trim the normal page tree response
+        if (this.pageSetMenuSelection === 'archive') {
+          pageTree = pageTree._children.find(page => page.slug === '/archive');
+          pageTree = pageTree._children;
         }
-      ));
 
-      formatPage(pageTree);
+        formatPage(pageTree);
 
-      this.pages = [ pageTree ];
+        if (!pageTree.length && pageTree.length !== 0) {
+          pageTree = [ pageTree ];
+        }
+
+        this.pages = [ ...pageTree ];
+
+      } finally {
+        this.gettingPages = false;
+      }
 
       function formatPage(page) {
+        if (page.length) {
+          page.forEach(formatPage);
+          return;
+        }
+
         self.pagesFlat.push(klona(page));
 
-        page.children = page._children;
-        delete page._children;
-
-        if (Array.isArray(page.children)) {
-          page.children.forEach(formatPage);
+        if (Array.isArray(page._children)) {
+          page._children.forEach(formatPage);
         }
       }
     },
@@ -226,6 +313,12 @@ export default {
       }
 
       await this.getPages();
+      if (this.pagesFlat.find(page => {
+        return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.archived;
+      })) {
+        // With the current page gone, we need to move to safe ground
+        location.assign(`${window.apos.prefix}/`);
+      }
     },
     toggleRowCheck(id) {
       if (this.checked.includes(id)) {
@@ -248,27 +341,25 @@ export default {
         });
       }
     },
-    trashClick() {
-      // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('trash', this.selected);
-    },
-    async openEditor(pageId) {
-      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
-        moduleName: this.moduleName,
-        docId: pageId
+    async create() {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
+        moduleName: this.moduleName
       });
       if (!doc) {
         // Cancel clicked
         return;
       }
       await this.getPages();
-      if (this.relationshipField && (!pageId)) {
+      if (this.relationshipField) {
         doc._fields = doc._fields || {};
         // Must push to checked docs or it will try to do it for us
         // and not include _fields
         this.checkedDocs.push(doc);
         this.checked.push(doc._id);
       }
+    },
+    setCheckedDocs(checkedDocs) {
+      this.checked = checkedDocs.map(doc => doc._id);
     },
     updateCheckedDocs() {
       this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
@@ -278,4 +369,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-pages-manager__relationship__rail {
+    padding: 20px;
+  }
+
+  .apos-pages-manager__relationship__counts {
+    margin-bottom: 20px;
+  }
 </style>

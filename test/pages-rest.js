@@ -130,24 +130,22 @@ describe('Pages REST', function() {
     const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'ad';
-    user.lastName = 'min';
     user.title = 'admin';
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
+    user.role = 'admin';
 
     await apos.user.insert(apos.task.getReq(), user);
 
     const user2 = apos.user.newInstance();
     assert(user2);
 
-    user2.firstName = 'ad';
-    user2.lastName = 'min2';
     user2.title = 'admin2';
     user2.username = 'admin2';
     user2.password = 'admin2';
     user2.email = 'ad@min2.com';
+    user2.role = 'admin';
 
     return apos.user.insert(apos.task.getReq(), user2);
 
@@ -633,29 +631,29 @@ describe('Pages REST', function() {
     assert.strictEqual(page.rank, 0);
   });
 
-  it('can use PATCH to move a page into the trash using _trash as _targetId', async function() {
+  it('can use PATCH to move a page into the archive using _archive as _targetId', async function() {
     let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin:en:published', {
       body: {
-        _targetId: '_trash',
+        _targetId: '_archive',
         _position: 'firstChild'
       },
       jar
     });
     assert(page._id);
-    const trash = await apos.http.get('/api/v1/@apostrophecms/page/_trash?trash=1', {
+    const archive = await apos.http.get('/api/v1/@apostrophecms/page/_archive?archived=1', {
       jar
     });
-    assert(trash);
-    // Verify this is really working because of the _trash
+    assert(archive);
+    // Verify this is really working because of the _archived
     // shortcut
-    assert(trash._id !== '_trash');
-    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${trash.aposDocId}/${page.aposDocId}`);
+    assert(archive._id !== '_archive');
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${archive.aposDocId}/${page.aposDocId}`);
     assert.strictEqual(page.level, 2);
     assert.strictEqual(page.rank, 0);
-    page = await apos.http.get('/api/v1/@apostrophecms/page/cousin:en:published?_edit=1&trash=1', {
+    page = await apos.http.get('/api/v1/@apostrophecms/page/cousin:en:published?_edit=1&archived=1', {
       jar
     });
-    assert(page.trash);
+    assert(page.archived);
   });
 
   it('Can use PATCH to add a widget to an area by path', async () => {
@@ -997,7 +995,7 @@ describe('Pages REST', function() {
                           {
                             _id: 'ckhuxqw8o006h094lnkip3gen',
                             visibility: 'public',
-                            trash: false,
+                            archived: false,
                             type: '@apostrophecms/image',
                             attachment: {
                               _id: 'ckhxvoqra00qsuj4lq0hnkrzg',
@@ -1011,7 +1009,7 @@ describe('Pages REST', function() {
                               docIds: [
                                 'ckhuxqw8o006h094lnkip3gen'
                               ],
-                              trashDocIds: [],
+                              archivedDocIds: [],
                               length: {
                                 dev: 51713,
                                 mode: 33204,
@@ -1036,10 +1034,9 @@ describe('Pages REST', function() {
                               width: 1072,
                               height: 715,
                               landscape: true,
-                              ownerId: 'ckgrzqiyy0006zuec6xrfnq24',
                               used: true,
                               utilized: true,
-                              trash: false,
+                              archived: false,
                               _urls: {
                                 max: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.max.jpg',
                                 full: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.full.jpg',
@@ -1242,7 +1239,7 @@ describe('Pages REST', function() {
                     {
                       _id: 'ckhuxqw8o006h094lnkip3gen',
                       visibility: 'public',
-                      trash: false,
+                      archived: false,
                       type: '@apostrophecms/image',
                       attachment: {
                         _id: 'ckhxvoqra00qsuj4lq0hnkrzg',
@@ -1256,7 +1253,7 @@ describe('Pages REST', function() {
                         docIds: [
                           'ckhuxqw8o006h094lnkip3gen'
                         ],
-                        trashDocIds: [],
+                        archivedDocIds: [],
                         length: {
                           dev: 51713,
                           mode: 33204,
@@ -1281,10 +1278,9 @@ describe('Pages REST', function() {
                         width: 1072,
                         height: 715,
                         landscape: true,
-                        ownerId: 'ckgrzqiyy0006zuec6xrfnq24',
                         used: true,
                         utilized: true,
-                        trash: false,
+                        archived: false,
                         _urls: {
                           max: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.max.jpg',
                           full: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.full.jpg',
@@ -1410,7 +1406,7 @@ describe('Pages REST', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         },
         title: 'Advisory Test Patched'
@@ -1425,7 +1421,7 @@ describe('Pages REST', function() {
         jar,
         body: {
           _advisoryLock: {
-            htmlPageId: 'pdq',
+            tabId: 'pdq',
             lock: true
           }
         }
@@ -1443,7 +1439,7 @@ describe('Pages REST', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true,
           force: true
         }
@@ -1456,7 +1452,7 @@ describe('Pages REST', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true
         }
       }
@@ -1468,7 +1464,7 @@ describe('Pages REST', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: false
         },
         title: 'Advisory Test Patched Again'
@@ -1482,7 +1478,7 @@ describe('Pages REST', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         }
       }
@@ -1521,13 +1517,13 @@ describe('Pages REST', function() {
     assert(page.match(/logged in/));
   });
 
-  it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
+  it('second user with a distinct tabId gets an appropriate error specifying who has the lock', async () => {
     try {
       await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {
-            htmlPageId: 'nbc',
+            tabId: 'nbc',
             lock: true
           }
         }

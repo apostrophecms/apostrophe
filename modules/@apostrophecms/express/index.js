@@ -135,6 +135,13 @@
 // Use the `middleware` section in your module. That function should
 // return an object containing named middleware functions. These are
 // activated for all requests.
+//
+// ### trustProxy
+//
+// Enables the ["trust proxy" option for Express](https://expressjs.com/en/api.html#trust.proxy.options.table).
+// Set to `true` to tell the Express app to  respect `X-Forwarded-* ` headers.
+// This is helpful when Apostrophe is generating `http:` URLs even though a
+// proxy like nginx is being used to serve it over `https:`.
 
 const fs = require('fs');
 const _ = require('lodash');
@@ -146,11 +153,14 @@ const expressSession = require('express-session');
 const cookieParser = require('cookie-parser');
 const qs = require('qs');
 const expressBearerToken = require('express-bearer-token');
+const cors = require('cors');
+const Promise = require('bluebird');
 
 module.exports = {
   init(self) {
     self.createApp();
     self.prefix();
+    self.trustProxy();
     if (self.options.baseUrl && !self.apos.baseUrl) {
       self.apos.util.error('WARNING: you have baseUrl set as an option to the `@apostrophecms/express` module.');
       self.apos.util.error('Set it as a global option (a property of the main object passed to apostrophe).');
@@ -181,18 +191,28 @@ module.exports = {
         addCsrf() {
           self.enableCsrf();
         },
-        addModuleMiddleware() {
+        async addModuleMiddlewareAndRoutes() {
           // This has to happen on modulesReady, so that it happens before
           // the adding of routes by other, later modules on modulesReady,
           // and before the adding of the catch-all route for pages
           // on afterInit
-          self.findModuleMiddleware();
-          for (const middleware of self.finalModuleMiddleware) {
-            self.apos.app.use(middleware);
+          await self.findModuleMiddlewareAndRoutes();
+          for (const item of self.finalModuleMiddlewareAndRoutes) {
+            if (item.method) {
+              self.apos.app[item.method](item.url, item.route);
+            } else if (item.middleware) {
+              if (item.url) {
+                self.apos.app.use(item.url, item.middleware);
+              } else {
+                self.apos.app.use(item.middleware);
+              }
+            } else if ((typeof item) === 'function') {
+              // Simple middleware
+              self.apos.app.use(item);
+            } else {
+              throw self.apos.error('error', 'Unrecognized entry on finalModuleMiddlewareAndRoutes chain', item);
+            }
           }
-        },
-        async addModuleRoutes() {
-          await self.emit('addRoutes');
         }
       }
     };
@@ -200,6 +220,11 @@ module.exports = {
 
   middleware(self) {
     return {
+      // Enable CORS headers for all APIs
+      enableCors: {
+        url: '/api/v1',
+        middleware: cors()
+      },
       createDataAndGuards(req, res, next) {
         if (!req.data) {
           req.data = {};
@@ -320,21 +345,6 @@ module.exports = {
       absoluteUrl(req, res, next) {
         self.addAbsoluteUrlsToReq(req);
         next();
-      },
-      // Makes the `@apostrophecms/Html-Page-Id` header available
-      // as `req.htmlPageId`. This header is passed by
-      // all jQuery AJAX requests made by Apostrophe. It
-      // contains a unique identifier just for the current
-      // webpage in the browser; that is, navigating to a new
-      // page always generates a *new* id, the same page in two tabs
-      // will have *different* ids, etc. This makes it easy to
-      // identify requests that come from the "same place"
-      // for purposes of conflict resolution and locking.
-      // (Note that conflicts can occur between two tabs
-      // belonging to the same user, so a session ID is not enough.)
-      htmlPageId(req, res, next) {
-        req.htmlPageId = req.header('@apostrophecms/Html-Page-Id');
-        next();
       }
     };
   },
@@ -378,6 +388,13 @@ module.exports = {
           });
           self.apos.baseApp = express();
           self.apos.baseApp.use(self.apos.prefix, self.apos.app);
+        }
+      },
+
+      // Implement the trustProxy option
+      trustProxy() {
+        if (self.options.trustProxy) {
+          self.apos.app.set('trust proxy', true);
         }
       },
 
@@ -553,28 +570,49 @@ module.exports = {
           address = false;
         }
 
-        if (address !== false) {
-          self.server = self.apos.baseApp.listen(port, address);
-        } else if (port) {
-          self.server = self.apos.baseApp.listen(port);
-        } else {
-          self.server = self.apos.baseApp.listen();
-        }
-
-        return new Promise(function (resolve, reject) {
-          self.server.on('error', reject);
-          self.server.on('listening', function () {
-            self.address = self.server.address().address;
-            if (self.address === '::') {
-              // :: is not recognized as an ipv6 address by Chrome
-              self.address = 'localhost';
+        const attempts = (process.env.NODE_ENV === 'production') ? 1 : 5;
+        let attempt = 0;
+        while (true) {
+          try {
+            await listen();
+            break;
+          } catch (e) {
+            attempt++;
+            if (attempt === attempts) {
+              throw e;
+            } else {
+              // Work around frequent issue with nodemon due to long polling
+              await Promise.delay(500);
             }
-            self.port = self.server.address().port;
-            self.apos.util.log(`Listening at http://${self.address}:${self.port}`);
-            enableDestroy(self.server);
-            return resolve();
+          }
+        }
+        self.apos.util.log(`Listening at http://${self.address}:${self.port}`);
+
+        // awaitable listen function
+        function listen() {
+          if (address !== false) {
+            self.server = self.apos.baseApp.listen(port, address);
+          } else if (port) {
+            self.server = self.apos.baseApp.listen(port);
+          } else {
+            self.server = self.apos.baseApp.listen();
+          }
+          return new Promise(function (resolve, reject) {
+            self.server.on('error', function(e) {
+              return reject(e);
+            });
+            self.server.on('listening', function () {
+              self.address = self.server.address().address;
+              if (self.address === '::') {
+                // :: is not recognized as an ipv6 address by Chrome
+                self.address = 'localhost';
+              }
+              self.port = self.server.address().port;
+              enableDestroy(self.server);
+              return resolve();
+            });
           });
-        });
+        }
       },
 
       // Sets the `req.absoluteUrl` property for all requests,
@@ -598,40 +636,53 @@ module.exports = {
         _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));
       },
 
-      // Locate modules with middleware and add it to the list. By default
+      // Locate modules with middleware and routes and add them to the list. By default
       // the order is: middleware of this module, then middleware of all other
-      // modules in module registration order. The "before" keyword can be used
-      // to change this
-      findModuleMiddleware() {
+      // modules in module registration order, then routes of all modules in
+      // module registration order.
+      //
+      // The "before" keyword can be used to change this
+      async findModuleMiddlewareAndRoutes() {
+        await self.emit('compileRoutes');
         const labeledList = [];
         const moduleNames = Array.from(new Set([ self.__meta.name, ...Object.keys(self.apos.modules) ]));
         for (const name of moduleNames) {
-          const middleware = self.apos.modules[name].middleware;
-          if (!middleware) {
-            continue;
-          }
+          const middleware = self.apos.modules[name].middleware || {};
           labeledList.push({
-            name,
+            name: `middleware:${name}`,
             middleware: Object.values(middleware).filter(middleware => !middleware.before)
           });
         }
         for (const name of Object.keys(self.apos.modules)) {
-          const middleware = self.apos.modules[name].middleware;
-          if (!middleware) {
-            continue;
-          }
-          for (const item of Object.values(middleware)) {
+          const _routes = self.apos.modules[name]._routes;
+          labeledList.push({
+            name: `routes:${name}`,
+            routes: _routes.filter(route => !route.before)
+          });
+        }
+        for (const name of Object.keys(self.apos.modules)) {
+          const middleware = self.apos.modules[name].middleware || {};
+          const _routes = self.apos.modules[name]._routes;
+          for (const item of [ ...Object.values(middleware), ..._routes ]) {
             if (item.before) {
-              const before = labeledList.find(entry => entry.name === item.before);
+              let fullBeforeName = item.before;
+              if ((!item.before.startsWith('routes:')) && (!item.before.startsWith('middleware:'))) {
+                if (item.routes) {
+                  fullBeforeName = `routes:${item.before}`;
+                } else {
+                  fullBeforeName = `middleware:${item.before}`;
+                }
+              }
+              const before = labeledList.find(entry => entry.name === fullBeforeName);
               if (!before) {
-                throw new Error(`The module ${name} attempted to add middleware "before" the module ${item.before}, which does not exist`);
+                throw new Error(`The module ${name} attempted to add middleware or routes "before" the module ${fullBeforeName.split(':')[1]}, which does not exist`);
               }
               before.prepending = before.prepending || [];
-              before.prepending.push(item.middleware);
+              before.prepending.push(item);
             }
           }
         }
-        self.finalModuleMiddleware = labeledList.map(item => (item.prepending || []).concat(item.middleware)).flat();
+        self.finalModuleMiddlewareAndRoutes = labeledList.map(item => (item.prepending || []).concat(item.middleware || item.routes)).flat();
       }
     };
   }

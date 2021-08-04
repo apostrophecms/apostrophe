@@ -17,7 +17,8 @@
             class="apos-input apos-input--text apos-input--relationship"
             v-model="searchTerm" type="text"
             :placeholder="placeholder"
-            :disabled="disabled" :required="field.required"
+            :disabled="field.readOnly || limitReached"
+            :required="field.required"
             :id="uid"
             @input="input"
             @focusout="handleFocusOut"
@@ -25,6 +26,7 @@
           >
           <AposButton
             class="apos-input-relationship__button"
+            :disabled="field.readOnly || limitReached"
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
@@ -37,6 +39,8 @@
           @input="updateSelected"
           @item-clicked="editRelationship"
           :value="next"
+          :disabled="field.readOnly"
+          :has-relationship-schema="!!field.schema"
         />
         <AposSearchList
           :list="searchList"
@@ -56,11 +60,19 @@ export default {
   mixins: [ AposInputMixin ],
   emits: [ 'input' ],
   data () {
+    const next = (this.value && Array.isArray(this.value.data))
+        ? this.value.data : (this.field.def || []);
     return {
       searchTerm: '',
       searchList: [],
-      next: (this.value && Array.isArray(this.value.data))
-        ? this.value.data : (this.field.def || []),
+      next,
+      // Remember relationship subfield values even if a document
+      // is temporarily deselected, easing the user's pain if they
+      // inadvertently deselect something for a moment
+      subfields: Object.fromEntries((this.next || [])
+        .filter(doc => doc._fields)
+        .map(doc => [ doc._id, doc._fields ])
+      ),
       disabled: false,
       searching: false,
       choosing: false,
@@ -68,6 +80,9 @@ export default {
     };
   },
   computed: {
+    limitReached() {
+      return this.field.max === this.next.length;
+    },
     pluralLabel() {
       return apos.modules[this.field.withType].pluralLabel;
     },
@@ -83,12 +98,24 @@ export default {
       return apos.modules[this.field.withType].components.managerModal;
     }
   },
+  watch: {
+    next(after, before) {
+      for (const doc of before) {
+        this.subfields[doc._id] = doc._fields;
+      }
+      for (const doc of after) {
+        if (this.subfields[doc._id] && !Object.keys(doc._fields || {}).length) {
+          doc._fields = this.subfields[doc._id];
+        }
+      }
+    }
+  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
         return { message: 'required' };
       }
-      if (this.field.max && this.field.max <= value.length) {
+      if (this.limitReached) {
         this.searchTerm = 'Limit reached!';
         this.disabled = true;
       } else {

@@ -14,7 +14,7 @@
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
-        :display-options="displayOptions"
+        :display-options="getDisplayOptions(field.name)"
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
@@ -81,6 +81,12 @@ export default {
       default() {
         return {};
       }
+    },
+    changed: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'input', 'reset' ],
@@ -142,6 +148,16 @@ export default {
     this.populateDocData();
   },
   methods: {
+    getDisplayOptions(fieldName) {
+      let options = {};
+      if (this.displayOptions) {
+        options = { ...this.displayOptions };
+      }
+      if (this.changed && this.changed.includes(fieldName)) {
+        options.changed = true;
+      }
+      return options;
+    },
     populateDocData() {
       this.schemaReady = false;
       const next = {
@@ -191,7 +207,7 @@ export default {
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
 
-      this.schema.forEach(field => {
+      this.schema.filter(field => this.displayComponent(field.name)).forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
@@ -242,18 +258,24 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-schema /deep/ .apos-field__wrapper {
+  .apos-schema ::v-deep .apos-field__wrapper {
     max-width: $input-max-width;
   }
+
+  .apos-schema ::v-deep img {
+    max-width: 100%;
+  }
+
   .apos-field {
-    .apos-schema /deep/ & {
-      margin-bottom: $spacing-triple;
-      &.apos-field--micro {
+    .apos-schema ::v-deep & {
+      margin-bottom: $spacing-quadruple;
+      &.apos-field--micro,
+      &.apos-field--margin-micro {
         margin-bottom: $spacing-double;
       }
     }
 
-    .apos-schema /deep/ .apos-toolbar & {
+    .apos-schema ::v-deep .apos-toolbar & {
       margin-bottom: 0;
     }
   }

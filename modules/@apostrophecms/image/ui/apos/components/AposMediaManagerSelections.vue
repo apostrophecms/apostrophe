@@ -30,6 +30,7 @@
               {{ item.title }}
             </div>
             <AposButton
+              v-if="canEdit"
               label="Edit"
               type="quiet"
               :modifiers="['no-motion']"
@@ -48,6 +49,10 @@
 <script>
 export default {
   props: {
+    canEdit: {
+      type: Boolean,
+      default: false
+    },
     items: {
       type: Array,
       required: true
@@ -90,7 +95,7 @@ export default {
   margin-bottom: $spacing-double;
 }
 
-.apos-media-manager-selections__heading /deep/ .apos-button {
+.apos-media-manager-selections__heading ::v-deep .apos-button {
   margin-left: $spacing-base;
 }
 

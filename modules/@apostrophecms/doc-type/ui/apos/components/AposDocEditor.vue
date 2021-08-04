@@ -12,25 +12,30 @@
       />
     </template>
     <template #primaryControls>
-      <!-- TODO: these conditions will need adjusting when we get to the
-        "Duplicate" feature, but without them we would have an empty
-        menu in many cases because all of the operations
-        depend on modification from published -->
-      <AposDocMoreMenu
-        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished || canDiscardDraft)"
-        :is-modified="isModified"
-        :is-modified-from-published="isModifiedFromPublished"
-        :can-discard-draft="canDiscardDraft"
-        :is-published="!!published"
-        :options="{ saveDraft: true }"
-        @saveDraft="saveDraft"
-        @discardDraft="onDiscardDraft"
+      <AposDocContextMenu
+        v-if="original"
+        :disabled="(errorCount > 0) || restoreOnly"
+        :doc="original"
+        :current="docFields.data"
+        :published="published"
+        :show-edit="false"
+        @close="close"
       />
       <AposButton
+        v-if="restoreOnly"
         type="primary" :label="saveLabel"
-        :modifiers="buttonModifiers"
-        @click="submit"
+        :disabled="saveDisabled"
+        @click="onRestore"
         :tooltip="tooltip"
+      />
+      <AposButtonSplit
+        v-else-if="saveMenu"
+        :menu="saveMenu"
+        menu-label="Select Save Method"
+        :disabled="saveDisabled"
+        :tooltip="tooltip"
+        :selected="savePreference"
+        @click="saveHandler($event)"
       />
     </template>
     <template #leftRail>
@@ -53,6 +58,7 @@
               v-for="tab in tabs"
               v-show="tab.name === currentTab"
               :key="tab.name"
+              :changed="changed"
               :schema="groups[tab.name].schema"
               :current-fields="groups[tab.name].fields"
               :trigger-validation="triggerValidation"
@@ -75,6 +81,7 @@
           <AposSchema
             v-if="docReady"
             :schema="groups['utility'].schema"
+            :changed="changed"
             :current-fields="groups['utility'].fields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
@@ -94,10 +101,11 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
@@ -107,10 +115,11 @@ export default {
   name: 'AposDocEditor',
   mixins: [
     AposModalTabsMixin,
-    AposModalModifiedMixin,
+    AposModifiedMixin,
     AposEditorMixin,
     AposPublishMixin,
-    AposAdvisoryLockMixin
+    AposAdvisoryLockMixin,
+    AposArchiveMixin
   ],
   props: {
     moduleName: {
@@ -121,13 +130,9 @@ export default {
       type: String,
       default: null
     },
-    filterValues: {
+    copyOf: {
       type: Object,
-      default() {
-        return {
-          trash: false
-        };
-      }
+      default: null
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -145,10 +150,15 @@ export default {
       triggerValidation: false,
       original: null,
       published: null,
-      errorCount: 0
+      errorCount: 0,
+      restoreOnly: false,
+      saveMenu: null
     };
   },
   computed: {
+    getOnePath() {
+      return `${this.moduleAction}/${this.docId}`;
+    },
     tooltip() {
       // TODO I18N
       let msg;
@@ -160,12 +170,50 @@ export default {
     followingUtils() {
       return this.followingValues('utility');
     },
-    buttonModifiers() {
-      if (this.errorCount) {
-        return [ 'disabled' ];
-      } else {
-        return [];
+    saveDisabled() {
+      if (this.restoreOnly) {
+        // Can always restore if it's a read-only view of the archive
+        return false;
       }
+      if (this.errorCount) {
+        // Always block save if there are errors in the modal
+        return true;
+      }
+      if (!this.docId) {
+        // If it is new you can always save it, even just to insert it with
+        // defaults is sometimes useful
+        return false;
+      }
+      if (this.isModified) {
+        // If it has been modified in the modal you can always save it
+        return false;
+      }
+      // If it is not manually published this is a simple "save" operation,
+      // don't allow it since the doc is unmodified in the modal
+      if (!this.manuallyPublished) {
+        return true;
+      }
+      if (this.moduleOptions.canPublish) {
+        // Primary button is "publish". If it is previously published and the
+        // draft is not modified since then, don't allow it
+        return this.published && !this.isModifiedFromPublished;
+      }
+      if (!this.original) {
+        // There is an id but no original — that means we're still loading the
+        // original — block until ready
+        return true;
+      }
+      // Contributor case. Button is "submit"
+      // If previously published and not modified since, we can't submit
+      if (this.published && !this.isModifiedFromPublished) {
+        return true;
+      }
+      if (!this.original.submitted) {
+        // Allow initial submission
+        return false;
+      }
+      // Block re-submission of an unmodified draft (we already checked modified)
+      return true;
     },
     moduleOptions() {
       return window.apos.modules[this.docType] || {};
@@ -175,13 +223,13 @@ export default {
       // `@apostrophecms/page` module action.
       return (window.apos.modules[this.moduleName] || {}).action;
     },
-    schema() {
-      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
-    },
     groups() {
       const groupSet = {};
 
       this.schema.forEach(field => {
+        if (!this.filterOutParkedFields([ field.name ]).length) {
+          return;
+        }
         if (field.group && !groupSet[field.group.name]) {
           groupSet[field.group.name] = {
             label: field.group.label,
@@ -222,7 +270,11 @@ export default {
       return tabs;
     },
     modalTitle() {
-      return `Edit ${this.moduleOptions.label || ''}`;
+      if (this.docId) {
+        return `Edit ${this.moduleOptions.label || ''}`;
+      } else {
+        return `New ${this.moduleOptions.label || ''}`;
+      }
     },
     currentFields() {
       if (this.currentTab) {
@@ -234,15 +286,26 @@ export default {
         return [];
       }
     },
-    manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
-    },
     saveLabel() {
-      if (this.manuallyPublished) {
-        if (this.original && this.original.lastPublishedAt) {
-          return 'Publish Changes';
+      if (this.restoreOnly) {
+        return 'Restore';
+      } else if (this.manuallyPublished) {
+        if (this.moduleOptions.canPublish) {
+          if (this.copyOf) {
+            return 'Publish';
+          } else if (this.original && this.original.lastPublishedAt) {
+            return 'Update';
+          } else {
+            return 'Publish';
+          }
         } else {
-          return 'Publish';
+          if (this.copyOf) {
+            return 'Submit';
+          } else if (this.original && this.original.lastPublishedAt) {
+            return 'Submit Update';
+          } else {
+            return 'Submit';
+          }
         }
       } else {
         return 'Save';
@@ -260,28 +323,39 @@ export default {
       }
       return detectDocChange(this.schema, this.published, this.docFields.data);
     },
-    canDiscardDraft() {
-      return (this.docId && (!this.published)) || this.isModifiedFromPublished;
+    savePreferenceName() {
+      return `apos-${this.moduleName}-save-pref`;
+    },
+    savePreference() {
+      let pref = window.localStorage.getItem(this.savePreferenceName);
+      if (typeof pref !== 'string') {
+        pref = null;
+      }
+      return pref;
     }
   },
   watch: {
-    'docFields.data': {
-      deep: true,
+    'docFields.data.type': {
       handler(newVal, oldVal) {
-        if (this.moduleName !== '@apostrophecms/page' || this.splittingDoc) {
+        if (this.moduleName !== '@apostrophecms/page') {
           return;
         }
-
-        if (this.docType !== newVal.type) {
-          this.docType = newVal.type;
+        if (this.docType !== newVal) {
+          this.docType = newVal;
           this.prepErrors();
         }
       }
     },
-
+    // comes in late for pages
+    manuallyPublished() {
+      this.saveMenu = this.computeSaveMenu();
+    },
+    original() {
+      this.saveMenu = this.computeSaveMenu();
+    },
     tabs() {
       if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
-        this.currentTab = this.tabs[0].name;
+        this.currentTab = this.tabs[0] && this.tabs[0].name;
       }
     }
 
@@ -289,20 +363,105 @@ export default {
   async mounted() {
     this.modal.active = true;
     // After computed properties become available
+    this.saveMenu = this.computeSaveMenu();
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
-      let docData;
-      const getOnePath = `${this.moduleAction}/${this.docId}`;
+      await this.loadDoc();
       try {
-        if (!await this.lock(getOnePath, this.docId)) {
+        if (this.manuallyPublished) {
+          this.published = await apos.http.get(this.getOnePath, {
+            busy: true,
+            qs: {
+              archived: 'any',
+              aposMode: 'published'
+            }
+          });
+        }
+      } catch (e) {
+        if (e.name !== 'notfound') {
+          console.error(e);
+          // TODO a nicer message here, but moduleLabels is undefined here
+          await apos.notify('An error occurred fetching the published version of the document.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+        }
+      }
+    } else if (this.copyOf) {
+      const newInstance = klona(this.copyOf);
+      delete newInstance.parked;
+      newInstance.title = `Copy of ${this.copyOf.title}`;
+      if (this.copyOf.slug.startsWith('/')) {
+        const matches = this.copyOf.slug.match(/\/([^/]+)$/);
+        if (matches) {
+          newInstance.slug = `${apos.page.page.slug}/copy-of-${matches[1]}`;
+        } else {
+          newInstance.slug = '/copy-of-home-page';
+        }
+      } else {
+        newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+      }
+      delete newInstance._id;
+      delete newInstance._url;
+
+      this.original = newInstance;
+
+      if (newInstance && newInstance.type !== this.docType) {
+        this.docType = newInstance.type;
+      }
+      this.docFields.data = newInstance;
+      this.prepErrors();
+      this.docReady = true;
+    } else {
+      this.$nextTick(() => {
+        this.loadNewInstance();
+      });
+    }
+    apos.bus.$on('content-changed', this.onContentChanged);
+  },
+  destroyed() {
+    apos.bus.$off('content-changed', this.onContentChanged);
+  },
+  methods: {
+    async saveHandler(action) {
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        if (this.savePreference !== action) {
+          this.setSavePreference(action);
+        }
+        if (!this.errorCount) {
+          this[action]();
+        } else {
+          await apos.notify('Resolve errors before saving.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+          this.focusNextError();
+        }
+      });
+    },
+    async loadDoc() {
+      let docData;
+      try {
+        if (!await this.lock(this.getOnePath, this.docId)) {
           await this.lockNotAvailable();
           return;
         }
-        docData = await apos.http.get(getOnePath, {
+        docData = await apos.http.get(this.getOnePath, {
           busy: true,
-          qs: this.filterValues,
+          qs: {
+            archived: 'any'
+          },
           draft: true
         });
+
+        if (docData.archived) {
+          this.restoreOnly = true;
+        } else {
+          this.restoreOnly = false;
+        }
       } catch {
         // TODO a nicer message here, but moduleLabels is undefined here
         await apos.notify('The requested document was not found.', {
@@ -318,38 +477,20 @@ export default {
           }
           this.original = klona(docData);
           this.docFields.data = docData;
+          if (this.published) {
+            this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
+          }
           this.docReady = true;
           this.prepErrors();
         }
       }
-      try {
-        if (this.manuallyPublished) {
-          this.published = await apos.http.get(getOnePath, {
-            busy: true,
-            qs: {
-              ...this.filterValues,
-              'apos-mode': 'published'
-            }
-          });
-        }
-      } catch (e) {
-        if (e.name !== 'notfound') {
-          console.error(e);
-          // TODO a nicer message here, but moduleLabels is undefined here
-          await apos.notify('An error occurred fetching the published version of the document.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-        }
+    },
+    async preview() {
+      if (!await this.confirmAndCancel()) {
+        return;
       }
-    } else {
-      this.$nextTick(() => {
-        this.loadNewInstance();
-      });
-    }
-  },
-  methods: {
+      window.location = this.original._url;
+    },
     updateFieldState(fieldState) {
       this.tabKey = cuid();
       for (const key in this.groups) {
@@ -380,7 +521,11 @@ export default {
             field = this.schema.filter(item => {
               return item.name === tabKey;
             })[0];
-            this.switchPane(field.group.name);
+
+            if (field.group.name !== 'utility') {
+              this.switchPane(field.group.name);
+            }
+
             this.getAposSchema(field).scrollFieldIntoView(field.name);
           }
         }
@@ -395,81 +540,116 @@ export default {
     lockNotAvailable() {
       this.modal.showModal = false;
     },
-    submit() {
-      this.save({
-        andPublish: this.manuallyPublished,
-        savingDraft: false
+    async onRestore() {
+      await this.restore(this.original);
+      await this.loadDoc();
+    },
+    async onSave(navigate = false) {
+      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+        await this.save({
+          andPublish: this.manuallyPublished,
+          navigate
+        });
+      } else {
+        await this.save({
+          andPublish: false,
+          andSubmit: true,
+          navigate
+        });
+      }
+    },
+    async onSaveAndView() {
+      await this.onSave({ navigate: true });
+    },
+    async onSaveAndNew() {
+      await this.onSave();
+      this.startNew();
+    },
+    async onSaveDraftAndNew() {
+      await this.onSaveDraft();
+      this.startNew();
+    },
+    async onSaveDraftAndView() {
+      await this.onSaveDraft({ navigate: true });
+    },
+    async onSaveDraft(navigate = false) {
+      await this.save({
+        andPublish: false,
+        navigate
+      });
+      await apos.notify('Draft saved', {
+        type: 'success',
+        dismiss: true,
+        icon: 'file-document-icon'
       });
     },
     // If andPublish is true, publish after saving.
-    // If savingDraft is true, make sure we're in draft
-    // mode before redirecting to the _url of the draft.
     async save({
       andPublish = false,
-      savingDraft = false
+      navigate = false,
+      andSubmit = false
     }) {
-      this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.errorCount) {
-          await apos.notify('Resolve errors before saving.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
+      const body = this.docFields.data;
+      let route;
+      let requestMethod;
+      if (this.docId) {
+        route = `${this.moduleAction}/${this.docId}`;
+        requestMethod = apos.http.put;
+        this.addLockToRequest(body);
+      } else {
+        route = this.moduleAction;
+        requestMethod = apos.http.post;
+
+        if (this.moduleName === '@apostrophecms/page') {
+          // New pages are always born as drafts
+          body._targetId = apos.page.page._id.replace(':published', ':draft');
+          body._position = 'lastChild';
+        }
+        if (this.copyOf) {
+          body._copyingId = this.copyOf._id;
+        }
+      }
+      let doc;
+      try {
+        doc = await requestMethod(route, {
+          busy: true,
+          body,
+          draft: true
+        });
+        if (andSubmit) {
+          await this.submitDraft(doc);
+        } else if (andPublish) {
+          await this.publish(doc);
+        }
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: (requestMethod === apos.http.put) ? 'update' : 'insert'
+        });
+      } catch (e) {
+        if (this.isLockedError(e)) {
+          await this.showLockedError(e);
+          this.modal.showModal = false;
+          return;
+        } else {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the document.'
           });
-          this.focusNextError();
           return;
         }
-        const body = this.docFields.data;
-        let route;
-        let requestMethod;
-        if (this.docId) {
-          route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
-          this.addLockToRequest(body);
+      }
+      this.$emit('modal-result', doc);
+      this.modal.showModal = false;
+      if (navigate) {
+        if (doc._url) {
+          window.location = doc._url;
         } else {
-          route = this.moduleAction;
-          requestMethod = apos.http.post;
-
-          if (this.moduleName === '@apostrophecms/page') {
-            // New pages are always born as drafts
-            body._targetId = apos.page.page._id.replace(':published', ':draft');
-            body._position = 'lastChild';
-          }
-        }
-        let doc;
-        try {
-          doc = await requestMethod(route, {
-            busy: true,
-            body,
-            draft: true
-          });
-          apos.bus.$emit('content-changed', doc);
-        } catch (e) {
-          if (this.isLockedError(e)) {
-            await this.showLockedError(e);
-            this.modal.showModal = false;
-            return;
-          } else {
-            await this.handleSaveError(e, {
-              fallback: 'An error occurred saving the document.'
-            });
-            return;
-          }
-        }
-        if (andPublish) {
-          await this.publish(this.moduleAction, doc._id, !!doc.lastPublishedAt);
-        }
-        this.$emit('modal-result', doc);
-        this.modal.showModal = false;
-        // TODO: Add a check if we should redirect on creation based on the doc
-        // type.
-        if (doc._url && (!this.docId)) {
-          apos.bus.$emit('set-context', {
-            mode: savingDraft ? 'draft' : null,
-            doc
+          const subject = andPublish ? 'Document published' : 'Draft saved';
+          await apos.notify(`${subject} but could not navigate to a preview.`, {
+            type: 'warning',
+            icon: 'alert-circle-icon'
           });
         }
-      });
+      }
     },
     async getNewInstance() {
       try {
@@ -507,8 +687,22 @@ export default {
         this.docType = newInstance.type;
       }
       this.docFields.data = newInstance;
+      const slugField = this.schema.find(field => field.name === 'slug');
+      if (slugField) {
+        // As a matter of UI implementation, we know our slug input field will
+        // automatically change the empty string to the prefix, so to
+        // prevent a false positive for this being considered a change,
+        // do it earlier when creating a new user
+        this.original.slug = this.original.slug || slugField.def || slugField.prefix || '';
+      }
       this.prepErrors();
       this.docReady = true;
+    },
+    startNew() {
+      this.modal.showModal = false;
+      apos.bus.$emit('admin-menu-click', {
+        itemName: `${this.moduleName}:editor`
+      });
     },
     updateDocFields(value) {
       this.updateFieldState(value.fieldState);
@@ -524,21 +718,83 @@ export default {
         return this.$refs[field.group.name][0];
       }
     },
-    async onDiscardDraft(e) {
-      if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
-        this.modal.showModal = false;
-      }
-    },
-    saveDraft() {
-      this.save({
-        andPublish: false,
-        savingDraft: true
-      });
-    },
     filterOutParkedFields(fields) {
       return fields.filter(fieldName => {
         return !((this.original && this.original.parked) || []).includes(fieldName);
       });
+    },
+    computeSaveMenu () {
+      // Powers the dropdown Save menu
+      // all actions expected to be methods of this component
+      // Needs to be manually computed because this.saveLabel doesnt stay reactive when part of an object
+      const typeLabel = this.moduleOptions
+        ? this.moduleOptions.label.toLowerCase()
+        : 'document';
+      const isNew = !this.docId;
+      // this.original takes a moment to populate, don't crash
+      const canPreview = this.original && (this.original._id ? this.original._url : this.original._previewable);
+      const canNew = this.moduleOptions.showCreate;
+      const menu = [
+        {
+          label: this.saveLabel,
+          action: 'onSave',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and return to the ${typeLabel} listing.`
+            : `${this.saveLabel} updates and return to the ${typeLabel} listing.`,
+          def: true
+        }
+      ];
+      if (canPreview) {
+        menu.push({
+          label: `${this.saveLabel} and View`,
+          action: 'onSaveAndView',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and be redirected to the ${typeLabel}.`
+            : `${this.saveLabel} updates and be redirected to the ${typeLabel}.`
+        });
+      }
+      if (canNew) {
+        menu.push({
+          label: `${this.saveLabel} and Create New`,
+          action: 'onSaveAndNew',
+          description: isNew
+            ? `${this.saveLabel} ${typeLabel} and create a new one.`
+            : `${this.saveLabel} updates and create a new ${typeLabel}.`
+        });
+      }
+      if (this.manuallyPublished) {
+        menu.push({
+          label: 'Save Draft',
+          action: 'onSaveDraft',
+          description: 'Save as a draft to publish later.'
+        });
+      }
+      if (this.manuallyPublished && canPreview) {
+        menu.push({
+          label: 'Save Draft and Preview',
+          action: 'onSaveDraftAndView',
+          description: `Save as a draft and preview the ${typeLabel}.`
+        });
+      };
+      if (this.manuallyPublished && canNew) {
+        menu.push({
+          label: 'Save Draft and Create New',
+          action: 'onSaveDraftAndNew',
+          description: `Save as a draft and create a new ${typeLabel}.`
+        });
+      }
+      return menu;
+    },
+    setSavePreference(pref) {
+      window.localStorage.setItem(this.savePreferenceName, pref);
+    },
+    onContentChanged(e) {
+      if ((e.action === 'archive') || (e.action === 'delete') || (e.action === 'revert-draft-to-published')) {
+        this.modal.showModal = false;
+      }
+    },
+    close() {
+      this.modal.showModal = false;
     }
   }
 };

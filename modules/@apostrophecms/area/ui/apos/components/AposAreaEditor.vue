@@ -1,5 +1,9 @@
 <template>
-  <div :data-apos-area="areaId" class="apos-area apos-theme--primary-purple">
+  <div
+    :data-apos-area="areaId"
+    class="apos-area"
+    :class="themeClass"
+  >
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -7,6 +11,7 @@
       <template v-if="isEmptySingleton">
         <AposButton
           :label="'Add ' + contextMenuOptions.menu[0].label"
+          :disabled="field && field.readOnly"
           type="primary"
           :icon="icon"
           @click="add({ index: 0, name: contextMenuOptions.menu[0].name })"
@@ -20,6 +25,7 @@
           :index="0"
           :widget-options="options.widgets"
           :max-reached="maxReached"
+          :disabled="field && field.readOnly"
         />
       </template>
     </div>
@@ -35,6 +41,7 @@
         :doc-id="docId"
         :context-menu-options="contextMenuOptions"
         :field-id="fieldId"
+        :disabled="field && field.readOnly"
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
@@ -56,9 +63,11 @@
 <script>
 import cuid from 'cuid';
 import { klona } from 'klona';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposAreaEditor',
+  mixins: [ AposThemeMixin ],
   props: {
     docId: {
       type: String,
@@ -71,6 +80,12 @@ export default {
     id: {
       type: String,
       required: true
+    },
+    field: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     fieldId: {
       type: String,
@@ -127,8 +142,8 @@ export default {
       return this.next.length === 0 &&
         this.options.widgets &&
         Object.keys(this.options.widgets).length === 1 &&
-        this.options.max &&
-        this.options.max === 1;
+        (this.options.max || this.field.max) &&
+        (this.options.max === 1 || this.field.max === 1);
     },
     icon() {
       let icon = null;
@@ -163,14 +178,14 @@ export default {
         this.$emit('changed', {
           items: this.next
         });
-        // For the benefit of all other area editors on-page
-        // which may have this one as a sub-area in some way, and
-        // mistakenly think they know its contents have not changed
-        apos.bus.$emit('area-updated', {
-          _id: this.id,
-          items: this.next
-        });
       }
+      // For the benefit of all other area editors on-page
+      // which may have this one as a sub-area in some way, and
+      // mistakenly think they know its contents have not changed
+      apos.bus.$emit('area-updated', {
+        _id: this.id,
+        items: this.next
+      });
     }
   },
   mounted() {
@@ -323,10 +338,34 @@ export default {
     clone(index) {
       const widget = klona(this.next[index]);
       delete widget._id;
+      this.regenerateIds(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
       this.insert({
         widget,
         index
       });
+    },
+    // Regenerate all array item, area and widget ids so they are considered
+    // new. Useful when copying a widget with nested content.
+    regenerateIds(schema, object) {
+      for (const field of schema) {
+        if (field.type === 'array') {
+          for (const item of (object[field.name] || [])) {
+            item._id = cuid();
+            this.regenerateIds(field.schema, item);
+          }
+        } else if (field.type === 'area') {
+          if (object[field.name]) {
+            object[field.name]._id = cuid();
+            for (const item of (object[field.name].items || [])) {
+              item._id = cuid();
+              const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
+              this.regenerateIds(schema, item);
+            }
+          }
+        }
+        // We don't want to regenerate attachment ids. They correspond to
+        // actual files, and the reference count will update automatically
+      }
     },
     async update(widget) {
       if (this.docId === window.apos.adminBar.contextId) {
@@ -422,6 +461,11 @@ export default {
     patchSubobject(object, subObject) {
       let result;
       for (const [ key, val ] of Object.entries(object)) {
+        if (key.charAt(0) === '_') {
+          // Patch only the thing itself, not a relationship that also contains
+          // a copy
+          continue;
+        }
         if (val && typeof val === 'object') {
           if (val._id === subObject._id) {
             object[key] = subObject;

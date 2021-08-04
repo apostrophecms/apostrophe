@@ -3,22 +3,15 @@
     class="apos-table__cell-field" type="button"
     :class="`apos-table__cell-field--${header.name}`"
   >
-    {{ item[header.name] }}
+    {{ get(header.name) }}
   </button>
 </template>
 
 <script>
+import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
+
 export default {
   name: 'AposCellButton',
-  props: {
-    item: {
-      type: Object,
-      required: true
-    },
-    header: {
-      type: Object,
-      required: true
-    }
-  }
+  mixins: [ AposCellMixin ]
 };
 </script>

@@ -74,17 +74,17 @@ describe('Pages', function() {
     assert(home.visibility === 'public');
   });
 
-  it('parked trash can exists', async function() {
-    const trash = await apos.page.find(apos.task.getReq(), { slug: '/trash' }).trash(null).toObject();
-    assert(trash);
-    assert(trash.slug === '/trash');
-    assert(trash.path === `${homeId.replace(':en:published', '')}/${trash._id.replace(':en:published', '')}`);
-    assert(trash.type === '@apostrophecms/trash');
-    assert(trash.parked);
+  it('parked archive page exists', async function() {
+    const archive = await apos.page.find(apos.task.getReq(), { slug: '/archive' }).archived(null).toObject();
+    assert(archive);
+    assert(archive.slug === '/archive');
+    assert(archive.path === `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}`);
+    assert(archive.type === '@apostrophecms/archive-page');
+    assert(archive.parked);
     // Verify that clonePermanent did its
     // job and removed properties not meant
     // to be stored in mongodb
-    assert(!trash._children);
+    assert(!archive._children);
   });
 
   it('should be able to use db to insert documents', async function() {
@@ -105,7 +105,7 @@ describe('Pages', function() {
         aposLocale: 'en:published',
         aposDocId: 'child',
         type: 'test-page',
-        slug: '/child',
+        slug: '/parent/child',
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/child`,
         level: 2,
@@ -116,7 +116,7 @@ describe('Pages', function() {
         aposLocale: 'en:published',
         aposDocId: 'grandchild',
         type: 'test-page',
-        slug: '/grandchild',
+        slug: '/parent/child/grandchild',
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/child/grandchild`,
         level: 3,
@@ -127,7 +127,7 @@ describe('Pages', function() {
         aposLocale: 'en:published',
         aposDocId: 'sibling',
         type: 'test-page',
-        slug: '/sibling',
+        slug: '/parent/sibling',
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/sibling`,
         level: 2,
@@ -139,7 +139,7 @@ describe('Pages', function() {
         aposLocale: 'en:published',
         aposDocId: 'cousin',
         type: 'test-page',
-        slug: '/cousin',
+        slug: '/parent/sibling/cousin',
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/sibling/cousin`,
         level: 3,
@@ -191,7 +191,7 @@ describe('Pages', function() {
   });
 
   it('should be able to find just a single page', async function() {
-    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/parent/child' });
 
     const page = await cursor.toObject();
 
@@ -202,7 +202,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the ancestors of a page', async function() {
-    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/parent/child' });
 
     const page = await cursor.ancestors(true).toObject();
 
@@ -217,7 +217,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include just one ancestor of a page, i.e. the parent', async function() {
-    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/parent/child' });
 
     const page = await cursor.ancestors({ depth: 1 }).toObject();
 
@@ -230,7 +230,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the children of the ancestors of a page', async function() {
-    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/parent/child' });
 
     const page = await cursor.ancestors({ children: 1 }).toObject();
 
@@ -252,7 +252,7 @@ describe('Pages', function() {
     const parentId = 'parent:en:published';
 
     const newPage = {
-      slug: '/new-page',
+      slug: '/parent/new-page',
       visibility: 'public',
       type: 'test-page',
       title: 'New Page'
@@ -264,15 +264,43 @@ describe('Pages', function() {
     assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/${page._id.replace(':en:published', '')}`);
   });
 
+  let newPage;
+
   it('is able to insert a new page in the correct order', async function() {
     const cursor = apos.page.find(apos.task.getAnonReq(), {
-      slug: '/new-page'
+      slug: '/parent/new-page'
     });
 
-    const page = await cursor.toObject();
+    newPage = await cursor.toObject();
 
-    assert(page);
-    assert.strictEqual(page.rank, 2);
+    assert(newPage);
+    assert.strictEqual(newPage.rank, 2);
+    assert.strictEqual(newPage.level, 2);
+  });
+
+  it('is able to insert a subpage', async function() {
+
+    const subPageInfo = {
+      slug: '/parent/new-page/sub-page',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'Sub Page'
+    };
+
+    const subPage = await apos.page.insert(apos.task.getReq(), newPage._id, 'lastChild', subPageInfo);
+    const homePage = await apos.doc.db.findOne({
+      slug: '/',
+      aposMode: 'published'
+    });
+    const components = subPage.path.split('/');
+    assert.strictEqual(components.length, 4);
+    assert(components[0] === homePage.aposDocId);
+    assert(components[1] === 'parent');
+    assert(components[2] === newPage.aposDocId);
+    assert(components[3] === subPage.aposDocId);
+    assert.strictEqual(subPage.slug, '/parent/new-page/sub-page');
+    assert(subPage.rank === 0);
+    assert(subPage.level === 3);
   });
 
   // MOVING
@@ -327,7 +355,7 @@ describe('Pages', function() {
   });
 
   it('should be able to serve a page', async function() {
-    const response = await apos.http.get('/child', {
+    const response = await apos.http.get('/another-parent/parent/child', {
       fullResponse: true
     });
 
@@ -397,8 +425,8 @@ describe('Pages', function() {
 
   });
 
-  it('is able to move parent to the trash', async function() {
-    await apos.page.moveToTrash(apos.task.getReq(), 'parent:en:published');
+  it('is able to move parent to the archive', async function() {
+    await apos.page.archive(apos.task.getReq(), 'parent:en:published');
 
     const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'parent' });
     const page = await cursor.toObject();
@@ -406,13 +434,13 @@ describe('Pages', function() {
     assert(!page);
 
     const req = apos.task.getReq();
-    const trash = await apos.page.findOneForEditing(req, { parkedId: 'trash' });
-    const trashed = await apos.page.findOneForEditing(req, {
+    const archive = await apos.page.findOneForEditing(req, { parkedId: 'archive' });
+    const archived = await apos.page.findOneForEditing(req, {
       _id: 'parent:en:published'
     });
-    assert.strictEqual(trashed.path, `${homeId.replace(':en:published', '')}/${trash._id.replace(':en:published', '')}/${trashed._id.replace(':en:published', '')}`);
-    assert(trashed.trash);
-    assert.strictEqual(trashed.level, 2);
+    assert.strictEqual(archived.path, `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}/${archived._id.replace(':en:published', '')}`);
+    assert(archived.archived);
+    assert.strictEqual(archived.level, 2);
   });
 
   it('should be able to find the parked homepage', async function() {

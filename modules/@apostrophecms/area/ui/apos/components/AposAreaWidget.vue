@@ -58,6 +58,7 @@
           :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="options.widgets"
+          :disabled="disabled"
         />
       </div>
       <div
@@ -69,6 +70,8 @@
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
           :foreign="foreign"
+          :disabled="disabled"
+          :max-reached="maxReached"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -84,7 +87,7 @@
       -->
       <div
         class="apos-area-widget-guard"
-        :class="{'is-disabled': focused}"
+        :class="{'apos-is-disabled': focused}"
       />
       <!-- Still used for contextual editing components -->
       <component
@@ -120,6 +123,7 @@
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
+          :disabled="disabled"
           @menu-open="toggleMenuFocus($event, 'bottom', true)"
           @menu-close="toggleMenuFocus($event, 'bottom', false)"
         />
@@ -188,6 +192,10 @@ export default {
       default() {
         return null;
       }
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
@@ -220,10 +228,10 @@ export default {
       highlightable: false,
       focused: false,
       classes: {
-        show: 'is-visible',
-        open: 'is-open',
-        focus: 'is-focused',
-        highlight: 'is-highlighted'
+        show: 'apos-is-visible',
+        open: 'apos-is-open',
+        focus: 'apos-is-focused',
+        highlight: 'apos-is-highlighted'
       },
       breadcrumbs: {
         $lastEl: null,
@@ -457,7 +465,7 @@ export default {
     height: 100%;
   }
 
-  .apos-area-widget-guard.is-disabled {
+  .apos-area-widget-guard.apos-is-disabled {
     pointer-events: none;
   }
 
@@ -486,12 +494,12 @@ export default {
     &:after {
       bottom: 0;
     }
-    &.is-highlighted {
+    &.apos-is-highlighted {
       &:before, &:after {
         opacity: 0.4;
       }
     }
-    &.is-focused {
+    &.apos-is-focused {
       &:before, &:after {
         opacity: 1;
         border-top: 1px solid var(--a-primary);
@@ -512,23 +520,18 @@ export default {
       background-color: var(--a-base-5);
       pointer-events: none;
     }
-    .apos-area-widget-inner &.is-focused:before,
-    .apos-area-widget-inner &.is-highlighted:before {
+    .apos-area-widget-inner &.apos-is-focused:before,
+    .apos-area-widget-inner &.apos-is-highlighted:before {
       z-index: $z-index-default;
     }
   }
 
   .apos-area-widget-inner .apos-area-widget-inner {
-    &.is-highlighted:before {
+    &.apos-is-highlighted:before {
       opacity: 0.1;
     }
-    &.is-focused:before {
+    &.apos-is-focused:before {
       opacity: 0.15;
-    }
-
-    &.is-highlighted,
-    &.is-focused {
-      outline-color: var(--a-secondary);
     }
   }
 
@@ -542,7 +545,7 @@ export default {
     &.apos-area-widget__label {
       z-index: $z-index-widget-label;
     }
-    &.is-focused {
+    &.apos-is-focused {
       z-index: $z-index-widget-focused-controls;
     }
   }
@@ -570,29 +573,24 @@ export default {
   .apos-area-widget-controls--add {
     top: 0;
     left: 50%;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
   }
 
   .apos-area-widget-controls--add--bottom {
     top: auto;
     bottom: 0;
-    transform: translateY(50%);
+    transform: translate(-50%, 50%);
   }
 
-  .apos-area-widget-inner /deep/ .apos-context-menu__popup.is-visible {
+  .apos-area-widget-inner ::v-deep .apos-context-menu__popup.apos-is-visible {
     top: calc(100% + 20px);
     left: 50%;
     transform: translate(-50%, 0);
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn {
-    background-color: var(--a-secondary);
-    border-color: var(--a-secondary);
-  }
-
   .apos-area-widget__label {
     position: absolute;
-    top: 0;
+    top: 1px;
     right: 0;
     display: flex;
     transform: translateY(-100%);
@@ -609,22 +607,22 @@ export default {
     align-items: center;
     margin: 0;
     padding: 2px;
-    background-color: var(--a-primary);
-  }
-
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-secondary);
+    background-color: var(--a-background-primary);
+    border: 1px solid var(--a-primary-dark-10);
   }
 
   .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-background-inverted);
+    background-color: var(--a-primary);
+    & ::v-deep .apos-button {
+      color: var(--a-text-inverted);
+    }
   }
 
   .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumb /deep/ .apos-button__content {
+  .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
     @include type-help;
     padding: 2px;
-    color: var(--a-white);
+    white-space: nowrap;
     &:hover {
       cursor: pointer;
     }
@@ -634,18 +632,15 @@ export default {
     padding: 2px;
   }
 
-  .apos-area-widget__breadcrumb /deep/ .apos-button {
+  .apos-area-widget__breadcrumb ::v-deep .apos-button {
+    color: var(--a-primary-dark-10);
     &:hover, &:active, &:focus {
       text-decoration: none;
     }
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__type {
-    background-color: var(--a-secondary);
-  }
-
-  .is-visible,
-  .is-focused {
+  .apos-is-visible,
+  .apos-is-focused {
     opacity: 1;
     pointer-events: auto;
   }

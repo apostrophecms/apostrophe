@@ -3,11 +3,13 @@
     :field="field" :error="effectiveError"
     :uid="uid"
     :display-options="displayOptions"
+    :modifiers="modifiers"
   >
     <template #body>
       <label
         class="apos-choice-label" :for="getChoiceId(uid, choice.value)"
         v-for="choice in field.choices" :key="choice.value"
+        :class="{'apos-choice-label--disabled': field.readOnly}"
       >
         <input
           type="radio" class="apos-sr-only apos-input--choice apos-input--radio"
@@ -15,6 +17,7 @@
           :id="getChoiceId(uid, choice.value)"
           :checked="next === choice.value"
           tabindex="1"
+          :disabled="field.readOnly"
           @change="change($event.target.value)"
         >
         <span class="apos-input-indicator" aria-hidden="true">
@@ -42,13 +45,11 @@ export default {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     validate(value) {
-      if (this.field.required && (!value || !value.length)) {
+      if (this.field.required && (value === '')) {
         return 'required';
       }
 
-      if (!this.field.choices.map(choice => {
-        return choice.value;
-      }).includes(value)) {
+      if (value && !this.field.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
 

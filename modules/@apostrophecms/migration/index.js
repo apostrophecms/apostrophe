@@ -40,8 +40,11 @@ module.exports = {
           });
         },
         async executeMigrations() {
-          if (process.env.NODE_ENV !== 'production') {
-            // Run migrations at dev startup (low friction)
+          if ((process.env.NODE_ENV !== 'production') || self.apos.isNew) {
+            // Run migrations at dev startup (low friction).
+            // Also always run migrations at first startup, so even
+            // in prod with a brand new database the after event always fires
+            // and we get a chance to mark the migrations as skipped
             await self.migrate(self.apos.argv);
           }
         }
@@ -230,9 +233,30 @@ module.exports = {
       async migrate(options) {
         await self.apos.lock.lock(self.__meta.name);
         try {
-          for (const migration of self.migrations) {
-            await self.runOne(migration);
+          if (self.apos.isNew) {
+            // Since the site is brand new (zero documents), we may assume
+            // it requires no migrations. Mark them all as "done" but note
+            // that they were skipped, just in case we decide that's an issue later
+            const at = new Date();
+            await self.db.insertMany(self.migrations.map(migration => ({
+              _id: migration.name,
+              at,
+              skipped: true
+            })));
+          } else {
+            for (const migration of self.migrations) {
+              await self.runOne(migration);
+            }
           }
+          // In production, this event is emitted only at the end of the migrate command line task.
+          // In dev it is emitted at every startup after the automatic migration.
+          //
+          // Intentionally emitted regardless of whether the site is new or not.
+          //
+          // This is the right time to park pages, for instance, because the
+          // database is guaranteed to be in a sane state, whether because the
+          // site is new or because migrations ran successfully.
+          await self.emit('after');
         } finally {
           await self.apos.lock.unlock(self.__meta.name);
         }

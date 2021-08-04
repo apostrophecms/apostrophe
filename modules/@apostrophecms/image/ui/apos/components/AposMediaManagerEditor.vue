@@ -2,7 +2,7 @@
   <div
     class="apos-media-editor"
     :class="{
-      'is-replacing': showReplace
+      'apos-is-replacing': showReplace
     }"
   >
     <div class="apos-media-editor__inner" v-if="activeMedia">
@@ -10,7 +10,7 @@
         <img
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
-          :src="activeMedia.attachment._urls['one-third']" :alt="activeMedia.description"
+          :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']" :alt="activeMedia.description"
         >
       </div>
       <ul class="apos-media-editor__details">
@@ -33,18 +33,21 @@
           <AposButton
             type="quiet" label="Replace"
             @click="showReplace = true"
+            :disabled="isArchived"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="View"
             @click="viewMedia"
+            :disabled="isArchived"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="Download"
-            :href="activeMedia.attachment._urls.original"
+            :href="!isArchived ? activeMedia.attachment._urls.original : false"
+            :disabled="isArchived"
             download
           />
         </li>
@@ -66,15 +69,23 @@
       <div
         class="apos-media-editor__lip"
       >
-        <AposButton
-          @click="cancel"
-          class="apos-media-editor__back" type="outline"
-          label="Cancel"
+        <AposContextMenu
+          v-if="!restoreOnly"
+          :button="{
+            label: 'More operations',
+            iconOnly: true,
+            icon: 'dots-vertical-icon',
+            type: 'subtle',
+            modifiers: [ 'small', 'no-motion' ]
+          }"
+          :menu="moreMenu"
+          @item-clicked="moreMenuHandler"
+          menu-placement="top-end"
         />
         <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          label="Save" type="primary"
+          :label="restoreOnly ? 'Restore' : 'Save'" type="primary"
         />
       </div>
     </AposModalLip>
@@ -123,6 +134,7 @@ export default {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
+      restoreOnly: this.media && this.media.archived,
       // Unlike `activeMedia` this changes ONLY when a new doc is swapped in.
       // For overall change detection.
       original: klona(this.media),
@@ -135,8 +147,19 @@ export default {
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
     },
-    schema() {
-      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+    moreMenu() {
+      const menu = [ {
+        label: 'Discard Changes',
+        action: 'cancel'
+      } ];
+      if (this.activeMedia._id && !this.restoreOnly) {
+        menu.push({
+          label: 'Archive Image',
+          action: 'archive',
+          modifiers: [ 'danger' ]
+        });
+      }
+      return menu;
     },
     fileSize() {
       if (
@@ -159,6 +182,9 @@ export default {
         return '';
       }
       return dayjs(this.activeMedia.attachment.createdAt).format('MMM Do, YYYY');
+    },
+    isArchived() {
+      return this.media.archived;
     }
   },
   watch: {
@@ -193,9 +219,13 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
+    moreMenuHandler(action) {
+      this[action]();
+    },
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
+      this.restoreOnly = this.activeMedia.archived;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
@@ -206,6 +236,28 @@ export default {
           this.lockNotAvailable();
         }
       }
+    },
+    async archive() {
+      if (!await apos.confirm({
+        heading: 'Are You Sure?',
+        description: 'This will move the image to the archive.'
+      })) {
+        return;
+      }
+      const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
+      const patched = await apos.http.patch(route, {
+        busy: true,
+        body: {
+          archived: true
+        },
+        draft: true
+        // Autopublish will take care of the published side
+      });
+      apos.bus.$emit('content-changed', {
+        doc: patched,
+        action: 'archive'
+      });
+      await this.cancel();
     },
     save() {
       this.triggerValidation = true;
@@ -223,15 +275,24 @@ export default {
           return;
         }
 
-        const body = this.docFields.data;
+        let body = this.docFields.data;
         this.addLockToRequest(body);
         try {
-          const doc = await apos.http.put(route, {
+          const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
+          if (this.restoreOnly) {
+            body = {
+              archived: false
+            };
+          }
+          const doc = await requestMethod(route, {
             busy: true,
             body,
             draft: true
           });
-          apos.bus.$emit('content-changed', doc);
+          apos.bus.$emit('content-changed', {
+            doc,
+            action: 'update'
+          });
           this.original = klona(this.docFields.data);
           this.$emit('modified', false);
           this.$emit('saved');
@@ -241,7 +302,7 @@ export default {
             this.lockNotAvailable();
           } else {
             await this.handleSaveError(e, {
-              fallback: `Error Saving ${this.moduleLabels.label}`
+              fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
             });
           }
         } finally {
@@ -291,7 +352,7 @@ export default {
     max-height: 100%;
   }
 
-  .apos-media-editor /deep/ .apos-field {
+  .apos-media-editor ::v-deep .apos-field {
     margin-bottom: $spacing-double;
   }
 
@@ -311,8 +372,8 @@ export default {
     display: flex;
     margin-bottom: $spacing-triple;
 
-    /deep/ .apos-button--quiet {
-      display: block;
+    ::v-deep .apos-button--quiet {
+      display: inline;
     }
   }
 
@@ -323,8 +384,8 @@ export default {
     }
   }
 
-  /deep/ [data-apos-field='attachment'] {
-    .apos-media-editor:not(.is-replacing) & {
+  ::v-deep [data-apos-field='attachment'] {
+    .apos-media-editor:not(.apos-is-replacing) & {
       position: absolute;
       left: -999rem;
       opacity: 0;
@@ -337,6 +398,9 @@ export default {
 
   .apos-media-editor__lip {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    & > .apos-context-menu, & > .apos-button__wrapper {
+      margin-left: 7.5px;
+    }
   }
 </style>

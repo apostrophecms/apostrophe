@@ -5,11 +5,11 @@
 // node app @apostrophecms/migration:migrate
 //
 // Apostrophe is fully initialized before your task is run, except that it does
-// not listen for connections. So you may access all of its features in your task.
+// not listen for connections. So you may access all of its features in your
+// task.
 
-// Direct use of `console` makes sense here because
-// we're implementing an interaction at the CLI.
-// -Tom
+// Direct use of `console` makes sense here because we're implementing an
+// interaction at the CLI.
 
 /* eslint-disable no-console */
 
@@ -77,8 +77,9 @@ module.exports = {
   methods(self) {
     return {
 
-      // For use when you wish to execute an Apostrophe command line task from your code and continue,
-      // without using the command line or using the `child_process` module.
+      // For use when you wish to execute an Apostrophe command line task from
+      // your code and continue, without using the command line or using the
+      // `child_process` module.
       //
       // Except for `name`, all arguments may be omitted.
       //
@@ -95,18 +96,20 @@ module.exports = {
       // If present, `args` contains an array of positional arguments to
       // the task, **not including** the task name.
       //
-      // If present, `options` contains the optional parameters that would normally
-      // be hyphenated, i.e. at the command line you might write `--total=20`.
+      // If present, `options` contains the optional parameters that would
+      // normally be hyphenated, i.e. at the command line you might write
+      // `--total=20`.
       //
       // **Gotchas**
       //
-      // If you can invoke a method directly rather than invoking a task, do that. This
-      // method is for cases where that option is not readily available.
+      // If you can invoke a method directly rather than invoking a task, do
+      // that. This method is for cases where that option is not readily
+      // available.
       //
       // During the execution of the task, `self.apos.argv` will have a new,
-      // temporary value to accommodate tasks that inspect this property directly
-      // rather than examining their `argv` argument. `self.apos.argv` will be
-      // restored at the end of task execution.
+      // temporary value to accommodate tasks that inspect this property
+      // directly rather than examining their `argv` argument. `self.apos.argv`
+      // will be restored at the end of task execution.
       //
       // Some tasks may not be written to be "good neighbors." For instance, a
       // task developer might assume they can exit the process directly.
@@ -164,25 +167,28 @@ module.exports = {
         process.exit(1);
       },
 
-      // Return a `req` object with permission to do anything.
-      // Useful since most APIs require one and most tasks
-      // should run with administrative rights.
+      // Return a `req` object suitable for command line tasks
+      // and unit tests. The `req` object returned is a mockup of a true Express
+      // `req` object.
       //
-      // The `req` object returned is a mockup of a true Express `req` object
-      // with sufficient functionality to implement Apostrophe's
-      // unit tests, so it is suitable for command line
-      // task code that requires a `req` as well.
+      // An `options` object may be passed. If `options.role` is set,
+      // it may be `anon` (no role and no req.user), `guest`, `contributor`,
+      // `editor`, or `admin`. For bc reasons, it defaults to `admin`.
       //
-      // Optionally a `properties` object can be passed. If it is
-      // passed its properties are added to the req object before
-      // any initialization tasks such as computing `req.absoluteUrl`.
-      // This allows testing of that mechanism by setting `req.url`.
+      // Other properties of `options` are assigned as properties of the
+      // returned `req` object before any initialization tasks such as computing
+      // `req.absoluteUrl`. This facilitates unit testing.
 
-      getReq(properties) {
+      getReq(options) {
+        options = options || {};
+        options.role = options.role || 'admin';
         const req = {
-          user: {
-            title: 'System Task'
-          },
+          ...(options.role === 'anon' ? {} : {
+            user: {
+              title: 'System Task',
+              role: options.role
+            }
+          }),
           res: {
             __: function (s) {
               return s;
@@ -203,35 +209,56 @@ module.exports = {
           aposNeverLoad: {},
           aposStack: []
         };
-        if (properties && properties.mode && properties.mode.draft) {
-          req.mode = 'draft';
-        }
-        _.extend(req, properties || {});
+        const { role, ..._properties } = options || {};
+        Object.assign(req, _properties);
         self.apos.modules['@apostrophecms/express'].addAbsoluteUrlsToReq(req);
         return req;
       },
 
-      // Return a `req` object with privileges equivalent
-      // to an anonymous user visiting the website. Most
-      // often used for unit testing but sometimes useful
-      // in tasks as well.
-      //
-      // The `req` object returned is a mockup of a true Express `req` object
-      // with sufficient functionality to implement Apostrophe's
-      // unit tests, so it is suitable for command line
-      // task code that requires a `req` as well.
-      //
-      // Optionally a `properties` object can be passed. If it is
-      // passed its properties are added to the req object before
-      // any initialization tasks such as computing `req.absoluteUrl`.
-      // This allows testing of that mechanism by setting `req.url`.
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating an anonymous site visitor, with no role
+      // and no `req.user`.
+      getAnonReq(options) {
+        return self.getReq({
+          role: 'anon',
+          ...options
+        });
+      },
 
-      getAnonReq(properties) {
-        const req = self.getReq();
-        delete req.user;
-        _.extend(req, properties || {});
-        return req;
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the guest role.
+      getGuestReq(options) {
+        return self.getReq({
+          role: 'guest',
+          ...options
+        });
+      },
+
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the contributor role.
+      getContributorReq(options) {
+        return self.getReq({
+          role: 'contributor',
+          ...options
+        });
+      },
+
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the editor role.
+      getEditorReq(options) {
+        return self.getReq({
+          role: 'editor',
+          ...options
+        });
+      },
+
+      // Convenience wrapper for `getReq`. Returns a request
+      // object simulating a user with the admin role.
+      getAdminReq(options) {
+        // For bc reasons this is the default behavior of getReq
+        return self.getReq(options);
       }
+
     };
   }
 };

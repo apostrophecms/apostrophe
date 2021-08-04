@@ -11,10 +11,13 @@
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
+const { stripIndent } = require('common-tags');
+const chokidar = require('chokidar');
 
 module.exports = function(moduleName, searchPaths, noWatch, templates, options) {
 
   const self = this;
+  self.watches = [];
   options = options || {};
   const extensions = options.extensions || [ 'njk', 'html' ];
   self.moduleName = moduleName;
@@ -29,23 +32,25 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
     } else {
       self.searchPaths = [];
     }
-    if (!noWatch) {
+    // Unless and until chokidar declares this a supported config,
+    // no watching in WSL (it doesn't work without chokidar either)
+    if ((!noWatch) && (!require('is-wsl'))) {
       _.each(self.searchPaths, function(p) {
         if (fs.existsSync(p)) {
           try {
-            fs.watch(p, {
-              persistent: false,
-              recursive: true
-            }, function(event, filename) {
+            const watcher = chokidar.watch(p);
+            watcher.on('change', (path, stats) => {
               // Just blow the whole cache if anything is modified. Much simpler,
               // avoids several false negatives, and works well for a CMS in dev. -Tom
               self.cache = {};
             });
+            self.watches.push(watcher);
           } catch (e) {
             if (!self.firstWatchFailure) {
-              // Don't crash in broken environments like the Linux subsystem for Windows
+              // Don't crash in broken environments (not sure if any are left thanks
+              // to chokidar, but still a useful warning to have if it comes up)
               self.firstWatchFailure = true;
-              self.templates.apos.util.warn('WARNING: fs.watch does not really work on this system. That is OK but you\n' +
+              self.templates.apos.util.warn('WARNING: fs.watch does not work on this system. That is OK but you\n' +
                 'will have to restart to see any template changes take effect.');
             }
             self.templates.apos.util.error(e);
@@ -144,7 +149,15 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
           const macro = matches[0];
           if (macro.match(/{%\s*area|{%\s*component/)) {
             self.templates.apos.util.warnDevOnce('async-in-macros',
-              `The Nunjucks template:\n\n${fullpath}\n\nAttempts to use {% area %} or {% component %} inside {% macro %}.\nThis will not work. Replace {% macro %}...{% endmacro %} with\n{% fragment %}...{% endfragment %}.`
+              stripIndent`The Nunjucks template:
+
+              ${fullpath}
+
+              attempts to use {% area %} or {% component %} inside {% macro %}.
+
+              This will not work. Replace {% macro %}...{% endmacro %} with
+              {% fragment %}...{% endfragment %}. Also replace every call to
+              the macro with {% render fragmentName(arguments) %}.`
             );
           }
         }
@@ -165,6 +178,12 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
       _.each(self.listeners[name], function(listener) {
         listener.apply(null, args);
       });
+    }
+  };
+
+  self.destroy = async () => {
+    for (const watch of self.watches) {
+      await watch.close();
     }
   };
 

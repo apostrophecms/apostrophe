@@ -142,7 +142,7 @@ describe('page-type', function() {
       path: '/niftyPages',
       level: 1,
       rank: 5,
-      trash: false
+      archived: false
     };
 
     const response = await apos.doc.db.insertOne(testItem);

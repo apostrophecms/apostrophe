@@ -53,7 +53,9 @@ module.exports = function(self) {
       }
       if (!argv['crop-only']) {
         try {
-          await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, originalFile);
+          await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, originalFile, {
+            sizes: self.imageSizes
+          });
         } catch (e) {
           self.apos.util.error('WARNING: could not work with ' + tempFile + ' even though copyOut claims it is there');
           return;
@@ -64,7 +66,10 @@ module.exports = function(self) {
         const originalFile = '/attachments/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
         console.log('Cropping ' + tempFile + ' to ' + originalFile);
         try {
-          Promise.promisify(self.uploadfs.copyImageIn)(tempFile, originalFile, { crop: crop });
+          Promise.promisify(self.uploadfs.copyImageIn)(tempFile, originalFile, {
+            crop: crop,
+            sizes: self.imageSizes
+          });
         } catch (e) {
           console.error('WARNING: problem copying image back into uploadfs:');
           console.error(e);

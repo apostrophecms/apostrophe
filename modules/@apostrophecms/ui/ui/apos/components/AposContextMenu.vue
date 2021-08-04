@@ -9,18 +9,24 @@
       :placement="menuPlacement"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
-      popover-class="apos-popover"
+      :popover-class="popoverClass"
       popover-wrapper-class="apos-popover__wrapper"
       popover-inner-class="apos-popover__inner"
     >
       <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
         class="apos-context-menu__btn"
-        @click="buttonClicked($event)"
+        @click.stop="buttonClicked($event)"
         v-bind="button"
         :state="buttonState"
         ref="button"
         :disabled="disabled"
+        :tooltip="tooltip"
+        role="button"
+        :attrs="{
+          'aria-haspopup': 'menu',
+          'aria-expanded': isOpen ? true : false
+        }"
       />
       <template #popover class="apos-popover__slot">
         <AposContextMenuDialog
@@ -40,12 +46,14 @@
 import {
   VPopover
 } from 'v-tooltip';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposContextMenu',
   components: {
     'v-popover': VPopover
   },
+  mixins: [ AposThemeMixin ],
   props: {
     menu: {
       type: Array,
@@ -79,6 +87,16 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    tooltip: {
+      type: [ String, Boolean ],
+      default: false
+    },
+    popoverModifiers: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'open', 'close', 'item-clicked' ],
@@ -90,6 +108,13 @@ export default {
     };
   },
   computed: {
+    popoverClass() {
+      const classes = [ 'apos-popover' ].concat(this.themeClass);
+      this.popoverModifiers.forEach(m => {
+        classes.push(`apos-popover--${m}`);
+      });
+      return classes;
+    },
     classList() {
       const classes = [];
       const baseClass = 'apos-context-menu__popup';
@@ -107,7 +132,6 @@ export default {
     buttonState() {
       return this.open ? [ 'active' ] : null;
     }
-
   },
   watch: {
     isOpen(newVal, oldVal) {
@@ -189,11 +213,11 @@ export default {
 }
 
 .apos-context-menu {
-  & /deep/ .apos-popover__wrapper,
-  & /deep/ div:not([class]),
-  & /deep/ .apos-context-menu__dialog,
-  & /deep/ .apos-popover,
-  & /deep/ .apos-popover__inner {
+  & ::v-deep .apos-popover__wrapper,
+  & ::v-deep div:not([class]),
+  & ::v-deep .apos-context-menu__dialog,
+  & ::v-deep .apos-popover,
+  & ::v-deep .apos-popover__inner {
     &:focus {
       outline: none;
     }
@@ -233,6 +257,10 @@ export default {
     visibility: visible;
     opacity: 1;
   }
+}
+
+.apos-popover--z-index-in-context {
+  z-index: $z-index-widget-focused-controls;
 }
 
 </style>

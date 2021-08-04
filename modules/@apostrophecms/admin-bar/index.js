@@ -59,15 +59,17 @@ module.exports = {
       // wish to implement a custom admin bar item not powered by
       // the `AposModals` app.
       //
-      // If `options.contextUtility` is true, then `options.icon` is required, and
-      // the item will be displayed in a tray of icons just to the left
-      // of the page settings gear. If `options.toggle` is also true,
+      // If `options.contextUtility` is true the item will be displayed in a tray of
+      // icons just to the left of the page settings gear. If `options.toggle` is also true,
       // then the button will have the `active` state until toggled
       // off again. `options.openTooltip` and `options.closeTooltip` may be
       // provided to offer a different tooltip during the active state. Otherwise
       // `options.tooltip` is used. The regular label is also present for
       // screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
+      //
+      // If an `options.when` function is provided, it will be invoked with
+      // `req` to test whether this admin bar item should be displayed or not.
 
       add(name, label, permission, options) {
         let index;
@@ -87,17 +89,6 @@ module.exports = {
           }
         }
         self.items.push(item);
-      },
-
-      // Group several menu items together in the interface (currently
-      // implemented as a dropdown menu). If `items` is an array of menu
-      // item names, then the group's label is the same as the label of
-      // the first item. If you wish the label to differ from the label
-      // of the first item, instead pass an object with a `label` property
-      // and an `items` property.
-
-      group(items) {
-        self.groups.push(items);
       },
 
       getVisibleItems(req) {
@@ -233,14 +224,17 @@ module.exports = {
           // Being logged in is good enough to see this
           return true;
         }
-        return self.apos.permission.can(req, item.permission.action, item.permission.type);
+        // Test the permission as if we were in draft mode, as when you actually
+        // manage the items those requests will be made in draft mode (when
+        // applicable to the content type)
+        return self.apos.permission.can(req, item.permission.action, item.permission.type, 'draft');
       },
 
       getBrowserData(req) {
-        const items = self.getVisibleItems(req);
-        if (!items.length) {
+        if (!req.user) {
           return false;
         }
+        const items = self.getVisibleItems(req);
         const context = req.data.piece || req.data.page;
         // Page caching is never desirable when possibly
         // editing that page
@@ -248,14 +242,11 @@ module.exports = {
           req.res.setHeader('Cache-Control', 'no-cache');
         }
         let contextEditorName;
-        let contextAction;
         if (context) {
           if (self.apos.page.isPage(context)) {
             contextEditorName = '@apostrophecms/page:editor';
-            contextAction = self.apos.page.action;
           } else {
             contextEditorName = `${context.type}:editor`;
-            contextAction = self.apos.doc.getManager(context.type).action;
           }
         }
         return {
@@ -270,16 +261,20 @@ module.exports = {
             modified: context.modified,
             updatedAt: context.updatedAt,
             updatedBy: context.updatedBy,
-            lastPublishedAt: context.lastPublishedAt
+            submitted: context.submitted,
+            lastPublishedAt: context.lastPublishedAt,
+            _edit: context._edit,
+            aposMode: context.aposMode,
+            aposLocale: context.aposLocale,
+            aposDocId: context.aposDocId
           },
           // Base API URL appropriate to the context document
-          contextAction,
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           // Simplifies frontend logic
           contextId: context && context._id,
-          htmlPageId: cuid(),
+          tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft')
         };
       }
     };

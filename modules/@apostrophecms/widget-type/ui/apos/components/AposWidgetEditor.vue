@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
@@ -50,7 +50,7 @@ import { klona } from 'klona';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [ AposModalModifiedMixin, AposEditorMixin ],
+  mixins: [ AposModifiedMixin, AposEditorMixin ],
   props: {
     type: {
       required: true,
@@ -115,6 +115,9 @@ export default {
     },
     schema() {
       return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+    },
+    isModified() {
+      return detectDocChange(this.schema, this.original, this.docFields.data);
     }
   },
   async mounted() {
@@ -126,10 +129,6 @@ export default {
   methods: {
     updateDocFields(value) {
       this.docFields = value;
-    },
-    isModified() {
-      const result = detectDocChange(this.schema, this.original, this.docFields.data);
-      return result;
     },
     save() {
       this.triggerValidation = true;
@@ -161,7 +160,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-widget-editor /deep/ .apos-modal__inner {
+  .apos-widget-editor ::v-deep .apos-modal__inner {
     max-width: 458px;
   }
 </style>

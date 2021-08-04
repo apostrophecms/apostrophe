@@ -27,14 +27,17 @@ module.exports = {
 
     self.fieldTypes = {};
     self.fieldsById = {};
+    self.arrayManagers = {};
+    self.objectManagers = {};
+
     self.enableBrowserData();
 
     self.addFieldType({
       name: 'area',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const _id = self.apos.launder.id(data[field.name] && data[field.name]._id) || self.apos.util.generateId();
         if (typeof data[field.name] === 'string') {
-          object[field.name] = self.apos.area.fromPlaintext(data[field.name]);
+          destination[field.name] = self.apos.area.fromPlaintext(data[field.name]);
           return;
         }
         if (Array.isArray(data[field.name])) {
@@ -56,7 +59,7 @@ module.exports = {
           items = [];
         }
         items = await self.apos.area.sanitizeItems(req, items, field.options || {});
-        object[field.name] = {
+        destination[field.name] = {
           _id,
           items,
           metaType: 'area'
@@ -89,10 +92,10 @@ module.exports = {
 
     self.addFieldType({
       name: 'string',
-      convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], field.def);
+      convert: function (req, field, data, destination) {
+        destination[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        object[field.name] = checkStringLength(object[field.name], field.min, field.max);
+        destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
         // If field is required but empty (and client side didn't catch that)
         // This is new and until now if JS client side failed, then it would
         // allow the save with empty values -Lars
@@ -127,7 +130,8 @@ module.exports = {
             return self.sortedDistinct(field.name, query);
           }
         });
-      }
+      },
+      def: ''
     });
 
     self.addFieldType({
@@ -136,21 +140,21 @@ module.exports = {
       // if field.page is true, expect a page slug (slashes allowed,
       // leading slash required). Otherwise, expect a object-style slug
       // (no slashes at all)
-      convert: function (req, field, data, object) {
+      convert: function (req, field, data, destination) {
         const options = {};
         if (field.page) {
           options.allow = '/';
         }
-        object[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
+        destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
         if (field.page) {
-          if (!(object[field.name].charAt(0) === '/')) {
-            object[field.name] = '/' + object[field.name];
+          if (!(destination[field.name].charAt(0) === '/')) {
+            destination[field.name] = '/' + destination[field.name];
           }
           // No runs of slashes
-          object[field.name] = object[field.name].replace(/\/+/g, '/');
+          destination[field.name] = destination[field.name].replace(/\/+/g, '/');
           // No trailing slashes (except for root)
-          if (object[field.name] !== '/') {
-            object[field.name] = object[field.name].replace(/\/$/, '');
+          if (destination[field.name] !== '/') {
+            destination[field.name] = destination[field.name].replace(/\/$/, '');
           }
         }
       },
@@ -176,8 +180,8 @@ module.exports = {
 
     self.addFieldType({
       name: 'boolean',
-      convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.boolean(data[field.name], field.def);
+      convert: function (req, field, data, destination) {
+        destination[field.name] = self.apos.launder.boolean(data[field.name], field.def);
       },
       isEmpty: function (field, value) {
         return !value;
@@ -227,16 +231,16 @@ module.exports = {
 
     self.addFieldType({
       name: 'color',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name], field.def);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-        if (field.required && (_.isUndefined(object[field.name]) || !object[field.name].toString().length)) {
+        if (field.required && (_.isUndefined(destination[field.name]) || !destination[field.name].toString().length)) {
           throw self.apos.error('required');
         }
 
-        const test = tinycolor(object[field.name]);
+        const test = tinycolor(destination[field.name]);
         if (!tinycolor(test).isValid()) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       isEmpty: function (field, value) {
@@ -246,23 +250,23 @@ module.exports = {
 
     self.addFieldType({
       name: 'checkboxes',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         if (typeof data[field.name] === 'string') {
           data[field.name] = self.apos.launder.string(data[field.name]).split(',');
 
           if (!Array.isArray(data[field.name])) {
-            object[field.name] = [];
+            destination[field.name] = [];
             return;
           }
 
-          object[field.name] = _.filter(data[field.name], function (choice) {
+          destination[field.name] = _.filter(data[field.name], function (choice) {
             return _.includes(_.map(field.choices, 'value'), choice);
           });
         } else {
           if (!Array.isArray(data[field.name])) {
-            object[field.name] = [];
+            destination[field.name] = [];
           } else {
-            object[field.name] = _.filter(data[field.name], function (choice) {
+            destination[field.name] = _.filter(data[field.name], function (choice) {
               return _.includes(_.map(field.choices, 'value'), choice);
             });
           }
@@ -318,8 +322,8 @@ module.exports = {
 
     self.addFieldType({
       name: 'select',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
       },
       index: function (value, field, texts) {
         const silent = field.silent === undefined ? true : field.silent;
@@ -381,8 +385,8 @@ module.exports = {
     self.addFieldType({
       name: 'integer',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
         if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
@@ -393,7 +397,7 @@ module.exports = {
         // This allows the form to be saved and sets the value to null if no value was given by
         // the user.
         if (!data[field.name] && data[field.name] !== 0) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       addQueryBuilder(field, query) {
@@ -428,8 +432,8 @@ module.exports = {
     self.addFieldType({
       name: 'float',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
@@ -437,7 +441,7 @@ module.exports = {
           throw self.apos.error('invalid');
         }
         if (!data[field.name] && data[field.name] !== 0) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       addQueryBuilder(field, query) {
@@ -469,8 +473,8 @@ module.exports = {
     self.addFieldType({
       name: 'email',
       vueComponent: 'AposInputString',
-      convert: function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name]);
+      convert: function (req, field, data, destination) {
+        destination[field.name] = self.apos.launder.string(data[field.name]);
         if (!data[field.name]) {
           if (field.required) {
             throw self.apos.error('required');
@@ -482,15 +486,15 @@ module.exports = {
             throw self.apos.error('invalid');
           }
         }
-        object[field.name] = data[field.name];
+        destination[field.name] = data[field.name];
       }
     });
 
     self.addFieldType({
       name: 'url',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.url(data[field.name], field.def);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
       },
       diffable: function (value) {
         // URLs are fine to diff and display
@@ -526,11 +530,11 @@ module.exports = {
     self.addFieldType({
       name: 'date',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const newDateVal = data[field.name];
-        if (!newDateVal && object[field.name]) {
+        if (!newDateVal && destination[field.name]) {
           // Allow date fields to be unset.
-          object[field.name] = null;
+          destination[field.name] = null;
           return;
         }
         if (field.min && newDateVal && (newDateVal < field.min)) {
@@ -542,7 +546,7 @@ module.exports = {
           return;
         }
 
-        object[field.name] = self.apos.launder.date(newDateVal, field.def);
+        destination[field.name] = self.apos.launder.date(newDateVal, field.def);
       },
       validate: function (field, options, warn, fail) {
         if (field.max && !field.max.match(dateRegex)) {
@@ -599,20 +603,20 @@ module.exports = {
     self.addFieldType({
       name: 'time',
       vueComponent: 'AposInputString',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.time(data[field.name], field.def);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.time(data[field.name], field.def);
       }
     });
 
     self.addFieldType({
       name: 'password',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         // This is the only field type that we never update unless
         // there is actually a new value — a blank password is not cool. -Tom
         if (data[field.name]) {
-          object[field.name] = self.apos.launder.string(data[field.name], field.def);
+          destination[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-          object[field.name] = checkStringLength(object[field.name], field.min, field.max);
+          destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
         }
       }
     });
@@ -624,8 +628,8 @@ module.exports = {
     self.addFieldType({
       name: 'range',
       vueComponent: 'AposInputRange',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      async convert(req, field, data, destination) {
+        destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
           throw self.apos.error('required');
         }
@@ -639,7 +643,7 @@ module.exports = {
           data[field.name] < field.min ||
           data[field.name] > field.max
         ) {
-          object[field.name] = null;
+          destination[field.name] = null;
         }
       },
       validate: function (field, options, warn, fail) {
@@ -666,7 +670,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'array',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const schema = field.schema;
         data = data[field.name];
         if (!Array.isArray(data)) {
@@ -680,6 +684,8 @@ module.exports = {
         for (const datum of data) {
           const result = {};
           result._id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
+          result.metaType = 'arrayItem';
+          result.scopedArrayName = field.scopedArrayName;
           try {
             await self.convert(req, schema, datum, result);
           } catch (e) {
@@ -694,7 +700,7 @@ module.exports = {
           }
           results.push(result);
         }
-        object[field.name] = results;
+        destination[field.name] = results;
         if (field.required && !results.length) {
           throw self.apos.error('required');
         }
@@ -721,8 +727,13 @@ module.exports = {
           self.validateField(subField, options);
         }
       },
-      register: function (field) {
-        self.register(field.schema);
+      register: function (metaType, type, field) {
+        const localArrayName = field.arrayName || field.name;
+        field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
+        self.arrayManagers[field.scopedArrayName] = {
+          schema: field.schema
+        };
+        self.register(metaType, type, field.schema);
       },
       isEqual(req, field, one, two) {
         if (!(one[field.name] && two[field.name])) {
@@ -743,7 +754,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'object',
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const schema = field.schema;
         const errors = [];
         const result = {
@@ -762,13 +773,18 @@ module.exports = {
             });
           }
         }
-        object[field.name] = result;
+        destination[field.name] = result;
         if (errors.length) {
           throw errors;
         }
       },
-      register: function (field) {
-        self.register(field.schema);
+      register: function (metaType, type, field) {
+        const localObjectName = field.objectName || field.name;
+        field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
+        self.objectManagers[field.scopedObjectName] = {
+          schema: field.schema
+        };
+        self.register(metaType, type, field.schema);
       },
       isEqual(req, field, one, two) {
         if (one && (!two)) {
@@ -810,7 +826,7 @@ module.exports = {
       // properties is handled at a lower level in a beforeSave
       // handler of the doc-type module.
 
-      convert: async function (req, field, data, object) {
+      async convert(req, field, data, destination) {
         const manager = self.apos.doc.getManager(field.withType);
         if (!manager) {
           throw Error('relationship with type ' + field.withType + ' unrecognized');
@@ -856,7 +872,7 @@ module.exports = {
           });
         }
         if (!clauses.length) {
-          object[field.name] = [];
+          destination[field.name] = [];
           return;
         }
         const results = await manager.find(req, { $or: clauses }).relationships(false).toArray();
@@ -881,7 +897,7 @@ module.exports = {
             }
           }
         }
-        object[field.name] = actualDocs;
+        destination[field.name] = actualDocs;
       },
 
       relate: async function (req, field, objects, options) {
@@ -909,7 +925,7 @@ module.exports = {
               // sanitizer (which doesn't apply to programmatic use) accepts these
               if (Array.isArray(value)) {
                 criteria[field.idsStorage] = {};
-                criteria[field.idsStorage][operator] = value;
+                criteria[field.idsStorage][operator] = value.map(self.apos.doc.toAposDocId);
               } else if (value === 'none') {
                 criteria.$or = [];
                 let clause = {};
@@ -922,7 +938,7 @@ module.exports = {
                 clause[field.idsStorage + '.0'] = { $exists: 0 };
                 criteria.$or.push(clause);
               } else {
-                criteria[field.idsStorage] = { $in: [ value ] };
+                criteria[field.idsStorage] = { $in: [ self.apos.doc.toAposDocId(value) ] };
               }
               query.and(criteria);
             },
@@ -953,20 +969,22 @@ module.exports = {
         }
         if (Array.isArray(field.withType)) {
           _.each(field.withType, function (type) {
-            if (!_.find(self.apos.doc.managers, { name: type })) {
-              fail('withType property, ' + type + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
-            }
+            lintType(type);
           });
         } else {
-          if (!_.find(self.apos.doc.managers, { name: field.withType })) {
-            fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
-          }
+          lintType(field.withType);
         }
         if (field.schema && !field.fieldsStorage) {
           field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
         }
         if (field.schema && !Array.isArray(field.schema)) {
           fail('schema property should be an array if present at this stage');
+        }
+        function lintType(type) {
+          type = self.apos.doc.normalizeType(type);
+          if (!_.find(self.apos.doc.managers, { name: type })) {
+            fail('withType property, ' + type + ', does not match the name of any piece or page type module.');
+          }
         }
       },
       isEqual(req, field, one, two) {
@@ -1008,13 +1026,13 @@ module.exports = {
           // Try to supply reasonable value based on relationship name
           const withType = field.name.replace(/^_/, '').replace(/s$/, '');
           if (!_.find(self.apos.doc.managers, { name: withType })) {
-            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
+            fail('withType property is missing. Hint: it must match the name of a piece or page type module. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
         }
-        const otherModule = _.find(self.apos.doc.managers, { name: field.withType });
+        const otherModule = _.find(self.apos.doc.managers, { name: self.apos.doc.normalizeType(field.withType) });
         if (!otherModule) {
-          fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
+          fail('withType property, ' + field.withType + ', does not match the name of a piece or page type module.');
         }
         if (!(field.reverseOf || field.idsStorage)) {
           self.validate(otherModule.schema, {
@@ -1042,6 +1060,7 @@ module.exports = {
             subtype: otherModule.name
           });
           field.idsStorage = forwardRelationship.idsStorage;
+          field.fieldsStorage = forwardRelationship.fieldsStorage;
         }
         if (!field.idsStorage) {
           field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
@@ -1053,6 +1072,9 @@ module.exports = {
           });
           if (!forwardRelationship) {
             fail('idsStorage property does not match the idsStorage property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, your idsStorage must be the same to find the data there.');
+          }
+          if (forwardRelationship.fieldsStorage) {
+            field.fieldsStorage = forwardRelationship.fieldsStorage;
           }
         }
       }
@@ -1079,10 +1101,10 @@ module.exports = {
         },
         registerAllSchemas() {
           _.each(self.apos.doc.managers, function (manager, type) {
-            self.register(manager.schema);
+            self.register('doc', type, manager.schema);
           });
           _.each(self.apos.area.widgetManagers, function (manager, type) {
-            self.register(manager.schema);
+            self.register('widget', type, manager.schema);
           });
         }
       }
@@ -1468,7 +1490,7 @@ module.exports = {
       // Note that for relationship fields this comparison is based on the idsStorage
       // and fieldsStorage, which are updated at the time a document is saved to the
       // database, so it will not work on a document not yet inserted or updated
-      // unless `prepareRelationshipsForStorage` is used.
+      // unless `prepareForStorage` is used.
       //
       // This method is invoked by the doc module to compare draft and published
       // documents and set the modified property of the draft, just before updating the
@@ -1510,7 +1532,7 @@ module.exports = {
       },
 
       // Convert submitted `data` object according to `schema`, sanitizing it
-      // and populating the appropriate properties of `object` with it.
+      // and populating the appropriate properties of `destination` with it.
       //
       // Most field types may be converted as plaintext or in the format used for Apostrophe
       // schema forms, which in most cases is identical to that in which they will be stored
@@ -1526,7 +1548,7 @@ module.exports = {
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
 
-      async convert(req, schema, data, object) {
+      async convert(req, schema, data, destination) {
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
@@ -1545,7 +1567,7 @@ module.exports = {
           const convert = self.fieldTypes[field.type].convert;
           if (convert) {
             try {
-              await convert(req, field, data, object);
+              await convert(req, field, data, destination);
             } catch (e) {
               if (Array.isArray(e)) {
                 const invalid = self.apos.error('invalid', {
@@ -1565,7 +1587,7 @@ module.exports = {
         }
 
         errors = errors.filter(error => {
-          if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
+          if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, destination, error.path)) {
             // It is not reasonable to enforce required for
             // fields hidden via conditional fields
             return false;
@@ -1640,7 +1662,7 @@ module.exports = {
           if (reverse) {
             idsCriteria[idsStorage] = { $in: ids };
           } else {
-            idsCriteria._id = { $in: ids };
+            idsCriteria.aposDocId = { $in: ids };
           }
           const criteria = {
             $and: [
@@ -1655,14 +1677,7 @@ module.exports = {
           // Hints, on the other hand, must be sanitized
           query.applyBuildersSafely(hints);
           return query.toArray();
-        }, _id => {
-          const index = _id.indexOf(':');
-          const locale = `${req.locale}:${req.mode}`;
-          if (index > -1) {
-            return `${_id.substring(0, index)}:${locale}`;
-          }
-          return `${_id}:${locale}`;
-        });
+        }, self.apos.doc.toAposDocId);
       },
 
       // Fetch all the relationships in the schema on the specified object or array
@@ -1827,7 +1842,6 @@ module.exports = {
               }
               await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
                 // Allow options to the getter to be specified in the schema,
-                // notably editable: true
                 return self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
               });
               _.each(_objects, function (object) {
@@ -1873,8 +1887,7 @@ module.exports = {
             _.extend(options.hints, relationship.hints);
           }
 
-          // Allow options to the getter to be specified in the schema,
-          // notably editable: true
+          // Allow options to the getter to be specified in the schema
           await self.apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
             return self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
           });
@@ -1896,26 +1909,28 @@ module.exports = {
         }
       },
 
-      // In the given document, for any relationships that are present in
-      // the data (such as `_products`), update the underlying
-      // idsStorage and fieldsStorage (if appropriate) so that
-      // storage to the database can take place. This method is
+      // In the given document or widget, update any underlying
+      // storage needs required for relationships, arrays, etc.,
+      // such as populating the idsStorage and fieldsStorage
+      // properties of relationship fields, or setting the
+      // arrayName property of array items. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
       // itself as needed for relationships nested in widgets,
       // array fields and object fields.
       //
-      // If the relationship field is present by name (such as `_products`)
+      // If a relationship field is present by name (such as `_products`)
       // in the document, that is taken as authoritative, and any
       // existing values in the `idsStorage` and `fieldsStorage`
       // are overwritten. If the relationship field is not present, the
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
-      // `.relationships(false)`, provided a projection was not also used.
+      // `.relationships(false)`, provided the projection included
+      // the ids.
       //
       // Currently `req` does not impact this, but that may change.
 
-      prepareRelationshipsForStorage(req, doc) {
+      prepareForStorage(req, doc) {
         if (doc.metaType === 'doc') {
           const manager = self.apos.doc.getManager(doc.type);
           if (!manager) {
@@ -1934,25 +1949,32 @@ module.exports = {
             if (field.type === 'area') {
               if (doc[field.name] && doc[field.name].items) {
                 for (const widget of doc[field.name].items) {
-                  self.prepareRelationshipsForStorage(req, widget);
+                  self.prepareForStorage(req, widget);
                 }
               }
             } else if (field.type === 'array') {
               if (doc[field.name]) {
-                doc[field.name].forEach(item => forSchema(field.schema, item));
+                doc[field.name].forEach(item => {
+                  item.metaType = 'arrayItem';
+                  item.scopedArrayName = field.scopedArrayName;
+                  forSchema(field.schema, item);
+                });
               }
             } else if (field.type === 'object') {
-              if (doc[field.name]) {
-                forSchema(field.schema, doc[field.name]);
+              const value = doc[field.name];
+              if (value) {
+                value.metaType = 'object';
+                value.scopedObjectName = field.scopedObjectName;
+                forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {
               if (Array.isArray(doc[field.name])) {
-                doc[field.idsStorage] = doc[field.name].map(relatedDoc => relatedDoc._id);
+                doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
                 if (field.fieldsStorage) {
                   const fieldsById = doc[field.fieldsStorage] || {};
                   for (const relatedDoc of doc[field.name]) {
                     if (relatedDoc._fields) {
-                      fieldsById[relatedDoc._id] = relatedDoc._fields;
+                      fieldsById[self.apos.doc.toAposDocId(relatedDoc)] = relatedDoc._fields;
                     }
                   }
                   doc[field.fieldsStorage] = fieldsById;
@@ -1972,9 +1994,9 @@ module.exports = {
       //
       // ### `convert`
       //
-      // Required. An `async` function which takes `(req, field, data, object)`. The value
+      // Required. An `async` function which takes `(req, field, data, destination)`. The value
       // of the field is drawn from the untrusted input object `data` and sanitized
-      // if possible, then copied to the appropriate property (or properties) of `object`.
+      // if possible, then copied to the appropriate property (or properties) of `destination`.
       //
       // `field` contains the schema field definition, useful to access
       // `def`, `min`, `max`, etc.
@@ -2070,7 +2092,7 @@ module.exports = {
           const idsStorage = field.idsStorage;
           const ids = await query.toDistinct(idsStorage);
           const manager = self.apos.doc.getManager(field.withType);
-          const relationshipQuery = manager.find(query.req, { _id: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
+          const relationshipQuery = manager.find(query.req, { aposDocId: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
           if (field.builders) {
             relationshipQuery.applyBuilders(field.builders);
           }
@@ -2205,6 +2227,9 @@ module.exports = {
         if (!field.label && !field.contextual) {
           field.label = _.startCase(field.name.replace(/^_/, ''));
         }
+        if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
+          fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
+        }
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
         }
@@ -2221,7 +2246,14 @@ module.exports = {
 
       // Recursively register the given schema, giving each field an _id and making provision to be able to
       // fetch its definition via apos.schema.getFieldById().
-      register(schema) {
+      //
+      // metaType and type refer to the doc or widget that ultimately contains this schema,
+      // even if it is nested as an array schema. `metaType` will be "doc" or "widget"
+      // and `type` will be the type name. This is used to dynamically assign
+      // sufficiently unique `arrayName` properties to array fields and may be used
+      // for similar scoping tasks.
+
+      register(metaType, type, schema) {
         for (const field of schema) {
           // _id needs to be consistent across processes
           field._id = self.apos.util.md5(JSON.stringify(_.omit(field, '_id', 'group')));
@@ -2231,9 +2263,9 @@ module.exports = {
             field.def = self.fieldTypes[field.type].def;
           }
           self.fieldsById[field._id] = field;
-          const type = self.fieldTypes[field.type];
-          if (type.register) {
-            type.register(field);
+          const fieldType = self.fieldTypes[field.type];
+          if (fieldType.register) {
+            fieldType.register(metaType, type, field);
           }
         }
       },
@@ -2383,7 +2415,7 @@ module.exports = {
             if (dot !== -1) {
               _id = _id.substring(0, dot);
             }
-            const result = self.apos.util.findNestedObjectAndDotPathById(existingPage, _id);
+            const result = self.apos.util.findNestedObjectAndDotPathById(existingPage, _id, { ignoreDynamicProperties: true });
             if (!result) {
               throw self.apos.error('invalid', {
                 '@path': key
@@ -2464,6 +2496,35 @@ module.exports = {
           result.push(field);
         }
         return result;
+      },
+      // Array "managers" currently offer just a schema property, for parallelism
+      // with doc type and widget managers. This allows the getManagerOf method
+      // to operate on objects of any of three types: doc, widget or array item.
+      getArrayManager(name) {
+        return self.arrayManagers[name];
+      },
+      // Regenerate all array item, area and widget ids so they are considered
+      // new. Useful when copying an entire doc.
+      regenerateIds(req, schema, doc) {
+        for (const field of schema) {
+          if (field.type === 'array') {
+            for (const item of (doc[field.name] || [])) {
+              item._id = self.apos.util.generateId();
+              self.regenerateIds(req, field.schema, item);
+            }
+          } else if (field.type === 'area') {
+            if (doc[field.name]) {
+              doc[field.name]._id = self.apos.util.generateId();
+              for (const item of (doc[field.name].items || [])) {
+                item._id = self.apos.util.generateId();
+                const schema = self.apos.area.getWidgetManager(item.type).schema;
+                self.regenerateIds(req, schema, item);
+              }
+            }
+          }
+          // We don't want to regenerate attachment ids. They correspond to
+          // actual files, and the reference count will update automatically
+        }
       }
     };
   },
@@ -2484,26 +2545,6 @@ module.exports = {
 
         browserOptions.components = { fields: fields };
         return browserOptions;
-      }
-    };
-  },
-  helpers(self) {
-    return {
-      toGroups: function (fields) {
-        return self.toGroups(fields);
-      },
-      field: function (field, readOnly) {
-        if (readOnly) {
-          field.readOnly = true;
-        }
-        // Allow custom partials for types and for individual fields
-        const partial = field.partial || self.fieldTypes[field.type].partial;
-        if (!partial) {
-          // Look for a standard partial template in the views folder
-          // of this module
-          return self.partialer(field.type)(field);
-        }
-        return partial(field);
       }
     };
   }

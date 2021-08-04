@@ -2,6 +2,9 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
 const cuid = require('cuid');
+const fs = require('fs');
+const path = require('path');
+const FormData = require('form-data');
 
 let apos;
 let jar;
@@ -33,10 +36,10 @@ describe('Pieces', function() {
             }
           }
         },
-        things: {
+        thing: {
           extend: '@apostrophecms/piece-type',
           options: {
-            alias: 'things',
+            alias: 'thing',
             name: 'thing',
             label: 'Thing',
             publicApiProjection: {
@@ -53,10 +56,10 @@ describe('Pieces', function() {
             }
           }
         },
-        people: {
+        person: {
           extend: '@apostrophecms/piece-type',
           options: {
-            alias: 'people',
+            alias: 'person',
             name: 'person',
             label: 'Person',
             publicApiProjection: {
@@ -68,6 +71,17 @@ describe('Pieces', function() {
             add: {
               _things: {
                 type: 'relationship'
+              },
+              _tools: {
+                type: 'relationship',
+                withType: 'thing',
+                fields: {
+                  add: {
+                    skillLevel: {
+                      type: 'integer'
+                    }
+                  }
+                }
               }
             }
           }
@@ -122,8 +136,8 @@ describe('Pieces', function() {
               _articles: {
                 type: 'relationship',
                 withType: 'article',
-                filters: {
-                  projection: {
+                builders: {
+                  project: {
                     _url: 1,
                     title: 1
                   }
@@ -175,18 +189,32 @@ describe('Pieces', function() {
               }
             }
           }
+        },
+        resume: {
+          options: {
+            alias: 'resume'
+          },
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              attachment: {
+                type: 'attachment',
+                required: true
+              }
+            }
+          }
         }
       }
     });
-    assert(apos.modules.things);
-    assert(apos.modules.things.schema);
+    assert(apos.modules.thing);
+    assert(apos.modules.thing.schema);
   });
 
-  // little test-helper function to get piece by id regardless of trash status
+  // little test-helper function to get piece by id regardless of archive status
   async function findPiece(req, id) {
-    const piece = apos.modules.things.find(req, { _id: id })
+    const piece = apos.modules.thing.find(req, { _id: id })
       .permission('edit')
-      .trash(null)
+      .archived(null)
       .toObject();
     if (!piece) {
       throw apos.error('notfound');
@@ -228,22 +256,22 @@ describe('Pieces', function() {
 
   // Test pieces.newInstance()
   it('should be able to create a new piece', function() {
-    assert(apos.modules.things.newInstance);
-    const thing = apos.modules.things.newInstance();
+    assert(apos.modules.thing.newInstance);
+    const thing = apos.modules.thing.newInstance();
     assert(thing);
     assert(thing.type === 'thing');
   });
 
   // Test pieces.insert()
   it('should be able to insert a piece into the database', async () => {
-    assert(apos.modules.things.insert);
-    await apos.modules.things.insert(apos.task.getReq(), testThing);
+    assert(apos.modules.thing.insert);
+    await apos.modules.thing.insert(apos.task.getReq(), testThing);
   });
 
   it('should be able to retrieve a piece by id from the database', async () => {
-    assert(apos.modules.things.requireOneForEditing);
+    assert(apos.modules.thing.requireOneForEditing);
     const req = apos.task.getReq();
-    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing:en:published' });
+    req.piece = await apos.modules.thing.requireOneForEditing(req, { _id: 'testThing:en:published' });
     assert(req.piece);
     assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.title === 'hello');
@@ -252,13 +280,13 @@ describe('Pieces', function() {
 
   // Test pieces.update()
   it('should be able to update a piece in the database', async () => {
-    assert(apos.modules.things.update);
+    assert(apos.modules.thing.update);
     testThing.foo = 'moo';
-    const piece = await apos.modules.things.update(apos.task.getReq(), testThing);
+    const piece = await apos.modules.thing.update(apos.task.getReq(), testThing);
     assert(testThing === piece);
     // Now let's get the piece and check if it was updated
     const req = apos.task.getReq();
-    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing:en:published' });
+    req.piece = await apos.modules.thing.requireOneForEditing(req, { _id: 'testThing:en:published' });
     assert(req.piece);
     assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.foo === 'moo');
@@ -310,39 +338,39 @@ describe('Pieces', function() {
     assert(manageTest === true);
   });
 
-  it('should be able to trash a piece with proper deduplication', async () => {
-    assert(apos.modules.things.requireOneForEditing);
+  it('should be able to archive a piece with proper deduplication', async () => {
+    assert(apos.modules.thing.requireOneForEditing);
     const req = apos.task.getReq();
     const id = 'testThing:en:published';
     req.body = { _id: id };
-    // let's make sure the piece is not trashed to start
+    // let's make sure the piece is not archived to start
     const piece = await findPiece(req, id);
-    assert(!piece.trash);
-    piece.trash = true;
-    await apos.modules.things.update(req, piece);
-    // let's get the piece to make sure it is trashed
+    assert(!piece.archived);
+    piece.archived = true;
+    await apos.modules.thing.update(req, piece);
+    // let's get the piece to make sure it is archived
     const piece2 = await findPiece(req, id);
     assert(piece2);
-    assert(piece2.trash === true);
-    assert(piece2.aposWasTrash === true);
+    assert(piece2.archived === true);
+    assert(piece2.aposWasArchived === true);
     assert.equal(piece2.slug, 'deduplicate-testThing-hello');
   });
 
-  it('should be able to rescue a trashed piece with proper deduplication', async () => {
+  it('should be able to rescue a archived piece with proper deduplication', async () => {
     const req = apos.task.getReq();
     const id = 'testThing:en:published';
     req.body = {
       _id: id
     };
-    // let's make sure the piece is trashed to start
+    // let's make sure the piece is archived to start
     const piece = await findPiece(req, id);
-    assert(piece.trash === true);
-    piece.trash = false;
-    await apos.modules.things.update(req, piece);
+    assert(piece.archived === true);
+    piece.archived = false;
+    await apos.modules.thing.update(req, piece);
     const piece2 = await findPiece(req, id);
     assert(piece2);
-    assert(!piece2.trash);
-    assert(!piece2.aposWasTrash);
+    assert(!piece2.archived);
+    assert(!piece2.aposWasArchived);
     assert(piece2.slug === 'hello');
   });
 
@@ -351,22 +379,20 @@ describe('Pieces', function() {
     const user = apos.user.newInstance();
     assert(user);
 
-    user.firstName = 'ad';
-    user.lastName = 'min';
     user.title = 'admin';
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
+    user.role = 'admin';
 
     await apos.user.insert(apos.task.getReq(), user);
 
     const user2 = apos.user.newInstance();
-    user2.firstName = 'ad';
-    user2.lastName = 'min2';
     user2.title = 'admin2';
     user2.username = 'admin2';
     user2.password = 'admin2';
     user2.email = 'ad@min2.com';
+    user2.role = 'admin';
 
     return apos.user.insert(apos.task.getReq(), user2);
 
@@ -375,10 +401,10 @@ describe('Pieces', function() {
   it('people can find things via a relationship', async () => {
     const req = apos.task.getReq();
     for (const person of testPeople) {
-      await apos.people.insert(req, person);
+      await apos.person.insert(req, person);
     }
     for (const thing of additionalThings) {
-      await apos.things.insert(req, thing);
+      await apos.thing.insert(req, thing);
     }
     const person = await apos.doc.getManager('person').find(req, {}).toObject();
     assert(person);
@@ -447,6 +473,34 @@ describe('Pieces', function() {
     });
 
     assert(page.match(/logged in/));
+  });
+
+  it('can attach a tool to a person via the REST API', async function() {
+    const person1 = await apos.http.get('/api/v1/person/person1:en:published');
+    assert(person1);
+    const thing1 = await apos.http.get('/api/v1/thing/thing1:en:published');
+    assert(thing1);
+    person1._tools = [
+      {
+        ...thing1,
+        _fields: {
+          skillLevel: 5
+        }
+      }
+    ];
+    await apos.http.put('/api/v1/person/person1:en:published', {
+      body: person1,
+      jar
+    });
+    const person1After = await apos.http.get('/api/v1/person/person1:en:published', {
+      jar
+    });
+    assert(person1After);
+    assert(person1After._tools);
+    assert(person1After._tools.length);
+    assert(person1After._tools[0].title === 'Red');
+    assert(person1After._tools[0]._fields);
+    assert(person1After._tools[0]._fields.skillLevel === 5);
   });
 
   it('cannot POST a product without a session', async () => {
@@ -575,16 +629,16 @@ describe('Pieces', function() {
     assert(response.body.items.length);
   });
 
-  it('can trash a product', async () => {
+  it('can archive a product', async () => {
     return apos.http.patch(`/api/v1/product/${updateProduct._id}`, {
       body: {
-        trash: true
+        archived: true
       },
       jar
     });
   });
 
-  it('cannot fetch a trashed product', async () => {
+  it('cannot fetch a archived product', async () => {
     try {
       await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
         jar
@@ -596,12 +650,12 @@ describe('Pieces', function() {
     }
   });
 
-  it('can fetch trashed product with trash=any and the right user', async () => {
-    const product = await apos.http.get(`/api/v1/product/${updateProduct._id}?trash=any`, {
+  it('can fetch archived product with archived=any and the right user', async () => {
+    const product = await apos.http.get(`/api/v1/product/${updateProduct._id}?archived=any`, {
       jar
     });
     // Should have been a 404, 200 = test fails
-    assert(product.trash);
+    assert(product.archived);
   });
 
   let relatedProductId;
@@ -639,8 +693,8 @@ describe('Pieces', function() {
       jar
     });
     assert(response._id);
-    assert(response.articlesIds[0] === article._id);
-    assert(response.articlesFields[article._id].relevance === 'The very first article that was ever published about this product');
+    assert(response.articlesIds[0] === article.aposDocId);
+    assert(response.articlesFields[article.aposDocId].relevance === 'The very first article that was ever published about this product');
     relatedProductId = response._id;
   });
 
@@ -651,6 +705,8 @@ describe('Pieces', function() {
     const product = _.find(response.results, { slug: 'product-key-product-with-relationship' });
     assert(Array.isArray(product._articles));
     assert(product._articles.length === 1);
+    assert(product._articles[0]._fields);
+    assert.strictEqual(product._articles[0]._fields.relevance, 'The very first article that was ever published about this product');
   });
 
   let relatedArticleId;
@@ -669,6 +725,16 @@ describe('Pieces', function() {
     assert(response._products);
     assert(response._products.length === 1);
     assert(response._products[0]._id === relatedProductId);
+  });
+
+  it('can GET a single article with reverse relationships in draft mode', async () => {
+    const draftRelatedArticleId = relatedArticleId.replace(':published', ':draft');
+    const draftRelatedProductId = relatedProductId.replace(':published', ':draft');
+    const response = await apos.http.get(`/api/v1/article/${draftRelatedArticleId}`, { jar });
+    assert(response);
+    assert(response._products);
+    assert(response._products.length === 1);
+    assert(response._products[0]._id === draftRelatedProductId);
   });
 
   it('can GET results plus filter choices', async () => {
@@ -756,7 +822,7 @@ describe('Pieces', function() {
     });
     assert(response.title === 'Initially No Relationship Value');
     assert(response.articlesIds);
-    assert(response.articlesIds[0] === article._id);
+    assert(response.articlesIds[0] === article.aposDocId);
     assert(response._articles);
     assert(response._articles[0]._id === article._id);
   });
@@ -817,7 +883,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         },
         title: 'Advisory Test Patched'
@@ -832,7 +898,7 @@ describe('Pieces', function() {
         jar,
         body: {
           _advisoryLock: {
-            htmlPageId: 'pdq',
+            tabId: 'pdq',
             lock: true
           }
         }
@@ -850,7 +916,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true,
           force: true
         }
@@ -863,7 +929,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: true
         }
       }
@@ -875,7 +941,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'pdq',
+          tabId: 'pdq',
           lock: false
         },
         title: 'Advisory Test Patched Again'
@@ -889,7 +955,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          htmlPageId: 'xyz',
+          tabId: 'xyz',
           lock: true
         }
       }
@@ -928,13 +994,13 @@ describe('Pieces', function() {
     assert(page.match(/logged in/));
   });
 
-  it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
+  it('second user with a distinct tabId gets an appropriate error specifying who has the lock', async () => {
     try {
       await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {
-            htmlPageId: 'nbc',
+            tabId: 'nbc',
             lock: true
           }
         }
@@ -1102,6 +1168,33 @@ describe('Pieces', function() {
     });
     assert(response);
     assert(response.title === 'API Key Product');
+  });
+
+  it('can insert a resume with an attachment', async () => {
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(path.join(__dirname, '/public/static-test.txt')));
+
+    // Make an async request to upload the image.
+    const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      },
+      body: formData
+    });
+
+    const resume = await apos.http.post('/api/v1/resume', {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      },
+      body: {
+        title: 'Jane Doe',
+        attachment
+      }
+    });
+    assert(resume);
+    assert(resume.title === 'Jane Doe');
+    assert(resume.attachment._url);
+    assert(fs.readFileSync(path.join(__dirname, 'public', resume.attachment._url), 'utf8') === fs.readFileSync(path.join(__dirname, '/public/static-test.txt'), 'utf8'));
   });
 
 });

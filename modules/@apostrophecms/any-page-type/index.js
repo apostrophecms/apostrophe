@@ -1,5 +1,5 @@
-// This module provides a special doc type manager for the `@apostrophecms/page` type, which
-// actually refers to any page in the tree, regardless of type. This
+// This module provides a special doc type manager, `@apostrophecms/any-page-type`, a virtual
+// type which actually refers to any page in the tree, regardless of type. This
 // allows you to create [@apostrophecms/schema](Apostrophe schema relationships) that can link to
 // any page in the page tree, rather than one specific page type.
 
@@ -10,22 +10,44 @@ module.exports = {
   extend: '@apostrophecms/doc-type',
 
   options: {
-    // Never actually found
-    name: '@apostrophecms/page',
     pluralLabel: 'Pages'
   },
-
+  init(self) {
+    self.addManagerModal();
+    self.addEditorModal();
+    self.enableBrowserData();
+  },
   methods(self) {
     return {
-      // Returns a string to represent the given `doc` in an
-      // autocomplete menu. `doc` will contain only the fields returned
-      // by `getAutocompleteProjection`. `query.field` will contain
-      // the schema field definition for the relationship the user is attempting
-      // to match titles from. The default behavior is to return
-      // the `title` property, but since this is a page we are including
-      // the slug as well.
+      // Returns a string to represent the given `doc` in an autocomplete menu.
+      // `doc` will contain only the fields returned by
+      // `getAutocompleteProjection`. `query.field` will contain the schema
+      // field definition for the relationship the user is attempting to match
+      // titles from. The default behavior is to return the `title` property,
+      // but since this is a page we are including the slug as well.
       getAutocompleteTitle(doc, query) {
         return doc.title + ' (' + doc.slug + ')';
+      },
+      getBrowserData(req) {
+        const browserData = self.apos.page.getBrowserData(req);
+        browserData.name = self.__meta.name;
+        browserData.quickCreate = false;
+
+        return browserData;
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:manager`,
+          self.getComponentName('managerModal', 'AposPagesManager'),
+          { moduleName: self.__meta.name }
+        );
+      },
+      addEditorModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:editor`,
+          self.getComponentName('editorModal', 'AposDocEditor'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   },
@@ -162,6 +184,20 @@ module.exports = {
         // for the children, which you may use to filter them.
         children: {
           def: false,
+          launder(input) {
+            let value = null;
+            if (input) {
+              if ((typeof input) === 'object') {
+                value = {};
+                if (input.depth) {
+                  value.depth = self.apos.launder.integer(input.depth);
+                }
+              } else {
+                value = true;
+              }
+            }
+            return value;
+          },
           async after(results) {
             const value = query.get('children');
             if ((!value) || (!results.length)) {

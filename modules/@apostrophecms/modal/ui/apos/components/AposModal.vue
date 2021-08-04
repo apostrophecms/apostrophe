@@ -18,7 +18,7 @@
       </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
         <div
-          v-if="modal.showModal"
+          v-if="modal.showModal" :class="innerClasses"
           class="apos-modal__inner" data-apos-modal-inner
         >
           <header class="apos-modal__header" v-if="!modal.disableHeader">
@@ -78,7 +78,7 @@ export default {
       default: ''
     }
   },
-  emits: [ 'inactive', 'esc', 'show-modal', 'no-modal' ],
+  emits: [ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ],
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));
@@ -122,6 +122,13 @@ export default {
       }
       return classes.join(' ');
     },
+    innerClasses() {
+      const classes = [];
+      if (this.modal.width) {
+        classes.push(`apos-modal__inner--${this.modal.width}`);
+      };
+      return classes;
+    },
     gridModifier() {
       if (this.hasLeftRail && this.hasRightRail) {
         return 'apos-modal__main--with-rails';
@@ -159,11 +166,16 @@ export default {
       this.bindEventListeners();
       apos.modal.stack = apos.modal.stack || [];
       apos.modal.stack.push(this);
+      this.$nextTick(() => {
+        this.$emit('ready');
+      });
     },
     finishExit () {
       this.removeEventListeners();
       this.$emit('no-modal');
-      apos.modal.stack.pop();
+      // pop doesn't quite suffice because of race conditions when
+      // closing one and opening another
+      apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.esc);
@@ -234,7 +246,7 @@ export default {
     height: calc(100vh - #{$spacing-double * 2});
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
-    border: 1px solid var(--a-base-4);
+    border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
 
     .apos-modal--slide & {
@@ -250,6 +262,18 @@ export default {
 
       @media screen and (min-width: 800px) {
         max-width: 540px;
+      }
+    }
+
+    &.apos-modal__inner--two-thirds {
+      @media screen and (min-width: 800px) {
+        max-width: 66%;
+      }
+    }
+
+    &.apos-modal__inner--half {
+      @media screen and (min-width: 800px) {
+        max-width: 50%;
       }
     }
 
@@ -331,7 +355,7 @@ export default {
   }
 
   .apos-modal__header__main {
-    border-bottom: 1px solid var(--a-base-4);
+    border-bottom: 1px solid var(--a-base-9);
   }
 
   .apos-modal__footer {
@@ -356,8 +380,11 @@ export default {
     justify-content: flex-end;
     flex-grow: 1;
   }
-  .apos-modal__controls--primary /deep/ > .apos-button {
-    margin-left: 7.5px;
+  .apos-modal__controls--primary ::v-deep {
+    & > .apos-button__wrapper,
+    & > .apos-context-menu {
+      margin-left: 7.5px;
+    }
   }
 
   .apos-modal__heading {

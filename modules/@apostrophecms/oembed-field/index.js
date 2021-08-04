@@ -26,16 +26,16 @@ module.exports = {
       addFieldType() {
         self.apos.schema.addFieldType({
           name: self.name,
-          convert: async function (req, field, data, object) {
+          async convert(req, field, data, destination) {
             if (typeof data[field.name] === 'string') {
-              object[field.name] = {
-                url: self.apos.launder.url(data[field.name])
+              destination[field.name] = {
+                url: self.apos.launder.url(data[field.name], null, true)
               };
             } else if (data[field.name]) {
-              object[field.name] = {
-                url: self.apos.launder.url(data[field.name].url),
+              destination[field.name] = {
+                url: self.apos.launder.url(data[field.name].url, null, true),
                 title: self.apos.launder.string(data[field.name].title),
-                thumbnail: self.apos.launder.url(data[field.name].thumbnail)
+                thumbnail: self.apos.launder.url(data[field.name].thumbnail, null, true)
               };
             }
           },

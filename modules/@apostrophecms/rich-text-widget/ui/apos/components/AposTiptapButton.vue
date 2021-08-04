@@ -3,7 +3,7 @@
     type="rich-text"
     @click="click"
     class="apos-rich-text-editor__control"
-    :class="{ 'is-active': active }"
+    :class="{ 'apos-is-active': active }"
     :label="tool.label"
     :icon-only="!!tool.icon"
     :icon="tool.icon ? tool.icon : false"
@@ -32,12 +32,14 @@ export default {
   },
   computed: {
     active() {
-      const activeTester = this.editor.isActive[this.command()];
-      if (!activeTester) {
-        return false;
+      // The parameters passed to isActive are unpredictable.
+      // If they do not follow the pattern isActive(NAME, OPTIONS)
+      // they should include their own helper
+      if (this.tool.isActive) {
+        return this.editor.isActive(this.tool.isActive);
+      } else {
+        return this.editor.isActive(this.name, this.tool.commandParameters || {});
       }
-      activeTester.bind(this.editor);
-      return activeTester(this.tool.commandParameters);
     }
   },
   methods: {
@@ -46,6 +48,7 @@ export default {
     },
     click() {
       this.editor.commands[this.command()](this.tool.commandParameters || {});
+      this.editor.commands.focus();
     }
   }
 };

@@ -1,13 +1,14 @@
 <template>
   <label
     class="apos-choice-label" :for="id"
+    :class="{'apos-choice-label--disabled': field.readOnly}"
     :tabindex="{'-1' : field.hideLabel}"
   >
     <input
       type="checkbox" class="apos-sr-only apos-input--choice apos-input--checkbox"
       :value="choice.value" :name="field.name"
       :id="id" :aria-label="choice.label || field.label"
-      :tabindex="tabindex" :disabled="field.disabled"
+      :tabindex="tabindex" :disabled="field.readOnly"
       v-model="checkProxy"
       @change="updateThis"
     >

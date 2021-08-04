@@ -100,9 +100,19 @@ module.exports = function(self) {
           area._id = self.apos.util.get(mainDoc, areaDotPath)._id;
         }
       }
+      const manager = self.apos.util.getManagerOf(doc);
+      const field = manager.schema.find(field => field.name === name);
+      if (!field) {
+        throw new Error(`The doc of type ${doc.type} with the slug ${doc.slug} has no field named ${name}.
+In Apostrophe 3.x areas must be part of the schema for each page or piece type.`);
+      }
+      area._fieldId = field._id;
+      area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+      // For existing areas this is propagated at load time, areas in
+      // array items will always be existing areas
+      area._edit = area._edit || doc._edit;
 
       self.apos.area.prepForRender(area, doc, name);
-
       const content = await self.apos.area.renderArea(req, area, _with);
       return content;
     }

@@ -18,8 +18,8 @@ module.exports = {
         'italic',
         'strike',
         'link',
-        'bullet_list',
-        'ordered_list',
+        'bulletList',
+        'orderedList',
         'blockquote'
       ],
       styles: [
@@ -56,52 +56,61 @@ module.exports = {
       bold: {
         component: 'AposTiptapButton',
         label: 'Bold',
-        icon: 'format-bold-icon'
+        icon: 'format-bold-icon',
+        command: 'toggleBold'
       },
       italic: {
         component: 'AposTiptapButton',
         label: 'Italic',
-        icon: 'format-italic-icon'
+        icon: 'format-italic-icon',
+        command: 'toggleItalic'
       },
       underline: {
         component: 'AposTiptapButton',
         label: 'Underline',
-        icon: 'format-underline-icon'
+        icon: 'format-underline-icon',
+        command: 'toggleUnderline'
       },
-      horizontal_rule: {
+      horizontalRule: {
         component: 'AposTiptapButton',
         label: 'Horizontal Rule',
-        icon: 'minus-icon'
+        icon: 'minus-icon',
+        command: 'setHorizontalRule'
       },
       link: {
         component: 'AposTiptapLink',
         label: 'Link',
         icon: 'link-icon'
       },
-      bullet_list: {
+      bulletList: {
         component: 'AposTiptapButton',
         label: 'Bulleted List',
-        icon: 'format-list-bulleted-icon'
+        icon: 'format-list-bulleted-icon',
+        command: 'toggleBulletList'
       },
-      ordered_list: {
+      orderedList: {
         component: 'AposTiptapButton',
         label: 'Ordered List',
-        icon: 'format-list-numbered-icon'
+        icon: 'format-list-numbered-icon',
+        command: 'toggleOrderedList'
       },
       strike: {
         component: 'AposTiptapButton',
         label: 'Strike',
-        icon: 'format-strikethrough-variant-icon'
+        icon: 'format-strikethrough-variant-icon',
+        command: 'toggleStrike'
       },
       blockquote: {
         component: 'AposTiptapButton',
         label: 'Blockquote',
-        icon: 'format-quote-close-icon'
+        icon: 'format-quote-close-icon',
+        command: 'toggleBlockquote'
       },
-      code_block: {
+      codeBlock: {
         component: 'AposTiptapButton',
         label: 'Code Block',
-        icon: 'code-tags-icon'
+        icon: 'code-tags-icon',
+        command: 'toggleCode'
       },
       undo: {
         component: 'AposTiptapButton',
@@ -112,7 +121,69 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'Redo',
         icon: 'redo-icon'
+      },
+      alignLeft: {
+        component: 'AposTiptapButton',
+        label: 'Align Left',
+        icon: 'format-align-left-icon',
+        command: 'setTextAlign',
+        commandParameters: 'left',
+        isActive: { textAlign: 'left' }
+      },
+      alignCenter: {
+        component: 'AposTiptapButton',
+        label: 'Align Center',
+        icon: 'format-align-center-icon',
+        command: 'setTextAlign',
+        commandParameters: 'center',
+        isActive: { textAlign: 'center' }
+      },
+      alignRight: {
+        component: 'AposTiptapButton',
+        label: 'Align Right',
+        icon: 'format-align-right-icon',
+        command: 'setTextAlign',
+        commandParameters: 'right',
+        isActive: { textAlign: 'right' }
+      },
+      alignJustify: {
+        component: 'AposTiptapButton',
+        label: 'Align Justify',
+        icon: 'format-align-justify-icon',
+        command: 'setTextAlign',
+        commandParameters: 'justify',
+        isActive: { textAlign: 'justify' }
+      },
+      highlight: {
+        component: 'AposTiptapButton',
+        label: 'Mark',
+        icon: 'format-color-highlight-icon',
+        command: 'toggleHighlight'
       }
+    },
+    // Additional properties used in executing tiptap commands
+    // Will be mixed in automatically for developers
+    tiptapTextCommands: {
+      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
+      toggleMark: [
+        'b', 'strong', 'code', 'mark', 'em', 'i',
+        'a', 's', 'del', 'strike', 'span', 'u'
+      ],
+      wrapIn: [ 'blockquote' ]
+    },
+    tiptapTypes: {
+      heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
+      paragraph: [ 'p' ],
+      textStyle: [ 'span' ],
+      code: [ 'code' ],
+      bold: [ 'strong', 'b' ],
+      strike: [ 's', 'del', 'strike' ],
+      italic: [ 'i', 'em' ],
+      highlight: [ 'mark' ],
+      link: [ 'a' ],
+      underline: [ 'u' ],
+      codeBlock: [ 'pre' ],
+      blockquote: [ 'blockquote' ]
     }
   },
   beforeSuperClass(self) {
@@ -122,7 +193,8 @@ module.exports = {
     };
   },
   icons: {
-    'format-text-icon': 'FormatText'
+    'format-text-icon': 'FormatText',
+    'format-color-highlight-icon': 'FormatColorHighlight'
   },
   methods(self) {
     return {
@@ -135,16 +207,17 @@ module.exports = {
       async load(req, widgets) {
       },
 
-      // Convert template-level options (including defaults for this widget
-      // type) into a valid sanitize-html configuration, so that h4 can
-      // be legal in one area and illegal in another
+      // Convert area rich text options into a valid sanitize-html
+      // configuration, so that h4 can be legal in one area and illegal in
+      // another.
 
       optionsToSanitizeHtml(options) {
         return {
-          ...sanitizeHtml.defaultOptions,
+          ...sanitizeHtml.defaults,
           allowedTags: self.toolbarToAllowedTags(options),
           allowedAttributes: self.toolbarToAllowedAttributes(options),
-          allowedClasses: self.toolbarToAllowedClasses(options)
+          allowedClasses: self.toolbarToAllowedClasses(options),
+          allowedStyles: self.toolbarToAllowedStyles(options)
         };
       },
 
@@ -164,17 +237,17 @@ module.exports = {
           ],
           strike: [ 's' ],
           link: [ 'a' ],
-          horizontal_rule: [ 'hr' ],
-          bullet_list: [
+          horizontalRule: [ 'hr' ],
+          bulletList: [
             'ul',
             'li'
           ],
-          ordered_list: [
+          orderedList: [
             'ol',
             'li'
           ],
           blockquote: [ 'blockquote' ],
-          code_block: [
+          codeBlock: [
             'pre',
             'code'
           ]
@@ -205,6 +278,22 @@ module.exports = {
               'name',
               'target'
             ]
+          },
+          alignLeft: {
+            tag: '*',
+            attributes: [ 'style' ]
+          },
+          alignCenter: {
+            tag: '*',
+            attributes: [ 'style' ]
+          },
+          alignRight: {
+            tag: '*',
+            attributes: [ 'style' ]
+          },
+          alignJustify: {
+            tag: '*',
+            attributes: [ 'style' ]
           }
         };
         for (const item of options.toolbar || []) {
@@ -212,10 +301,58 @@ module.exports = {
             for (const attribute of simple[item].attributes) {
               allowedAttributes[simple[item].tag] = allowedAttributes[simple[item].tag] || [];
               allowedAttributes[simple[item].tag].push(attribute);
+              allowedAttributes[simple[item].tag] = [ ...new Set(allowedAttributes[simple[item].tag]) ];
             }
           }
         }
         return allowedAttributes;
+      },
+
+      toolbarToAllowedStyles(options) {
+        const allowedStyles = {};
+        const simple = {
+          alignLeft: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^left$/ ]
+            }
+          },
+          alignCenter: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^center$/ ]
+            }
+          },
+          alignRight: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^right$/ ]
+            }
+          },
+          alignJustify: {
+            selector: '*',
+            properties: {
+              'text-align': [ /^justify$/ ]
+            }
+          }
+        };
+        for (const item of options.toolbar || []) {
+          if (simple[item]) {
+            if (!allowedStyles[simple[item].selector]) {
+              allowedStyles[simple[item].selector] = {};
+            }
+            for (const property in simple[item].properties) {
+              if (!allowedStyles[simple[item].selector][property]) {
+                allowedStyles[simple[item].selector][property] = [];
+              }
+
+              allowedStyles[simple[item].selector][property]
+                .push(...simple[item].properties[property]);
+            }
+          }
+        }
+
+        return allowedStyles;
       },
 
       toolbarToAllowedClasses(options) {
@@ -259,14 +396,16 @@ module.exports = {
   },
   extendMethods(self) {
     return {
-      async sanitize(_super, req, input, saniOptions) {
+      async sanitize(_super, req, input, options) {
         const rteOptions = {
           ...self.options.defaultOptions,
-          ...saniOptions
+          ...options
         };
 
         const output = await _super(req, input, rteOptions);
-        output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(rteOptions));
+        const finalOptions = self.optionsToSanitizeHtml(rteOptions);
+
+        output.content = sanitizeHtml(input.content, finalOptions);
         return output;
       },
       // Add on the core default options to use, if needed.
@@ -277,7 +416,9 @@ module.exports = {
           ...initialData,
           components: self.options.components,
           tools: self.options.editorTools,
-          defaultOptions: self.options.defaultOptions
+          defaultOptions: self.options.defaultOptions,
+          tiptapTextCommands: self.options.tiptapTextCommands,
+          tiptapTypes: self.options.tiptapTypes
         };
         return finalData;
       }

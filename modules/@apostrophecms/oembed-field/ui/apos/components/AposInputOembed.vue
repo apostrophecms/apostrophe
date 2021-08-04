@@ -10,7 +10,7 @@
           :class="classes"
           v-model="next.url" type="url"
           :placeholder="field.placeholder"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >
         <component
@@ -19,14 +19,12 @@
           class="apos-input-icon"
           :is="icon"
         />
+        <div
+          v-if="!error && oembedResult.html" v-html="oembedResult.html"
+          class="apos-input__embed" :class="{ 'apos-is-dynamic': !!dynamicRatio }"
+          :style="{ paddingTop: dynamicRatio && `${(dynamicRatio * 100)}%` }"
+        />
       </div>
-    </template>
-    <template #secondary>
-      <div
-        v-if="!error && oembedResult.html" v-html="oembedResult.html"
-        class="apos-input__embed" :class="{ 'is-dynamic': !!dynamicRatio }"
-        :style="{ paddingTop: dynamicRatio && `${(dynamicRatio * 100)}%` }"
-      />
     </template>
   </AposInputWrapper>
 </template>
@@ -40,7 +38,7 @@ export default {
   emits: [ 'return' ],
   data () {
     return {
-      next: (this.value && this.value.data !== undefined)
+      next: (this.value && this.value.data)
         ? this.value.data : {},
       oembedResult: {},
       dynamicRatio: '',
@@ -52,7 +50,7 @@ export default {
       return this.field.disableFocus ? '-1' : '0';
     },
     classes () {
-      return [ 'apos-input', 'apos-input--url' ];
+      return [ 'apos-input', 'apos-input--oembed' ];
     },
     icon () {
       if (this.error) {
@@ -71,6 +69,11 @@ export default {
     validate(value) {
       if (value == null || value.url === null) {
         value = {};
+      }
+
+      if (!value.url && !this.field.required) {
+        // field is now empty and not required, not an error
+        return false;
       }
 
       if (
@@ -97,7 +100,7 @@ export default {
       this.validateAndEmit();
     },
     async loadOembed () {
-      this.field.disabled = true;
+      this.field.readOnly = true;
       this.oembedResult = {};
       this.oembedError = null;
       this.dynamicRatio = '';
@@ -125,7 +128,7 @@ export default {
         this.next.title = '';
         this.next.thumbnail = '';
       } finally {
-        this.field.disabled = false;
+        this.field.readOnly = false;
       }
     }
   }
@@ -134,16 +137,16 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input__embed {
-    /deep/ iframe {
+    ::v-deep iframe {
       max-width: 100%;
     }
 
-    &.is-dynamic {
+    &.apos-is-dynamic {
       position: relative;
       width: 100%;
       height: 0;
 
-      /deep/ iframe {
+      ::v-deep iframe {
         position: absolute;
         top: 0;
         left: 0;

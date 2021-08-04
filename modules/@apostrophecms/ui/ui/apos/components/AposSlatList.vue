@@ -25,18 +25,16 @@
           :key="item._id"
           :item="item"
           :selected="selected === item._id"
-          :class="{'apos-slat-list__item--disabled' : !editable}"
+          :class="{'apos-slat-list__item--disabled' : disabled}"
+          :disabled="disabled"
           :engaged="engaged === item._id"
           :parent="listId"
           :slat-count="next.length"
           :removable="removable"
+          :has-relationship-schema="hasRelationshipSchema"
         />
       </transition-group>
     </draggable>
-
-    <div class="apos-slat-status">
-      {{ message }}
-    </div>
   </div>
 </template>
 
@@ -53,9 +51,9 @@ export default {
       type: Array,
       required: true
     },
-    editable: {
+    disabled: {
       type: Boolean,
-      default: true
+      default: false
     },
     removable: {
       type: Boolean,
@@ -65,11 +63,9 @@ export default {
       type: String,
       default: null
     },
-    field: {
-      type: Object,
-      default() {
-        return {};
-      }
+    hasRelationshipSchema: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'update', 'item-clicked', 'select', 'input' ],
@@ -78,7 +74,6 @@ export default {
       isDragging: false,
       delayedDragging: false,
       engaged: null,
-      message: null,
       next: this.value.slice()
     };
   },
@@ -89,8 +84,8 @@ export default {
     dragOptions() {
       return {
         animation: 0,
-        disabled: !this.editable || this.next.length <= 1,
-        ghostClass: 'is-dragging'
+        disabled: this.disabled || this.next.length <= 1,
+        ghostClass: 'apos-is-dragging'
       };
     }
   },
@@ -120,13 +115,9 @@ export default {
         equal = false;
       }
       if (!equal) {
-        this.updateMessage();
         this.$emit('input', this.next);
       }
     }
-  },
-  mounted() {
-    this.updateMessage();
   },
   methods: {
     engage(id) {
@@ -179,20 +170,13 @@ export default {
       return (
         (!relatedElement || !relatedElement.fixed) && !draggedElement.fixed
       );
-    },
-    updateMessage() {
-      if (this.field.max && this.field.max <= this.items.length) {
-        this.message = 'Limit reached!';
-      } else {
-        this.message = null;
-      }
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-slat-list /deep/ .apos-slat {
+  .apos-slat-list ::v-deep .apos-slat {
     margin-bottom: 5px;
     transition: all 0.4s;
     max-width: $input-max-width * 0.65;
@@ -202,7 +186,7 @@ export default {
     opacity: 0;
   }
 
-  .is-dragging {
+  .apos-is-dragging {
     opacity: 0.5;
     background: var(--a-base-4);
   }

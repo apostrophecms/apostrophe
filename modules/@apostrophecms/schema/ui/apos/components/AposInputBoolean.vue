@@ -11,7 +11,7 @@
           type="radio" :id="`${uid}-true`"
           :value="true" @change="setValue(true)"
           :checked="value.data === true"
-          :disabled="field.disabled"
+          :disabled="field.readOnly"
           ref="true"
         >
         <label :for="`${uid}-true`" class="apos-boolean__label apos-input">
@@ -26,7 +26,7 @@
           type="radio" :id="`${uid}-false`"
           :value="false" @change="setValue(false)"
           :checked="value.data === false"
-          :disabled="field.disabled"
+          :disabled="field.readOnly"
           ref="false"
         >
         <label :for="`${uid}-false`" class="apos-boolean__label apos-input">
@@ -108,7 +108,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: ($boolean-padding / 2) $boolean-padding;
+    padding: math.div($boolean-padding, 2) $boolean-padding;
 
     &:first-of-type {
       border-top-right-radius: 0;
