@@ -26,9 +26,7 @@ describe('Soft Redirects', function() {
             ]
           }
         },
-        'default-page': {
-          extend: '@apostrophecms/page-type'
-        }
+        'default-page': {}
       }
     });
     assert(apos.modules['@apostrophecms/soft-redirect']);
@@ -97,9 +95,7 @@ describe('Soft Redirects - with `statusCode` option', async function() {
             statusCode: 301
           }
         },
-        'default-page': {
-          extend: '@apostrophecms/page-type'
-        }
+        'default-page': {}
       }
     });
     assert(apos.modules['@apostrophecms/soft-redirect']);

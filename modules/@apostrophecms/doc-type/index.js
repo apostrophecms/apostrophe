@@ -731,9 +731,6 @@ module.exports = {
         const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
         // We need a slug even if removed from the schema for editing purposes
         data.slug = draft.slug;
-        if (draft.parkedId) {
-          data.parkedId = draft.parkedId;
-        }
         if (!existing) {
           if (self.apos.page.isPage(draft)) {
             if (!draft.level) {
@@ -743,7 +740,11 @@ module.exports = {
                 aposDocId: draft.aposDocId,
                 aposLocale: `${toLocale}:draft`,
                 _id: toId,
-                path: draft.aposDocId
+                path: draft.path,
+                level: draft.level,
+                rank: draft.rank,
+                parked: draft.parked,
+                parkedId: draft.parkedId
               });
             } else {
               // A page that is not the home page, being replicated for the first time
@@ -753,7 +754,9 @@ module.exports = {
                 {
                   ...data,
                   aposLocale: `${toLocale}:draft`,
-                  _id: toId
+                  _id: toId,
+                  parked: draft.parked,
+                  parkedId: draft.parkedId
                 }
               );
             }
@@ -766,12 +769,17 @@ module.exports = {
             });
           }
         } else {
-          return actionModule.update(toReq, {
+          const update = {
             ...data,
             aposDocId: draft.aposDocId,
             aposLocale: `${toLocale}:draft`,
             _id: toId
-          });
+          };
+          if (self.apos.page.isPage(draft)) {
+            update.parked = draft.parked;
+            update.parkedId = draft.parkedId;
+          }
+          return actionModule.update(toReq, update);
         }
       },
       // Reverts the given draft to the most recent publication.
