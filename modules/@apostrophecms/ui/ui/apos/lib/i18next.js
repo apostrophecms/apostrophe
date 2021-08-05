@@ -12,7 +12,7 @@ export default {
 
     i18next.init({
       lng: i18n.locale,
-      fallbackLng: i18n.locale,
+      fallbackLng: i18n.defaultLocale,
       resources: {},
       debug: i18n.debug
     });

@@ -32,7 +32,7 @@ async function destroy(apos) {
 
 async function create(options) {
   const config = {
-    shortName: `test-${cuid()}`,
+    shortName: options.shortName || `test-${cuid()}`,
     argv: {
       _: [],
       'ignore-orphan-modules': true
