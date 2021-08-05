@@ -49,10 +49,10 @@
     border-radius: 10px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--a-primary-button-hover);
+    background: var(--a-primary-dark-10);
   }
   ::-webkit-scrollbar-thumb:active {
-    background: var(--a-primary-button-active);
+    background: var(--a-primary-dark-15);
   }
   ::-webkit-scrollbar-track {
     border: 6px none var(--a-base-10);

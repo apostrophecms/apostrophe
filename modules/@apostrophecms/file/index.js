@@ -16,9 +16,13 @@ module.exports = {
     quickCreate: false,
     insertViaUpload: true,
     slugPrefix: 'file-',
-    autopublish: true
+    autopublish: true,
+    editRole: 'editor',
+    publishRole: 'editor',
+    showPermissions: true
   },
   fields: {
+    remove: [ 'visibility' ],
     add: {
       slug: {
         type: 'slug',
@@ -55,21 +59,24 @@ module.exports = {
       basics: {
         label: 'Basics',
         fields: [
-          'attachment',
           'title',
-          'slug',
-          '_tags'
-        ]
-      },
-      details: {
-        label: 'Details',
-        fields: [
+          'attachment',
           'description',
           'credit',
           'creditUrl'
         ]
+      },
+      utility: {
+        label: 'Utility',
+        fields: [
+          'slug',
+          '_tags'
+        ]
       }
     }
+  },
+  filters: {
+    remove: [ 'visibility' ]
   },
   methods(self) {
     return {

@@ -18,14 +18,10 @@
 <script>
 
 export default {
+  name: 'TheAposAdminBarUser',
   data() {
     return {
       menu: [
-        {
-          label: 'My Profile',
-          name: 'profile',
-          action: 'user-profile'
-        },
         {
           label: 'Log out',
           name: 'logOut',
@@ -49,14 +45,7 @@ export default {
   },
   methods: {
     emitEvent(e) {
-      if (e === 'user-profile') {
-        apos.bus.$emit('admin-menu-click', {
-          itemName: '@apostrophecms/user:editor',
-          props: {
-            docId: this.user._id
-          }
-        });
-      } else if (e === 'user-logout') {
+      if (e === 'user-logout') {
         apos.bus.$emit('admin-menu-click', '@apostrophecms/login-logout');
       }
     }
@@ -69,12 +58,12 @@ export default {
   display: inline-flex;
   align-items: center;
 
-  /deep/ .apos-button {
+  ::v-deep .apos-button {
     @include type-base;
     color: var(--a-text-primary);
   }
 
-  /deep/ .apos-context-menu__popup {
+  ::v-deep .apos-context-menu__popup {
     right: 0;
     transform: translatex(10px);
   }

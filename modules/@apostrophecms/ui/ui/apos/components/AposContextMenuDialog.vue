@@ -12,7 +12,10 @@
     />
     <div class="apos-context-menu__pane">
       <slot>
-        <ul class="apos-context-menu__items" v-if="menu">
+        <ul
+          v-if="menu"
+          class="apos-context-menu__items" role="menu"
+        >
           <AposContextMenuItem
             v-for="item in menu"
             :key="item.action"
@@ -137,7 +140,7 @@ export default {
   padding: 10px 0;
 }
 
-.apos-context-menu__dialog /deep/ .apos-schema .apos-field {
+.apos-context-menu__dialog ::v-deep .apos-schema .apos-field {
   margin-bottom: 20px;
   .apos-field__help {
     margin-top: 5px;

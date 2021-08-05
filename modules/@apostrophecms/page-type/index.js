@@ -31,12 +31,13 @@ module.exports = {
           def: false
         }
       },
-      remove: [ 'trash' ],
+      remove: [ 'archived' ],
       group: {
         utility: {
           fields: [
             'slug',
             'type',
+            'visibility',
             'orphan'
           ]
         }
@@ -44,8 +45,8 @@ module.exports = {
     };
   },
   init(self) {
-    self.removeTrashPrefixFields([ 'slug' ]);
-    self.addTrashSuffixFields([
+    self.removeDeduplicatePrefixFields([ 'slug' ]);
+    self.addDeduplicateSuffixFields([
       'slug'
     ]);
     self.rules = {};
@@ -92,6 +93,13 @@ module.exports = {
           await matched.handler(req);
         }
       },
+      beforeMove: {
+        checkPermissions(req, doc) {
+          if (doc.lastPublishedAt && !self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type')) {
+            throw self.apos.error('forbidden', 'Contributors may only move unpublished pages.');
+          }
+        }
+      },
       afterMove: {
         async replayMoveAfterMoved(req, doc) {
           if (!doc._id.includes(':draft')) {
@@ -136,29 +144,14 @@ module.exports = {
               aposLocale: draft.aposLocale
             }).project({
               _id: 1,
+              aposLocale: 1,
               aposDocId: 1,
-              title: 1
+              title: 1,
+              type: 1
             }).toArray();
             throw self.apos.error('invalid', {
               unpublishedAncestors: draftAncestors.filter(draftAncestor => !publishedAncestors.find(publishedAncestor => draftAncestor.aposDocId === publishedAncestor.aposDocId))
             });
-          }
-        }
-      },
-      afterPublish: {
-        async replayMoveAfterPublish(req, { published, firstTime }) {
-          if (!firstTime) {
-            // We already do this after every move of the draft, so
-            // if there was already a published version it will have
-            // already been moved
-            return;
-          }
-          // Home page does not move
-          if (published.aposLastTargetId) {
-            return self.apos.page.move({
-              ...req,
-              mode: 'published'
-            }, published._id, published.aposLastTargetId, published.aposLastPosition);
           }
         }
       },
@@ -178,31 +171,13 @@ module.exports = {
           }
         }
       },
-      afterRevertDraftToPublished: {
-        async replayMoveAfterRevert(req, result) {
-          const _req = {
-            ...req,
-            mode: 'draft'
-          };
-          if (!result.draft.level) {
-            // The home page cannot move, so there is no
-            // chance we need to "replay" such a move
-            return;
-          }
-          await self.apos.page.move(_req, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
-          const draft = await self.apos.page.findOneForEditing(_req, {
-            _id: result.draft._id
-          });
-          result.draft = draft;
-        }
-      },
       afterRevertPublishedToPrevious: {
         async replayMoveAfterRevert(req, result) {
           const publishedReq = {
             ...req,
             mode: 'published'
           };
-          if (!result.published.level) {
+          if (result.published.level === 0) {
             // The home page cannot move, so there is no
             // chance we need to "replay" such a move
             return;
@@ -224,12 +199,14 @@ module.exports = {
           }
         },
         async checkForChildren(req, doc, options) {
-          const descendants = await self.apos.doc.db.countDocuments({
-            path: self.apos.page.matchDescendants(doc),
-            aposLocale: doc.aposLocale
-          });
-          if (descendants) {
-            throw self.apos.error('invalid', 'You must delete the children of this page first.');
+          if (options.checkForChildren !== false) {
+            const descendants = await self.apos.doc.db.countDocuments({
+              path: self.apos.page.matchDescendants(doc),
+              aposLocale: doc.aposLocale
+            });
+            if (descendants) {
+              throw self.apos.error('invalid', 'You must delete the children of this page first.');
+            }
           }
         }
       }
@@ -314,17 +291,21 @@ module.exports = {
       // Called for you when a page is inserted directly in
       // the published locale, to ensure there is an equivalent
       // draft page. You don't need to invoke this.
-      async insertDraftOf(req, doc, draft) {
+      async insertDraftOf(req, doc, draft, options) {
         const _req = {
           ...req,
           mode: 'draft'
         };
+        options = {
+          ...options,
+          setModified: false
+        };
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale
-          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft);
+          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft, options);
         } else if (!doc.level) {
           // Insert the home page
-          return self.apos.doc.insert(_req, draft);
+          return self.apos.doc.insert(_req, draft, options);
         } else {
           throw new Error('Page inserted without using the page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent draft');
         }
@@ -357,6 +338,15 @@ module.exports = {
       async update(req, page, options = {}) {
         return self.apos.page.update(req, page, options);
       },
+      // True delete. Will throw an error if the page
+      // has descendants.
+      //
+      // This is a convenience wrapper for `apos.page.delete`, for the
+      // benefit of code that expects all managers to have a delete method.
+      // Pages are usually deleted via `apos.page.delete`.
+      async delete(req, page, options = {}) {
+        return self.apos.page.delete(req, page, options);
+      },
       // If the page does not yet have a slug, add one based on the
       // title; throw an error if there is no title
       ensureSlug(page) {
@@ -376,6 +366,9 @@ module.exports = {
   },
   extendMethods(self) {
     return {
+      enableAction() {
+        self.action = self.apos.modules['@apostrophecms/page'].action;
+      },
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);
         const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';

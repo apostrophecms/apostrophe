@@ -1,7 +1,7 @@
 <template>
   <AposInputWrapper
     :field="field" :error="effectiveError"
-    :uid="uid"
+    :uid="uid" :modifiers="modifiers"
     :display-options="displayOptions"
   >
     <template #body>
@@ -10,9 +10,8 @@
           class="apos-input-wrapper apos-attachment-dropzone"
           :class="{
             'apos-attachment-dropzone--dragover': dragging,
-            'is-disabled': disabled
+            'apos-is-disabled': disabled || limitReached
           }"
-          :disabled="disabled"
           @drop.prevent="uploadMedia"
           @dragover="dragHandler"
           @dragleave="dragging = false"
@@ -33,7 +32,7 @@
           <input
             type="file"
             class="apos-sr-only"
-            :disabled="disabled"
+            :disabled="disabled || limitReached"
             @input="uploadMedia"
             :accept="field.accept"
           >
@@ -42,6 +41,7 @@
           <AposSlatList
             :value="next ? [ next ] : []"
             @input="updated"
+            :disabled="field.readOnly"
           />
         </div>
       </div>
@@ -74,20 +74,26 @@ export default {
   },
   computed: {
     messages () {
-      const msgs = {};
+      const msgs = {
+        primary: 'Drop a file here or',
+        highlighted: 'click to open the file explorer'
+      };
       if (this.disabled) {
+        msgs.primary = 'Field is disabled';
+        msgs.highlighted = '';
+      }
+      if (this.limitReached) {
         msgs.primary = 'Attachment limit reached';
         msgs.highlighted = '';
-      } else {
-        msgs.primary = 'Drop a file here or';
-        msgs.highlighted = 'click to open the file explorer';
       }
-
       return msgs;
+    },
+    limitReached () {
+      return !!(this.value.data && this.value.data._id);
     }
   },
   async mounted () {
-    this.disabled = this.field.disabled || !!(this.value.data && this.value.data._id);
+    this.disabled = this.field.readOnly;
 
     const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
     const groupInfo = groups.find(group => {
@@ -100,7 +106,6 @@ export default {
   methods: {
     watchNext () {
       this.validateAndEmit();
-      this.disabled = !!this.next;
     },
     updated (items) {
       // NOTE: This is limited to a single item.
@@ -114,7 +119,7 @@ export default {
       return false;
     },
     async uploadMedia (event) {
-      if (!this.disabled) {
+      if (!this.disabled || !this.limitReached) {
         try {
           this.dragging = false;
           this.disabled = true;
@@ -161,8 +166,8 @@ export default {
             icon: 'alert-circle-icon',
             dismiss: true
           });
-          this.disabled = false;
         } finally {
+          this.disabled = false;
           this.uploading = false;
         }
       }
@@ -190,6 +195,7 @@ export default {
     margin: 10px 0;
     padding: 20px;
     border: 2px dashed var(--a-base-8);
+    border-radius: var(--a-border-radius);
     transition: all 0.2s ease;
     &:hover {
       border-color: var(--a-primary);
@@ -199,13 +205,13 @@ export default {
     &:focus {
       border: 2px solid var(--a-primary);
     }
-    &.is-disabled {
+    &.apos-is-disabled {
       color: var(--a-base-4);
+      background-color: var(--a-base-7);
+      border-color: var(--a-base-4);
 
       &:hover {
         cursor: not-allowed;
-        background-color: transparent;
-        border-color: var(--a-base-8);
       }
     }
   }
@@ -222,7 +228,7 @@ export default {
     justify-content: center;
     pointer-events: none;
     // v-html goofiness
-    & /deep/ .apos-attachment-highlight {
+    & ::v-deep .apos-attachment-highlight {
       color: var(--a-primary);
       font-weight: var(--a-weight-bold);
     }

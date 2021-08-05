@@ -62,6 +62,7 @@
   &--password,
   &--number,
   &--email,
+  &--oembed,
   &--url {
     padding: $input-padding;
     padding-right: $input-padding * 2;
@@ -130,9 +131,12 @@
   display: flex;
   color: var(--a-base-2);
   align-items: center;
-  &:hover {
-    color: var(--a-primary-text);
+  &:hover:not(.apos-choice-label--disabled) {
+    color: var(--a-text-primary);
     cursor: pointer;
+  }
+  &:hover.apos-choice-label--disabled {
+    cursor: not-allowed;
   }
   & + &,
   .apos-legend + & {

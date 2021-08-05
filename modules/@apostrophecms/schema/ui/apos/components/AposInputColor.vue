@@ -13,10 +13,11 @@
             @close="close"
             menu-placement="bottom-start"
             menu-offset="5, 20"
+            :disabled="field.readOnly"
+            :tooltip="tooltip"
           >
             <Picker
-              v-if="next"
-              v-bind="fieldOptions"
+              v-bind="pickerOptions"
               :value="next"
               @input="update"
             />
@@ -24,6 +25,13 @@
         </div>
         <div class="apos-color__info">
           {{ valueLabel }}
+          <AposButton
+            v-if="next"
+            type="quiet" label="Clear"
+            class="apos-color__clear"
+            :modifiers="['no-motion']"
+            @click="clear"
+          />
         </div>
       </div>
     </template>
@@ -32,7 +40,7 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import Picker from 'vue-color/src/components/Sketch';
+import Picker from '@apostrophecms/vue-color/src/components/Sketch';
 import tinycolor from 'tinycolor2';
 
 export default {
@@ -41,29 +49,21 @@ export default {
     Picker
   },
   mixins: [ AposInputMixin ],
-  props: {
-    // TODO need to work out field-level option overrides
-    fieldOptions: {
-      type: Object,
-      default() {
-        return {
-          presetColors: [
-            '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
-            '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
-            '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
-          ],
-          disableAlpha: false,
-          disableFields: false,
-          format: 'hex8'
-        };
-      }
-    }
-  },
   data() {
     return {
       active: false,
       tinyColorObj: null,
-      startsNull: false
+      startsNull: false,
+      defaultFormat: 'hex8',
+      defaultPickerOptions: {
+        presetColors: [
+          '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
+          '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
+          '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
+        ],
+        disableAlpha: false,
+        disableFields: false
+      }
     };
   },
   computed: {
@@ -74,6 +74,19 @@ export default {
         color: this.value.data || ''
       };
     },
+    format() {
+      return this.field.options && this.field.options.format
+        ? this.field.options.format
+        : this.defaultFormat;
+    },
+    pickerOptions() {
+      let fieldOptions = {};
+      if (this.field.options && this.field.options.pickerOptions) {
+        fieldOptions = this.field.options.pickerOptions;
+      }
+      return Object.assign(this.defaultPickerOptions, fieldOptions);
+    },
+
     valueLabel() {
       if (this.next) {
         return this.next;
@@ -90,10 +103,7 @@ export default {
   },
   mounted() {
     if (!this.next) {
-      // vue-color does not support null values
-      // If a color begins null, set it to a transparent black and flag it
-      this.next = '#00000000';
-      this.startsNull = true;
+      this.next = null;
     }
   },
   methods: {
@@ -105,14 +115,7 @@ export default {
     },
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
-      this.next = this.tinyColorObj.toString(this.fieldOptions.format);
-
-      if (this.startsNull) {
-        // As a basic UX courtesey make sure to reset the alpha value of an orginally null value back to 1
-        // as it was previously set to 0 by us, not the user.
-        this.next = this.tinyColorObj.setAlpha(1).toString(this.fieldOptions.format);
-        this.startsNull = false;
-      }
+      this.next = this.tinyColorObj.toString(this.format);
     },
     validate(value) {
       if (this.field.required) {
@@ -127,6 +130,9 @@ export default {
 
       const color = tinycolor(value);
       return color.isValid() ? false : 'Error';
+    },
+    clear() {
+      this.next = null;
     }
   }
 };
@@ -136,6 +142,10 @@ export default {
   .apos-color {
     display: flex;
     align-items: center;
+  }
+
+  .apos-color__clear {
+    margin-left: 10px;
   }
 
   .apos-color__info {

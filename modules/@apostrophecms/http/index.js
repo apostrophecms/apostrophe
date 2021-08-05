@@ -29,7 +29,9 @@ module.exports = {
   methods(self) {
     return {
       // Add another friendly error name to http status code mapping so you
-      // can throw `apos.error('name')` and get the status code `code`
+      // can throw `apos.error('name')` and get the status code `code`.
+      // Not used in core at the time of writing, but available as part of the
+      // API.
       addError(name, code) {
         self.errors[name] = code;
       },
@@ -209,7 +211,15 @@ module.exports = {
           options.headers = options.headers || {};
           options.headers.cookie = cookies.join('; ');
         }
-        if (((options.body != null) && ((typeof options.body) === 'object')) || (options.send === 'json')) {
+        if (options.body && options.body.constructor && (options.body.constructor.name === 'FormData')) {
+          // If we don't do this multiparty will not parse it properly
+          const contentLength = await require('util').promisify((callback) => {
+            return options.body.getLength(callback);
+          })();
+          options.headers = options.headers || {};
+          options.headers['Content-Length'] = contentLength;
+          // node-fetch will set the Content-Type
+        } else if (((options.body != null) && ((typeof options.body) === 'object')) || (options.send === 'json')) {
           options.body = JSON.stringify(options.body);
           options.headers = options.headers || {};
           options.headers['Content-Type'] = 'application/json';

@@ -349,7 +349,18 @@ module.exports = async function(options) {
       }
     }
     function test(name) {
+      // Projects that have different theme modules activated at different times
+      // are a frequent source of false positives for this warning, so ignore
+      // seemingly unused modules with "theme" in the name
       if (!validSteps.includes(name)) {
+        try {
+          const submodule = require(require('path').resolve(`${self.localModules}/${name}`));
+          if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
+            return;
+          }
+        } catch (e) {
+          // index.js might not exist, that's fine for our purposes
+        }
         if (name.match(/^apostrophe-/)) {
           warn('namespace-apostrophe-modules', `You have a ${self.localModules}/${name} folder. You are probably trying to configure an official Apostrophe module, but those are namespaced now. Your directory should be renamed ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}\n\nIf you get this warning for your own, original module, do not use the apostrophe- prefix. It is reserved.`);
         } else {
@@ -375,7 +386,7 @@ module.exports = async function(options) {
         lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
       }
       if (module.options.singletonWarningIfNot && (name !== module.options.singletonWarningIfNot)) {
-        lint(`The module ${name} extends ${module.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use lib/modules/${module.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
+        lint(`The module ${name} extends ${module.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use modules/${module.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
       }
       if (name.match(/-widget$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -widget module usually extends @apostrophecms/widget-type or another widget type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
@@ -407,7 +418,7 @@ module.exports = async function(options) {
       if (code) {
         return true;
       }
-      if (d.__meta.dirname && (fs.existsSync(`${d.__meta.dirname}/ui/apos`) || fs.existsSync(`${d.__meta.dirname}/ui/public`))) {
+      if (d.__meta.dirname && (fs.existsSync(`${d.__meta.dirname}/ui/apos`) || fs.existsSync(`${d.__meta.dirname}/ui/src`) || fs.existsSync(`${d.__meta.dirname}/ui/public`))) {
         // Assets that will be bundled, instead of server code
         return true;
       }

@@ -14,7 +14,14 @@ export default {
       // as initially checked.
       checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
         : [],
-      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : false
+      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : [],
+      // Remember relationship subfield values even if a document
+      // is temporarily deselected, easing the user's pain if they
+      // inadvertently deselect something for a moment
+      subfields: Object.fromEntries((this.chosen || [])
+        .filter(doc => doc._fields)
+        .map(doc => [ doc._id, doc._fields ])
+      )
     };
   },
   props: {
@@ -27,17 +34,19 @@ export default {
       default: false
     }
   },
-  emits: [ 'modal-result' ],
+  emits: [ 'modal-result', 'sort' ],
   computed: {
     relationshipErrors() {
       if (!this.relationshipField) {
         return false;
       }
-
+      if (this.relationshipField.required && !this.checked.length) {
+        // Treated as min for consistency with AposMinMaxCount
+        return 'min';
+      }
       if (this.relationshipField.min && this.checked.length < this.relationshipField.min) {
         return 'min';
       }
-
       if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
         return 'max';
       }
@@ -47,15 +56,12 @@ export default {
     sort(action) {
       this.$emit('sort', action);
     },
-    headers() {
-      return this.options.columns ? this.options.columns : [];
-    },
     selectAllValue() {
       return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
-      const itemCount = this.items.length;
+      const itemCount = (this.items && this.items.length) || 0;
 
       return checkCount > 0 && checkCount !== itemCount ? {
         value: 'checked',
@@ -87,14 +93,24 @@ export default {
         this.generateUi();
       }
     },
-    checked () {
-      if (!this.checkedDocs) {
-        return;
+    checkedDocs(after, before) {
+      for (const doc of before) {
+        this.subfields[doc._id] = doc._fields;
       }
+      for (const doc of after) {
+        if (this.subfields[doc._id] && !Object.keys(doc._fields || {}).length) {
+          doc._fields = this.subfields[doc._id];
+        }
+      }
+    },
+    checked() {
       this.updateCheckedDocs();
     }
   },
   methods: {
+    findDocById(docs, id) {
+      return docs.find(p => p._id === id);
+    },
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
     // a computed prop rather than a method call in the template.

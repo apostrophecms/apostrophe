@@ -21,9 +21,13 @@ module.exports = {
     insertViaUpload: true,
     searchable: false,
     slugPrefix: 'image-',
-    autopublish: true
+    autopublish: true,
+    editRole: 'editor',
+    publishRole: 'editor',
+    showPermissions: true
   },
   fields: {
+    remove: [ 'visibility' ],
     add: {
       slug: {
         type: 'slug',
@@ -68,14 +72,14 @@ module.exports = {
           '_tags',
           'credit',
           'creditUrl',
-          'visibility',
           'slug',
-          'trash'
+          'archived'
         ]
       }
     }
   },
   filters: {
+    remove: [ 'visibility' ],
     add: {
       _tags: {
         label: 'Tags'

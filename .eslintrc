@@ -11,6 +11,8 @@
     "no-console": 0,
     "multiline-ternary": "off",
     "vue/no-deprecated-destroyed-lifecycle": 0,
+    "vue/v-on-event-hyphenation": 1,
+    "vue/custom-event-name-casing": ["warn", "kebab-case"],
     "vue/component-tags-order": [
       "warn",
       {

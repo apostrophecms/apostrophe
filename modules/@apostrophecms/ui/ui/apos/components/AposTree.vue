@@ -19,7 +19,6 @@
       :level="1"
       :nested="nested"
       @update="update"
-      @edit="$emit('edit', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -73,7 +72,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'change', 'edit' ],
+  emits: [ 'update', 'change' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.
@@ -108,9 +107,9 @@ export default {
       this.items.forEach(row => {
         completeRows.push(row);
 
-        if (row.children && row.children.length > 0) {
+        if (row._children && row._children.length > 0) {
           this.nested = true;
-          completeRows = completeRows.concat(row.children);
+          completeRows = completeRows.concat(row._children);
         }
       });
       completeRows = completeRows.slice(0, 50);

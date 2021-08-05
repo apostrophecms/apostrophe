@@ -1,16 +1,25 @@
 <template>
   <div role="alert" :class="classList">
-    <span class="apos-notification__indicator" v-if="type !== 'none'">
-      <component
-        :is="iconComponent"
-        :decorative="true"
-        :size="icon ? 16 : 12"
+    <span class="apos-notification__indicator">
+      <AposIndicator
+        :icon="iconComponent" class="apos-notification__indicator__icon"
+        :icon-size="icon ? 16 : 12"
       />
     </span>
     <span
-      class="apos-notification__label" v-html="label"
+      class="apos-notification__label"
       ref="label"
-    />
+    >
+      {{ label }}
+      <!-- OK to use index as key because buttons are constant for the lifetime of the notification -->
+      <button
+        v-for="(button, i) in buttons"
+        :key="i"
+        :data-apos-bus-event="JSON.stringify({ name: button.name, data: button.data })"
+      >
+        {{ button.label }}
+      </button>
+    </span>
     <div
       class="apos-notification__progress"
       v-if="progress && progress.current"
@@ -66,6 +75,12 @@ export default {
     dismiss: {
       type: Number,
       default: 0
+    },
+    buttons: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'close' ],
@@ -78,6 +93,15 @@ export default {
 
       if (this.progress && this.progress.current) {
         classes.push('apos-notification--progress');
+      }
+
+      // long notifications look funky, but reading the label's length doesn't account for html.
+      // Throw the string into a fake element to get its text content
+      const div = document.createElement('div');
+      div.innerHTML = this.label;
+      const textContent = div.textContent || div.innerText || '';
+      if (textContent.length > 160) {
+        classes.push('apos-notification--long');
       }
 
       return classes.join(' ');
@@ -115,45 +139,59 @@ export default {
 
 <style lang="scss" scoped>
   .apos-notification {
+    @include apos-transition();
+    pointer-events: auto;
     position: relative;
     display: inline-flex;
+    overflow: hidden;
     min-width: 200px;
-    max-width: 400px;
-    padding: 15px 35px 15px 15px;
-    border: 1px solid var(--a-base-8);
+    max-width: 500px;
+    padding: 8px 35px 8px 8px;
     color: var(--a-text-inverted);
     background: var(--a-background-inverted);
-    border-radius: var(--a-border-radius);
+    border-radius: 200px;
     box-shadow: var(--a-box-shadow);
-
+    align-items: center;
     & + .apos-notification {
       margin-top: 8px;
     }
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  .apos-notification--long {
+    border-radius: 10px;
   }
 
   .apos-notification__indicator {
     position: relative;
-    top: 1px;
-    margin-right: 15px;
-    color: var(--a-base-8);
+    display: inline-flex;
+    margin-right: 10px;
+    padding: 5px;
+    color: var(--a-base-1);
+    border-radius: 50%;
+    background-color: var(--a-base-1);
   }
 
   .apos-notification--warning .apos-notification__indicator {
+    background-color: var(--a-warning-fade);
     color: var(--a-warning);
   }
 
   .apos-notification--success .apos-notification__indicator {
+    background-color: var(--a-success-fade);
     color: var(--a-success);
   }
 
   .apos-notification--danger .apos-notification__indicator {
+    background-color: var(--a-danger-fade);
     color: var(--a-danger);
   }
 
   .apos-notification__button {
     position: absolute;
-    top: 0;
-    right: 0;
+    right: 2px;
     display: flex;
     align-items: center;
     box-sizing: border-box;
@@ -179,18 +217,12 @@ export default {
     line-height: var(--a-line-tallest);
   }
 
-  .apos-notification__label {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-
-    & /deep/ button {
-      @include apos-button-reset();
-      text-decoration: underline;
-      text-decoration-color: var(--a-success);
-      text-underline-offset: 3px;
-      padding: 0 3px;
-    }
+  .apos-notification__label ::v-deep button {
+    @include apos-button-reset();
+    text-decoration: underline;
+    text-decoration-color: var(--a-success);
+    text-underline-offset: 3px;
+    padding: 0 3px;
   }
 
   .apos-notification__progress {

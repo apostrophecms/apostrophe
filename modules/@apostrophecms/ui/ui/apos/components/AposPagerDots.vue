@@ -6,7 +6,7 @@
     >
       <button
         role="button"
-        :class="{'is-active': i === index }"
+        :class="{'apos-is-active': i === index }"
         class="apos-pager-dots__button"
         @click="click(i)"
       >
@@ -56,20 +56,20 @@ export default {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background-color: var(--a-primary-button-disabled);
+    background-color: var(--a-primary-light-40);
     margin-right: 20px;
     transition: all 0.3s ease;
   }
 
-  .apos-pager-dots__button.is-active {
+  .apos-pager-dots__button.apos-is-active {
     background-color: var(--a-primary);
   }
 
   .apos-pager-dots__button:hover {
-    background-color: var(--a-primary-button-hover);
+    background-color: var(--a-primary-dark-10);
   }
 
   .apos-pager-dots__button:active {
-    background-color: var(--a-primary-button-active);
+    background-color: var(--a-primary-dark-15);
   }
 </style>

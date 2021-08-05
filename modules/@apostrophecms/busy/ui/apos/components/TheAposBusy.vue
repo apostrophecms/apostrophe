@@ -1,17 +1,31 @@
 <template>
-  <div class="apos-busy apos-theme--primary-purple" :class="{'is-busy': busy}">
+  <div
+    class="apos-busy"
+    :class="classes"
+  >
     <AposSpinner class="apos-busy__spinner" />
   </div>
 </template>
 
 <script>
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposBusy',
+  mixins: [ AposThemeMixin ],
   data() {
     return {
       busy: false,
       busyCount: 0
     };
+  },
+  computed: {
+    classes() {
+      const classes = [];
+      if (this.busy) {
+        classes.push('apos-is-busy');
+      }
+      return classes.concat(this.themeClass);
+    }
   },
   mounted() {
     apos.bus.$on('busy', state => {
@@ -53,7 +67,7 @@ export default {
   pointer-events: none;
 }
 
-.apos-busy.is-busy {
+.apos-busy.apos-is-busy {
   opacity: 1;
   pointer-events: auto;
 }
@@ -62,7 +76,7 @@ export default {
   z-index: $z-index-default;
   width: 60px;
   height: 60px;
-  & /deep/ svg {
+  & ::v-deep svg {
     width: 100%;
     height: 100%;
   }

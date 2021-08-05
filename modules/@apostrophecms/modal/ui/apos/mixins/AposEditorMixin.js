@@ -14,14 +14,33 @@
  *   AposDocEditor that split the UI into several AposSchemas.
  */
 
+import { klona } from 'klona';
+
 export default {
   data() {
     return {
       docFields: {
         data: {}
       },
-      serverErrors: null
+      serverErrors: null,
+      restoreOnly: false,
+      changed: []
     };
+  },
+
+  computed: {
+    schema() {
+      let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      if (this.restoreOnly) {
+        schema = klona(schema);
+        for (const field of schema) {
+          field.readOnly = true;
+        }
+      }
+      // Archive UI is handled via action buttons
+      schema = schema.filter(field => field.name !== 'archived');
+      return schema;
+    }
   },
 
   methods: {
@@ -114,6 +133,10 @@ export default {
             result = false;
             break;
           }
+          if (Array.isArray(self.getFieldValue(key))) {
+            result = self.getFieldValue(key).includes(val);
+            break;
+          }
           if (val !== self.getFieldValue(key)) {
             result = false;
             break;
@@ -166,5 +189,6 @@ export default {
         });
       }
     }
+
   }
 };

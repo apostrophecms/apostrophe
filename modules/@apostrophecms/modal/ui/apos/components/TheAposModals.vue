@@ -1,5 +1,5 @@
 <template>
-  <div id="apos-modals" class="apos-theme--primary-purple">
+  <div id="apos-modals" :class="themeClass">
     <component
       v-for="modal in stack" :key="modal.id"
       :is="modal.componentName"
@@ -12,9 +12,10 @@
 
 <script>
 import cuid from 'cuid';
-
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposModals',
+  mixins: [ AposThemeMixin ],
   props: {
     modals: {
       type: Array,
@@ -31,6 +32,7 @@ export default {
     // To allow for injecting additional props dynamically, if itemName is an
     // object, it must have an itemName property and a props property. The props
     // property is merged with the props supplied by the server-side configuration.
+
     apos.bus.$on('admin-menu-click', async (itemName) => {
       let item;
       if (itemName === '@apostrophecms/global:singleton-editor') {

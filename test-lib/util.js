@@ -37,6 +37,7 @@ async function create(options) {
       _: [],
       'ignore-orphan-modules': true
     },
+    autoBuild: false,
     ...options
   };
   // Automatically configure Express, but not if we're in a special

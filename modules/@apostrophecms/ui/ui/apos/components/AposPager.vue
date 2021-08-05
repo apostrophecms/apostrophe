@@ -101,7 +101,7 @@ export default {
   }
 
   .apos-input-icon {
-    right: $spacing-base / 4;
+    right: math.div($spacing-base, 4);
   }
 
   .apos-pager__btn {

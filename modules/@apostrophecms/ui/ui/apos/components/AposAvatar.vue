@@ -40,10 +40,15 @@ export default {
       };
     },
     initials() {
-      let initials = (this.user.firstName || this.user.title || this.user.username).substring(0, 1);
-      if (this.user.lastName) {
-        initials += this.user.lastName.substring(0, 1);
+      let initials = '';
+      const splitName = this.user.title && this.user.title.split(' ');
+
+      if (splitName.length > 1) {
+        initials = `${splitName[0].substring(0, 1)}${splitName[1].substring(0, 1)}`;
+      } else {
+        initials = (this.user.title || this.user.username).substring(0, 1);
       }
+
       return initials;
     }
   }

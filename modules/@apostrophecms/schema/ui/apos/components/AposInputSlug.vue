@@ -11,7 +11,7 @@
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="$emit('return')"
-          :disabled="field.disabled" :required="field.required"
+          :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >
         <component
@@ -85,9 +85,14 @@ export default {
         if (this.compatible(oldValue, this.next)) {
           // If this is a page slug, we only replace the last section of the slug.
           if (this.field.page) {
-            const parts = this.next.match(/[^/]+/g);
-            parts.pop();
-            this.next = `/${parts.join('/')}${this.slugify(newValue)}`;
+            let parts = this.next.split('/');
+            parts = parts.filter(part => part.length > 0);
+            if (parts.length) {
+              // Remove last path component so we can replace it
+              parts.pop();
+            }
+            parts.push(this.slugify(newValue, { componentOnly: true }));
+            this.next = `/${parts.join('/')}`;
           } else {
             this.next = this.slugify(newValue);
           }
@@ -95,8 +100,11 @@ export default {
       }
     }
   },
-  mounted() {
+  async mounted() {
     this.debouncedCheckConflict = debounce(() => this.checkConflict(), 250);
+    if (this.next.length) {
+      await this.debouncedCheckConflict();
+    }
   },
   methods: {
     async watchNext() {
@@ -144,25 +152,30 @@ export default {
         const matches = slug.match(/[^/]+$/);
         slug = (matches && matches[0]) || '';
       }
-      return ((title === '') && (slug === `${this.prefix}none`)) || this.slugify(title) === this.slugify(slug);
+      return ((title === '') && (slug === `${this.prefix}`)) || this.slugify(title) === this.slugify(slug);
     },
-    slugify(s) {
-      const options = {};
-      if (this.field.page) {
+    // if componentOnly is true, we are slugifying just one component of
+    // a slug as part of following the title field, and so we do *not*
+    // want to allow slashes (when editing a page) or set a prefix.
+    slugify(s, { componentOnly = false } = {}) {
+      const options = {
+        def: ''
+      };
+      if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
-      let preserveSlash = false;
+      let preserveDash = false;
       // When you are typing a slug it feels wrong for hyphens you typed
       // to disappear as you go, so if the last character is not valid in a slug,
       // restore it after we call sluggo for the full string
-      if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === 'none')) {
-        preserveSlash = true;
+      if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === '')) {
+        preserveDash = true;
       }
       s = sluggo(s, options);
-      if (preserveSlash) {
+      if (preserveDash) {
         s += '-';
       }
-      if (this.field.page) {
+      if (this.field.page && !componentOnly) {
         if (!s.charAt(0) !== '/') {
           s = `/${s}`;
         }
@@ -171,16 +184,15 @@ export default {
           s = s.replace(/\/$/, '');
         }
       }
-      if (!s.length) {
-        s = 'none';
-      }
-      if (!s.startsWith(this.prefix)) {
-        if (this.prefix.startsWith(s)) {
-          // If they delete the `-`, and the prefix is `recipe-`,
-          // we want to restore `recipe-`, not set it to `recipe-recipe`
-          s = this.prefix;
-        } else {
-          s = this.prefix + s;
+      if (!componentOnly) {
+        if (!s.startsWith(this.prefix)) {
+          if (this.prefix.startsWith(s)) {
+            // If they delete the `-`, and the prefix is `recipe-`,
+            // we want to restore `recipe-`, not set it to `recipe-recipe`
+            s = this.prefix;
+          } else {
+            s = this.prefix + s;
+          }
         }
       }
       return s;

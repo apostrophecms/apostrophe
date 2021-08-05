@@ -20,7 +20,7 @@
     >
       <div class="apos-tree__row-data">
         <button
-          v-if="row.children && row.children.length > 0"
+          v-if="row._children && row._children.length > 0"
           class="apos-tree__row__toggle" data-apos-tree-toggle
           aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
@@ -34,13 +34,16 @@
           v-for="(col, index) in headers"
           :key="`${col.property}-${index}`"
           :is="getEffectiveType(col, row)"
+          :draft="row"
+          :published="row._publishedDoc"
+          :header="col"
           :href="(getEffectiveType(col, row) === 'a') ? row[col.property] : false"
           :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :disabled="getCellDisabled(col, row)"
           :data-col="col.property"
           :style="getCellStyles(col.property, index)"
-          @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
+          @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
         >
           <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
@@ -48,16 +51,16 @@
             class="apos-tree__row__icon apos-tree__row__icon--handle"
           />
           <AposIndicator
-            v-if="index === 0 && row.parked && row.type !== '@apostrophecms/trash'"
+            v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
             tooltip="This page is parked and cannot be moved"
           />
           <AposIndicator
-            v-if="index === 0 && row.type === '@apostrophecms/trash'"
+            v-if="index === 0 && row.type === '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
-            tooltip="You cannot move the Trash"
+            tooltip="You cannot move the Archive"
           />
           <AposCheckbox
             v-if="options.bulkSelect && index === 0"
@@ -89,7 +92,7 @@
         data-apos-branch-height
         :data-list-row="row._id"
         ref="tree-branches"
-        :rows="row.children"
+        :rows="row._children"
         :headers="headers"
         :icons="icons"
         :col-widths="colWidths"
@@ -98,12 +101,11 @@
         :list-id="row._id"
         :tree-id="treeId"
         :options="options"
-        :class="{ 'is-collapsed': options.startCollapsed }"
+        :class="{ 'apos-is-collapsed': options.startCollapsed }"
         :style="{
           'max-height': options.startCollapsed ? '0' : null
         }"
         @update="$emit('update', $event)"
-        @edit="$emit('edit', $event)"
         v-model="checkedProxy"
       />
     </li>
@@ -176,7 +178,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'update', 'change', 'edit' ],
+  emits: [ 'update', 'change' ],
   computed: {
     myRows() {
       return this.rows;
@@ -199,8 +201,8 @@ export default {
         dataListId: this.listId,
         disabled: !this.options.draggable,
         handle: '.apos-tree__row__icon--handle',
-        ghostClass: 'is-dragging',
-        filter: '.is-parked'
+        ghostClass: 'apos-is-dragging',
+        filter: '.apos-is-parked'
       };
     }
   },
@@ -243,11 +245,11 @@ export default {
       if (toggle.getAttribute('aria-expanded') !== 'true') {
         rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
         toggle.setAttribute('aria-expanded', true);
-        rowList.classList.remove('is-collapsed');
+        rowList.classList.remove('apos-is-collapsed');
       } else if (rowList) {
         rowList.style.maxHeight = 0;
         toggle.setAttribute('aria-expanded', false);
-        rowList.classList.add('is-collapsed');
+        rowList.classList.add('apos-is-collapsed');
       }
     },
     keydownRow(event) {
@@ -280,23 +282,19 @@ export default {
       const classes = [
         'apos-tree__row',
         {
-          'is-parked': !!row.parked,
-          'apos-tree__row--parent': row.children && row.children.length > 0,
+          'apos-is-parked': !!row.parked,
+          'apos-tree__row--parent': row._children && row._children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
         }
       ];
 
-      if (this.options.ghostUnpublished) {
-        classes.push({
-          'is-unpublished': !row.lastPublishedAt
-        });
-      }
-
       return classes;
     },
     getEffectiveType(col, row) {
-      if (row.type === '@apostrophecms/trash') {
+      if (col.component) {
+        return col.component;
+      } else if (row.type === '@apostrophecms/archive-page') {
         return 'span';
       } else if (col.type === 'link') {
         return 'a';
@@ -309,7 +307,7 @@ export default {
     getEffectiveIcon(col, row) {
       const boolStr = (!!row[col.property]).toString();
 
-      if (row.type === '@apostrophecms/trash') {
+      if (row.type === '@apostrophecms/archive-page' || !col.cellValue) {
         return false;
       }
 
@@ -337,7 +335,7 @@ export default {
       return 15;
     },
     getEffectiveCellLabel(col, row) {
-      const excludedTypes = [ '@apostrophecms/trash' ];
+      const excludedTypes = [ '@apostrophecms/archive-page' ];
       const boolStr = (!!row[col.property]).toString();
 
       // Opportunity to display a custom true/false label for cell value
@@ -361,10 +359,11 @@ export default {
       }
 
       // Original default of just printing the row property value
-      if (row[col.cellValue]) {
-        return row[col.cellValue];
+      const publishedDoc = row._publishedDoc;
+      const value = (publishedDoc && (publishedDoc[col.cellValue] !== undefined) && publishedDoc[col.cellValue]) || row[col.cellValue];
+      if (value) {
+        return value;
       }
-
       return false;
     },
     getCellClasses(col, row) {
@@ -392,7 +391,7 @@ export default {
       }
       if ((col.type === 'link') && (!row[col.property])) {
         return true;
-      } else if (row.trash && (col.type === 'button')) {
+      } else if (row.archived && (col.type === 'button')) {
         return true;
       } else {
         return false;
@@ -432,17 +431,14 @@ export default {
   }
 
   .apos-tree__row {
-    &.is-dragging {
-      opacity: 0.5;
-    }
-    &.is-unpublished > .apos-tree__row-data {
+    &.apos-is-dragging {
       opacity: 0.5;
     }
   }
   .apos-tree__list {
     transition: max-height 0.3s ease;
 
-    &.is-collapsed {
+    &.apos-is-collapsed {
       overflow-y: auto;
     }
   }
@@ -463,7 +459,7 @@ export default {
       position: absolute;
       top: 24px;
       bottom: 0;
-      left: $row-nested-h-padding / 2;
+      left: math.div($row-nested-h-padding, 2);
       display: block;
       content: '';
       background-color: var(--a-base-8);
@@ -471,7 +467,7 @@ export default {
       transition: background-color 0.3s ease;
     }
 
-    &.is-collapsed::before {
+    &.apos-is-collapsed::before {
       background-color: transparent;
     }
   }
@@ -480,7 +476,7 @@ export default {
     @include apos-button-reset();
     position: absolute;
     top: 50%;
-    left: -$row-nested-h-padding / 2;
+    left: -(math.div($row-nested-h-padding, 2));
     background-color: var(--a-background-primary);
     transform: translate(-50%, -50%);
   }
@@ -498,7 +494,7 @@ export default {
   .apos-tree__row__icon {
     margin-right: 0.25em;
 
-    /deep/ .material-design-icon__svg {
+    ::v-deep .material-design-icon__svg {
       transition: fill 0.2s ease;
       fill: var(--a-base-5);
     }
@@ -509,8 +505,8 @@ export default {
     &:active {
       cursor: grabbing;
     }
-    .sortable-chosen & /deep/ .material-design-icon__svg,
-    &:hover /deep/ .material-design-icon__svg {
+    .sortable-chosen & ::v-deep .material-design-icon__svg,
+    &:hover ::v-deep .material-design-icon__svg {
       fill: var(--a-base-2);
     }
   }
@@ -552,7 +548,7 @@ export default {
     align-self: center;
   }
 
-  .apos-tree__cell.is-published /deep/ .apos-tree__cell__icon {
+  .apos-tree__cell.apos-is-published ::v-deep .apos-tree__cell__icon {
     color: var(--a-success);
   }
 

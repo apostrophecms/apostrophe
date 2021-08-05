@@ -117,8 +117,7 @@ module.exports = {
         return area;
       },
       // Render the given `area` object via `area.html`, with the given `context`
-      // which may be omitted. Called for you by the `{% area %}` and `{% singleton %}`
-      // custom tags.
+      // which may be omitted. Called for you by the `{% area %} custom tag.
       async renderArea(req, area, _with) {
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
@@ -140,7 +139,12 @@ module.exports = {
         });
         // Guarantee that `items` at least exists
         area.items = area.items || [];
-        const canEdit = area._edit && (options.edit !== false) && req.query['apos-edit'];
+        if (area._docId) {
+          for (const item of area.items) {
+            item._docId = area._docId;
+          }
+        }
+        const canEdit = area._edit && (options.edit !== false) && req.query.aposEdit;
         if (canEdit) {
           // Ease of access to image URLs. When not editing we
           // just use the helpers
@@ -625,7 +629,6 @@ module.exports = {
   },
   customTags(self) {
     return {
-      // 'singleton': require('./lib/custom-tags/singleton.js'),
       area: require('./lib/custom-tags/area.js')(self),
       widget: require('./lib/custom-tags/widget.js')(self)
     };

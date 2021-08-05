@@ -1,5 +1,5 @@
 
-[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/3.0.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/3.0)
+[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/main.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/main)
 [![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.org)
 
 <p align="center">
@@ -12,10 +12,10 @@
   <p align="center">
     ApostropheCMS is a full-featured, open source CMS built with Node.js that seeks to empower organizations by combining in-context editing and headless architecture in a full-stack JS environment.
     <br />
-    <a href="https://a3.docs.apos.dev/"><strong>Alpha Documentation »</strong></a>
+    <a href="https://v3.docs.apostrophecms.org/"><strong>Documentation »</strong></a>
     <br />
     <br />
-    <a href="https://demo.apos3.dev">A3 Demo</a>
+    <a href="http://demo.apostrophecms.com">Demo</a>
     ·
     <a href="https://portal.productboard.com/apostrophecms/1-product-roadmap/tabs/2-planned">Roadmap</a>
     ·
@@ -35,7 +35,7 @@ ApostropheCMS is content software for everyone in an organization. It helps team
 
 ## Getting Started
 
-To get started with Apostrophe 3, follow these steps to set up a local development environment. For more detail, refer to the [A3 getting started guide](https://a3.docs.apos.dev/guide/starting-your-project.html) in the documentation.
+To get started with Apostrophe 3, follow these steps to set up a local development environment. For more detail, refer to the [A3 getting started guide](https://a3.docs.apostrophecms.org/guide/setting-up.html) in the documentation.
 
 #### Prerequisites
 

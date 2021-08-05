@@ -29,6 +29,7 @@ const _ = require('lodash');
 const dayjs = require('dayjs');
 const qs = require('qs');
 const Promise = require('bluebird');
+const path = require('path');
 
 module.exports = {
   options: { alias: 'template' },
@@ -36,7 +37,8 @@ module.exports = {
     return {
       component: require('./lib/custom-tags/component')(self),
       fragment: require('./lib/custom-tags/fragment')(self),
-      render: require('./lib/custom-tags/render')(self)
+      // render & rendercall
+      ...require('./lib/custom-tags/render')(self)
     };
   },
   components(self) {
@@ -58,12 +60,9 @@ module.exports = {
       prefix: self.apos.prefix
     };
 
-    self.helperShortcuts = {};
     self.filters = {};
 
     self.nunjucks = self.options.language || require('nunjucks');
-
-    self.envs = {};
 
     self.insertions = {};
   },
@@ -84,11 +83,6 @@ module.exports = {
           _.each(self.templateApos.modules, function (helpers, moduleName) {
             helpers.options = self.apos.modules[moduleName].options;
           });
-          _.each(self.helperShortcuts, function (list, moduleName) {
-            _.each(list, function (name) {
-              self.templateApos[name] = self.templateApos.modules[moduleName][name];
-            });
-          });
 
           function wrapFunctions(object) {
             _.each(object, function (value, key) {
@@ -107,6 +101,13 @@ module.exports = {
                 };
               }
             });
+          }
+        }
+      },
+      'apostrophe:destroy': {
+        async nunjucksLoaderCleanup() {
+          for (const loader of Object.values(self.loaders || {})) {
+            await loader.destroy();
           }
         }
       }
@@ -134,21 +135,6 @@ module.exports = {
         }
       },
 
-      addHelperShortcutForModule(module, name) {
-        self.helperShortcuts[module.__meta.name] = self.helperShortcuts[module.__meta.name] || [];
-        self.helperShortcuts[module.__meta.name].push(name);
-      },
-
-      // The use of this method is restricted to core modules
-      // and should only be used for apos.area, apos.singleton,
-      // and anything we later decide is at least that important.
-      // Everything else should be namespaced at all times,
-      // at least under its module alias. -Tom
-
-      addShortcutHelper(name, value) {
-        self.shortcutHelpers[name] = value;
-      },
-
       // Add new filters to the Nunjucks environment. You
       // can add many by passing an object with named
       // properties, or add just one by passing a name
@@ -171,6 +157,19 @@ module.exports = {
 
       safe(s) {
         return new self.nunjucks.runtime.SafeString(s);
+      },
+
+      // Escape any HTML markup in the given string and return a new Nunjucks safe string,
+      // unless it is already marked as safe by Nunjucks. If it is nullish treat it as an
+      // empty string. If it is not a string convert it with its `toString` method before
+      // escaping.
+
+      escapeIfNeeded(s) {
+        if (!(s instanceof self.nunjucks.runtime.SafeString)) {
+          return self.safe(self.apos.util.escapeHtml((s == null) ? '' : s.toString()));
+        } else {
+          return s;
+        }
       },
 
       // Load and render a Nunjucks template, internationalized
@@ -301,12 +300,10 @@ module.exports = {
         return result;
       },
 
-      // Fetch a nunjucks environment in which `include`,
-      // `extends`, etc. search the views directories of the
-      // specified module and its ancestors. Typically you
-      // will call `self.render`, `self.renderPage` or
-      // `self.partial` on your module object rather than calling
-      // this directly.
+      // Fetch a nunjucks environment in which `include`, `extends`, etc. search
+      // the views directories of the specified module and its ancestors.
+      // Typically you will call `self.render` or `self.partial` on your module
+      // object rather than calling this directly.
 
       getEnv(req, module) {
         const name = module.__meta.name;
@@ -326,9 +323,12 @@ module.exports = {
         });
         // Final class should win
         dirs.reverse();
-        if (self.options.viewsFolderFallback) {
-          dirs.push(self.options.viewsFolderFallback);
-        }
+
+        const viewsFolderFallback = self.options.viewsFolderFallback ||
+          path.join(self.apos.rootDir, 'views');
+
+        dirs.push(viewsFolderFallback);
+
         return dirs;
       },
 
@@ -340,7 +340,7 @@ module.exports = {
 
       newEnv(req, moduleName, dirs) {
 
-        const loader = self.newLoader(moduleName, dirs, undefined, self);
+        const loader = self.getLoader(moduleName, dirs);
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
@@ -433,6 +433,23 @@ module.exports = {
         return new NunjucksLoader(moduleName, dirs, undefined, self, self.options.loader);
       },
 
+      // Wrapper for newLoader with caching. You will not need
+      // to call this directly.
+
+      getLoader(moduleName, dirs) {
+        const key = JSON.stringify({
+          moduleName,
+          dirs
+        });
+        if (!self.loaders) {
+          self.loaders = {};
+        }
+        if (!self.loaders[key]) {
+          self.loaders[key] = self.newLoader(moduleName, dirs);
+        }
+        return self.loaders[key];
+      },
+
       addStandardFilters(env) {
 
         // Format the given date with the given moment.js
@@ -476,21 +493,19 @@ module.exports = {
 
         // Convert newlines to <br /> tags.
         env.addFilter('nlbr', function (data) {
-          data = self.apos.util.globalReplace(data, '\n', '<br />\n');
-          return data;
+          data = self.escapeIfNeeded(data);
+          data = self.apos.util.globalReplace(data.toString(), '\n', '<br />\n');
+          return self.safe(data);
         });
 
         // Newlines to paragraphs, produces better spacing and semantics
         env.addFilter('nlp', function (data) {
-          if (data === null || data === undefined) {
-            // don't crash, nunjucks tolerates nulls
-            return '';
-          }
+          data = self.escapeIfNeeded(data);
           const parts = data.toString().split(/\n/);
           const output = _.map(parts, function (part) {
             return '<p>' + part + '</p>\n';
           }).join('');
-          return output;
+          return self.safe(output);
         });
 
         // Convert the camelCasedString s to a hyphenated-string,
@@ -574,7 +589,7 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // If `req.query.apos-refresh` is `'1'`,
+      // If `req.query.aposRefresh` is `'1'`,
       // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are also provided on the `data` object
@@ -602,9 +617,8 @@ module.exports = {
           modules: {},
           prefix: self.apos.prefix,
           locale: req.locale,
-          mode: req.mode,
           csrfCookieName: self.apos.csrfCookieName,
-          htmlPageId: self.apos.util.generateId(),
+          tabId: self.apos.util.generateId(),
           scene
         };
         if (req.user) {
@@ -629,7 +643,7 @@ module.exports = {
         // Waits for DOMready to give other
         // things maximum opportunity to happen.
 
-        const decorate = (req.query['apos-refresh'] !== '1');
+        const decorate = req.query.aposRefresh !== '1';
 
         // data.url will be the original requested page URL, for use in building
         // relative links, adding or removing query parameters, etc. If this is a
@@ -644,7 +658,7 @@ module.exports = {
           // Make the query available to templates for easy access to
           // filter settings etc.
           query: req.query,
-          url: req.url
+          url: unrefreshed(req.url)
         };
 
         _.extend(args, data);
@@ -672,6 +686,22 @@ module.exports = {
           self.apos.util.error(e);
           req.statusCode = 500;
           return self.render(req, 'templateError');
+        }
+
+        function unrefreshed(url) {
+          // Including aposRefresh=1 in data.url leads to busted pages in
+          // navigation links, so strip that out. However this is invoked on
+          // every page load so do it as quickly as we can to avoid the
+          // overhead of a full parse and rebuild
+          if (!url.includes('aposRefresh=1')) {
+            return url;
+          } else if (url.endsWith('?aposRefresh=1')) {
+            return url.replace('?aposRefresh=1', '');
+          } else if (url.includes('?aposRefresh=1')) {
+            return url.replace('?aposRefresh=1&', '?');
+          } else {
+            return url.replace('&aposRefresh=1', '');
+          }
         }
       },
 

@@ -30,10 +30,9 @@ module.exports = {
     self.managers = {};
     self.enableBrowserData();
     await self.enableCollection();
+    self.apos.isNew = await self.detectNew();
     await self.createIndexes();
-    self.addDuplicateOrMissingWidgetIdMigration();
-    self.addDraftPublishedMigration();
-    self.addLastPublishedToAllDraftsMigration();
+    self.addLegacyMigrations();
   },
   restApiRoutes(self) {
     return {
@@ -59,7 +58,7 @@ module.exports = {
           if (_id) {
             criteria._id = { $ne: _id };
           }
-          const doc = await self.find(req, criteria).permission(false).trash(null).project({ slug: 1 }).toObject();
+          const doc = await self.find(req, criteria).permission(false).archived(null).project({ slug: 1 }).toObject();
           if (doc) {
             throw self.apos.error('conflict');
           } else {
@@ -74,10 +73,11 @@ module.exports = {
   handlers(self) {
     return {
       '@apostrophecms/doc-type:beforeInsert': {
-        setLocale(req, doc, options) {
+        setLocaleAndMode(req, doc, options) {
           const manager = self.getManager(doc.type);
           if (manager.isLocalized()) {
             doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
+            doc.aposMode = req.mode;
           }
         },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
@@ -110,10 +110,10 @@ module.exports = {
           }
           doc.metaType = 'doc';
           doc.createdAt = new Date();
-          if (doc.trash == null) {
+          if (doc.archived == null) {
             // Not always in the schema, so ensure it's true or false
             // to simplify queries and indexing
-            doc.trash = false;
+            doc.archived = false;
           }
         },
         // Makes using our model APIs directly less tedious
@@ -140,9 +140,11 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforePublish': {
-        testPermissions(req, doc) {
-          if (!self.apos.permission.can(req, 'publish', doc)) {
-            throw self.apos.error('forbidden');
+        testPermissions(req, info) {
+          if (info.options.permissions !== false) {
+            if (!self.apos.permission.can(req, info.options.autopublishing ? 'edit' : 'publish', info.draft)) {
+              throw self.apos.error('forbidden');
+            }
           }
         }
       },
@@ -155,15 +157,16 @@ module.exports = {
               doc[field.name + 'Sortified'] = self.apos.util.sortify(doc[field.name] ? doc[field.name] : '');
             }
           });
-          doc.updatedAt = new Date();
-          doc.updatedBy = req.user ? {
-            _id: req.user._id,
-            firstName: req.user.firstName || null,
-            lastName: req.user.lastName || null,
-            username: req.user.username
-          } : {
-            username: 'ApostropheCMS'
-          };
+          if (options.setUpdatedAtAndBy !== false) {
+            doc.updatedAt = new Date();
+            doc.updatedBy = req.user ? {
+              _id: req.user._id,
+              title: req.user.title || null,
+              username: req.user.username
+            } : {
+              username: 'ApostropheCMS'
+            };
+          }
         }
       },
       '@apostrophecms/doc-type:afterInsert': {
@@ -192,7 +195,7 @@ module.exports = {
             aposLocale: draftLocale,
             lastPublishedAt: doc.createdAt || new Date()
           };
-          return manager.insertDraftOf(req, doc, draft);
+          return manager.insertDraftOf(req, doc, draft, options);
         }
       },
       fixUniqueError: {
@@ -215,33 +218,26 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:afterDelete': {
-        // If deleting draft also delete published, but
-        // not vice versa ("undo publish" is a thing).
-        async deleteOtherModeAfterDelete(req, doc) {
+        // Deleting a draft implies deleting the document completely, since
+        // a draft must always exist. Deleting a published doc implies deleting
+        // the "previous" copy, since it only makes sense as a tool to revert
+        // the published doc's content. Note that deleting a draft recursively
+        // deletes both the published and previous docs.
+        async deleteOtherModes(req, doc, options) {
           if (doc.aposLocale.endsWith(':draft')) {
             return cleanup('published');
           }
+          if (doc.aposLocale.endsWith(':published')) {
+            return cleanup('previous');
+          }
           async function cleanup(mode) {
-            const manager = self.getManager(doc.type);
-            const _req = {
-              ...req,
-              mode
-            };
-            const peer = await manager.findOneForEditing(_req, {
-              aposDocId: doc.aposDocId
+            const peer = await self.apos.doc.db.findOne({
+              _id: doc._id.replace(/:[\w]+$/, `:${mode}`)
             });
             if (peer) {
-              await manager.delete(_req, peer);
+              const manager = peer.slug.startsWith('/') ? self.apos.page : self.getManager(peer.type);
+              await manager.delete(req, peer, options);
             }
-          }
-        },
-        // Remove the copy we keep around for undoing publish
-        async deletePreviousAfterDelete(req, doc) {
-          if (doc.aposLocale.endsWith('published')) {
-            return self.db.removeOne({
-              aposDocId: doc.aposDocId,
-              aposLocale: doc.aposLocale.replace(':published', ':previous')
-            });
           }
         }
       }
@@ -251,6 +247,13 @@ module.exports = {
     return {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposDocs');
+      },
+      // Detect whether the database is brand new (zero documents).
+      // This can't be done later because after this point init()
+      // functions are permitted to insert documents
+      async detectNew() {
+        const existing = await self.db.countDocuments();
+        return !existing;
       },
       async createSlugIndex() {
         const params = self.getSlugIndexParams();
@@ -270,13 +273,27 @@ module.exports = {
         };
       },
       async createIndexes() {
-        await self.db.createIndex({ type: 1 }, {});
+        await self.db.createIndex({
+          type: 1,
+          aposLocale: 1
+        }, {});
         await self.createSlugIndex();
-        await self.db.createIndex({ titleSortified: 1 }, {});
-        await self.db.createIndex({ updatedAt: -1 }, {});
+        await self.db.createIndex({
+          titleSortified: 1,
+          aposLocale: 1
+        }, {});
+        await self.db.createIndex({
+          updatedAt: -1,
+          aposLocale: 1
+        }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
         await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});
+        await self.db.createIndex({
+          submitted: 1,
+          aposLocale: 1
+        });
+        await self.createPathLevelIndex();
       },
       async createTextIndex() {
         try {
@@ -310,7 +327,7 @@ module.exports = {
           });
         }
       },
-      async ensurePathLevelIndex() {
+      async createPathLevelIndex() {
         const params = self.getPathLevelIndexParams();
         return self.db.createIndex(params, {});
       },
@@ -418,10 +435,13 @@ module.exports = {
         return doc;
       },
 
-      // True delete. To place a document in the trash,
-      // update the trash property (for a piece) or move it
-      // to be a child of the trash (for a page). True delete
-      // cannot be undone
+      // True delete. To place a document in the archive,
+      // update the archived property (for a piece) or move it
+      // to be a child of the archive (for a page). True delete
+      // cannot be undone.
+      //
+      // This operation ignores the locale and mode of `req`
+      // in favor of the actual document's locale and mode.
       async delete(req, doc, options = {}) {
         options = options || {};
         const m = self.getManager(doc.type);
@@ -575,7 +595,7 @@ module.exports = {
         if (manager.isLocalized(doc.type)) {
           // Performance hit now at write time is better than inaccurate
           // indicators of which docs are modified later (per Ben)
-          if (doc.aposLocale.endsWith(':draft')) {
+          if (doc.aposLocale.endsWith(':draft') && (options.setModified !== false)) {
             doc.modified = await manager.isModified(req, doc);
           }
         }
@@ -622,8 +642,17 @@ module.exports = {
         const manager = self.apos.doc.getManager(doc.type);
         if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
           // We are inserting the draft for the first time so it is always
-          // different from the published, which won't exist yet
-          doc.modified = true;
+          // different from the published, which won't exist yet. An exception
+          // is when the published doc is inserted first (like a parked page)
+          // in which case setModified: false will be passed in
+          if (options.setModified !== false) {
+            doc.modified = true;
+          }
+        }
+        if (!doc.visibility) {
+          // If the visibility property has been removed from the schema
+          // (images and files), make sure public queries can still match this type
+          doc.visibility = 'public';
         }
         return self.retryUntilUnique(req, doc, async function () {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
@@ -677,11 +706,11 @@ module.exports = {
       // pieces, the `data.global` doc, and page types registered
       // with `@apostrophecms/page` always have one).
       getManager(type) {
-        return self.managers[type];
+        return self.managers[self.normalizeType(type)];
       },
-      // Lock the given doc to a given `htmlPageId`, such
+      // Lock the given doc to a given `tabId`, such
       // that other calls to `apos.doc.lock` for that doc id will
-      // fail unless they have the same `htmlPageId`. If
+      // fail unless they have the same `tabId`. If
       // `options.force` is true, any existing lock is
       // overwritten. The `options` argument may be
       // omitted entirely.
@@ -696,7 +725,7 @@ module.exports = {
       // by someone else. Other errors are thrown as appropriate.
       //
       // If you need to refresh a lock in order to avoid
-      // expiration, just lock it again. As long as the htmlPageId
+      // expiration, just lock it again. As long as the tabId
       // is the same as the current lock holder you will receive
       // another successful response.
       //
@@ -705,7 +734,7 @@ module.exports = {
       // that you pass to it. This ensures it is present if you
       // follow this call up with an `update()` of the document.
 
-      async lock(req, doc, htmlPageId, options) {
+      async lock(req, doc, tabId, options) {
         if (!options) {
           options = {};
         }
@@ -718,8 +747,8 @@ module.exports = {
           throw self.apos.error('invalid', 'No doc was passed');
         }
         const _id = doc._id;
-        if (!htmlPageId) {
-          throw self.apos.error('invalid', 'no htmlPageId was passed');
+        if (!tabId) {
+          throw self.apos.error('invalid', 'no tabId was passed');
         }
         let criteria = { _id };
         if (!options.force) {
@@ -735,7 +764,7 @@ module.exports = {
               }
             },
             {
-              'advisoryLock._id': htmlPageId
+              'advisoryLock._id': tabId
             }
           ];
         }
@@ -750,7 +779,7 @@ module.exports = {
         doc.advisoryLock = {
           username: req.user && req.user.username,
           title: req.user && req.user.title,
-          _id: htmlPageId,
+          _id: tabId,
           updatedAt: new Date()
         };
         const result = await self.db.updateOne(criteria, {
@@ -795,14 +824,14 @@ module.exports = {
       getAdvisoryLockExpiration() {
         return new Date(Date.now() - 1000 * self.options.advisoryLockTimeout);
       },
-      // Release a document lock set via `lock` for a particular htmlPageId.
+      // Release a document lock set via `lock` for a particular tabId.
       // If the lock is already gone no error occurs.
       //
       // This method will unset the `advisoryLock` property of the
       // document both in the database and in the `doc` object
       // that you pass to it. This ensures it is present if you
       // follow this call up with an `update()` of the document.
-      async unlock(req, doc, htmlPageId) {
+      async unlock(req, doc, tabId) {
         if (!(req && req.res)) {
           // Use 'error' because this is always a code bug, not a bad
           // HTTP request, and the message should not be disclosed to the client
@@ -812,12 +841,12 @@ module.exports = {
         if (!id) {
           throw self.apos.error('invalid', 'no doc');
         }
-        if (!htmlPageId) {
-          throw self.apos.error('invalid', 'no htmlPageId');
+        if (!tabId) {
+          throw self.apos.error('invalid', 'no tabId');
         }
         await self.db.updateOne({
           _id: id,
-          'advisoryLock._id': htmlPageId
+          'advisoryLock._id': tabId
         }, {
           $unset: {
             advisoryLock: 1
@@ -842,124 +871,84 @@ module.exports = {
           action: self.action
         };
       },
-      addDuplicateOrMissingWidgetIdMigration() {
-        self.apos.migration.add('duplicate-or-missing-widget-id', async () => {
-          return self.apos.migration.eachDoc({}, 5, async (doc) => {
-            const widgetIds = {};
-            const patches = {};
-            // Walk the areas in a doc. Your iterator function is invoked once
-            // for each area found, and receives the
-            // area object and the dot-notation path to that object.
-            // note that areas can be deeply nested in docs via
-            // array schemas.
-            //
-            // If the iterator explicitly returns `false`, the area
-            // is *removed* from the page object, otherwise no
-            // modifications are made. This happens in memory only;
-            // the database is not modified.
-            self.apos.area.walk(doc, (area, dotPath) => {
-              if (!area.items) {
-                return;
-              }
-              for (let i = 0; (i < area.items.length); i++) {
-                const item = area.items[i];
-                if (!item) {
-                  continue;
-                }
-                if ((!item._id) || (_.has(widgetIds, item._id))) {
-                  patches[`${dotPath}.items.${i}._id`] = self.apos.util.generateId();
-                }
-                if (item._id) {
-                  widgetIds[item._id] = true;
+      migrateRelationshipIds(doc) {
+        if (doc.metaType === 'doc') {
+          const manager = self.apos.doc.getManager(doc.type);
+          if (!manager) {
+            return false;
+          }
+          return forSchema(manager.schema, doc);
+        } else if (doc.metaType === 'widget') {
+          const manager = self.apos.area.getWidgetManager(doc.type);
+          if (!manager) {
+            return false;
+          }
+          return forSchema(manager.schema, doc);
+        }
+        function forSchema(schema, doc) {
+          let needed = false;
+          for (const field of schema) {
+            if (field.type === 'area') {
+              if (doc[field.name] && doc[field.name].items) {
+                for (const widget of doc[field.name].items) {
+                  self.migrateRelationshipIds(widget);
                 }
               }
-            });
-            if (Object.keys(patches).length) {
-              return self.apos.doc.db.updateOne({
-                _id: doc._id
-              }, {
-                $set: patches
-              });
-            }
-          });
-        });
-      },
-      addDraftPublishedMigration() {
-        self.apos.migration.add('add-draft-published', async () => {
-          const indexes = await self.apos.doc.db.indexes();
-          for (const index of indexes) {
-            let keys = Object.keys(index.key);
-            keys.sort();
-            keys = keys.join(',');
-            if ((keys === 'slug') && index.unique) {
-              await self.apos.doc.db.dropIndex(index.name);
-            }
-            if ((keys === 'path') && index.unique) {
-              await self.apos.doc.db.dropIndex(index.name);
+            } else if (field.type === 'array') {
+              if (doc[field.name]) {
+                doc[field.name].forEach(item => {
+                  item.metaType = 'arrayItem';
+                  item.scopedArrayName = field.scopedArrayName;
+                  forSchema(field.schema, item);
+                });
+              }
+            } else if (field.type === 'object') {
+              const value = doc[field.name];
+              if (value) {
+                value.metaType = 'object';
+                value.scopedObjectName = field.scopedObjectName;
+                forSchema(field.schema, value);
+              }
+            } else if (field.type === 'relationship') {
+              doc[field.idsStorage] = (doc[field.idsStorage] || []).map(self.apos.doc.toAposDocId);
+              if (field.fieldsStorage) {
+                doc[field.fieldsStorage] = Object.fromEntries(Object.entries(doc[field.fieldsStorage] || {}).map(([ key, value ]) => [ self.apos.doc.toAposDocId(key), value ]));
+              }
+              needed = true;
             }
           }
-          // If a document should be localized but is not, localize it in
-          // all locales and modes, as a migration strategy from alpha 2
-          const types = Object.keys(self.managers).filter(type => {
-            return self.managers[type].isLocalized();
-          });
-          if (!types.length) {
-            return;
-          }
-          return self.apos.migration.eachDoc({
-            aposLocale: {
-              $exists: 0
-            },
-            type: {
-              $in: types
-            }
-          }, 5, async (doc) => {
-            const locales = self.apos.i18n.locales;
-            for (const locale of locales) {
-              await self.apos.doc.db.insertOne({
-                ...doc,
-                _id: `${doc._id}:${locale}:draft`,
-                aposLocale: `${locale}:draft`,
-                aposDocId: doc._id,
-                lastPublishedAt: doc.updatedAt
-              });
-              await self.apos.doc.db.insertOne({
-                ...doc,
-                _id: `${doc._id}:${locale}:published`,
-                aposLocale: `${locale}:published`,
-                aposDocId: doc._id
-              });
-            }
-            await self.apos.doc.db.removeOne({
-              _id: doc._id
-            });
-          });
-        });
-      },
-      addLastPublishedToAllDraftsMigration() {
-        return self.apos.migration.add('add lastPublishedAt to all published drafts without it', async () => {
-          return self.apos.migration.eachDoc({
-            _id: /:draft$/,
-            lastPublishedAt: null
-          }, async (doc) => {
-            const published = await self.db.findOne({
-              _id: doc._id.replace(':draft', ':published')
-            });
-            if (published) {
-              return self.db.updateOne({
-                _id: doc._id
-              }, {
-                $set: {
-                  lastPublishedAt: published.updatedAt
-                }
-              });
-            }
-          });
-        });
+          return needed;
+        }
       },
       isDraft(doc) {
         return doc.aposLocale.endsWith(':draft');
-      }
+      },
+      // Given a type name, normalize for any backwards compatibility
+      // provisions such as accepting @apostrophecms/page for
+      // @apostrophecms/any-page-type
+      normalizeType(type) {
+        if (type === '@apostrophecms/page') {
+          // Backwards compatible
+          type = '@apostrophecms/any-page-type';
+        }
+        return type;
+      },
+      // Given a doc, an _id, or an aposDocId, this method
+      // will return the aposDocId (the _id without the
+      // mode and locale parts). This will work on a doc
+      // even if the projection did not include aposDocId
+      toAposDocId(input) {
+        if (typeof input === 'object') {
+          return input.aposDocId || self.toAposDocId(input._id);
+        }
+        const index = input.indexOf(':');
+        if (index > -1) {
+          return input.substring(0, index);
+        } else {
+          return input;
+        }
+      },
+      ...require('./lib/legacy-migrations')(self)
     };
   }
 };

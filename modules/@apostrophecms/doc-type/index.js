@@ -1,9 +1,14 @@
 const _ = require('lodash');
+const util = require('util');
 
 module.exports = {
   options: {
     localized: true,
-    contextBar: true
+    contextBar: true,
+    editRole: 'contributor',
+    publishRole: 'editor',
+    viewRole: false,
+    previewDraft: true
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -24,15 +29,16 @@ module.exports = {
           following: 'title',
           required: true
         },
-        trash: {
+        archived: {
           type: 'boolean',
-          label: 'Trash',
+          label: 'Archived',
           contextual: true,
           def: false
         },
         visibility: {
           type: 'select',
-          label: 'Who can view this?',
+          label: 'Visibility',
+          help: 'Select whether this content is public or private',
           def: 'public',
           required: true,
           choices: [
@@ -57,15 +63,8 @@ module.exports = {
         utility: {
           fields: [
             'slug',
-            'trash'
-          ]
-        },
-        permissions: {
-          label: 'Permissions',
-          fields: [
             'visibility'
-          ],
-          last: true
+          ]
         }
       }
     };
@@ -76,17 +75,17 @@ module.exports = {
     }
     self.name = self.options.name;
     // Each doc-type has an array of fields which will be updated
-    // if the document is moved to the trash. In most cases 'slug'
+    // if the document is moved to the archive. In most cases 'slug'
     // might suffice. For users, for instance, the email field should
     // be prefixed (de-duplicated) so that the email address is available.
-    // A trash prefix should always be used for fields that have no bearing
+    // An archive prefix should always be used for fields that have no bearing
     // on page tree relationships. A suffix should always be used for fields
     // that do (`slug` and `path`).
     //
     // For suffixes, @apostrophecms/page will take care of adding and removing
     // them from earlier components in the path or slug as required.
-    self.trashPrefixFields = [ 'slug' ];
-    self.trashSuffixFields = [];
+    self.deduplicatePrefixFields = [ 'slug' ];
+    self.deduplicateSuffixFields = [];
     self.composeSchema();
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
@@ -94,8 +93,8 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        prepareRelationshipsForStorage(req, doc) {
-          self.apos.schema.prepareRelationshipsForStorage(req, doc);
+        prepareForStorage(req, doc) {
+          self.apos.schema.prepareForStorage(req, doc);
         },
         slugPrefix(req, doc) {
           if (self.options.slugPrefix) {
@@ -109,22 +108,22 @@ module.exports = {
         }
       },
       afterSave: {
-        async emitAfterTrashOrAfterRescue(req, doc) {
-          if (doc.trash && (!doc.aposWasTrash)) {
+        async emitAfterArchiveOrAfterRescue(req, doc) {
+          if (doc.archived && (!doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
             }, {
               $set: {
-                aposWasTrash: true
+                aposWasArchived: true
               }
             });
-            return self.emit('afterTrash', req, doc);
-          } else if ((!doc.trash) && (doc.aposWasTrash)) {
+            return self.emit('afterArchive', req, doc);
+          } else if ((!doc.archived) && (doc.aposWasArchived)) {
             await self.apos.doc.db.updateOne({
               _id: doc._id
             }, {
               $set: {
-                aposWasTrash: false
+                aposWasArchived: false
               }
             });
             return self.emit('afterRescue', req, doc);
@@ -135,104 +134,72 @@ module.exports = {
             return;
           }
           if (doc.aposLocale.includes(':draft')) {
-            return self.publish(req, doc, options);
+            return self.publish(req, doc, {
+              ...options,
+              autopublishing: true
+            });
           }
         }
       },
-      afterTrash: {
-        deduplicateTrash(req, doc) {
-          const deduplicateKey = doc.aposDocId;
-          if (doc.parkedId === 'trash') {
-            // The primary trashcan itself should not deduplicate
+      afterArchive: {
+        async retainOnlyAsDraft(req, doc) {
+          if (!self.options.localized) {
             return;
           }
-          const prefix = 'deduplicate-' + deduplicateKey + '-';
-          const suffix = '-deduplicate-' + deduplicateKey;
-          const $set = {};
-          _.each(self.trashPrefixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            if (doc[name].substr(0, prefix.length) !== prefix) {
-              $set[name] = prefix + doc[name];
-            }
-            // So methods called later, or extending this method, see the change in piece
-            doc[name] = $set[name];
-          });
-          _.each(self.trashSuffixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            if (doc[name].substr(doc[name].length - suffix.length) !== suffix) {
-              $set[name] = doc[name] + suffix;
-            }
-            // So methods called later, or extending this method, see the change in piece
-            doc[name] = $set[name];
-          });
-          if (_.isEmpty($set)) {
+          if (self.options.autopublish) {
             return;
           }
-          return self.apos.doc.db.updateOne({ _id: doc._id }, { $set: $set });
+          if (!doc._id.includes(':draft')) {
+            return;
+          }
+          if (doc.parkedId === 'archive') {
+            // The root trash can exists in both draft and published to
+            // avoid overcomplicating parked pages
+            return;
+          }
+          if (doc.modified) {
+            doc = await self.revertDraftToPublished(req, doc, {
+              overrides: {
+                archived: true
+              }
+            });
+          }
+          await self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              lastPublishedAt: null
+            }
+          });
+          const published = await self.apos.doc.db.findOne({
+            _id: doc._id.replace(':draft', ':published')
+          });
+          const previous = await self.apos.doc.db.findOne({
+            _id: doc._id.replace(':draft', ':previous')
+          });
+          if (published) {
+            await self.apos.doc.db.remove({ _id: published._id });
+            await self.emit('afterDelete', req, published, { checkForChildren: false });
+          }
+          if (previous) {
+            await self.apos.doc.db.remove({ _id: previous._id });
+            await self.emit('afterDelete', req, previous, { checkForChildren: false });
+          }
+        },
+        async deduplicate(req, doc) {
+          const $set = await self.getDeduplicationSet(req, doc);
+          Object.assign(doc, $set);
+          if (Object.keys($set).length) {
+            return self.apos.doc.db.updateOne({ _id: doc._id }, { $set });
+          }
         }
       },
       afterRescue: {
-        async deduplicateRescue(req, doc) {
-          if (doc.parkedId === 'trash') {
-            // The primary trashcan itself should not deduplicate
-            return;
-          }
-          const deduplicateKey = doc.aposDocId;
-          const prefix = 'deduplicate-' + deduplicateKey + '-';
-          const suffix = '-deduplicate-' + deduplicateKey;
-          const $set = {};
-          _.each(self.trashPrefixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            $set[name] = doc[name].replace(prefix, '');
-          });
-          _.each(self.trashSuffixFields, function (name) {
-            if (typeof doc[name] !== 'string') {
-              // Presumably a sparse index
-              return;
-            }
-            $set[name] = doc[name].replace(suffix, '');
-          });
-          for (const field of self.trashPrefixFields.concat(self.trashSuffixFields)) {
-            await checkOne(field);
-          }
-          await update();
-          async function checkOne(name) {
-            const query = {
-              type: self.name,
-              _id: { $ne: doc._id }
-            };
-            if (doc.aposLocale) {
-              query.aposLocale = doc.aposLocale;
-            }
-            query[name] = $set[name];
-            if ($set[name] === '') {
-              // Assume sparse index if empty strings are seen; don't
-              // generate lots of weird prefix-only email addresses
-              return;
-            }
-            const found = await self.apos.doc.db.findOne(query, { _id: 1 });
-            if (found) {
-              delete $set[name];
-            }
-          }
-          async function update() {
-            const action = { $set: $set };
-            // So methods called later, or extending this method, see the change in docs
-            _.assign(doc, $set);
-            if (_.isEmpty($set)) {
-              // Nothing to do
-              return;
-            }
-            return self.apos.doc.db.updateOne({ _id: doc._id }, action);
+        async revertDeduplication(req, doc) {
+          const $set = await self.getRevertDeduplicationSet(req, doc);
+          if (Object.keys($set).length) {
+            Object.assign(doc, $set);
+            return self.apos.doc.db.updateOne({ _id: doc._id }, { $set });
           }
         }
       },
@@ -277,17 +244,17 @@ module.exports = {
           return self.apos.launder.strings(choices);
         }
       },
-      addTrashPrefixFields(fields) {
-        self.trashPrefixFields = self.trashPrefixFields.concat(fields);
+      addDeduplicatePrefixFields(fields) {
+        self.deduplicatePrefixFields = self.deduplicatePrefixFields.concat(fields);
       },
-      removeTrashPrefixFields(fields) {
-        self.trashPrefixFields = _.difference(self.trashPrefixFields, fields);
+      removeDeduplicatePrefixFields(fields) {
+        self.deduplicatePrefixFields = _.difference(self.deduplicatePrefixFields, fields);
       },
-      addTrashSuffixFields(fields) {
-        self.trashSuffixFields = self.trashSuffixFields.concat(fields);
+      addDeduplicateSuffixFields(fields) {
+        self.deduplicateSuffixFields = self.deduplicateSuffixFields.concat(fields);
       },
-      removeTrashSuffixFields(fields) {
-        self.trashSuffixFields = _.difference(self.trashSuffixFields, fields);
+      removeDeduplicateSuffixFields(fields) {
+        self.deduplicateSuffixFields = _.difference(self.deduplicateSuffixFields, fields);
       },
       // Returns a query that will only yield docs of the appropriate type
       // as determined by the `name` option of the module.
@@ -370,10 +337,6 @@ module.exports = {
       // desired text.
       decorateChange(doc, change) {
         change.text = doc.title;
-      },
-      // Returns true if only admins are allowed to edit this type.
-      isAdminOnly() {
-        return self.options.adminOnly;
       },
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `permission`
@@ -532,16 +495,20 @@ module.exports = {
       // If `options.copyingId` is present, the doc with the given id is
       // fetched and used as defaults for any schema fields not defined
       // in `input`. This overrides `presentFieldsOnly` as long as the fields
-      // in question exist in the doc being copied.
+      // in question exist in the doc being copied. Also, the _id of the copied
+      // doc is copied to the `copyOfId` property of doc.
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
         copyingId: false
       }) {
-        let schema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        const fullSchema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        let schema;
         let copyOf;
         if (options.presentFieldsOnly) {
-          schema = self.apos.schema.subset(schema, self.fieldsPresent(input));
+          schema = self.apos.schema.subset(fullSchema, self.fieldsPresent(input));
+        } else {
+          schema = fullSchema;
         }
         if (options.copyingId) {
           copyOf = await self.findOneForCopying(req, { _id: options.copyingId });
@@ -554,8 +521,9 @@ module.exports = {
           };
         }
         await self.apos.schema.convert(req, schema, input, doc);
+        doc.copyOfId = copyOf && copyOf._id;
         if (copyOf) {
-          await self.emit('copyExtras', req, copyOf, input, doc);
+          self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
       },
 
@@ -576,10 +544,10 @@ module.exports = {
         }
       },
       // Returns a query that finds docs the current user can edit. Unlike
-      // find(), this query defaults to including docs in the trash. Subclasses
+      // find(), this query defaults to including docs in the archive. Subclasses
       // of @apostrophecms/piece-type often extend this to remove more default filters
       findForEditing(req, criteria, builders) {
-        const query = self.find(req, criteria).permission('edit').trash(null);
+        const query = self.find(req, criteria).permission('edit').archived(null);
         if (builders) {
           for (const [ key, value ] of Object.entries(builders)) {
             query[key](value);
@@ -598,8 +566,53 @@ module.exports = {
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
+      // Submit the current draft for review. The identity
+      // of `req.user` is associated with the submission.
+      // Returns the `submitted` object, with `by`, `byId`,
+      // and `at` properties.
+      async submit(req, draft) {
+        if (!self.apos.permission.can(req, 'edit', draft)) {
+          throw self.apos.error('forbidden');
+        }
+        const submitted = {
+          by: req.user && req.user.title,
+          byId: req.user && req.user._id,
+          at: new Date()
+        };
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $set: {
+            submitted
+          }
+        });
+        return submitted;
+      },
+      // Dismisses a previous submission of the given draft for review.
+      // The draft is unchanged; it simply is no longer marked as needing review.
+      async dismissSubmission(req, draft) {
+        if (!self.apos.permission.can(req, 'publish', draft)) {
+          if (!self.apos.permission.can(req, 'edit', draft)) {
+            throw self.apos.error('forbidden');
+          }
+          if (!(draft.submitted && (draft.submitted.byId === req.user._id))) {
+            throw self.apos.error('forbidden');
+          }
+        }
+        // Don't use "return" here, that could leak mongodb details
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $unset: {
+            submitted: 1
+          }
+        });
+      },
       // Publish the given draft. If `options.permissions` is explicitly
-      // set to `false`, permissions checks are bypassed.
+      // set to `false`, permissions checks are bypassed. If `options.autopublishing`
+      // is true, then the `edit` permission is sufficient, otherwise the
+      // `publish` permission is checked for. Returns the draft with its
+      // new `lastPublishedAt` value.
       async publish(req, draft, options = {}) {
         let firstTime = false;
         if (!self.isLocalized()) {
@@ -633,10 +646,27 @@ module.exports = {
           });
           published = await self.insertPublishedOf(req, draft, published, options);
         } else {
+          const oldPreviousPublished = await self.apos.doc.db.findOne({
+            _id: published._id.replace(':published', ':previous')
+          });
           // As found in db, not with relationships etc.
           previousPublished = await self.apos.doc.db.findOne({
             _id: published._id
           });
+          // Update "previous" so we can revert the most recent publication if desired.
+          // Do this first so we don't mistakenly think all references to the
+          // attachments are already gone before we do it
+          if (previousPublished) {
+            previousPublished._id = previousPublished._id.replace(':published', ':previous');
+            previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
+            Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
+            await self.apos.doc.db.replaceOne({
+              _id: previousPublished._id
+            }, previousPublished, {
+              upsert: true
+            });
+            await self.apos.attachment.updateDocReferences(previousPublished);
+          }
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
             draft,
@@ -645,36 +675,41 @@ module.exports = {
             firstTime
           });
           published.lastPublishedAt = lastPublishedAt;
-          published = await self.update({
-            ...req,
-            mode: 'published'
-          }, published, options);
+          try {
+            published = await self.update({
+              ...req,
+              mode: 'published'
+            }, published, options);
+          } catch (e) {
+            if (oldPreviousPublished) {
+              await self.apos.doc.db.replaceOne({
+                _id: oldPreviousPublished._id
+              }, oldPreviousPublished);
+              await self.apos.attachment.updateDocReferences(oldPreviousPublished);
+            }
+            throw e;
+          }
         }
+        draft.modified = false;
+        draft.lastPublishedAt = lastPublishedAt;
         await self.apos.doc.db.updateOne({
           _id: draft._id
         }, {
           $set: {
             modified: false,
             lastPublishedAt
+          },
+          $unset: {
+            submitted: 1
           }
         });
-        // Now that we're sure publication worked, update "previous" so we
-        // can revert the most recent publication if desired
-        if (previousPublished) {
-          previousPublished._id = previousPublished._id.replace(':published', ':previous');
-          previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
-          await self.apos.doc.db.replaceOne({
-            _id: previousPublished._id
-          }, previousPublished, {
-            upsert: true
-          });
-        }
         await self.emit('afterPublish', req, {
           draft,
           published,
           options,
           firstTime
         });
+        return draft;
       },
       // Reverts the given draft to the most recent publication.
       //
@@ -688,7 +723,11 @@ module.exports = {
       // Emits the `afterRevertDraftToPublished` event before
       // returning, which receives `req, { draft }` and may
       // replace the `draft` property to alter the returned value.
-      async revertDraftToPublished(req, draft) {
+      //
+      // If you need to keep certain properties that would otherwise
+      // revert, you can pass values for those properties in an
+      // `options.overrides` object.
+      async revertDraftToPublished(req, draft, options = {}) {
         if (!draft.modified) {
           return false;
         }
@@ -709,10 +748,21 @@ module.exports = {
         // Draft and published roles intentionally reversed
         self.copyForPublication(req, published, draft);
         draft.modified = false;
+        delete draft.submitted;
+        if (options.overrides) {
+          Object.assign(draft, options.overrides);
+        }
+        // Setting it this way rather than setting it to published.updatedAt
+        // guarantees no small discrepancy breaking equality comparisons
+        draft.updatedAt = draft.lastPublishedAt;
+        draft.updatedBy = published.updatedBy;
         draft = await self.update({
           ...req,
           mode: 'draft'
-        }, draft);
+        }, draft, {
+          setModified: false,
+          setUpdatedAtAndBy: false
+        });
         const result = {
           draft
         };
@@ -726,6 +776,9 @@ module.exports = {
       // there is no previous publication, throws an `invalid` exception.
 
       async revertPublishedToPrevious(req, published) {
+        if (!self.apos.permission.can(req, 'publish', published)) {
+          throw self.apos.error('forbidden');
+        }
         const previousId = published._id.replace(':published', ':previous');
         const previous = await self.apos.doc.db.findOne({
           _id: previousId
@@ -734,7 +787,8 @@ module.exports = {
           // Feature has already been used
           throw self.apos.error('invalid');
         }
-
+        const $set = await self.getRevertDeduplicationSet(req, previous);
+        Object.assign(previous, $set);
         // We must load relationships as if we had done a regular find
         // because relationships are read/write in A3,
         // but we don't have to call widget loaders
@@ -751,6 +805,7 @@ module.exports = {
         self.apos.doc.db.removeOne({
           _id: previousId
         });
+        await self.emit('afterDelete', req, previous, { checkForChildren: false });
         const result = {
           published
         };
@@ -806,6 +861,119 @@ module.exports = {
             to[field.name] = from[field.name];
           }
         }
+      },
+      // If the type is not localized, return the `_id` without modification to
+      // either `_id` or `req`.
+      //
+      // If the type is localized, infer `req.locale` and `req.mode` from `_id`
+      // if they were not set already by explicit query parameters. Conversely,
+      // if the appropriate query parameters were set, rewrite
+      // `_id` accordingly. Returns `_id`, after rewriting if appropriate.
+      inferIdLocaleAndMode(req, _id) {
+        if (!self.isLocalized()) {
+          return _id;
+        } else {
+          return self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        }
+      },
+
+      // Returns an object containing the properties of doc that
+      // require deduplication when archived, stored as
+      // "previous published" or any other scenario where the slug
+      // and similar properties should never be treated as "in conflict"
+      // with content that is in play on the site. The returned object
+      // contains values for those properties that have been deduplicated, and
+      // can be passed to $set or Object.assign or both, depending on your
+      // situation. `doc` is not changed.
+
+      async getDeduplicationSet(req, doc) {
+        const deduplicateKey = doc.aposDocId;
+        if (doc.parkedId === 'archive') {
+          // The primary archive itself should not deduplicate
+          // and is never "previous published", either
+          return {};
+        }
+        const prefix = 'deduplicate-' + deduplicateKey + '-';
+        const suffix = '-deduplicate-' + deduplicateKey;
+        const $set = {};
+        _.each(self.deduplicatePrefixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          if (doc[name].substr(0, prefix.length) !== prefix) {
+            $set[name] = prefix + doc[name];
+          }
+        });
+        _.each(self.deduplicateSuffixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          if (doc[name].substr(doc[name].length - suffix.length) !== suffix) {
+            $set[name] = doc[name] + suffix;
+          }
+        });
+        return $set;
+      },
+
+      // Returns an object containing the properties of doc that
+      // were formerly deduplicated (and require restoration of the original slug
+      // and other potentially conflicting properties) when restored from the
+      // archive, used to "undo publish" or any other scenario where the slug
+      // and similar properties should once again treated as "in conflict"
+      // with content that is in play on the site. The returned object
+      // contains values for those properties that have been reduplicated, and
+      // can be passed to $set or Object.assign or both, depending on your
+      // situation. If existing docs on the site would immediately conflict,
+      // then those particular fields are left in their "deduplicated"
+      // form for the user to fix manually. `doc` is not changed.
+
+      async getRevertDeduplicationSet(req, doc) {
+        if (doc.parkedId === 'archive') {
+          // The primary archive itself should not deduplicate
+          return;
+        }
+        const deduplicateKey = doc.aposDocId;
+        const prefix = 'deduplicate-' + deduplicateKey + '-';
+        const suffix = '-deduplicate-' + deduplicateKey;
+        const $set = {};
+        _.each(self.deduplicatePrefixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          $set[name] = doc[name].replace(prefix, '');
+        });
+        _.each(self.deduplicateSuffixFields, function (name) {
+          if (typeof doc[name] !== 'string') {
+            // Presumably a sparse index
+            return;
+          }
+          $set[name] = doc[name].replace(suffix, '');
+        });
+        for (const field of self.deduplicatePrefixFields.concat(self.deduplicateSuffixFields)) {
+          await checkOne(field);
+        }
+        return $set;
+        async function checkOne(name) {
+          const query = {
+            _id: { $ne: doc._id }
+          };
+          if (doc.aposLocale) {
+            query.aposLocale = doc.aposLocale;
+          }
+          query[name] = $set[name];
+          if ($set[name] === '') {
+            // Assume sparse index if empty strings are seen; don't
+            // generate lots of weird prefix-only email addresses
+            return;
+          }
+          const found = await self.apos.doc.db.findOne(query, { _id: 1 });
+          if (found) {
+            delete $set[name];
+          }
+        }
       }
     };
   },
@@ -822,12 +990,14 @@ module.exports = {
           ...initialBrowserOptions,
           name,
           label,
-          pluralLabel
+          pluralLabel,
+          canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
         browserOptions.action = self.action;
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
+        browserOptions.previewDraft = self.isLocalized() && !browserOptions.autopublish && self.options.previewDraft;
 
         return browserOptions;
       }
@@ -1126,9 +1296,10 @@ module.exports = {
             }
           },
           after(results) {
-            // In all cases we mark the docs with ._edit if
-            // the req is permitted to do that
+            // In all cases we mark the docs with ._edit and ._publish if
+            // the req is permitted to do those things
             self.apos.permission.annotate(query.req, 'edit', results);
+            self.apos.permission.annotate(query.req, 'publish', results);
           }
         },
 
@@ -1189,46 +1360,46 @@ module.exports = {
           }
         },
 
-        // `.trash(flag)`. If flag is `false`, `undefined` or this method is
-        // never called, the query returns only docs not in the trash. This is
+        // `.archived(flag)`. If flag is `false`, `undefined` or this method is
+        // never called, the query returns only docs not in the archive. This is
         // the default behavior.
         //
-        // if flag is `true`, returns only docs in the trash. Note permissions
+        // if flag is `true`, returns only docs in the archive. Note permissions
         // would still prevent a typical site visitor from obtaining any results,
         // but an editor might.
         //
         // if flag is `null` (not undefined), return
-        // docs regardless of trash status.
+        // docs regardless of archived status.
 
-        trash: {
+        archived: {
           finalize() {
-            const trash = query.get('trash');
-            if (trash === null) {
-              // We are interested regardless of trash state
+            const archived = query.get('archived');
+            if (archived === null) {
+              // We are interested regardless of archived state
               return;
             }
-            if (!trash) {
-              // allow trash to work as a normal boolean; also treat
-              // docs inserted with no trash property at all as not
-              // being trash. Yes it is safe to use $ne with
+            if (!archived) {
+              // allow archived to work as a normal boolean; also treat
+              // docs inserted with no archived property at all as not
+              // being archived. Yes it is safe to use $ne with
               // an index: https://github.com/apostrophecms/apostrophe/issues/1601
               query.and({
-                trash: {
+                archived: {
                   $ne: true
                 }
               });
               return;
             }
             query.and({
-              trash: true
+              archived: true
             });
           },
           launder(s) {
             return self.apos.launder.booleanOrNull(s);
           },
           choices() {
-            // For the trash query builder, it is generally a mistake not to offer "No" as a choice,
-            // even if everything is in the trash, as "No" is often the default.
+            // For the archive query builder, it is generally a mistake not to offer "No" as a choice,
+            // even if everything is in the archive, as "No" is often the default.
             return [
               {
                 value: '0',
@@ -1242,56 +1413,64 @@ module.exports = {
           }
         },
 
-        // `.explicitOrder([ id1, id2... ])` causes the query to return values
-        // in that order, assuming the documents with the specified ids exist.
-        // If a doc is not mentioned in the array it will
-        // be discarded from the result. Docs that
-        // exist in the array but not in the database are
-        // also absent from the result.
+        // `._ids([ id1, id2... ])` causes the query to return only those
+        // documents, and to return them in that order, assuming the documents
+        // with the specified ids exist. All documents are fetched in the
+        // same locale regardless of the locale suffix of the _ids. If
+        // no locale can be determined via query parameters, the locale is
+        // inferred from the first _id in the set.
         //
-        // As a second argument you may optionally specify a property name
-        // other than `_id` to order on.
+        // Can also be called with a string, which is treated as a single `_id`.
 
-        explicitOrder: {
-          set(values, property) {
-            property = property || '_id';
-            query.set('explicitOrder', values);
-            query.set('explicitOrderProperty', property);
+        _ids: {
+          set(values) {
+            if (Array.isArray(values)) {
+              query.set('_ids', values);
+            } else if (values) {
+              query.set([ values ]);
+            }
+          },
+          launder(values) {
+            return self.apos.launder.ids(values);
           },
           finalize() {
-            if (!query.get('explicitOrder')) {
+            if (!query.get('_ids')) {
               return;
             }
             const criteria = {};
-            const values = query.get('explicitOrder');
-            const property = query.get('explicitOrderProperty');
+            let values = query.get('_ids');
             if (!values.length) {
               // MongoDB gets mad if you have an empty $in
-              criteria[property] = { _id: '__iNeverMatch' };
+              criteria._id = { _id: null };
               query.and(criteria);
               return;
             }
-            criteria[property] = { $in: values };
+            if (self.isLocalized()) {
+              const parts = values[0].split(':');
+              if (parts.length > 1) {
+                values = values.map(value => self.inferIdLocaleAndMode(query.req, `${value.split(':')[0]}:${parts[1]}:${parts[2]}`));
+              }
+            }
+            criteria._id = { $in: values };
             query.and(criteria);
-            query.set('explicitOrderSkip', query.get('skip'));
-            query.set('explicitOrderLimit', query.get('limit'));
+            query.set('_idsSkip', query.get('skip'));
+            query.set('_idsLimit', query.get('limit'));
             query.set('skip', undefined);
             query.set('limit', undefined);
           },
           after(results) {
-            const values = query.get('explicitOrder');
+            const values = query.get('_ids');
             if (!values) {
               return;
             }
-            const property = query.get('explicitOrderProperty');
-            const temp = self.apos.util.orderById(values, results, property);
+            const temp = self.apos.util.orderById(values, results, '_id');
             let i;
             // Must modify array in place
             for (i = 0; (i < temp.length); i++) {
               results[i] = temp[i];
             }
-            const skip = query.get('explicitOrderSkip');
-            const limit = query.get('explicitOrderLimit');
+            const skip = query.get('_idsSkip');
+            const limit = query.get('_idsLimit');
             if ((typeof (skip) !== 'number') && (typeof (limit) !== 'number')) {
               return;
             }
@@ -1300,6 +1479,36 @@ module.exports = {
             // for returning a new one
             results.splice(0, skip);
             results.splice(limit, results.length - limit);
+          }
+        },
+
+        // If set to true, attach a `_publishedDoc` property to each draft document,
+        // containing the related published document.
+
+        withPublished: {
+          launder(value) {
+            return self.apos.launder.boolean(value);
+          },
+          async after(results) {
+            if (!self.isLocalized()) {
+              return;
+            }
+            const value = query.get('withPublished');
+            if (!value) {
+              return;
+            }
+            if (!results.length) {
+              return;
+            }
+            const _req = {
+              ...query.req,
+              mode: 'published'
+            };
+            const publishedDocs = await self.find(_req)._ids(results.map(result => result._id.replace(':draft', ':published'))).project(query.get('project')).toArray();
+            for (const doc of results) {
+              const publishedDoc = publishedDocs.find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
+              doc._publishedDoc = publishedDoc;
+            }
           }
         },
 
@@ -1425,7 +1634,7 @@ module.exports = {
           def: true,
           after(results) {
             for (const result of results) {
-              if ((!result.trash) && result.slug && self.apos.page.isPage(result)) {
+              if ((!result.archived) && result.slug && self.apos.page.isPage(result)) {
                 const url = self.apos.page.getBaseUrl(query.req);
                 result._url = url + self.apos.prefix + result.slug;
               }
@@ -1453,12 +1662,23 @@ module.exports = {
 
             for (const doc of results) {
               const areasInfo = [];
-              self.apos.area.walk(doc, function(area, dotPath) {
-                areasInfo.push({
-                  area: area,
-                  dotPath: dotPath
-                });
+              const arrayItemsInfo = [];
+              self.apos.doc.walk(doc, (o, k, v, dotPath) => {
+                if (v) {
+                  if (v.metaType === 'area') {
+                    areasInfo.push({
+                      area: v,
+                      dotPath
+                    });
+                  } else if (doc._edit && (v.metaType === 'arrayItem')) {
+                    arrayItemsInfo.push({
+                      arrayItem: v,
+                      dotPath
+                    });
+                  }
+                }
               });
+
               if (areasInfo.length) {
                 for (const info of areasInfo) {
                   const area = info.area;
@@ -1486,6 +1706,14 @@ module.exports = {
                     widgetsByType[item.type].push(item);
                   }
                 }
+              }
+              // We also need to track which array items are editable,
+              // for purposes of allowing areas nested in them to
+              // be edited in context
+              for (const info of arrayItemsInfo) {
+                const arrayItem = info.arrayItem;
+                arrayItem._docId = doc._docId || doc._id;
+                arrayItem._edit = doc._edit;
               }
             }
 
@@ -1521,18 +1749,26 @@ module.exports = {
           launder(choices) {
             return self.sanitizeFieldList(choices);
           },
+          prefinalize() {
+            // Capture the query to be cloned before it is finalized so we can
+            // still turn filters on and off, if we wait too long
+            // those will already have been and()'ed into the criteria
+            query.set('choices-query-prefinalize', query.clone());
+          },
           async after(results) {
             const filters = query.get('choices');
             if (!filters) {
               return;
             }
             const choices = {};
+            const baseQuery = query.get('choices-query-prefinalize');
+            baseQuery.set('choices-query-prefinalize', null);
             for (const filter of filters) {
               // The choices for each filter should reflect the effect of all filters
               // except this one (filtering by topic pares down the list of categories and
               // vice versa)
-              const _query = query.clone();
-              _query[filter](undefined);
+              const _query = baseQuery.clone();
+              _query[filter](null);
               choices[filter] = await _query.toChoices(filter, { counts: query.get('counts') });
             }
             if (query.get('counts')) {
@@ -1792,7 +2028,13 @@ module.exports = {
             _.assign(criteria, lateCriteria);
           }
           if (query.get('log') || process.env.APOS_LOG_ALL_QUERIES) {
-            self.apos.util.log(require('util').inspect(criteria, { depth: 20 }));
+            self.apos.util.log(util.inspect({
+              criteria: query.get('criteria'),
+              skip: query.get('skip'),
+              limit: query.get('limit'),
+              sort: query.get('sortMongo'),
+              project: query.get('project')
+            }, { depth: 20 }));
           }
           return query.lowLevelMongoCursor(query.req, query.get('criteria'), query.get('project'), {
             skip: query.get('skip'),
@@ -1857,6 +2099,9 @@ module.exports = {
           const field = _.find(schema, { name: key });
           if (field) {
             add.push('type', field.idsStorage);
+            if (field.fieldsStorage) {
+              add.push(field.fieldsStorage);
+            }
             return true;
           }
           return false;
@@ -2197,7 +2442,7 @@ module.exports = {
             // has a manager thanks to @apostrophecms/any-page-type. Use that as a default
             // so that we always get a manager object
 
-            const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/page');
+            const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/any-page-type');
             if (!(manager && manager.schema)) {
               return;
             }

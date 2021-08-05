@@ -31,24 +31,25 @@
           class="apos-button__icon"
           fill-color="currentColor"
         />
-        <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
-          {{ label }}
-        </span>
+        <slot name="label">
+          <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
+            {{ label }}
+          </span>
+        </slot>
       </div>
     </component>
   </span>
 </template>
 
 <script>
-import tinycolor from 'tinycolor2';
 import cuid from 'cuid';
 
 export default {
   name: 'AposButton',
   props: {
     label: {
-      required: true,
-      type: String
+      type: String,
+      default: 'Provide a Button Label'
     },
     modifiers: {
       type: Array,
@@ -61,8 +62,8 @@ export default {
       default: null
     },
     href: {
-      type: String,
-      default: ''
+      type: [ String, Boolean ],
+      default: false
     },
     iconSize: {
       type: Number,
@@ -158,7 +159,7 @@ export default {
 
       if (this.state && this.state.length) {
         this.state.forEach((state) => {
-          modifiers.push(`is-${state}`);
+          modifiers.push(`apos-is-${state}`);
         });
       }
 
@@ -211,7 +212,7 @@ export default {
       background-color: var(--a-base-8);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-base-7);
     }
     &:focus {
@@ -305,11 +306,11 @@ export default {
     background-color: transparent;
     &:hover,
     &:active,
-    &.is-active,
+    &.apos-is-active,
     &:focus {
       background-color: transparent;
       text-decoration: underline;
-      color: var(--a-primary-button-hover);
+      color: var(--a-primary-dark-10);
     }
     &:focus {
       box-shadow: none;
@@ -397,7 +398,7 @@ export default {
       background-color: var(--a-base-9);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-base-8);
     }
     &:focus {
@@ -424,28 +425,28 @@ export default {
   }
 
   .apos-button--primary {
-    border: 1px solid var(--a-primary);
+    border: 1px solid var(--a-primary-dark-10);
     color: var(--a-white);
     background: var(--a-primary);
     &:hover {
-      background-color: var(--a-primary-button-hover);
+      background-color: var(--a-primary-dark-10);
     }
     &:active,
-    &.is-active {
-      background-color: var(--a-primary-button-active);
+    &.apos-is-active {
+      background-color: var(--a-primary-dark-15);
     }
     &:focus {
       box-shadow: 0 0 0 1px var(--a-base-7),
-        0 0 0 3px var(--a-primary-button-disabled);
+        0 0 0 3px var(--a-primary-light-40);
     }
     &[disabled],
     &.apos-button--disabled {
-      border: 1px solid var(--a-primary-button-disabled);
+      border: 1px solid var(--a-primary-light-40);
       color: var(--a-white);
-      background-color: var(--a-primary-button-disabled);
+      background-color: var(--a-primary-light-40);
     }
     &[disabled].apos-button--busy {
-      border: 1px solid var(--a-primary-button-disabled);
+      border: 1px solid var(--a-primary-light-40);
     }
   }
 
@@ -457,7 +458,7 @@ export default {
       background-color: var(--a-base-1);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-base-1);
     }
     &:focus {
@@ -480,7 +481,7 @@ export default {
       background-color: var(--a-danger-button-hover);
     }
     &:active,
-    &.is-active {
+    &.apos-is-active {
       background-color: var(--a-danger-button-active);
     }
     &:focus {
@@ -566,7 +567,7 @@ export default {
 
   .apos-button--inline {
     padding: 0;
-    &, &:hover, &:active, &:focus {
+    &, &[disabled], &:hover, &:active, &:focus {
       border: 0;
       background-color: transparent;
       box-shadow: none;

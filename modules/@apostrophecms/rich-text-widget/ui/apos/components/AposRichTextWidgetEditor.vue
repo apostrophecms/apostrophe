@@ -1,18 +1,16 @@
 <template>
-  <div class="apos-rich-text-editor">
-    <component
-      :is="menuType"
+  <div>
+    <bubble-menu
+      class="bubble-menu"
+      :tippy-options="{ duration: 100 }"
       :editor="editor"
-      :keep-in-bounds="false"
-      v-slot="{ menu, focused }"
+      v-if="editor"
     >
       <AposContextMenuDialog
         menu-placement="top"
         class-list="apos-rich-text-toolbar"
         :has-tip="false"
         :modifiers="['unpadded']"
-        :class="extraClasses(menu, focused)"
-        :style="`left: ${menu ? menu.left : 0}px; bottom: ${menu ? menu.bottom : 0}px;`"
       >
         <div class="apos-rich-text-toolbar__inner">
           <component
@@ -26,8 +24,8 @@
           />
         </div>
       </AposContextMenuDialog>
-    </component>
-    <div class="apos-rich-text-editor__editor">
+    </bubble-menu>
+    <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
   </div>
@@ -37,36 +35,17 @@
 import {
   Editor,
   EditorContent,
-  EditorMenuBar,
-  EditorMenuBubble
-} from 'tiptap';
-
-import {
-  HardBreak,
-  ListItem,
-  OrderedList,
-  BulletList,
-  Bold,
-  Italic,
-  History,
-  Strike,
-  Blockquote,
-  CodeBlock,
-  HorizontalRule
-} from 'tiptap-extensions';
-
-// Here because we cannot access computed inside data
-
-function moduleOptionsBody(type) {
-  return apos.modules[apos.area.widgetManagers[type]];
-}
-
+  BubbleMenu
+} from '@tiptap/vue-2';
+import StarterKit from '@tiptap/starter-kit';
+import TextAlign from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
+import TextStyle from '@tiptap/extension-text-style';
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
-    EditorMenuBar,
     EditorContent,
-    EditorMenuBubble
+    BubbleMenu
   },
   props: {
     type: {
@@ -93,31 +72,8 @@ export default {
   },
   emits: [ 'update' ],
   data() {
-    const defaultOptions = moduleOptionsBody(this.type).defaultOptions;
-    const toolbar = this.options.toolbar === false ? []
-      : (this.options.toolbar || defaultOptions.toolbar);
-
     return {
-      tools: moduleOptionsBody(this.type).tools,
-      toolbar,
-      editor: new Editor({
-        extensions: [
-          new BulletList(),
-          new HardBreak(),
-          new ListItem(),
-          new OrderedList(),
-          new Bold(),
-          new Italic(),
-          new History(),
-          new Strike(),
-          new Blockquote(),
-          new CodeBlock(),
-          new HorizontalRule()
-        ].concat((apos.tiptapExtensions || []).map(C => new C(computeEditorOptions(this.type, this.options)))),
-        autoFocus: true,
-        onUpdate: this.editorUpdate,
-        content: this.stripPlaceholderBrs(this.value.content)
-      }),
+      editor: null,
       docFields: {
         data: {
           ...this.value
@@ -129,16 +85,56 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return moduleOptionsBody(this.type);
+      return apos.modules[apos.area.widgetManagers[this.type]];
+    },
+    defaultOptions() {
+      return this.moduleOptions.defaultOptions;
     },
     editorOptions() {
-      return computeEditorOptions(this.type, this.options);
+      const activeOptions = Object.assign({}, this.options);
+
+      // Allow toolbar option to pass through if `false`
+      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
+        ? activeOptions.toolbar : this.defaultOptions.toolbar;
+
+      activeOptions.styles = this.enhanceStyles(activeOptions.styles || this.defaultOptions.styles);
+
+      return activeOptions;
     },
-    menuType() {
-      if (this.options.menuType && this.options.menuType === 'block') {
-        return 'editor-menu-bar';
+
+    initialContent() {
+      return this.stripPlaceholderBrs(this.value.content);
+    },
+    toolbar() {
+      return this.editorOptions.toolbar;
+    },
+    tools() {
+      return this.moduleOptions.tools;
+    },
+    isVisuallyEmpty () {
+      const div = document.createElement('div');
+      div.innerHTML = this.value.content;
+      return !div.textContent;
+    },
+    editorModifiers () {
+      const classes = [];
+      if (this.isVisuallyEmpty) {
+        classes.push('apos-is-visually-empty');
       }
-      return 'editor-menu-bubble';
+      return classes;
+    },
+    tiptapTextCommands() {
+      return this.moduleOptions.tiptapTextCommands;
+    },
+    tiptapTypes() {
+      return this.moduleOptions.tiptapTypes;
+    },
+    aposTiptapExtensions() {
+      return (apos.tiptapExtensions || [])
+        .map(extension => extension({
+          styles: this.editorOptions.styles,
+          types: this.tiptapTypes
+        }));
     }
   },
   watch: {
@@ -150,25 +146,26 @@ export default {
       }
     }
   },
+  mounted() {
+    this.editor = new Editor({
+      content: this.initialContent,
+      autofocus: true,
+      onUpdate: this.editorUpdate,
+      extensions: [
+        StarterKit,
+        TextAlign.configure({
+          types: [ 'heading', 'paragraph' ]
+        }),
+        Highlight,
+        TextStyle
+      ].concat(this.aposTiptapExtensions)
+    });
+  },
+
   beforeDestroy() {
     this.editor.destroy();
   },
   methods: {
-    extraClasses(menu, focused) {
-      const classes = [];
-
-      classes.push(this.menuType);
-
-      if (menu && menu.isActive) {
-        classes.push('is-active');
-      }
-
-      if (focused && !menu) {
-        classes.push('is-active');
-      }
-
-      return classes.join(' ');
-    },
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
@@ -199,9 +196,6 @@ export default {
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });
     },
-    command(name, options) {
-      this.commands[name](options);
-    },
     // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
     // temporarily so the editing experience doesn't break due to contenteditable
     // issues with empty paragraphs, but strips them on save; however
@@ -214,31 +208,54 @@ export default {
     // Otherwise they get doubled by ProseMirror
     stripPlaceholderBrs(html) {
       return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
+    },
+    // Enhances the dev-defined styles list with tiptap
+    // commands and parameters used internally.
+    enhanceStyles(styles) {
+      const self = this;
+      const enhanced = [];
+      (styles || []).forEach(style => {
+        style.options = {};
+        for (const key in self.tiptapTextCommands) {
+          if (self.tiptapTextCommands[key].includes(style.tag)) {
+            style.command = key;
+          }
+        }
+        for (const key in self.tiptapTypes) {
+          if (self.tiptapTypes[key].includes(style.tag)) {
+            style.type = key;
+          }
+        }
+
+        // Set heading level
+        if (style.type === 'heading') {
+          const level = parseInt(style.tag.split('h')[1]);
+          style.options.level = level;
+        }
+
+        // Handle custom attributes
+        if (style.class) {
+          style.options.class = style.class;
+        }
+
+        if (style.type) {
+          enhanced.push(style);
+        } else {
+          apos.notify(`Misconfigured rich text style: label: ${style.label}, tag: ${style.tag}`, {
+            type: 'warning',
+            dismiss: true,
+            icon: 'text-box-remove-icon'
+          });
+        }
+      });
+      return styles;
     }
   }
 };
 
-function computeEditorOptions(type, explicitOptions) {
-  const defaultOptions = moduleOptionsBody(type).defaultOptions;
-
-  const activeOptions = Object.assign({}, explicitOptions);
-
-  // Allow toolbar option to pass through if `false`
-  activeOptions.toolbar = (activeOptions.toolbar !== undefined)
-    ? activeOptions.toolbar : defaultOptions.toolbar;
-
-  activeOptions.styles = activeOptions.styles || defaultOptions.styles;
-
-  return activeOptions;
-}
 </script>
 
 <style lang="scss" scoped>
-
-  .apos-rich-text-toolbar {
-    opacity: 0;
-    pointer-events: none;
-  }
 
   .apos-rich-text-toolbar.editor-menu-bubble {
     z-index: $z-index-manager-toolbar;
@@ -251,11 +268,6 @@ function computeEditorOptions(type, explicitOptions) {
     margin-bottom: 10px;
   }
 
-  .apos-rich-text-toolbar.is-active {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
   .apos-rich-text-toolbar__inner {
     display: flex;
     align-items: stretch;
@@ -265,15 +277,50 @@ function computeEditorOptions(type, explicitOptions) {
     border-radius: var(--a-border-radius);
   }
 
-  .apos-rich-text-toolbar /deep/ .is-active {
+  .apos-rich-text-toolbar ::v-deep .apos-is-active {
     background-color: var(--a-base-9);
   }
 
-  .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
     outline: none;
   }
 
-  .apos-rich-text-toolbar__inner /deep/ > .apos-rich-text-editor__control {
+  .apos-rich-text-editor__editor {
+    @include apos-transition();
+    position: relative;
+    border-radius: var(--a-border-radius);
+    box-shadow: 0 0 0 1px transparent;
+    &:after {
+      @include type-small;
+      content: 'Empty Rich Text Widget';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: block;
+      width: 200px;
+      height: 10px;
+      margin: auto;
+      color: var(--a-base-5);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+  }
+  .apos-rich-text-editor__editor.apos-is-visually-empty {
+    box-shadow: 0 0 0 1px var(--a-primary-transparent-50);
+    &:after {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  .apos-rich-text-toolbar__inner ::v-deep > .apos-rich-text-editor__control {
     /* Addresses a Safari-only situation where it inherits the
       `::-webkit-scrollbar-button` 2px margin. */
     margin: 0;

@@ -50,21 +50,21 @@ export default {
       const styles = this.options.styles || [];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
-        const attrs = {
-          tag: style.tag,
-          class: style.class || null
-        };
-        if (this.editor.isActive.styles(attrs)) {
+        if (this.editor.isActive(style.type, (style.options || {}))) {
           return i;
         }
       }
       return 0;
+    },
+    moduleOptions() {
+      return window.apos.modules['@apostrophecms/rich-text-widget'];
     }
   },
   methods: {
     setStyle($event) {
       const style = this.options.styles[$event.target.value];
-      this.editor.commands.styles(style);
+      this.editor.commands.focus();
+      this.editor.commands[style.command](style.type, style.options || {});
     }
   }
 };
@@ -91,7 +91,7 @@ export default {
     position: relative;
   }
 
-  .apos-tiptap-select /deep/ .apos-tiptap-select__icon {
+  .apos-tiptap-select ::v-deep .apos-tiptap-select__icon {
     position: absolute;
     top: 50%;
     right: 5px;

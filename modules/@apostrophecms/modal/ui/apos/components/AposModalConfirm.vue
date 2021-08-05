@@ -4,42 +4,59 @@
     v-on="mode !== 'alert' ? { 'esc': cancel } : null"
     @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    @ready="ready"
   >
     <template #main>
       <AposModalBody>
         <template #bodyMain>
           <img
-            v-if="confirmContent.icon" class="apos-confirm__custom-logo"
-            :src="confirmContent.icon" alt=""
+            v-if="content.icon" class="apos-confirm__custom-logo"
+            :src="content.icon" alt=""
           >
           <AposLogoIcon
-            v-else-if="confirmContent.icon !== false" class="apos-confirm__logo"
+            v-else-if="content.icon !== false" class="apos-confirm__logo"
           />
           <h2
-            v-if="confirmContent.heading"
+            v-if="content.heading"
             class="apos-confirm__heading"
           >
-            {{ confirmContent.heading }}
+            {{ content.heading }}
           </h2>
           <p
             class="apos-confirm__description"
-            v-if="confirmContent.description"
+            v-if="content.description"
           >
-            {{ confirmContent.description }}
+            {{ content.description }}
           </p>
+          <div v-if="content.form" class="apos-confirm__schema">
+            <AposSchema
+              v-if="formValues"
+              v-model="formValues"
+              :schema="content.form.schema"
+              :trigger-validation="true"
+            />
+          </div>
           <div class="apos-confirm__btns">
             <AposButton
               v-if="mode !== 'alert'"
               class="apos-confirm__btn"
-              :label="confirmContent.negativeLabel || 'Cancel'" @click="cancel"
+              :label="content.negativeLabel || 'Cancel'" @click="cancel"
             />
             <AposButton
               class="apos-confirm__btn"
               :label="affirmativeLabel"
               @click="confirm"
-              :type="confirmContent.theme || 'primary'"
+              :type="content.theme || 'primary'"
+              :disabled="isDisabled"
+              ref="confirm"
             />
           </div>
+          <p
+            class="apos-confirm__note"
+            v-if="content.note"
+          >
+            {{ content.note }}
+          </p>
         </template>
       </AposModalBody>
     </template>
@@ -54,7 +71,7 @@ export default {
       type: String,
       default: 'confirm'
     },
-    confirmContent: {
+    content: {
       type: Object,
       required: true
     },
@@ -73,26 +90,48 @@ export default {
         showModal: false,
         disableHeader: true,
         trapFocus: true
-      }
+      },
+      formValues: null
     };
   },
   computed: {
     affirmativeLabel() {
       if (this.mode === 'confirm') {
-        return this.confirmContent.affirmativeLabel || 'Confirm';
+        return this.content.affirmativeLabel || 'Confirm';
       } else {
-        return this.confirmContent.affirmativeLabel || 'OK';
+        return this.content.affirmativeLabel || 'OK';
       }
+    },
+    isDisabled() {
+      if (!this.formValues) {
+        return false;
+      }
+      let disabled = false;
+      if (this.content.form.schema) {
+        this.content.form.schema.forEach(field => {
+          if (field.required && !this.formValues.data[field.name]) {
+            disabled = true;
+          }
+        });
+      }
+      return disabled;
     }
   },
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
+    if (this.content.form) {
+      this.formValues = this.content.form.value;
+    }
   },
   methods: {
+    ready() {
+      this.$refs.confirm.$el.querySelector('button').focus();
+    },
     confirm() {
       this.modal.showModal = false;
-      this.$emit('modal-result', true);
+      const result = this.content.form ? this.formValues : true;
+      this.$emit('modal-result', result);
     },
     async cancel() {
       this.modal.showModal = false;
@@ -115,30 +154,36 @@ export default {
   justify-content: center;
 }
 
-/deep/ .apos-modal__inner {
+::v-deep .apos-modal__inner {
   top: auto;
   right: auto;
   bottom: auto;
   left: auto;
-  width: 430px;
+  width: 550px;
   height: auto;
   text-align: center;
 }
 
-/deep/ .apos-modal__overlay {
+::v-deep .apos-modal__overlay {
   .apos-modal + .apos-confirm & {
     display: block;
   }
 }
 
-/deep/ .apos-modal__body {
+::v-deep .apos-modal__body {
   padding: 60px;
+}
+
+::v-deep .apos-modal__body-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .apos-confirm__logo,
 .apos-confirm__custom-logo {
-  height: 40px;
-  margin-bottom: $spacing-base;
+  height: 35px;
+  margin-bottom: $spacing-double;
 }
 
 .apos-confirm__heading {
@@ -148,14 +193,31 @@ export default {
 }
 
 .apos-confirm__description {
-  @include type-large;
+  @include type-base;
+  max-width: 370px;
   line-height: var(--a-line-tallest);
+}
+
+.apos-confirm__note {
+  @include type-small;
+  margin-top: $spacing-double;
+  line-height: var(--a-line-tall);
+  max-width: 355px;
+  color: var(--a-base-2);
+}
+
+.apos-confirm__schema {
+  margin-top: $spacing-base;
+}
+
+::v-deep .apos-schema .apos-field {
+  margin-bottom: $spacing-base;
 }
 
 .apos-confirm__btns {
   display: flex;
   justify-content: center;
-  margin-top: 30px;
+  margin-top: 10px;
 }
 
 .apos-confirm__btn {

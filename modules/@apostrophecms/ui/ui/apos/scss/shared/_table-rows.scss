@@ -4,6 +4,10 @@
   padding: $cell-padding;
   border-bottom: 1px solid var(--a-base-8);
   box-sizing: border-box;
+  align-items: center;
+}
+.apos-tree__cell--contextMenu {
+  padding: 0;
 }
 
 // Let the title cell column grow.

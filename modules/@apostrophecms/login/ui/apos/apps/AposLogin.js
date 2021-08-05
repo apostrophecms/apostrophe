@@ -16,6 +16,14 @@ export default function() {
     await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/logout`, {});
     window.sessionStorage.setItem('aposStateChange', Date.now());
     window.sessionStorage.setItem('aposStateChangeSeen', '{}');
+    try {
+      await apos.http.get(location.href, {});
+    } catch (e) {
+      if (e.status === 404) {
+        location.assign('/');
+        return;
+      }
+    }
     location.reload();
   });
 };

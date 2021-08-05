@@ -1,0 +1,45 @@
+{% extends data.outerLayout %}
+
+{% import "fragment.html" as fragment %}
+
+{% block main %}
+--test1--
+{% render fragment.test('pos1', 'pos2') %}
+--endtest1--
+
+
+--test2--
+Above Fragment
+
+{% render fragment.test('pos1', 'pos2', kw2 = 'kw2', 'pos3') %}
+
+Below Fragment
+--endtest2--
+
+
+--test3--
+Above Call Fragment
+
+{% rendercall fragment.test('pos1', 'pos2', kw2 = 'kw2', 'pos3') %}
+  Start Call Body
+  {% component "fragment-page:test" with { text: 'called' } %}
+  End Call Body
+{% endrendercall %}
+
+Below Call Fragment
+--endtest3--
+
+
+--issue_3056_1--
+{% render fragment.listNumbers(1, third = 9) %}
+--endissue_3056_1--
+
+--issue_3056_2--
+{% render fragment.listNumbers(third = 9, 1) %}
+--endissue_3056_2--
+
+--issue_3102--
+{% render fragment.printNumbers(three = 3) %}
+--endissue_3102--
+
+{% endblock %}

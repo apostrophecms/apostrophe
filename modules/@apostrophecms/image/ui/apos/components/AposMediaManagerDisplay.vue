@@ -2,6 +2,7 @@
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
+        v-if="canEdit"
         :disabled="maxReached"
         :action="moduleOptions.action"
         :accept="accept"
@@ -12,7 +13,7 @@
       <div
         class="apos-media-manager-display__cell" v-for="item in items"
         :key="idFor(item)"
-        :class="{'is-selected': checked.includes(item._id)}"
+        :class="{'apos-is-selected': checked.includes(item._id)}"
       >
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
@@ -58,7 +59,7 @@
       placeholder. -->
       <div
         v-if="items.length === 0"
-        class="apos-media-manager-display__cell is-hidden"
+        class="apos-media-manager-display__cell apos-is-hidden"
         aria-hidden="true"
       >
         <button
@@ -81,6 +82,10 @@ export default {
     event: 'change'
   },
   props: {
+    canEdit: {
+      type: Boolean,
+      default: false
+    },
     maxReached: {
       type: Boolean,
       default: false
@@ -158,10 +163,10 @@ export default {
 
     },
     addDragClass(event) {
-      event.target.classList.add('is-hovering');
+      event.target.classList.add('apos-is-hovering');
     },
     removeDragClass(event) {
-      event.target.classList.remove('is-hovering');
+      event.target.classList.remove('apos-is-hovering');
     },
     idFor(item) {
       return `${item._id}-${cuid()}`;
@@ -192,7 +197,7 @@ export default {
     height: 100%;
     @include apos-transition();
 
-    &.is-hidden { visibility: hidden; }
+    &.apos-is-hidden { visibility: hidden; }
 
     &::before {
       content: '';
@@ -203,7 +208,7 @@ export default {
     }
 
     &:hover,
-    &.is-selected,
+    &.apos-is-selected,
     &:focus {
       .apos-media-manager-display__media {
         opacity: 1;
@@ -221,7 +226,7 @@ export default {
   }
 
   .apos-media-manager-display__cell:hover .apos-media-manager-display__checkbox,
-  .apos-media-manager-display__cell.is-selected .apos-media-manager-display__checkbox {
+  .apos-media-manager-display__cell.apos-is-selected .apos-media-manager-display__checkbox {
     opacity: 1;
   }
 
@@ -260,7 +265,7 @@ export default {
   .apos-media-manager-display__select:hover,
   .apos-media-manager-display__select:focus,
   // The button when selected
-  .apos-media-manager-display__cell.is-selected .apos-media-manager-display__select,
+  .apos-media-manager-display__cell.apos-is-selected .apos-media-manager-display__select,
   // The button when hovering on the checkbox
   .apos-media-manager-display__checkbox:hover ~ .apos-media-manager-display__select {
     border-color: var(--a-primary);

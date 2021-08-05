@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-// const cheerio = require('cheerio');
 
 let apos;
 

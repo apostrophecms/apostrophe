@@ -7,9 +7,13 @@
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')"
       />
-      <!-- TODO: Return this delete button when batch updates are added -->
+      <!-- TODO: Return this delete button when batch updates are added.
+        When we do that though, we should do it like we handle the other
+        batch operation events, not with extra event plumbing
+        percolating everywhere. We can still achieve a custom button
+        without that. -->
       <!-- <AposButton
-        label="Delete" @click="$emit('trash-click')"
+        label="Delete" @click="$emit('archive-click')"
         :icon-only="true" icon="delete-icon"
         type="outline"
       /> -->
@@ -97,7 +101,6 @@ export default {
     }
   },
   emits: [
-    'trash-click',
     'select-click',
     'filter',
     'search',
@@ -171,7 +174,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-manager-toolbar /deep/ .apos-field--search {
+  .apos-manager-toolbar ::v-deep .apos-field--search {
     width: 250px;
   }
 </style>

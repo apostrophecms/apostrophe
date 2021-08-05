@@ -1,3 +1,5 @@
+@use 'sass:math';
+
 $brand-red: #ea433a;
 $brand-gold: #cc9300;
 $brand-magenta: #b327bf;
@@ -5,8 +7,11 @@ $brand-blue: #66f;
 $brand-green: #00bf9a;
 
 $spacing-base: 10px;
+$spacing-half: math.div($spacing-base, 2);
+$spacing-three-quarters: math.div($spacing-base, 4) * 3;
 $spacing-double: $spacing-base * 2;
 $spacing-triple: $spacing-base * 3;
+$spacing-quadruple: $spacing-base * 4;
 
 $input-padding: $spacing-base * 1.5;
 $boolean-padding: $spacing-double;
@@ -15,12 +20,11 @@ $input-color-disabled: var(--a-base-4);
 
 @mixin apos-primary-mixin($color) {
   --a-primary: #{$color};
-  --a-primary-50: #{transparentize($color, 0.5)};
-  // stylelint-disable
-  --a-primary-button-hover: #{mix(black, $color, 10%)};
-  --a-primary-button-active: #{mix(black, $color, 15%)};
-  --a-primary-button-disabled: #{mix(white, $color, 40%)};
-  // stylelint-enable
+  --a-primary-transparent-50: #{transparentize($color, 0.5)};
+  --a-primary-transparent-10: #{transparentize($color, 0.9)};
+  --a-primary-dark-10: #{mix(#000, $color, 10%)};
+  --a-primary-dark-15: #{mix(#000, $color, 15%)};
+  --a-primary-light-40: #{mix(#FFF, $color, 40%)};
 }
 
 //Application Styles
@@ -48,6 +52,14 @@ $input-color-disabled: var(--a-base-4);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
   line-height: var(--a-line-base);
+}
+
+@mixin type-label {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-label);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
 }
 
 @mixin type-large {

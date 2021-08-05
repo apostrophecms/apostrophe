@@ -1,18 +1,19 @@
 <template>
-  <div class="apos-area-menu" :class="{'is-focused': groupIsFocused}">
+  <div class="apos-area-menu" :class="{'apos-is-focused': groupIsFocused}">
     <AposContextMenu
-      :disabled="disabled"
+      :disabled="isDisabled"
       :button="buttonOptions"
       v-bind="extendedContextMenuOptions"
       @open="menuOpen"
       @close="menuClose"
       ref="contextMenu"
+      :popover-modifiers="inContext ? ['z-index-in-context'] : []"
     >
       <ul class="apos-area-menu__wrapper">
         <li
           class="apos-area-menu__item"
           v-for="(item, itemIndex) in myMenu" :key="item.label"
-          :class="{'has-group': item.items}"
+          :class="{'apos-has-group': item.items}"
           :ref="`item-${itemIndex}`"
         >
           <dl v-if="item.items" class="apos-area-menu__group">
@@ -36,14 +37,14 @@
                 <span>{{ item.label }}</span>
                 <chevron-up-icon
                   class="apos-area-menu__group-chevron"
-                  :class="{'is-active': itemIndex === active}" :size="13"
+                  :class="{'apos-is-active': itemIndex === active}" :size="13"
                 />
               </button>
             </dt>
             <dd class="apos-area-menu__group-list" role="region">
               <ul
                 class="apos-area-menu__items apos-area-menu__items--accordion"
-                :class="{'is-active': active === itemIndex}"
+                :class="{'apos-is-active': active === itemIndex}"
                 :id="`${menuId}-group-${itemIndex}`"
                 :aria-labelledby="`${menuId}-trigger-${itemIndex}`"
                 :aria-expanded="active === itemIndex ? 'true' : 'false'"
@@ -102,13 +103,18 @@ export default {
     },
     maxReached: {
       type: Boolean
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'menu-close', 'menu-open', 'add' ],
   data() {
     return {
       active: 0,
-      groupIsFocused: false
+      groupIsFocused: false,
+      inContext: true
     };
   },
   computed: {
@@ -122,11 +128,15 @@ export default {
         icon: 'plus-icon',
         type: 'primary',
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],
-        iconSize: this.empty ? 20 : 11,
+        iconSize: this.empty ? 20 : 11
       };
     },
-    disabled() {
-      return this.maxReached;
+    isDisabled() {
+      let flag = this.disabled;
+      if (this.maxReached) {
+        flag = true;
+      }
+      return flag;
     },
     extendedContextMenuOptions() {
       const modifiers = [ 'unpadded' ];
@@ -167,6 +177,11 @@ export default {
     menuId() {
       return `areaMenu-${cuid()}`;
     }
+  },
+  mounted() {
+    // if this area is not in-context then it is assumed in a schema's modal and we need to bump
+    // the z-index of menus above them
+    this.inContext = !apos.util.closest(this.$el, '[data-apos-schema-area]');
   },
   methods: {
     menuClose(e) {
@@ -266,11 +281,11 @@ export default {
 
 <style lang="scss" scoped>
 
-.apos-area-menu.is-focused /deep/ .apos-context-menu__inner {
+.apos-area-menu.apos-is-focused ::v-deep .apos-context-menu__inner {
   border: 1px solid var(--a-base-4);
 }
 
-.apos-area-menu.is-focused /deep/ .apos-context-menu__tip-outline {
+.apos-area-menu.apos-is-focused ::v-deep .apos-context-menu__tip-outline {
   stroke: var(--a-base-4);
 }
 
@@ -295,7 +310,7 @@ export default {
 
   &:hover,
   &:focus {
-    & /deep/ .apos-area-menu__item-icon {
+    & ::v-deep .apos-area-menu__item-icon {
       color: var(--a-primary);
     }
   }
@@ -342,7 +357,7 @@ export default {
   transform: rotate(90deg);
 }
 
-.apos-area-menu__group-chevron.is-active {
+.apos-area-menu__group-chevron.apos-is-active {
   transform: rotate(180deg);
 }
 
@@ -351,7 +366,7 @@ export default {
   padding-bottom: 10px;
   margin: 10px 0;
 }
-.apos-area-menu__item:last-child.has-group .apos-area-menu__group {
+.apos-area-menu__item:last-child.apos-has-group .apos-area-menu__group {
   border-bottom: none;
   margin-bottom: 0;
 }
@@ -362,7 +377,7 @@ export default {
   @include apos-transition($duration:0.3s);
 }
 
-.apos-area-menu__items--accordion.is-active {
+.apos-area-menu__items--accordion.apos-is-active {
   transition-delay: 0.25s;
   max-height: 20rem;
 }
