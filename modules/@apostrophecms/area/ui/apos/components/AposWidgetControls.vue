@@ -8,42 +8,47 @@
         v-bind="upButton"
         :disabled="first || disabled"
         @click="$emit('up')"
+        :tooltip="(!disabled && !first) ? 'Nudge Up' : null"
       />
-      <!-- TODO later -->
-      <!-- <AposButton v-bind="dragButton" /> -->
       <AposButton
         v-bind="editButton"
         :disabled="disabled"
         v-if="!foreign && !options.contextual"
         @click="$emit('edit')"
+        tooltip="Edit Widget"
       />
       <AposButton
         v-bind="cutButton"
         v-if="!foreign"
         @click="$emit('cut')"
+        tooltip="Cut"
       />
       <AposButton
         v-bind="copyButton"
         v-if="!foreign"
         @click="$emit('copy')"
+        tooltip="Copy"
       />
       <AposButton
         v-if="!foreign"
         :disabled="disabled || maxReached"
         v-bind="cloneButton"
         @click="$emit('clone')"
+        tooltip="Duplicate"
       />
       <AposButton
         v-if="!foreign"
         :disabled="disabled"
         v-bind="removeButton"
         @click="$emit('remove')"
+        tooltip="Delete"
       />
       <AposButton
         v-if="!foreign"
         v-bind="downButton"
         :disabled="last || disabled"
         @click="$emit('down')"
+        :tooltip="(!disabled && !last) ? 'Nudge Down' : null"
       />
     </AposButtonGroup>
   </div>
@@ -87,14 +92,16 @@ export default {
         iconOnly: true,
         icon: 'plus-icon',
         type: 'group',
-        modifiers: [ 'tiny' ],
-        role: 'menuitem'
+        modifiers: [ 'small' ],
+        role: 'menuitem',
+        class: 'apos-area-modify-controls__button',
+        iconSize: 16
       }
     };
   },
   computed: {
     groupModifiers() {
-      const mods = [ 'vertical', 'theme' ];
+      const mods = [ 'vertical' ];
 
       if (this.foreign) {
         mods.push('invert');
@@ -106,23 +113,16 @@ export default {
       return {
         ...this.buttonDefaults,
         label: 'Nudge Up',
-        icon: 'chevron-up-icon'
+        icon: 'arrow-up-icon'
       };
     },
     downButton() {
       return {
         ...this.buttonDefaults,
         label: 'Nudge down',
-        icon: 'chevron-down-icon'
+        icon: 'arrow-down-icon'
       };
     },
-    // dragButton() {
-    //   return {
-    //     ...this.buttonDefaults,
-    //     label: 'Drag',
-    //     icon: 'drag-icon'
-    //   };
-    // },
     cloneButton() {
       return {
         ...this.buttonDefaults,
@@ -134,7 +134,7 @@ export default {
       return {
         ...this.buttonDefaults,
         label: 'Remove',
-        icon: 'delete-icon'
+        icon: 'trash-can-outline-icon'
       };
     },
     editButton() {
@@ -148,14 +148,14 @@ export default {
       return {
         ...this.buttonDefaults,
         label: 'Cut',
-        icon: 'scissors-cutting-icon'
+        icon: 'content-cut-icon'
       };
     },
     copyButton() {
       return {
         ...this.buttonDefaults,
         label: 'Copy',
-        icon: 'clipboard-plus-icon'
+        icon: 'clipboard-plus-outline-icon'
       };
     }
   }
