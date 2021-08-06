@@ -340,6 +340,27 @@ module.exports = {
           }
           return self.publish(req, draft);
         },
+        ':_id/localize': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          const toLocale = self.apos.i18n.sanitizeLocaleName(req.body.toLocale);
+          if ((!toLocale) || (toLocale === req.locale)) {
+            throw self.apos.error('invalid');
+          }
+          return self.localize(req, draft, toLocale);
+        },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
           const aposDocId = _id.replace(/:.*$/, '');
@@ -547,6 +568,7 @@ database.`);
           for (const item of self.parked) {
             await self.implementParkOne(req, item);
           }
+          return self.emit('afterParkAll');
         }
       }
     };
@@ -1278,6 +1300,12 @@ database.`);
       async publish(req, draft, options = {}) {
         const manager = self.apos.doc.getManager(draft.type);
         return manager.publish(req, draft, options);
+      },
+      // Localize the draft, i.e. copy it to another locale, creating
+      // that locale's draft for the first time if necessary.
+      async localize(req, draft, toLocale) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.localize(req, draft, toLocale);
       },
       // Reverts the given draft to the most recent publication.
       //

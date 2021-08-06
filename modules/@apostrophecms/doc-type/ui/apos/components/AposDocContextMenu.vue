@@ -336,7 +336,7 @@ export default {
       apos.bus.$emit('admin-menu-click', {
         itemName: '@apostrophecms/i18n:localize',
         props: {
-          id: doc._id
+          doc
         }
       });
     },

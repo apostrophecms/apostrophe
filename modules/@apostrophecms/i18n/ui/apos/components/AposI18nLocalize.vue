@@ -124,9 +124,9 @@ export default {
   name: 'AposI18nLocalize',
   components: { InformationIcon },
   props: {
-    id: {
+    doc: {
       required: true,
-      type: String
+      type: Object
     }
   },
   emits: [ 'safe-close', 'modal-result' ],
@@ -153,6 +153,9 @@ export default {
   computed: {
     moduleOptions() {
       return window.apos.i18n;
+    },
+    action() {
+      return this.doc.slug.startsWith('/') ? apos.page.action : apos.modules[this.doc.type].action;
     }
   },
   async mounted() {
