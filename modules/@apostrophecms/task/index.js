@@ -211,6 +211,7 @@ module.exports = {
         const { role, ..._properties } = options || {};
         Object.assign(req, _properties);
         self.apos.modules['@apostrophecms/express'].addAbsoluteUrlsToReq(req);
+        self.apos.i18n.setPrefix(req);
         return req;
       },
 

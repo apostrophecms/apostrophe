@@ -12,10 +12,12 @@ const config = {
             label: 'English'
           },
           'en-CA': {
-            label: 'Canadian English'
+            label: 'Canadian English',
+            prefix: '/ca/en'
           },
           'en-FR': {
-            label: 'Canadian French'
+            label: 'Canadian French',
+            prefix: '/ca/fr'
           }
         }
       }
@@ -38,14 +40,12 @@ describe('Locales', function() {
     apos = await t.create(config);
 
     const homes = await apos.doc.db.find({ parkedId: 'home' }).toArray();
-    // Home page in default locale is published, others start out draft only
-    assert(homes.length === 4);
+    // Draft and published
+    assert(homes.length === 6);
     const archives = await apos.doc.db.find({ parkedId: 'archive' }).toArray();
-    // Archive page in default locale is published, others start out draft only
-    assert(archives.length === 4);
+    assert(archives.length === 6);
     const globals = await apos.doc.db.find({ type: '@apostrophecms/global' }).toArray();
-    // Global doc in default locale is published, others start out draft only
-    assert(globals.length === 4);
+    assert(globals.length === 6);
   });
 
   it('should not replicate redundantly on a second startup in same db', async function() {
@@ -55,14 +55,12 @@ describe('Locales', function() {
     });
 
     const homes = await apos2.doc.db.find({ parkedId: 'home' }).toArray();
-    // Home page in default locale is published, others start out draft only
-    assert(homes.length === 4);
+    // Draft and published
+    assert(homes.length === 6);
     const archives = await apos2.doc.db.find({ parkedId: 'archive' }).toArray();
-    // Archive page in default locale is published, others start out draft only
-    assert(archives.length === 4);
+    assert(archives.length === 6);
     const globals = await apos2.doc.db.find({ type: '@apostrophecms/global' }).toArray();
-    // Global doc in default locale is published, others start out draft only
-    assert(globals.length === 4);
+    assert(globals.length === 6);
 
     await apos2.destroy();
   });
@@ -132,8 +130,39 @@ describe('Locales', function() {
     const versions = await apos.doc.db.find({ aposDocId: child.aposDocId }).toArray();
     assert(versions.length === 2);
     assert(!versions.find(version => version.title !== 'Child Page'));
-    assert(versions.find(version => version.aposLocale === 'en:draft'));
-    assert(versions.find(version => version.aposLocale === 'en-CA:draft'));
+    const reqEn = apos.task.getReq({
+      locale: 'en',
+      mode: 'draft'
+    });
+    const en = await apos.doc.find(reqEn, { slug: '/child-page' }).toObject();
+    assert(en);
+    assert.strictEqual(en._url, '/child-page');
+    const reqEnCA = apos.task.getReq({
+      locale: 'en-CA',
+      mode: 'draft'
+    });
+    const enCA = await apos.doc.find(reqEnCA, { slug: '/child-page' }).toObject();
+    assert(enCA);
+    assert.strictEqual(enCA._url, '/ca/en/child-page');
+    // Distinguish the content in this locale
+    enCA.title = 'Child Page, Toronto Style';
+    assert(apos.page.update(reqEnCA, enCA));
+    // Not published yet
+    try {
+      await apos.http.get('/ca/en/child-page', {});
+      assert(false);
+    } catch (e) {
+      assert(e.status === 404);
+    }
+    await apos.page.publish(reqEnCA, enCA);
+    // Now it should work
+    const childPage = await apos.http.get('/ca/en/child-page', {});
+    assert(childPage.includes('<title>Child Page, Toronto Style</title>'));
+    assert(childPage.includes('"/ca/en/">Home: /'));
+    assert(childPage.includes('"/ca/en/child-page">Tab: /child-page'));
+    // And the home page should be reachable
+    const home = await apos.http.get('/ca/en/');
+    assert(home);
   });
 
 });

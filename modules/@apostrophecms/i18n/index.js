@@ -84,12 +84,27 @@ module.exports = {
         const localeOptions = self.locales[locale];
         if (localeOptions.prefix) {
           // Remove locale prefix so URL parsing can proceed normally from here
-          if (
-            (req.path.substring(0, localeOptions.prefix.length + 1) === localeOptions.prefix + '/') ||
-            (req.path === localeOptions.prefix)
-          ) {
+          if (req.path === localeOptions.prefix) {
+            // Add / for home page
+            return res.redirect(`${req.url}/`);
+          }
+          if (req.path.substring(0, localeOptions.prefix.length + 1) === localeOptions.prefix + '/') {
             req.path = req.path.replace(localeOptions.prefix, '');
             req.url = req.url.replace(localeOptions.prefix, '');
+            const superRedirect = res.redirect;
+            res.redirect = function (status, url) {
+              if (arguments.length === 1) {
+                url = status;
+                status = 302;
+              }
+              if (!url.match(/^[a-zA-Z]+:/)) {
+                // We don't need all of req.prefix here because
+                // the global site prefix middleware already extended
+                // res.redirect once
+                url = localeOptions.prefix + url;
+              }
+              return superRedirect.call(this, status, url);
+            };
           }
         }
         let mode;
@@ -100,7 +115,7 @@ module.exports = {
         }
         req.locale = locale;
         req.mode = mode;
-        req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
+        self.setPrefix(req);
         if ((req.mode === 'draft') && (!self.apos.permission.can(req, 'view-draft'))) {
           return res.status(403).send({
             name: 'forbidden'
@@ -273,6 +288,9 @@ module.exports = {
           self.getComponentName('localizeModal', 'AposI18nLocalize'),
           { moduleName: self.__meta.name }
         );
+      },
+      setPrefix(req) {
+        req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
       }
     };
   }

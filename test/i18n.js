@@ -15,6 +15,14 @@ describe('static i18n', function() {
     apos = await t.create({
       root: module,
       modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: {},
+              fr: {}
+            }
+          }
+        },
         example: {
           options: {
             l10n: {}

@@ -364,8 +364,8 @@ module.exports = {
       },
 
       // Patch Express so that all calls to `res.redirect` honor
-      // the global `prefix` option without the need to make each
-      // call "prefix-aware"
+      // the global `prefix` option and locale prefix without the need to
+      // make each call "prefix-aware"
       prefix() {
         if (self.apos.prefix) {
           // Use middleware to patch the redirect method to accommodate
@@ -631,7 +631,7 @@ module.exports = {
 
       addAbsoluteUrlsToReq(req) {
         req.baseUrl = self.apos.baseUrl || self.options.baseUrl || req.protocol + '://' + req.get('Host');
-        req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}/${self.apos.prefix}`;
+        req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));
       },
