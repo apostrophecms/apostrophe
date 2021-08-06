@@ -9,6 +9,7 @@
 * Fixes the `toolbarToAllowedStyles` method in the rich text widget, which was not returning any configuration.
 * Fixes the broken text alignment in rich text widgets.
 * Adds a missing npm dependency on `chokidar`, which Apostrophe and Nunjucks use for template refreshes. In most environments this worked anyway due to an indirect dependency via the `sass` module, but for stability Apostrophe should depend directly on any npm module it uses.
+* Fixes the display of inline range inputs, notably broken when using Palette
 
 ## 3.1.3 - 2021-07-16
 
