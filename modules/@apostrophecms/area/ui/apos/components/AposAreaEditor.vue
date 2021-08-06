@@ -276,11 +276,21 @@ export default {
       ];
     },
     async cut(i) {
-      this.copy(i);
+      apos.area.widgetClipboard.set(this.next[i]);
       await this.remove(i);
+      apos.notify('Widget cut to clipboard', {
+        type: 'success',
+        icon: 'content-cut-icon',
+        dismiss: true
+      });
     },
     async copy(i) {
       apos.area.widgetClipboard.set(this.next[i]);
+      apos.notify('Widget copied to clipboard', {
+        type: 'success',
+        icon: 'content-copy-icon',
+        dismiss: true
+      });
     },
     async edit(i) {
       if (this.foreign) {

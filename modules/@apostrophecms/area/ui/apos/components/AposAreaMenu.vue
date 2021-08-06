@@ -12,7 +12,8 @@
       <ul class="apos-area-menu__wrapper">
         <li
           class="apos-area-menu__item"
-          v-for="(item, itemIndex) in myMenu" :key="item.label"
+          v-for="(item, itemIndex) in myMenu"
+          :key="item.type ? `${item.type}_${item.label}` : item.label"
           :class="{'apos-has-group': item.items}"
           :ref="`item-${itemIndex}`"
         >
@@ -161,17 +162,23 @@ export default {
     },
     myMenu() {
       const clipboard = apos.area.widgetClipboard.get();
+      const menu = [ ...this.contextMenuOptions.menu ];
       if (clipboard) {
         const widget = clipboard;
-        const matchingChoice = this.contextMenuOptions.menu.find(option => option.name === widget.type);
+        const matchingChoice = menu.find(option => option.name === widget.type);
         if (matchingChoice) {
-          return this.composeGroups(widget, matchingChoice);
+          menu.unshift({
+            type: 'clipboard',
+            ...matchingChoice,
+            label: `Paste  ${matchingChoice.label}`,
+            clipboard: widget
+          });
         }
       }
       if (this.groupedMenus) {
-        return this.composeGroups();
+        return this.composeGroups(menu);
       } else {
-        return this.contextMenuOptions.menu;
+        return menu;
       }
     },
     menuId() {
@@ -206,25 +213,14 @@ export default {
     groupBlurred() {
       this.groupIsFocused = false;
     },
-    composeGroups(clipboard, matchingChoice) {
+    composeGroups(menu) {
       const ungrouped = {
         label: 'Ungrouped Widgets',
         items: []
       };
       const myMenu = [];
-      if (clipboard) {
-        myMenu.push({
-          label: 'Clipboard Widget',
-          items: [
-            {
-              ...matchingChoice,
-              clipboard
-            }
-          ]
-        });
-      }
 
-      this.contextMenuOptions.menu.forEach((item) => {
+      menu.forEach((item) => {
         if (!item.items) {
           ungrouped.items.push(item);
         } else {
@@ -302,10 +298,9 @@ export default {
 .apos-area-menu__button {
   @include apos-button-reset();
   @include type-base;
-  display: flex;
+  box-sizing: border-box;
   width: 100%;
   padding: 5px 20px;
-  align-items: center;
   color: var(--a-base-1);
 
   &:hover,
@@ -338,6 +333,7 @@ export default {
 
 .apos-area-menu__group-label {
   @include apos-button-reset();
+  box-sizing: border-box;
   display: flex;
   width: 100%;
   justify-content: space-between;
