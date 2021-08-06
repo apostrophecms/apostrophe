@@ -131,8 +131,6 @@ export default function() {
           return klona(this.widgetClipboard);
         },
         onStorage() {
-          // When local storage changes, dump the list to
-          // the console.
           const contents = window.localStorage.getItem('aposWidgetClipboard');
           if (contents) {
             this.widgetClipboard = JSON.parse(contents);
