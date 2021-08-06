@@ -125,6 +125,15 @@ module.exports = {
             {
               action: 'edit',
               type: self.name
+            },
+            {
+              icon: 'cog-icon',
+              contextUtility: true,
+              toggle: true,
+              tooltip: {
+                activate: 'Open Global Site Settings',
+                deactivate: 'Close Global Site Settings'
+              }
             }
           );
         }
