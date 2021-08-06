@@ -4,31 +4,24 @@
     class="apos-admin-bar__control-set apos-admin-bar__control-set--context-controls"
     name="flip"
   >
-    <!-- need a tooltip even on a disabled button -->
-    <div
-      :key="'undo'"
-      v-tooltip="undoTooltips.undo"
-    >
-      <AposButton
-        :disabled="patchesSinceLoaded.length === 0"
-        type="subtle" :modifiers="['small', 'no-motion']"
-        label="Undo" class="apos-admin-bar__context-button"
-        icon="undo-icon" :icon-only="true"
-        @click="undo"
-      />
-    </div>
-    <div
-      :key="'redo'"
-      v-tooltip="undoTooltips.redo"
-    >
-      <AposButton
-        :disabled="undone.length === 0"
-        type="subtle" :modifiers="['small', 'no-motion']"
-        label="Redo" class="apos-admin-bar__context-button"
-        icon="redo-icon" :icon-only="true"
-        @click="redo"
-      />
-    </div>
+    <AposButton
+      key="undo"
+      :tooltip="undoTooltips.undo"
+      :disabled="patchesSinceLoaded.length === 0"
+      type="subtle" :modifiers="['small', 'no-motion']"
+      label="Undo" class="apos-admin-bar__context-button"
+      icon="undo-icon" :icon-only="true"
+      @click="undo"
+    />
+    <AposButton
+      key="redo"
+      :tooltip="undoTooltips.redo"
+      :disabled="undone.length === 0"
+      type="subtle" :modifiers="['small', 'no-motion']"
+      label="Redo" class="apos-admin-bar__context-button"
+      icon="redo-icon" :icon-only="true"
+      @click="redo"
+    />
     <TheAposSavingIndicator
       :key="'status'"
       :retrying="retrying"
@@ -90,3 +83,8 @@ export default {
   }
 };
 </script>
+<style lang="scss" scoped>
+  ::v-deep .apos-admin-bar__context-button.apos-button__wrapper {
+    display: flex;
+  }
+</style>
