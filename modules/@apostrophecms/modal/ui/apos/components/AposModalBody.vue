@@ -1,12 +1,15 @@
 <template>
   <div class="apos-modal__body">
     <div class="apos-modal__body-inner">
-      <div v-if="hasHeader" class="apos-modal__body-header">
+      <div v-if="hasSlot('bodyHeader')" class="apos-modal__body-header">
         <slot name="bodyHeader" />
       </div>
       <div class="apos-modal__body-main">
         <slot name="bodyMain" />
       </div>
+    </div>
+    <div v-if="hasSlot('footer')" class="apos-modal__body-footer">
+      <slot name="footer" />
     </div>
   </div>
 </template>
@@ -14,30 +17,42 @@
 <script>
 export default {
   name: 'AposModalBody',
-  computed: {
-    hasHeader() {
-      return !!this.$slots.bodyHeader;
+  methods: {
+    hasSlot(name) {
+      return !!this.$slots[name];
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-modal__body {
-    overflow-y: auto;
-    padding: 20px;
-  }
+.apos-modal__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
 
-  .apos-modal__main--no-rails .apos-modal__body {
-    padding: 20px;
-  }
+.apos-modal__body-inner {
+  overflow-y: auto;
+  padding: 20px;
+}
 
-  .apos-modal__body-header {
-    margin-bottom: 20px;
-  }
+.apos-modal__main--no-rails .apos-modal__body {
+  padding: 20px;
+}
 
-  // TODO responsibilty of this setting might change
-  .apos-modal__body-main .apos-field {
-    margin-bottom: 40px;
-  }
+.apos-modal__body-header {
+  margin-bottom: 20px;
+}
+
+.apos-modal__body-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+// TODO responsibilty of this setting might change
+.apos-modal__body-main .apos-field {
+  margin-bottom: 40px;
+}
 </style>
