@@ -1706,8 +1706,7 @@ module.exports = {
           after(results) {
             for (const result of results) {
               if ((!result.archived) && result.slug && self.apos.page.isPage(result)) {
-                const url = self.apos.page.getBaseUrl(query.req);
-                result._url = url + self.apos.prefix + result.slug;
+                result._url = `${query.req.prefix}/${result.slug}`;
               }
             }
           }

@@ -438,7 +438,7 @@ export default {
         if (e.action === 'delete') {
           if (!this.contextStack.length) {
             // With the current page gone, we need to move to safe ground
-            location.assign(`${window.apos.prefix}/`);
+            location.assign(`${window.apos.reqPrefix}/`);
           }
         } else {
           this.context = await apos.http.get(`${this.action}/${this.context._id}`, {

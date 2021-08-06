@@ -79,7 +79,18 @@ module.exports = {
         if (self.isValidLocale(req.query.aposLocale)) {
           locale = req.query.aposLocale;
         } else {
-          locale = self.sanitizeLocaleName(req.session.aposLocale) || self.defaultLocale;
+          locale = self.sanitizeLocaleName(req.session.aposLocale) || self.matchLocale(req);
+        }
+        const localeOptions = self.locales[locale];
+        if (localeOptions.prefix) {
+          // Remove locale prefix so URL parsing can proceed normally from here
+          if (
+            (req.path.substring(0, localeOptions.prefix.length + 1) === localeOptions.prefix + '/') ||
+            (req.path === localeOptions.prefix)
+          ) {
+            req.path = req.path.replace(localeOptions.prefix, '');
+            req.url = req.url.replace(localeOptions.prefix, '');
+          }
         }
         let mode;
         if (validModes.includes(req.query.aposMode)) {
@@ -89,6 +100,7 @@ module.exports = {
         }
         req.locale = locale;
         req.mode = mode;
+        req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
         if ((req.mode === 'draft') && (!self.apos.permission.can(req, 'view-draft'))) {
           return res.status(403).send({
             name: 'forbidden'
@@ -154,6 +166,40 @@ module.exports = {
       },
       isValidLocale(locale) {
         return locale && has(self.locales, locale);
+      },
+      // Return the best matching locale for the request based on the hostname
+      // and path prefix. If available the first locale matching both
+      // hostname and prefix is returned, otherwise the first matching locale
+      // that specifies only a hostname or only a prefix. If no matches are
+      // possible the default locale is returned.
+      matchLocale(req) {
+        const hostname = (req.get('Host') || '').split(':')[0];
+        let best = false;
+        for (const [ name, options] of Object.entries(self.locales)) {
+          const matchedHostname = options.hostname ? (hostname === options.hostname) : null;
+          const matchedPrefix = options.prefix ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/')) : null;
+          if (options.hostname && options.prefix) {
+            if (matchedHostname && matchedPrefix) {
+              // Best possible match
+              return name;
+            } else {
+              // Didn't match both, so not a candidate
+            }
+          } else if (options.hostname) {
+            if (matchedHostname) {
+              if (!best) {
+                best = name;
+              }
+            }
+          } else if (options.prefix) {
+            if (matchedPrefix) {
+              if (!best) {
+                best = name;
+              }
+            }
+          }
+        }
+        return best || self.defaultLocale;
       },
       // Infer `req.locale` and `req.mode` from `_id` if they were
       // not set already by explicit query parameters. Conversely,

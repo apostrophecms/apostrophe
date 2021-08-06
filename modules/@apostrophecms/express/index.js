@@ -631,7 +631,7 @@ module.exports = {
 
       addAbsoluteUrlsToReq(req) {
         req.baseUrl = self.apos.baseUrl || self.options.baseUrl || req.protocol + '://' + req.get('Host');
-        req.baseUrlWithPrefix = req.baseUrl + self.apos.prefix;
+        req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}/${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));
       },
