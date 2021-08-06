@@ -13,7 +13,7 @@
         <li
           class="apos-area-menu__item"
           v-for="(item, itemIndex) in myMenu"
-          :key="(item.type + '_' || '') + item.label"
+          :key="item.type ? `${item.type}_${item.label}` : item.label"
           :class="{'apos-has-group': item.items}"
           :ref="`item-${itemIndex}`"
         >
