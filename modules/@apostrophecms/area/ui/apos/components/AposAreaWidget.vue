@@ -75,6 +75,8 @@
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
+          @cut="$emit('cut', i);"
+          @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
         />
@@ -196,7 +198,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'add', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
   data() {
     const initialState = {
       controls: {

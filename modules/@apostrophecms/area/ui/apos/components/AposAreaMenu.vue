@@ -12,7 +12,8 @@
       <ul class="apos-area-menu__wrapper">
         <li
           class="apos-area-menu__item"
-          v-for="(item, itemIndex) in myMenu" :key="item.label"
+          v-for="(item, itemIndex) in myMenu"
+          :key="item.type ? `${item.type}_${item.label}` : item.label"
           :class="{'apos-has-group': item.items}"
           :ref="`item-${itemIndex}`"
         >
@@ -56,7 +57,7 @@
                   :ref="`child-${index}-${childIndex}`"
                 >
                   <AposAreaMenuItem
-                    @click="add(child.name)"
+                    @click="add(child)"
                     :item="child"
                     :tabbable="itemIndex === active"
                     @up="switchItem(`child-${itemIndex}-${childIndex - 1}`, -1)"
@@ -68,7 +69,7 @@
           </dl>
           <AposAreaMenuItem
             v-else
-            @click="add(item.name)"
+            @click="add(item)"
             :item="item"
             @up="switchItem(`item-${itemIndex - 1}`, -1)"
             @down="switchItem(`item-${itemIndex + 1}`, 1)"
@@ -160,10 +161,24 @@ export default {
       return flag;
     },
     myMenu() {
+      const clipboard = apos.area.widgetClipboard.get();
+      const menu = [ ...this.contextMenuOptions.menu ];
+      if (clipboard) {
+        const widget = clipboard;
+        const matchingChoice = menu.find(option => option.name === widget.type);
+        if (matchingChoice) {
+          menu.unshift({
+            type: 'clipboard',
+            ...matchingChoice,
+            label: `Paste  ${matchingChoice.label}`,
+            clipboard: widget
+          });
+        }
+      }
       if (this.groupedMenus) {
-        return this.composeGroups();
+        return this.composeGroups(menu);
       } else {
-        return this.contextMenuOptions.menu;
+        return menu;
       }
     },
     menuId() {
@@ -182,14 +197,14 @@ export default {
     menuOpen(e) {
       this.$emit('menu-open', e);
     },
-    async add(name) {
+    async add(item) {
       // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
       // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
       // as it is often the logical experience (not always, see tag menus and filters)
       this.$refs.contextMenu.isOpen = false;
       this.$emit('add', {
-        index: this.index,
-        name
+        ...item,
+        index: this.index
       });
     },
     groupFocused() {
@@ -198,14 +213,14 @@ export default {
     groupBlurred() {
       this.groupIsFocused = false;
     },
-    composeGroups() {
+    composeGroups(menu) {
       const ungrouped = {
         label: 'Ungrouped Widgets',
         items: []
       };
       const myMenu = [];
 
-      this.contextMenuOptions.menu.forEach((item) => {
+      menu.forEach((item) => {
         if (!item.items) {
           ungrouped.items.push(item);
         } else {
@@ -283,10 +298,9 @@ export default {
 .apos-area-menu__button {
   @include apos-button-reset();
   @include type-base;
-  display: flex;
+  box-sizing: border-box;
   width: 100%;
   padding: 5px 20px;
-  align-items: center;
   color: var(--a-base-1);
 
   &:hover,
@@ -319,6 +333,7 @@ export default {
 
 .apos-area-menu__group-label {
   @include apos-button-reset();
+  box-sizing: border-box;
   display: flex;
   width: 100%;
   justify-content: space-between;
