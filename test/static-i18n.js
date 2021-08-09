@@ -19,7 +19,9 @@ describe('static i18n', function() {
           options: {
             locales: {
               en: {},
-              fr: {}
+              fr: {
+                prefix: '/fr'
+              }
             }
           }
         },
