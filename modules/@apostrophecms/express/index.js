@@ -630,7 +630,10 @@ module.exports = {
       // set the `baseUrl` option for Apostrophe.
 
       addAbsoluteUrlsToReq(req) {
-        req.baseUrl = self.apos.baseUrl || self.options.baseUrl || req.protocol + '://' + req.get('Host');
+        // For bc, req.baseUrl is always set, to a best guess if baseUrl is not configured.
+        // When falling back, req.hostname is used if trustProxy is active, otherwise the
+        // Host header to allow port numbers in dev
+        req.baseUrl = self.apos.page.getBaseUrl(req) || ((self.options.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : (req.protocol + '://' + req.get('Host')));
         req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));

@@ -28,7 +28,7 @@ describe('static i18n', function() {
             l10n: {}
           }
         },
-        'apostrophe-fr': {
+        'apos-fr': {
           options: {
             l10n: {
               ns: 'apostrophe'

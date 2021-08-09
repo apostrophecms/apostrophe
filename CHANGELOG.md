@@ -16,6 +16,10 @@
 * There is a backend route to accept a new locale on switch, on refresh you currently have a 404, but we'll fix this when we do replication in content localization.
 * We ditched the i18next middleware in favor of simpler i18next-based middleware better for our needs.
 
+### Fixes
+
+* `req.hostname` now works as expected when `trustProxy: true` is passed to the `@apostrophecms/express` module.
+
 ## 3.1.2 - 2021-07-14
 
 ### Changes

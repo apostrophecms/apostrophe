@@ -18,8 +18,18 @@ const config = {
           'en-FR': {
             label: 'Canadian French',
             prefix: '/ca/fr'
+          },
+          'es-MX': {
+            label: 'Mexico',
+            hostname: 'example.mx'
           }
         }
+      }
+    },
+    '@apostrophecms/express': {
+      options: {
+        // Allows us to inject an X-Forwarded-Host header for test purposes
+        trustProxy: true
       }
     },
     'default-page': {}
@@ -41,11 +51,11 @@ describe('Locales', function() {
 
     const homes = await apos.doc.db.find({ parkedId: 'home' }).toArray();
     // Draft and published
-    assert(homes.length === 6);
+    assert(homes.length === 8);
     const archives = await apos.doc.db.find({ parkedId: 'archive' }).toArray();
-    assert(archives.length === 6);
+    assert(archives.length === 8);
     const globals = await apos.doc.db.find({ type: '@apostrophecms/global' }).toArray();
-    assert(globals.length === 6);
+    assert(globals.length === 8);
   });
 
   it('should not replicate redundantly on a second startup in same db', async function() {
@@ -56,11 +66,11 @@ describe('Locales', function() {
 
     const homes = await apos2.doc.db.find({ parkedId: 'home' }).toArray();
     // Draft and published
-    assert(homes.length === 6);
+    assert(homes.length === 8);
     const archives = await apos2.doc.db.find({ parkedId: 'archive' }).toArray();
-    assert(archives.length === 6);
+    assert(archives.length === 8);
     const globals = await apos2.doc.db.find({ type: '@apostrophecms/global' }).toArray();
-    assert(globals.length === 6);
+    assert(globals.length === 8);
 
     await apos2.destroy();
   });
@@ -163,6 +173,29 @@ describe('Locales', function() {
     // And the home page should be reachable
     const home = await apos.http.get('/ca/en/');
     assert(home);
+  });
+
+  it('Mexico locale should be received when hostname is correct', async() => {
+    const reqEsMX = apos.task.getReq({
+      locale: 'es-MX',
+      mode: 'draft'
+    });
+    let esMX = await apos.doc.find(reqEsMX, { slug: '/' }).toObject();
+    assert(esMX);
+    assert.strictEqual(esMX._url, '/');
+    // Distinguish the content in this locale
+    esMX.title = 'Pagina De Inicio';
+    esMX = await apos.page.update(reqEsMX, esMX);
+    await apos.page.publish(reqEsMX, esMX);
+    // Without hostname, we default to English
+    const homePage = await apos.http.get('/', {});
+    assert(homePage.includes('<title>Home</title>'));
+    const homePageEsMX = await apos.http.get('/', {
+      headers: {
+        'X-Forwarded-Host': 'example.mx'
+      }
+    });
+    assert(homePageEsMX.includes('<title>Pagina De Inicio</title>'));
   });
 
 });

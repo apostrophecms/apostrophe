@@ -188,9 +188,9 @@ module.exports = {
       // that specifies only a hostname or only a prefix. If no matches are
       // possible the default locale is returned.
       matchLocale(req) {
-        const hostname = (req.get('Host') || '').split(':')[0];
+        const hostname = req.hostname;
         let best = false;
-        for (const [ name, options] of Object.entries(self.locales)) {
+        for (const [ name, options ] of Object.entries(self.locales)) {
           const matchedHostname = options.hostname ? (hostname === options.hostname) : null;
           const matchedPrefix = options.prefix ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/')) : null;
           if (options.hostname && options.prefix) {
