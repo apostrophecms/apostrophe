@@ -7,6 +7,8 @@
 
 const i18next = require('i18next');
 const fs = require('fs');
+const _ = require('lodash');
+const { stripIndent } = require('common-tags');
 
 const apostropheI18nDebugPlugin = {
   type: 'postProcessor',
@@ -79,7 +81,7 @@ module.exports = {
         if (self.isValidLocale(req.query.aposLocale)) {
           locale = req.query.aposLocale;
         } else {
-          locale = self.sanitizeLocaleName(req.session.aposLocale) || self.matchLocale(req);
+          locale = self.matchLocale(req);
         }
         const localeOptions = self.locales[locale];
         if (localeOptions.prefix) {
@@ -115,12 +117,13 @@ module.exports = {
         }
         req.locale = locale;
         req.mode = mode;
-        self.setPrefix(req);
+        self.setPrefixUrls(req);
         if ((req.mode === 'draft') && (!self.apos.permission.can(req, 'view-draft'))) {
           return res.status(403).send({
             name: 'forbidden'
           });
         }
+        _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));
         return next();
       },
       localize(req, res, next) {
@@ -139,11 +142,27 @@ module.exports = {
       post: {
         async locale(req) {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
+          const _id = self.apos.launder.id(req.body.contextDocId);
+          let doc;
+          const localeReq = {
+            ...req,
+            locale: sanitizedLocale,
+            // A getter on the original, so won't clone on its own
+            protocol: req.protocol
+          };
+          self.apos.i18n.setPrefixUrls(localeReq);
+          if (_id) {
+            doc = await self.apos.doc.find(localeReq, {
+              aposDocId: _id.split(':')[0]
+            }).toObject();
+          }
           if (!sanitizedLocale) {
             throw self.apos.error('invalid');
           }
-          req.session.aposLocale = sanitizedLocale;
-          return {};
+          const result = {
+            redirectTo: doc && doc._url
+          };
+          return result;
         }
       }
     };
@@ -191,7 +210,7 @@ module.exports = {
         const hostname = req.hostname;
         let best = false;
         for (const [ name, options ] of Object.entries(self.locales)) {
-          const matchedHostname = options.hostname ? (hostname === options.hostname) : null;
+          const matchedHostname = options.hostname ? (hostname === options.hostname.split(':')[0]) : null;
           const matchedPrefix = options.prefix ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/')) : null;
           if (options.hostname && options.prefix) {
             if (matchedHostname && matchedPrefix) {
@@ -269,11 +288,28 @@ module.exports = {
         return result;
       },
       getLocales() {
-        return self.options.locales || {
+        const locales = self.options.locales || {
           en: {
             label: 'English'
           }
         };
+        const taken = {};
+        for (const [ name, options ] of Object.entries(locales)) {
+          const key = (options.hostname || '__none') + ':' + (options.prefix || '__none');
+          if (taken[key]) {
+            throw new Error(stripIndent`
+              @apostrophecms/i18n: the locale ${name} cannot be distinguished from
+              earlier locales. Make sure it is uniquely distingished by its hostname
+              option, prefix option or a combination of the two. One locale per site
+              may be a default with neither hostname nor prefix, and one locale per
+              hostname may be a default for that hostname without a prefix.
+            `);
+          }
+          taken[key] = true;
+        }
+        // Make sure they are adequately distinguished by
+        // hostname and prefix
+        return locales;
       },
       sanitizeLocaleName(locale) {
         locale = self.apos.launder.string(locale);
@@ -289,7 +325,13 @@ module.exports = {
           { moduleName: self.__meta.name }
         );
       },
-      setPrefix(req) {
+      setPrefixUrls(req) {
+        // For bc, req.baseUrl is always set, to a best guess if baseUrl is not configured.
+        // When falling back, req.hostname is used if trustProxy is active, otherwise the
+        // Host header to allow port numbers in dev
+        req.baseUrl = self.apos.page.getBaseUrl(req) || (req.protocol + '://' + (self.options.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host'));
+        req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}${self.apos.prefix}`;
+        req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
       }
     };

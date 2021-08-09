@@ -182,7 +182,7 @@ describe('Locales', function() {
     });
     let esMX = await apos.doc.find(reqEsMX, { slug: '/' }).toObject();
     assert(esMX);
-    assert.strictEqual(esMX._url, '/');
+    assert.strictEqual(esMX._url, 'http://example.mx/');
     // Distinguish the content in this locale
     esMX.title = 'Pagina De Inicio';
     esMX = await apos.page.update(reqEsMX, esMX);

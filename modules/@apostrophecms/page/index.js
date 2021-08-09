@@ -1938,7 +1938,12 @@ database.`);
       // `@apostrophecms/workflow` module to create correct absolute URLs
       // for specific locales.
       getBaseUrl(req) {
-        return self.apos.baseUrl || '';
+        const hostname = self.apos.i18n.locales[req.locale].hostname;
+        if (hostname) {
+          return `${req.protocol}://${hostname}`;
+        } else {
+          return self.apos.baseUrl || '';
+        }
       },
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation,

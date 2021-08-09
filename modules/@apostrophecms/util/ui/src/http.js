@@ -106,7 +106,9 @@ export default () => {
     }
 
     if (apos.prefix) {
-      if (apos.util.sameSite(url)) {
+      // We don't need a prefix if the target URL is already prefixed,
+      // which any absolute URL should be
+      if (url.substring(0, 1) === '/') {
         url = apos.prefix + url;
       }
     }
