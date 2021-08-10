@@ -357,17 +357,16 @@ export default {
     // Regenerate all array item, area and widget ids so they are considered
     // new. Useful when copying a widget with nested content.
     regenerateIds(schema, object) {
+      object._id = cuid();
       for (const field of schema) {
         if (field.type === 'array') {
           for (const item of (object[field.name] || [])) {
-            item._id = cuid();
             this.regenerateIds(field.schema, item);
           }
         } else if (field.type === 'area') {
           if (object[field.name]) {
             object[field.name]._id = cuid();
             for (const item of (object[field.name].items || [])) {
-              item._id = cuid();
               const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
               this.regenerateIds(schema, item);
             }
@@ -398,6 +397,8 @@ export default {
       clipboard
     }) {
       if (clipboard) {
+        // clear clipboard after paste
+        apos.area.widgetClipboard.set(null);
         this.regenerateIds(apos.modules[apos.area.widgetManagers[clipboard.type]].schema, clipboard);
         return this.insert({
           widget: clipboard,
@@ -493,28 +494,6 @@ export default {
         return null;
       } else {
         return this.renderings[widget._id];
-      }
-    },
-    // Regenerate all array item, area and widget ids so they are considered
-    // new. Useful when copying an entire nested widget.
-    regenerateIds(schema, doc) {
-      doc._id = cuid();
-      for (const field of schema) {
-        if (field.type === 'array') {
-          for (const item of (doc[field.name] || [])) {
-            this.regenerateIds(field.schema, item);
-          }
-        } else if (field.type === 'area') {
-          if (doc[field.name]) {
-            doc[field.name]._id = cuid();
-            for (const item of (doc[field.name].items || [])) {
-              const schema = apos.area.widgetManagers[item.type].schema;
-              this.regenerateIds(schema, item);
-            }
-          }
-        }
-        // We don't want to regenerate attachment ids. They correspond to
-        // actual files, and the reference count will update automatically
       }
     }
   }
