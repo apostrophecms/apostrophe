@@ -180,6 +180,8 @@
   "resumeEditing": "Resume Editing",
   "richText": "Rich Text",
   "safeModeActive": "Running in safe mode, not showing raw HTML.",
+  "searchLocales": "Search Locales",
+  "selectAll": "Select All",
   "selectContent": "Select Content",
   "selectLabel": "Select { typeLabel }",
   "selectLocales": "Select Locales",
