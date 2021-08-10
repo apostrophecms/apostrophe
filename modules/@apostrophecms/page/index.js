@@ -455,6 +455,14 @@ module.exports = {
           }
           return self.revertPublishedToPrevious(req, published);
         }
+      },
+      get: {
+        ':_id/locales': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          return {
+            results: await self.apos.doc.getLocales(req, _id)
+          };
+        }
       }
     };
   },

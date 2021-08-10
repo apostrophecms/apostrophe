@@ -1010,6 +1010,20 @@ module.exports = {
           }
         }
       },
+      // Determine which locales exist for the given doc _id
+      async getLocales(req, _id) {
+        const criteria = {
+          aposDocId: _id.split(':')[0]
+        };
+        if (!self.apos.permission.can(req, 'view-draft')) {
+          criteria.aposMode = 'published';
+        }
+        const existing = await self.apos.doc.db.find(criteria).project({
+          _id: 1,
+          aposLocale: 1
+        }).toArray();
+        return existing;
+      },
       ...require('./lib/legacy-migrations')(self)
     };
   }
