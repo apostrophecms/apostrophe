@@ -200,6 +200,7 @@
   "takeControlFromOther": "{{ who }} is editing that document. Do you want to take control?",
   "takeControlFromSelf": "You are editing that document in another tab or window. Do you want to take control in this tab?",
   "thereAreActiveChanges": "There are active changes to this document.",
+  "thisDocumentExistsIn": "This document exists in these locales:",
   "title": "Title",
   "thisDocument": "This document",
   "thisDocumentAndRelated": "This document and related documents",
