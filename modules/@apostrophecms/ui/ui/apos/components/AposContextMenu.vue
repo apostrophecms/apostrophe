@@ -59,6 +59,10 @@ export default {
       type: Array,
       default: null
     },
+    unpadded: {
+      type: Boolean,
+      default: false
+    },
     modifiers: {
       type: Array,
       default() {
@@ -124,7 +128,7 @@ export default {
           classes.push(`${baseClass}--${m}`);
         });
       }
-      if (this.menu) {
+      if (this.menu || this.unpadded) {
         classes.push(`${baseClass}--unpadded`);
       }
       return classes.join(' ');
