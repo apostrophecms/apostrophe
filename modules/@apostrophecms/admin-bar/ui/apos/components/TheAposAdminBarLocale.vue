@@ -88,10 +88,12 @@ export default {
       };
     },
     filteredLocales(input) {
-      return this.locales.filter(locale => {
-        return (
-          locale.label.toLowerCase().indexOf(this.search.toLowerCase()) > -1
-        );
+      return this.locales.filter(({ name, label }) => {
+        const matches = term =>
+          term
+            .toLowerCase()
+            .includes(this.wizard.sections[1].filter.toLowerCase());
+        return matches(name) || matches(label);
       });
     }
   },
