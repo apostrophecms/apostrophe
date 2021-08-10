@@ -14,8 +14,8 @@
 // `csrfExceptions` can be set to an array of URLs or route names
 // to be excluded from CSRF protection.
 //
-// `l10n` can be set to an object. If so the project is expected to contain
-// translation JSON files in an `l10n` subdirectory. This object
+// `i18n` can be set to an object. If so the project is expected to contain
+// translation JSON files in an `i18n` subdirectory. This object
 // may have an `ns` property. If so those translations are considered to
 // be part of the given namespace, otherwise they are considered to be
 // part of the default namespace. npm modules should always declare a
