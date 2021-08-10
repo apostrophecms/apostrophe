@@ -22,7 +22,7 @@ const config = {
           'es-MX': {
             label: 'Mexico',
             hostname: 'example.mx'
-          },
+          }
         }
       }
     },
