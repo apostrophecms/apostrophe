@@ -68,14 +68,13 @@ export default {
         'Netherlands',
         'Canada (EN)'
       ],
-      locales: Object.entries(window.apos.i18n.locales).map(
-        ([ locale, options ]) => {
-          return {
-            name: locale,
-            label: options.label || locale
-          };
-        }
-      )
+      locales: Object.entries(window.apos.i18n.locales).map(([ locale, options ]) => {
+        return {
+          name: locale,
+          label: options.label || locale
+        };
+      }),
+      localized: null
     };
   },
   computed: {
@@ -95,7 +94,20 @@ export default {
             .includes(this.wizard.sections[1].filter.toLowerCase());
         return matches(name) || matches(label);
       });
-    }
+    },
+    action() {
+      return apos.modules[apos.adminBar.context.type].action;
+    },
+  },
+  async mounted() {
+    const docs = await apos.http.get(`${this.action}/${apos.adminBar.context._id}/locales`, {
+      busy: true
+    });
+    this.localized = Object.fromEntries(
+      docs.results
+        .filter(doc => doc.aposLocale.endsWith(':draft'))
+        .map(doc => [ doc.aposLocale.split(':')[0], doc ])
+    );
   },
   methods: {
     isActive(locale) {
@@ -111,13 +123,12 @@ export default {
       );
     },
     localeClasses(locale) {
+      const classes = {};
       if (this.isActive(locale)) {
-        return {
-          'apos-active': true
-        };
-      } else {
-        return {};
+        classes['apos-active'] = true;
       }
+      classes['apos-exists'] = this.localized[locale.name];
+      return classes;
     },
     async switchLocale(locale) {
       const { name } = locale;

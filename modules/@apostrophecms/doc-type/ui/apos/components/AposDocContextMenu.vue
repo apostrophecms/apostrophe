@@ -142,6 +142,12 @@ export default {
             action: 'copy'
           }
         ] : []),
+        ...(this.canLocalize ? [
+          {
+            label: 'Localize...',
+            action: 'localize'
+          }
+        ] : []),
         ...((this.showDiscardDraft && this.canDiscardDraft) ? [
           {
             label: this.context.lastPublishedAt ? 'Discard Draft' : 'Delete Draft',
@@ -206,6 +212,9 @@ export default {
         this.context.lastPublishedAt &&
         this.isModifiedFromPublished
       );
+    },
+    canLocalize() {
+      return (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized;
     },
     canArchive() {
       return (
@@ -311,6 +320,23 @@ export default {
             ...this.current || doc,
             _id: doc._id
           }
+        }
+      });
+    },
+    async localize(doc) {
+      // If there are changes warn the user before discarding them before
+      // the localize operation
+      if (this.current) {
+        if (!await this.confirmAndCancel()) {
+          return;
+        } else {
+          this.$emit('close', doc);
+        }
+      }
+      apos.bus.$emit('admin-menu-click', {
+        itemName: '@apostrophecms/i18n:localize',
+        props: {
+          doc
         }
       });
     },

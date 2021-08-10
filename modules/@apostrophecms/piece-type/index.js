@@ -225,6 +225,14 @@ module.exports = {
   }),
   apiRoutes(self) {
     return {
+      get: {
+        ':_id/locales': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          return {
+            results: await self.apos.doc.getLocales(req, _id)
+          };
+        }
+      },
       post: {
         ':_id/publish': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -242,6 +250,27 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.publish(req, draft);
+        },
+        ':_id/localize': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          const toLocale = self.apos.i18n.sanitizeLocaleName(req.body.toLocale);
+          if ((!toLocale) || (toLocale === req.locale)) {
+            throw self.apos.error('invalid');
+          }
+          return self.localize(req, draft, toLocale);
         },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);

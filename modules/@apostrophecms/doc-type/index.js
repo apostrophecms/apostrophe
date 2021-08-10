@@ -711,6 +711,77 @@ module.exports = {
         });
         return draft;
       },
+      // Localize (export) the given draft to another locale, creating the document in the
+      // other locale if necessary.
+      async localize(req, draft, toLocale) {
+        if (!self.isLocalized()) {
+          throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
+        }
+        const toReq = {
+          ...req,
+          locale: toLocale
+        };
+        const toId = draft._id.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
+        const actionModule = self.apos.page.isPage(draft) ? self.apos.page : self;
+        const existing = await actionModule.findForEditing(toReq, {
+          _id: toId
+        }).toObject();
+        // We only want to copy schema properties, leave non-schema
+        // properties of the source document alone
+        const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
+        // We need a slug even if removed from the schema for editing purposes
+        data.slug = draft.slug;
+        if (!existing) {
+          if (self.apos.page.isPage(draft)) {
+            if (!draft.level) {
+              // Replicating the home page for the first time
+              return self.apos.doc.insert(toReq, {
+                ...data,
+                aposDocId: draft.aposDocId,
+                aposLocale: `${toLocale}:draft`,
+                _id: toId,
+                path: draft.path,
+                level: draft.level,
+                rank: draft.rank,
+                parked: draft.parked,
+                parkedId: draft.parkedId
+              });
+            } else {
+              // A page that is not the home page, being replicated for the first time
+              return actionModule.insert(toReq,
+                draft.aposLastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`),
+                draft.aposLastPosition,
+                {
+                  ...data,
+                  aposLocale: `${toLocale}:draft`,
+                  _id: toId,
+                  parked: draft.parked,
+                  parkedId: draft.parkedId
+                }
+              );
+            }
+          } else {
+            return actionModule.insert(toReq, {
+              ...data,
+              aposDocId: draft.aposDocId,
+              aposLocale: `${toLocale}:draft`,
+              _id: toId
+            });
+          }
+        } else {
+          const update = {
+            ...data,
+            aposDocId: draft.aposDocId,
+            aposLocale: `${toLocale}:draft`,
+            _id: toId
+          };
+          if (self.apos.page.isPage(draft)) {
+            update.parked = draft.parked;
+            update.parkedId = draft.parkedId;
+          }
+          return actionModule.update(toReq, update);
+        }
+      },
       // Reverts the given draft to the most recent publication.
       //
       // Returns the draft's new value, or `false` if the draft
@@ -1793,20 +1864,20 @@ module.exports = {
         },
 
         locale: {
-          def: null,
-          launder(locale) {
-            return self.apos.launder.string(locale);
-          },
+          def: false,
           finalize() {
             if (!self.isLocalized()) {
               return;
             }
-            const locale = query.get('locale') || `${query.req.locale}:${query.req.mode}`;
-            if (locale) {
+            let queryLocale = query.get('locale');
+            if (queryLocale === false) {
+              queryLocale = `${query.req.locale}:${query.req.mode}`;
+            }
+            if (queryLocale) {
               query.and({
                 $or: [
                   {
-                    aposLocale: locale
+                    aposLocale: queryLocale
                   },
                   {
                     aposLocale: null

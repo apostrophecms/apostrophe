@@ -43,7 +43,8 @@ module.exports = {
     pluralLabel: 'apostrophe:globalContent',
     searchable: false,
     singleton: true,
-    showPermissions: true
+    showPermissions: true,
+    replicate: true
   },
   fields: {
     remove: [

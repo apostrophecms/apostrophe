@@ -53,6 +53,15 @@ module.exports = {
     self.addInitialResources();
     self.enableBrowserData();
   },
+  handlers(self) {
+    return {
+      'apostrophe:modulesReady': {
+        addModal() {
+          self.addLocalizeModal();
+        }
+      }
+    };
+  },
   middleware(self) {
     return {
       init(req, res, next) {
@@ -190,6 +199,7 @@ module.exports = {
         const result = {
           l10n,
           locale: req.locale,
+          defaultLocale: self.defaultLocale,
           locales: self.locales,
           debug: self.debug,
           show: self.show,
@@ -210,6 +220,13 @@ module.exports = {
           return null;
         }
         return locale;
+      },
+      addLocalizeModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:localize`,
+          self.getComponentName('localizeModal', 'AposI18nLocalize'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   }

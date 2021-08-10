@@ -240,6 +240,13 @@ module.exports = {
             }
           }
         }
+      },
+      // Happens within the migration process, but specifically after
+      // parked pages exist so they can be replicated
+      '@apostrophecms/page:afterParkAll': {
+        async replicate() {
+          return self.replicate();
+        }
       }
     };
   },
@@ -947,6 +954,71 @@ module.exports = {
         } else {
           return input;
         }
+      },
+      // Replicate all documents that should automatically be replicated
+      // across all locales: parked pages, and piece types with the
+      // replicate: true option. The latter currently must be singletons
+      // like the global doc or the palette doc, they cannot be types
+      // with more than one instance per locale
+      async replicate() {
+        const localeNames = Object.keys(self.apos.i18n.locales);
+        if (localeNames.length === 1) {
+          return;
+        }
+        const criteria = [];
+        for (const parked of self.apos.page.parked) {
+          criteria.push({
+            parkedId: parked.parkedId
+          });
+        }
+        const pieceModules = Object.values(self.apos.modules).filter(module => self.apos.instanceOf(module, '@apostrophecms/piece-type') && module.options.replicate);
+        for (const module of pieceModules) {
+          criteria.push({
+            type: module.name
+          });
+        }
+        for (const criterion of criteria) {
+          const existing = await self.apos.doc.db.find({
+            ...criterion,
+            aposLocale: /:draft$/
+          }).project({
+            _id: 1,
+            aposLocale: 1
+          }).toArray();
+          for (const info of existing) {
+            info.aposLocale = info.aposLocale.replace(':draft', '');
+          }
+          if ((existing.length > 0) && (existing.length < localeNames.length)) {
+            const sourceInfo = self.apos.util.orderById(localeNames, existing, 'aposLocale')[0];
+            const req = self.apos.task.getReq({
+              locale: sourceInfo.aposLocale,
+              mode: 'draft'
+            });
+            const sourceDoc = await self.apos.doc.find(req, {
+              _id: sourceInfo._id
+            }).archived(null).toObject();
+            for (const locale of localeNames) {
+              if (!existing.find(doc => doc.aposLocale === locale)) {
+                const module = self.getManager(sourceDoc.type);
+                await module.localize(req, sourceDoc, locale);
+              }
+            }
+          }
+        }
+      },
+      // Determine which locales exist for the given doc _id
+      async getLocales(req, _id) {
+        const criteria = {
+          aposDocId: _id.split(':')[0]
+        };
+        if (!self.apos.permission.can(req, 'view-draft')) {
+          criteria.aposMode = 'published';
+        }
+        const existing = await self.apos.doc.db.find(criteria).project({
+          _id: 1,
+          aposLocale: 1
+        }).toArray();
+        return existing;
       },
       ...require('./lib/legacy-migrations')(self)
     };
