@@ -225,6 +225,12 @@ module.exports = {
         url: '/api/v1',
         middleware: cors()
       },
+      createRawRedirect(req, res, next) {
+        // We apply the super pattern variously to res.redirect,
+        // make sure the original version is always available
+        res.rawRedirect = res.redirect;
+        return next();
+      },
       createDataAndGuards(req, res, next) {
         if (!req.data) {
           req.data = {};
