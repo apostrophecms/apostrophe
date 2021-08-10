@@ -1866,20 +1866,20 @@ module.exports = {
         },
 
         locale: {
-          def: null,
-          launder(locale) {
-            return self.apos.launder.string(locale);
-          },
+          def: false,
           finalize() {
             if (!self.isLocalized()) {
               return;
             }
-            const locale = query.get('locale') || `${query.req.locale}:${query.req.mode}`;
-            if (locale) {
+            let queryLocale = query.get('locale');
+            if (queryLocale === false) {
+              queryLocale = `${query.req.locale}:${query.req.mode}`;
+            }
+            if (queryLocale) {
               query.and({
                 $or: [
                   {
-                    aposLocale: locale
+                    aposLocale: queryLocale
                   },
                   {
                     aposLocale: null
