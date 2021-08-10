@@ -286,7 +286,6 @@ export default {
     },
     async copy(i) {
       apos.area.widgetClipboard.set(this.next[i]);
-      console.log(this.next[i]);
       apos.notify('Widget copied to clipboard', {
         type: 'success',
         icon: 'content-copy-icon',
