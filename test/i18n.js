@@ -20,7 +20,7 @@ describe('static i18n', function() {
             i18n: {}
           }
         },
-        'apostrophe-fr': {
+        'apos-fr': {
           options: {
             i18n: {
               ns: 'apostrophe'
