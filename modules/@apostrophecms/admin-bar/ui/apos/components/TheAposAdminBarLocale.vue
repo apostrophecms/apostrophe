@@ -42,10 +42,10 @@
       </p>
       <span
         v-for="locale in availableLocales"
-        :key="locale"
+        :key="locale.name"
         class="apos-available-locale"
       >
-        {{ locale }}
+        {{ locale.label }}
       </span>
     </div>
   </AposContextMenu>
@@ -60,21 +60,13 @@ export default {
   data() {
     return {
       search: '',
-      // TODO: Need to get this somehow
-      availableLocales: [
-        'English',
-        'Austria',
-        'Germany',
-        'Netherlands',
-        'Canada (EN)'
-      ],
       locales: Object.entries(window.apos.i18n.locales).map(([ locale, options ]) => {
         return {
           name: locale,
           label: options.label || locale
         };
       }),
-      localized: null
+      localized: {}
     };
   },
   computed: {
@@ -91,36 +83,35 @@ export default {
         const matches = term =>
           term
             .toLowerCase()
-            .includes(this.wizard.sections[1].filter.toLowerCase());
+            .includes(this.search.toLowerCase());
         return matches(name) || matches(label);
       });
     },
-    action() {
-      return apos.modules[apos.adminBar.context.type].action;
+    availableLocales() {
+      return this.locales.filter(locale => !!this.localized[locale.name]);
     },
+    action() {
+      return apos.modules[apos.adminBar.context.type]?.action;
+    }
   },
   async mounted() {
-    const docs = await apos.http.get(`${this.action}/${apos.adminBar.context._id}/locales`, {
-      busy: true
-    });
-    this.localized = Object.fromEntries(
-      docs.results
-        .filter(doc => doc.aposLocale.endsWith(':draft'))
-        .map(doc => [ doc.aposLocale.split(':')[0], doc ])
-    );
+    if (apos.adminBar.context) {
+      const docs = await apos.http.get(`${this.action}/${apos.adminBar.context._id}/locales`, {
+        busy: true
+      });
+      this.localized = Object.fromEntries(
+        docs.results
+          .filter(doc => doc.aposLocale.endsWith(':draft'))
+          .map(doc => [ doc.aposLocale.split(':')[0], doc ])
+      );
+    }
   },
   methods: {
     isActive(locale) {
       return window.apos.i18n.locale === locale.name;
     },
     isLocalized(locale) {
-      // TODO: Not sure we have the proper data to make this work properly yet.
-      return (
-        (window.apos.page &&
-          window.apos.page.page &&
-          window.apos.page.page.aposLocale.includes(locale.name)) ||
-        false
-      );
+      return !!this.localized[locale.name];
     },
     localeClasses(locale) {
       const classes = {};
