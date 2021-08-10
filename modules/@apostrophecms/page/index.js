@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const path = require('path');
+const { klona } = require('klona');
 
 module.exports = {
   cascades: [ 'batchOperations' ],
@@ -563,12 +564,32 @@ database.`);
         }
       },
       '@apostrophecms/migration:after': {
-        async implementParkAll() {
+        async implementParkAllInDefaultLocale() {
           const req = self.apos.task.getReq();
           for (const item of self.parked) {
             await self.implementParkOne(req, item);
           }
+          // Triggers replicate in the doc module
           return self.emit('afterParkAll');
+        }
+      },
+      '@apostrophecms/doc:afterReplicate': {
+        async implementParkAllInOtherLocales() {
+          // Now that replication has occurred, we can
+          // park in the other locales and we'll just
+          // reset the parked properties without
+          // destroying the locale relationships
+          for (const locale of Object.keys(self.apos.i18n.locales)) {
+            if (locale === self.apos.i18n.defaultLocale) {
+              continue;
+            }
+            const req = self.apos.task.getReq({
+              locale
+            });
+            for (const item of self.parked) {
+              await self.implementParkOne(req, item);
+            }
+          }
         }
       }
     };
@@ -1705,6 +1726,7 @@ database.`);
         if (!((item.type || (item._defaults && item._defaults.type)) && (item.slug || item._defaults.slug))) {
           throw new Error('Parked pages must have type and slug properties, they may be fixed or part of _defaults:\n' + JSON.stringify(item, null, '  '));
         }
+        item = klona(item);
         const parent = await findParent();
         item.parked = _.keys(_.omit(item, '_defaults'));
         if (!parent) {

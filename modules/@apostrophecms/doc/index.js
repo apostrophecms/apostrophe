@@ -1009,6 +1009,7 @@ module.exports = {
             }
           }
         }
+        await self.emit('afterReplicate');
       },
       ...require('./lib/legacy-migrations')(self)
     };
