@@ -27,7 +27,7 @@
           />
         </span>
         <span class="apos-choice-label-text">
-          {{ choice.label }}
+          {{ $t(choice.label) }}
         </span>
       </label>
     </template>

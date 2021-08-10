@@ -18,7 +18,7 @@
             :value="JSON.stringify(choice.value)"
             :selected="choice.value === value.data"
           >
-            {{ choice.label }}
+            {{ $t(choice.label) }}
           </option>
         </select>
         <AposIndicator
