@@ -23,12 +23,12 @@
         @click="$emit('cut')"
         tooltip="Cut"
       />
-      <AposButton
+      <!-- <AposButton
         v-bind="copyButton"
         v-if="!foreign"
         @click="$emit('copy')"
         tooltip="Copy"
-      />
+      /> -->
       <AposButton
         v-if="!foreign"
         :disabled="disabled || maxReached"
