@@ -31,6 +31,7 @@ module.exports = {
   'eye-icon': 'Eye',
   'file-tree-icon': 'FileTree',
   'file-document-icon': 'FileDocument',
+  'flare-icon': 'Flare',
   'format-align-center-icon': 'FormatAlignCenter',
   'format-align-justify-icon': 'FormatAlignJustify',
   'format-align-left-icon': 'FormatAlignLeft',

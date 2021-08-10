@@ -225,6 +225,14 @@ module.exports = {
   }),
   apiRoutes(self) {
     return {
+      get: {
+        ':_id/locales': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          return {
+            results: await self.apos.doc.getLocales(req, _id)
+          };
+        }
+      },
       post: {
         ':_id/publish': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
