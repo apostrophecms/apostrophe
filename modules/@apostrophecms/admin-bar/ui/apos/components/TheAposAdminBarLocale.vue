@@ -5,48 +5,50 @@
     :unpadded="true"
     menu-placement="bottom-end"
   >
-    <div class="apos-input-wrapper">
-      <input
-        v-model="search"
-        type="text"
-        class="apos-locales-filter"
-        placeholder="Search locales..."
-      >
-    </div>
-    <ul class="apos-locales">
-      <li
-        v-for="locale in filteredLocales"
-        :key="locale.name"
-        class="apos-locale-item"
-        :class="localeClasses(locale)"
-        @click="switchLocale(locale)"
-      >
-        <span class="apos-locale">
-          <CheckIcon
-            v-if="isActive(locale)"
-            class="apos-check"
-            title="Currently selected locale"
-            :size="12"
-          />
+    <div class="apos-locales-picker">
+      <div class="apos-input-wrapper">
+        <input
+          v-model="search"
+          type="text"
+          class="apos-locales-filter"
+          placeholder="Search locales..."
+        >
+      </div>
+      <ul class="apos-locales">
+        <li
+          v-for="locale in filteredLocales"
+          :key="locale.name"
+          class="apos-locale-item"
+          :class="localeClasses(locale)"
+          @click="switchLocale(locale)"
+        >
+          <span class="apos-locale">
+            <CheckIcon
+              v-if="isActive(locale)"
+              class="apos-check"
+              title="Currently selected locale"
+              :size="12"
+            />
+            {{ locale.label }}
+            <span
+              class="apos-locale-localized"
+              :class="{ 'apos-state-is-localized': isLocalized(locale) }"
+            />
+          </span>
+        </li>
+      </ul>
+      <div class="apos-available-locales">
+        <p class="apos-available-description">
+          {{ $t('apostrophe:thisDocumentExistsIn') }}
+        </p>
+        <span
+          v-for="locale in availableLocales"
+          :key="locale.name"
+          class="apos-available-locale"
+        >
           {{ locale.label }}
-          <span
-            class="apos-locale-localized"
-            :class="{ 'apos-state-is-localized': isLocalized(locale) }"
-          />
         </span>
-      </li>
-    </ul>
-    <div class="apos-available-locales">
-      <p class="apos-available-description">
-        {{ $t('apostrophe:thisDocumentExistsIn') }}
-      </p>
-      <span
-        v-for="locale in availableLocales"
-        :key="locale.name"
-        class="apos-available-locale"
-      >
-        {{ locale.label }}
-      </span>
+      </div>
     </div>
   </AposContextMenu>
 </template>
@@ -60,12 +62,14 @@ export default {
   data() {
     return {
       search: '',
-      locales: Object.entries(window.apos.i18n.locales).map(([ locale, options ]) => {
-        return {
-          name: locale,
-          label: options.label || locale
-        };
-      }),
+      locales: Object.entries(window.apos.i18n.locales).map(
+        ([ locale, options ]) => {
+          return {
+            name: locale,
+            label: options.label || locale
+          };
+        }
+      ),
       localized: {}
     };
   },
@@ -81,9 +85,7 @@ export default {
     filteredLocales(input) {
       return this.locales.filter(({ name, label }) => {
         const matches = term =>
-          term
-            .toLowerCase()
-            .includes(this.search.toLowerCase());
+          term.toLowerCase().includes(this.search.toLowerCase());
         return matches(name) || matches(label);
       });
     },
@@ -96,9 +98,12 @@ export default {
   },
   async mounted() {
     if (apos.adminBar.context) {
-      const docs = await apos.http.get(`${this.action}/${apos.adminBar.context._id}/locales`, {
-        busy: true
-      });
+      const docs = await apos.http.get(
+        `${this.action}/${apos.adminBar.context._id}/locales`,
+        {
+          busy: true
+        }
+      );
       this.localized = Object.fromEntries(
         docs.results
           .filter(doc => doc.aposLocale.endsWith(':draft'))
@@ -139,8 +144,32 @@ export default {
 };
 </script>
 
-<style lang="scss">
-.apos-context-menu__pane {
+<style lang="scss" scoped>
+.apos-admin-locales {
+  position: relative;
+  margin-right: $spacing-base;
+  padding-left: $spacing-base;
+  padding-right: $spacing-base;
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -20px;
+    bottom: -20px;
+    width: 1px;
+    background-color: var(--a-base-9);
+  }
+
+  &::before {
+    left: 0;
+  }
+
+  &::after {
+    right: 0;
+  }
+}
+
+.apos-locales-picker {
   width: 315px;
 }
 
