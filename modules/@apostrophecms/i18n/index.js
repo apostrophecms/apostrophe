@@ -24,7 +24,7 @@ const apostropheI18nDebugPlugin = {
 module.exports = {
   options: {
     alias: 'i18n',
-    l10n: {
+    i18n: {
       ns: 'apostrophe',
       browser: true
     }
@@ -222,14 +222,14 @@ module.exports = {
       // Add the i18next resources provided by the specified module,
       // merging with any existing phrases for the same locales and namespaces
       addResourcesForModule(module) {
-        if (!module.options.l10n) {
+        if (!module.options.i18n) {
           return;
         }
-        const ns = module.options.l10n.ns || 'default';
+        const ns = module.options.i18n.ns || 'default';
         self.namespaces[ns] = self.namespaces[ns] || {};
-        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.l10n.browser;
+        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.i18n.browser;
         for (const entry of module.__meta.chain) {
-          const localizationsDir = `${entry.dirname}/l10n`;
+          const localizationsDir = `${entry.dirname}/i18n`;
           if (!fs.existsSync(localizationsDir)) {
             continue;
           }
@@ -266,8 +266,6 @@ module.exports = {
             if (matchedHostname && matchedPrefix) {
               // Best possible match
               return name;
-            } else {
-              // Didn't match both, so not a candidate
             }
           } else if (options.hostname) {
             if (matchedHostname) {
@@ -320,14 +318,14 @@ module.exports = {
         }
       },
       getBrowserData(req) {
-        const l10n = {};
+        const i18n = {};
         for (const [ name, options ] of Object.entries(self.namespaces)) {
           if (options.browser) {
-            l10n[name] = self.i18next.getResourceBundle(req.locale, name);
+            i18n[name] = self.i18next.getResourceBundle(req.locale, name);
           }
         }
         const result = {
-          l10n,
+          i18n,
           locale: req.locale,
           defaultLocale: self.defaultLocale,
           locales: self.locales,
@@ -391,7 +389,8 @@ module.exports = {
         // For bc, req.baseUrl is always set, to a best guess if baseUrl is not configured.
         // When falling back, req.hostname is used if trustProxy is active, otherwise the
         // Host header to allow port numbers in dev
-        req.baseUrl = self.apos.page.getBaseUrl(req) || (req.protocol + '://' + (self.options.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host'));
+        const host = (self.options.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host');
+        req.baseUrl = self.apos.page.getBaseUrl(req) || `${req.protocol}://${host}`;
         req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;

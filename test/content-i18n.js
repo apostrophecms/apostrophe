@@ -17,7 +17,7 @@ const config = {
             label: 'Canadian English',
             prefix: '/ca/en'
           },
-          'en-FR': {
+          'fr-CA': {
             label: 'Canadian French',
             prefix: '/ca/fr'
           },
@@ -34,7 +34,19 @@ const config = {
         trustProxy: true
       }
     },
-    'default-page': {}
+    'default-page': {},
+    '@apostrophecms/page': {
+      options: {
+        park: [
+          {
+            parkedId: 'people',
+            type: 'default-page',
+            slug: '/people',
+            title: 'People'
+          }
+        ]
+      }
+    }
   }
 };
 
@@ -58,9 +70,33 @@ describe('Locales', function() {
     assert(archives.length === 8);
     const globals = await apos.doc.db.find({ type: '@apostrophecms/global' }).toArray();
     assert(globals.length === 8);
+    const people = await apos.doc.db.find({ parkedId: 'people' }).toArray();
+    assert(people.length === 8);
+    // People page in fr-CA has expected parked properties
+    const req = apos.task.getReq();
+    const peoplePageEn = await apos.page.find(req, {
+      parkedId: 'people'
+    }).toObject();
+    const frCAReq = apos.task.getReq({
+      locale: 'fr-CA'
+    });
+    let peoplePageFrCA = await apos.page.find(frCAReq, {
+      parkedId: 'people'
+    }).toObject();
+    assert(peoplePageEn.aposDocId === peoplePageFrCA.aposDocId);
+    assert(peoplePageEn.aposLocale === 'en:published');
+    assert(peoplePageFrCA.aposLocale === 'fr-CA:published');
+    assert(peoplePageEn.title === 'People');
+    assert(peoplePageFrCA.title === 'People');
+    peoplePageFrCA.title = 'Altered';
+    await apos.page.update(frCAReq, peoplePageFrCA);
+    peoplePageFrCA = await apos.page.find(frCAReq, {
+      parkedId: 'people'
+    }).toObject();
+    assert(peoplePageFrCA.title === 'Altered');
   });
 
-  it('should not replicate redundantly on a second startup in same db', async function() {
+  it('should not replicate redundantly on a second startup in same db, but should repark parked properties', async function() {
     const apos2 = await t.create({
       ...config,
       shortName: apos.options.shortName
@@ -69,11 +105,20 @@ describe('Locales', function() {
     const homes = await apos2.doc.db.find({ parkedId: 'home' }).toArray();
     // Draft and published
     assert(homes.length === 8);
+    const people = await apos2.doc.db.find({ parkedId: 'people' }).toArray();
+    assert(people.length === 8);
     const archives = await apos2.doc.db.find({ parkedId: 'archive' }).toArray();
     assert(archives.length === 8);
     const globals = await apos2.doc.db.find({ type: '@apostrophecms/global' }).toArray();
     assert(globals.length === 8);
-
+    const frCAReq = apos2.task.getReq({
+      locale: 'fr-CA'
+    });
+    const peoplePageFrCA = await apos2.page.find(frCAReq, {
+      parkedId: 'people'
+    }).toObject();
+    // Restored to parked value
+    assert(peoplePageFrCA.title === 'People');
     await apos2.destroy();
   });
 

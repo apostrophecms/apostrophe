@@ -27,12 +27,12 @@ describe('static i18n', function() {
         },
         example: {
           options: {
-            l10n: {}
+            i18n: {}
           }
         },
         'apos-fr': {
           options: {
-            l10n: {
+            i18n: {
               ns: 'apostrophe'
             }
           }
