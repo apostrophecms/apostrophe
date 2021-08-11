@@ -27,10 +27,11 @@
           />
         </span>
         <span class="apos-choice-label-text" v-apos-tooltip.top="choice.tooltip">
-          {{ choice.label }}
+          {{ $t(choice.label) }}
           <InformationIcon
             v-if="choice.tooltip"
-            :size="14"  />
+            :size="14"
+          />
         </span>
       </label>
     </template>
