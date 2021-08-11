@@ -147,11 +147,18 @@ module.exports = {
           const localeReq = req.clone({
             locale: sanitizedLocale
           });
-          self.apos.i18n.setPrefixUrls(localeReq);
+          self.setPrefixUrls(localeReq);
           if (_id) {
             doc = await self.apos.doc.find(localeReq, {
               aposDocId: _id.split(':')[0]
             }).toObject();
+            if (!doc) {
+              const publishedLocaleReq = localeReq.clone({ mode: 'draft' });
+              self.setPrefixUrls(publishedLocaleReq);
+              doc = await self.apos.doc.find(publishedLocaleReq, {
+                aposDocId: _id.split(':')[0]
+              }).toObject();
+            }
           }
           if (!sanitizedLocale) {
             throw self.apos.error('invalid');
