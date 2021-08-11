@@ -4,8 +4,10 @@
 
 ### Adds
 
-* The home page, other parked pages, and the global document are automatically replicates to all configures locales at startup.
+* The home page, other parked pages, and the global document are automatically replicated to all configured locales at startup. Parked properties are refreshed if needed.
 * An API route has been added for voluntary replication, i.e. when deciding a document should exist in a second locale, or desiring to overwrite the current draft contents in locale `B` with the draft contents of locale `A`.
+* Locales can specify `prefix` and `hostname` options, which are automatically recognized by middleware that removes the prefix dynamically where appropriate and sets `req.locale`. In 3.x this works more like the global site `prefix` option. This is a departure from 2.x which stored the prefix directly in the slug, creating maintenance issues.
+* Locales are stateless: they are never recorded in the session. This eliminates many avenues for bugs and bad SEO. However, this also means the developer must fully distinguish them from the beginning via either `prefix` or `hostname`. A helpful error message is displayed if this is not the case.
 * An API route has been added to discover the locales in which a document exists. This provides basic information only for performance (it does not report `title` or `_url`).
 * The `@apostrophecms/i18n` module now uses `i18next` to implement static localization. All phrases in the Vue-based admin UI are passed through `i18next` via `this.$t`, and `i18next` is also available via `req.t()` in routes and `__t()` in templates. Apostrophe's own admin UI phrases are in the `apostrophe` namespace for a clean separation. An array of locale codes, such as `en` or `fr` or `en-au`, can be specified using the `locales` option to the `@apostrophecms/i18n` module. The first locale is the default, unless the `defaultLocale` option is set. If no locales are set, the locale defaults to `en`. The `i18next-http-middleware` locale guesser is installed and will select an available locale if possible, otherwise it will fall back to the default.
 * In the admin UI, `v-tooltip` has been extended as `v-apos-tooltip`, which passes phrases through `i18next`.
@@ -15,6 +17,10 @@
 * There is a bare bones, unstyled locale switcher (so far, will update this entry).
 * There is a backend route to accept a new locale on switch, on refresh you currently have a 404, but we'll fix this when we do replication in content localization.
 * We ditched the i18next middleware in favor of simpler i18next-based middleware better for our needs.
+
+### Fixes
+
+* `req.hostname` now works as expected when `trustProxy: true` is passed to the `@apostrophecms/express` module.
 
 ## 3.1.2 - 2021-07-14
 

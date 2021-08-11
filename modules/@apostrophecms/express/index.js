@@ -331,21 +331,7 @@ module.exports = {
       bodyParserJson: bodyParser.json({
         limit: '16mb',
         ..._(self.options.bodyParser && self.options.bodyParser.json)
-      }),
-      // Sets the `req.absoluteUrl` property for all requests,
-      // based on the `baseUrl` option if available, otherwise based on the user's
-      // request headers. The global `prefix` option and `req.url` are then appended.
-      //
-      // `req.baseUrl` and `req.baseUrlWithPrefix` are also made available, and all three
-      // properties are also added to `req.data` if not already present.
-      //
-      // The `baseUrl` option should be configured at the top level, for Apostrophe itself,
-      // NOT specifically for this module, but for bc the latter is also accepted in this
-      // one case. For a satisfyingly global result, set it at the top level instead.
-      absoluteUrl(req, res, next) {
-        self.addAbsoluteUrlsToReq(req);
-        next();
-      }
+      })
     };
   },
 
@@ -364,8 +350,8 @@ module.exports = {
       },
 
       // Patch Express so that all calls to `res.redirect` honor
-      // the global `prefix` option without the need to make each
-      // call "prefix-aware"
+      // the global `prefix` option and locale prefix without the need to
+      // make each call "prefix-aware"
       prefix() {
         if (self.apos.prefix) {
           // Use middleware to patch the redirect method to accommodate
@@ -613,27 +599,6 @@ module.exports = {
             });
           });
         }
-      },
-
-      // Sets the `req.absoluteUrl` property for all requests,
-      // based on the `baseUrl` option if available, otherwise based on the user's
-      // request headers. The global `prefix` option and `req.url` are then appended.
-      //
-      // `req.baseUrl` and `req.baseUrlWithPrefix` are also made available, and all three
-      // properties are also added to `req.data` if not already present.
-      //
-      // The `baseUrl` option should be configured at the top level, for Apostrophe itself,
-      // NOT specifically for this module, but for bc the latter is also accepted in this
-      // one case. For a satisfyingly global result, set it at the top level instead.
-      //
-      // If you want reasonable URLs in req objects used in tasks you must
-      // set the `baseUrl` option for Apostrophe.
-
-      addAbsoluteUrlsToReq(req) {
-        req.baseUrl = self.apos.baseUrl || self.options.baseUrl || req.protocol + '://' + req.get('Host');
-        req.baseUrlWithPrefix = req.baseUrl + self.apos.prefix;
-        req.absoluteUrl = req.baseUrlWithPrefix + req.url;
-        _.defaults(req.data, _.pick(req, 'baseUrl', 'baseUrlWithPrefix', 'absoluteUrl'));
       },
 
       // Locate modules with middleware and routes and add them to the list. By default
