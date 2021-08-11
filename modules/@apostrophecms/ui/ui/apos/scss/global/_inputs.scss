@@ -120,6 +120,13 @@
       white-space: nowrap;
     }
   }
+  &.apos-field--range {
+    .apos-range__input::-webkit-slider-thumb,
+    .apos-range__input::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+    }
+  }
 }
 
 .apos-input-wrapper {

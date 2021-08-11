@@ -222,6 +222,25 @@ export default {
   .apos-field__info {
     margin-right: 4%;
   }
+  &.apos-field--range {
+    display: block;
+    .apos-range__input {
+      margin: 5px 0 0;
+    }
+    .apos-range__scale {
+      margin-top: 0;
+    }
+    .apos-range__value {
+      padding-top: 9px;
+    }
+    .apos-field__info {
+      margin: 0 0 5px;
+    }
+    .apos-field__info,
+    .apos-input-wrapper {
+      width: 100%;
+    }
+  }
 }
 
 </style>
