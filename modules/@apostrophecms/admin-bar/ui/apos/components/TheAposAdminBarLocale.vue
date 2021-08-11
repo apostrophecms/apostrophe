@@ -154,8 +154,8 @@ export default {
   &::after {
     content: '';
     position: absolute;
-    top: -20px;
-    bottom: -20px;
+    top: -18px;
+    bottom: -18px;
     width: 1px;
     background-color: var(--a-base-9);
   }
