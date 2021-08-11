@@ -116,6 +116,7 @@
   "loadDocFailed": "The requested document was not found.",
   "localizationSettings": "Localization Settings",
   "localizeContent": "Localize Content",
+  "localizingContent": "Localizing Content",
   "loginDisabled": "Login Disabled",
   "loginPageBothRequired": "Both the username and the password are required.",
   "loginPageIncorrectOrNoSuchUser": "Your credentials are incorrect, or there is no such user",

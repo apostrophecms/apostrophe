@@ -1,13 +1,14 @@
 <template>
   <AposModal
     class="apos-wizard apos-i18n-localize"
+    :class="{ 'apos-wizard-busy': wizard.busy }"
     :modal="modal"
     @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @no-modal="$emit('safe-close')"
   >
-    <template #leftRail>
+    <template v-if="!wizard.busy" #leftRail>
       <AposModalBody class="apos-wizard__navigation">
         <template #bodyMain>
           <button
@@ -31,7 +32,17 @@
         </template>
       </AposModalBody>
     </template>
-    <template #main>
+    <template v-if="wizard.busy" #main>
+      <AposModalBody>
+        <template #bodyMain>
+          <p class="apos-busy-text">
+            {{ $t('apostrophe:localizingContent') }}
+          </p>
+          <AposSpinner class="apos-busy__spinner" />
+        </template>
+      </AposModalBody>
+    </template>
+    <template v-else #main>
       <AposModalBody class="apos-wizard__content">
         <template #bodyMain>
           <header class="apos-wizard__header">
@@ -218,6 +229,7 @@
             v-if="isStep(wizard.sections.length - 1)"
             type="primary"
             label="apostrophe:localizeContent"
+            @click="submit()"
           />
           <AposButton
             v-else
@@ -299,6 +311,7 @@ export default {
       ],
       wizard: {
         step: 0,
+        busy: false,
         sections: [
           { title: this.$t('apostrophe:selectContent') },
           {
@@ -364,7 +377,9 @@ export default {
   },
   methods: {
     close() {
-      this.modal.showModal = false;
+      if (!this.wizard.busy) {
+        this.modal.showModal = false;
+      }
     },
     goTo(number) {
       this.wizard.step = number;
@@ -410,6 +425,7 @@ export default {
       return classes;
     },
     submit() {
+      this.wizard.busy = true;
       console.log('Submitting...', this.wizard.values);
     }
   }
@@ -430,6 +446,22 @@ export default {
     left: $horizontal-spacing;
     height: calc(100vh - #{$vertical-spacing * 2});
     width: $width;
+    transition: all ease-in-out 500ms;
+  }
+
+  &.apos-wizard-busy ::v-deep .apos-modal__inner {
+    $height: 190px;
+    top: 50%;
+    bottom: -50%;
+    height: $height;
+    transform: translateY(math.div($height, 2) * -1);
+  }
+
+  &.apos-wizard-busy ::v-deep .apos-modal__main--with-left-rail {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
   }
 
   ::v-deep .apos-modal__main--with-left-rail {
@@ -443,6 +475,10 @@ export default {
   ::v-deep .apos-wizard__content .apos-modal__body-footer {
     flex-direction: row-reverse;
     border-top: 1px solid var(--a-base-9);
+  }
+
+  ::v-deep .apos-busy__spinner {
+    display: inline-block;
   }
 }
 
@@ -641,5 +677,10 @@ export default {
   border-radius: var(--a-border-radius);
   background: var(--a-primary);
   text-decoration: none;
+}
+
+.apos-busy-text {
+  margin-bottom: $spacing-triple;
+  font-size: var(--a-type-heading);
 }
 </style>
