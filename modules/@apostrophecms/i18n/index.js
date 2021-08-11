@@ -216,8 +216,6 @@ module.exports = {
             if (matchedHostname && matchedPrefix) {
               // Best possible match
               return name;
-            } else {
-              // Didn't match both, so not a candidate
             }
           } else if (options.hostname) {
             if (matchedHostname) {
