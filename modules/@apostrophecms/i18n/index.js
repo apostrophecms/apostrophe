@@ -23,7 +23,7 @@ const apostropheI18nDebugPlugin = {
 module.exports = {
   options: {
     alias: 'i18n',
-    l10n: {
+    i18n: {
       ns: 'apostrophe',
       browser: true
     }
@@ -172,14 +172,14 @@ module.exports = {
       // Add the i18next resources provided by the specified module,
       // merging with any existing phrases for the same locales and namespaces
       addResourcesForModule(module) {
-        if (!module.options.l10n) {
+        if (!module.options.i18n) {
           return;
         }
-        const ns = module.options.l10n.ns || 'default';
+        const ns = module.options.i18n.ns || 'default';
         self.namespaces[ns] = self.namespaces[ns] || {};
-        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.l10n.browser;
+        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.i18n.browser;
         for (const entry of module.__meta.chain) {
-          const localizationsDir = `${entry.dirname}/l10n`;
+          const localizationsDir = `${entry.dirname}/i18n`;
           if (!fs.existsSync(localizationsDir)) {
             continue;
           }
@@ -268,14 +268,14 @@ module.exports = {
         }
       },
       getBrowserData(req) {
-        const l10n = {};
+        const i18n = {};
         for (const [ name, options ] of Object.entries(self.namespaces)) {
           if (options.browser) {
-            l10n[name] = self.i18next.getResourceBundle(req.locale, name);
+            i18n[name] = self.i18next.getResourceBundle(req.locale, name);
           }
         }
         const result = {
-          l10n,
+          i18n,
           locale: req.locale,
           defaultLocale: self.defaultLocale,
           locales: self.locales,

@@ -216,7 +216,9 @@
 .apos-input-indicator {
   @include apos-transition(all, 0.1s, ease-in-out);
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
+  align-self: flex-start;
   justify-content: center;
   width: $box-width;
   height: $box-width;
