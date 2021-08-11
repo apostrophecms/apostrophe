@@ -788,7 +788,12 @@ module.exports = {
         // access to things like `req.get`. Solution: ask `Object.create` to
         // create a new object with the same prototype as `req`, then copy the
         // own properties of `req` into the new object.
-        return Object.assign(Object.create(Object.getPrototypeOf(req)), req, properties);
+        const result = Object.assign(Object.create(Object.getPrototypeOf(req)), req, properties);
+        // Must have its own clone function or we can't clone two levels deep
+        result.clone = (properties = {}) => {
+          return self.apos.util.cloneReq(result, properties);
+        };
+        return result;
       }
     };
   },
