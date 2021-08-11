@@ -64,7 +64,6 @@
                     },
                   ],
                 }"
-                :value="wizard.values.toLocalize"
                 v-model="wizard.values.toLocalize"
               />
               <p class="apos-wizard__help-text">
@@ -117,7 +116,7 @@
                   <span class="apos-locale">
                     <FlareIcon
                       v-if="isCurrentLocale(locale) && !isSelected(locale)"
-                      class="apos-default-icon"
+                      class="apos-current-locale-icon"
                       title="Default locale"
                       :size="12"
                     />
@@ -143,7 +142,74 @@
               v-if="isStep(2)"
               class="apos-wizard__step apos-wizard__step-2"
             >
-              <div>Confirm Settings</div>
+              <ul class="apos-selected-locales">
+                <li
+                  v-for="locale in selectedLocales"
+                  :key="locale.name"
+                  class="apos-locale-item--selected"
+                >
+                  <span class="apos-locale-to-localize">{{
+                    locale.label
+                  }}</span>
+                </li>
+              </ul>
+
+              <div class="apos-wizard__field-group">
+                <p class="apos-wizard__field-group-heading">
+                  {{ $t('apostrophe:localizationSettings') }}
+                </p>
+                <AposInputCheckboxes
+                  :field="{
+                    name: 'localizationSettings',
+                    choices: [
+                      {
+                        value: 'localizeChildren',
+                        label: 'Also localize children of this document',
+                      },
+                    ],
+                  }"
+                  v-model="wizard.values.localizationSettings"
+                />
+              </div>
+
+              <div class="apos-wizard__field-group">
+                <p class="apos-wizard__field-group-heading">
+                  {{ $t('apostrophe:relatedDocumentSettings') }}
+                  <span
+                    v-apos-tooltip.top="tooltips.relatedDocumentSettings"
+                  ><InformationIcon
+                    :size="14"
+                  /></span>
+                </p>
+
+                <AposInputRadio
+                  :field="{
+                    name: 'relatedDocumentSettings',
+                    choices: [
+                      {
+                        value: 'localizeNewRelated',
+                        label: 'Localize new related documents',
+                      },
+                      {
+                        value: 'localizeAllRelatedAndOverwriteExisting',
+                        label:
+                          'Localize all related documents and overwrite existing documents',
+                        tooltip: tooltips.localizeAllAndOverwrite,
+                      },
+                    ],
+                  }"
+                  v-model="wizard.values.relatedDocumentSettings"
+                />
+
+                <AposInputCheckboxes
+                  :field="{
+                    name: 'relatedDocumentsTypesToLocalize',
+                    label: 'Related document types to localize',
+                    choices: relatedDocumentTypeChoices,
+                  }"
+                  v-model="wizard.values.relatedDocumentTypesToLocalize"
+                />
+              </div>
             </fieldset>
           </form>
         </template>
@@ -151,7 +217,6 @@
           <AposButton
             v-if="isStep(wizard.sections.length - 1)"
             type="primary"
-            :disabled="hasError()"
             label="apostrophe:localizeContent"
           />
           <AposButton
@@ -209,6 +274,29 @@ export default {
           };
         }
       ),
+      localized: {},
+      tooltips: {
+        relatedDocumentSettings: this.$t('apostrophe:relatedDocumentsAre'),
+        localizeAllAndOverwrite: this.$t('apostrophe:ifRelatedDocumentExists')
+      },
+      relatedDocumentTypes: [
+        {
+          type: 'Images',
+          count: 4
+        },
+        {
+          type: 'Articles',
+          count: 1
+        },
+        {
+          type: 'Files',
+          count: 0
+        },
+        {
+          type: 'Pages',
+          count: 2
+        }
+      ],
       wizard: {
         step: 0,
         sections: [
@@ -221,7 +309,10 @@ export default {
         ],
         values: {
           toLocalize: { data: 'thisDocumentAndRelated' },
-          toLocales: { data: [] }
+          toLocales: { data: [] },
+          localizationSettings: { data: '' },
+          relatedDocumentSettings: { data: 'localizeNewRelated' },
+          relatedDocumentTypesToLocalize: { data: [] }
         }
       }
     };
@@ -247,10 +338,29 @@ export default {
     },
     selectedLocales() {
       return this.wizard.values.toLocales.data;
+    },
+    relatedDocumentTypeChoices() {
+      const choices = this.relatedDocumentTypes.map(({ type, count }) => ({
+        value: type,
+        label: `${type} (${count})`,
+        readOnly: count === 0
+      }));
+      return choices;
     }
   },
   async mounted() {
     this.modal.active = true;
+    const docs = await apos.http.get(
+      `${this.action}/${apos.adminBar.context._id}/locales`,
+      {
+        busy: true
+      }
+    );
+    this.localized = Object.fromEntries(
+      docs.results
+        .filter(doc => doc.aposLocale.endsWith(':draft'))
+        .map(doc => [ doc.aposLocale.split(':')[0], doc ])
+    );
   },
   methods: {
     close() {
@@ -260,7 +370,8 @@ export default {
       this.wizard.step = number;
     },
     hasError() {
-      return false;
+      const currentStep = Object.keys(this.wizard.values)[this.wizard.step];
+      return !this.wizard.values[currentStep].data.length > 0;
     },
     isStep(number) {
       return this.wizard.step === number;
@@ -274,19 +385,13 @@ export default {
       );
     },
     isLocalized(locale) {
-      // TODO: Integrate this when PRO-1870 is merged.
-      return (
-        (window.apos.page &&
-          window.apos.page.page &&
-          window.apos.page.page.aposLocale.includes(locale.name)) ||
-        false
-      );
+      return !!this.localized[locale.name];
     },
     selectAll() {
       this.wizard.values.toLocales.data = [ ...this.locales ];
     },
     selectLocale(locale) {
-      if (!this.isSelected(locale) || !this.isCurrentLocale(locale)) {
+      if (!this.isSelected(locale)) {
         this.wizard.values.toLocales.data.push(locale);
       }
     },
@@ -298,20 +403,14 @@ export default {
       );
     },
     localeClasses(locale) {
-      if (this.isSelected(locale)) {
-        return {
-          'apos-active': true
-        };
-      } else if (this.isCurrentLocale(locale)) {
-        return {
-          'apos-default': true
-        };
-      } else {
-        return {};
+      const classes = {};
+      if (this.isCurrentLocale(locale)) {
+        classes['apos-current-locale'] = true;
       }
+      return classes;
     },
     submit() {
-      console.log('Submitting...');
+      console.log('Submitting...', this.wizard.values);
     }
   }
 };
@@ -473,7 +572,7 @@ export default {
   }
 
   .apos-check-icon,
-  .apos-default-icon {
+  .apos-current-locale-icon {
     position: absolute;
     top: 50%;
     left: 20px;
@@ -485,18 +584,12 @@ export default {
     stroke: var(--a-primary);
   }
 
-  &.apos-active {
-    .active {
-      opacity: 1;
-    }
-  }
-
-  &.apos-default,
-  .apos-default-icon {
+  &.apos-current-locale,
+  .apos-current-locale-icon {
     color: var(--a-base-5);
   }
 
-  &.apos-default {
+  &.apos-current-locale {
     font-style: italic;
   }
 
@@ -514,5 +607,39 @@ export default {
       border-color: var(--a-success);
     }
   }
+}
+
+.apos-wizard__step {
+  .apos-field__wrapper:not(:last-of-type) {
+    margin-bottom: $spacing-triple;
+  }
+}
+
+.apos-wizard__field-group-heading {
+  padding-bottom: $spacing-base;
+  margin-bottom: $spacing-base;
+  font-size: var(--a-type-large);
+  font-weight: 600;
+  color: var(--a-base-3);
+  border-bottom: 1px solid var(--a-base-8);
+}
+
+.apos-wizard__step-2 {
+  .apos-selected-locales,
+  .apos-wizard__field-group:not(:last-of-type) {
+    margin-bottom: $spacing-quadruple;
+  }
+}
+
+.apos-locale-to-localize {
+  @include type-small;
+  position: relative;
+  overflow: hidden;
+  padding: 10px 20px;
+  border: 1px solid var(--a-primary-dark-10);
+  color: var(--a-white);
+  border-radius: var(--a-border-radius);
+  background: var(--a-primary);
+  text-decoration: none;
 }
 </style>

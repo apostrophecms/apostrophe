@@ -3,6 +3,7 @@
 .apos-tooltip {
   z-index: $z-index-notifications;
   display: block;
+  max-width: 285px;
 
   .apos-info {
     max-width: 330px;
