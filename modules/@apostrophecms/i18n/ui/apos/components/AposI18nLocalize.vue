@@ -8,7 +8,7 @@
     @show-modal="modal.showModal = true"
     @no-modal="$emit('safe-close')"
   >
-    <template v-if="!wizard.busy" #leftRail>
+    <template #leftRail>
       <AposModalBody class="apos-wizard__navigation">
         <template #bodyMain>
           <button
@@ -32,17 +32,7 @@
         </template>
       </AposModalBody>
     </template>
-    <template v-if="wizard.busy" #main>
-      <AposModalBody>
-        <template #bodyMain>
-          <p class="apos-busy-text">
-            {{ $t('apostrophe:localizingContent') }}
-          </p>
-          <AposSpinner class="apos-busy__spinner" />
-        </template>
-      </AposModalBody>
-    </template>
-    <template v-else #main>
+    <template #main>
       <AposModalBody class="apos-wizard__content">
         <template #bodyMain>
           <header class="apos-wizard__header">
@@ -274,6 +264,8 @@ export default {
   data() {
     return {
       modal: {
+        busy: false,
+        busyTitle: this.$t('apostrophe:localizingContent'),
         disableHeader: true,
         active: false,
         showModal: false
@@ -311,7 +303,6 @@ export default {
       ],
       wizard: {
         step: 0,
-        busy: false,
         sections: [
           { title: this.$t('apostrophe:selectContent') },
           {
@@ -377,7 +368,7 @@ export default {
   },
   methods: {
     close() {
-      if (!this.wizard.busy) {
+      if (!this.modal.busy) {
         this.modal.showModal = false;
       }
     },
@@ -425,7 +416,7 @@ export default {
       return classes;
     },
     submit() {
-      this.wizard.busy = true;
+      this.modal.busy = true;
       console.log('Submitting...', this.wizard.values);
     }
   }
@@ -446,22 +437,6 @@ export default {
     left: $horizontal-spacing;
     height: calc(100vh - #{$vertical-spacing * 2});
     width: $width;
-    transition: all ease-in-out 500ms;
-  }
-
-  &.apos-wizard-busy ::v-deep .apos-modal__inner {
-    $height: 190px;
-    top: 50%;
-    bottom: -50%;
-    height: $height;
-    transform: translateY(math.div($height, 2) * -1);
-  }
-
-  &.apos-wizard-busy ::v-deep .apos-modal__main--with-left-rail {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
   }
 
   ::v-deep .apos-modal__main--with-left-rail {
@@ -677,10 +652,5 @@ export default {
   border-radius: var(--a-border-radius);
   background: var(--a-primary);
   text-decoration: none;
-}
-
-.apos-busy-text {
-  margin-bottom: $spacing-triple;
-  font-size: var(--a-type-heading);
 }
 </style>
