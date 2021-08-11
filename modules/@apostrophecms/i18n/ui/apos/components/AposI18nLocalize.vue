@@ -64,7 +64,6 @@
                     },
                   ],
                 }"
-                :value="wizard.values.toLocalize"
                 v-model="wizard.values.toLocalize"
               />
               <p class="apos-wizard__help-text">
@@ -169,7 +168,6 @@
                       },
                     ],
                   }"
-                  :value="wizard.values.localizationSettings"
                   v-model="wizard.values.localizationSettings"
                 />
               </div>
@@ -200,7 +198,6 @@
                       },
                     ],
                   }"
-                  :value="wizard.values.relatedDocumentSettings"
                   v-model="wizard.values.relatedDocumentSettings"
                 />
 
@@ -210,7 +207,6 @@
                     label: 'Related document types to localize',
                     choices: relatedDocumentTypeChoices,
                   }"
-                  :value="wizard.values.relatedDocumentTypesToLocalize"
                   v-model="wizard.values.relatedDocumentTypesToLocalize"
                 />
               </div>
