@@ -101,6 +101,7 @@
   "hideInNavigation": "Hide in Navigation",
   "home": "Home",
   "horizontalRule": "Horizontal Rule",
+  "ifRelatedDocumentExists": "If a related document exists in the destination locale, it will be overwritten by the incoming document. This may result in loss of translation work.",
   "image": "Image",
   "imageFile": "Image File",
   "imageTag": "Image Tag",

@@ -276,10 +276,8 @@ export default {
       ),
       localized: {},
       tooltips: {
-        relatedDocumentSettings:
-          'Related documents are documents referenced by this document. This typically includes images, content defined by relationships, etc.',
-        localizeAllAndOverwrite:
-          'If a related document exists in the destination locale, it will be overwritten by the incoming document. This may result in loss of translation work.'
+        relatedDocumentSettings: this.$t('apostrophe:relatedDocumentsAre'),
+        localizeAllAndOverwrite: this.$t('apostrophe:ifRelatedDocumentExists')
       },
       relatedDocumentTypes: [
         {
