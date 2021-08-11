@@ -52,15 +52,15 @@
                   choices: [
                     {
                       value: 'thisDocument',
-                      label: $t('apostrophe:thisDocument'),
+                      label: 'apostrophe:thisDocument',
                     },
                     {
                       value: 'thisDocumentAndRelated',
-                      label: $t('apostrophe:thisDocumentAndRelated'),
+                      label: 'apostrophe:thisDocumentAndRelated',
                     },
                     {
                       value: 'relatedDocumentsOnly',
-                      label: $t('apostrophe:relatedDocumentsOnly'),
+                      label: 'apostrophe:relatedDocumentsOnly',
                     },
                   ],
                 }"
