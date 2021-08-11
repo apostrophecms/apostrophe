@@ -26,8 +26,12 @@
             :size="8" v-if="next === choice.value"
           />
         </span>
-        <span class="apos-choice-label-text">
+        <span class="apos-choice-label-text" v-apos-tooltip.top="choice.tooltip">
           {{ $t(choice.label) }}
+          <InformationIcon
+            v-if="choice.tooltip"
+            :size="14"
+          />
         </span>
       </label>
     </template>
@@ -36,10 +40,12 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import InformationIcon from 'vue-material-design-icons/Information.vue';
 
 export default {
   name: 'AposInputRadio',
   mixins: [ AposInputMixin ],
+  components: { InformationIcon },
   methods: {
     getChoiceId(uid, value) {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
@@ -68,5 +74,9 @@ export default {
     .apos-input--radio + & {
       border-radius: 50%;
     }
+  }
+  .information-icon {
+    position: relative;
+    top: 2px;
   }
 </style>

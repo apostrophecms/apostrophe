@@ -323,7 +323,14 @@ module.exports = {
           return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition, published, options);
         } else if (!doc.level) {
           // Insert the home page
-          return self.apos.doc.db.insertOne(_req, published, options);
+          Object.assign(published, {
+            path: doc.path,
+            level: doc.level,
+            rank: doc.rank,
+            parked: doc.parked,
+            parkedId: doc.parkedId
+          });
+          return self.apos.doc.insert(_req, published, options);
         } else {
           throw new Error('insertPublishedOf called on a page that was never inserted via the standard page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent published page');
         }
@@ -378,6 +385,8 @@ module.exports = {
           to.aposLastTargetId = from.aposLastTargetId.replace(oldMode, newMode);
           to.aposLastPosition = from.aposLastPosition;
         }
+        to.parkedId = from.parkedId;
+        to.parked = from.parked;
       },
       getAutocompleteProjection(_super, query) {
         const projection = _super(query);

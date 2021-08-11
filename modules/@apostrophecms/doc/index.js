@@ -1000,11 +1000,16 @@ module.exports = {
             for (const locale of localeNames) {
               if (!existing.find(doc => doc.aposLocale === locale)) {
                 const module = self.getManager(sourceDoc.type);
-                await module.localize(req, sourceDoc, locale);
+                const localized = await module.localize(req, sourceDoc, locale);
+                await module.publish({
+                  ...req,
+                  locale
+                }, localized);
               }
             }
           }
         }
+        await self.emit('afterReplicate');
       },
       // Determine which locales exist for the given doc _id
       async getLocales(req, _id) {
