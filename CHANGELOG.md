@@ -1,6 +1,6 @@
 # Changelog
 
-## UNANNOUNCED
+## 3.1.4 - 2021-08-13
 
 ### Fixes
 
