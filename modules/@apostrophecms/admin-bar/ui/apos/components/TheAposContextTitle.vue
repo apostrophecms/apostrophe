@@ -58,7 +58,7 @@ export default {
       }
     }
   },
-  emits: [ 'switchDraftMode' ],
+  emits: [ 'switch-draft-mode' ],
   computed: {
     updatedBy() {
       let editorLabel = 'ApostropheCMS ■●▲';
@@ -103,7 +103,7 @@ export default {
   },
   methods: {
     switchDraftMode(mode) {
-      this.$emit('switchDraftMode', mode);
+      this.$emit('switch-draft-mode', mode);
     }
   }
 };

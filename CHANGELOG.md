@@ -15,14 +15,26 @@
 * `i18next` localization JSON files can be added to the `i18n` subdirectory of *any* module, as long as its `i18n` option is set. The `i18n` object may specify `ns` to give an `i18next` namespace, otherwise phrases are in the default namespace, used when no namespace is specified with a `:` in an `i18next` call. The default namespace is yours for use at project level. Multiple modules may contribute to the same namespace.
 * If `APOS_DEBUG_I18N=1` is set in the environment, the `i18next` debug flag is activated. For server-side translations, i.e. `req.t()` and `__t()`, debugging output will appear on the server console. For browser-side translations in the Vue admin UI, debugging output will appear in the browser console.
 * If `APOS_SHOW_I18N=1` is set in the environment, all phrases passed through `i18next` are visually marked, to make it easier to find those that didn't go through `i18next`. This does not mean translations actually exist in the JSON files. For that, review the output of `APOS_DEBUG_I18N=1`.
-* There is a bare bones, unstyled locale switcher (so far, will update this entry).
-* There is a backend route to accept a new locale on switch, on refresh you currently have a 404, but we'll fix this when we do replication in content localization.
-* We ditched the i18next middleware in favor of simpler i18next-based middleware better for our needs.
+* There is a locale switcher for editors.
+* There is a backend route to accept a new locale on switch.
 * A `req.clone(properties)` method is now available. This creates a clone of the `req` object, optionally passing in an object of properties to be set. The use of `req.clone` ensures the new object supports `req.get` and other methods of a true `req` object. This technique is mainly used to obtain a new request object with the same privileges but a different mode or locale, i.e. `mode: 'published'`.
 
 ### Fixes
 
 * `req.hostname` now works as expected when `trustProxy: true` is passed to the `@apostrophecms/express` module.
+* Apostrophe loads modules from npm if they exist there and are configured in the `modules` section of `app.js`. This was always intended only as a way to load direct, intentional dependencies of your project. However, since npm "flattens" the dependency tree, dependencies of dependencies that happen to have the same name as a project-level Apostrophe module could be loaded by default, crashing the site or causing unexpected behavior. So beginning with this release, Apostrophe scans `package.json` to verify an npm module is actually a dependency of the project itself before attempting to load it as an Apostrophe module.
+* Fixes the reference to sanitize-html defaults in the rich text widget.
+* Fixes the `toolbarToAllowedStyles` method in the rich text widget, which was not returning any configuration.
+* Fixes the broken text alignment in rich text widgets.
+* Adds a missing npm dependency on `chokidar`, which Apostrophe and Nunjucks use for template refreshes. In most environments this worked anyway due to an indirect dependency via the `sass` module, but for stability Apostrophe should depend directly on any npm module it uses.
+* Fixes the display of inline range inputs, notably broken when using Palette
+* Fixes occasional unique key errors from migrations when attempting to start up again with a site that experienced a startup failure before inserting its first document.
+
+## 3.1.3 - 2021-07-16
+
+### Fixes
+
+* Hotfix for an incompatibility between `vue-loader` and `webpack` 5.45.0 which causes a crash at startup in development, or asset build time in production. We have temporarily pinned our dependency to `webpack` 5.44.x. We are [contributing to the discussion around the best long-term fix for vue-loader](https://github.com/vuejs/vue-loader/issues/1854).
 
 ## 3.1.2 - 2021-07-14
 
