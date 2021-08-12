@@ -185,11 +185,18 @@ module.exports = {
           const localeReq = req.clone({
             locale: sanitizedLocale
           });
-          self.apos.i18n.setPrefixUrls(localeReq);
+          self.setPrefixUrls(localeReq);
           if (_id) {
             doc = await self.apos.doc.find(localeReq, {
               aposDocId: _id.split(':')[0]
             }).toObject();
+            if (!doc) {
+              const publishedLocaleReq = localeReq.clone({ mode: 'draft' });
+              self.setPrefixUrls(publishedLocaleReq);
+              doc = await self.apos.doc.find(publishedLocaleReq, {
+                aposDocId: _id.split(':')[0]
+              }).toObject();
+            }
           }
           if (!sanitizedLocale) {
             throw self.apos.error('invalid');
@@ -315,11 +322,11 @@ module.exports = {
         }
       },
       getBrowserData(req) {
-        const i18n = {};
-        for (const [ name, options ] of Object.entries(self.namespaces)) {
-          if (options.browser) {
-            i18n[name] = self.i18next.getResourceBundle(req.locale, name);
-          }
+        const i18n = {
+          [req.locale]: self.getBrowserBundles(req.locale)
+        };
+        if (req.locale !== self.defaultLocale) {
+          i18n[self.defaultLocale] = self.getBrowserBundles(self.defaultLocale);
         }
         const result = {
           i18n,
@@ -331,6 +338,15 @@ module.exports = {
           action: self.action
         };
         return result;
+      },
+      getBrowserBundles(locale) {
+        const i18n = {};
+        for (const [ name, options ] of Object.entries(self.namespaces)) {
+          if (options.browser) {
+            i18n[name] = self.i18next.getResourceBundle(locale, name);
+          }
+        }
+        return i18n;
       },
       getLocales() {
         const locales = self.options.locales || {

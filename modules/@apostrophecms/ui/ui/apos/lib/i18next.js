@@ -17,8 +17,13 @@ export default {
       debug: i18n.debug
     });
 
-    for (const [ ns, phrases ] of Object.entries(i18n.i18n)) {
+    for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.locale])) {
       i18next.addResourceBundle(i18n.locale, ns, phrases, true, true);
+    }
+    if (i18n.locale !== i18n.defaultLocale) {
+      for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.defaultLocale])) {
+        i18next.addResourceBundle(i18n.defaultLocale, ns, phrases, true, true);
+      }
     }
 
     Vue.prototype.$t = (phrase, options) => {
