@@ -49,24 +49,11 @@
                 :field="{
                   name: 'toLocalize',
                   label: 'apostrophe:whatContentToLocalize',
-                  choices: [
-                    {
-                      value: 'thisDocument',
-                      label: 'apostrophe:thisDocument',
-                    },
-                    {
-                      value: 'thisDocumentAndRelated',
-                      label: 'apostrophe:thisDocumentAndRelated',
-                    },
-                    {
-                      value: 'relatedDocumentsOnly',
-                      label: 'apostrophe:relatedDocumentsOnly',
-                    },
-                  ],
+                  choices: toLocalizeChoices
                 }"
                 v-model="wizard.values.toLocalize"
               />
-              <p class="apos-wizard__help-text">
+              <p v-if="relatedDocumentTypes.length > 0" class="apos-wizard__help-text">
                 <InformationIcon :size="16" />
                 {{ $t('apostrophe:relatedDocumentsAre') }}
               </p>
@@ -172,7 +159,7 @@
                 />
               </div>
 
-              <div class="apos-wizard__field-group">
+              <div v-if="relatedDocumentTypes.length > 0" class="apos-wizard__field-group">
                 <p class="apos-wizard__field-group-heading">
                   {{ $t('apostrophe:relatedDocumentSettings') }}
                   <span
@@ -280,24 +267,6 @@ export default {
         relatedDocumentSettings: this.$t('apostrophe:relatedDocumentsAre'),
         localizeAllAndOverwrite: this.$t('apostrophe:ifRelatedDocumentExists')
       },
-      relatedDocumentTypes: [
-        {
-          type: 'Images',
-          count: 4
-        },
-        {
-          type: 'Articles',
-          count: 1
-        },
-        {
-          type: 'Files',
-          count: 0
-        },
-        {
-          type: 'Pages',
-          count: 2
-        }
-      ],
       wizard: {
         step: 0,
         sections: [
@@ -315,7 +284,9 @@ export default {
           relatedDocumentSettings: { data: 'localizeNewRelated' },
           relatedDocumentTypesToLocalize: { data: [] }
         }
-      }
+      },
+      fullDoc: this.doc,
+      related: []
     };
   },
   computed: {
@@ -340,19 +311,58 @@ export default {
     selectedLocales() {
       return this.wizard.values.toLocales.data;
     },
-    relatedDocumentTypeChoices() {
-      const choices = this.relatedDocumentTypes.map(({ type, count }) => ({
-        value: type,
-        label: `${type} (${count})`,
-        readOnly: count === 0
-      }));
-      return choices;
+    toLocalizeChoices() {
+      return [
+        {
+          value: 'thisDocument',
+          label: 'apostrophe:thisDocument',
+        },
+        ...(this.relatedDocumentTypes.length ? [
+          {
+            value: 'thisDocumentAndRelated',
+            label: 'apostrophe:thisDocumentAndRelated',
+          },
+          {
+            value: 'relatedDocumentsOnly',
+            label: 'apostrophe:relatedDocumentsOnly',
+          }
+        ] : []
+        )
+      ];
+    },
+    relatedDocumentTypes() {
+      const types = {};
+      for (const doc of this.related) {
+        if (!types[doc.type]) {
+          const module = apos.modules[doc.type] || {};
+          types[doc.type] = {
+            value: doc.type,
+            count: 0,
+            label: module.pluralLabel || module.label || module.type
+          };
+        }
+        types[doc.type].count++;
+      }
+      return Object.values(types);
     }
   },
   async mounted() {
     this.modal.active = true;
+    this.fullDoc = await apos.http.get(
+      `${this.action}/${this.doc._id}`,
+      {
+        busy: true
+      }
+    );
+    this.related = this.getRelated(this.fullDoc);
+    if (!this.relatedDocumentTypes.length) {
+      // Only one choice, skip step 0
+      this.wizard.values.localizationSettings.data = 'thisDocument';
+      this.goTo(1);
+    }
+
     const docs = await apos.http.get(
-      `${this.action}/${apos.adminBar.context._id}/locales`,
+      `${this.action}/${this.fullDoc._id}/locales`,
       {
         busy: true
       }
@@ -422,6 +432,38 @@ export default {
         });
       }
       this.close();
+    },
+    getRelated(doc) {
+      const schema = apos.modules[doc.type].schema;
+      return getRelatedBySchema(doc, schema);
+      function getRelatedBySchema(object, schema) {
+        let related = [];
+        for (const field of schema) {
+          if (field.type === 'array') {
+            for (const value of (object[field.name] || [])) {
+              related = [
+                ...related,
+                ...getRelatedBySchema(value, field.schema)
+              ];
+            }
+          } else if (field.type === 'area') {
+            for (const widget of (object[field.name]?.items || [])) {
+              related = [
+                ...related,
+                ...getRelatedBySchema(widget, apos.modules[`${widget?.type}-widget`]?.schema || [])
+              ];
+            }
+          } else if (field.type === 'relationship') {
+            related = [
+              ...related,
+              object[field.name] || []
+            ];
+            // Stop here, don't recurse through relationships or we're soon
+            // related to the entire site
+          }
+        }
+        return related;
+      }
     }
   }
 };
