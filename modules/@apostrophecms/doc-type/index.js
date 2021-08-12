@@ -737,7 +737,6 @@ module.exports = {
         if (!existing) {
           if (self.apos.page.isPage(draft)) {
             if (!draft.level) {
-              console.log('replicating home page for first time');
               // Replicating the home page for the first time
               return self.apos.doc.insert(toReq, {
                 ...data,
@@ -751,7 +750,6 @@ module.exports = {
                 parkedId: draft.parkedId
               });
             } else {
-              console.log('inserting non home');
               // A page that is not the home page, being replicated for the first time
               return actionModule.insert(toReq,
                 draft.aposLastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`),
@@ -774,7 +772,6 @@ module.exports = {
             });
           }
         } else {
-          console.log('updating');
           const update = {
             ...existing,
             ...data,
