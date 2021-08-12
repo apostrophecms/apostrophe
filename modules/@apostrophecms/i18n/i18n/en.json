@@ -169,7 +169,7 @@
   "redoTooltipNoChanges": "No Changes to Redo",
   "redoFailed": "The operation could not be redone.",
   "refreshForRawHtml": "Refresh the page to view raw HTML.",
-  "relatedDocumentsAre": "Related documents are documents referenced by this document. This typically includes images, content defined by relationships, ect.",
+  "relatedDocumentsAre": "Related documents are documents referenced by this document. This typically includes images, content defined by relationships, etc.",
   "relatedDocumentsOnly": "Related documents only",
   "relatedDocumentTypesToLocalize": "Related document types to localize",
   "relatedDocumentSettings": "Related Documents Settings",

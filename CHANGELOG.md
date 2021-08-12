@@ -18,6 +18,7 @@
 * There is a bare bones, unstyled locale switcher (so far, will update this entry).
 * There is a backend route to accept a new locale on switch, on refresh you currently have a 404, but we'll fix this when we do replication in content localization.
 * We ditched the i18next middleware in favor of simpler i18next-based middleware better for our needs.
+* A `req.clone(properties)` method is now available. This creates a clone of the `req` object, optionally passing in an object of properties to be set. The use of `req.clone` ensures the new object supports `req.get` and other methods of a true `req` object. This technique is mainly used to obtain a new request object with the same privileges but a different mode or locale, i.e. `mode: 'published'`.
 
 ### Fixes
 

@@ -225,10 +225,15 @@ module.exports = {
         url: '/api/v1',
         middleware: cors()
       },
-      createRawRedirect(req, res, next) {
+      attachUtilityMethods(req, res, next) {
         // We apply the super pattern variously to res.redirect,
         // make sure the original version is always available
         res.rawRedirect = res.redirect;
+        // Convenient way to make a new req object with
+        // some tweaked properties
+        req.clone = (properties = {}) => {
+          return self.apos.util.cloneReq(req, properties);
+        };
         return next();
       },
       createDataAndGuards(req, res, next) {
