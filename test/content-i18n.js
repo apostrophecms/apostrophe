@@ -4,6 +4,8 @@ let apos;
 
 const config = {
   root: module,
+  // Wrong port, but that is OK for this test
+  baseUrl: 'http://localhost:3000',
   modules: {
     '@apostrophecms/i18n': {
       options: {
@@ -191,14 +193,14 @@ describe('Locales', function() {
     });
     const en = await apos.doc.find(reqEn, { slug: '/child-page' }).toObject();
     assert(en);
-    assert.strictEqual(en._url, '/child-page');
+    assert.strictEqual(en._url, 'http://localhost:3000/child-page');
     const reqEnCA = apos.task.getReq({
       locale: 'en-CA',
       mode: 'draft'
     });
     const enCA = await apos.doc.find(reqEnCA, { slug: '/child-page' }).toObject();
     assert(enCA);
-    assert.strictEqual(enCA._url, '/ca/en/child-page');
+    assert.strictEqual(enCA._url, 'http://localhost:3000/ca/en/child-page');
     // Distinguish the content in this locale
     enCA.title = 'Child Page, Toronto Style';
     assert(apos.page.update(reqEnCA, enCA));
@@ -213,8 +215,8 @@ describe('Locales', function() {
     // Now it should work
     const childPage = await apos.http.get('/ca/en/child-page', {});
     assert(childPage.includes('<title>Child Page, Toronto Style</title>'));
-    assert(childPage.includes('"/ca/en/">Home: /'));
-    assert(childPage.includes('"/ca/en/child-page">Tab: /child-page'));
+    assert(childPage.includes('"http://localhost:3000/ca/en/">Home: /'));
+    assert(childPage.includes('"http://localhost:3000/ca/en/child-page">Tab: /child-page'));
     // And the home page should be reachable
     const home = await apos.http.get('/ca/en/');
     assert(home);
