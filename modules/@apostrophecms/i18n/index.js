@@ -272,11 +272,11 @@ module.exports = {
         }
       },
       getBrowserData(req) {
-        const i18n = {};
-        for (const [ name, options ] of Object.entries(self.namespaces)) {
-          if (options.browser) {
-            i18n[name] = self.i18next.getResourceBundle(req.locale, name);
-          }
+        const i18n = {
+          [req.locale]: self.getBrowserBundles(req.locale)
+        };
+        if (req.locale !== self.defaultLocale) {
+          i18n[self.defaultLocale] = self.getBrowserBundles(self.defaultLocale);
         }
         const result = {
           i18n,
@@ -288,6 +288,15 @@ module.exports = {
           action: self.action
         };
         return result;
+      },
+      getBrowserBundles(locale) {
+        const i18n = {};
+        for (const [ name, options ] of Object.entries(self.namespaces)) {
+          if (options.browser) {
+            i18n[name] = self.i18next.getResourceBundle(locale, name);
+          }
+        }
+        return i18n;
       },
       getLocales() {
         const locales = self.options.locales || {
