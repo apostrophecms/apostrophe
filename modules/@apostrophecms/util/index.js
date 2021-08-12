@@ -661,6 +661,7 @@ module.exports = {
         } else if (object.metaType === 'object') {
           return self.apos.schema.getArrayManager(object.scopedObjectName);
         } else {
+          self.apos.util.error(object);
           throw new Error('Unsupported metaType in getManagerOf:', object);
         }
       },

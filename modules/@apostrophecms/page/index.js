@@ -715,6 +715,7 @@ database.`);
           throw self.apos.error('invalid');
         }
         self.apos.schema.implementPatchOperators(input, page);
+        console.log('***', page);
         const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
         const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req, {
           ...page,
@@ -1460,7 +1461,8 @@ database.`);
                 0: req.path
               },
               query: req.query,
-              mode: 'draft'
+              mode: 'draft',
+              locale: req.locale
             });
             await self.serveGetPage(testReq);
             await self.emit('serve', testReq);
