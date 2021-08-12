@@ -144,12 +144,9 @@ module.exports = {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
           const _id = self.apos.launder.id(req.body.contextDocId);
           let doc;
-          const localeReq = {
-            ...req,
-            locale: sanitizedLocale,
-            // A getter on the original, so won't clone on its own
-            protocol: req.protocol
-          };
+          const localeReq = req.clone({
+            locale: sanitizedLocale
+          });
           self.apos.i18n.setPrefixUrls(localeReq);
           if (_id) {
             doc = await self.apos.doc.find(localeReq, {

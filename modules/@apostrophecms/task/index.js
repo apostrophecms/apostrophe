@@ -206,7 +206,13 @@ module.exports = {
           locale: self.apos.argv.locale || self.apos.modules['@apostrophecms/i18n'].defaultLocale,
           mode: 'published',
           aposNeverLoad: {},
-          aposStack: []
+          aposStack: [],
+          clone(properties = {}) {
+            return {
+              ...req,
+              ...properties
+            };
+          }
         };
         const { role, ..._properties } = options || {};
         Object.assign(req, _properties);

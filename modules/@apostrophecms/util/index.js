@@ -776,6 +776,24 @@ module.exports = {
         const result = await fn();
         req.aposStack.pop();
         return result;
+      },
+      // Returns a new `req` object with the properties of the original plus any
+      // in the optional `properties` parameter. Used when a request object
+      // with one change is desired, such as `mode: 'published'`. Avoids
+      // the need to push and pop properties of the original `req`.
+      // Also available as `req.clone(properties = {})`.
+      cloneReq(req, properties = {}) {
+        // Express and Node.js offer no official constructor for a req object.
+        // But a plain object "clone" only takes us so far because we need
+        // access to things like `req.get`. Solution: ask `Object.create` to
+        // create a new object with the same prototype as `req`, then copy the
+        // own properties of `req` into the new object.
+        const result = Object.assign(Object.create(Object.getPrototypeOf(req)), req, properties);
+        // Must have its own clone function or we can't clone two levels deep
+        result.clone = (properties = {}) => {
+          return self.apos.util.cloneReq(result, properties);
+        };
+        return result;
       }
     };
   },
