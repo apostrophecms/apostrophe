@@ -773,15 +773,13 @@ module.exports = {
           }
         } else {
           const update = {
+            ...existing,
             ...data,
+            _id: toId,
             aposDocId: draft.aposDocId,
             aposLocale: `${toLocale}:draft`,
-            _id: toId
+            metaType: 'doc'
           };
-          if (self.apos.page.isPage(draft)) {
-            update.parked = draft.parked;
-            update.parkedId = draft.parkedId;
-          }
           return actionModule.update(toReq, update);
         }
       },

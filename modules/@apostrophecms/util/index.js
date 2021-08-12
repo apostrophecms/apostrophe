@@ -661,7 +661,7 @@ module.exports = {
         } else if (object.metaType === 'object') {
           return self.apos.schema.getArrayManager(object.scopedObjectName);
         } else {
-          throw new Error('Unsupported metaType in getManagerOf:', object);
+          throw new Error(`Unsupported metaType in getManagerOf: ${object.metaType}`);
         }
       },
       // fetch the value at the given path from the object or

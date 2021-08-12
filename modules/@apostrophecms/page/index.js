@@ -1460,7 +1460,8 @@ database.`);
                 0: req.path
               },
               query: req.query,
-              mode: 'draft'
+              mode: 'draft',
+              locale: req.locale
             });
             await self.serveGetPage(testReq);
             await self.emit('serve', testReq);
