@@ -10,6 +10,7 @@
 * Fixes the broken text alignment in rich text widgets.
 * Adds a missing npm dependency on `chokidar`, which Apostrophe and Nunjucks use for template refreshes. In most environments this worked anyway due to an indirect dependency via the `sass` module, but for stability Apostrophe should depend directly on any npm module it uses.
 * Fixes the display of inline range inputs, notably broken when using Palette
+* Fixes occasional unique key errors from migrations when attempting to start up again with a site that experienced a startup failure before inserting its first document.
 
 ## 3.1.3 - 2021-07-16
 
