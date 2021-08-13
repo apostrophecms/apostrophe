@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.1.4 - 2021-08-13
+## 3.2.0 - 2021-08-13
 
 ### Fixes
 
@@ -11,6 +11,15 @@
 * Adds a missing npm dependency on `chokidar`, which Apostrophe and Nunjucks use for template refreshes. In most environments this worked anyway due to an indirect dependency via the `sass` module, but for stability Apostrophe should depend directly on any npm module it uses.
 * Fixes the display of inline range inputs, notably broken when using Palette
 * Fixes occasional unique key errors from migrations when attempting to start up again with a site that experienced a startup failure before inserting its first document.
+
+### Adds
+* Adds Cut and Paste to area controls. You can now Cut a widget to a virtual clipboard and paste it in suitable areas. If an area
+can include the widget on the clipboard, a special Clipboard widget will appear in area's Add UI. This works across pages as well.
+
+### Changes
+* Apostrophe's Global's UI (the @apostrophecms/global singleton has moved from the admin bar's content controls to
+the admin utility tray under a cog icon.
+* The context bar's document Edit button, which was a cog icon, has been rolled into the doc's context menu.
 
 ## 3.1.3 - 2021-07-16
 
