@@ -238,6 +238,11 @@ module.exports = {
             // it requires no migrations. Mark them all as "done" but note
             // that they were skipped, just in case we decide that's an issue later
             const at = new Date();
+            // Just in case the db has no documents but did
+            // start to run migrations on a previous attempt,
+            // which causes an occasional unique key error if not
+            // corrected for here
+            await self.db.removeMany({});
             await self.db.insertMany(self.migrations.map(migration => ({
               _id: migration.name,
               at,
