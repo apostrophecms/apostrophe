@@ -63,6 +63,7 @@ export default {
   .apos-button-group__inner {
     display: flex;
     overflow: hidden;
+    padding: 5px;
     border: 1px solid var(--a-background-inverted);
     border-radius: var(--a-border-radius);
     color: var(--a-text-primary);
@@ -74,10 +75,6 @@ export default {
   }
 
   // group-specific style overrides
-
-  .apos-button-group ::v-deep .apos-button {
-    border-radius: 0;
-  }
 
   // transform weirds this out
   .apos-button-group ::v-deep .apos-button:hover,

@@ -49,6 +49,8 @@
         @up="up"
         @down="down"
         @remove="remove"
+        @cut="cut"
+        @copy="copy"
         @edit="edit"
         @clone="clone"
         @update="update"
@@ -273,6 +275,23 @@ export default {
         ...this.next.slice(i + 1)
       ];
     },
+    async cut(i) {
+      apos.area.widgetClipboard.set(this.next[i]);
+      await this.remove(i);
+      apos.notify('Widget cut to clipboard', {
+        type: 'success',
+        icon: 'content-cut-icon',
+        dismiss: true
+      });
+    },
+    async copy(i) {
+      apos.area.widgetClipboard.set(this.next[i]);
+      apos.notify('Widget copied to clipboard', {
+        type: 'success',
+        icon: 'content-copy-icon',
+        dismiss: true
+      });
+    },
     async edit(i) {
       if (this.foreign) {
         try {
@@ -344,17 +363,16 @@ export default {
     // Regenerate all array item, area and widget ids so they are considered
     // new. Useful when copying a widget with nested content.
     regenerateIds(schema, object) {
+      object._id = cuid();
       for (const field of schema) {
         if (field.type === 'array') {
           for (const item of (object[field.name] || [])) {
-            item._id = cuid();
             this.regenerateIds(field.schema, item);
           }
         } else if (field.type === 'area') {
           if (object[field.name]) {
             object[field.name]._id = cuid();
             for (const item of (object[field.name].items || [])) {
-              item._id = cuid();
               const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
               this.regenerateIds(schema, item);
             }
@@ -379,8 +397,20 @@ export default {
       this.edited[widget._id] = true;
     },
     // Add a widget into an area.
-    async add({ index, name }) {
-      if (this.widgetIsContextual(name)) {
+    async add({
+      index,
+      name,
+      clipboard
+    }) {
+      if (clipboard) {
+        // clear clipboard after paste
+        apos.area.widgetClipboard.set(null);
+        this.regenerateIds(apos.modules[apos.area.widgetManagers[clipboard.type]].schema, clipboard);
+        return this.insert({
+          widget: clipboard,
+          index
+        });
+      } else if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
             _id: cuid(),
@@ -400,7 +430,7 @@ export default {
         });
         apos.area.activeEditor = null;
         if (widget) {
-          await this.insert({
+          return this.insert({
             widget,
             index
           });

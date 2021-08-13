@@ -213,7 +213,7 @@ module.exports = {
 
       optionsToSanitizeHtml(options) {
         return {
-          ...sanitizeHtml.defaultOptions,
+          ...sanitizeHtml.defaults,
           allowedTags: self.toolbarToAllowedTags(options),
           allowedAttributes: self.toolbarToAllowedAttributes(options),
           allowedClasses: self.toolbarToAllowedClasses(options),
@@ -345,10 +345,14 @@ module.exports = {
               if (!allowedStyles[simple[item].selector][property]) {
                 allowedStyles[simple[item].selector][property] = [];
               }
-              allowedStyles[simple[item].selector][property].push(...simple[item].properties[property]);
+
+              allowedStyles[simple[item].selector][property]
+                .push(...simple[item].properties[property]);
             }
           }
         }
+
+        return allowedStyles;
       },
 
       toolbarToAllowedClasses(options) {
@@ -392,14 +396,16 @@ module.exports = {
   },
   extendMethods(self) {
     return {
-      async sanitize(_super, req, input, saniOptions) {
+      async sanitize(_super, req, input, options) {
         const rteOptions = {
           ...self.options.defaultOptions,
-          ...saniOptions
+          ...options
         };
 
         const output = await _super(req, input, rteOptions);
-        output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(rteOptions));
+        const finalOptions = self.optionsToSanitizeHtml(rteOptions);
+
+        output.content = sanitizeHtml(input.content, finalOptions);
         return output;
       },
       // Add on the core default options to use, if needed.

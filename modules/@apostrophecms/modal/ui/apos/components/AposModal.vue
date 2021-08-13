@@ -37,9 +37,9 @@
                 </div>
                 <h2 :id="id" class="apos-modal__heading">
                   <span v-if="modal.a11yTitle" class="apos-sr-only">
-                    {{ modal.a11yTitle }}
+                    {{ $t(modal.a11yTitle) }}
                   </span>
-                  {{ modalTitle }}
+                  {{ $t(modalTitle) }}
                 </h2>
                 <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
                   <slot name="primaryControls" />

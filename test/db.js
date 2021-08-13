@@ -23,7 +23,10 @@ describe('Db', function() {
 
     assert(doc);
   });
+
   it('should be able to launch a second instance reusing the connection', async function() {
+    // Often takes too long otherwise
+    this.timeout(10000);
     apos2 = await t.create({
       root: module,
       modules: {

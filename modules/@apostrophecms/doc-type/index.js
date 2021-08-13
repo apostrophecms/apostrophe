@@ -637,6 +637,9 @@ module.exports = {
             aposLocale: publishedLocale,
             lastPublishedAt
           };
+          // Might be omitted for editing purposes, but must exist
+          // in the database (global doc for instance)
+          published.slug = draft.slug;
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
             draft,
@@ -770,15 +773,13 @@ module.exports = {
           }
         } else {
           const update = {
+            ...existing,
             ...data,
+            _id: toId,
             aposDocId: draft.aposDocId,
             aposLocale: `${toLocale}:draft`,
-            _id: toId
+            metaType: 'doc'
           };
-          if (self.apos.page.isPage(draft)) {
-            update.parked = draft.parked;
-            update.parkedId = draft.parkedId;
-          }
           return actionModule.update(toReq, update);
         }
       },
@@ -1706,8 +1707,7 @@ module.exports = {
           after(results) {
             for (const result of results) {
               if ((!result.archived) && result.slug && self.apos.page.isPage(result)) {
-                const url = self.apos.page.getBaseUrl(query.req);
-                result._url = url + self.apos.prefix + result.slug;
+                result._url = `${query.req.prefix}${result.slug}`;
               }
             }
           }

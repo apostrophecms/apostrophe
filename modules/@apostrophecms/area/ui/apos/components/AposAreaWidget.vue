@@ -75,6 +75,8 @@
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
+          @cut="$emit('cut', i);"
+          @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
         />
@@ -196,7 +198,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'add', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
   data() {
     const initialState = {
       controls: {
@@ -610,7 +612,10 @@ export default {
   }
 
   .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-background-inverted);
+    background-color: var(--a-primary);
+    & ::v-deep .apos-button {
+      color: var(--a-text-inverted);
+    }
   }
 
   .apos-area-widget__breadcrumb,

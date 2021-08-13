@@ -41,7 +41,7 @@
             </h2>
           </header>
 
-          <form class="apos-wizard__form" @submit.prevent="submit">
+          <form class="apos-wizard__form" @submit.prevent>
             <fieldset
               v-if="isStep(0)"
               class="apos-wizard__step apos-wizard__step-0"
@@ -53,15 +53,15 @@
                   choices: [
                     {
                       value: 'thisDocument',
-                      label: $t('apostrophe:thisDocument'),
+                      label: 'apostrophe:thisDocument',
                     },
                     {
                       value: 'thisDocumentAndRelated',
-                      label: $t('apostrophe:thisDocumentAndRelated'),
+                      label: 'apostrophe:thisDocumentAndRelated',
                     },
                     {
                       value: 'relatedDocumentsOnly',
-                      label: $t('apostrophe:relatedDocumentsOnly'),
+                      label: 'apostrophe:relatedDocumentsOnly',
                     },
                   ],
                 }"
@@ -219,7 +219,7 @@
             v-if="isStep(wizard.sections.length - 1)"
             type="primary"
             label="apostrophe:localizeContent"
-            @click="submit()"
+            @click="submit"
           />
           <AposButton
             v-else
@@ -415,9 +415,18 @@ export default {
       }
       return classes;
     },
-    submit() {
-      this.modal.busy = true;
-      console.log('Submitting...', this.wizard.values);
+    async submit() {
+      // Leaving this until we finish implementing the rest of the operations
+      console.log('Submitting...', JSON.stringify(this.wizard.values, null, '  '));
+      for (const locale of this.wizard.values.toLocales.data) {
+        apos.http.post(`${this.action}/${this.doc._id}/localize`, {
+          body: {
+            toLocale: locale.name
+          },
+          busy: true
+        });
+      }
+      this.close();
     }
   }
 };

@@ -60,7 +60,6 @@ module.exports = {
       prefix: self.apos.prefix
     };
 
-    self.helperShortcuts = {};
     self.filters = {};
 
     self.nunjucks = self.options.language || require('nunjucks');
@@ -83,11 +82,6 @@ module.exports = {
           });
           _.each(self.templateApos.modules, function (helpers, moduleName) {
             helpers.options = self.apos.modules[moduleName].options;
-          });
-          _.each(self.helperShortcuts, function (list, moduleName) {
-            _.each(list, function (name) {
-              self.templateApos[name] = self.templateApos.modules[moduleName][name];
-            });
           });
 
           function wrapFunctions(object) {
@@ -139,21 +133,6 @@ module.exports = {
         } else {
           _.merge(helpersForModule, object);
         }
-      },
-
-      addHelperShortcutForModule(module, name) {
-        self.helperShortcuts[module.__meta.name] = self.helperShortcuts[module.__meta.name] || [];
-        self.helperShortcuts[module.__meta.name].push(name);
-      },
-
-      // The use of this method is restricted to core modules
-      // and should only be used for apos.area, apos.singleton,
-      // and anything we later decide is at least that important.
-      // Everything else should be namespaced at all times,
-      // at least under its module alias. -Tom
-
-      addShortcutHelper(name, value) {
-        self.shortcutHelpers[name] = value;
       },
 
       // Add new filters to the Nunjucks environment. You
@@ -636,7 +615,8 @@ module.exports = {
 
         const aposBodyData = {
           modules: {},
-          prefix: self.apos.prefix,
+          prefix: req.prefix,
+          sitePrefix: self.apos.prefix,
           locale: req.locale,
           csrfCookieName: self.apos.csrfCookieName,
           tabId: self.apos.util.generateId(),

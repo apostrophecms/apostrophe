@@ -1,18 +1,27 @@
 <template>
   <button
     @click="click" class="apos-area-menu__button"
+    :class="{ 'apos-area-menu__button--separated': item.type }"
     :data-action="item.name"
     :tabindex="String(tabindex)"
     @keydown.prevent.arrow-down="$emit('down')"
     @keydown.prevent.arrow-up="$emit('up')"
   >
-    <component
-      v-if="item.icon"
-      :size="15"
-      class="apos-area-menu__item-icon"
-      :is="item.icon"
-    />
-    {{ item.label }}
+    <div
+      v-if="item.type === 'clipboard'"
+      class="apos-area-menu__item-sublabel"
+    >
+      Clipboard
+    </div>
+    <div class="apos-area-menu__item-content">
+      <component
+        v-if="item.icon"
+        :size="15"
+        class="apos-area-menu__item-icon"
+        :is="item.icon"
+      />
+      {{ item.label }}
+    </div>
   </button>
 </template>
 
@@ -48,8 +57,22 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-area-menu__button--separated {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--a-base-9);
+  }
+
   .apos-area-menu__item-icon {
     @include apos-align-icon();
     margin-right: 10px;
+  }
+  .apos-area-menu__item-content {
+    display: flex;
+    align-items: center;
+  }
+  .apos-area-menu__item-sublabel {
+    margin-bottom: 10px;
+    color: var(--a-base-4);
   }
 </style>

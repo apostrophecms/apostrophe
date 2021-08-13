@@ -171,7 +171,7 @@ export default () => {
   // `el` is a DOM element, not a jQuery object. Otherwise identical to
   // traditional Apostrophe widget players. `data` contains the properties
   // of the widget itself, `options` contains the options that were
-  // passed to it at the area or singleton level.
+  // passed to it at the area level.
   //
   // Your player is guaranteed to run only once per widget. Hint:
   // DON'T try to find all the widgets. DO just enhance `el`.
