@@ -217,6 +217,49 @@ module.exports = {
             });
           }
           return result;
+        },
+        // Fast bulk query for doc `ids` that exist in the given `locale`.
+        // `ids` may contain `_id` or `aposDocId` values.
+        //
+        // For convenience the returned object contains a `results` array
+        // containing `originalLocaleIds`, `newLocaleIds` and
+        // `aposDocIds` arrays. Any documents not existing in `locale`
+        // will not be included in these arrays.
+        //
+        // The original mode and locale are inferred from the given
+        // `ids`, or from the request.
+        //
+        // This route is a POST route because large numbers of ids
+        // might not be accepted as a query string.
+        async existInLocale(req) {
+          if (!req.user) {
+            throw self.apos.error('notfound');
+          }
+          const ids = self.apos.launder.ids(req.body.ids);
+          const locale = self.apos.launder.string(req.body.locale);
+          console.log(req.body, ids);
+          const originalLocale = (ids[0] && ids[0].split(':')[1]) || req.locale;
+          const originalMode = (ids[0] && ids[0].split(':')[2]) || req.mode;
+          const mode = self.apos.launder.string(req.body.mode, originalMode);
+          if (!self.isValidLocale(locale)) {
+            throw self.apos.error('invalid');
+          }
+          const found = await self.apos.doc.db.find({
+            aposLocale: `${locale}:${mode}`,
+            aposDocId: {
+              $in: ids.map(self.apos.doc.toAposDocId)
+            }
+          }).project({
+            _id: 1,
+            aposDocId: 1
+          }).toArray();
+          const result = {
+            originalLocaleIds: found.map(doc => `${doc.aposDocId}:${originalLocale}:${originalMode}`),
+            newLocaleIds: found.map(doc => doc._id),
+            aposDocIds: found.map(doc => doc.aposDocId)
+          };
+          console.log(result);
+          return result;
         }
       }
     };

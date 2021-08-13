@@ -11,11 +11,12 @@
       <AposModalBody class="apos-wizard__navigation">
         <template #bodyMain>
           <button
-            v-for="(section, index) in wizard.sections"
+            v-for="section in visibleSections"
+            :disabled="!completedPrevious(section.name)"
             :key="section.title"
-            @click="goTo(index)"
+            @click="goTo(section.name)"
             class="apos-wizard__navigation-item"
-            :class="{ 'apos-state-active': isStep(index) }"
+            :class="{ 'apos-state-active': isStep(section.name) }"
           >
             {{ section.title }}
           </button>
@@ -42,8 +43,8 @@
 
           <form class="apos-wizard__form" @submit.prevent>
             <fieldset
-              v-if="isStep(0)"
-              class="apos-wizard__step apos-wizard__step-0"
+              v-if="isStep('selectContent')"
+              class="apos-wizard__step apos-wizard__step-select-content"
             >
               <AposInputRadio
                 :field="{
@@ -53,15 +54,15 @@
                 }"
                 v-model="wizard.values.toLocalize"
               />
-              <p v-if="relatedDocumentTypes.length > 0" class="apos-wizard__help-text">
+              <p v-if="relatedDocTypes.length > 0" class="apos-wizard__help-text">
                 <InformationIcon :size="16" />
                 {{ $t('apostrophe:relatedDocumentsAre') }}
               </p>
             </fieldset>
 
             <fieldset
-              v-if="isStep(1)"
-              class="apos-wizard__step apos-wizard__step-1"
+              v-if="isStep('selectLocales')"
+              class="apos-wizard__step apos-wizard__step-select-locales"
             >
               <label for="localeFilter" class="apos-local-filter-label">
                 {{ $t('apostrophe:searchLocales') }}
@@ -70,7 +71,7 @@
                 {{ $t('apostrophe:selectAll') }}
               </button>
               <input
-                v-model="wizard.sections[1].filter"
+                v-model="wizard.sections.selectLocales.filter"
                 type="text"
                 name="localeFilter"
                 class="apos-locales-filter"
@@ -126,8 +127,8 @@
             </fieldset>
 
             <fieldset
-              v-if="isStep(2)"
-              class="apos-wizard__step apos-wizard__step-2"
+              v-if="isStep('confirmSettings')"
+              class="apos-wizard__step apos-wizard__step-confirm-settings"
             >
               <ul class="apos-selected-locales">
                 <li
@@ -159,11 +160,11 @@
                 />
               </div>
 
-              <div v-if="relatedDocumentTypes.length > 0" class="apos-wizard__field-group">
+              <div v-if="(relatedDocTypes.length > 0) && (wizard.values.toLocalize.data !== 'thisDoc')" class="apos-wizard__field-group">
                 <p class="apos-wizard__field-group-heading">
-                  {{ $t('apostrophe:relatedDocumentSettings') }}
+                  {{ $t('apostrophe:relatedDocSettings') }}
                   <span
-                    v-apos-tooltip.top="tooltips.relatedDocumentSettings"
+                    v-apos-tooltip.top="tooltips.relatedDocSettings"
                   ><InformationIcon
                     :size="14"
                   /></span>
@@ -171,7 +172,7 @@
 
                 <AposInputRadio
                   :field="{
-                    name: 'relatedDocumentSettings',
+                    name: 'relatedDocSettings',
                     choices: [
                       {
                         value: 'localizeNewRelated',
@@ -185,16 +186,12 @@
                       },
                     ],
                   }"
-                  v-model="wizard.values.relatedDocumentSettings"
+                  v-model="wizard.values.relatedDocSettings"
                 />
 
                 <AposInputCheckboxes
-                  :field="{
-                    name: 'relatedDocumentsTypesToLocalize',
-                    label: 'Related document types to localize',
-                    choices: relatedDocumentTypeChoices,
-                  }"
-                  v-model="wizard.values.relatedDocumentTypesToLocalize"
+                  :field="relatedDocTypesField"
+                  v-model="wizard.values.relatedDocTypesToLocalize"
                 />
               </div>
             </fieldset>
@@ -202,24 +199,25 @@
         </template>
         <template #footer>
           <AposButton
-            v-if="isStep(wizard.sections.length - 1)"
+            v-if="isLastStep()"
             type="primary"
             label="apostrophe:localizeContent"
+            :disabled="!complete()"
             @click="submit"
           />
           <AposButton
             v-else
             type="primary"
-            @click="goTo(wizard.step + 1)"
+            @click="goToNext()"
             icon-after="arrow-right-icon"
-            :disabled="hasError()"
+            :disabled="!complete()"
             :icon-size="12"
             label="apostrophe:next"
           />
           <AposButton
-            v-if="!isStep(0)"
+            v-if="!isFirstStep()"
             type="default"
-            @click="goTo(wizard.step - 1)"
+            @click="goToPrevious()"
             label="apostrophe:back"
           />
         </template>
@@ -248,7 +246,7 @@ export default {
   },
   emits: [ 'safe-close', 'modal-result' ],
   data() {
-    return {
+    const result = {
       modal: {
         disableHeader: true,
         active: false,
@@ -264,30 +262,52 @@ export default {
       ),
       localized: {},
       tooltips: {
-        relatedDocumentSettings: this.$t('apostrophe:relatedDocumentsAre'),
-        localizeAllAndOverwrite: this.$t('apostrophe:ifRelatedDocumentExists')
+        relatedDocSettings: this.$t('apostrophe:relatedDocsAre'),
+        localizeAllAndOverwrite: this.$t('apostrophe:ifrelatedDocExists')
       },
       wizard: {
-        step: 0,
-        sections: [
-          { title: this.$t('apostrophe:selectContent') },
-          {
-            title: this.$t('apostrophe:selectLocales'),
-            filter: ''
+        step: 'selectContent',
+        sections: {
+          selectContent: {
+            title: this.$t('apostrophe:selectContent'),
+            if() {
+              return this.relatedDocTypes.length > 0;
+            }
           },
-          { title: this.$t('apostrophe:confirmSettings') }
-        ],
+          selectLocales: {
+            title: this.$t('apostrophe:selectLocales'),
+            filter: '',
+            complete() {
+              return this.selectedLocales.length > 0;
+            }
+          },
+          confirmSettings: {
+            title: this.$t('apostrophe:confirmSettings')
+          }
+        },
         values: {
-          toLocalize: { data: 'thisDocumentAndRelated' },
+          toLocalize: { data: 'thisDocAndRelated' },
           toLocales: { data: [] },
           localizationSettings: { data: '' },
-          relatedDocumentSettings: { data: 'localizeNewRelated' },
-          relatedDocumentTypesToLocalize: { data: [] }
+          relatedDocSettings: { data: 'localizeNewRelated' },
+          relatedDocTypesToLocalize: { data: [] }
         }
       },
       fullDoc: this.doc,
       related: []
     };
+    return result;
+  },
+  watch: {
+    'wizard.values.relatedDocSettings.data'() {
+      this.updateRelatedDocs();
+    },
+    'wizard.values.toLocalize.data'() {
+      this.updateRelatedDocs();
+    },
+    selectedLocales() {
+      this.updateRelatedDocs();
+    }
   },
   computed: {
     moduleOptions() {
@@ -303,7 +323,7 @@ export default {
         const matches = term =>
           term
             .toLowerCase()
-            .includes(this.wizard.sections[1].filter.toLowerCase());
+            .includes(this.wizard.sections.selectLocales.filter.toLowerCase());
 
         return matches(name) || matches(label);
       });
@@ -314,36 +334,83 @@ export default {
     toLocalizeChoices() {
       return [
         {
-          value: 'thisDocument',
+          value: 'thisDoc',
           label: 'apostrophe:thisDocument',
         },
-        ...(this.relatedDocumentTypes.length ? [
+        ...(this.relatedDocTypes.length ? [
           {
-            value: 'thisDocumentAndRelated',
+            value: 'thisDocAndRelated',
             label: 'apostrophe:thisDocumentAndRelated',
           },
           {
-            value: 'relatedDocumentsOnly',
+            value: 'relatedDocsOnly',
             label: 'apostrophe:relatedDocumentsOnly',
           }
         ] : []
         )
       ];
     },
-    relatedDocumentTypes() {
+    relatedDocTypes() {
       const types = {};
       for (const doc of this.related) {
         if (!types[doc.type]) {
-          const module = apos.modules[doc.type] || {};
           types[doc.type] = {
             value: doc.type,
             count: 0,
-            label: module.pluralLabel || module.label || module.type
+            readOnly: false
           };
         }
         types[doc.type].count++;
       }
+      for (const type of Object.values(types)) {
+        const module = apos.modules[type.value] || {};
+        const baseLabel = module.pluralLabel || module.label || type.value;
+        type.label = {
+          key: 'apostrophe:typeWithCount',
+          type: this.$t(baseLabel),
+          count: type.count
+        };
+      }
       return Object.values(types);
+    },
+    relatedDocTypesField() {
+      return {
+        name: 'relatedDocTypesToLocalize',
+        label: 'Related document types to localize',
+        choices: this.relatedDocTypes
+      };
+    },
+    visibleSections() {
+      const self = this;
+      const result = Object.entries(this.wizard.sections).filter(([ name, section ]) => {
+        return section.if ? section.if.bind(self)() : true;
+      }).map(([ name, section ]) => {
+        return {
+          name,
+          ...section
+        };
+      });
+      return result;
+    },
+    visibleStepNames() {
+      return this.visibleSections.map(section => section.name);
+    },
+    previousStepName() {
+      const names = this.visibleStepNames;
+      const result = names[names.indexOf(this.wizard.step) - 1];
+      return result;
+    },
+    nextStepName() {
+      const names = this.visibleStepNames;
+      const result = names[names.indexOf(this.wizard.step) + 1];
+      return result;
+    },
+    relatedDocypesField() {
+      return {
+        name: 'relatedDocTypesToLocalize',
+        label: 'Related document types to localize',
+        choices: relatedDocTypes,
+      };
     }
   },
   async mounted() {
@@ -354,12 +421,6 @@ export default {
         busy: true
       }
     );
-    this.related = this.getRelated(this.fullDoc);
-    if (!this.relatedDocumentTypes.length) {
-      // Only one choice, skip step 0
-      this.wizard.values.localizationSettings.data = 'thisDocument';
-      this.goTo(1);
-    }
 
     const docs = await apos.http.get(
       `${this.action}/${this.fullDoc._id}/locales`,
@@ -372,20 +433,30 @@ export default {
         .filter(doc => doc.aposLocale.endsWith(':draft'))
         .map(doc => [ doc.aposLocale.split(':')[0], doc ])
     );
+    await this.updateRelatedDocs();
+    this.wizard.step = this.visibleStepNames[0];
   },
   methods: {
     close() {
       this.modal.showModal = false;
     },
-    goTo(number) {
-      this.wizard.step = number;
+    goTo(name) {
+      this.wizard.step = name;
     },
-    hasError() {
-      const currentStep = Object.keys(this.wizard.values)[this.wizard.step];
-      return !this.wizard.values[currentStep].data.length > 0;
+    goToPrevious() {
+      this.wizard.step = this.previousStepName;
     },
-    isStep(number) {
-      return this.wizard.step === number;
+    goToNext() {
+      this.goTo(this.nextStepName);
+    },
+    isFirstStep() {
+      return this.wizard.step === this.visibleStepNames[0];
+    },
+    isLastStep() {
+      return this.wizard.step === this.visibleStepNames[this.visibleStepNames.length - 1];
+    },
+    isStep(name) {
+      return this.wizard.step === name;
     },
     isCurrentLocale(locale) {
       return window.apos.i18n.locale === locale.name;
@@ -413,6 +484,25 @@ export default {
         }
       );
     },
+    // Is the given step complete
+    complete(stepName) {
+      if (!stepName) {
+        stepName = this.wizard.step;
+      }
+      const complete = this.wizard.sections[stepName].complete;
+      return !complete || complete.bind(this)();
+    },
+    // Returns true if all previous steps are complete
+    completedPrevious(stepName) {
+      for (const _stepName of this.visibleStepNames) {
+        if (stepName === _stepName) {
+          return true;
+        }
+        if (!this.complete(_stepName)) {
+          return false;
+        }
+      }
+    },
     localeClasses(locale) {
       const classes = {};
       if (this.isCurrentLocale(locale)) {
@@ -421,19 +511,46 @@ export default {
       return classes;
     },
     async submit() {
-      // Leaving this until we finish implementing the rest of the operations
-      console.log('Submitting...', JSON.stringify(this.wizard.values, null, '  '));
-      for (const locale of this.wizard.values.toLocales.data) {
-        apos.http.post(`${this.action}/${this.doc._id}/localize`, {
-          body: {
-            toLocale: locale.name
-          },
-          busy: true
-        });
+      const docs = [ this.doc._id ];
+      for (const type of this.relatedDocTypes) {
+        docs = [
+          ...docs,
+          ...this.relatedDocs.filter(doc => doc.type === type.type)
+        ];
+      }
+      for (const doc of docs) {
+        for (const locale of this.selectedLocales) {
+          try {
+            apos.http.post(`${this.action}/${this.doc._id}/localize`, {
+              body: {
+                toLocale: locale.name
+              },
+              busy: true
+            });
+            await apos.notify('apostrophe:localized', {
+              type: 'success',
+              interpolate: {
+                type: this.typeLabel(doc.type),
+                title: doc.title,
+                locale: locale.name
+              },
+              dismiss: true
+            });
+          } catch (e) {
+            await apos.notify('apostrophe:notLocalized', {
+              type: 'error',
+              interpolate: {
+                type: this.typeLabel(doc.type),
+                title: doc.title,
+                locale: locale.name
+              }
+            });
+          }
+        }
       }
       this.close();
     },
-    getRelated(doc) {
+    getRelatedDocs(doc) {
       const schema = apos.modules[doc.type].schema;
       return getRelatedBySchema(doc, schema);
       function getRelatedBySchema(object, schema) {
@@ -456,7 +573,7 @@ export default {
           } else if (field.type === 'relationship') {
             related = [
               ...related,
-              object[field.name] || []
+              ...(object[field.name] || [])
             ];
             // Stop here, don't recurse through relationships or we're soon
             // related to the entire site
@@ -464,6 +581,34 @@ export default {
         }
         return related;
       }
+    },
+    async updateRelatedDocs() {
+      if (this.wizard.values.toLocalize.data === 'thisDoc') {
+        return;
+      }
+      let relatedDocs = this.getRelatedDocs(this.fullDoc);
+      if (this.wizard.values.relatedDocSettings.data === 'localizeNewRelated') {
+        console.log('querying because localizeNewRelated', this.selectedLocales);
+        let existingIds = new Set();
+        for (const locale of this.selectedLocales) {
+          const existingIdsForLocale = (await apos.http.post(`${apos.modules['@apostrophecms/i18n'].action}/exist-in-locale`, {
+            busy: true,
+            body: {
+              ids: related.map(doc => doc._id),
+              locale: locale.name
+            }
+          })).originalLocaleIds;
+          for (const id of existingIdsForLocale) {
+            existingIds.add(id);
+          }
+        }
+        console.log(existingIds);
+        // New documents only
+        relatedDocs = relatedDocs.filter(doc => !existingIds.has(doc._id));
+      } else {
+        console.log('skipping because:' + this.wizard.values.relatedDocSettings.data);
+      }
+      this.relatedDocs = relatedDocs;
     }
   }
 };
