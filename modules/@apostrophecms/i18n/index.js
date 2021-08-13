@@ -237,7 +237,6 @@ module.exports = {
           }
           const ids = self.apos.launder.ids(req.body.ids);
           const locale = self.apos.launder.string(req.body.locale);
-          console.log(req.body, ids);
           const originalLocale = (ids[0] && ids[0].split(':')[1]) || req.locale;
           const originalMode = (ids[0] && ids[0].split(':')[2]) || req.mode;
           const mode = self.apos.launder.string(req.body.mode, originalMode);
@@ -258,7 +257,6 @@ module.exports = {
             newLocaleIds: found.map(doc => doc._id),
             aposDocIds: found.map(doc => doc.aposDocId)
           };
-          console.log(result);
           return result;
         }
       }

@@ -4,6 +4,10 @@ const pathToRegexp = require('path-to-regexp');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
+  options: {
+    // Pages should never be considered "related documents" when localizing another document etc.
+    relatedDocument: false
+  },
   fields(self) {
     return {
       add: {

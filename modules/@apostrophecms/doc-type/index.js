@@ -8,7 +8,8 @@ module.exports = {
     editRole: 'contributor',
     publishRole: 'editor',
     viewRole: false,
-    previewDraft: true
+    previewDraft: true,
+    relatedDocType: null
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -1063,6 +1064,7 @@ module.exports = {
           name,
           label,
           pluralLabel,
+          relatedDocument: self.options.relatedDocument,
           canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
         browserOptions.action = self.action;
