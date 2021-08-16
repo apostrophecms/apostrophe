@@ -221,8 +221,7 @@ module.exports = {
         // Fast bulk query for doc `ids` that exist in the given `locale`.
         // `ids` may contain `_id` or `aposDocId` values.
         //
-        // For convenience the returned object contains a `results` array
-        // containing `originalLocaleIds`, `newLocaleIds` and
+        // The response object contains `originalLocaleIds`, `newLocaleIds` and
         // `aposDocIds` arrays. Any documents not existing in `locale`
         // will not be included in these arrays.
         //

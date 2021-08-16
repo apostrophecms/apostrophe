@@ -258,13 +258,15 @@ export default {
           selectContent: {
             title: this.$t('apostrophe:selectContent'),
             if() {
-              // Show these choices if there are any related docs at all.
-              // We'll know later whether any actually are new for the
-              // selected locales
               if (!this.fullDoc) {
+                // We can't rule it out yet
                 return true;
               }
-              return this.getRelatedDocs(this.fullDoc).length > 0;
+              // Must show step one as long as some related docs
+              // exist, as the user might opt in step three
+              // to express an interest in previously
+              // replicated related docs
+              return this.allRelatedDocs.length > 0;
             }
           },
           selectLocales: {
@@ -291,6 +293,9 @@ export default {
       },
       fullDoc: this.doc,
       relatedDocs: [],
+      // Includes those that aren't new, even if we are only expressing
+      // interest in new docs
+      allRelatedDocs: [],
       docTypesSeen: []
     };
     return result;
@@ -580,9 +585,20 @@ export default {
       this.close();
     },
     // Get all related documents
-    getRelatedDocs(doc) {
+    async getRelatedDocs(doc) {
       const schema = apos.modules[doc.type].schema;
-      return getRelatedBySchema(doc, schema);
+      const docs = getRelatedBySchema(doc, schema);
+      if (!docs.length) {
+        return [];
+      }
+      const result = await apos.http.post(`${apos.doc.action}/editable?aposMode=draft`, {
+        body: {
+          ids: docs.map(doc => doc._id)
+        }
+      });
+      const filtered = docs.filter(doc => result.editable.includes(doc._id));
+      return filtered;
+
       function getRelatedBySchema(object, schema) {
         let related = [];
         for (const field of schema) {
@@ -620,7 +636,8 @@ export default {
       if (this.wizard.values.toLocalize.data === 'thisDoc') {
         return;
       }
-      let relatedDocs = this.getRelatedDocs(this.fullDoc);
+      let relatedDocs = await this.getRelatedDocs(this.fullDoc);
+      this.allRelatedDocs = relatedDocs;
       if (this.wizard.values.relatedDocSettings.data === 'localizeNewRelated') {
         // Find the ids that are unlocalized in at least one of the target locales
         let unlocalizedIds = new Set();
@@ -639,7 +656,7 @@ export default {
           }
         }
         // New documents only
-        relatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
+        newRelatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
       }
       this.relatedDocs = relatedDocs;
     }
