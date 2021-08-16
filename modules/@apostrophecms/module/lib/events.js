@@ -37,8 +37,7 @@ module.exports = function(self) {
             const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
             // Although we have `self` it can't hurt to
             // supply the correct `this`
-            const response = fn.apply(module, args);
-            await response;
+            await fn.apply(module, args);
           }
         }
       }
