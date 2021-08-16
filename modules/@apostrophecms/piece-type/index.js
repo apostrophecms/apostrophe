@@ -231,7 +231,7 @@ module.exports = {
         ':_id/locales': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           return {
-            locales: await self.apos.doc.getLocales(req, _id)
+            results: await self.apos.doc.getLocales(req, _id)
           };
         }
       },
