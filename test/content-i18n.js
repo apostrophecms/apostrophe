@@ -225,8 +225,8 @@ describe('Locales', function() {
     const childPageId = enCA._id.replace(':draft', ':published');
     assert(childPage.includes(`"http://localhost:3000/ca/en/api/v1/@apostrophecms/page/${childPageId}/locale/en">English (en)</a></li>`));
     assert(childPage.includes(`"http://localhost:3000/ca/en/api/v1/@apostrophecms/page/${childPageId}/locale/en-CA">Canadian English (en-CA)</a></li>`));
-    assert(childPage.includes(`"http://localhost:3000/ca/fr/">Canadian French (fr-CA)</a></li>`));
-    assert(childPage.includes(`"http://example.mx/">Mexico (es-MX)</a></li>`));
+    assert(childPage.includes('"http://localhost:3000/ca/fr/">Canadian French (fr-CA)</a></li>'));
+    assert(childPage.includes('"http://example.mx/">Mexico (es-MX)</a></li>'));
 
     // And the home page should be reachable
     const home = await apos.http.get('/ca/en/');
