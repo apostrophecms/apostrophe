@@ -62,6 +62,58 @@ module.exports = {
         addModal() {
           self.addLocalizeModal();
         }
+      },
+      '@apostrophecms/page:beforeSend': {
+        // Developers can link to alternate locales by iterating over
+        // `data.localizations` in any page template. Each element always has
+        // `locale`, `label` and `homePageUrl` properties. Each element also has an
+        // `available` property; if true, the current context document is available
+        // in that locale, `title` and a small number of other document properties are
+        // populated, and `_url` redirects to the context document in that locale.
+        //
+        // The array is provided in the order in which locales are configured.
+        // The current locale is included and has the property `current: true`.
+        async addLocalizations(req) {
+          const context = req.data.piece || req.data.page;
+          if (!context) {
+            return;
+          }
+          if (!self.apos.modules[context.type].isLocalized()) {
+            return;
+          }
+          const localizations = await self.apos.doc.db.find({
+            aposDocId: context.aposDocId,
+            aposMode: req.mode
+          }).project({
+            type: 1,
+            title: 1,
+            slug: 1,
+            aposLocale: 1,
+            aposMode: 1,
+            visibility: 1,
+            docPermissions: 1
+          }).toArray();
+          req.data.localizations = [];
+          for (const name of Object.keys(self.locales)) {
+            const localeReq = self.apos.util.cloneReq(req, {
+              locale: name
+            });
+            self.setPrefixUrls(localeReq);
+            const doc = localizations.find(doc => doc.aposLocale.split(':')[0] === name);
+            if (doc && self.apos.permission.can(req, 'view', doc)) {
+              doc.available = true;
+              doc._url = `${req.prefix}${self.apos.modules[context.type].action}/${context._id}/locale/${name}`;
+              if (doc._id === context._id) {
+                doc.current = true;
+              }
+            }
+            const info = doc || {};
+            info.locale = name;
+            info.label = self.locales[name].label;
+            info.homePageUrl = `${localeReq.prefix}/`;
+            req.data.localizations.push(info);
+          }
+        }
       }
     };
   },
@@ -407,6 +459,30 @@ module.exports = {
         req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
+      },
+      // Returns an Express route suitable for use in a module
+      // like a piece type or the page module. The returned route will
+      // expect req.params._id and req.params.toLocale and redirect,
+      // if possible, to the corresponding version in toLocale.
+      toLocaleRouteFactory(module) {
+        return async (req, res) => {
+          const _id = module.inferIdLocaleAndMode(req, req.params._id);
+          const toLocale = req.params.toLocale;
+          const localeReq = req.clone({
+            locale: toLocale
+          });
+          self.setPrefixUrls(localeReq);
+          const corresponding = await module.find(localeReq, {
+            _id: `${_id.split(':')[0]}:${localeReq.locale}:${localeReq.mode}`
+          }).toObject();
+          if (!corresponding) {
+            return res.status(404).send('not found');
+          }
+          if (!corresponding._url) {
+            return res.status(400).send('invalid (has no URL)');
+          }
+          return res.redirect(corresponding._url);
+        };
       }
     };
   }

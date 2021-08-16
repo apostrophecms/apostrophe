@@ -91,12 +91,17 @@ module.exports = {
     return {
       get: {
         // Login page
-        [self.login()]: async (req) => {
+        [self.login()]: async (req, res) => {
           if (req.user) {
-            return req.res.redirect('/');
+            return res.redirect('/');
           }
           req.scene = 'apos';
-          await self.sendPage(req, 'login', {});
+          try {
+            await self.sendPage(req, 'login', {});
+          } catch (e) {
+            self.apos.util.error(e);
+            return res.status(500).send('error');
+          }
         }
       }
     };
