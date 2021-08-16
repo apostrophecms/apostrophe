@@ -277,7 +277,10 @@ module.exports = {
           if ((!toLocale) || (toLocale === req.locale)) {
             throw self.apos.error('invalid');
           }
-          return self.localize(req, draft, toLocale);
+          const update = self.apos.launder.boolean(req.body.update);
+          return self.localize(req, draft, toLocale, {
+            update
+          });
         },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);

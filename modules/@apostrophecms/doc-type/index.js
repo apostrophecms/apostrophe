@@ -716,8 +716,9 @@ module.exports = {
         return draft;
       },
       // Localize (export) the given draft to another locale, creating the document in the
-      // other locale if necessary.
-      async localize(req, draft, toLocale) {
+      // other locale if necessary. By default, if the document already exists in the
+      // other locale, it is not ovewritten. Use the `update: true` option to change that.
+      async localize(req, draft, toLocale, options = { update: false }) {
         if (!self.isLocalized()) {
           throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
         }
@@ -773,6 +774,9 @@ module.exports = {
             });
           }
         } else {
+          if (!options.update) {
+            throw self.apos.error('conflict');
+          }
           const update = {
             ...existing,
             ...data,

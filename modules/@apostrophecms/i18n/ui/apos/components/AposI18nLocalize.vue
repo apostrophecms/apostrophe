@@ -545,9 +545,10 @@ export default {
         }
         for (const locale of this.selectedLocales) {
           try {
-            apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
+            await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
               body: {
-                toLocale: locale.name
+                toLocale: locale.name,
+                update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
               },
               busy: true
             });
@@ -561,14 +562,18 @@ export default {
               dismiss: true
             });
           } catch (e) {
-            await apos.notify('apostrophe:notLocalized', {
-              type: 'error',
-              interpolate: {
-                type: this.$t(this.singular(doc.type)),
-                title: doc.title,
-                locale: locale.name
-              }
-            });
+            // Status code 409 (conflict) means an existing document
+            // we opted not to overwrite
+            if (e.status !== 409) {
+              await apos.notify('apostrophe:notLocalized', {
+                type: 'error',
+                interpolate: {
+                  type: this.$t(this.singular(doc.type)),
+                  title: doc.title,
+                  locale: locale.name
+                }
+              });
+            }
           }
         }
       }

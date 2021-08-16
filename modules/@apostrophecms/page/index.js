@@ -357,10 +357,13 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           const toLocale = self.apos.i18n.sanitizeLocaleName(req.body.toLocale);
+          const update = self.apos.launder.boolean(req.body.update);
           if ((!toLocale) || (toLocale === req.locale)) {
             throw self.apos.error('invalid');
           }
-          return self.localize(req, draft, toLocale);
+          return self.localize(req, draft, toLocale, {
+            update
+          });
         },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
@@ -1331,10 +1334,11 @@ database.`);
         return manager.publish(req, draft, options);
       },
       // Localize the draft, i.e. copy it to another locale, creating
-      // that locale's draft for the first time if necessary.
-      async localize(req, draft, toLocale) {
+      // that locale's draft for the first time if necessary. By default
+      // existing documents are not updated
+      async localize(req, draft, toLocale, options = { update: false }) {
         const manager = self.apos.doc.getManager(draft.type);
-        return manager.localize(req, draft, toLocale);
+        return manager.localize(req, draft, toLocale, options);
       },
       // Reverts the given draft to the most recent publication.
       //
