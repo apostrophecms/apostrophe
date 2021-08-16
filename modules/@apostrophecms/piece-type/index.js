@@ -226,7 +226,7 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
-        // Returns an object with a `locales` array containing all locale names
+        // Returns an object with a `results` array containing all locale names
         // for which the given document has been localized
         ':_id/locales': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
