@@ -185,17 +185,21 @@ export default {
         }
       }
       if (!componentOnly) {
-        if (!s.startsWith(this.prefix)) {
-          if (this.prefix.startsWith(s)) {
-            // If they delete the `-`, and the prefix is `recipe-`,
-            // we want to restore `recipe-`, not set it to `recipe-recipe`
-            s = this.prefix;
-          } else {
-            s = this.prefix + s;
-          }
+        this.setPrefix(s);
+      }
+
+      return s;
+    },
+    setPrefix (slug) {
+      if (!slug.startsWith(this.prefix)) {
+        if (this.prefix.startsWith(slug)) {
+          // If they delete the `-`, and the prefix is `recipe-`,
+          // we want to restore `recipe-`, not set it to `recipe-recipe`
+          slug = this.prefix;
+        } else {
+          slug = this.prefix + slug;
         }
       }
-      return s;
     },
     async checkConflict() {
       let slug;
