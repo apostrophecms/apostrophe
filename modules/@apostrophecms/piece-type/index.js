@@ -20,8 +20,8 @@ module.exports = {
       slug: {
         type: 'slug',
         label: 'Slug',
-        required: true,
-        following: 'title'
+        following: [ 'title', 'archived' ],
+        required: true
       }
     }
   },

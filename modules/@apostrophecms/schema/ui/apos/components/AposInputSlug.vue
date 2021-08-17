@@ -32,6 +32,7 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import sluggo from 'sluggo';
 import debounce from 'debounce-async';
+import { klona } from 'klona';
 
 export default {
   name: 'AposInputSlug',
@@ -39,7 +40,8 @@ export default {
   emits: [ 'return' ],
   data() {
     return {
-      conflict: false
+      conflict: false,
+      isArchived: null
     };
   },
   computed: {
@@ -80,9 +82,19 @@ export default {
       // one or more other fields
       deep: true,
       handler(newValue, oldValue) {
-        oldValue = Object.values(oldValue).join(' ');
-        newValue = Object.values(newValue).join(' ');
-        if (this.compatible(oldValue, this.next)) {
+        const newClone = klona(newValue);
+        const oldClone = klona(oldValue);
+
+        // Track whether the slug is archived for prefixing.
+        this.isArchived = newValue.archived;
+        // We only want the string properties to build the slug itself.
+        delete newClone.archived;
+        delete oldClone.archived;
+
+        oldValue = Object.values(oldClone).join(' ');
+        newValue = Object.values(newClone).join(' ');
+
+        if (this.compatible(oldValue, this.next) && !newValue.archived) {
           // If this is a page slug, we only replace the last section of the slug.
           if (this.field.page) {
             let parts = this.next.split('/');
@@ -92,6 +104,7 @@ export default {
               parts.pop();
             }
             parts.push(this.slugify(newValue, { componentOnly: true }));
+            // TODO: handle page archives.
             this.next = `/${parts.join('/')}`;
           } else {
             this.next = this.slugify(newValue);
@@ -152,7 +165,8 @@ export default {
         const matches = slug.match(/[^/]+$/);
         slug = (matches && matches[0]) || '';
       }
-      return ((title === '') && (slug === `${this.prefix}`)) || this.slugify(title) === this.slugify(slug);
+      return ((title === '') && (slug === `${this.prefix}`)) ||
+        this.slugify(title) === this.slugify(slug);
     },
     // if componentOnly is true, we are slugifying just one component of
     // a slug as part of following the title field, and so we do *not*
@@ -185,21 +199,41 @@ export default {
         }
       }
       if (!componentOnly) {
-        this.setPrefix(s);
+        s = this.setPrefix(s);
       }
 
       return s;
     },
     setPrefix (slug) {
-      if (!slug.startsWith(this.prefix)) {
-        if (this.prefix.startsWith(slug)) {
+      // Get a fresh clone of the slug.
+      let updated = slug.slice();
+      const archivedRegexp = new RegExp(`^deduplicate-[a-z0-9]+-${this.prefix}`);
+
+      // Prefix if the slug doesn't start with the prefix OR if its archived
+      // and it doesn't start with the dedupe+prefix pattern.
+      if (
+        !updated.startsWith(this.prefix) ||
+        (this.isArchived && !updated.match(archivedRegexp))
+      ) {
+        let archivePrefix = '';
+        // If archived, remove the dedupe pattern to add again later.
+        if (this.isArchived) {
+          archivePrefix = updated.match(/^deduplicate-[a-z0-9]+-/);
+          updated = updated.replace(archivePrefix, '');
+        }
+
+        if (this.prefix.startsWith(updated)) {
           // If they delete the `-`, and the prefix is `recipe-`,
           // we want to restore `recipe-`, not set it to `recipe-recipe`
-          slug = this.prefix;
+          updated = this.prefix;
         } else {
-          slug = this.prefix + slug;
+          // Make sure we're not double prefixing archived slugs.
+          updated = updated.startsWith(this.prefix) ? updated : this.prefix + updated;
         }
+        // Reapply the dedupe pattern if archived.
+        updated = this.isArchived ? `${archivePrefix}${updated}` : updated;
       }
+      return updated;
     },
     async checkConflict() {
       let slug;
