@@ -117,6 +117,7 @@
   "localizationSettings": "Localization Settings",
   "localizeContent": "Localize Content",
   "localized": "Localized the {{ type }} {{ title }} to {{ locale }}",
+  "localizingContent": "Localizing Content",
   "loginDisabled": "Login Disabled",
   "loginPageBothRequired": "Both the username and the password are required.",
   "loginPageIncorrectOrNoSuchUser": "Your credentials are incorrect, or there is no such user",

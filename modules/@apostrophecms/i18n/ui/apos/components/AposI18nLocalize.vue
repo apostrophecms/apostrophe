@@ -1,6 +1,7 @@
 <template>
   <AposModal
     class="apos-wizard apos-i18n-localize"
+    :class="{ 'apos-wizard-busy': wizard.busy }"
     :modal="modal"
     @esc="close"
     @inactive="modal.active = false"
@@ -235,6 +236,8 @@ export default {
   data() {
     const result = {
       modal: {
+        busy: false,
+        busyTitle: this.$t('apostrophe:localizingContent'),
         disableHeader: true,
         active: false,
         showModal: false
@@ -442,7 +445,9 @@ export default {
   },
   methods: {
     close() {
-      this.modal.showModal = false;
+      if (!this.modal.busy) {
+        this.modal.showModal = false;
+      }
     },
     goTo(name) {
       this.wizard.step = name;
@@ -691,6 +696,10 @@ export default {
   ::v-deep .apos-wizard__content .apos-modal__body-footer {
     flex-direction: row-reverse;
     border-top: 1px solid var(--a-base-9);
+  }
+
+  ::v-deep .apos-busy__spinner {
+    display: inline-block;
   }
 }
 
