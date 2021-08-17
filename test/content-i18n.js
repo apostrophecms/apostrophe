@@ -245,4 +245,27 @@ describe('Locales', function() {
     assert(homePageEsMX.includes('<title>Pagina De Inicio</title>'));
   });
 
+  it('localize API should not succeed a second time without the update flag', async () => {
+    try {
+      await apos.http.post(`/api/v1/@apostrophecms/page/${child._id}/localize`, {
+        body: {
+          toLocale: 'en-CA'
+        },
+        jar
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 409);
+    }
+  });
+
+  it('localize API should succeed a second time with the update flag', async () => {
+    return apos.http.post(`/api/v1/@apostrophecms/page/${child._id}/localize`, {
+      body: {
+        toLocale: 'en-CA',
+        update: true
+      },
+      jar
+    });
+  });
 });

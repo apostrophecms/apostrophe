@@ -19,7 +19,10 @@ module.exports = {
     autopublish: true,
     editRole: 'editor',
     publishRole: 'editor',
-    showPermissions: true
+    showPermissions: true,
+    // Files should by default be considered "related documents" when localizing
+    // another document that references them
+    relatedDocument: true
   },
   fields: {
     remove: [ 'visibility' ],

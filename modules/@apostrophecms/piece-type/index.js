@@ -7,7 +7,14 @@ module.exports = {
     perPage: 10,
     quickCreate: true,
     previewDraft: true,
-    showCreate: true
+    showCreate: true,
+    // By default a piece type may be optionally
+    // optionally selected by the user as a related document
+    // when localizing a document that references it
+    // (null means "no opinion"). If set to `true` in your
+    // subclass it is selected by default, if set to `false`
+    // it is not offered at all
+    relatedDocument: null
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -270,7 +277,10 @@ module.exports = {
           if ((!toLocale) || (toLocale === req.locale)) {
             throw self.apos.error('invalid');
           }
-          return self.localize(req, draft, toLocale);
+          const update = self.apos.launder.boolean(req.body.update);
+          return self.localize(req, draft, toLocale, {
+            update
+          });
         },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
