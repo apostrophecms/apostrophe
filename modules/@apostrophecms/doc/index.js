@@ -66,6 +66,37 @@ module.exports = {
               available: true
             };
           }
+        },
+        // Fast bulk query for doc `ids` that the user is permitted to edit.
+        //
+        // IDs should be sent as an array in the `ids` property of the POST
+        // request.
+        //
+        // The response object contains an `editable` array made up of
+        // the ids of those documents in the original set that the user
+        // is actually permitted to edit. Those the user cannot edit
+        // are not included. The original order is preserved.
+        //
+        // This route is a POST route because large numbers of ids
+        // might not be accepted as a query string.
+        async editable(req) {
+          if (!req.user) {
+            throw self.apos.error('notfound');
+          }
+          const ids = self.apos.launder.ids(req.body.ids);
+          if (!ids.length) {
+            return {
+              editable: []
+            };
+          }
+          const found = await self.apos.doc.find(req, {
+            _id: {
+              $in: ids
+            }
+          }).project({ _id: 1 }).permission('edit').toArray();
+          return {
+            editable: self.apos.util.orderById(ids, found).map(doc => doc._id)
+          };
         }
       }
     };

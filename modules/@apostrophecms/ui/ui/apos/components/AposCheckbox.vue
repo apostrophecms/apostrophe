@@ -24,7 +24,7 @@
       :class="{'apos-sr-only': field.hideLabel }" v-if="choice.label"
       class="apos-choice-label-text"
     >
-      {{ choice.label }}
+      {{ $t(choice.label) }}
     </span>
   </label>
 </template>

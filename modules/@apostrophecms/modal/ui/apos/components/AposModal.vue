@@ -21,35 +21,45 @@
           v-if="modal.showModal" :class="innerClasses"
           class="apos-modal__inner" data-apos-modal-inner
         >
-          <header class="apos-modal__header" v-if="!modal.disableHeader">
-            <div class="apos-modal__header__main">
-              <div v-if="hasSecondaryControls" class="apos-modal__controls--secondary">
-                <slot name="secondaryControls" />
+          <template v-if="modal.busy">
+            <div class="apos-modal__busy">
+              <p class="apos-modal__busy-text">
+                {{ modal.busyTitle }}
+              </p>
+              <AposSpinner class="apos-busy__spinner" />
+            </div>
+          </template>
+          <template v-else>
+            <header class="apos-modal__header" v-if="!modal.disableHeader">
+              <div class="apos-modal__header__main">
+                <div v-if="hasSecondaryControls" class="apos-modal__controls--secondary">
+                  <slot name="secondaryControls" />
+                </div>
+                <h2 :id="id" class="apos-modal__heading">
+                  <span v-if="modal.a11yTitle" class="apos-sr-only">
+                    {{ $t(modal.a11yTitle) }}
+                  </span>
+                  {{ $t(modalTitle) }}
+                </h2>
+                <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
+                  <slot name="primaryControls" />
+                </div>
               </div>
-              <h2 :id="id" class="apos-modal__heading">
-                <span v-if="modal.a11yTitle" class="apos-sr-only">
-                  {{ $t(modal.a11yTitle) }}
-                </span>
-                {{ $t(modalTitle) }}
-              </h2>
-              <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
-                <slot name="primaryControls" />
+              <div class="apos-modal__breadcrumbs" v-if="hasBreadcrumbs">
+                <slot class="apos-modal__breadcrumbs" name="breadcrumbs" />
               </div>
+            </header>
+            <div class="apos-modal__main" :class="gridModifier">
+              <slot v-if="hasLeftRail" name="leftRail" />
+              <slot name="main" />
+              <slot name="rightRail" />
             </div>
-            <div class="apos-modal__breadcrumbs" v-if="hasBreadcrumbs">
-              <slot class="apos-modal__breadcrumbs" name="breadcrumbs" />
-            </div>
-          </header>
-          <div class="apos-modal__main" :class="gridModifier">
-            <slot v-if="hasLeftRail" name="leftRail" />
-            <slot name="main" />
-            <slot name="rightRail" />
-          </div>
-          <footer v-if="hasFooter" class="apos-modal__footer">
-            <div class="apos-modal__footer__inner">
-              <slot name="footer" />
-            </div>
-          </footer>
+            <footer v-if="hasFooter" class="apos-modal__footer">
+              <div class="apos-modal__footer__inner">
+                <slot name="footer" />
+              </div>
+            </footer>
+          </template>
         </div>
       </transition>
     </section>
@@ -119,6 +129,9 @@ export default {
       classes.push(`apos-modal--${this.modal.type}`);
       if (this.modal.type === 'slide') {
         classes.push('apos-modal--full-height');
+      }
+      if (this.modal.busy) {
+        classes.push('apos-modal--busy');
       }
       return classes.join(' ');
     },
@@ -406,5 +419,22 @@ export default {
 
   .apos-modal__main--with-right-rail {
     grid-template-columns: 78% $modal-rail-right-w;
+  }
+
+  .apos-modal--busy .apos-modal__inner {
+    $height: 190px;
+    top: 50%;
+    bottom: -50%;
+    height: $height;
+    transform: translateY(math.div($height, 2) * -1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .apos-modal__busy-text {
+    margin-bottom: $spacing-triple;
+    font-size: var(--a-type-heading);
   }
 </style>

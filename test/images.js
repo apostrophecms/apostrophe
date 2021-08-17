@@ -1,6 +1,8 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 let apos;
+let jar;
+let inserted;
 
 const mockImages = [
   {
@@ -83,7 +85,7 @@ describe('Images', function() {
       return apos.image.insert(req, image);
     });
 
-    const inserted = await Promise.all(insertPromises);
+    inserted = await Promise.all(insertPromises);
 
     assert(inserted.length === mockImages.length);
     assert(inserted[0]._id);
@@ -131,4 +133,93 @@ describe('Images', function() {
 
     assert.strictEqual(srcset, '');
   });
+
+  it('should be able to insert test users', async function() {
+
+    await insertUser({
+      title: 'admin',
+      username: 'admin',
+      password: 'admin',
+      email: 'ad@min.com',
+      role: 'admin'
+    });
+
+    await insertUser({
+      title: 'contributor',
+      username: 'contributor',
+      password: 'contributor',
+      email: 'con@tributor.com',
+      role: 'contributor'
+    });
+
+  });
+
+  it('REST: should be able to log in as admin', async () => {
+    jar = await login('admin');
+  });
+
+  it('"editable" API includes images for admin', async () => {
+
+    const editable = await getEditableImages(jar);
+    assert(editable.length === 4);
+  });
+
+  it('REST: should be able to log in as contributor', async () => {
+    jar = await login('contributor');
+  });
+
+  it('"editable" API does not include images for contributor', async () => {
+    const editable = await getEditableImages(jar);
+    assert(editable.length === 0);
+  });
+
 });
+
+async function insertUser(info) {
+  const user = apos.user.newInstance();
+  assert(user);
+  Object.assign(user, info);
+  await apos.user.insert(apos.task.getReq(), user);
+}
+
+async function login(username, password) {
+  if (!password) {
+    password = username;
+  }
+  jar = apos.http.jar();
+
+  // establish session
+  let page = await apos.http.get('/', {
+    jar
+  });
+
+  assert(page.match(/logged out/));
+
+  // Log in
+
+  await apos.http.post('/api/v1/@apostrophecms/login/login', {
+    body: {
+      username,
+      password,
+      session: true
+    },
+    jar
+  });
+
+  // Confirm login
+  page = await apos.http.get('/', {
+    jar
+  });
+
+  assert(page.match(/logged in/));
+  return jar;
+}
+
+async function getEditableImages(jar) {
+  return (await apos.http.post('/api/v1/@apostrophecms/doc/editable?aposMode=draft', {
+    body: {
+      ids: inserted.map(doc => doc._id.replace(':published', ':draft'))
+    },
+    jar
+  })).editable;
+}
