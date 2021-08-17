@@ -103,7 +103,7 @@ module.exports = {
             const doc = localizations.find(doc => doc.aposLocale.split(':')[0] === name);
             if (doc && self.apos.permission.can(req, 'view', doc)) {
               doc.available = true;
-              doc._url = `${req.prefix}${manager.action}/${context._id}/locale/${name}`;
+              doc._url = `${self.apos.prefix}${manager.action}/${context._id}/locale/${name}`;
               if (doc._id === context._id) {
                 doc.current = true;
               }

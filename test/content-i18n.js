@@ -172,7 +172,7 @@ describe('Locales', function() {
     });
 
     assert(page.match(/logged in/));
-    assert(page.includes(`<a href="http://localhost:3000/api/v1/@apostrophecms/page/${home._id}/locale/en-CA">Canadian English (en-CA)</a>`));
+    assert(page.includes(`<a href="/api/v1/@apostrophecms/page/${home._id}/locale/en-CA">Canadian English (en-CA)</a>`));
   });
 
   it('localize API should succeed', async () => {
@@ -223,8 +223,8 @@ describe('Locales', function() {
     // Locale-switching links are present for locales that are available
     // and fall back to home page for locales that are not
     const childPageId = enCA._id.replace(':draft', ':published');
-    assert(childPage.includes(`"http://localhost:3000/ca/en/api/v1/@apostrophecms/page/${childPageId}/locale/en">English (en)</a></li>`));
-    assert(childPage.includes(`"http://localhost:3000/ca/en/api/v1/@apostrophecms/page/${childPageId}/locale/en-CA">Canadian English (en-CA)</a></li>`));
+    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en">English (en)</a></li>`));
+    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en-CA">Canadian English (en-CA)</a></li>`));
     assert(childPage.includes('"http://localhost:3000/ca/fr/">Canadian French (fr-CA)</a></li>'));
     assert(childPage.includes('"http://example.mx/">Mexico (es-MX)</a></li>'));
 
