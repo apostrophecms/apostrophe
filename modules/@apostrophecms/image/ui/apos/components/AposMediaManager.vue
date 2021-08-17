@@ -269,6 +269,7 @@ export default {
       this.filterValues[name] = value;
       this.currentPage = 1;
 
+      this.updateEditing(null);
       await this.getMedia();
     },
     createPlaceholder(dimensions) {
