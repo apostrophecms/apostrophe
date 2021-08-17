@@ -105,9 +105,7 @@ module.exports = {
         basics: {
           label: 'Basics',
           fields: [
-            'title',
-            // TODO: Move slug to the utility column.
-            'slug'
+            'title'
           ]
         },
         utility: {
@@ -115,6 +113,7 @@ module.exports = {
             'username',
             'email',
             'password',
+            'slug',
             'archived'
           ]
         },
