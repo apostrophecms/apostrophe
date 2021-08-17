@@ -106,6 +106,7 @@ module.exports = {
           label: 'Basics',
           fields: [
             'title',
+            // TODO: Move slug to the utility column.
             'slug'
           ]
         },

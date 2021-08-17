@@ -97,12 +97,27 @@ module.exports = {
           self.apos.schema.prepareForStorage(req, doc);
         },
         slugPrefix(req, doc) {
-          if (self.options.slugPrefix) {
+          const prefix = self.options.slugPrefix;
+          if (prefix) {
             if (!doc.slug) {
               doc.slug = 'none';
             }
-            if (!doc.slug.startsWith(self.options.slugPrefix)) {
-              doc.slug = `${self.options.slugPrefix}${doc.slug}`;
+
+            let archivePrefix;
+            const archivedRegexp = new RegExp(`^deduplicate-[a-z0-9]+-${prefix}`);
+
+            // The doc may be going from archived to published, so it won't have
+            // doc.archived === true. Remove the dedupe prefix, check the slug
+            // prefix, then reapply the dedupe prefix.
+            if (doc.slug.match(archivedRegexp)) {
+              archivePrefix = doc.slug.match(/^deduplicate-[a-z0-9]+-/);
+              doc.slug = doc.slug.replace(archivePrefix, '');
+            }
+            if (!doc.slug.startsWith(prefix)) {
+              doc.slug = `${prefix}${doc.slug}`;
+            }
+            if (archivePrefix) {
+              doc.slug = `${archivePrefix}${doc.slug}`;
             }
           }
         }

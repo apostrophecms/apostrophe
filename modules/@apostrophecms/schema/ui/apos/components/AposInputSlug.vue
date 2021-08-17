@@ -207,6 +207,7 @@ export default {
     setPrefix (slug) {
       // Get a fresh clone of the slug.
       let updated = slug.slice();
+      console.info('Update 0', updated);
       const archivedRegexp = new RegExp(`^deduplicate-[a-z0-9]+-${this.prefix}`);
 
       // Prefix if the slug doesn't start with the prefix OR if its archived
@@ -230,8 +231,10 @@ export default {
           // Make sure we're not double prefixing archived slugs.
           updated = updated.startsWith(this.prefix) ? updated : this.prefix + updated;
         }
-        // Reapply the dedupe pattern if archived.
-        updated = this.isArchived ? `${archivePrefix}${updated}` : updated;
+        // Reapply the dedupe pattern if archived. If being restored from the
+        // doc editor modal it will momentarily be tracked as archived but
+        // without not have the archive prefix, so check that too.
+        updated = this.isArchived && archivePrefix ? `${archivePrefix}${updated}` : updated;
       }
       return updated;
     },
