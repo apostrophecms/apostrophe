@@ -390,6 +390,10 @@ module.exports = {
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
         });
         if (self.options.slugPrefix) {
+          if (self.options.slugPrefix === 'deduplicate-') {
+            const req = self.apos.task.getReq();
+            throw self.apos.error('invalid', req.__('The deduplicate- slug is reserved.'));
+          }
           const slug = self.schema.find(field => field.name === 'slug');
           if (slug) {
             slug.prefix = self.options.slugPrefix;
