@@ -26,7 +26,7 @@ module.exports = {
         slug: {
           type: 'slug',
           label: 'Slug',
-          following: 'title',
+          following: [ 'title', 'archived' ],
           required: true
         },
         archived: {
