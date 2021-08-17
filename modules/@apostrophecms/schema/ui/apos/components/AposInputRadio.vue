@@ -44,8 +44,8 @@ import InformationIcon from 'vue-material-design-icons/Information.vue';
 
 export default {
   name: 'AposInputRadio',
-  mixins: [ AposInputMixin ],
   components: { InformationIcon },
+  mixins: [ AposInputMixin ],
   methods: {
     getChoiceId(uid, value) {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');

@@ -26,7 +26,17 @@ export default {
       }
     }
 
+    // Like standard i18next $t, but also with support
+    // for just one object argument with at least a `key`
+    // property, which makes it easier to pass both
+    // a label and its interpolation values through
+    // multiple layers of code, as a single `label`
+    // property for instance
     Vue.prototype.$t = (phrase, options) => {
+      if ((typeof phrase) === 'object') {
+        options = phrase;
+        phrase = phrase.key;
+      }
       return (i18n.show ? '🌍 ' : '') + i18next.t(phrase, {
         lng: i18n.locale,
         ...options

@@ -8,7 +8,8 @@ module.exports = {
     editRole: 'contributor',
     publishRole: 'editor',
     viewRole: false,
-    previewDraft: true
+    previewDraft: true,
+    relatedDocType: null
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -715,8 +716,9 @@ module.exports = {
         return draft;
       },
       // Localize (export) the given draft to another locale, creating the document in the
-      // other locale if necessary.
-      async localize(req, draft, toLocale) {
+      // other locale if necessary. By default, if the document already exists in the
+      // other locale, it is not ovewritten. Use the `update: true` option to change that.
+      async localize(req, draft, toLocale, options = { update: false }) {
         if (!self.isLocalized()) {
           throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
         }
@@ -772,6 +774,9 @@ module.exports = {
             });
           }
         } else {
+          if (!options.update) {
+            throw self.apos.error('conflict');
+          }
           const update = {
             ...existing,
             ...data,
@@ -1063,6 +1068,7 @@ module.exports = {
           name,
           label,
           pluralLabel,
+          relatedDocument: self.options.relatedDocument,
           canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
         browserOptions.action = self.action;
