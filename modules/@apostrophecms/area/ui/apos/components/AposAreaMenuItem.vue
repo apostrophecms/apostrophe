@@ -20,7 +20,7 @@
         class="apos-area-menu__item-icon"
         :is="item.icon"
       />
-      {{ item.label }}
+      {{ $t(item.label) }}
     </div>
   </button>
 </template>

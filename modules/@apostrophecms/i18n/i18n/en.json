@@ -153,6 +153,7 @@
   "paragraphP": "Paragraph (P)",
   "password": "Password",
   "passwordResetRequest": "Your request to reset your password on {{ site }}",
+  "pasteWidget": "Paste {{ widget }}",
   "pending": "Pending",
   "pendingUpdates": "Pending Updates",
   "permissions": "Permissions",
