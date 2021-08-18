@@ -1,4 +1,5 @@
 const util = require('util');
+
 module.exports = (self) => {
   // Create the render input object, used to parse the fragment source
   function createRenderInput(info) {
@@ -100,7 +101,7 @@ module.exports = (self) => {
       const req = context.env.opts.req;
       const env = self.getEnv(req, context.env.opts.module);
       input.apos = self.templateApos;
-      input.__ = req.res.__;
+
       // attach the render caller as a function
       // it's just a string, but we keep
       // the convention from the macro `call`

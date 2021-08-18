@@ -30,6 +30,7 @@ const dayjs = require('dayjs');
 const qs = require('qs');
 const Promise = require('bluebird');
 const path = require('path');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
   options: { alias: 'template' },
@@ -281,7 +282,13 @@ module.exports = {
 
         args.apos = self.templateApos;
         args.__t = req.t;
-
+        args.__ = key => {
+          self.apos.util.warnDevOnce('old-i18n-nunjucks-helper', stripIndent`
+            The __() Nunjucks helper is deprecated and does not localize in A3.
+            Use __t() instead.
+          `);
+          return key;
+        };
         if (type === 'file') {
           let finalName = s;
           if (!finalName.match(/\.\w+$/)) {
