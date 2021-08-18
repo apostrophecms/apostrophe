@@ -104,7 +104,7 @@ module.exports = {
             }
 
             let archivePrefix;
-            const archivedRegexp = new RegExp(`^deduplicate-[a-z0-9]+-${prefix}`);
+            const archivedRegexp = new RegExp(`^deduplicate-[a-z0-9]+-${self.apos.util.regExpQuote(prefix)}`);
 
             // The doc may be going from archived to published, so it won't have
             // doc.archived === true. Remove the dedupe prefix, check the slug
@@ -391,8 +391,8 @@ module.exports = {
         });
         if (self.options.slugPrefix) {
           if (self.options.slugPrefix === 'deduplicate-') {
-            const req = self.apos.task.getReq();
-            throw self.apos.error('invalid', req.__('The deduplicate- slug is reserved.'));
+            // TODO: i18n
+            throw self.apos.error('invalid', 'The deduplicate- slug is reserved.');
           }
           const slug = self.schema.find(field => field.name === 'slug');
           if (slug) {
