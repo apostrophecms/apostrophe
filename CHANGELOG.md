@@ -1,5 +1,10 @@
 # Changelog
 
+## v3 Unreleased 
+
+### Fixes
+* Fixes migration task crash when parking new page
+
 ## 3.2.0 - 2021-08-13
 
 ### Fixes
