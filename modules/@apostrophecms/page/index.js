@@ -470,6 +470,16 @@ module.exports = {
       }
     };
   },
+  routes(self) {
+    return {
+      get: {
+        // Redirects to the URL of the document in the specified alternate
+        // locale. Issues a 404 if the document not found, a 400 if the
+        // document has no URL
+        ':_id/locale/:toLocale': self.apos.i18n.toLocaleRouteFactory(self)
+      }
+    };
+  },
   handlers(self) {
     return {
       beforeSend: {
@@ -1395,10 +1405,13 @@ database.`);
           await self.emit('serve', req);
           await self.serveNotFound(req);
         } catch (err) {
-          await self.serveDeliver(req, err);
-          return;
+          return await self.serve500Error(req, err);
         }
-        await self.serveDeliver(req, null);
+        try {
+          await self.serveDeliver(req, null);
+        } catch (err) {
+          await self.serve500Error(req, err);
+        }
       },
       // Sets `req.data.bestPage` to the page whose slug is the longest
       // path prefix of `req.params[0]` (the page slug); an exact match
@@ -1565,6 +1578,14 @@ database.`);
           return req.res.send(args.page);
         }
         return self.sendPage(req, req.template, args);
+      },
+      // In the event of an error during the beforeSend event or the
+      // error template itself, we render the error template in a
+      // simplified way with less potential for chicken and egg problems
+      async serve500Error(req, err) {
+        self.apos.template.logError(req, err);
+        req.res.statusCode = 500;
+        return req.res.send(await self.render(req, '@apostrophecms/template:templateError'));
       },
       // A request is "found" if it should not be
       // treated as a "404 not found" situation

@@ -666,7 +666,7 @@ module.exports = {
 
         if (req.aposError) {
           // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
-          return error(req.aposError, 'template');
+          return error(req.aposError);
         }
 
         try {
@@ -674,17 +674,13 @@ module.exports = {
         } catch (e) {
           // The page template threw an exception. Log where it
           // occurred for easier debugging
-          return error(e, 'template');
+          return error(e);
         }
 
         return content;
 
-        function error(e, type) {
-          let now = Date.now();
-          now = dayjs(now).format('YYYY-MM-DDTHH:mm:ssZZ');
-          self.apos.util.error(':: ' + now + ': ' + type + ' error at ' + req.url);
-          self.apos.util.error('Current user: ' + (req.user ? req.user.username : 'none'));
-          self.apos.util.error(e);
+        function error(e) {
+          self.logError(req, e);
           req.statusCode = 500;
           return self.render(req, 'templateError');
         }
@@ -704,6 +700,15 @@ module.exports = {
             return url.replace('&aposRefresh=1', '');
           }
         }
+      },
+
+      // Log the given template error with timestamp and user information
+      logError(req, e) {
+        let now = Date.now();
+        now = dayjs(now).format('YYYY-MM-DDTHH:mm:ssZZ');
+        self.apos.util.error(`:: ${now}: template error at ${req.url}`);
+        self.apos.util.error(`Current user: ${req.user ? req.user.username : 'none'}`);
+        self.apos.util.error(e);
       },
 
       // Add a body class or classes to be emitted when the page is rendered. This information

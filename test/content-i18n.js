@@ -96,6 +96,8 @@ describe('Locales', function() {
     assert(peoplePageFrCA.title === 'Altered');
   });
 
+  let home;
+
   it('should not replicate redundantly on a second startup in same db, but should repark parked properties', async function() {
     const apos2 = await t.create({
       ...config,
@@ -105,6 +107,7 @@ describe('Locales', function() {
     const homes = await apos2.doc.db.find({ parkedId: 'home' }).toArray();
     // Draft and published
     assert(homes.length === 8);
+    home = homes.find(home => home.aposLocale === 'en:published');
     const people = await apos2.doc.db.find({ parkedId: 'people' }).toArray();
     assert(people.length === 8);
     const archives = await apos2.doc.db.find({ parkedId: 'archive' }).toArray();
@@ -164,14 +167,12 @@ describe('Locales', function() {
       jar
     });
 
-    // Confirm login, seems necessary for the session cookie in the jar to work
-    // on the next call
     const page = await apos.http.get('/', {
       jar
     });
 
     assert(page.match(/logged in/));
-
+    assert(page.includes(`<a href="/api/v1/@apostrophecms/page/${home._id}/locale/en-CA">Canadian English (en-CA)</a>`));
   });
 
   it('localize API should succeed', async () => {
@@ -194,6 +195,7 @@ describe('Locales', function() {
     const en = await apos.doc.find(reqEn, { slug: '/child-page' }).toObject();
     assert(en);
     assert.strictEqual(en._url, 'http://localhost:3000/child-page');
+    await apos.page.publish(reqEn, en);
     const reqEnCA = apos.task.getReq({
       locale: 'en-CA',
       mode: 'draft'
@@ -215,8 +217,17 @@ describe('Locales', function() {
     // Now it should work
     const childPage = await apos.http.get('/ca/en/child-page', {});
     assert(childPage.includes('<title>Child Page, Toronto Style</title>'));
+    // Navigation links are localized
     assert(childPage.includes('"http://localhost:3000/ca/en/">Home: /'));
     assert(childPage.includes('"http://localhost:3000/ca/en/child-page">Tab: /child-page'));
+    // Locale-switching links are present for locales that are available
+    // and fall back to home page for locales that are not
+    const childPageId = enCA._id.replace(':draft', ':published');
+    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en">English (en)</a></li>`));
+    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en-CA">Canadian English (en-CA)</a></li>`));
+    assert(childPage.includes('"http://localhost:3000/ca/fr/">Canadian French (fr-CA)</a></li>'));
+    assert(childPage.includes('"http://example.mx/">Mexico (es-MX)</a></li>'));
+
     // And the home page should be reachable
     const home = await apos.http.get('/ca/en/');
     assert(home);

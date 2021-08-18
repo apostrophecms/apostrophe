@@ -233,6 +233,8 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
+        // Returns an object with a `results` array containing all locale names
+        // for which the given document has been localized
         ':_id/locales': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
           return {
@@ -372,6 +374,16 @@ module.exports = {
           }
           return self.revertPublishedToPrevious(req, published);
         }
+      }
+    };
+  },
+  routes(self) {
+    return {
+      get: {
+        // Redirects to the URL of the document in the specified alternate
+        // locale. Issues a 404 if the document not found, a 400 if the
+        // document has no URL
+        ':_id/locale/:toLocale': self.apos.i18n.toLocaleRouteFactory(self)
       }
     };
   },
