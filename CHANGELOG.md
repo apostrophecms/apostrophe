@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+## Fixes
+
+* The template error page was returning a 200 status code. It now correctly returns a 500 status code.
+
 ## 2.220.4 (2021-08-03)
 
 ## Fixes
