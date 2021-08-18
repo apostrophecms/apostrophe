@@ -1,6 +1,6 @@
 # Changelog
 
-## Unannounced
+## Unreleased
 ### Changes
 * Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
 
