@@ -214,7 +214,7 @@ export default {
       );
     },
     canLocalize() {
-      return (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized;
+      return (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized && this.context._id;
     },
     canArchive() {
       return (
