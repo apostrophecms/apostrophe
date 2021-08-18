@@ -33,6 +33,10 @@ export default {
     // multiple layers of code, as a single `label`
     // property for instance
     Vue.prototype.$t = (phrase, options) => {
+      if (phrase == null) {
+        // Button with icon only, no label or similar
+        return '';
+      }
       if ((typeof phrase) === 'object') {
         options = phrase;
         phrase = phrase.key;

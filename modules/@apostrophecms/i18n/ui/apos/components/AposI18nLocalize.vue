@@ -661,7 +661,7 @@ export default {
           }
         }
         // New documents only
-        newRelatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
+        relatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
       }
       this.relatedDocs = relatedDocs;
     }
