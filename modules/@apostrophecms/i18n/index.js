@@ -171,6 +171,14 @@ module.exports = {
             lng: req.locale
           });
         };
+        req.__ = key => {
+          self.apos.util.warnDevOnce('old-i18n-req-helper', stripIndent`
+            The req.__() and res.__() functions are deprecated and do not localize in A3.
+            Use req.t instead.
+          `);
+          return key;
+        };
+        req.res.__ = req.__;
         return next();
       }
     };

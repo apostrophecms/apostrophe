@@ -14,6 +14,7 @@
 /* eslint-disable no-console */
 
 const _ = require('lodash');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
   options: { alias: 'task' },
@@ -212,8 +213,16 @@ module.exports = {
               ...req,
               ...properties
             };
+          },
+          __(key) {
+            self.apos.util.warnDevOnce('old-i18n-req-helper', stripIndent`
+              The req.__() and res.__() functions are deprecated and do not localize in A3.
+              Use req.t instead.
+            `);
+            return key;
           }
         };
+        req.res.__ = req.__;
         const { role, ..._properties } = options || {};
         Object.assign(req, _properties);
         self.apos.i18n.setPrefixUrls(req);
