@@ -6,6 +6,11 @@
 
 * Resolves slug-related bug when switching between images in the archived view of the media manager. The slug field was not taking into account the double slug prefix case.
 
+
+### Changes
+* Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
+
+
 ## 3.2.0 - 2021-08-13
 
 ### Fixes
