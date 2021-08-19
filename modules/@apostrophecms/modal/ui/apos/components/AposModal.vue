@@ -41,8 +41,13 @@
                   </span>
                   {{ $t(modalTitle) }}
                 </h2>
-                <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
-                  <slot name="primaryControls" />
+                <div class="apos-modal__controls--header">
+                  <div class="apos-modal__locale">
+                    <span class="apos-modal__locale-label">{{ $t('apostrophe:locale')}}:</span> <span class="apos-modal__locale-name">{{ currentLocale }}</span>
+                  </div>
+                  <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
+                    <slot name="primaryControls" />
+                  </div>
                 </div>
               </div>
               <div class="apos-modal__breadcrumbs" v-if="hasBreadcrumbs">
@@ -105,6 +110,9 @@ export default {
     },
     modalReady () {
       return this.modal.active;
+    },
+    currentLocale: function() {
+      return window.apos.locale;
     },
     hasPrimaryControls: function () {
       return !!this.$slots.primaryControls;
@@ -383,13 +391,14 @@ export default {
     background-color: var(--a-white);
   }
 
+  .apos-modal__controls--header,
   .apos-modal__controls--primary,
   .apos-modal__controls--secondary {
     display: flex;
     align-items: center;
   }
 
-  .apos-modal__controls--primary {
+  .apos-modal__controls--header {
     justify-content: flex-end;
     flex-grow: 1;
   }
@@ -398,6 +407,16 @@ export default {
     & > .apos-context-menu {
       margin-left: 7.5px;
     }
+  }
+
+  .apos-modal__locale {
+    @include type-base;
+    margin-right: $spacing-double;
+    font-weight: var(--a-weight-bold);
+  }
+
+  .apos-modal__locale-name {
+    color: var(--a-primary);
   }
 
   .apos-modal__heading {
