@@ -114,6 +114,7 @@
   "listJoiner": ", ",
   "live": "Live",
   "loadDocFailed": "The requested document was not found.",
+  "locale": "Locale",
   "localizationSettings": "Localization Settings",
   "localizeContent": "Localize Content",
   "localized": "Localized the {{ type }} {{ title }} to {{ locale }}",
