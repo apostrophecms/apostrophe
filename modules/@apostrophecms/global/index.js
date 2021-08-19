@@ -133,8 +133,8 @@ module.exports = {
               contextUtility: true,
               toggle: true,
               tooltip: {
-                activate: 'Open Global Site Settings',
-                deactivate: 'Close Global Site Settings'
+                activate: 'apostrophe:openGlobal',
+                deactivate: 'apostrophe:closeGlobal'
               }
             }
           );

@@ -6,7 +6,6 @@
         :key="set.key"
         class="apos-filters-menu__set"
       >
-        {{ set }}
         <component
           :is="map[set.field.type]"
           :field="set.field"
@@ -47,7 +46,7 @@ export default {
       type: Object,
       default() {
         return {
-          label: 'Filter',
+          label: 'apostrophe:filter',
           icon: 'chevron-down-icon',
           modifiers: [ 'icon-right' ],
           type: 'outline'

@@ -26,7 +26,7 @@
           <AposButton
             type="quiet"
             @click="removeLink"
-            label="Remove Link"
+            label="apostrophe:removeLink"
           />
         </div>
         <AposSchema
@@ -37,12 +37,12 @@
         />
         <footer class="apos-link-control__footer">
           <AposButton
-            type="default" label="Cancel"
+            type="default" label="apostrophe:cancel"
             @click="close"
             :modifiers="formModifiers"
           />
           <AposButton
-            type="primary" label="Save"
+            type="primary" label="apostrophe:save"
             @click="save"
             :modifiers="formModifiers"
           />

@@ -9,7 +9,7 @@
         <input
           :class="classes"
           v-model="next" :type="type"
-          :placeholder="field.placeholder"
+          :placeholder="$t(field.placeholder)"
           @keydown.enter="$emit('return')"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
@@ -124,7 +124,7 @@ export default {
       if (this.conflict) {
         return {
           name: 'conflict',
-          message: 'Slug already in use'
+          message: 'apostrophe:slugInUse'
         };
       }
       if (this.field.required) {

@@ -27,7 +27,7 @@
           {{ valueLabel }}
           <AposButton
             v-if="next"
-            type="quiet" label="Clear"
+            type="quiet" label="apostrophe:clear"
             class="apos-color__clear"
             :modifiers="['no-motion']"
             @click="clear"

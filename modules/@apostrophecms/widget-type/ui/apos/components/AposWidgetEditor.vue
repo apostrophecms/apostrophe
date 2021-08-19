@@ -29,7 +29,7 @@
     </template>
     <template #footer>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton

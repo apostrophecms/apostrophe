@@ -76,7 +76,7 @@
                 type="text"
                 name="localeFilter"
                 class="apos-locales-filter"
-                placeholder="Search Locales"
+                :placeholder="$t('apostrophe:searchLocales')"
               >
               <ul class="apos-selected-locales">
                 <li

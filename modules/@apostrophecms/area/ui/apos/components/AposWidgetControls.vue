@@ -8,20 +8,20 @@
         v-bind="upButton"
         :disabled="first || disabled"
         @click="$emit('up')"
-        :tooltip="(!disabled && !first) ? 'Nudge Up' : null"
+        :tooltip="(!disabled && !first) ? 'apostrophe:nudgeUp' : null"
       />
       <AposButton
         v-bind="editButton"
         :disabled="disabled"
         v-if="!foreign && !options.contextual"
         @click="$emit('edit')"
-        tooltip="Edit Widget"
+        tooltip="apostrophe:editWidget"
       />
       <AposButton
         v-bind="cutButton"
         v-if="!foreign"
         @click="$emit('cut')"
-        tooltip="Cut"
+        tooltip="apostrophe:cut"
       />
       <!-- <AposButton
         v-bind="copyButton"
@@ -34,21 +34,21 @@
         :disabled="disabled || maxReached"
         v-bind="cloneButton"
         @click="$emit('clone')"
-        tooltip="Duplicate"
+        tooltip="apostrophe:duplicate"
       />
       <AposButton
         v-if="!foreign"
         :disabled="disabled"
         v-bind="removeButton"
         @click="$emit('remove')"
-        tooltip="Delete"
+        tooltip="apostrophe:delete"
       />
       <AposButton
         v-if="!foreign"
         v-bind="downButton"
         :disabled="last || disabled"
         @click="$emit('down')"
-        :tooltip="(!disabled && !last) ? 'Nudge Down' : null"
+        :tooltip="(!disabled && !last) ? 'apostrophe:nudgeDown' : null"
       />
     </AposButtonGroup>
   </div>
@@ -112,49 +112,49 @@ export default {
     upButton() {
       return {
         ...this.buttonDefaults,
-        label: 'Nudge Up',
+        label: 'apostrophe:nudgeUp',
         icon: 'arrow-up-icon'
       };
     },
     downButton() {
       return {
         ...this.buttonDefaults,
-        label: 'Nudge down',
+        label: 'apostrophe:nudgeDown',
         icon: 'arrow-down-icon'
       };
     },
     cloneButton() {
       return {
         ...this.buttonDefaults,
-        label: 'Clone',
+        label: 'apostrophe:clone',
         icon: 'content-copy-icon'
       };
     },
     removeButton() {
       return {
         ...this.buttonDefaults,
-        label: 'Remove',
+        label: 'apostrophe:remove',
         icon: 'trash-can-outline-icon'
       };
     },
     editButton() {
       return {
         ...this.buttonDefaults,
-        label: 'Edit',
+        label: 'apostrophe:edit',
         icon: 'pencil-icon'
       };
     },
     cutButton() {
       return {
         ...this.buttonDefaults,
-        label: 'Cut',
+        label: 'apostrophe:cut',
         icon: 'content-cut-icon'
       };
     },
     copyButton() {
       return {
         ...this.buttonDefaults,
-        label: 'Copy',
+        label: 'apostrophe:copy',
         icon: 'clipboard-plus-outline-icon'
       };
     }

@@ -37,7 +37,7 @@
               type="quiet"
               @click="foreign ? $emit('edit', i) : false"
               :label="foreign ? 'Edit ' + widgetLabel : widgetLabel"
-              tooltip="Click to edit this content in its natural context"
+              tooltip="apostrophe:clickToEditInContext"
               :icon="foreign ? 'earth-icon' : null"
               :icon-size="11"
               :modifiers="['no-motion']"

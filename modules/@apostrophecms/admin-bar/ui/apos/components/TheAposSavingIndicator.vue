@@ -10,7 +10,7 @@
         class="apos-admin-bar__status__icon"
       />
       <div class="apos-admin-bar__status__label" ref="statusLabel">
-        {{ savingLabel }}
+        {{ $t(savingLabel) }}
       </div>
     </span>
   </div>
@@ -31,16 +31,16 @@ export default {
         transitioning: false,
         messages: {
           1: {
-            label: 'Document Saved',
+            label: 'apostrophe:documentSaved',
             icon: 'database-check-icon',
             class: 'apos-is-success'
           },
           2: {
-            label: 'Saving document...',
+            label: 'apostrophe:savingDocument',
             component: 'AposSpinner'
           },
           3: {
-            label: 'Retrying Save document...',
+            label: 'apostrophe:retryingSaveDocument',
             component: 'AposSpinner',
             class: 'apos-is-warning'
           }

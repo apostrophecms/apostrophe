@@ -84,18 +84,18 @@ export default {
       required: true
     },
     modalTitle: {
-      type: String,
+      type: [ String, Object ],
       default: ''
     }
   },
   emits: [ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ],
+  data() {
+    return {
+      // For aria purposes
+      id: 'modal:' + Math.random().toString().replace('.', '')
+    };
+  },
   computed: {
-    id() {
-      const rand = (Math.floor(Math.random() * Math.floor(10000)));
-      // replace everything not A-Za-z0-9_ with _
-      const title = this.modalTitle.replace(/\W/g, '_');
-      return `${title}-${rand}`;
-    },
     transitionType: function () {
       if (this.modal.type === 'slide') {
         return 'slide';

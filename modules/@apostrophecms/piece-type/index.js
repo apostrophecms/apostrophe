@@ -105,8 +105,8 @@ module.exports = {
           archived: true
         }
       },
-      rescue: {
-        label: 'apostrophe:rescue',
+      restore: {
+        label: 'apostrophe:restore',
         unlessFilter: {
           archived: false
         }

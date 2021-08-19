@@ -35,7 +35,7 @@
                   :busy="busy"
                   :disabled="disabled"
                   type="primary"
-                  label="Login"
+                  label="apostrophe:login"
                   button-type="submit"
                   :modifiers="['gradient-on-hover', 'block']"
                   @click="submit"

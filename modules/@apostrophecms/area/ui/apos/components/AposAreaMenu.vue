@@ -124,7 +124,7 @@ export default {
     },
     buttonOptions() {
       return {
-        label: 'Add Content',
+        label: 'apostrophe:addContent',
         iconOnly: this.empty === false,
         icon: 'plus-icon',
         type: 'primary',
@@ -218,7 +218,7 @@ export default {
     },
     composeGroups(menu) {
       const ungrouped = {
-        label: 'Ungrouped Widgets',
+        label: 'apostrophe:ungroupedWidgets',
         items: []
       };
       const myMenu = [];

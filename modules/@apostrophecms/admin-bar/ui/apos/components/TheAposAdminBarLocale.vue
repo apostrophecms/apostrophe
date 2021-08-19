@@ -11,7 +11,7 @@
           v-model="search"
           type="text"
           class="apos-locales-filter"
-          placeholder="Search locales..."
+          :placeholder="$t('apostrophe:searchLocalesPlaceholder')"
         >
       </div>
       <ul class="apos-locales">
@@ -26,7 +26,7 @@
             <CheckIcon
               v-if="isActive(locale)"
               class="apos-check"
-              title="Currently selected locale"
+              title="$t('apostrophe:currentlySelectedLocale')"
               :size="12"
             />
             {{ locale.label }}
@@ -76,7 +76,10 @@ export default {
   computed: {
     button() {
       return {
-        label: window.apos.i18n.locale,
+        label: {
+          phrase: window.apos.i18n.locale,
+          localize: false
+        },
         icon: 'chevron-down-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'

@@ -15,7 +15,7 @@
         v-if="col.columnHeaderIcon" :is="icons[col.columnHeaderIcon]"
         class="apos-tree__cell__icon"
       />
-      {{ col.columnHeader }}
+      {{ $t(col.columnHeader) }}
     </span>
   </div>
 </template>
