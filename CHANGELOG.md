@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+
+### Fixes
+* Fixes AposCellDate to show correct month on Apostrophe UI list view
+
 ### Changes
 * Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
 

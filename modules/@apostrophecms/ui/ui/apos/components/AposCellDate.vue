@@ -27,7 +27,7 @@ export default {
         // We're not sure what this is, but it's not a date.
         return value;
       }
-      const month = d.getMonth();
+      const month = d.getMonth() + 1;
       const date = d.getDate();
       const year = d.getFullYear();
       let hour = d.getHours();
