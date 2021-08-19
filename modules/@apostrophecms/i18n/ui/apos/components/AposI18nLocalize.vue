@@ -482,7 +482,7 @@ export default {
       this.wizard.values.toLocales.data = [ ...this.locales ];
     },
     selectLocale(locale) {
-      if (!this.isSelected(locale)) {
+      if (!this.isSelected(locale) && !this.isCurrentLocale(locale)) {
         this.wizard.values.toLocales.data.push(locale);
       }
     },
@@ -822,9 +822,12 @@ export default {
   position: relative;
   padding: 12px 35px;
   line-height: 1;
-  cursor: pointer;
 
-  &:hover {
+  &:not(.apos-current-locale) {
+    cursor: pointer;
+  }
+
+  &:not(.apos-current-locale):hover {
     background-color: var(--a-base-10);
   }
 
