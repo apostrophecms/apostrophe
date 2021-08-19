@@ -5,8 +5,10 @@
 ### Fixes
 
 * Addresses the page jump when using the in-context undo/redo feature. The page will immediately return users to their origin scroll position after the content refreshes.
+* Fixes migration task crash when parking new page. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
 
 ### Changes
+
 * Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
 
 ## 3.2.0 - 2021-08-13
