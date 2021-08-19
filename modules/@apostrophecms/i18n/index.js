@@ -463,7 +463,7 @@ module.exports = {
           if (taken[key]) {
             throw new Error(stripIndent`
               @apostrophecms/i18n: the locale ${name} cannot be distinguished from
-              earlier locales. Make sure it is uniquely distingished by its hostname
+              earlier locales. Make sure it is uniquely distinguished by its hostname
               option, prefix option or a combination of the two. One locale per site
               may be a default with neither hostname nor prefix, and one locale per
               hostname may be a default for that hostname without a prefix.
