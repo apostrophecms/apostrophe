@@ -1711,8 +1711,9 @@ database.`);
           await self.apos.doc.db.updateOne({ _id: existing._id }, { $set: self.apos.util.clonePermanent(item) });
         }
         async function insert() {
-          const parkedDefaults = item._defaults || {};
-          delete item._defaults;
+          const parkedDefaults = { ...(item._defaults || {}) };
+          const cloned = { ...item };
+          delete cloned._defaults;
           let ordinaryDefaults;
           if (parent) {
             ordinaryDefaults = self.newChild(parent);
@@ -1727,7 +1728,7 @@ database.`);
           const _item = {
             ...ordinaryDefaults,
             ...parkedDefaults,
-            ...item
+            ...cloned
           };
           delete _item._children;
           if (!parent) {
