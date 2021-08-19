@@ -41,8 +41,8 @@
                   </span>
                   {{ $t(modalTitle) }}
                 </h2>
-                <div class="apos-modal__controls--header">
-                  <div class="apos-modal__locale">
+                <div class="apos-modal__controls--header" v-if="hasBeenLocalized || hasPrimaryControls">
+                  <div class="apos-modal__locale" v-if="hasBeenLocalized">
                     <span class="apos-modal__locale-label">{{ $t('apostrophe:locale')}}:</span> <span class="apos-modal__locale-name">{{ currentLocale }}</span>
                   </div>
                   <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
@@ -111,8 +111,11 @@ export default {
     modalReady () {
       return this.modal.active;
     },
+    hasBeenLocalized: function() {
+      return Object.keys(apos.i18n.locales).length > 1;
+    },
     currentLocale: function() {
-      return window.apos.locale;
+      return apos.i18n.locale;
     },
     hasPrimaryControls: function () {
       return !!this.$slots.primaryControls;
