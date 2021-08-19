@@ -170,7 +170,10 @@ export default {
           menu.unshift({
             type: 'clipboard',
             ...matchingChoice,
-            label: `Paste  ${matchingChoice.label}`,
+            label: {
+              key: 'apostrophe:pasteWidget',
+              widget: this.$t(matchingChoice.label)
+            },
             clipboard: widget
           });
         }
