@@ -206,7 +206,7 @@ export default {
     },
     setPrefix (slug) {
       // Get a fresh clone of the slug.
-      let updated = slug.slice();
+      let updated = slug;
       const archivedRegexp = new RegExp(`^deduplicate-[a-z0-9]+-${this.prefix}`);
 
       // Prefix if the slug doesn't start with the prefix OR if its archived
