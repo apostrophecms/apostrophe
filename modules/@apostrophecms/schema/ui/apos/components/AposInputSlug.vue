@@ -5,8 +5,12 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-input-wrapper">
-        <span class="apos-input--slug-locale-prefix" v-if="localePrefix">
+      <div :class="wrapperClasses">
+        <span
+          class="apos-input apos-input--slug-locale-prefix"
+          v-if="localePrefix"
+          @click="passFocus"
+        >
           {{ localePrefix }}
         </span>
         <input
@@ -16,6 +20,7 @@
           @keydown.enter="$emit('return')"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
+          ref="input"
         >
         <component
           v-if="icon"
@@ -57,7 +62,10 @@ export default {
       }
     },
     classes () {
-      return [ 'apos-input', 'apos-input--text' ];
+      return [ 'apos-input', 'apos-input--text', 'apos-input--slug' ];
+    },
+    wrapperClasses () {
+      return [ 'apos-input-wrapper' ].concat(this.localePrefix ? [ 'apos-input-wrapper--with-prefix' ] : []);
     },
     icon () {
       if (this.error) {
@@ -76,7 +84,7 @@ export default {
       return this.field.prefix || '';
     },
     localePrefix() {
-      return apos.i18n.locales[apos.i18n.locale].prefix;
+      return this.field.page && apos.i18n.locales[apos.i18n.locale].prefix;
     }
   },
   watch: {
@@ -237,36 +245,33 @@ export default {
           throw e;
         }
       }
+    },
+    passFocus() {
+      this.$refs.input.focus();
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-input--date,
-  .apos-input--time {
-    // lame magic number ..
-    // height of date/time input is slightly larger than others due to the browser spinner ui
-    height: 46px;
-  }
-  .apos-input--date {
-    // padding is lessend to overlap with calendar UI
-    padding-right: $input-padding * 1.4;
-    &::-webkit-calendar-picker-indicator { opacity: 0; }
-    &::-webkit-clear-button {
-      position: relative;
-      right: 5px;
+  .apos-input-wrapper--with-prefix {
+    display: flex;
+    // To look like one element, with a read-only part
+    .apos-input--slug-locale-prefix {
+      width: auto;
+      padding: 12px 0px 10px 15px;
+      border-radius: 5px 0 0 5px;
+      border-right: none;
+      &:hover,
+      &:focus {
+        border: 1px solid var(--a-base-8);
+        border-right: none;
+      }
     }
-  }
-  .apos-input--time {
-    padding-right: $input-padding * 2.5;
-  }
-
-  .apos-field--small .apos-input--date,
-  .apos-field--small .apos-input--time {
-    height: 33px;
-  }
-  .apos-input--slug-locale-prefix {
-
+    .apos-input--slug {
+      padding-left: 0;
+      border-radius: 0 5px 5px 0;
+      border-left: none;
+    }
   }
 </style>
