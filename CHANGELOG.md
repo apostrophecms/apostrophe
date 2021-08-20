@@ -10,6 +10,7 @@
 ### Changes
 
 * Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
+* Removes the 2.x series changelog entries. They can be found in the 2.0 branch in Github.
 
 ## 3.2.0 - 2021-08-13
 
