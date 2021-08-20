@@ -12,7 +12,7 @@ module.exports = {
           label: 'Slug',
           required: true,
           page: true,
-          following: 'title'
+          following: [ 'title', 'archived' ]
         },
         type: {
           type: 'select',
