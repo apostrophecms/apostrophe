@@ -37,7 +37,7 @@
         class="apos-admin-bar__create"
         :menu="createMenu"
         :button="{
-          label: 'New item',
+          label: 'apostrophe:newItem',
           iconOnly: true,
           icon: 'plus-icon',
           type: 'primary',

@@ -28,6 +28,10 @@
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
+    <!-- Using actual DOM element rather than :after to ease localization -->
+    <div class="apos-rich-text-editor__editor_after" :class="editorModifiers">
+      {{ $t('apostrophe:emptyRichTextWidget') }}
+    </div>
   </div>
 </template>
 
@@ -294,36 +298,36 @@ export default {
     position: relative;
     border-radius: var(--a-border-radius);
     box-shadow: 0 0 0 1px transparent;
-    &:after {
-      @include type-small;
-      content: 'Empty Rich Text Widget';
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      display: block;
-      width: 200px;
-      height: 10px;
-      margin: auto;
-      color: var(--a-base-5);
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-align: center;
-    }
   }
   .apos-rich-text-editor__editor.apos-is-visually-empty {
     box-shadow: 0 0 0 1px var(--a-primary-transparent-50);
-    &:after {
+  }
+  .apos-rich-text-editor__editor_after {
+    @include type-small;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 200px;
+    height: 10px;
+    margin: auto;
+    margin-top: 7.5px;
+    margin-bottom: 7.5px;
+    color: var(--a-base-5);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    &.apos-is-visually-empty {
       opacity: 1;
       visibility: visible;
     }
   }
-
   .apos-rich-text-toolbar__inner ::v-deep > .apos-rich-text-editor__control {
     /* Addresses a Safari-only situation where it inherits the
       `::-webkit-scrollbar-button` 2px margin. */

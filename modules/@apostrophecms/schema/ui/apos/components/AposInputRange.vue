@@ -39,7 +39,7 @@
         >
           {{ valueLabel }}
           <AposButton
-            type="quiet" label="Clear"
+            type="quiet" label="apostrophe:clear"
             class="apos-range__clear"
             :modifiers="['no-motion']"
             @click="unset"

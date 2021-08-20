@@ -3,7 +3,7 @@
     <template #leftControls>
       <AposButton
         v-if="!options.hideSelectAll"
-        label="Select" :icon-only="true"
+        label="apostrophe:select" :icon-only="true"
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')"
       />
@@ -13,7 +13,7 @@
         percolating everywhere. We can still achieve a custom button
         without that. -->
       <!-- <AposButton
-        label="Delete" @click="$emit('archive-click')"
+        label="apostrophe:delete" @click="$emit('archive-click')"
         :icon-only="true" icon="delete-icon"
         type="outline"
       /> -->
@@ -111,7 +111,7 @@ export default {
       // TODO: Uncomment to return this when batch updates are added.
       // more: {
       //   button: {
-      //     label: 'More operations',
+      //     label: 'apostrophe:moreOperations',
       //     iconOnly: true,
       //     icon: 'dots-vertical-icon',
       //     type: 'outline'
@@ -126,7 +126,10 @@ export default {
       searchField: {
         field: {
           name: 'search',
-          placeholder: `Search ${this.labels.plural || ''}`,
+          placeholder: {
+            key: 'apostrophe:searchDocType',
+            type: this.$t(this.labels.plural)
+          },
           icon: 'magnify-icon',
           enterSubmittable: true
         },

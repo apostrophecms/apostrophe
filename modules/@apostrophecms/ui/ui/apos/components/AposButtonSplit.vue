@@ -73,7 +73,7 @@ export default {
       default: false
     },
     tooltip: {
-      type: String,
+      type: [ String, Object ],
       default: null
     },
     selected: {

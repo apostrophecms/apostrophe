@@ -31,20 +31,43 @@ export default {
     // property, which makes it easier to pass both
     // a label and its interpolation values through
     // multiple layers of code, as a single `label`
-    // property for instance
-    Vue.prototype.$t = (phrase, options) => {
-      if (phrase == null) {
-        // Button with icon only, no label or similar
-        return '';
-      }
-      if ((typeof phrase) === 'object') {
+    // property for instance. You may also specify
+    // `localize: false` to pass a string through without
+    // invoking i18next.
+    Vue.prototype.$t = (phrase, options = {}) => {
+      if ((phrase !== null) && ((typeof phrase) === 'object')) {
         options = phrase;
         phrase = phrase.key;
       }
-      return (i18n.show ? '🌍 ' : '') + i18next.t(phrase, {
+      if (options.localize === false) {
+        return phrase;
+      }
+      // Check carefully for empty string and equivalent scenarios
+      // before doing any work
+      if (phrase == null) {
+        return '';
+      }
+      phrase += '';
+      if (!phrase.length) {
+        return '';
+      }
+      const result = i18next.t(phrase, {
         lng: i18n.locale,
         ...options
       });
+      if (i18n.show) {
+        if (result === phrase) {
+          if (phrase.match(/^\S+:/)) {
+            return `❌ ${result}`;
+          } else {
+            return `🕳 ${result}`;
+          }
+        } else {
+          return `🌍 ${result}`;
+        }
+      } else {
+        return result;
+      }
     };
   }
 };

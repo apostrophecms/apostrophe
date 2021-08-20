@@ -7,13 +7,13 @@
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="Save"
+        type="primary" label="apostrophe:save"
         :disabled="!valid"
         @click="submit"
       />
@@ -35,7 +35,7 @@
             </div>
             <AposButton
               class="apos-modal-array-items__add"
-              label="Add Item"
+              label="apostrophe:addItem"
               :icon-only="true"
               icon="plus-icon"
               :modifiers="[ 'tiny', 'round' ]"

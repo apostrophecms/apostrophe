@@ -136,17 +136,28 @@ export default {
       uploading: false,
       lastSelected: null,
       emptyDisplay: {
-        title: 'No Media Found',
-        message: 'Uploaded media will appear here',
+        title: 'apostrophe:noMediaFound',
+        message: 'apostrophe:uploadedMediaWillAppearHere',
         emoji: '🖼'
       },
-      cancelDescription: 'Do you want to discard changes to the active image?'
+      cancelDescription: 'apostrophe:discardImageChangesPrompt'
     };
   },
   computed: {
     modalTitle () {
-      const verb = this.relationshipField ? 'Choose' : 'Manage';
-      return `${verb} ${this.moduleLabels.pluralLabel}`;
+      let result;
+      if (this.relationshipField) {
+        result = {
+          key: 'apostrophe:chooseDocType',
+          type: this.$t(this.moduleLabels.pluralLabel)
+        };
+      } else {
+        result = {
+          key: 'apostrophe:manageDocType',
+          type: this.$t(this.moduleLabels.pluralLabel)
+        };
+      }
+      return result;
     },
     moduleOptions() {
       return window.apos.modules[this.moduleName];
