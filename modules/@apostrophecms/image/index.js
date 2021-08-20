@@ -34,7 +34,7 @@ module.exports = {
         label: 'Slug',
         prefix: 'image',
         required: true,
-        following: 'title'
+        following: [ 'title', 'archived' ]
       },
       attachment: {
         type: 'attachment',

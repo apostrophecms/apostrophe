@@ -172,6 +172,11 @@ export default {
         next.data._id = this.value.data._id;
         fieldState._id = { data: this.value.data._id };
       }
+      // Though not *always* in the schema, keep track of the archived status.
+      if (this.value.data.archived !== undefined) {
+        next.data.archived = this.value.data.archived;
+        fieldState.archived = { data: this.value.data.archived };
+      }
 
       this.schema.forEach(field => {
         const value = this.value.data[field.name];
