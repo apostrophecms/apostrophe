@@ -893,6 +893,7 @@ export default {
 
 .apos-locale-to-localize {
   @include type-small;
+  display: inline-block;
   position: relative;
   overflow: hidden;
   padding: 10px 20px;
