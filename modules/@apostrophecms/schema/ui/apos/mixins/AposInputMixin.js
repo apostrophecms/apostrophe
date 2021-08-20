@@ -47,8 +47,7 @@ export default {
   },
   data () {
     return {
-      next: (this.value && this.value.data !== undefined)
-        ? this.value.data : '',
+      next: this.valueToNext(this.value.data),
       error: false,
       // This is just meant to be sufficient to prevent unintended collisions
       // in the UI between id attributes
@@ -125,7 +124,7 @@ export default {
     },
     watchValue () {
       this.error = this.value.error;
-      this.next = this.value.data;
+      this.next = this.valueToNext(this.value.data);
     },
     watchNext () {
       this.validateAndEmit();
@@ -146,6 +145,19 @@ export default {
     // experience.
     convert() {
       return this.next;
-    }
+    },
+    // Convert from the representation used by the field type
+    // (for instance, a number) to the internal representation
+    // used wile eidting (for instance, a string). Called
+    // at the start and when the value prop changes. Receives
+    // just the data, not the entire value object. The opposite
+    // of convert().
+    valueToNext(value) {
+      if (this.value && this.value.data !== undefined) {
+        return this.value.data;
+      } else {
+        return '';
+      }
+    },
   }
 };

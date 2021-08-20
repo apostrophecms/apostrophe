@@ -6,10 +6,13 @@
   >
     <template #body>
       <div class="apos-input-wrapper">
+        <span class="apos-input--slug-locale-prefix" v-if="localePrefix">
+          {{ localePrefix }}
+        </span>
         <input
           :class="classes"
           v-model="next" :type="type"
-          :placeholder="field.placeholder"
+          :placeholder="$t(field.placeholder)"
           @keydown.enter="$emit('return')"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
@@ -71,6 +74,9 @@ export default {
     },
     prefix () {
       return this.field.prefix || '';
+    },
+    localePrefix() {
+      return apos.i18n.locales[apos.i18n.locale].prefix;
     }
   },
   watch: {
@@ -124,7 +130,7 @@ export default {
       if (this.conflict) {
         return {
           name: 'conflict',
-          message: 'Slug already in use'
+          message: 'apostrophe:slugInUse'
         };
       }
       if (this.field.required) {
@@ -259,5 +265,8 @@ export default {
   .apos-field--small .apos-input--date,
   .apos-field--small .apos-input--time {
     height: 33px;
+  }
+  .apos-input--slug-locale-prefix {
+
   }
 </style>
