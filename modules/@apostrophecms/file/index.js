@@ -29,7 +29,7 @@ module.exports = {
         label: 'Slug',
         prefix: 'file',
         required: true,
-        following: 'title'
+        following: [ 'title', 'archived' ]
       },
       attachment: {
         type: 'attachment',

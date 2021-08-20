@@ -57,12 +57,6 @@ module.exports = {
           label: 'Display Name',
           required: true
         },
-        slug: {
-          type: 'slug',
-          label: 'Slug',
-          following: 'title',
-          required: true
-        },
         disabled: {
           type: 'boolean',
           label: 'Login Disabled',
@@ -111,8 +105,7 @@ module.exports = {
         basics: {
           label: 'Basics',
           fields: [
-            'title',
-            'slug'
+            'title'
           ]
         },
         utility: {
@@ -120,6 +113,7 @@ module.exports = {
             'username',
             'email',
             'password',
+            'slug',
             'archived'
           ]
         },
