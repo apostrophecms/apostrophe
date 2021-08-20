@@ -4,6 +4,7 @@
     :button="button"
     :unpadded="true"
     menu-placement="bottom-end"
+    @open="open"
   >
     <div class="apos-locales-picker">
       <div class="apos-input-wrapper">
@@ -96,22 +97,22 @@ export default {
       return apos.modules[apos.adminBar.context.type]?.action;
     }
   },
-  async mounted() {
-    if (apos.adminBar.context) {
-      const docs = await apos.http.get(
-        `${this.action}/${apos.adminBar.context._id}/locales`,
-        {
-          busy: true
-        }
-      );
-      this.localized = Object.fromEntries(
-        docs.results
-          .filter(doc => doc.aposLocale.endsWith(':draft'))
-          .map(doc => [ doc.aposLocale.split(':')[0], doc ])
-      );
-    }
-  },
   methods: {
+    async open() {
+      if (apos.adminBar.context) {
+        const docs = await apos.http.get(
+          `${this.action}/${apos.adminBar.context._id}/locales`,
+          {
+            busy: true
+          }
+        );
+        this.localized = Object.fromEntries(
+          docs.results
+            .filter(doc => doc.aposLocale.endsWith(':draft'))
+            .map(doc => [ doc.aposLocale.split(':')[0], doc ])
+        );
+      }
+    },
     isActive(locale) {
       return window.apos.i18n.locale === locale.name;
     },
