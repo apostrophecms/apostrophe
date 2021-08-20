@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-### Fixes
-
 ### Changes
 
 * Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
@@ -11,6 +9,7 @@
 ### Fixes
 
 * Fixes migration task crash when parking new page. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
+* Fixes incorrect month name in `AposCellDate`, which can be optionally used in manage views of pieces. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
 
 ## 3.2.0 - 2021-08-13
 
