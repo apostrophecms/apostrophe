@@ -35,6 +35,12 @@ module.exports = {
     self.show = process.env.APOS_SHOW_I18N ? true : self.options.show;
     self.locales = self.getLocales();
     self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
+
+    Object.keys(self.locales).forEach(key => {
+      if (typeof key !== 'string' || !key.match(/^[a-zA-Z]/)) {
+        throw self.apos.error('invalid', 'Locale names must begin with a non-numeric, "word" character (a-z or A-Z)');
+      }
+    });
     // Make sure we have our own instance to avoid conflicts with other apos objects
     self.i18next = i18next.createInstance({
       fallbackLng: self.defaultLocale,
@@ -365,8 +371,11 @@ module.exports = {
         const hostname = req.hostname;
         let best = false;
         for (const [ name, options ] of Object.entries(self.locales)) {
-          const matchedHostname = options.hostname ? (hostname === options.hostname.split(':')[0]) : null;
-          const matchedPrefix = options.prefix ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/')) : null;
+          const matchedHostname = options.hostname
+            ? (hostname === options.hostname.split(':')[0]) : null;
+          const matchedPrefix = options.prefix
+            ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/'))
+            : null;
           if (options.hostname && options.prefix) {
             if (matchedHostname && matchedPrefix) {
               // Best possible match
