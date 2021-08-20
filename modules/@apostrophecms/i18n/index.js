@@ -35,6 +35,12 @@ module.exports = {
     self.show = process.env.APOS_SHOW_I18N ? true : self.options.show;
     self.locales = self.getLocales();
     self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
+
+    Object.keys(self.locales).forEach(key => {
+      if (typeof key !== 'string' || !key.match(/^[a-zA-Z]/)) {
+        throw self.apos.error('invalid', 'Locale names must begin with a non-numeric, "word" character (a-z or A-Z)');
+      }
+    });
     // Make sure we have our own instance to avoid conflicts with other apos objects
     self.i18next = i18next.createInstance({
       fallbackLng: self.defaultLocale,
@@ -365,8 +371,11 @@ module.exports = {
         const hostname = req.hostname;
         let best = false;
         for (const [ name, options ] of Object.entries(self.locales)) {
-          const matchedHostname = options.hostname ? (hostname === options.hostname.split(':')[0]) : null;
-          const matchedPrefix = options.prefix ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/')) : null;
+          const matchedHostname = options.hostname
+            ? (hostname === options.hostname.split(':')[0]) : null;
+          const matchedPrefix = options.prefix
+            ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/'))
+            : null;
           if (options.hostname && options.prefix) {
             if (matchedHostname && matchedPrefix) {
               // Best possible match
@@ -463,7 +472,7 @@ module.exports = {
           if (taken[key]) {
             throw new Error(stripIndent`
               @apostrophecms/i18n: the locale ${name} cannot be distinguished from
-              earlier locales. Make sure it is uniquely distingished by its hostname
+              earlier locales. Make sure it is uniquely distinguished by its hostname
               option, prefix option or a combination of the two. One locale per site
               may be a default with neither hostname nor prefix, and one locale per
               hostname may be a default for that hostname without a prefix.
@@ -503,7 +512,7 @@ module.exports = {
         // For bc, req.baseUrl is always set, to a best guess if baseUrl is not configured.
         // When falling back, req.hostname is used if trustProxy is active, otherwise the
         // Host header to allow port numbers in dev
-        const host = (self.options.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host');
+        const host = (self.apos.modules['@apostrophecms/express'].trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host');
         req.baseUrl = self.apos.page.getBaseUrl(req) || `${req.protocol}://${host}`;
         req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;

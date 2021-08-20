@@ -156,6 +156,7 @@
   "live": "Live",
   "lastUpdatedBy": "Last saved on {{ updatedAt }} <br /> by {{ updatedBy }}",
   "loadDocFailed": "The requested document was not found.",
+  "locale": "Locale",
   "localizationSettings": "Localization Settings",
   "localize": "Localize...",
   "localizeContent": "Localize Content",

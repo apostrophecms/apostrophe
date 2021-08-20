@@ -661,7 +661,7 @@ export default {
           }
         }
         // New documents only
-        newRelatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
+        relatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
       }
       this.relatedDocs = relatedDocs;
     }
@@ -893,6 +893,7 @@ export default {
 
 .apos-locale-to-localize {
   @include type-small;
+  display: inline-block;
   position: relative;
   overflow: hidden;
   padding: 10px 20px;
