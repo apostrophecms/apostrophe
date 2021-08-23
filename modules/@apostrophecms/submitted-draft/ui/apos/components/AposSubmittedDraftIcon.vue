@@ -28,9 +28,9 @@ export default {
     },
     tooltip() {
       if (this.count > 0) {
-        return 'Manage Draft Submissions';
+        return 'apostrophe:manageDraftSubmissions';
       } else {
-        return 'No Draft Submissions to Manage';
+        return 'apostrophe:noDraftSubmissions';
       }
     }
   },

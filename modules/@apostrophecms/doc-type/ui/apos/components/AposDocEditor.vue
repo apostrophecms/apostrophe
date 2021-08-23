@@ -7,7 +7,7 @@
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
@@ -163,7 +163,10 @@ export default {
       // TODO I18N
       let msg;
       if (this.errorCount) {
-        msg = `${this.errorCount} error${this.errorCount > 1 ? 's' : ''} remaining`;
+        msg = {
+          key: 'apostrophe:errorCount',
+          count: this.errorCount
+        };
       }
       return msg;
     },
@@ -243,7 +246,7 @@ export default {
       });
       if (!groupSet.utility) {
         groupSet.utility = {
-          label: 'Utility',
+          label: 'apostrophe:utility',
           fields: [],
           schema: []
         };
@@ -271,9 +274,15 @@ export default {
     },
     modalTitle() {
       if (this.docId) {
-        return `Edit ${this.moduleOptions.label || ''}`;
+        return {
+          key: 'apostrophe:editDocType',
+          type: this.$t(this.moduleOptions.label)
+        };
       } else {
-        return `New ${this.moduleOptions.label || ''}`;
+        return {
+          key: 'apostrophe:newDocType',
+          type: this.$t(this.moduleOptions.label)
+        };
       }
     },
     currentFields() {
@@ -288,27 +297,27 @@ export default {
     },
     saveLabel() {
       if (this.restoreOnly) {
-        return 'Restore';
+        return 'apostrophe:restore';
       } else if (this.manuallyPublished) {
         if (this.moduleOptions.canPublish) {
           if (this.copyOf) {
-            return 'Publish';
+            return 'apostrophe:publish';
           } else if (this.original && this.original.lastPublishedAt) {
-            return 'Update';
+            return 'apostrophe:update';
           } else {
-            return 'Publish';
+            return 'apostrophe:publish';
           }
         } else {
           if (this.copyOf) {
-            return 'Submit';
+            return 'apostrophe:submit';
           } else if (this.original && this.original.lastPublishedAt) {
-            return 'Submit Update';
+            return 'apostrophe:submitUpdate';
           } else {
-            return 'Submit';
+            return 'apostrophe:submit';
           }
         }
       } else {
-        return 'Save';
+        return 'apostrophe:save';
       }
     },
     isModified() {
@@ -364,7 +373,10 @@ export default {
     this.modal.active = true;
     // After computed properties become available
     this.saveMenu = this.computeSaveMenu();
-    this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
+    this.cancelDescription = {
+      key: 'apostrophe:discardChangesToDocTypePrompt',
+      type: this.$t(this.moduleOptions.label)
+    };
     if (this.docId) {
       await this.loadDoc();
       try {
@@ -723,7 +735,7 @@ export default {
     computeSaveMenu () {
       // Powers the dropdown Save menu
       // all actions expected to be methods of this component
-      // Needs to be manually computed because this.saveLabel doesnt stay reactive when part of an object
+      // Needs to be manually computed because this.saveLabel doesn't stay reactive when part of an object
       const typeLabel = this.moduleOptions
         ? this.moduleOptions.label.toLowerCase()
         : 'document';
@@ -731,53 +743,68 @@ export default {
       // this.original takes a moment to populate, don't crash
       const canPreview = this.original && (this.original._id ? this.original._url : this.original._previewable);
       const canNew = this.moduleOptions.showCreate;
+      const description = {
+        saveLabel: this.$t(this.saveLabel),
+        typeLabel: this.$t(typeLabel)
+      };
       const menu = [
         {
           label: this.saveLabel,
           action: 'onSave',
-          description: isNew
-            ? `${this.saveLabel} ${typeLabel} and return to the ${typeLabel} listing.`
-            : `${this.saveLabel} updates and return to the ${typeLabel} listing.`,
+          description: {
+            ...description,
+            key: isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn',
+          },
           def: true
         }
       ];
       if (canPreview) {
         menu.push({
-          label: `${this.saveLabel} and View`,
+          label: {
+            key: 'apostrophe:takeActionAndView',
+            saveLabel: this.$t(this.saveLabel)
+          },
           action: 'onSaveAndView',
-          description: isNew
-            ? `${this.saveLabel} ${typeLabel} and be redirected to the ${typeLabel}.`
-            : `${this.saveLabel} updates and be redirected to the ${typeLabel}.`
+          description: {
+            ...description,
+            key: isNew ? 'apostrophe:insertAndRedirect' : 'apostrophe:updateAndRedirect'
+          }
         });
       }
       if (canNew) {
         menu.push({
-          label: `${this.saveLabel} and Create New`,
+          label: {
+            key: 'apostrophe:takeActionAndCreateNew',
+            saveLabel: this.$t(this.saveLabel)
+          },
           action: 'onSaveAndNew',
-          description: isNew
-            ? `${this.saveLabel} ${typeLabel} and create a new one.`
-            : `${this.saveLabel} updates and create a new ${typeLabel}.`
+          description: {
+            ...description,
+            key: isNew ? 'apostrophe:insertAndNew' : 'apostrophe:updateAndNew'
+          }
         });
       }
       if (this.manuallyPublished) {
         menu.push({
-          label: 'Save Draft',
+          label: 'apostrophe:saveDraft',
           action: 'onSaveDraft',
-          description: 'Save as a draft to publish later.'
+          description: 'apostrophe:saveAsDraft'
         });
       }
       if (this.manuallyPublished && canPreview) {
         menu.push({
-          label: 'Save Draft and Preview',
+          label: 'apostrophe:saveDraftAndPreview',
           action: 'onSaveDraftAndView',
-          description: `Save as a draft and preview the ${typeLabel}.`
+          description: 'apostrophe:saveAsDraftAndPreview',
+          typeLabel: this.$t(typeLabel)
         });
       };
       if (this.manuallyPublished && canNew) {
         menu.push({
-          label: 'Save Draft and Create New',
+          label: 'apostrophe:saveDraftAndCreateNew',
           action: 'onSaveDraftAndNew',
-          description: `Save as a draft and create a new ${typeLabel}.`
+          description: 'apostrophe:saveAsDraftAndNew',
+          typeLabel: this.$t(typeLabel)
         });
       }
       return menu;

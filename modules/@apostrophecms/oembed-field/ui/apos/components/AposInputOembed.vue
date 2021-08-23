@@ -9,7 +9,7 @@
         <input
           :class="classes"
           v-model="next.url" type="url"
-          :placeholder="field.placeholder"
+          :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >

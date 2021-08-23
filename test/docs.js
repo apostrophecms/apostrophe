@@ -475,9 +475,9 @@ describe('Docs', function() {
     assert(newDoc.archived === false);
   });
 
-  it('should not allow you to call the rescue method if you are not an admin', async function() {
+  it('should not allow you to call the restore method if you are not an admin', async function() {
     try {
-      await apos.doc.rescue(apos.task.getAnonReq(), {
+      await apos.doc.restore(apos.task.getAnonReq(), {
         slug: 'carl'
       });
       assert(false);

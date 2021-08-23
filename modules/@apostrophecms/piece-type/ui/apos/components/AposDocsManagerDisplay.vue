@@ -20,7 +20,7 @@
               :size="iconSize(header)"
               class="apos-table__header-icon"
             />
-            {{ header.label }}
+            {{ $t(header.label) }}
           </component>
         </th>
         <th class="apos-table__header" key="contextMenu">
@@ -28,7 +28,7 @@
             :is="getEl({})"
             class="apos-table__header-label is-hidden"
           >
-            More Operations
+            {{ $t('apostrophe:moreOperations') }}
           </component>
         </th>
       </tr>

@@ -57,7 +57,7 @@ const realWorldCase = {
     {
       type: 'boolean',
       name: 'archive',
-      label: 'Archived',
+      label: 'apostrophe:archived',
       contextual: true,
       def: false
     },

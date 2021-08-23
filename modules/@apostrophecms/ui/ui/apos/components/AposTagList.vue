@@ -37,7 +37,7 @@ export default {
     return {
       active: null,
       emptyState: {
-        message: 'Tag your images to make searching and filtering the media manager easier'
+        message: 'apostrophe:tagYourImages'
       }
     };
   },

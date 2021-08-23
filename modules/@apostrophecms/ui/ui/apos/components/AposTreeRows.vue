@@ -54,13 +54,13 @@
             v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
-            tooltip="This page is parked and cannot be moved"
+            tooltip="apostrophe:pageIsParked"
           />
           <AposIndicator
             v-if="index === 0 && row.type === '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
-            tooltip="You cannot move the Archive"
+            tooltip="apostrophe:cannotMoveArchive"
           />
           <AposCheckbox
             v-if="options.bulkSelect && index === 0"
@@ -69,7 +69,10 @@
             :field="{
               name: row._id,
               hideLabel: true,
-              label: `Toggle selection of ${row.title}`,
+              label: {
+                key: 'toggleSelectionOf',
+                title: row.title
+              },
               disableFocus: true
             }"
             :choice="{ value: row._id }"

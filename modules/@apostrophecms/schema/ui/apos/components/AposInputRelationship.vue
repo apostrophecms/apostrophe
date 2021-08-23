@@ -16,7 +16,7 @@
           <input
             class="apos-input apos-input--text apos-input--relationship"
             v-model="searchTerm" type="text"
-            :placeholder="placeholder"
+            :placeholder="$t(placeholder)"
             :disabled="field.readOnly || limitReached"
             :required="field.required"
             :id="uid"
@@ -61,7 +61,7 @@ export default {
   emits: [ 'input' ],
   data () {
     const next = (this.value && Array.isArray(this.value.data))
-        ? this.value.data : (this.field.def || []);
+      ? this.value.data : (this.field.def || []);
     return {
       searchTerm: '',
       searchList: [],
@@ -88,11 +88,17 @@ export default {
     },
     // TODO get 'Search' server for better i18n
     placeholder() {
-      return this.field.placeholder || `Search ${this.pluralLabel}`;
+      return this.field.placeholder || {
+        key: 'apostrophe:searchDocType',
+        type: this.$t(this.pluralLabel)
+      };
     },
     // TODO get 'Browse' for better i18n
     browseLabel() {
-      return `Browse ${this.pluralLabel}`;
+      return {
+        key: 'apostrophe:browseDocType',
+        type: this.$t(this.pluralLabel)
+      };
     },
     chooserComponent () {
       return apos.modules[this.field.withType].components.managerModal;

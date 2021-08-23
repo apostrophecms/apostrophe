@@ -69,7 +69,7 @@
           icon="close-icon"
           :icon-only="true"
           :modifiers="['inline']"
-          label="Remove Item"
+          label="apostrophe:removeItem"
           :disabled="disabled"
         />
       </div>
@@ -121,7 +121,7 @@ export default {
     return {
       more: {
         button: {
-          label: 'More operations',
+          label: 'apostrophe:moreOperations',
           iconOnly: true,
           icon: 'dots-vertical-icon',
           iconSize: 13,

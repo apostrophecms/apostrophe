@@ -145,7 +145,7 @@ module.exports = {
         },
         async logout(req) {
           if (!req.user) {
-            throw self.apos.error('forbidden', req.t('apostrophe:logoutNotLoggedIn'));
+            throw self.apos.error('forbidden', req.t('apostrophe:logOutNotLoggedIn'));
           }
           if (req.token) {
             await self.bearerTokens.remove({
