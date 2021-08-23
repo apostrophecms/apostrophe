@@ -514,7 +514,7 @@ module.exports = {
         // Host header to allow port numbers in dev. Watch out for modules that won't be
         // set up if this is an afterInit task in an early module like the asset module
         const expressModule = self.apos.modules['@apostrophecms/express'];
-        const host = (expressModule && expressModule.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host');
+        const host = (expressModule && expressModule.options.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host');
         req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) || `${req.protocol}://${host}`;
         req.baseUrlWithPrefix = `${req.baseUrl}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
