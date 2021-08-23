@@ -511,10 +511,11 @@ module.exports = {
       setPrefixUrls(req) {
         // For bc, req.baseUrl is always set, to a best guess if baseUrl is not configured.
         // When falling back, req.hostname is used if trustProxy is active, otherwise the
-        // Host header to allow port numbers in dev
-        const host = (self.apos.modules['@apostrophecms/express'].trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host');
-        req.baseUrl = self.apos.page.getBaseUrl(req) || `${req.protocol}://${host}`;
-        req.baseUrlWithPrefix = `${self.apos.page.getBaseUrl(req)}${self.apos.prefix}`;
+        // Host header to allow port numbers in dev. Watch out for modules that won't be
+        // set up if this is an afterInit task in an early module like the asset module
+        const host = (self.apos.modules['@apostrophecms/express']?.trustProxy && req.get('X-Forwarded-Host')) ? req.hostname : req.get('Host');
+        req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) || `${req.protocol}://${host}`;
+        req.baseUrlWithPrefix = `${req.baseUrl}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
       },
