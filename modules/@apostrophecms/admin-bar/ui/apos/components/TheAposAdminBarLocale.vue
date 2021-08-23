@@ -77,10 +77,7 @@ export default {
   computed: {
     button() {
       return {
-        label: {
-          phrase: window.apos.i18n.locale,
-          localize: false
-        },
+        label: window.apos.i18n.locale,
         icon: 'chevron-down-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'

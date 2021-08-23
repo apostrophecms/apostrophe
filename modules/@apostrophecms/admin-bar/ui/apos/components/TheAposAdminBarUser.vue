@@ -33,10 +33,7 @@ export default {
   computed: {
     button() {
       return {
-        label: {
-          phrase: this.user.title || '',
-          localize: false
-        },
+        label: this.user.title || '',
         icon: 'chevron-down-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'

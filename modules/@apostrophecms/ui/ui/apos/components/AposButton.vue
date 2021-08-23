@@ -55,7 +55,7 @@ export default {
   name: 'AposButton',
   props: {
     label: {
-      type: [ String, Object ],
+      type: String,
       default: 'apostrophe:provideButtonLabel'
     },
     interpolate: {
