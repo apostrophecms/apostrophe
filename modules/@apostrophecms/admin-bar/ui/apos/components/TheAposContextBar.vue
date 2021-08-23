@@ -342,9 +342,9 @@ export default {
       navigate = false
     }) {
       mode = mode || this.draftMode;
-      locale = locale || apos.locale;
+      locale = locale || apos.i18n.locale;
       doc = doc || this.context;
-      if ((mode === this.draftMode) && (locale === apos.locale)) {
+      if ((mode === this.draftMode) && (locale === apos.i18n.locale)) {
         if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
           return;
         } else if (navigate && this.urlDiffers(doc._url)) {
