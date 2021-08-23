@@ -7,9 +7,10 @@
     <template #body>
       <div :class="wrapperClasses">
         <span
-          class="apos-input apos-input--slug-locale-prefix"
+          class="apos-input__slug-locale-prefix"
           v-if="localePrefix"
           @click="passFocus"
+          v-apos-tooltip="'cannot change the slug prefix'"
         >
           {{ localePrefix }}
         </span>
@@ -255,23 +256,25 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input-wrapper--with-prefix {
+    @include apos-input();
     display: flex;
-    // To look like one element, with a read-only part
-    .apos-input--slug-locale-prefix {
-      width: auto;
-      padding: 12px 0px 10px 15px;
-      border-radius: 5px 0 0 5px;
-      border-right: none;
+    align-items: center;
+    color: var(--a-base-4);
+    .apos-input {
+      border: none;
+      padding-left: 0;
       &:hover,
       &:focus {
-        border: 1px solid var(--a-base-8);
-        border-right: none;
+        border: none;
+        box-shadow: none;
       }
     }
-    .apos-input--slug {
-      padding-left: 0;
-      border-radius: 0 5px 5px 0;
-      border-left: none;
-    }
+  }
+  .apos-input__slug-locale-prefix {
+    display: inline-block;
+    padding-left: 20px;
+  }
+  .apos-field--inverted .apos-input-wrapper--with-prefix {
+    background-color: var(--a-background-primary);
   }
 </style>
