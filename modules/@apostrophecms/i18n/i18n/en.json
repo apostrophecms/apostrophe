@@ -31,6 +31,7 @@
   "changesAwaitingApproval": "Changes to this document are awaiting approval by an admin or editor.",
   "changesDiscarded": "Changes discarded",
   "changesPublished": "Your changes have been published.",
+  "cannotChangeSlugPrefix": "cannot change the slug prefix",
   "codeBlock": "Code Block",
   "confirmArchive": "You are going to archive the {{ type }} {{ title }}.",
   "confirmSettings": "Confirm Settings",

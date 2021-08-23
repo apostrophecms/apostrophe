@@ -10,7 +10,7 @@
           class="apos-input__slug-locale-prefix"
           v-if="localePrefix"
           @click="passFocus"
-          v-apos-tooltip="'cannot change the slug prefix'"
+          v-apos-tooltip="'apostrophe:cannotChangeSlugPrefix'"
         >
           {{ localePrefix }}
         </span>
