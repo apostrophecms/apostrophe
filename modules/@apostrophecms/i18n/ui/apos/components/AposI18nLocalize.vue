@@ -582,10 +582,8 @@ export default {
               dismiss: true
             });
 
-            console.log(result);
-
             if (this.locale) {
-              window.location.assign(result._url);
+              window.location.assign(`${result._url}?aposMode=draft`);
             }
 
           } catch (e) {

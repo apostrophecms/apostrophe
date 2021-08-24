@@ -718,14 +718,16 @@ module.exports = {
       // Localize (export) the given draft to another locale, creating the document in the
       // other locale if necessary. By default, if the document already exists in the
       // other locale, it is not ovewritten. Use the `update: true` option to change that.
+      // You can localize starting from either draft or published content. Either way what
+      // gets created or updated in the other locale is a draft.
       async localize(req, draft, toLocale, options = { update: false }) {
         if (!self.isLocalized()) {
           throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
         }
-        const toReq = {
-          ...req,
-          locale: toLocale
-        };
+        const toReq = req.clone({
+          locale: toLocale,
+          mode: 'draft'
+        });
         const toId = draft._id.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
         const actionModule = self.apos.page.isPage(draft) ? self.apos.page : self;
         const existing = await actionModule.findForEditing(toReq, {
@@ -736,11 +738,12 @@ module.exports = {
         const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
         // We need a slug even if removed from the schema for editing purposes
         data.slug = draft.slug;
+        let result;
         if (!existing) {
           if (self.apos.page.isPage(draft)) {
             if (!draft.level) {
               // Replicating the home page for the first time
-              return self.apos.doc.insert(toReq, {
+              result = await self.apos.doc.insert(toReq, {
                 ...data,
                 aposDocId: draft.aposDocId,
                 aposLocale: `${toLocale}:draft`,
@@ -753,7 +756,7 @@ module.exports = {
               });
             } else {
               // A page that is not the home page, being replicated for the first time
-              return actionModule.insert(toReq,
+              result = await actionModule.insert(toReq,
                 draft.aposLastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`),
                 draft.aposLastPosition,
                 {
@@ -766,7 +769,7 @@ module.exports = {
               );
             }
           } else {
-            return actionModule.insert(toReq, {
+            result = await actionModule.insert(toReq, {
               ...data,
               aposDocId: draft.aposDocId,
               aposLocale: `${toLocale}:draft`,
@@ -785,8 +788,12 @@ module.exports = {
             aposLocale: `${toLocale}:draft`,
             metaType: 'doc'
           };
-          return actionModule.update(toReq, update);
+          result = await actionModule.update(toReq, update);
         }
+        // Make sure we have the complete _url property
+        return await actionModule.find(toReq, {
+          _id: result._id
+        }).archived(null).toObject();
       },
       // Reverts the given draft to the most recent publication.
       //

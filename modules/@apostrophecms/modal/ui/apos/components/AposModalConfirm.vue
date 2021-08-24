@@ -142,12 +142,6 @@ export default {
       this.$emit('modal-result', false);
     },
     localize(s) {
-      console.log(
-        'AposModalConfirm',
-        s,
-        this.options.interpolate,
-        this.options.localize
-      );
       if (this.options.localize === false) {
         return s;
       } else {
