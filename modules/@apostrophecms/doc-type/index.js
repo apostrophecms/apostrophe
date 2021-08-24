@@ -790,10 +790,7 @@ module.exports = {
           };
           result = await actionModule.update(toReq, update);
         }
-        // Make sure we have the complete _url property
-        return await actionModule.find(toReq, {
-          _id: result._id
-        }).archived(null).toObject();
+        return result;
       },
       // Reverts the given draft to the most recent publication.
       //

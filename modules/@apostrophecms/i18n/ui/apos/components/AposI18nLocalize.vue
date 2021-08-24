@@ -51,7 +51,7 @@
                 :field="{
                   name: 'toLocalize',
                   label: 'apostrophe:whatContentToLocalize',
-                  choices: toLocalizeChoices,
+                  choices: toLocalizeChoices
                 }"
                 v-model="wizard.values.toLocalize"
               />
@@ -581,9 +581,18 @@ export default {
               },
               dismiss: true
             });
-
             if (this.locale) {
-              window.location.assign(`${result._url}?aposMode=draft`);
+              // Ask for the redirect URL, this way it still works if we
+              // need to carry a session across hostnames
+              const result = await apos.http.post(`${apos.i18n.action}/locale`, {
+                body: {
+                  contextDocId: apos.adminBar.context && apos.adminBar.context._id,
+                  locale: locale.name
+                }
+              });
+              if (result.redirectTo) {
+                window.location.assign(result.redirectTo);
+              }
             }
 
           } catch (e) {
