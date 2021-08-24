@@ -167,6 +167,18 @@ export default {
     this.$nextTick(() => {
       this.$emit('mounted');
     });
+
+    apos.util.onReadyAndRefresh(() => {
+      if (window.apos.adminBar.scrollPosition) {
+        setTimeout(() => {
+          window.scroll({
+            left: window.apos.adminBar.scrollPosition.x,
+            top: window.apos.adminBar.scrollPosition.y
+          });
+          window.apos.adminBar.scrollPosition = null;
+        }, 0);
+      }
+    });
   },
   methods: {
     // Implements the `set-context` Apostrophe event, which can change the mode
@@ -450,7 +462,9 @@ export default {
           });
         }
       }
-      await this.refresh();
+      await this.refresh({
+        scrollcheck: e.action === 'history'
+      });
     },
     async switchEditMode(editing) {
       this.editMode = editing;
@@ -468,7 +482,7 @@ export default {
         await this.refresh();
       }
     },
-    async refresh() {
+    async refresh(options = {}) {
       let url = window.location.href;
       const qs = {
         ...apos.http.parseQuery(window.location.search),
@@ -488,6 +502,14 @@ export default {
         busy: true
       });
       const refreshable = document.querySelector('[data-apos-refreshable]');
+
+      if (options.scrollcheck) {
+        window.apos.adminBar.scrollPosition = {
+          x: window.scrollX,
+          y: window.scrollY
+        };
+      }
+
       if (refreshable) {
         refreshable.innerHTML = content;
         if (!this.original) {
@@ -611,7 +633,9 @@ export default {
           busy: true
         });
         if (!this.contextStack.length) {
-          await this.refresh();
+          await this.refresh({
+            scrollcheck: true
+          });
         } else {
           apos.bus.$emit('content-changed', {
             doc: updated,

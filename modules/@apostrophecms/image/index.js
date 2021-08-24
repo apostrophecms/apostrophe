@@ -38,7 +38,7 @@ module.exports = {
         label: 'apostrophe:slug',
         prefix: 'image',
         required: true,
-        following: 'title'
+        following: [ 'title', 'archived' ]
       },
       attachment: {
         type: 'attachment',
