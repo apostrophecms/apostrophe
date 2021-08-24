@@ -196,6 +196,7 @@ export default {
   .apos-notification__label,
   .apos-notification__progress-value {
     @include type-base;
+    color: var(--a-text-inverted);
     line-height: var(--a-line-tallest);
   }
 
