@@ -34,6 +34,7 @@
 * Fixes the display of inline range inputs, notably broken when using Palette
 * Fixes occasional unique key errors from migrations when attempting to start up again with a site that experienced a startup failure before inserting its first document.
 * Requires that locale names begin with a letter character to ensure order when looping over the object entries.
+* Unit tests pass in MongoDB 5.x.
 
 ## 3.1.3 - 2021-07-16
 
