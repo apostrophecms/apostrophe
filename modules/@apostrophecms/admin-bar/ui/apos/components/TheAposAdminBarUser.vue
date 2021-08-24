@@ -34,7 +34,7 @@ export default {
     button() {
       return {
         label: {
-          phrase: this.user.title || '',
+          key: this.user.title || '',
           localize: false
         },
         icon: 'chevron-down-icon',

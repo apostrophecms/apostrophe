@@ -79,7 +79,7 @@ export default {
     button() {
       return {
         label: {
-          phrase: window.apos.i18n.locale,
+          key: window.apos.i18n.locale,
           localize: false
         },
         icon: 'chevron-down-icon',
