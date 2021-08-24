@@ -392,8 +392,8 @@ module.exports = {
         });
         if (self.options.slugPrefix) {
           if (self.options.slugPrefix === 'deduplicate-') {
-            // TODO: i18n
-            throw self.apos.error('invalid', 'The deduplicate- slug is reserved.');
+            const req = self.apos.task.getReq();
+            throw self.apos.error('invalid', req.t('apostrophe:deduplicateSlugReserved'));
           }
           const slug = self.schema.find(field => field.name === 'slug');
           if (slug) {

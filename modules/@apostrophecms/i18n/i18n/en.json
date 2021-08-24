@@ -61,6 +61,7 @@
   "dayjsRelativeTimeFormat": "apostrophe",
   "dayjsTitleDateFormat": "ddd MMMM D [at] H:mma",
   "dayjsCellDateFormat": "apostrophe",
+  "deduplicateSlugReserved": "The deduplicate- slug is reserved.",
   "delete": "Delete",
   "deleteDraft": "Delete Draft",
   "deleteDraftAffirmativeLabel": "Yes, delete document",
