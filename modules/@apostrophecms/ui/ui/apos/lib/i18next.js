@@ -37,7 +37,7 @@ export default {
     Vue.prototype.$t = (phrase, options = {}) => {
       if ((phrase !== null) && ((typeof phrase) === 'object')) {
         options = phrase;
-        phrase = phrase.key;
+        phrase = options.phrase;
       }
       if (options.localize === false) {
         return phrase;
