@@ -130,7 +130,12 @@ module.exports = {
         }
         const interpolate = {};
         for (const [ key, val ] of Object.entries(input)) {
-          interpolate[key] = self.apos.launder.string(val);
+          if (key === 'count') {
+            // Has a special status in i18next
+            interpolate[key] = self.apos.launder.integer(val);
+          } else {
+            interpolate[key] = self.apos.launder.string(val);
+          }
         }
         return interpolate;
       }
