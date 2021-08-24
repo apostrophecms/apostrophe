@@ -1,5 +1,6 @@
 <template>
   <AposContextMenu
+    ref="menu"
     class="apos-admin-locales"
     :button="button"
     :unpadded="true"
@@ -138,10 +139,44 @@ export default {
           locale: name
         }
       });
-      if (result.redirectTo) {
-        window.location.assign(result.redirectTo);
+
+      if (this.isLocalized(locale)) {
+        if (result.redirectTo) {
+          window.location.assign(result.redirectTo);
+        } else {
+          window.location.reload();
+        }
       } else {
-        window.location.reload();
+        const currentLocale = apos.i18n.locales[apos.locale];
+
+        const toLocalize = await apos.confirm(
+          {
+            icon: false,
+            heading: 'apostrophe:switchLocalesAndLocalizePage',
+            description: 'apostrophe:currentPageDoesntExistInLocale',
+            negativeLabel: 'No, just switch locales',
+            affirmativeLabel: 'Yes, localize this page and switch locales'
+          },
+          {
+            interpolate: {
+              label: locale.label,
+              currentLocale: currentLocale.label
+            }
+          }
+        );
+
+        if (toLocalize) {
+          this.$refs.menu.hide();
+          apos.bus.$emit('admin-menu-click', {
+            itemName: '@apostrophecms/i18n:localize',
+            props: {
+              doc: apos.adminBar.context,
+              locale
+            }
+          });
+        } else {
+          window.location.assign(result.redirectTo);
+        }
       }
     }
   }
