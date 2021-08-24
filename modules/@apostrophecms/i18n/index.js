@@ -275,7 +275,7 @@ module.exports = {
             // with the appropriate prefix
             result.redirectTo = localeReq.prefix;
           };
-          if (localeReq.hostname !== req.hostname) {
+          if (self.locales[localeReq.locale].hostname !== self.locales[req.locale].hostname) {
             const crossDomainSessionToken = self.apos.util.generateId();
             await self.apos.cache.set('@apostrophecms/i18n:cross-domain-sessions', crossDomainSessionToken, req.session, 60 * 60);
             result.redirectTo = self.apos.url.build(result.redirectTo, {
