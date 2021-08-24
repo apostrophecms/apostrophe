@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-modal__body">
+  <div class="apos-modal__body" :class="{ 'apos-modal__body--flex': hasSlot('footer') }">
     <div class="apos-modal__body-inner">
       <div v-if="hasSlot('bodyHeader')" class="apos-modal__body-header">
         <slot name="bodyHeader" />
@@ -27,14 +27,21 @@ export default {
 
 <style lang="scss" scoped>
 .apos-modal__body {
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.apos-modal__body--flex {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-}
+  overflow-y: initial;
+  padding: 0;
 
-.apos-modal__body-inner {
-  overflow-y: auto;
-  padding: 20px;
+  .apos-modal__body-inner {
+    overflow-y: auto;
+    padding: 20px;
+  }
 }
 
 .apos-modal__main--no-rails .apos-modal__body {
