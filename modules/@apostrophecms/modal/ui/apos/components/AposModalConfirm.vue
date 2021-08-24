@@ -1,31 +1,30 @@
 <template>
   <AposModal
-    :modal="modal" class="apos-confirm"
-    v-on="mode !== 'alert' ? { 'esc': cancel } : null"
+    :modal="modal"
+    class="apos-confirm"
+    v-on="mode !== 'alert' ? { esc: cancel } : null"
     @no-modal="$emit('safe-close')"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
     @ready="ready"
   >
     <template #main>
       <AposModalBody>
         <template #bodyMain>
           <img
-            v-if="content.icon" class="apos-confirm__custom-logo"
-            :src="content.icon" alt=""
+            v-if="content.icon"
+            class="apos-confirm__custom-logo"
+            :src="content.icon"
+            alt=""
           >
           <AposLogoIcon
-            v-else-if="content.icon !== false" class="apos-confirm__logo"
+            v-else-if="content.icon !== false"
+            class="apos-confirm__logo"
           />
-          <h2
-            v-if="content.heading"
-            class="apos-confirm__heading"
-          >
+          <h2 v-if="content.heading" class="apos-confirm__heading">
             {{ localize(content.heading) }}
           </h2>
-          <p
-            class="apos-confirm__description"
-            v-if="content.description"
-          >
+          <p class="apos-confirm__description" v-if="content.description">
             {{ localize(content.description) }}
           </p>
           <div v-if="content.form" class="apos-confirm__schema">
@@ -40,7 +39,8 @@
             <AposButton
               v-if="mode !== 'alert'"
               class="apos-confirm__btn"
-              :label="content.negativeLabel || 'Cancel'" @click="cancel"
+              :label="content.negativeLabel || 'Cancel'"
+              @click="cancel"
             />
             <AposButton
               class="apos-confirm__btn"
@@ -51,10 +51,7 @@
               ref="confirm"
             />
           </div>
-          <p
-            class="apos-confirm__note"
-            v-if="content.note"
-          >
+          <p class="apos-confirm__note" v-if="content.note">
             {{ localize(content.note) }}
           </p>
         </template>
@@ -64,7 +61,6 @@
 </template>
 
 <script>
-
 export default {
   props: {
     mode: {
@@ -103,7 +99,9 @@ export default {
   computed: {
     affirmativeLabel() {
       if (this.mode === 'confirm') {
-        return this.localize(this.content.affirmativeLabel) || this.$t('Confirm');
+        return (
+          this.localize(this.content.affirmativeLabel) || this.$t('Confirm')
+        );
       } else {
         return this.localize(this.content.affirmativeLabel) || this.$t('OK');
       }
@@ -144,6 +142,12 @@ export default {
       this.$emit('modal-result', false);
     },
     localize(s) {
+      console.log(
+        'AposModalConfirm',
+        s,
+        this.options.interpolate,
+        this.options.localize
+      );
       if (this.options.localize === false) {
         return s;
       } else {

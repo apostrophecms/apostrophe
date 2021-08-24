@@ -51,11 +51,14 @@
                 :field="{
                   name: 'toLocalize',
                   label: 'apostrophe:whatContentToLocalize',
-                  choices: toLocalizeChoices
+                  choices: toLocalizeChoices,
                 }"
                 v-model="wizard.values.toLocalize"
               />
-              <p v-if="relatedDocTypes.length > 0" class="apos-wizard__help-text">
+              <p
+                v-if="relatedDocTypes.length > 0"
+                class="apos-wizard__help-text"
+              >
                 <InformationIcon :size="16" />
                 {{ $t('apostrophe:relatedDocumentsAre') }}
               </p>
@@ -77,7 +80,7 @@
                 name="localeFilter"
                 class="apos-locales-filter"
                 :placeholder="$t('apostrophe:searchLocales')"
-              >
+              />
               <ul class="apos-selected-locales">
                 <li
                   v-for="locale in selectedLocales"
@@ -143,13 +146,14 @@
                 </li>
               </ul>
 
-              <div v-if="wizard.values.toLocalize.data !== 'thisDoc'" class="apos-wizard__field-group">
+              <div
+                v-if="wizard.values.toLocalize.data !== 'thisDoc'"
+                class="apos-wizard__field-group"
+              >
                 <p class="apos-wizard__field-group-heading">
                   {{ $t('apostrophe:relatedDocumentSettings') }}
-                  <span
-                    v-apos-tooltip.top="tooltips.relatedDocSettings"
-                  ><InformationIcon
-                    :size="14"
+                  <span v-apos-tooltip.top="tooltips.relatedDocSettings"
+                    ><InformationIcon :size="14"
                   /></span>
                 </p>
 
@@ -173,14 +177,13 @@
                 />
 
                 <AposInputCheckboxes
-                  v-if="(relatedDocTypes.length > 0)"
+                  v-if="relatedDocTypes.length > 0"
                   :field="relatedDocTypesField"
                   v-model="wizard.values.relatedDocTypesToLocalize"
                 />
                 <p v-else class="apos-wizard__field-group-heading">
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
-
               </div>
             </fieldset>
           </form>
@@ -230,6 +233,10 @@ export default {
     doc: {
       required: true,
       type: Object
+    },
+    locale: {
+      required: false,
+      type: Object
     }
   },
   emits: [ 'safe-close', 'modal-result' ],
@@ -275,6 +282,9 @@ export default {
           selectLocales: {
             title: this.$t('apostrophe:selectLocales'),
             filter: '',
+            if() {
+              return !this.locale;
+            },
             complete() {
               return this.selectedLocales.length > 0;
             }
@@ -289,7 +299,7 @@ export default {
         },
         values: {
           toLocalize: { data: 'thisDocAndRelated' },
-          toLocales: { data: [] },
+          toLocales: { data: this.locale ? [this.locale] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
           relatedDocTypesToLocalize: { data: [] }
         }
@@ -555,7 +565,7 @@ export default {
         }
         for (const locale of this.selectedLocales) {
           try {
-            await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
+            const result = await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
               body: {
                 toLocale: locale.name,
                 update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
@@ -571,6 +581,13 @@ export default {
               },
               dismiss: true
             });
+
+            console.log(result);
+
+            if (this.locale) {
+              window.location.assign(result._url);
+            }
+
           } catch (e) {
             // Status code 409 (conflict) means an existing document
             // we opted not to overwrite
