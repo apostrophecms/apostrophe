@@ -34,30 +34,30 @@ export default {
     // property for instance. You may also specify
     // `localize: false` to pass a string through without
     // invoking i18next.
-    Vue.prototype.$t = (phrase, options = {}) => {
-      if ((phrase !== null) && ((typeof phrase) === 'object')) {
-        options = phrase;
-        phrase = phrase.key;
+    Vue.prototype.$t = (key, options = {}) => {
+      if ((key !== null) && ((typeof key) === 'object')) {
+        options = key;
+        key = options.key;
       }
       if (options.localize === false) {
-        return phrase;
+        return key;
       }
       // Check carefully for empty string and equivalent scenarios
       // before doing any work
-      if (phrase == null) {
+      if (key == null) {
         return '';
       }
-      phrase += '';
-      if (!phrase.length) {
+      key += '';
+      if (!key.length) {
         return '';
       }
-      const result = i18next.t(phrase, {
+      const result = i18next.t(key, {
         lng: i18n.locale,
         ...options
       });
       if (i18n.show) {
-        if (result === phrase) {
-          if (phrase.match(/^\S+:/)) {
+        if (result === key) {
+          if (key.match(/^\S+:/)) {
             return `❌ ${result}`;
           } else {
             return `🕳 ${result}`;
