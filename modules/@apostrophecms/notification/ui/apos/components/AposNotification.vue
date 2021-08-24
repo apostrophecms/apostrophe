@@ -108,12 +108,14 @@ export default {
       this.$emit('close', this.notification._id);
     },
     localize(s) {
+      let result;
       if (this.notification.localize !== false) {
-        return this.$t(s, this.notification.interpolate || {});
+        result = this.$t(s, this.notification.interpolate || {});
       } else {
         // Any interpolation was done before insertion
-        return s;
+        result = s;
       }
+      return result;
     }
   }
 };
