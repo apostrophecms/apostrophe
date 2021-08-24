@@ -701,7 +701,7 @@ export default {
         // As a matter of UI implementation, we know our slug input field will
         // automatically change the empty string to the prefix, so to
         // prevent a false positive for this being considered a change,
-        // do it earlier when creating a new user
+        // do it earlier when creating a new doc.
         this.original.slug = this.original.slug || slugField.def || slugField.prefix || '';
       }
       this.prepErrors();

@@ -16,7 +16,7 @@ module.exports = {
           label: 'apostrophe:slug',
           required: true,
           page: true,
-          following: 'title'
+          following: [ 'title', 'archived' ]
         },
         type: {
           type: 'select',

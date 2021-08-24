@@ -57,12 +57,6 @@ module.exports = {
           label: 'apostrophe:displayName',
           required: true
         },
-        slug: {
-          type: 'slug',
-          label: 'apostrophe:slug',
-          following: 'title',
-          required: true
-        },
         disabled: {
           type: 'boolean',
           label: 'apostrophe:loginDisabled',
@@ -111,8 +105,7 @@ module.exports = {
         basics: {
           label: 'apostrophe:basics',
           fields: [
-            'title',
-            'slug'
+            'title'
           ]
         },
         utility: {
@@ -120,6 +113,7 @@ module.exports = {
             'username',
             'email',
             'password',
+            'slug',
             'archived'
           ]
         },

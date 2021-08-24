@@ -225,7 +225,7 @@ export default {
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
-      this.restoreOnly = this.activeMedia.archived;
+      this.restoreOnly = !!this.activeMedia.archived;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
