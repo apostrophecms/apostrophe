@@ -48,8 +48,9 @@ export default {
     // If the URL references a draft, go into draft mode but then clean up the URL
     const draftMode = query.aposMode || 'published';
     if (draftMode === 'draft') {
-      delete query.aposMode;
-      history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
+      const newQuery = { ... query };
+      delete newQuery.aposMode;
+      history.replaceState(null, '', apos.http.addQueryToUrl(location.href, newQuery));
     }
     return {
       patchesSinceLoaded: [],
@@ -57,6 +58,7 @@ export default {
       patchesSinceSave: [],
       editMode: false,
       draftMode,
+      queryDraftMode: query.aposMode,
       original: null,
       saving: false,
       editing: false,
@@ -149,6 +151,8 @@ export default {
     window.apos.adminBar.tabId = tabId;
     window.apos.adminBar.editMode = false;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
+    // Explicit query parameter beats our state on the previous page
+    lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
     if (lastBaseContext.aposDocId === this.context.aposDocId) {
       if (lastBaseContext.draftMode !== this.draftMode) {
         await this.setContext({ mode: lastBaseContext.draftMode });

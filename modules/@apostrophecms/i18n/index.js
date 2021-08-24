@@ -252,14 +252,12 @@ module.exports = {
           const localeReq = req.clone({
             locale: sanitizedLocale
           });
-          self.setPrefixUrls(localeReq);
           if (_id) {
             doc = await self.apos.doc.find(localeReq, {
               aposDocId: _id.split(':')[0]
             }).toObject();
             if (!doc) {
               const publishedLocaleReq = localeReq.clone({ mode: 'draft' });
-              self.setPrefixUrls(publishedLocaleReq);
               doc = await self.apos.doc.find(publishedLocaleReq, {
                 aposDocId: _id.split(':')[0]
               }).toObject();
@@ -533,7 +531,6 @@ module.exports = {
           const localeReq = req.clone({
             locale: toLocale
           });
-          self.setPrefixUrls(localeReq);
           const corresponding = await module.find(localeReq, {
             _id: `${_id.split(':')[0]}:${localeReq.locale}:${localeReq.mode}`
           }).toObject();
