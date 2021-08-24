@@ -1011,7 +1011,10 @@ module.exports = {
         for (const criterion of criteria) {
           const existing = await self.apos.doc.db.find({
             ...criterion,
-            aposLocale: /:draft$/
+            aposLocale: {
+              // Only interested in valid draft locales
+              $in: Object.keys(self.apos.i18n.locales).map(locale => `${locale}:draft`)
+            }
           }).project({
             _id: 1,
             aposLocale: 1
