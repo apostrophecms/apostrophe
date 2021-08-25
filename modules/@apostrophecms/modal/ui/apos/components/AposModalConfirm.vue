@@ -27,9 +27,7 @@
           <p v-if="content.description" class="apos-confirm__description">
             {{ localize(content.description) }}
           </p>
-          <ul v-if="content.notifications" class="apos-confirm__notifications">
-            <li v-for="item in content.notifications" v-html="item" :key="index" class="apos-confirm__notification"></li>
-          </ul>
+          <Component :is="content.notifications.component" v-bind="content.notifications.props" />
           <div v-if="content.form" class="apos-confirm__schema">
             <AposSchema
               v-if="formValues"
@@ -239,9 +237,4 @@ export default {
     margin-left: $spacing-double;
   }
 }
-
-.apos-confirm__notifications {
-  @include type-base;
-}
-
 </style>
