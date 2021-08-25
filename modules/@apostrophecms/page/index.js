@@ -586,9 +586,13 @@ database.`);
       },
       '@apostrophecms/migration:after': {
         async implementParkAllInDefaultLocale() {
-          const req = self.apos.task.getReq();
-          for (const item of self.parked) {
-            await self.implementParkOne(req, item);
+          for (const mode of [ 'draft', 'published' ]) {
+            const req = self.apos.task.getReq({
+              mode
+            });
+            for (const item of self.parked) {
+              await self.implementParkOne(req, item);
+            }
           }
           // Triggers replicate in the doc module
           return self.emit('afterParkAll');
@@ -601,14 +605,17 @@ database.`);
           // reset the parked properties without
           // destroying the locale relationships
           for (const locale of Object.keys(self.apos.i18n.locales)) {
-            if (locale === self.apos.i18n.defaultLocale) {
-              continue;
-            }
-            const req = self.apos.task.getReq({
-              locale
-            });
-            for (const item of self.parked) {
-              await self.implementParkOne(req, item);
+            for (const mode of [ 'draft', 'published' ]) {
+              if (locale === self.apos.i18n.defaultLocale) {
+                continue;
+              }
+              const req = self.apos.task.getReq({
+                locale,
+                mode
+              });
+              for (const item of self.parked) {
+                await self.implementParkOne(req, item);
+              }
             }
           }
         }
