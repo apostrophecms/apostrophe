@@ -44,6 +44,7 @@
   "clearSelection": "Clear Selection",
   "clickToEditInContext": "Click to edit this content in its natural context",
   "clone": "Clone",
+  "close": "Close",
   "closeGlobal": "Close Global Site Settings",
   "codeBlock": "Code Block",
   "confirmArchive": "You are going to archive the {{ type }} {{ title }}.",
@@ -190,6 +191,7 @@
   "no": "No",
   "noDraftSubmissions": "No Draft Submissions to Manage",
   "noItemsSelected": "No Items Selected",
+  "noJustSwitchLocales": "No, just switch locales",
   "noLongerPublished": "No longer published.",
   "noMediaFound": "No media found",
   "noNewRelatedDocuments": "Although this document has related documents, none of them are new to the locales you have selected.",
@@ -303,6 +305,7 @@
   "takeControlFromOther": "{{ who }} is editing that document. Do you want to take control?",
   "takeControlFromSelf": "You are editing that document in another tab or window. Do you want to take control in this tab?",
   "thereAreActiveChanges": "There are active changes to this document.",
+  "thereWasAnIssueLocalizing": "There was an issue localizing some content:",
   "thisDocumentExistsIn": "This document exists in these locales:",
   "title": "Title",
   "thisDocument": "This document",
@@ -353,5 +356,6 @@
   "willAlsoUnpublish": "This will also un-publish the {{ type }}.",
   "willMoveImageToArchive": "This will move the image to the archive.",
   "yes": "Yes",
+  "yesLocalizeAndSwitchLocales": "Yes, localize this page and switch locales",
   "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time."
 }
