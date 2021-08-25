@@ -775,9 +775,51 @@ module.exports = {
               });
             } else {
               // A page that is not the home page, being replicated for the first time
+              let parent;
+              let lastTargetId = draft.aposLastTargetId;
+              let lastPosition = draft.aposLastPosition;
+              let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`)
+              const localizedTarget = await actionModule.find(toReq, {
+                _id: localizedTargetId
+              }).toObject();
+              if (!localizedTarget) {
+                if ((lastPosition === 'firstChild') || (lastPosition === 'lastChild')) {
+                  throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized', {
+                    title: draft.title,
+                    locale: toReq.locale
+                  }), {
+                    // Also provide as data for code that prefers to localize client side
+                    // when it is certain an error message is user friendly
+                    parentNotLocalized: true
+                  });
+                } else {
+                  const originalTarget = await actionModule.find(req, {
+                    _id: lastTargetId
+                  }).toObject();
+                  if (!originalTarget) {
+                    // Almost impossible (race conditions like someone removing it while we're in the modal)
+                    throw self.apos.error('notfound');
+                  }
+                  const localizedTarget = await actionModule.find(toReq, {
+                    path: self.apos.page.getParentPath(originalTarget)
+                  }).toObject();
+                  if (!localizedTarget) {
+                    throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized', {
+                      title: draft.title,
+                      locale: toReq.locale
+                    }), {
+                      // Also provide as data for code that prefers to localize client side
+                      // when it is certain an error message is user friendly
+                      parentNotLocalized: true
+                    });
+                  }
+                  localizedTargetId = localizedTarget._id;
+                  lastPosition = 'lastChild';
+                }
+              }
               result = await actionModule.insert(toReq,
-                draft.aposLastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`),
-                draft.aposLastPosition,
+                localizedTargetId,
+                lastPosition,
                 {
                   ...data,
                   aposLocale: `${toLocale}:draft`,

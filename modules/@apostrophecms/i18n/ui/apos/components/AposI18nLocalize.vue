@@ -600,7 +600,7 @@ export default {
             // Status code 409 (conflict) means an existing document
             // we opted not to overwrite
             if (e.status !== 409) {
-              await apos.notify('apostrophe:notLocalized', {
+              await apos.notify(e?.body?.data?.parentNotLocalized ? 'apostrophe:parentNotLocalized' : 'apostrophe:notLocalized', {
                 type: 'error',
                 interpolate: {
                   type: this.$t(this.singular(doc.type)),
