@@ -22,7 +22,7 @@
         <button
           v-if="row._children && row._children.length > 0"
           class="apos-tree__row__toggle" data-apos-tree-toggle
-          aria-label="$t('apostrophe:toggleSection')" :aria-expanded="!options.startCollapsed"
+          :aria-label="$t('apostrophe:toggleSection')" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
         >
           <AposIndicator
