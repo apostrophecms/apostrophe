@@ -276,7 +276,11 @@ export default {
               // exist, as the user might opt in step three
               // to express an interest in previously
               // replicated related docs
-              return this.allRelatedDocs.length > 0;
+              const hasRelated = this.allRelatedDocs.length > 0;
+              if (!hasRelated) {
+                this.wizard.values.toLocalize.data = 'thisDoc';
+              }
+              return hasRelated;
             }
           },
           selectLocales: {
