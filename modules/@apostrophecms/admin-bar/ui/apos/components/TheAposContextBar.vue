@@ -576,7 +576,7 @@ export default {
       } catch (e) {
         await apos.alert({
           heading: this.$t('apostrophe:error'),
-          description: e.message || this.$t('apostrophe:errorOccurredWhileRestoring'),
+          description: e.message || this.$t('apostrophe:errorWhileRestoring'),
           localize: false
         });
       }
@@ -607,7 +607,7 @@ export default {
       } catch (e) {
         await apos.alert({
           heading: this.$t('apostrophe:error'),
-          description: e.message || this.$t('apostrophe:errorOccurredWhileUnpublishing'),
+          description: e.message || this.$t('apostrophe:errorWhileUnpublishing'),
           localize: false
         });
       }

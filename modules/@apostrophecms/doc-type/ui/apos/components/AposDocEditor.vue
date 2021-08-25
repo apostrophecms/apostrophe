@@ -788,14 +788,14 @@ export default {
         menu.push({
           label: 'apostrophe:saveDraft',
           action: 'onSaveDraft',
-          description: 'apostrophe:saveAsDraft'
+          description: 'apostrophe:saveDraftDescription'
         });
       }
       if (this.manuallyPublished && canPreview) {
         menu.push({
           label: 'apostrophe:saveDraftAndPreview',
           action: 'onSaveDraftAndView',
-          description: 'apostrophe:saveAsDraftAndPreview',
+          description: 'apostrophe:saveDraftAndPreviewDescription',
           typeLabel: this.$t(typeLabel)
         });
       };
@@ -803,7 +803,7 @@ export default {
         menu.push({
           label: 'apostrophe:saveDraftAndCreateNew',
           action: 'onSaveDraftAndNew',
-          description: 'apostrophe:saveAsDraftAndNew',
+          description: 'apostrophe:saveDraftAndCreateNewDescription',
           typeLabel: this.$t(typeLabel)
         });
       }
