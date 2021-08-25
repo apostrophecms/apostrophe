@@ -138,7 +138,7 @@ export default {
           }
         }
 
-        await apos.notify('apostrophe:uploadedCount', {
+        await apos.notify('apostrophe:uploaded', {
           type: 'success',
           dismiss: true,
           interpolate: {

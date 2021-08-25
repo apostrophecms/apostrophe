@@ -162,7 +162,8 @@ export default {
             dismiss: true,
             icon: 'check-all-icon',
             interpolate: {
-              name: file.name
+              name: file.name,
+              count: 1
             }
           });
 

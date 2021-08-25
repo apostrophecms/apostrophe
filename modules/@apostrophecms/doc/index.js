@@ -340,7 +340,7 @@ module.exports = {
           // We are experiencing what may be a mongodb bug in which these indexes
           // have different weights than expected and the createIndex call fails.
           // If this happens drop and recreate the text index
-          if (e.toString().match(/with different options/)) {
+          if (e.toString().match(/different options/)) {
             self.apos.util.warn('Text index has unexpected weights or other misconfiguration, reindexing');
             await self.db.dropIndex('highSearchText_text_lowSearchText_text_title_text_searchBoost_text');
             return await attempt();
@@ -1011,7 +1011,10 @@ module.exports = {
         for (const criterion of criteria) {
           const existing = await self.apos.doc.db.find({
             ...criterion,
-            aposLocale: /:draft$/
+            aposLocale: {
+              // Only interested in valid draft locales
+              $in: Object.keys(self.apos.i18n.locales).map(locale => `${locale}:draft`)
+            }
           }).project({
             _id: 1,
             aposLocale: 1

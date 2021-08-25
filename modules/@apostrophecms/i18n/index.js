@@ -34,6 +34,7 @@ module.exports = {
     self.debug = process.env.APOS_DEBUG_I18N ? true : self.options.debug;
     self.show = process.env.APOS_SHOW_I18N ? true : self.options.show;
     self.locales = self.getLocales();
+    self.hostnamesInUse = Object.values(self.locales).find(locale => locale.hostname);
     self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
 
     Object.keys(self.locales).forEach(key => {
@@ -274,7 +275,7 @@ module.exports = {
             // with the appropriate prefix
             result.redirectTo = localeReq.prefix;
           };
-          if (localeReq.hostname !== req.hostname) {
+          if (self.locales[localeReq.locale].hostname !== self.locales[req.locale].hostname) {
             const crossDomainSessionToken = self.apos.util.generateId();
             await self.apos.cache.set('@apostrophecms/i18n:cross-domain-sessions', crossDomainSessionToken, req.session, 60 * 60);
             result.redirectTo = self.apos.url.build(result.redirectTo, {
@@ -507,18 +508,26 @@ module.exports = {
         );
       },
       setPrefixUrls(req) {
-        // For bc, req.baseUrl is always set, to a best guess if baseUrl is not configured.
-        //
         // In a production-like environment, use req.hostname, otherwise the Host header
         // to allow port numbers in dev.
         //
         // Watch out for modules that won't be set up if this is an afterInit task in an
         // early module like the asset module
         const host = (process.env.NODE_ENV === 'production') ? req.hostname : req.get('Host');
-        req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) || `${req.protocol}://${host}`;
+        const fallbackBaseUrl = `${req.protocol}://${host}`;
+        if (self.hostnamesInUse) {
+          req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) || fallbackBaseUrl;
+        } else {
+          req.baseUrl = self.apos.page && self.apos.page.getBaseUrl(req);
+        }
         req.baseUrlWithPrefix = `${req.baseUrl}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
         req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
+        if (!req.baseUrl) {
+          // Always set for bc, but in the absence of locale hostnames we
+          // set it later so it is not part of req.prefix
+          req.baseUrl = fallbackBaseUrl;
+        }
       },
       // Returns an Express route suitable for use in a module
       // like a piece type or the page module. The returned route will
