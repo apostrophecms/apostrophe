@@ -27,7 +27,7 @@
           <p v-if="content.description" class="apos-confirm__description">
             {{ localize(content.description) }}
           </p>
-          <Component :is="content.notifications.component" v-bind="content.notifications.props" />
+          <Component :is="content.body.component" v-bind="content.body.props" />
           <div v-if="content.form" class="apos-confirm__schema">
             <AposSchema
               v-if="formValues"

@@ -611,7 +611,7 @@ export default {
             icon: false,
             heading: 'apostrophe:localizingContent',
             description: 'apostrophe:thereWasAnIssueLocalizing',
-            notifications: {
+            body: {
               component: 'AposI18nLocalizeErrors',
               props: {
                 notifications

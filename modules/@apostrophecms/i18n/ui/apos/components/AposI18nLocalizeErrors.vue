@@ -1,11 +1,23 @@
 <template>
   <ul class="apos-confirm__notifications">
-    <li>Something</li>
-    <li v-for="item in notifications" v-html="item" :key="index" class="apos-confirm__notification">
-      <div class="apos-confirm--{{ item.type }}">
+    <li v-for="(item, index) in notifications" :key="index" class="apos-confirm__notification">
+      <div :class="className(item.type)">
         <span class="apos-confirm__notification-locale">{{ item.locale.label }}</span>
         <div class="apos-confirm__notificaton-meta">
-          <span class="apos-confirm__notification-title">{{ item.doc.title }}</span> <span class="apos-confirm__notification-item-type">{{ item.doc.type }}</span>
+          <span class="apos-confirm__notification-title">
+            <CheckIcon
+              v-if="!isError(item.type)"
+              class="apos-check"
+              :size="12"
+            />
+            <CancelIcon
+              v-if="isError(item.type)"
+              class="apos-error"
+              :size="12"
+            />
+            {{ item.doc.title }}
+          </span>
+          <span class="apos-confirm__notification-item-type">{{ docType(item.doc) }}</span>
         </div>
       </div>
     </li>
@@ -13,13 +25,34 @@
 </template>
 
 <script>
+import CheckIcon from 'vue-material-design-icons/Check.vue';
+import CancelIcon from 'vue-material-design-icons/Cancel.vue';
 
 export default {
   name: 'AposI18nLocalizeErrors',
+  components: { CheckIcon, CancelIcon },
   props: {
     notifications: {
       required: true,
       type: Array
+    }
+  },
+  methods: {
+    className(type) {
+      return `apos-confirm--${type}`;
+    },
+    singular(name) {
+      const module = apos.modules[name] || {};
+      if (module.action === '@apostrophecms/page') {
+        return 'apostrophe:page';
+      }
+      return module.label || name;
+    },
+    docType(doc) {
+      return this.$t(this.singular(doc.type));
+    },
+    isError(type) {
+      return type === 'error';
     }
   }
 };
@@ -28,9 +61,6 @@ export default {
 <style lang="scss" scoped>
 .apos-confirm__notifications {
   @include type-base;
-}
-
-.apos-confirm__notifications {
   list-style-type: none;
   padding-top: 0;
   padding-bottom: 0;
@@ -52,9 +82,8 @@ export default {
   align-items: center;
 }
 
-.apos-confirm--success .apos-confirm__notification-title::before,
-.apos-confirm--error .apos-confirm__notification-title::before {
-  content: '';
+.apos-check,
+.apos-error {
   position: absolute;
   left: -17px;
   display: inline-block;
@@ -63,12 +92,12 @@ export default {
   background-size: contain;
 }
 
-.apos-confirm--success .apos-confirm__notification-title::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 0 24 24' width='24px' fill='%2300bf9a'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z'/%3E%3C/svg%3E");
+.apos-check {
+  color: var(--a-success);
 }
 
-.apos-confirm--error .apos-confirm__notification-title::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 0 24 24' width='24px' fill='%23eb443b'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM17 15.74L15.74 17 12 13.26 8.26 17 7 15.74 10.74 12 7 8.26 8.26 7 12 10.74 15.74 7 17 8.26 13.26 12 17 15.74z'/%3E%3C/svg%3E");
+.apos-error {
+  color: var(--a-danger);
 }
 
 .apos-confirm__notification,
