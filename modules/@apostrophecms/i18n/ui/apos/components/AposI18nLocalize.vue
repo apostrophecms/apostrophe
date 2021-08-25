@@ -563,6 +563,7 @@ export default {
         if ((doc._id !== this.fullDoc._id) && !this.wizard.values.relatedDocTypesToLocalize.data.includes(doc.type)) {
           continue;
         }
+        this.modal.busy = true;
         for (const locale of this.selectedLocales) {
           try {
             const result = await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
@@ -611,7 +612,12 @@ export default {
           }
         }
       }
-      this.close();
+
+      // Prevent flashing of the UI if the request returns quickly
+      setTimeout(() => {
+        this.modal.busy = false;
+        this.close();
+      }, 250);
     },
     // Get all related documents
     async getRelatedDocs(doc) {
