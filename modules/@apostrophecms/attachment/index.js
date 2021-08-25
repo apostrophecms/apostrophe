@@ -379,9 +379,10 @@ module.exports = {
         const group = self.getFileGroup(extension);
 
         if (!group) {
-          // Uncomment the next line for all possibly acceptable file types.
-          // const accepted = _.union(_.map(self.fileGroups, 'extensions'));
-          throw self.apos.error('invalid', req.t('apostrophe:fileTypeNotAccepted'));
+          const accepted = _.union(_.map(self.fileGroups, 'extensions')).flat();
+          throw self.apos.error('invalid', req.t('apostrophe:fileTypeNotAccepted', {
+            extensions: accepted.join(req.t('apostrophe:listJoiner'))
+          }));
         }
         const info = {
           _id: self.apos.util.generateId(),

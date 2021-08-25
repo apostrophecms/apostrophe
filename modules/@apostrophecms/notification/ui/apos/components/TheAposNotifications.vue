@@ -92,7 +92,6 @@ export default {
 
           this.notifications = [ ...this.notifications, ...(notifications || []) ];
           this.dismissed = [ ...this.dismissed, ...(dismissed || []) ];
-
           if (dismissed.length) {
             this.notifications = this.notifications.filter(notification => {
               return !dismissed.some(element => notification._id === element._id);
