@@ -40,7 +40,7 @@
             <AposButton
               v-if="mode !== 'alert'"
               class="apos-confirm__btn"
-              :label="content.negativeLabel || 'Cancel'"
+              :label="content.negativeLabel || 'apostrophe:cancel'"
               @click="cancel"
             />
             <AposButton

@@ -40,10 +40,10 @@
             icon-color="var(--a-primary)"
           />
           <dt class="apos-button-split__menu__dialog-label">
-            {{ item.label }}
+            {{ $t(item.label) }}
           </dt>
           <dd v-if="item.description" class="apos-button-split__menu__dialog-description">
-            {{ item.description }}
+            {{ $t(item.description) }}
           </dd>
         </button>
       </dl>

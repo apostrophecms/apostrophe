@@ -41,7 +41,7 @@
       </ul>
       <div class="apos-available-locales">
         <p class="apos-available-description">
-          {{ $t('apostrophe:thisDocumentExistsIn') }}
+          {{ $t('apostrophe:documentExistsInLocales') }}
         </p>
         <span
           v-for="locale in availableLocales"
