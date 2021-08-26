@@ -488,7 +488,7 @@ export default {
       return !!this.localized[locale.name];
     },
     selectAll() {
-      this.wizard.values.toLocales.data = [ ...this.locales ];
+      this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale));
     },
     selectLocale(locale) {
       if (!this.isSelected(locale) && !this.isCurrentLocale(locale)) {
