@@ -90,7 +90,7 @@ export default {
     async showLockedError(e) {
       await apos.alert({
         heading: 'apostrophe:multipleEditors',
-        description: e.body.data.me ? 'apostrophe:youTookControl' : 'someoneElseTookControl',
+        description: e.body.data.me ? 'apostrophe:youTookControl' : 'apostrophe:someoneElseTookControl',
         interpolate: {
           who: e.body.data.title
         }

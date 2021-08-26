@@ -11,7 +11,7 @@
       <select
         :disabled="totalPages <= 1"
         class="apos-input apos-input--select"
-        v-model="selectedPage" aria-label="Select page"
+        v-model="selectedPage" :aria-label="$t('apostrophe:selectPage')"
       >
         <option
           v-for="num in totalPages" :key="num"

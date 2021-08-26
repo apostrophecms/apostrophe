@@ -26,8 +26,7 @@
     <template v-if="relationshipField" #primaryControls>
       <AposButton
         type="primary"
-        label="apostrophe:selectLabel"
-        :interpolate="{ typeLabel: moduleLabels.pluralLabel || moduleLabels.label }"
+        :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
@@ -194,7 +193,20 @@ export default {
     headers() {
       // Satisfy mixin requirement not actually applicable here
       return [];
-    }
+    },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return {
+          key: 'apostrophe:selectOneLabel',
+          typeLabel: this.$t(this.moduleLabels.label)
+        };
+      } else {
+        return {
+          key: 'apostrophe:selectManyLabel',
+          typeLabel: this.$t(this.moduleLabels.pluralLabel)
+        };
+      }
+    },
   },
   watch: {
     async checked (newVal, oldVal) {

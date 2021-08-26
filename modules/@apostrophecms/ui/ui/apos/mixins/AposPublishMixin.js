@@ -65,16 +65,16 @@ export default {
               return this.publish(doc);
             } catch (e) {
               await apos.alert({
-                heading: this.$t('apostrophe:errorOccurredWhilePublishing'),
-                description: e.message || this.$t('apostrophe:errorOccurredWhilePublishingParentPage'),
+                heading: this.$t('apostrophe:errorWhilePublishing'),
+                description: e.message || this.$t('apostrophe:errorWhilePublishingParentPage'),
                 localize: false
               });
             }
           }
         } else {
           await apos.alert({
-            heading: this.$t('apostrophe:errorOccurredWhilePublishing'),
-            description: e.message || this.$t('apostrophe:errorOccurredWhilePublishingDocument'),
+            heading: this.$t('apostrophe:errorWhilePublishing'),
+            description: e.message || this.$t('apostrophe:errorWhilePublishingDocument'),
             localize: false
           });
         }
@@ -103,8 +103,8 @@ export default {
         return submitted;
       } catch (e) {
         await apos.alert({
-          heading: this.$t('apostrophe:errorOccurredWhileSubmitting'),
-          description: e.message || this.$t('apostrophe:errorOccurredWhileSubmittingDescription'),
+          heading: this.$t('apostrophe:errorWhileSubmitting'),
+          description: e.message || this.$t('apostrophe:errorWhileSubmittingDescription'),
           localize: false
         });
         return false;
@@ -134,8 +134,8 @@ export default {
         });
       } catch (e) {
         await apos.alert({
-          heading: this.$t('apostrophe:errorOccurredWhileDismissing'),
-          description: e.message || this.$t('apostrophe:errorOccurredWhileDismissingDescription'),
+          heading: this.$t('apostrophe:errorWhileDismissing'),
+          description: e.message || this.$t('apostrophe:errorWhileDismissingDescription'),
           localize: false
         });
         return false;
@@ -202,7 +202,7 @@ export default {
       } catch (e) {
         await apos.alert({
           heading: this.$t('apostrophe:error'),
-          description: e.message || this.$t('apostrophe:errorOccurredWhileRestoringPrevious'),
+          description: e.message || this.$t('apostrophe:errorWhileRestoringPrevious'),
           localize: false
         });
       }

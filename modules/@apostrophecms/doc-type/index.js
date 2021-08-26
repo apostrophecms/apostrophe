@@ -39,7 +39,7 @@ module.exports = {
         visibility: {
           type: 'select',
           label: 'apostrophe:visibility',
-          help: 'apostrophe:selectVisibility',
+          help: 'apostrophe:visibilityHelp',
           def: 'public',
           required: true,
           choices: [
