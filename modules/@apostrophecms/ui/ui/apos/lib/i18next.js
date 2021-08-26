@@ -58,11 +58,17 @@ export default {
       if (i18n.show) {
         if (result === key) {
           if (key.match(/^\S+:/)) {
+            // The l10n key does not have a value assigned (or the key is
+            // actually the same as the phrase). The key seems to have a
+            // namespace, so might be from the Apostrophe UI.
             return `❌ ${result}`;
           } else {
+            // The l10n key does not have a value assigned (or the key is
+            // actually the same as the phrase). It is in the default namespace.
             return `🕳 ${result}`;
           }
         } else {
+          // The phrase is fully localized.
           return `🌍 ${result}`;
         }
       } else {
