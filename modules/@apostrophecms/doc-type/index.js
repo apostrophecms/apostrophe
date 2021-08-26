@@ -778,9 +778,7 @@ module.exports = {
               const lastTargetId = draft.aposLastTargetId;
               let lastPosition = draft.aposLastPosition;
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
-              const localizedTarget = await actionModule.find(toReq, {
-                _id: localizedTargetId
-              }).toObject();
+              const localizedTarget = await actionModule.find(toReq, self.apos.page.getIdCriteria(localizedTargetId)).archived(null).areas(false).relationships(false).toObject();
               if (!localizedTarget) {
                 if ((lastPosition === 'firstChild') || (lastPosition === 'lastChild')) {
                   throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
@@ -789,9 +787,7 @@ module.exports = {
                     parentNotLocalized: true
                   });
                 } else {
-                  const originalTarget = await actionModule.find(req, {
-                    _id: lastTargetId
-                  }).archived(null).areas(false).relationships(false).toObject();
+                  const originalTarget = await actionModule.find(req, self.apos.page.getIdCriteria(lastTargetId)).archived(null).areas(false).relationships(false).toObject();
                   if (!originalTarget) {
                     // Almost impossible (race conditions like someone removing it while we're in the modal)
                     throw self.apos.error('notfound');
