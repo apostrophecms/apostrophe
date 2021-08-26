@@ -24,9 +24,10 @@
           <h2 v-if="content.heading" class="apos-confirm__heading">
             {{ localize(content.heading) }}
           </h2>
-          <p class="apos-confirm__description" v-if="content.description">
+          <p v-if="content.description" class="apos-confirm__description">
             {{ localize(content.description) }}
           </p>
+          <Component v-if="content.body" :is="content.body.component" v-bind="content.body.props" />
           <div v-if="content.form" class="apos-confirm__schema">
             <AposSchema
               v-if="formValues"
