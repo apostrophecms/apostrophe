@@ -775,10 +775,9 @@ module.exports = {
               });
             } else {
               // A page that is not the home page, being replicated for the first time
-              let parent;
-              let lastTargetId = draft.aposLastTargetId;
+              const lastTargetId = draft.aposLastTargetId;
               let lastPosition = draft.aposLastPosition;
-              let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`)
+              let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
               const localizedTarget = await actionModule.find(toReq, {
                 _id: localizedTargetId
               }).toObject();
