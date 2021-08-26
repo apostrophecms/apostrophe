@@ -153,7 +153,7 @@ export default {
           {
             icon: false,
             heading: 'apostrophe:switchLocalesAndLocalizePage',
-            description: 'apostrophe:currentPageDoesntExistInLocale',
+            description: 'apostrophe:notInLocale',
             negativeLabel: 'apostrophe:noJustSwitchLocales',
             affirmativeLabel: 'apostrophe:yesLocalizeAndSwitchLocales'
           },
