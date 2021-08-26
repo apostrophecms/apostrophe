@@ -68,6 +68,8 @@ describe('Locales', function() {
     assert(homes.length === 8);
     const archives = await apos.doc.db.find({ parkedId: 'archive' }).toArray();
     assert(archives.length === 8);
+    // Make sure all archive docs have the archived property set `true`
+    assert(!archives.find(archive => !archive.archived));
     const globals = await apos.doc.db.find({ type: '@apostrophecms/global' }).toArray();
     assert(globals.length === 8);
     const people = await apos.doc.db.find({ parkedId: 'people' }).toArray();

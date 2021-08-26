@@ -586,7 +586,7 @@ database.`);
       },
       '@apostrophecms/migration:after': {
         async implementParkAllInDefaultLocale() {
-          for (const mode of [ 'draft', 'published' ]) {
+          for (const mode of [ 'published', 'draft' ]) {
             const req = self.apos.task.getReq({
               mode
             });
@@ -605,7 +605,7 @@ database.`);
           // reset the parked properties without
           // destroying the locale relationships
           for (const locale of Object.keys(self.apos.i18n.locales)) {
-            for (const mode of [ 'draft', 'published' ]) {
+            for (const mode of [ 'published', 'draft' ]) {
               if (locale === self.apos.i18n.defaultLocale) {
                 continue;
               }
