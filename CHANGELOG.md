@@ -9,11 +9,6 @@
 * Fixes migration task crash when parking new page. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
 * Fixes incorrect month name in `AposCellDate`, which can be optionally used in manage views of pieces. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
 
-### Changes
-
-* Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
-* Removes the 2.x series changelog entries. They can be found in the 2.0 branch in Github.
-
 ### Adds
 
 * The home page, other parked pages, and the global document are automatically replicated to all configured locales at startup. Parked properties are refreshed if needed.
@@ -34,6 +29,11 @@
 * There is a backend route to accept a new locale on switch.
 * A `req.clone(properties)` method is now available. This creates a clone of the `req` object, optionally passing in an object of properties to be set. The use of `req.clone` ensures the new object supports `req.get` and other methods of a true `req` object. This technique is mainly used to obtain a new request object with the same privileges but a different mode or locale, i.e. `mode: 'published'`.
 * Fallback wrappers are provided for the `req.__()`, `res.__()` and `__()` localization helpers, which were never official or documented in 3.x but may be in use in projects ported from 2.x. These wrappers do not localize but do output the input they are given along with a developer warning. You should migrate them to use `req.t()` (in server-side javascript) or `__t()` (Nunjucks templates).
+
+### Changes
+
+* Bolsters the CSS that backs Apostrophe UI's typography to help prevent unintended style leaks at project-level code.
+* Removes the 2.x series changelog entries. They can be found in the 2.0 branch in Github.
 
 ## 3.2.0 - 2021-08-13
 
