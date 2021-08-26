@@ -52,12 +52,12 @@ describe('static i18n', function() {
   });
 
   it('should merge translations in different languages of the same phrases from @apostrophecms/i18n and a different module', function() {
-    assert.strictEqual(apos.task.getReq().t('apostrophe:alignCenter'), 'Align Center');
+    assert.strictEqual(apos.task.getReq().t('apostrophe:richTextAlignCenter'), 'Align Center');
   });
 
   it('should merge translations in different languages of the same phrases from @apostrophecms/i18n and a different module', function() {
     // je suis désolé re: Google Translate-powered French test, feel free to PR better example
-    assert.strictEqual(apos.task.getReq({ locale: 'fr' }).t('apostrophe:alignCenter'), 'Aligner Le Centre');
+    assert.strictEqual(apos.task.getReq({ locale: 'fr' }).t('apostrophe:richTextAlignCenter'), 'Aligner Le Centre');
   });
 
 });

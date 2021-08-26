@@ -128,7 +128,7 @@ export default {
       triggerValidation: false,
       minError: false,
       maxError: false,
-      cancelDescription: 'Do you want to discard changes to this list?'
+      cancelDescription: 'apostrophe:arrayCancelDescription'
     };
   },
   computed: {

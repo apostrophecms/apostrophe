@@ -36,12 +36,18 @@ module.exports = {
     self.locales = self.getLocales();
     self.hostnamesInUse = Object.values(self.locales).find(locale => locale.hostname);
     self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
-
-    Object.keys(self.locales).forEach(key => {
-      if (typeof key !== 'string' || !key.match(/^[a-zA-Z]/)) {
-        throw self.apos.error('invalid', 'Locale names must begin with a non-numeric, "word" character (a-z or A-Z)');
+    // Lint the locale configurations
+    for (const [ key, options ] of Object.entries(self.locales)) {
+      if (!options) {
+        throw self.apos.error('invalid', `Locale "${key}" was not configured.`);
       }
-    });
+      if (typeof key !== 'string' || !key.match(/^[a-zA-Z]/)) {
+        throw self.apos.error('invalid', `Locale names must begin with a non-numeric, "word" character (a-z or A-Z). Check locale "${key}".`);
+      }
+      if (options.prefix && !options.prefix.match(/^\//)) {
+        throw self.apos.error('invalid', `Locale prefixes must begin with a forward slash ("/"). Check locale "${key}".`);
+      }
+    }
     // Make sure we have our own instance to avoid conflicts with other apos objects
     self.i18next = i18next.createInstance({
       fallbackLng: self.defaultLocale,

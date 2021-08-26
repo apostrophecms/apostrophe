@@ -50,7 +50,7 @@
               <AposInputRadio
                 :field="{
                   name: 'toLocalize',
-                  label: 'apostrophe:whatContentToLocalize',
+                  label: 'apostrophe:selectContentToLocalize',
                   choices: toLocalizeChoices
                 }"
                 v-model="wizard.values.toLocalize"
@@ -163,12 +163,11 @@
                     choices: [
                       {
                         value: 'localizeNewRelated',
-                        label: 'Localize new related documents',
+                        label: 'apostrophe:localizeNewRelated',
                       },
                       {
                         value: 'localizeAllRelatedAndOverwriteExisting',
-                        label:
-                          'Localize all related documents and overwrite existing documents',
+                        label: 'apostrophe:localizeAllRelated',
                         tooltip: tooltips.localizeAllAndOverwrite,
                       },
                     ],
@@ -425,7 +424,7 @@ export default {
     relatedDocypesField() {
       return {
         name: 'relatedDocTypesToLocalize',
-        label: 'Related document types to localize',
+        label: 'apostrophe:relatedDocumentTypesToLocalize',
         choices: relatedDocTypes,
       };
     }

@@ -36,7 +36,10 @@
             <AposButton
               type="quiet"
               @click="foreign ? $emit('edit', i) : false"
-              :label="foreign ? 'Edit ' + widgetLabel : widgetLabel"
+              :label="foreign ? {
+                key: 'apostrophe:editWidgetType',
+                label: $t(widgetLabel)
+              } : widgetLabel"
               tooltip="apostrophe:clickToEditInContext"
               :icon="foreign ? 'earth-icon' : null"
               :icon-size="11"
