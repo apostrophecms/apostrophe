@@ -47,6 +47,9 @@ module.exports = {
       if (options.prefix && !options.prefix.match(/^\//)) {
         throw self.apos.error('invalid', `Locale prefixes must begin with a forward slash ("/"). Check locale "${key}".`);
       }
+      if (options.prefix && options.prefix.match(/\/.*?\//)) {
+        throw self.apos.error('invalid', `Locale prefixes must not contain more than one forward slash ("/").\nUse hyphens as separators. Check locale "${key}".`);
+      }
     }
     // Make sure we have our own instance to avoid conflicts with other apos objects
     self.i18next = i18next.createInstance({
