@@ -15,11 +15,11 @@ const config = {
           },
           'en-CA': {
             label: 'Canadian English',
-            prefix: '/ca/en'
+            prefix: '/ca-en'
           },
           'fr-CA': {
             label: 'Canadian French',
-            prefix: '/ca/fr'
+            prefix: '/ca-fr'
           },
           'es-MX': {
             label: 'Mexico',
@@ -204,34 +204,34 @@ describe('Locales', function() {
     });
     const enCA = await apos.doc.find(reqEnCA, { slug: '/child-page' }).toObject();
     assert(enCA);
-    assert.strictEqual(enCA._url, 'http://localhost:3000/ca/en/child-page');
+    assert.strictEqual(enCA._url, 'http://localhost:3000/ca-en/child-page');
     // Distinguish the content in this locale
     enCA.title = 'Child Page, Toronto Style';
     assert(apos.page.update(reqEnCA, enCA));
     // Not published yet
     try {
-      await apos.http.get('/ca/en/child-page', {});
+      await apos.http.get('/ca-en/child-page', {});
       assert(false);
     } catch (e) {
       assert(e.status === 404);
     }
     await apos.page.publish(reqEnCA, enCA);
     // Now it should work
-    const childPage = await apos.http.get('/ca/en/child-page', {});
+    const childPage = await apos.http.get('/ca-en/child-page', {});
     assert(childPage.includes('<title>Child Page, Toronto Style</title>'));
     // Navigation links are localized
-    assert(childPage.includes('"http://localhost:3000/ca/en/">Home: /'));
-    assert(childPage.includes('"http://localhost:3000/ca/en/child-page">Tab: /child-page'));
+    assert(childPage.includes('"http://localhost:3000/ca-en/">Home: /'));
+    assert(childPage.includes('"http://localhost:3000/ca-en/child-page">Tab: /child-page'));
     // Locale-switching links are present for locales that are available
     // and fall back to home page for locales that are not
     const childPageId = enCA._id.replace(':draft', ':published');
     assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en">English (en)</a></li>`));
     assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en-CA">Canadian English (en-CA)</a></li>`));
-    assert(childPage.includes('"http://localhost:3000/ca/fr/">Canadian French (fr-CA)</a></li>'));
+    assert(childPage.includes('"http://localhost:3000/ca-fr/">Canadian French (fr-CA)</a></li>'));
     assert(childPage.includes('"http://example.mx/">Mexico (es-MX)</a></li>'));
 
     // And the home page should be reachable
-    const home = await apos.http.get('/ca/en/');
+    const home = await apos.http.get('/ca-en/');
     assert(home);
   });
 

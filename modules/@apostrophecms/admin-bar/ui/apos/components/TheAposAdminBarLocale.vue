@@ -153,9 +153,9 @@ export default {
           {
             icon: false,
             heading: 'apostrophe:switchLocalesAndLocalizePage',
-            description: 'apostrophe:notInLocale',
-            negativeLabel: 'No, just switch locales',
-            affirmativeLabel: 'Yes, localize this page and switch locales'
+            description: 'apostrophe:currentPageDoesntExistInLocale',
+            negativeLabel: 'apostrophe:noJustSwitchLocales',
+            affirmativeLabel: 'apostrophe:yesLocalizeAndSwitchLocales'
           },
           {
             interpolate: {
