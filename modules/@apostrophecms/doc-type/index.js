@@ -783,10 +783,7 @@ module.exports = {
               }).toObject();
               if (!localizedTarget) {
                 if ((lastPosition === 'firstChild') || (lastPosition === 'lastChild')) {
-                  throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized', {
-                    title: draft.title,
-                    locale: toReq.locale
-                  }), {
+                  throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
                     // Also provide as data for code that prefers to localize client side
                     // when it is certain an error message is user friendly
                     parentNotLocalized: true
@@ -803,10 +800,7 @@ module.exports = {
                     path: self.apos.page.getParentPath(originalTarget)
                   }).archived(null).areas(false).relationships(false).toObject();
                   if (!localizedTarget) {
-                    throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized', {
-                      title: draft.title,
-                      locale: toReq.locale
-                    }), {
+                    throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
                       // Also provide as data for code that prefers to localize client side
                       // when it is certain an error message is user friendly
                       parentNotLocalized: true

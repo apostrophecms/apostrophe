@@ -550,6 +550,8 @@ export default {
     },
     async submit() {
       let docs = [];
+      const notifications = [];
+
       if (this.wizard.values.toLocalize.data !== 'relatedDocsOnly') {
         docs.push(this.fullDoc);
       }
@@ -576,15 +578,9 @@ export default {
               },
               busy: true
             });
-            await apos.notify('apostrophe:localized', {
-              type: 'success',
-              interpolate: {
-                type: this.$t(this.singular(doc.type)),
-                title: doc.title,
-                locale: locale.name
-              },
-              dismiss: true
-            });
+
+            notifications.push({ type: 'success', locale, doc })
+
             if (this.locale) {
               // Ask for the redirect URL, this way it still works if we
               // need to carry a session across hostnames
@@ -603,16 +599,47 @@ export default {
             // Status code 409 (conflict) means an existing document
             // we opted not to overwrite
             if (e.status !== 409) {
-              await apos.notify(e?.body?.data?.parentNotLocalized ? 'apostrophe:parentNotLocalized' : 'apostrophe:notLocalized', {
+              notifications.push({
                 type: 'error',
-                interpolate: {
-                  type: this.$t(this.singular(doc.type)),
-                  title: doc.title,
-                  locale: locale.name
-                }
+                locale,
+                doc,
+                detail: e?.body?.data?.parentNotLocalized && 'apostrophe:parentNotLocalized'
               });
             }
           }
+        }
+      }
+
+      if (notifications.some(({ type }) => type === 'error')) {
+        this.modal.busy = false;
+        this.close();
+
+        await apos.alert(
+          {
+            icon: false,
+            heading: 'apostrophe:localizingContent',
+            description: 'apostrophe:thereWasAnIssueLocalizing',
+            body: {
+              component: 'AposI18nLocalizeErrors',
+              props: {
+                notifications
+              }
+            },
+            affirmativeLabel: 'apostrophe:close'
+          }
+        );
+
+      } else {
+        for (const item of notifications) {
+          await apos.notify('apostrophe:localized', {
+            type: 'success',
+            interpolate: {
+              type: this.$t(this.singular(item.doc.type)),
+              title: item.doc.title,
+              locale: item.locale.name
+            },
+            dismiss: true
+          });
         }
       }
 
