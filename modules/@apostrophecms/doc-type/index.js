@@ -795,14 +795,14 @@ module.exports = {
                 } else {
                   const originalTarget = await actionModule.find(req, {
                     _id: lastTargetId
-                  }).toObject();
+                  }).archived(null).areas(false).relationships(false).toObject();
                   if (!originalTarget) {
                     // Almost impossible (race conditions like someone removing it while we're in the modal)
                     throw self.apos.error('notfound');
                   }
                   const localizedTarget = await actionModule.find(toReq, {
                     path: self.apos.page.getParentPath(originalTarget)
-                  }).toObject();
+                  }).archived(null).areas(false).relationships(false).toObject();
                   if (!localizedTarget) {
                     throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized', {
                       title: draft.title,
