@@ -60,7 +60,7 @@
                 class="apos-wizard__help-text"
               >
                 <InformationIcon :size="16" />
-                {{ $t('apostrophe:relatedDocumentsAre') }}
+                {{ $t('apostrophe:relatedDocsDefinition') }}
               </p>
             </fieldset>
 
@@ -151,7 +151,7 @@
                 class="apos-wizard__field-group"
               >
                 <p class="apos-wizard__field-group-heading">
-                  {{ $t('apostrophe:relatedDocumentSettings') }}
+                  {{ $t('apostrophe:relatedDocSettings') }}
                   <span v-apos-tooltip.top="tooltips.relatedDocSettings"
                     ><InformationIcon :size="14"
                   /></span>
@@ -243,7 +243,7 @@ export default {
     const result = {
       modal: {
         busy: false,
-        busyTitle: this.$t('apostrophe:localizingContent'),
+        busyTitle: this.$t('apostrophe:localizingBusy'),
         disableHeader: true,
         active: false,
         showModal: false
@@ -258,8 +258,8 @@ export default {
       ),
       localized: {},
       tooltips: {
-        relatedDocSettings: this.$t('apostrophe:relatedDocumentsAre'),
-        localizeAllAndOverwrite: this.$t('apostrophe:ifRelatedDocumentExists')
+        relatedDocSettings: this.$t('apostrophe:relatedDocsDefinition'),
+        localizeAllAndOverwrite: this.$t('apostrophe:relatedDocOverwriteWarning')
       },
       wizard: {
         step: 'selectContent',
@@ -361,7 +361,7 @@ export default {
         },
         {
           value: 'relatedDocsOnly',
-          label: 'apostrophe:relatedDocumentsOnly',
+          label: 'apostrophe:relatedDocsOnly',
         }
       ];
     },
@@ -428,7 +428,7 @@ export default {
     relatedDocypesField() {
       return {
         name: 'relatedDocTypesToLocalize',
-        label: 'apostrophe:relatedDocumentTypesToLocalize',
+        label: 'apostrophe:relatedDocTypesToLocalize',
         choices: relatedDocTypes,
       };
     }

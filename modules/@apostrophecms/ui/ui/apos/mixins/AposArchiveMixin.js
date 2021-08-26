@@ -40,32 +40,32 @@ export default {
         }));
 
         if (descendants > 0) {
-          sentences.push(this.$t('apostrophe:pageHasDescendants', {
+          sentences.push(this.$t('apostrophe:archivingPageHasChild', {
             count: descendants
           }));
         }
 
         if (draftDescendants > 0) {
-          sentences.push(this.$t('apostrophe:descendantsNeverPublished', {
+          sentences.push(this.$t('apostrophe:archivingDraftChildCount', {
             count: draftDescendants
           }));
         }
 
         if (isPublished) {
-          sentences.push(this.$t('apostrophe:willAlsoUnpublish', {
+          sentences.push(this.$t('apostrophe:archivingWillUnpublish', {
             type: plainType
           }));
         }
 
         if (draftDescendants > 0) {
-          sentences.push(this.$t('apostrophe:descendantsNeverPublishedWillBeDeleted'));
+          sentences.push(this.$t('apostrophe:archivingWillDeleteDraftChildren'));
         }
 
         if (isModified) {
           if (isPage) {
-            sentences.push(this.$t('apostrophe:unpublishedChangesToPageAndDescendantsWillBeLost'));
+            sentences.push(this.$t('apostrophe:archivingPageWillLoseDraftChanges'));
           } else {
-            sentences.push(this.$t('apostrophe:unpublishedChangesWillBeLost'));
+            sentences.push(this.$t('apostrophe:archivingWillLoseDraftChanges'));
           }
         }
 

@@ -118,7 +118,7 @@ module.exports = {
           add: {
             visibility: {
               type: 'select',
-              label: 'apostrophe:whoCanViewThis',
+              label: 'apostrophe:visibilityLabel',
               def: 'public',
               choices: [
                 {

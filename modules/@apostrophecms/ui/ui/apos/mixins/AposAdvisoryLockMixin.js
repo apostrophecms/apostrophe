@@ -46,7 +46,7 @@ export default {
       } catch (e) {
         if (this.isLockedError(e)) {
           if (await apos.confirm({
-            heading: e.body.data.me ? 'apostrophe:editingInAnotherTab' : 'apostrophe:anotherUserIsEditing',
+            heading: e.body.data.me ? 'apostrophe:docInUseBySelf' : 'apostrophe:docInUseByAnother',
             description: e.body.data.me ? 'apostrophe:takeControlFromSelf' : 'apostrophe:takeControlFromOther',
             interpolate: {
               who: e.body.data.title

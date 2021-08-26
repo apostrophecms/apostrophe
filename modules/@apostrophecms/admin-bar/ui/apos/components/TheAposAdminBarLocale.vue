@@ -28,7 +28,7 @@
             <CheckIcon
               v-if="isActive(locale)"
               class="apos-check"
-              title="$t('apostrophe:currentlySelectedLocale')"
+              title="$t('apostrophe:currentLocale')"
               :size="12"
             />
             {{ locale.label }}

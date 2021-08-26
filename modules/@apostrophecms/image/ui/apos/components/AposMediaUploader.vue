@@ -13,13 +13,13 @@
       />
       <div class="apos-media-uploader__instructions">
         <p class="apos-media-uploader__primary">
-          {{ $t(dragover ? 'apostrophe:dropMediaWhenReady' : 'apostrophe:dropMedia') }}
+          {{ $t(dragover ? 'apostrophe:mediaUploadViaDrop' : 'apostrophe:dropMedia') }}
         </p>
         <p
           v-if="!dragover"
           class="apos-media-uploader__secondary"
         >
-          {{ $t('apostrophe:orOpenFileExplorer') }}
+          {{ $t('apostrophe:mediaUploadViaExplorer') }}
         </p>
       </div>
     </div>

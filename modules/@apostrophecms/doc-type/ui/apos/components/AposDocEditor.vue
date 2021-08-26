@@ -653,7 +653,7 @@ export default {
         if (doc._url) {
           window.location = doc._url;
         } else {
-          await apos.notify(andPublish ? 'apostrophe:documentPublishedButNoPreview' : 'apostrophe:draftSavedButNoPreview', {
+          await apos.notify(andPublish ? 'apostrophe:documentPublishedNoPreview' : 'apostrophe:draftSavedNoPreview', {
             type: 'warning',
             icon: 'alert-circle-icon'
           });
@@ -753,7 +753,7 @@ export default {
           action: 'onSave',
           description: {
             ...description,
-            key: isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn',
+            key: isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn'
           },
           def: true
         }

@@ -136,7 +136,7 @@ export default {
       lastSelected: null,
       emptyDisplay: {
         title: 'apostrophe:noMediaFound',
-        message: 'apostrophe:uploadedMediaWillAppearHere',
+        message: 'apostrophe:uploadedMediaPlaceholder',
         emoji: '🖼'
       },
       cancelDescription: 'apostrophe:discardImageChangesPrompt'
@@ -206,7 +206,7 @@ export default {
           typeLabel: this.$t(this.moduleLabels.pluralLabel)
         };
       }
-    },
+    }
   },
   watch: {
     async checked (newVal, oldVal) {

@@ -171,7 +171,7 @@ module.exports = {
           }
 
           async function build(name, options) {
-            self.apos.util.log(req.t('apostrophe:buildingTheAssetType', {
+            self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
               label: req.t(options.label)
             }));
             const modulesDir = `${buildDir}/${name}/modules`;
