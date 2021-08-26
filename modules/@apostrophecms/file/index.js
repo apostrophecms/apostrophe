@@ -12,6 +12,7 @@ module.exports = {
   options: {
     name: '@apostrophecms/file',
     label: 'apostrophe:file',
+    pluralLabel: 'apostrophe:files',
     alias: 'file',
     quickCreate: false,
     insertViaUpload: true,

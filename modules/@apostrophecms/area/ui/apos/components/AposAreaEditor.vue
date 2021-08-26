@@ -10,7 +10,10 @@
     >
       <template v-if="isEmptySingleton">
         <AposButton
-          :label="'Add ' + contextMenuOptions.menu[0].label"
+          :label="{
+            key: 'apostrophe:addWidgetType',
+            label: $t(contextMenuOptions.menu[0].label)
+          }"
           :disabled="field && field.readOnly"
           type="primary"
           :icon="icon"

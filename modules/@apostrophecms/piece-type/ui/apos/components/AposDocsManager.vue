@@ -161,17 +161,20 @@ export default {
     saveRelationshipLabel() {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
         return {
-          key: 'apostrophe:selectLabel',
-          typeLabel: this.moduleLabels.label
+          key: 'apostrophe:selectOneLabel',
+          typeLabel: this.$t(this.moduleLabels.label)
         };
       } else {
-        return `Select ${this.moduleLabels.pluralLabel || ''}`;
+        return {
+          key: 'apostrophe:selectManyLabel',
+          typeLabel: this.$t(this.moduleLabels.pluralLabel)
+        };
       }
     },
     modalTitle () {
       const verb = this.relationshipField ? 'choose' : 'manage';
       return {
-        key: `apostrophe:${verb}DocType`,
+        key: (verb === 'choose') ? 'apostrophe:chooseDocType' : 'apostrophe:manageDocType',
         type: this.$t(this.moduleLabels.plural)
       };
     },

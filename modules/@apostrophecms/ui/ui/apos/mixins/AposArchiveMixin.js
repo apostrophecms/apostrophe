@@ -72,7 +72,7 @@ export default {
         // Confirm archiving
         const confirm = await apos.confirm({
           heading: this.$t('apostrophe:archiveType', { type: plainType }),
-          description: sentences.join(sentences.map(this.$t), this.$t('apostrophe:sentenceJoiner')),
+          description: sentences.join(this.$t('apostrophe:sentenceJoiner')),
           affirmativeLabel: this.$t('apostrophe:archiveTypeAffirmativeLabel', { type: plainType }),
           note: isCurrentContext
             ? this.$t('apostrophe:archiveTypeNote', { type: plainType })
@@ -152,7 +152,7 @@ export default {
       } catch (e) {
         await apos.alert({
           heading: this.$t('apostrophe:error'),
-          description: e.message || this.$t('errorOccurredWhileArchiving'),
+          description: e.message || this.$t('apostrophe:errorWhileArchiving'),
           localize: false
         });
       }
@@ -179,7 +179,7 @@ export default {
         }
         let total = 0;
         for (const child of doc._children) {
-          total += ((child.lastPublishedAt && 1) || 0);
+          total += (child.lastPublishedAt ? 0 : 1);
           total += countDraftDescendants(child);
         }
         return total;
@@ -274,7 +274,7 @@ export default {
         } else {
           await apos.alert({
             heading: this.$t('apostrophe:error'),
-            description: e.message || this.$t('apostrophe:errorOccurredWhileRestoring'),
+            description: e.message || this.$t('apostrophe:errorWhileRestoringArchive'),
             localize: false
           });
         }
