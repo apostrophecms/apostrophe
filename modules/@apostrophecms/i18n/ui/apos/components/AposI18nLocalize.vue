@@ -617,7 +617,7 @@ export default {
         await apos.alert(
           {
             icon: false,
-            heading: 'apostrophe:localizingContent',
+            heading: 'apostrophe:localizingBusy',
             description: 'apostrophe:thereWasAnIssueLocalizing',
             body: {
               component: 'AposI18nLocalizeErrors',
