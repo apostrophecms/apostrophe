@@ -190,7 +190,7 @@
   "notFoundPageStatusCode": "404",
   "notFoundPageTitle": "404 - Page not found",
   "noTypeFound": "No {{ type }} Found",
-  "notLocalized": "Unable to localize the {{ type }} {{ title }} to {{ locale }}",
+  "parentNotLocalized": "Localize the parent page first",
   "notYetPublished": "This document hasn't been published yet.",
   "nudgeDown": "Nudge Down",
   "nudgeUp": "Nudge Up",

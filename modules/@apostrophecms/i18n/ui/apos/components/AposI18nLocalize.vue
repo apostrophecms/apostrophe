@@ -599,7 +599,12 @@ export default {
             // Status code 409 (conflict) means an existing document
             // we opted not to overwrite
             if (e.status !== 409) {
-              notifications.push({ type: 'error', locale, doc })
+              notifications.push({
+                type: 'error',
+                locale,
+                doc,
+                detail: e?.body?.data?.parentNotLocalized && 'apostrophe:parentNotLocalized'
+              });
             }
           }
         }
