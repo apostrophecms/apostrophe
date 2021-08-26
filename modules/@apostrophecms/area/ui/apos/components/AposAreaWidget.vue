@@ -40,7 +40,7 @@
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)
               } : widgetLabel"
-              tooltip="apostrophe:clickToEditInContext"
+              tooltip="apostrophe:editWidgetForeignTooltip"
               :icon="foreign ? 'earth-icon' : null"
               :icon-size="11"
               :modifiers="['no-motion']"
