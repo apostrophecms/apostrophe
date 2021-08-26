@@ -41,7 +41,7 @@
       </ul>
       <div class="apos-available-locales">
         <p class="apos-available-description">
-          {{ $t('apostrophe:thisDocumentExistsIn') }}
+          {{ $t('apostrophe:documentExistsInLocales') }}
         </p>
         <span
           v-for="locale in availableLocales"
@@ -153,7 +153,7 @@ export default {
           {
             icon: false,
             heading: 'apostrophe:switchLocalesAndLocalizePage',
-            description: 'apostrophe:currentPageDoesntExistInLocale',
+            description: 'apostrophe:notInLocale',
             negativeLabel: 'No, just switch locales',
             affirmativeLabel: 'Yes, localize this page and switch locales'
           },

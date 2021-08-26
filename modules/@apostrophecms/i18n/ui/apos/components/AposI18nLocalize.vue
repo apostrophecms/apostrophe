@@ -50,7 +50,7 @@
               <AposInputRadio
                 :field="{
                   name: 'toLocalize',
-                  label: 'apostrophe:whatContentToLocalize',
+                  label: 'apostrophe:selectContentToLocalize',
                   choices: toLocalizeChoices
                 }"
                 v-model="wizard.values.toLocalize"
@@ -163,12 +163,11 @@
                     choices: [
                       {
                         value: 'localizeNewRelated',
-                        label: 'Localize new related documents',
+                        label: 'apostrophe:localizeNewRelated',
                       },
                       {
                         value: 'localizeAllRelatedAndOverwriteExisting',
-                        label:
-                          'Localize all related documents and overwrite existing documents',
+                        label: 'apostrophe:localizeAllRelated',
                         tooltip: tooltips.localizeAllAndOverwrite,
                       },
                     ],
@@ -276,7 +275,11 @@ export default {
               // exist, as the user might opt in step three
               // to express an interest in previously
               // replicated related docs
-              return this.allRelatedDocs.length > 0;
+              const hasRelated = this.allRelatedDocs.length > 0;
+              if (!hasRelated) {
+                this.wizard.values.toLocalize.data = 'thisDoc';
+              }
+              return hasRelated;
             }
           },
           selectLocales: {
@@ -425,7 +428,7 @@ export default {
     relatedDocypesField() {
       return {
         name: 'relatedDocTypesToLocalize',
-        label: 'Related document types to localize',
+        label: 'apostrophe:relatedDocumentTypesToLocalize',
         choices: relatedDocTypes,
       };
     }
@@ -489,7 +492,7 @@ export default {
       return !!this.localized[locale.name];
     },
     selectAll() {
-      this.wizard.values.toLocales.data = [ ...this.locales ];
+      this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale));
     },
     selectLocale(locale) {
       if (!this.isSelected(locale) && !this.isCurrentLocale(locale)) {
