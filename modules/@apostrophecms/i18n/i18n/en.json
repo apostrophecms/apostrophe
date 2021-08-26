@@ -194,7 +194,7 @@
   "notFoundPageTitle": "404 - Page not found",
   "notInLocale": "The current page doesn’t exist in {{ label }}. Localize the version from {{ currentLocale }}?",
   "noTypeFound": "No {{ type }} Found",
-  "notLocalized": "Unable to localize the {{ type }} {{ title }} to {{ locale }}",
+  "parentNotLocalized": "Localize the parent page first",
   "notYetPublished": "This document hasn't been published yet.",
   "nudgeDown": "Nudge Down",
   "nudgeUp": "Nudge Up",

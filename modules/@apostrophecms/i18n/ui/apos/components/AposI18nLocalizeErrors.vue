@@ -3,7 +3,7 @@
     <li v-for="(item, index) in notifications" :key="index" class="apos-confirm__notification">
       <div :class="className(item.type)">
         <span class="apos-confirm__notification-locale">{{ item.locale.label }}</span>
-        <div class="apos-confirm__notificaton-meta">
+        <div class="apos-confirm__notification-meta">
           <span class="apos-confirm__notification-title">
             <CheckIcon
               v-if="!isError(item.type)"
@@ -18,6 +18,9 @@
             {{ item.doc.title }}
           </span>
           <span class="apos-confirm__notification-item-type">{{ docType(item.doc) }}</span>
+        </div>
+        <div class="apos-confirm__notification-detail" v-if="item.detail">
+          {{ $t(item.detail) }}
         </div>
       </div>
     </li>
@@ -43,7 +46,7 @@ export default {
     },
     singular(name) {
       const module = apos.modules[name] || {};
-      if (module.action === '@apostrophecms/page') {
+      if (module.action === '/api/v1/@apostrophecms/page') {
         return 'apostrophe:page';
       }
       return module.label || name;
@@ -76,10 +79,15 @@ export default {
   width: 260px;
 }
 
-.apos-confirm__notificaton-meta {
+.apos-confirm__notification-meta {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.apos-confirm__notification-detail {
+  margin-top: 8px;
+  color: var(--a-danger);
 }
 
 .apos-check,
