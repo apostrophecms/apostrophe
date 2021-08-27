@@ -1,7 +1,7 @@
 {%- if data.render == 'safeMode' -%}
-  Running in safe mode, not showing raw HTML.
+  {{ __t('apostrophe:safeModeActive') }}
 {%- elif data.render -%}
   {{ data.code | safe }}
 {% else %}
-  Refresh the page to view raw HTML.
+  {{ __t('apostrophe:refreshForRawHtml') }}
 {%- endif -%}

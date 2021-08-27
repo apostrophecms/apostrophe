@@ -8,7 +8,10 @@
         <component
           :is="item.target ? 'button' : 'span'" :data-apos-target="item.target"
           :type="item.target ? 'button' : null"
-          :aria-label="item.target ? `Return to ${item.label}` : null"
+          :aria-label="item.target ? {
+            key: 'apostrophe:returnToPage',
+            label: $t(item.label)
+          } : null"
           @click="item.target ? $emit('return-to', item.target) : null"
         >
           {{ item.label }}

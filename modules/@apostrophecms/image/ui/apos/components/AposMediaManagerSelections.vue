@@ -4,7 +4,7 @@
       <div class="apos-media-manager-selections__heading">
         {{ items.length }} items selected
         <AposButton
-          label="Clear"
+          label="apostrophe:clear"
           type="quiet"
           @click="clear"
           :modifiers="['no-motion']"
@@ -31,7 +31,7 @@
             </div>
             <AposButton
               v-if="canEdit"
-              label="Edit"
+              label="apostrophe:edit"
               type="quiet"
               :modifiers="['no-motion']"
               @click="edit(item._id)"
@@ -63,10 +63,10 @@ export default {
   data() {
     return {
       emptyState: {
-        message: 'No items selected'
+        message: 'apostrophe:noItemsSelected'
       },
       clearButton: {
-        label: 'Clear Selection',
+        label: 'apostrophe:clearSelection',
         type: 'quiet',
         modifiers: [ 'no-motion' ]
       }

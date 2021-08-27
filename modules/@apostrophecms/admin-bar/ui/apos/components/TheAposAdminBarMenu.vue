@@ -2,7 +2,7 @@
   <ul class="apos-admin-bar__items">
     <li class="apos-admin-bar__item" v-if="pageTree">
       <AposButton
-        type="subtle" label="Pages"
+        type="subtle" label="apostrophe:pages"
         class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
         @click="emitEvent('@apostrophecms/page:manager')"
@@ -37,7 +37,7 @@
         class="apos-admin-bar__create"
         :menu="createMenu"
         :button="{
-          label: 'New item',
+          label: 'apostrophe:newItem',
           iconOnly: true,
           icon: 'plus-icon',
           type: 'primary',

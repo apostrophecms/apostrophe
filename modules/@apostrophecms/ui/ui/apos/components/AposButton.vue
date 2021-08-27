@@ -1,5 +1,5 @@
 <template>
-  <span v-tooltip="tooltip" class="apos-button__wrapper">
+  <span v-apos-tooltip="tooltip" class="apos-button__wrapper">
     <component
       :is="href ? 'a' : 'button'"
       v-on="href ? {} : {click: click}"
@@ -33,9 +33,16 @@
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
-            {{ label }}
+            {{ $t(label, interpolate) }}
           </span>
         </slot>
+        <AposIndicator
+          v-if="iconAfter"
+          :icon="iconAfter"
+          :icon-size="iconSize"
+          class="apos-button__icon-right"
+          fill-color="currentColor"
+        />
       </div>
     </component>
   </span>
@@ -48,8 +55,14 @@ export default {
   name: 'AposButton',
   props: {
     label: {
-      type: String,
-      default: 'Provide a Button Label'
+      type: [ String, Object ],
+      default: 'apostrophe:provideButtonLabel'
+    },
+    interpolate: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     modifiers: {
       type: Array,
@@ -72,6 +85,10 @@ export default {
     disabled: Boolean,
     busy: Boolean,
     icon: {
+      type: String,
+      default: null
+    },
+    iconAfter: {
       type: String,
       default: null
     },
@@ -414,16 +431,6 @@ export default {
     }
   }
 
-  .apos-button--icon-right {
-    .apos-button__content {
-      flex-direction: row-reverse;
-    }
-    .apos-button__icon {
-      margin-right: 0;
-      margin-left: 5px;
-    }
-  }
-
   .apos-button--primary {
     border: 1px solid var(--a-primary-dark-10);
     color: var(--a-white);
@@ -547,10 +554,18 @@ export default {
     transition: opacity 0.2s ease;
   }
 
-  .apos-button__icon {
+  .apos-button__icon,
+  .apos-button__icon-right {
     display: inline-flex;
-    margin-right: 5px;
     align-items: center;
+  }
+
+  .apos-button__icon {
+    margin-right: 5px;
+  }
+
+  .apos-button__icon-right {
+    margin-left: 5px;
   }
 
   .apos-button--danger-on-hover:hover {

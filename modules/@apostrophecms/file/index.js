@@ -11,7 +11,8 @@ module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
     name: '@apostrophecms/file',
-    label: 'File',
+    label: 'apostrophe:file',
+    pluralLabel: 'apostrophe:files',
     alias: 'file',
     quickCreate: false,
     insertViaUpload: true,
@@ -19,45 +20,48 @@ module.exports = {
     autopublish: true,
     editRole: 'editor',
     publishRole: 'editor',
-    showPermissions: true
+    showPermissions: true,
+    // Files should by default be considered "related documents" when localizing
+    // another document that references them
+    relatedDocument: true
   },
   fields: {
     remove: [ 'visibility' ],
     add: {
       slug: {
         type: 'slug',
-        label: 'Slug',
+        label: 'apostrophe:slug',
         prefix: 'file',
         required: true,
         following: [ 'title', 'archived' ]
       },
       attachment: {
         type: 'attachment',
-        label: 'File',
+        label: 'apostrophe:file',
         required: true
       },
       description: {
         type: 'string',
-        label: 'Description',
+        label: 'apostrophe:description',
         textarea: true
       },
       credit: {
         type: 'string',
-        label: 'Credit'
+        label: 'apostrophe:credit'
       },
       creditUrl: {
         type: 'url',
-        label: 'Credit URL'
+        label: 'apostrophe:creditUrl'
       },
       _tags: {
         type: 'relationship',
-        label: 'Tags',
+        label: 'apostrophe:tags',
         withType: '@apostrophecms/file-tag'
       }
     },
     group: {
       basics: {
-        label: 'Basics',
+        label: 'apostrophe:basics',
         fields: [
           'title',
           'attachment',
@@ -67,7 +71,7 @@ module.exports = {
         ]
       },
       utility: {
-        label: 'Utility',
+        label: 'apostrophe:utility',
         fields: [
           'slug',
           '_tags'

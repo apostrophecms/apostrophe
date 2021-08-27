@@ -27,15 +27,14 @@
         :button="draftButton"
         :menu="draftMenu"
         :disabled="hasCustomUi || isUnpublished"
-        :tooltip="isUnpublished ? 'The current document is unpublished' : null"
         @item-clicked="switchDraftMode"
         menu-offset="13, 10"
         menu-placement="bottom-end"
       />
       <AposLabel
         v-else
-        label="Draft" :modifiers="['apos-is-warning', 'apos-is-filled']"
-        tooltip="This document has not been published"
+        label="apostrophe:draft" :modifiers="['apos-is-warning', 'apos-is-filled']"
+        tooltip="apostrophe:notYetPublished"
       />
     </span>
   </transition-group>
@@ -72,7 +71,7 @@ export default {
     },
     draftButton() {
       return {
-        label: (this.draftMode === 'draft') ? 'Draft' : 'Published',
+        label: (this.draftMode === 'draft') ? 'apostrophe:draft' : 'apostrophe:published',
         icon: 'chevron-down-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'
@@ -82,18 +81,22 @@ export default {
       return !this.context.lastPublishedAt;
     },
     docTooltip() {
-      return `Last saved on ${dayjs(this.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;
+      return {
+        key: 'apostrophe:lastUpdatedBy',
+        updatedAt: dayjs(this.context.updatedAt).format(this.$t('apostrophe:dayjsTitleDateFormat')),
+        updatedBy: this.updatedBy
+      };
     },
     draftMenu() {
       return [
         {
-          label: 'Draft',
+          label: 'apostrophe:draft',
           name: 'draft',
           action: 'draft',
           modifiers: (this.draftMode === 'draft') ? [ 'disabled', 'selected' ] : null
         },
         {
-          label: 'Published',
+          label: 'apostrophe:published',
           name: 'published',
           action: 'published',
           modifiers: (this.draftMode === 'published') ? [ 'disabled', 'selected' ] : null

@@ -10,7 +10,7 @@
           :aria-selected="tab.name === currentTab ? true : false"
           @click="selectTab"
         >
-          {{ tab.label }}
+          {{ $t(tab.label) }}
           <span v-if="tabErrors[tab.name] && tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
             {{ tabErrors[tab.name].length }} {{ generateErrorLabel(tabErrors[tab.name].length) }}
           </span>

@@ -124,7 +124,7 @@ export default {
     },
     buttonOptions() {
       return {
-        label: 'Add Content',
+        label: 'apostrophe:addContent',
         iconOnly: this.empty === false,
         icon: 'plus-icon',
         type: 'primary',
@@ -170,7 +170,10 @@ export default {
           menu.unshift({
             type: 'clipboard',
             ...matchingChoice,
-            label: `Paste  ${matchingChoice.label}`,
+            label: {
+              key: 'apostrophe:pasteWidget',
+              widget: this.$t(matchingChoice.label)
+            },
             clipboard: widget
           });
         }
@@ -215,7 +218,7 @@ export default {
     },
     composeGroups(menu) {
       const ungrouped = {
-        label: 'Ungrouped Widgets',
+        label: 'apostrophe:ungroupedWidgets',
         items: []
       };
       const myMenu = [];

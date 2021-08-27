@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const path = require('path');
+const { klona } = require('klona');
 
 module.exports = {
   cascades: [ 'batchOperations' ],
@@ -9,7 +10,7 @@ module.exports = {
       {
         // So that the minimum parked pages don't result in an error when home has no manager. -Tom
         name: '@apostrophecms/home-page',
-        label: 'Home'
+        label: 'apostrophe:home'
       }
     ],
     quickCreate: true,
@@ -35,13 +36,13 @@ module.exports = {
   batchOperations: {
     add: {
       archive: {
-        label: 'Archive'
+        label: 'apostrophe:archive'
       },
       publish: {
-        label: 'Publish'
+        label: 'apostrophe:publish'
       },
       unpublish: {
-        label: 'Unpublish'
+        label: 'apostrophe:unpublish'
       }
     }
   },
@@ -340,6 +341,30 @@ module.exports = {
           }
           return self.publish(req, draft);
         },
+        ':_id/localize': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          const toLocale = self.apos.i18n.sanitizeLocaleName(req.body.toLocale);
+          const update = self.apos.launder.boolean(req.body.update);
+          if ((!toLocale) || (toLocale === req.locale)) {
+            throw self.apos.error('invalid');
+          }
+          return self.localize(req, draft, toLocale, {
+            update
+          });
+        },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
           const aposDocId = _id.replace(/:.*$/, '');
@@ -434,6 +459,24 @@ module.exports = {
           }
           return self.revertPublishedToPrevious(req, published);
         }
+      },
+      get: {
+        ':_id/locales': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          return {
+            results: await self.apos.doc.getLocales(req, _id)
+          };
+        }
+      }
+    };
+  },
+  routes(self) {
+    return {
+      get: {
+        // Redirects to the URL of the document in the specified alternate
+        // locale. Issues a 404 if the document not found, a 400 if the
+        // document has no URL
+        ':_id/locale/:toLocale': self.apos.i18n.toLocaleRouteFactory(self)
       }
     };
   },
@@ -542,10 +585,38 @@ database.`);
         }
       },
       '@apostrophecms/migration:after': {
-        async implementParkAll() {
-          const req = self.apos.task.getReq();
-          for (const item of self.parked) {
-            await self.implementParkOne(req, item);
+        async implementParkAllInDefaultLocale() {
+          for (const mode of [ 'published', 'draft' ]) {
+            const req = self.apos.task.getReq({
+              mode
+            });
+            for (const item of self.parked) {
+              await self.implementParkOne(req, item);
+            }
+          }
+          // Triggers replicate in the doc module
+          return self.emit('afterParkAll');
+        }
+      },
+      '@apostrophecms/doc:afterReplicate': {
+        async implementParkAllInOtherLocales() {
+          // Now that replication has occurred, we can
+          // park in the other locales and we'll just
+          // reset the parked properties without
+          // destroying the locale relationships
+          for (const locale of Object.keys(self.apos.i18n.locales)) {
+            for (const mode of [ 'published', 'draft' ]) {
+              if (locale === self.apos.i18n.defaultLocale) {
+                continue;
+              }
+              const req = self.apos.task.getReq({
+                locale,
+                mode
+              });
+              for (const item of self.parked) {
+                await self.implementParkOne(req, item);
+              }
+            }
           }
         }
       }
@@ -681,7 +752,7 @@ database.`);
         const browserOptions = _.pick(self, 'action', 'schema', 'types');
         _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
         _.defaults(browserOptions, {
-          label: 'Page',
+          label: 'apostrophe:page',
           pluralLabel: 'Pages',
           components: {}
         });
@@ -1279,6 +1350,13 @@ database.`);
         const manager = self.apos.doc.getManager(draft.type);
         return manager.publish(req, draft, options);
       },
+      // Localize the draft, i.e. copy it to another locale, creating
+      // that locale's draft for the first time if necessary. By default
+      // existing documents are not updated
+      async localize(req, draft, toLocale, options = { update: false }) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.localize(req, draft, toLocale, options);
+      },
       // Reverts the given draft to the most recent publication.
       //
       // Returns the draft's new value, or `false` if the draft
@@ -1334,10 +1412,13 @@ database.`);
           await self.emit('serve', req);
           await self.serveNotFound(req);
         } catch (err) {
-          await self.serveDeliver(req, err);
-          return;
+          return await self.serve500Error(req, err);
         }
-        await self.serveDeliver(req, null);
+        try {
+          await self.serveDeliver(req, null);
+        } catch (err) {
+          await self.serve500Error(req, err);
+        }
       },
       // Sets `req.data.bestPage` to the page whose slug is the longest
       // path prefix of `req.params[0]` (the page slug); an exact match
@@ -1403,7 +1484,8 @@ database.`);
                 0: req.path
               },
               query: req.query,
-              mode: 'draft'
+              mode: 'draft',
+              locale: req.locale
             });
             await self.serveGetPage(testReq);
             await self.emit('serve', testReq);
@@ -1503,6 +1585,14 @@ database.`);
           return req.res.send(args.page);
         }
         return self.sendPage(req, req.template, args);
+      },
+      // In the event of an error during the beforeSend event or the
+      // error template itself, we render the error template in a
+      // simplified way with less potential for chicken and egg problems
+      async serve500Error(req, err) {
+        self.apos.template.logError(req, err);
+        req.res.statusCode = 500;
+        return req.res.send(await self.render(req, '@apostrophecms/template:templateError'));
       },
       // A request is "found" if it should not be
       // treated as a "404 not found" situation
@@ -1677,6 +1767,7 @@ database.`);
         if (!((item.type || (item._defaults && item._defaults.type)) && (item.slug || item._defaults.slug))) {
           throw new Error('Parked pages must have type and slug properties, they may be fixed or part of _defaults:\n' + JSON.stringify(item, null, '  '));
         }
+        item = klona(item);
         const parent = await findParent();
         item.parked = _.keys(_.omit(item, '_defaults'));
         if (!parent) {
@@ -1846,7 +1937,7 @@ database.`);
           schema.splice(index + 1, 0, {
             type: 'boolean',
             name: 'applyVisibilityToSubpages',
-            label: 'Apply to Subpages',
+            label: 'apostrophe:applyToSubpages',
             group: schema[index].group
           });
         }
@@ -1911,7 +2002,12 @@ database.`);
       // `@apostrophecms/workflow` module to create correct absolute URLs
       // for specific locales.
       getBaseUrl(req) {
-        return self.apos.baseUrl || '';
+        const hostname = self.apos.i18n.locales[req.locale].hostname;
+        if (hostname) {
+          return `${req.protocol}://${hostname}`;
+        } else {
+          return self.apos.baseUrl || '';
+        }
       },
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation,

@@ -8,12 +8,12 @@
     <template #secondaryControls>
       <AposButton
         v-if="relationshipField"
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton
         v-else
-        type="default" label="Exit"
+        type="default" label="apostrophe:exit"
         @click="confirmAndCancel"
       />
     </template>
@@ -33,7 +33,10 @@
       />
       <AposButton
         v-else-if="moduleOptions.canEdit && moduleOptions.showCreate"
-        :label="`New ${ moduleOptions.label }`" type="primary"
+        :label="{
+          key: 'apostrophe:newDocType',
+          type: $t(moduleOptions.label)
+        }" type="primary"
         @click="create"
       />
     </template>
@@ -135,7 +138,7 @@ export default {
       holdQueries: false,
       moreMenu: {
         button: {
-          label: 'More operations',
+          label: 'apostrophe:moreOperations',
           iconOnly: true,
           icon: 'dots-vertical-icon',
           type: 'outline'
@@ -157,18 +160,30 @@ export default {
     },
     saveRelationshipLabel() {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
-        return `Select ${this.moduleLabels.label || ''}`;
+        return {
+          key: 'apostrophe:selectOneLabel',
+          typeLabel: this.$t(this.moduleLabels.label)
+        };
       } else {
-        return `Select ${this.moduleLabels.pluralLabel || ''}`;
+        return {
+          key: 'apostrophe:selectManyLabel',
+          typeLabel: this.$t(this.moduleLabels.pluralLabel)
+        };
       }
     },
     modalTitle () {
-      const verb = this.relationshipField ? 'Choose' : 'Manage';
-      return `${verb} ${this.moduleLabels.plural}`;
+      const verb = this.relationshipField ? 'choose' : 'manage';
+      return {
+        key: (verb === 'choose') ? 'apostrophe:chooseDocType' : 'apostrophe:manageDocType',
+        type: this.$t(this.moduleLabels.plural)
+      };
     },
     emptyDisplay() {
       return {
-        title: `No ${this.moduleLabels.plural || this.moduleLabels.singular} Found`,
+        title: {
+          key: 'apostrophe:noTypeFound',
+          type: this.$t(this.moduleLabels.plural || this.moduleLabels.singular)
+        },
         message: '',
         emoji: '📄'
       };

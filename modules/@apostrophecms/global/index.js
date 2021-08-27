@@ -38,11 +38,13 @@ module.exports = {
   options: {
     name: '@apostrophecms/global',
     alias: 'global',
-    label: 'Global Content',
-    pluralLabel: 'Global Content',
+    label: 'apostrophe:globalDocLabel',
+    // Intentionally the same
+    pluralLabel: 'apostrophe:globalDocLabel',
     searchable: false,
     singleton: true,
-    showPermissions: true
+    showPermissions: true,
+    replicate: true
   },
   fields: {
     remove: [
@@ -131,8 +133,8 @@ module.exports = {
               contextUtility: true,
               toggle: true,
               tooltip: {
-                activate: 'Open Global Site Settings',
-                deactivate: 'Close Global Site Settings'
+                activate: 'apostrophe:openGlobal',
+                deactivate: 'apostrophe:closeGlobal'
               }
             }
           );

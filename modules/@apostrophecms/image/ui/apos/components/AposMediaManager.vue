@@ -13,20 +13,20 @@
   >
     <template v-if="relationshipField" #secondaryControls>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template v-else #secondaryControls>
       <AposButton
-        type="default" label="Exit"
+        type="default" label="apostrophe:exit"
         @click="confirmAndCancel"
       />
     </template>
     <template v-if="relationshipField" #primaryControls>
       <AposButton
         type="primary"
-        :label="`Select ${moduleLabels.pluralLabel || ''}`"
+        :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
@@ -34,7 +34,7 @@
     <template #leftRail>
       <AposModalRail>
         <AposTagList
-          title="Filter by Tag"
+          title="apostrophe:filterByTag"
           :tags="tagList"
           @update="filter('_tags', $event)"
         />
@@ -135,17 +135,28 @@ export default {
       uploading: false,
       lastSelected: null,
       emptyDisplay: {
-        title: 'No Media Found',
-        message: 'Uploaded media will appear here',
+        title: 'apostrophe:noMediaFound',
+        message: 'apostrophe:uploadedMediaPlaceholder',
         emoji: '🖼'
       },
-      cancelDescription: 'Do you want to discard changes to the active image?'
+      cancelDescription: 'apostrophe:discardImageChangesPrompt'
     };
   },
   computed: {
     modalTitle () {
-      const verb = this.relationshipField ? 'Choose' : 'Manage';
-      return `${verb} ${this.moduleLabels.pluralLabel}`;
+      let result;
+      if (this.relationshipField) {
+        result = {
+          key: 'apostrophe:chooseDocType',
+          type: this.$t(this.moduleLabels.pluralLabel)
+        };
+      } else {
+        result = {
+          key: 'apostrophe:manageDocType',
+          type: this.$t(this.moduleLabels.pluralLabel)
+        };
+      }
+      return result;
     },
     moduleOptions() {
       return window.apos.modules[this.moduleName];
@@ -182,6 +193,19 @@ export default {
     headers() {
       // Satisfy mixin requirement not actually applicable here
       return [];
+    },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return {
+          key: 'apostrophe:selectOneLabel',
+          typeLabel: this.$t(this.moduleLabels.label)
+        };
+      } else {
+        return {
+          key: 'apostrophe:selectManyLabel',
+          typeLabel: this.$t(this.moduleLabels.pluralLabel)
+        };
+      }
     }
   },
   watch: {

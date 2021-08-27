@@ -66,6 +66,37 @@ module.exports = {
               available: true
             };
           }
+        },
+        // Fast bulk query for doc `ids` that the user is permitted to edit.
+        //
+        // IDs should be sent as an array in the `ids` property of the POST
+        // request.
+        //
+        // The response object contains an `editable` array made up of
+        // the ids of those documents in the original set that the user
+        // is actually permitted to edit. Those the user cannot edit
+        // are not included. The original order is preserved.
+        //
+        // This route is a POST route because large numbers of ids
+        // might not be accepted as a query string.
+        async editable(req) {
+          if (!req.user) {
+            throw self.apos.error('notfound');
+          }
+          const ids = self.apos.launder.ids(req.body.ids);
+          if (!ids.length) {
+            return {
+              editable: []
+            };
+          }
+          const found = await self.apos.doc.find(req, {
+            _id: {
+              $in: ids
+            }
+          }).project({ _id: 1 }).permission('edit').toArray();
+          return {
+            editable: self.apos.util.orderById(ids, found).map(doc => doc._id)
+          };
         }
       }
     };
@@ -240,6 +271,13 @@ module.exports = {
             }
           }
         }
+      },
+      // Happens within the migration process, but specifically after
+      // parked pages exist so they can be replicated
+      '@apostrophecms/page:afterParkAll': {
+        async replicate() {
+          return self.replicate();
+        }
       }
     };
   },
@@ -302,7 +340,7 @@ module.exports = {
           // We are experiencing what may be a mongodb bug in which these indexes
           // have different weights than expected and the createIndex call fails.
           // If this happens drop and recreate the text index
-          if (e.toString().match(/with different options/)) {
+          if (e.toString().match(/different options/)) {
             self.apos.util.warn('Text index has unexpected weights or other misconfiguration, reindexing');
             await self.db.dropIndex('highSearchText_text_lowSearchText_text_title_text_searchBoost_text');
             return await attempt();
@@ -947,6 +985,79 @@ module.exports = {
         } else {
           return input;
         }
+      },
+      // Replicate all documents that should automatically be replicated
+      // across all locales: parked pages, and piece types with the
+      // replicate: true option. The latter currently must be singletons
+      // like the global doc or the palette doc, they cannot be types
+      // with more than one instance per locale
+      async replicate() {
+        const localeNames = Object.keys(self.apos.i18n.locales);
+        if (localeNames.length === 1) {
+          return;
+        }
+        const criteria = [];
+        for (const parked of self.apos.page.parked) {
+          criteria.push({
+            parkedId: parked.parkedId
+          });
+        }
+        const pieceModules = Object.values(self.apos.modules).filter(module => self.apos.instanceOf(module, '@apostrophecms/piece-type') && module.options.replicate);
+        for (const module of pieceModules) {
+          criteria.push({
+            type: module.name
+          });
+        }
+        for (const criterion of criteria) {
+          const existing = await self.apos.doc.db.find({
+            ...criterion,
+            aposLocale: {
+              // Only interested in valid draft locales
+              $in: Object.keys(self.apos.i18n.locales).map(locale => `${locale}:draft`)
+            }
+          }).project({
+            _id: 1,
+            aposLocale: 1
+          }).toArray();
+          for (const info of existing) {
+            info.aposLocale = info.aposLocale.replace(':draft', '');
+          }
+          if ((existing.length > 0) && (existing.length < localeNames.length)) {
+            const sourceInfo = self.apos.util.orderById(localeNames, existing, 'aposLocale')[0];
+            const req = self.apos.task.getReq({
+              locale: sourceInfo.aposLocale,
+              mode: 'draft'
+            });
+            const sourceDoc = await self.apos.doc.find(req, {
+              _id: sourceInfo._id
+            }).archived(null).toObject();
+            for (const locale of localeNames) {
+              if (!existing.find(doc => doc.aposLocale === locale)) {
+                const module = self.getManager(sourceDoc.type);
+                const localized = await module.localize(req, sourceDoc, locale);
+                await module.publish({
+                  ...req,
+                  locale
+                }, localized);
+              }
+            }
+          }
+        }
+        await self.emit('afterReplicate');
+      },
+      // Determine which locales exist for the given doc _id
+      async getLocales(req, _id) {
+        const criteria = {
+          aposDocId: _id.split(':')[0]
+        };
+        if (!self.apos.permission.can(req, 'view-draft')) {
+          criteria.aposMode = 'published';
+        }
+        const existing = await self.apos.doc.db.find(criteria).project({
+          _id: 1,
+          aposLocale: 1
+        }).toArray();
+        return existing;
       },
       ...require('./lib/legacy-migrations')(self)
     };

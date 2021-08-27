@@ -1,18 +1,18 @@
 <template>
   <AposModal
-    :modal="modal" modal-title="Manage Pages"
+    :modal="modal" modal-title="apostrophe:managePages"
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         v-if="relationshipField"
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton
         v-else
-        type="default" label="Exit"
+        type="default" label="apostrophe:exit"
         @click="confirmAndCancel"
       />
     </template>
@@ -26,7 +26,7 @@
       />
       <AposButton
         v-else type="primary"
-        label="New Page" @click="create()"
+        label="apostrophe:newPage" @click="create()"
       />
       <AposButton
         v-if="relationshipField"
@@ -108,23 +108,21 @@ export default {
       options: {
         columns: [
           {
-            columnHeader: 'Page Title',
+            columnHeader: 'apostrophe:pageTitle',
             property: 'title',
             cellValue: 'title'
           },
           {
             name: 'labels',
-            columnHeader: '',
             component: 'AposCellLabels'
           },
           {
-            columnHeader: 'Last Edited',
+            columnHeader: 'apostrophe:lastEdited',
             property: 'updatedAt',
             component: 'AposCellLastEdited',
             cellValue: 'updatedAt'
           },
           {
-            columnHeader: '',
             property: 'contextMenu',
             component: 'AposCellContextMenu'
           }
@@ -192,18 +190,18 @@ export default {
     },
     pageSetMenu() {
       return [ {
-        label: 'Live',
+        label: 'apostrophe:live',
         action: 'live',
         modifiers: this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
       }, {
-        label: 'Archive',
+        label: 'apostrophe:archive',
         action: 'archive',
         modifiers: !this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
       } ];
     },
     pageSetMenuButton() {
       const button = {
-        label: this.pageSetMenuSelectionIsLive ? 'Live' : 'Archive',
+        label: this.pageSetMenuSelectionIsLive ? 'apostrophe:live' : 'apostrophe:archive',
         icon: 'chevron-down-icon',
         modifiers: [ 'no-motion', 'outline', 'icon-right' ],
         class: 'apos-pages-manager__page-set-menu-button'
@@ -305,10 +303,11 @@ export default {
           draft: true
         });
       } catch (error) {
-        await apos.notify(error.body.message || 'An error occurred while updating the page tree.', {
+        await apos.notify(error.body.message || this.$t('apostrophe:treeError'), {
           type: 'danger',
           icon: 'alert-circle-icon',
-          dismiss: true
+          dismiss: true,
+          localize: false
         });
       }
 

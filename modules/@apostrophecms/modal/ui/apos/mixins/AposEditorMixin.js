@@ -182,7 +182,7 @@ export default {
           }
         }
       } else {
-        await self.apos.notify((e.body && e.body.message) || fallback, {
+        await apos.notify((e.body && e.body.message) || fallback, {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true

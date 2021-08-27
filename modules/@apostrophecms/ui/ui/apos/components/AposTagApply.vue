@@ -149,7 +149,7 @@ export default {
         name: 'tagSearch',
         label: 'Apply Tags',
         placeholder: 'Tags...',
-        help: 'Find an existing tag or add a new one',
+        help: 'apostrophe:findOrAddTag',
         icon: (!this.searchTags || !this.searchTags.length) ? 'pencil-icon' : 'magnify-icon',
         disableFocus: !this.open
       };

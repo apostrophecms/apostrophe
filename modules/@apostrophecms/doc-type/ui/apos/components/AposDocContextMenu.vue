@@ -8,8 +8,8 @@
     @open="$emit('menu-open')"
     @close="$emit('menu-close')"
     :button="{
-      tooltip: { content: 'More Options', placement: 'bottom' },
-      label: 'More Options',
+      tooltip: { content: 'apostrophe:moreOptions', placement: 'bottom' },
+      label: 'apostrophe:moreOptions',
       icon: 'dots-vertical-icon',
       iconOnly: true,
       type: 'subtle',
@@ -120,45 +120,51 @@ export default {
         ...((this.showEdit && this.context._edit) ? [
           {
             // When archived the edit action opens a read-only "editor"
-            label: this.context.archived ? 'View' : 'Edit',
+            label: this.context.archived ? 'apostrophe:view' : 'apostrophe:edit',
             action: 'edit'
           }
         ] : []),
         ...((this.showPreview && this.context._url) ? [
           {
-            label: 'Preview',
+            label: 'apostrophe:preview',
             action: 'preview'
           }
         ] : []),
         ...((this.showDismissSubmission && this.canDismissSubmission) ? [
           {
-            label: 'Dismiss Submission',
+            label: 'apostrophe:dismissSubmission',
             action: 'dismissSubmission'
           }
         ] : []),
         ...(this.showCopy && this.canCopy ? [
           {
-            label: 'Duplicate...',
+            label: 'apostrophe:duplicate',
             action: 'copy'
+          }
+        ] : []),
+        ...(this.canLocalize ? [
+          {
+            label: 'apostrophe:localize',
+            action: 'localize'
           }
         ] : []),
         ...((this.showDiscardDraft && this.canDiscardDraft) ? [
           {
-            label: this.context.lastPublishedAt ? 'Discard Draft' : 'Delete Draft',
+            label: this.context.lastPublishedAt ? 'apostrophe:discardDraft' : 'apostrophe:deleteDraft',
             action: 'discardDraft',
             modifiers: [ 'danger' ]
           }
         ] : []),
         ...(this.showArchive && this.canArchive ? [
           {
-            label: 'Archive',
+            label: 'apostrophe:archive',
             action: 'archive',
             modifiers: [ 'danger' ]
           }
         ] : []),
         ...(this.showRestore && this.canRestore ? [
           {
-            label: 'Restore',
+            label: 'apostrophe:restore',
             action: 'restore'
           }
         ] : [])
@@ -206,6 +212,9 @@ export default {
         this.context.lastPublishedAt &&
         this.isModifiedFromPublished
       );
+    },
+    canLocalize() {
+      return (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized && this.context._id;
     },
     canArchive() {
       return (
@@ -311,6 +320,23 @@ export default {
             ...this.current || doc,
             _id: doc._id
           }
+        }
+      });
+    },
+    async localize(doc) {
+      // If there are changes warn the user before discarding them before
+      // the localize operation
+      if (this.current) {
+        if (!await this.confirmAndCancel()) {
+          return;
+        } else {
+          this.$emit('close', doc);
+        }
+      }
+      apos.bus.$emit('admin-menu-click', {
+        itemName: '@apostrophecms/i18n:localize',
+        props: {
+          doc
         }
       });
     },

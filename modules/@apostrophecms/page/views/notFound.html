@@ -1,15 +1,15 @@
 {% extends "layout.html" %}
 
-{% block title %}404 - Page not found{% endblock %}
+{% block title %}{{ __t('apostrophe:notFoundPageTitle') }}{% endblock %}
 
 {% block main %}
   <section class="apos-not-found">
     <div class="apos-not-found__container">
       <div class="apos-not-found__content">
-        <p class="apos-not-found__error-code">{{ __("404") }}</p>
+        <p class="apos-not-found__error-code">{{ __t('apostrophe:notFoundPageStatusCode') }}</p>
         <h1 class="apos-not-found__message">
-          {{ __("We can't seem to find the page you're looking for.") }}
-          <a class="apos-not-found__home-link" href="/">Back to Home</a>
+          {{ __t('apostrophe:notFoundPageMessage') }}
+          <a class="apos-not-found__home-link" href="/">{{ __t('apostrophe:backToHome') }}</a>
         </h1>
       </div>
     </div>

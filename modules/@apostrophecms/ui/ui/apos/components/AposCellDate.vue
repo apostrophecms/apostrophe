@@ -10,6 +10,7 @@
 <script>
 
 import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
+import dayjs from 'dayjs';
 
 export default {
   name: 'AposCellDate',
@@ -22,24 +23,31 @@ export default {
   },
   methods: {
     formatDateColumn (value) {
-      const d = new Date(value);
-      if (Number.isNaN(d.getDate())) {
-        // We're not sure what this is, but it's not a date.
-        return value;
-      }
-      const month = d.getMonth() + 1;
-      const date = d.getDate();
-      const year = d.getFullYear();
-      let hour = d.getHours();
-      const period = hour > 11 ? 'pm' : 'am';
-      if (hour > 12) {
-        hour = hour - 12;
-      } else if (hour === 0) {
-        hour = 12;
-      }
-      const minute = d.getMinutes();
+      const format = this.$t('apostrophe:dayjsCellDateFormat');
+      // endsWith allows it to still match when the i18n show debug mode
+      // is in effect
+      if (format.endsWith('apostrophe')) {
+        const d = new Date(value);
+        if (Number.isNaN(d.getDate())) {
+          // We're not sure what this is, but it's not a date.
+          return value;
+        }
+        const month = d.getMonth() + 1;
+        const date = d.getDate();
+        const year = d.getFullYear();
+        let hour = d.getHours();
+        const period = hour > 11 ? 'pm' : 'am';
+        if (hour > 12) {
+          hour = hour - 12;
+        } else if (hour === 0) {
+          hour = 12;
+        }
+        const minute = d.getMinutes();
 
-      return `${toTwoChars(month)}/${toTwoChars(date)}/${toTwoChars(year)} at ${hour}:${minute} ${period}`;
+        return `${toTwoChars(month)}/${toTwoChars(date)}/${toTwoChars(year)} at ${hour}:${minute} ${period}`;
+      } else {
+        return dayjs(value).format(format);
+      }
 
       function toTwoChars(num) {
         num = parseInt(num);

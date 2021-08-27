@@ -1,17 +1,19 @@
 <template>
-  <AposContextMenu
-    :button="button"
-    menu-placement="bottom"
-  >
+  <AposContextMenu :button="button" menu-placement="bottom">
     <div class="apos-filters-menu">
       <div
-        v-for="set in filterSets" :key="set.key"
+        v-for="set in filterSets"
+        :key="set.key"
         class="apos-filters-menu__set"
       >
         <component
-          :is="map[set.field.type]" :field="set.field"
-          :value="set.value" :status="set.status"
-          :icon="set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''"
+          :is="map[set.field.type]"
+          :field="set.field"
+          :value="set.value"
+          :status="set.status"
+          :icon="
+            set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''
+          "
           @input="input($event, set.name)"
         />
       </div>
@@ -20,7 +22,6 @@
 </template>
 
 <script>
-
 export default {
   props: {
     filters: {
@@ -30,14 +31,14 @@ export default {
     choices: {
       type: Object,
       required: false,
-      default () {
+      default() {
         return {};
       }
     },
     values: {
       type: Object,
       required: false,
-      default () {
+      default() {
         return {};
       }
     },
@@ -45,7 +46,7 @@ export default {
       type: Object,
       default() {
         return {
-          label: 'Filter',
+          label: 'apostrophe:filter',
           icon: 'chevron-down-icon',
           modifiers: [ 'icon-right' ],
           type: 'outline'
@@ -75,7 +76,10 @@ export default {
             name: filter.name,
             type: filter.inputType || 'select',
             label: filter.label || filter.name,
-            choices: this.addNullChoice(filter, this.choices[filter.name] || filter.choices)
+            choices: this.addNullChoice(
+              filter,
+              this.choices[filter.name] || filter.choices
+            )
           },
           value: {
             data: this.values[filter.name]
@@ -123,34 +127,33 @@ export default {
     }
   }
 };
-
 </script>
 
 <style lang="scss" scoped>
-  .apos-filters-menu {
-    min-width: 140px;
+.apos-filters-menu {
+  min-width: 140px;
 
-    ::v-deep .apos-input--select {
-      padding-top: 10px;
-      padding-bottom: 10px;
-      background-color: var(--a-base-10);
-      font-style: italic;
-    }
-  }
-
-  .apos-filters-menu ::v-deep .apos-field__label {
-    display: block;
-    width: 100%;
+  ::v-deep .apos-input--select {
+    padding-top: 10px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--a-base-9);
-    color: var(--a-base-3);
-    margin-bottom: 10px;
+    background-color: var(--a-base-10);
+    font-style: italic;
   }
+}
 
-  .apos-filters-menu__set {
-    margin-bottom: 30px;
-    &:last-child {
-      margin-bottom: 0;
-    }
+.apos-filters-menu ::v-deep .apos-field__label {
+  display: block;
+  width: 100%;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--a-base-9);
+  color: var(--a-base-3);
+  margin-bottom: 10px;
+}
+
+.apos-filters-menu__set {
+  margin-bottom: 30px;
+  &:last-child {
+    margin-bottom: 0;
   }
+}
 </style>

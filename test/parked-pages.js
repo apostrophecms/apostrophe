@@ -46,9 +46,7 @@ describe('Parked Pages', function() {
             ]
           }
         },
-        'default-page': {
-          extend: '@apostrophecms/page-type'
-        }
+        'default-page': {}
       }
     });
     const req = apos2.task.getAnonReq();

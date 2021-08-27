@@ -65,6 +65,7 @@ module.exports = {
         usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
         async task(argv) {
+          const req = self.apos.task.getReq();
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
@@ -170,7 +171,9 @@ module.exports = {
           }
 
           async function build(name, options) {
-            self.apos.util.log(`🧑‍💻 Building the ${options.label}...`);
+            self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
+              label: req.t(options.label)
+            }));
             const modulesDir = `${buildDir}/${name}/modules`;
             const source = options.source || name;
             await moduleOverrides(modulesDir, source);
@@ -271,7 +274,9 @@ module.exports = {
                 );
               }
             }
-            self.apos.util.log(`👍 ${options.label} is complete!`);
+            self.apos.util.log(req.t('apostrophe:assetTypeBuildComplete', {
+              label: req.t(options.label)
+            }));
           }
 
           function getIcons() {
@@ -582,7 +587,7 @@ module.exports = {
             scenes: [ 'public', 'apos' ],
             webpack: true,
             outputs: [ 'css', 'js' ],
-            label: 'public-facing modern JavaScript and Sass',
+            label: 'apostrophe:modernBuild',
             // Load index.js and index.scss from each module
             index: true,
             // Load only in browsers that support ES6 modules
@@ -596,7 +601,7 @@ module.exports = {
             scenes: [ 'public', 'apos' ],
             // The CSS from the src build is identical, do not duplicate it
             outputs: [ 'js' ],
-            label: 'public-facing modern JavaScript and Sass (IE11 build)',
+            label: 'apostrophe:ie11Build',
             // Load index.js and index.scss from each module
             index: true,
             // The polyfills babel will be expecting
@@ -611,7 +616,7 @@ module.exports = {
           public: {
             scenes: [ 'public', 'apos' ],
             outputs: [ 'css', 'js' ],
-            label: 'raw CSS and JS',
+            label: 'apostrophe:rawCssAndJs',
             // Just concatenates
             webpack: false
           },
@@ -619,7 +624,7 @@ module.exports = {
             scenes: [ 'apos' ],
             outputs: [ 'js' ],
             webpack: true,
-            label: 'Apostrophe admin UI',
+            label: 'apostrophe:apostropheAdminUi',
             // Only rebuilt on npm updates unless APOS_DEV is set in the environment
             // to indicate that the dev writes project level or npm linked admin UI
             // code of their own which might be newer than package-lock.json

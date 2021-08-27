@@ -7,13 +7,13 @@
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="Save"
+        type="primary" label="apostrophe:save"
         :disabled="!valid"
         @click="submit"
       />
@@ -35,7 +35,7 @@
             </div>
             <AposButton
               class="apos-modal-array-items__add"
-              label="Add Item"
+              label="apostrophe:addItem"
               :icon-only="true"
               icon="plus-icon"
               :modifiers="[ 'tiny', 'round' ]"
@@ -128,7 +128,7 @@ export default {
       triggerValidation: false,
       minError: false,
       maxError: false,
-      cancelDescription: 'Do you want to discard changes to this list?'
+      cancelDescription: 'apostrophe:arrayCancelDescription'
     };
   },
   computed: {
@@ -317,7 +317,7 @@ export default {
         (validateLength && (this.minError || this.maxError)) ||
         (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
       ) {
-        await apos.notify('Resolve errors first.', {
+        await apos.notify('apostrophe:resolveErrorsFirst', {
           type: 'warning',
           icon: 'alert-circle-icon',
           dismiss: true

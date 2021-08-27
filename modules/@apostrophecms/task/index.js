@@ -14,6 +14,7 @@
 /* eslint-disable no-console */
 
 const _ = require('lodash');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
   options: { alias: 'task' },
@@ -189,13 +190,12 @@ module.exports = {
               role: options.role
             }
           }),
-          res: {
-            __: function (s) {
-              return s;
-            }
-          },
-          __: function (s) {
-            return s;
+          res: {},
+          t(key, options = {}) {
+            return self.apos.i18n.i18next.t(key, {
+              ...options,
+              lng: req.locale
+            });
           },
           data: {},
           protocol: 'http',
@@ -204,14 +204,28 @@ module.exports = {
           },
           query: {},
           url: '/',
-          locale: self.apos.modules['@apostrophecms/i18n'].defaultLocale,
+          locale: self.apos.argv.locale || self.apos.modules['@apostrophecms/i18n'].defaultLocale,
           mode: 'published',
           aposNeverLoad: {},
-          aposStack: []
+          aposStack: [],
+          clone(properties = {}) {
+            return {
+              ...req,
+              ...properties
+            };
+          },
+          __(key) {
+            self.apos.util.warnDevOnce('old-i18n-req-helper', stripIndent`
+              The req.__() and res.__() functions are deprecated and do not localize in A3.
+              Use req.t instead.
+            `);
+            return key;
+          }
         };
+        req.res.__ = req.__;
         const { role, ..._properties } = options || {};
         Object.assign(req, _properties);
-        self.apos.modules['@apostrophecms/express'].addAbsoluteUrlsToReq(req);
+        self.apos.i18n.setPrefixUrls(req);
         return req;
       },
 

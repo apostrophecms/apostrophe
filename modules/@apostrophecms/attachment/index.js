@@ -47,7 +47,7 @@ module.exports = {
     self.fileGroups = self.options.fileGroups || [
       {
         name: 'images',
-        label: 'Images',
+        label: 'apostrophe:images',
         extensions: [
           'gif',
           'jpg',
@@ -60,7 +60,7 @@ module.exports = {
       },
       {
         name: 'office',
-        label: 'Office',
+        label: 'apostrophe:office',
         extensions: [
           'txt',
           'rtf',
@@ -251,14 +251,14 @@ module.exports = {
         }
         _.assign(info, _.omit(dbInfo, 'crop'));
 
-        // Check if the file type is acceptable of if there are
+        // Check if the file type is acceptable
         const correctedExtensions = self.checkExtension(field, info);
 
         if (correctedExtensions) {
-          let message = req.__('File type was not accepted.');
-          if (correctedExtensions.length) {
-            message += ` ${req.__('Allowed extensions:')} ${correctedExtensions.join(', ')}`;
-          }
+          const message = req.t('apostrophe:fileTypeNotAccepted', {
+            // i18next has no built-in support for interpolating an array argument
+            extensions: correctedExtensions.join(req.t('apostrophe:listJoiner'))
+          });
           throw self.apos.error('invalid', message);
         }
 
@@ -379,10 +379,10 @@ module.exports = {
         const group = self.getFileGroup(extension);
 
         if (!group) {
-          // Uncomment the next line for all possibly acceptable file types.
-          // const accepted = _.union(_.map(self.fileGroups, 'extensions'));
-
-          throw self.apos.error('invalid', req.__('File type was not accepted'));
+          const accepted = _.union(_.map(self.fileGroups, 'extensions')).flat();
+          throw self.apos.error('invalid', req.t('apostrophe:fileTypeNotAccepted', {
+            extensions: accepted.join(req.t('apostrophe:listJoiner'))
+          }));
         }
         const info = {
           _id: self.apos.util.generateId(),
@@ -1019,7 +1019,7 @@ module.exports = {
           res.statusCode = 403;
           return res.send({
             type: 'forbidden',
-            message: req.__('You do not have permission to upload a file')
+            message: req.t('apostrophe:uploadForbidden')
           });
         }
         next();

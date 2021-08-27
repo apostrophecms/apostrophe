@@ -29,7 +29,7 @@
     </template>
     <template #footer>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton
@@ -103,14 +103,20 @@ export default {
       if (this.moduleOptions.editLabel) {
         return this.moduleOptions.editLabel;
       } else {
-        return `Edit ${this.typeLabel}`;
+        return {
+          key: 'apostrophe:editType',
+          type: this.$t(this.typeLabel)
+        };
       }
     },
     saveLabel() {
       if (this.moduleOptions.saveLabel) {
         return this.moduleOptions.saveLabel;
       } else {
-        return `Save ${this.typeLabel}`;
+        return {
+          key: 'apostrophe:saveType',
+          type: this.$t(this.typeLabel)
+        };
       }
     },
     schema() {

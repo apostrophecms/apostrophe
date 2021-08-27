@@ -22,7 +22,7 @@
         <button
           v-if="row._children && row._children.length > 0"
           class="apos-tree__row__toggle" data-apos-tree-toggle
-          aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
+          :aria-label="$t('apostrophe:toggleSection')" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
         >
           <AposIndicator
@@ -54,13 +54,13 @@
             v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
-            tooltip="This page is parked and cannot be moved"
+            tooltip="apostrophe:pageIsParked"
           />
           <AposIndicator
             v-if="index === 0 && row.type === '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
-            tooltip="You cannot move the Archive"
+            tooltip="apostrophe:cannotMoveArchive"
           />
           <AposCheckbox
             v-if="options.bulkSelect && index === 0"
@@ -69,7 +69,10 @@
             :field="{
               name: row._id,
               hideLabel: true,
-              label: `Toggle selection of ${row.title}`,
+              label: {
+                key: 'apostrophe:toggleSelectionOf',
+                title: row.title
+              },
               disableFocus: true
             }"
             :choice="{ value: row._id }"

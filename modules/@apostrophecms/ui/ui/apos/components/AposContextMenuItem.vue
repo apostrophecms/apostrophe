@@ -6,7 +6,7 @@
       @click="click"
       :tabindex="tabindex"
     >
-      {{ label }}
+      {{ $t(label) }}
     </button>
   </li>
 </template>
@@ -38,7 +38,10 @@ export default {
     label() {
       let label = this.menuItem.label;
       if (this.menuItem.modifiers && this.menuItem.modifiers.includes('selected')) {
-        label = `✓ ${this.menuItem.label}`;
+        label = {
+          key: 'apostrophe:selectedMenuItem',
+          label: this.$t(this.menuItem.label)
+        };
       }
       return label;
     }

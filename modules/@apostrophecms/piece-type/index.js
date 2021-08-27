@@ -7,7 +7,14 @@ module.exports = {
     perPage: 10,
     quickCreate: true,
     previewDraft: true,
-    showCreate: true
+    showCreate: true,
+    // By default a piece type may be optionally
+    // optionally selected by the user as a related document
+    // when localizing a document that references it
+    // (null means "no opinion"). If set to `true` in your
+    // subclass it is selected by default, if set to `false`
+    // it is not offered at all
+    relatedDocument: null
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -19,7 +26,7 @@ module.exports = {
     add: {
       slug: {
         type: 'slug',
-        label: 'Slug',
+        label: 'apostrophe:slug',
         following: [ 'title', 'archived' ],
         required: true
       }
@@ -29,7 +36,7 @@ module.exports = {
     return {
       add: {
         title: {
-          label: 'Title',
+          label: 'apostrophe:title',
           name: 'title',
           component: 'AposCellButton'
         },
@@ -40,7 +47,7 @@ module.exports = {
         },
         updatedAt: {
           name: 'updatedAt',
-          label: 'Last Edited',
+          label: 'apostrophe:lastEdited',
           component: 'AposCellLastEdited'
         }
       }
@@ -49,20 +56,20 @@ module.exports = {
   filters: {
     add: {
       visibility: {
-        label: 'Visibility',
+        label: 'apostrophe:visibility',
         inputType: 'radio',
         choices: [
           {
             value: 'public',
-            label: 'Public'
+            label: 'apostrophe:public'
           },
           {
             value: 'loginRequired',
-            label: 'Login Required'
+            label: 'apostrophe:loginRequired'
           },
           {
             value: null,
-            label: 'Any'
+            label: 'apostrophe:any'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
@@ -70,16 +77,16 @@ module.exports = {
         def: true
       },
       archived: {
-        label: 'Archive',
+        label: 'apostrophe:archive',
         inputType: 'radio',
         choices: [
           {
             value: false,
-            label: 'Live'
+            label: 'apostrophe:live'
           },
           {
             value: true,
-            label: 'Archive'
+            label: 'apostrophe:archive'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
@@ -92,35 +99,35 @@ module.exports = {
   batchOperations: {
     add: {
       archive: {
-        label: 'Archive',
+        label: 'apostrophe:archive',
         inputType: 'radio',
         unlessFilter: {
           archived: true
         }
       },
-      rescue: {
-        label: 'Rescue',
+      restore: {
+        label: 'apostrophe:restore',
         unlessFilter: {
           archived: false
         }
       },
       visibility: {
-        label: 'Visibility',
+        label: 'apostrophe:visibility',
         requiredField: 'visibility',
         fields: {
           add: {
             visibility: {
               type: 'select',
-              label: 'Who can view this?',
+              label: 'apostrophe:visibilityLabel',
               def: 'public',
               choices: [
                 {
                   value: 'public',
-                  label: 'Public'
+                  label: 'apostrophe:public'
                 },
                 {
                   value: 'loginRequired',
-                  label: 'Login Required'
+                  label: 'apostrophe:loginRequired'
                 }
               ]
             }
@@ -225,6 +232,16 @@ module.exports = {
   }),
   apiRoutes(self) {
     return {
+      get: {
+        // Returns an object with a `results` array containing all locale names
+        // for which the given document has been localized
+        ':_id/locales': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          return {
+            results: await self.apos.doc.getLocales(req, _id)
+          };
+        }
+      },
       post: {
         ':_id/publish': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -242,6 +259,30 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.publish(req, draft);
+        },
+        ':_id/localize': async (req) => {
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          const toLocale = self.apos.i18n.sanitizeLocaleName(req.body.toLocale);
+          if ((!toLocale) || (toLocale === req.locale)) {
+            throw self.apos.error('invalid');
+          }
+          const update = self.apos.launder.boolean(req.body.update);
+          return self.localize(req, draft, toLocale, {
+            update
+          });
         },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
@@ -333,6 +374,16 @@ module.exports = {
           }
           return self.revertPublishedToPrevious(req, published);
         }
+      }
+    };
+  },
+  routes(self) {
+    return {
+      get: {
+        // Redirects to the URL of the document in the specified alternate
+        // locale. Issues a 404 if the document not found, a 400 if the
+        // document has no URL
+        ':_id/locale/:toLocale': self.apos.i18n.toLocaleRouteFactory(self)
       }
     };
   },
@@ -435,7 +486,7 @@ module.exports = {
               filter.def = null;
               filter.choices.push({
                 value: null,
-                label: 'None'
+                label: 'apostrophe:none'
               });
             }
           } else {

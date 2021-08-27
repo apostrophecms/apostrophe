@@ -228,7 +228,7 @@ module.exports = {
         if (!module.options.singleton) {
           permissions.push({
             name: 'create',
-            label: 'Create',
+            label: 'apostrophe:create',
             value: self.can(req, 'edit', module.name)
           });
         }
@@ -239,7 +239,7 @@ module.exports = {
         });
         permissions.push({
           name: 'publish',
-          label: 'Publish',
+          label: 'apostrophe:publish',
           value: self.can(req, 'publish', module.name)
         });
         permissionSet.permissions = permissions;
@@ -259,7 +259,7 @@ module.exports = {
           newPermissionSets.push({
             ...typicalPieceType,
             name: '@apostrophecms/piece-type',
-            label: 'Piece Content',
+            label: 'apostrophe:pieceContent',
             includes: permissionSets.filter(permissionSet => self.matchTypicalPieceType(permissionSet) && !newPermissionSets.includes(permissionSet)).map(permissionSet => permissionSet.label)
           });
         }

@@ -11,13 +11,13 @@
       <select
         :disabled="totalPages <= 1"
         class="apos-input apos-input--select"
-        v-model="selectedPage" aria-label="Select page"
+        v-model="selectedPage" :aria-label="$t('apostrophe:selectPage')"
       >
         <option
           v-for="num in totalPages" :key="num"
           :value="num"
         >
-          Page {{ num }}
+          {{ $t('apostrophe:pageNumber', { number: num }) }}
         </option>
       </select>
       <menu-swap-icon :size="18" class="apos-input-icon" />
@@ -53,12 +53,16 @@ export default {
   emits: [ 'change', 'click' ],
   computed: {
     prevButtonLabel () {
-      return this.currentPage > 1 ? `Go to page ${this.currentPage - 1}`
-        : 'Previous page';
+      return {
+        key: this.currentPage > 1 ? 'apostrophe:goToPage' : 'apostrophe:previousPage',
+        page: this.currentPage - 1
+      };
     },
     nextButtonLabel () {
-      return this.currentPage < this.totalPages
-        ? `Go to page ${this.currentPage + 1}` : 'Next page';
+      return {
+        key: this.currentPage < this.totalPages ? 'apostrophe:goToPage' : 'apostrophe:nextPage',
+        page: this.currentPage + 1
+      };
     },
     selectedPage: {
       get() {

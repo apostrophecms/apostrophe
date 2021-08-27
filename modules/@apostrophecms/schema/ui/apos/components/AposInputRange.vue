@@ -6,7 +6,7 @@
   >
     <template #body>
       <div class="apos-input-wrapper">
-        <div class="apos-range" v-tooltip="tooltip">
+        <div class="apos-range" v-apos-tooltip="tooltip">
           <input
             type="range"
             :min="field.min"
@@ -39,7 +39,7 @@
         >
           {{ valueLabel }}
           <AposButton
-            type="quiet" label="Clear"
+            type="quiet" label="apostrophe:clear"
             class="apos-range__clear"
             :modifiers="['no-motion']"
             @click="unset"

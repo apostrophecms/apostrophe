@@ -9,7 +9,7 @@
         <textarea
           :class="classes"
           v-if="field.textarea && field.type === 'string'" rows="5"
-          v-model="next" :placeholder="field.placeholder"
+          v-model="next" :placeholder="$t(field.placeholder)"
           @keydown.enter="enterEmit"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
@@ -17,7 +17,7 @@
         <input
           v-else :class="classes"
           v-model="next" :type="type"
-          :placeholder="field.placeholder"
+          :placeholder="$t(field.placeholder)"
           @keydown.enter="enterEmit"
           :disabled="field.readOnly || field.disabled"
           :required="field.required"

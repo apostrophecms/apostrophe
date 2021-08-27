@@ -8,7 +8,7 @@
       type="checkbox" class="apos-sr-only apos-input--choice apos-input--checkbox"
       :value="choice.value" :name="field.name"
       :id="id" :aria-label="choice.label || field.label"
-      :tabindex="tabindex" :disabled="field.readOnly"
+      :tabindex="tabindex" :disabled="field.readOnly || choice.readOnly"
       v-model="checkProxy"
       @change="updateThis"
     >
@@ -24,7 +24,7 @@
       :class="{'apos-sr-only': field.hideLabel }" v-if="choice.label"
       class="apos-choice-label-text"
     >
-      {{ choice.label }}
+      {{ $t(choice.label) }}
     </span>
   </label>
 </template>

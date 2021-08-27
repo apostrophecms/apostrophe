@@ -10,7 +10,7 @@
           type="password"
           class="apos-input apos-input--password"
           v-model="next"
-          :placeholder="field.placeholder"
+          :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"
           :required="field.required"
           :id="uid"

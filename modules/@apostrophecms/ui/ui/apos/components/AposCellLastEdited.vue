@@ -9,6 +9,7 @@
 
 <script>
 import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
+import dayjs from 'dayjs';
 
 export default {
   name: 'AposCellLastEdited',
@@ -21,7 +22,14 @@ export default {
   },
   methods: {
     getRelativeTime (value) {
-      // cribbed from https://gist.github.com/pomber/6195066a9258d1fb93bb59c206345b38
+      const format = this.$t('apostrophe:dayjsRelativeTimeFormat');
+      // endsWith allows it to still match when the i18n show debug mode
+      // is in effect
+      if (!format.endsWith('apostrophe')) {
+        return dayjs(value).format(format);
+      }
+      // Custom format for US
+      // Cribbed from https://gist.github.com/pomber/6195066a9258d1fb93bb59c206345b38
       const d = new Date(value);
       if (Number.isNaN(d.getDate())) {
         // We're not sure what this is, but it's not a date.

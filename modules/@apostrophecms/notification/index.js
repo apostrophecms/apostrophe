@@ -98,7 +98,7 @@ module.exports = {
       ], 'info');
       const icon = self.apos.launder.string(req.body.icon);
       const message = self.apos.launder.string(req.body.message);
-      const strings = self.apos.launder.strings(req.body.strings);
+      const interpolate = launderInterpolate(req.body.interpolate);
       const dismiss = self.apos.launder.integer(req.body.dismiss);
       let buttons = req.body.buttons;
       if (!Array.isArray(buttons)) {
@@ -116,12 +116,29 @@ module.exports = {
           type: button.type
         }));
       }
-      return self.trigger(req, message, ...strings, {
+      return self.trigger(req, message, {
+        interpolate,
         dismiss,
         icon,
         type,
         buttons
       });
+
+      function launderInterpolate(input) {
+        if ((input == null) || ((typeof input) !== 'object')) {
+          return {};
+        }
+        const interpolate = {};
+        for (const [ key, val ] of Object.entries(input)) {
+          if (key === 'count') {
+            // Has a special status in i18next
+            interpolate[key] = self.apos.launder.integer(val);
+          } else {
+            interpolate[key] = self.apos.launder.string(val);
+          }
+        }
+        return interpolate;
+      }
     },
     put(req, _id) {
       throw self.apos.error('unimplemented');
@@ -150,12 +167,14 @@ module.exports = {
           action: self.action
         };
       },
-      // Call with `req`, then a message, followed by any interpolated strings
-      // which must correspond to %s placeholders in `message` (variable number
-      // of arguments), followed by an `options` object if desired.
+      // Call with `req`, then a message key as found in the localization files,
+      // followed by an `options` object if desired.
       //
       // If you do not have a `req` it is acceptable to pass a user `_id` string
       // in place of `req`. Someone must be the recipient.
+      //
+      // `message` should be a key that exists in a localization file. If it does not
+      // it will be displayed directly as a fallback.
       //
       // `options.type` styles the notification and may be set to `error`,
       // `warning` or `success`. If not set, a "plain" default style is used.
@@ -163,9 +182,6 @@ module.exports = {
       // If `options.dismiss` is set to `true`, the message will auto-dismiss after 5 seconds.
       // If it is set to a number of seconds, it will dismiss after that number of seconds.
       // Otherwise it will not dismiss unless clicked.
-      //
-      // The message is internationalized, which is why the use of
-      // %s placeholders for any inserted titles, etc. is important.
       //
       // If `options.buttons` is present, it must be an array of objects
       // with `type` and `label` properties. If `type` is `'event'` then the object must have
@@ -175,6 +191,10 @@ module.exports = {
       //
       // Throws an error if there is no `req.user`.
       //
+      // `interpolate` may contain an object with properties to be
+      // interpolated into the message via i18next. These can also
+      // be passed via `options.interpolate`.
+      //
       // This method is aliased as `apos.notify` for convenience.
       //
       // The method is async, and you may `await` to be certain the
@@ -182,7 +202,7 @@ module.exports = {
       // It is a good idea when triggering a notification just before exiting
       // the application, as in a command line task.
 
-      async trigger(req, message, options) {
+      async trigger(req, message, options = {}, interpolate = {}) {
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
           req = { user: { _id: req } };
@@ -193,38 +213,15 @@ module.exports = {
         if (!message) {
           throw self.apos.error('required');
         }
-        const strings = [];
-        let i = 2;
-        let index = 0;
-        while (true) {
-          index = message.indexOf('%s', index);
-          if (index === -1) {
-            break;
-          }
-          // Don't match the same one over and over
-          index += 2;
-          if (i >= arguments.length || typeof arguments[i] === 'object') {
-            throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
-          }
-          strings.push(arguments[i++]);
-        }
-        // i18n and apply the strings
-        message = req.__(message, ...strings);
-        if (i === arguments.length - 1 && typeof arguments[i] === 'object') {
-          options = arguments[i++];
-        } else {
-          options = {};
-        }
-
-        if (i !== arguments.length) {
-          throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
-        }
 
         const notification = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),
           userId: req.user._id,
-          message
+          message,
+          interpolate: interpolate || options.interpolate || {},
+          // Defaults to true, otherwise launder as boolean
+          localize: has(req.body, 'localize') ? self.apos.launder.boolean(req.body.localize) : true
         };
 
         if (options.dismiss === true) {
@@ -299,3 +296,7 @@ module.exports = {
     };
   }
 };
+
+function has(o, k) {
+  return Object.prototype.hasOwnProperty.call(o, k);
+}

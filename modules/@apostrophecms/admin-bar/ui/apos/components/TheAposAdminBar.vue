@@ -5,6 +5,7 @@
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <TheAposAdminBarMenu :items="items" />
+        <TheAposAdminBarLocale v-if="hasLocales()" />
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
       <TheAposContextBar @mounted="setSpacer" />
@@ -34,6 +35,9 @@ export default {
       window.apos.adminBar.height = this.$refs.adminBar.offsetHeight;
       this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
       apos.bus.$emit('admin-menu-height-changed');
+    },
+    hasLocales() {
+      return Object.keys(window.apos.i18n.locales).length > 1;
     }
   }
 };

@@ -30,6 +30,7 @@ const dayjs = require('dayjs');
 const qs = require('qs');
 const Promise = require('bluebird');
 const path = require('path');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
   options: { alias: 'template' },
@@ -280,8 +281,14 @@ module.exports = {
         const env = self.getEnv(req, module);
 
         args.apos = self.templateApos;
-        args.__ = req.res.__;
-
+        args.__t = req.t;
+        args.__ = key => {
+          self.apos.util.warnDevOnce('old-i18n-nunjucks-helper', stripIndent`
+            The __() Nunjucks helper is deprecated and does not localize in A3.
+            Use __t() instead.
+          `);
+          return key;
+        };
         if (type === 'file') {
           let finalName = s;
           if (!finalName.match(/\.\w+$/)) {
@@ -615,7 +622,8 @@ module.exports = {
 
         const aposBodyData = {
           modules: {},
-          prefix: self.apos.prefix,
+          prefix: req.prefix,
+          sitePrefix: self.apos.prefix,
           locale: req.locale,
           csrfCookieName: self.apos.csrfCookieName,
           tabId: self.apos.util.generateId(),
@@ -665,7 +673,7 @@ module.exports = {
 
         if (req.aposError) {
           // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
-          return error(req.aposError, 'template');
+          return error(req.aposError);
         }
 
         try {
@@ -673,17 +681,13 @@ module.exports = {
         } catch (e) {
           // The page template threw an exception. Log where it
           // occurred for easier debugging
-          return error(e, 'template');
+          return error(e);
         }
 
         return content;
 
-        function error(e, type) {
-          let now = Date.now();
-          now = dayjs(now).format('YYYY-MM-DDTHH:mm:ssZZ');
-          self.apos.util.error(':: ' + now + ': ' + type + ' error at ' + req.url);
-          self.apos.util.error('Current user: ' + (req.user ? req.user.username : 'none'));
-          self.apos.util.error(e);
+        function error(e) {
+          self.logError(req, e);
           req.statusCode = 500;
           return self.render(req, 'templateError');
         }
@@ -703,6 +707,15 @@ module.exports = {
             return url.replace('&aposRefresh=1', '');
           }
         }
+      },
+
+      // Log the given template error with timestamp and user information
+      logError(req, e) {
+        let now = Date.now();
+        now = dayjs(now).format('YYYY-MM-DDTHH:mm:ssZZ');
+        self.apos.util.error(`:: ${now}: template error at ${req.url}`);
+        self.apos.util.error(`Current user: ${req.user ? req.user.username : 'none'}`);
+        self.apos.util.error(e);
       },
 
       // Add a body class or classes to be emitted when the page is rendered. This information

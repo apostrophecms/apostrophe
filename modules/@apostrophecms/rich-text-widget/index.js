@@ -7,7 +7,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     icon: 'format-text-icon',
-    label: 'Rich Text',
+    label: 'apostrophe:richText',
     contextual: true,
     defaultData: { content: '' },
     className: false,
@@ -26,19 +26,19 @@ module.exports = {
         // you may also use a `class` property with these
         {
           tag: 'p',
-          label: 'Paragraph (P)'
+          label: 'apostrophe:richTextParagraph'
         },
         {
           tag: 'h2',
-          label: 'Heading 2 (H2)'
+          label: 'apostrophe:richTextH2'
         },
         {
           tag: 'h3',
-          label: 'Heading 3 (H3)'
+          label: 'apostrophe:richTextH3'
         },
         {
           tag: 'h4',
-          label: 'Heading 4 (H4)'
+          label: 'apostrophe:richTextH4'
         }
       ]
     },
@@ -50,81 +50,81 @@ module.exports = {
     editorTools: {
       styles: {
         component: 'AposTiptapStyles',
-        label: 'Styles'
+        label: 'apostrophe:richTextStyles'
       },
       '|': { component: 'AposTiptapDivider' },
       bold: {
         component: 'AposTiptapButton',
-        label: 'Bold',
+        label: 'apostrophe:richTextBold',
         icon: 'format-bold-icon',
         command: 'toggleBold'
       },
       italic: {
         component: 'AposTiptapButton',
-        label: 'Italic',
+        label: 'apostrophe:richTextItalic',
         icon: 'format-italic-icon',
         command: 'toggleItalic'
       },
       underline: {
         component: 'AposTiptapButton',
-        label: 'Underline',
+        label: 'apostrophe:richTextUnderline',
         icon: 'format-underline-icon',
         command: 'toggleUnderline'
       },
       horizontalRule: {
         component: 'AposTiptapButton',
-        label: 'Horizontal Rule',
+        label: 'apostrophe:richTextHorizontalRule',
         icon: 'minus-icon',
         command: 'setHorizontalRule'
       },
       link: {
         component: 'AposTiptapLink',
-        label: 'Link',
+        label: 'apostrophe:richTextLink',
         icon: 'link-icon'
       },
       bulletList: {
         component: 'AposTiptapButton',
-        label: 'Bulleted List',
+        label: 'apostrophe:richTextBulletedList',
         icon: 'format-list-bulleted-icon',
         command: 'toggleBulletList'
       },
       orderedList: {
         component: 'AposTiptapButton',
-        label: 'Ordered List',
+        label: 'apostrophe:richTextOrderedList',
         icon: 'format-list-numbered-icon',
         command: 'toggleOrderedList'
       },
       strike: {
         component: 'AposTiptapButton',
-        label: 'Strike',
+        label: 'apostrophe:richTextStrikethrough',
         icon: 'format-strikethrough-variant-icon',
         command: 'toggleStrike'
       },
       blockquote: {
         component: 'AposTiptapButton',
-        label: 'Blockquote',
+        label: 'apostrophe:richTextBlockquote',
         icon: 'format-quote-close-icon',
         command: 'toggleBlockquote'
       },
       codeBlock: {
         component: 'AposTiptapButton',
-        label: 'Code Block',
+        label: 'apostrophe:richTextCodeBlock',
         icon: 'code-tags-icon',
         command: 'toggleCode'
       },
       undo: {
         component: 'AposTiptapButton',
-        label: 'Undo',
+        label: 'apostrophe:richTextUndo',
         icon: 'undo-icon'
       },
       redo: {
         component: 'AposTiptapButton',
-        label: 'Redo',
+        label: 'apostrophe:richTextRedo',
         icon: 'redo-icon'
       },
       alignLeft: {
         component: 'AposTiptapButton',
-        label: 'Align Left',
+        label: 'apostrophe:richTextAlignLeft',
         icon: 'format-align-left-icon',
         command: 'setTextAlign',
         commandParameters: 'left',
@@ -132,7 +132,7 @@ module.exports = {
       },
       alignCenter: {
         component: 'AposTiptapButton',
-        label: 'Align Center',
+        label: 'apostrophe:richTextAlignCenter',
         icon: 'format-align-center-icon',
         command: 'setTextAlign',
         commandParameters: 'center',
@@ -140,7 +140,7 @@ module.exports = {
       },
       alignRight: {
         component: 'AposTiptapButton',
-        label: 'Align Right',
+        label: 'apostrophe:richTextAlignRight',
         icon: 'format-align-right-icon',
         command: 'setTextAlign',
         commandParameters: 'right',
@@ -148,7 +148,7 @@ module.exports = {
       },
       alignJustify: {
         component: 'AposTiptapButton',
-        label: 'Align Justify',
+        label: 'apostrophe:richTextAlignJustify',
         icon: 'format-align-justify-icon',
         command: 'setTextAlign',
         commandParameters: 'justify',
@@ -156,7 +156,7 @@ module.exports = {
       },
       highlight: {
         component: 'AposTiptapButton',
-        label: 'Mark',
+        label: 'apostrophe:richTextHighlight',
         icon: 'format-color-highlight-icon',
         command: 'toggleHighlight'
       }

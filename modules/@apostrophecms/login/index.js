@@ -91,12 +91,17 @@ module.exports = {
     return {
       get: {
         // Login page
-        [self.login()]: async (req) => {
+        [self.login()]: async (req, res) => {
           if (req.user) {
-            return req.res.redirect('/');
+            return res.redirect('/');
           }
           req.scene = 'apos';
-          await self.sendPage(req, 'login', {});
+          try {
+            await self.sendPage(req, 'login', {});
+          } catch (e) {
+            self.apos.util.error(e);
+            return res.status(500).send('error');
+          }
         }
       }
     };
@@ -112,12 +117,12 @@ module.exports = {
           const password = self.apos.launder.string(req.body.password);
           const session = self.apos.launder.boolean(req.body.session);
           if (!(username && password)) {
-            throw self.apos.error('invalid', 'Both the username and the password are required.');
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
           }
           const user = await self.apos.login.verifyLogin(username, password);
           if (!user) {
             // For security reasons we may not tell the user which case applies
-            throw self.apos.error('invalid', 'Your credentials are incorrect, or there is no such user.');
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
           }
           if (session) {
             const passportLogin = (user) => {
@@ -140,7 +145,7 @@ module.exports = {
         },
         async logout(req) {
           if (!req.user) {
-            throw self.apos.error('forbidden', 'You were not logged in.');
+            throw self.apos.error('forbidden', req.t('apostrophe:logOutNotLoggedIn'));
           }
           if (req.token) {
             await self.bearerTokens.remove({
@@ -191,7 +196,7 @@ module.exports = {
                 site: site
               }, {
                 to: user.email,
-                subject: req.__('Your request to reset your password on ' + site)
+                subject: req.t('apostrophe:passwordResetRequest', { site })
               });
             } catch (err) {
               throw self.apos.error('email');

@@ -38,9 +38,7 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
             };
           }
         },
-        'default-page': {
-          extend: '@apostrophecms/page-type'
-        },
+        'default-page': {},
         '@apostrophecms/page': {
           options: {
             park: [

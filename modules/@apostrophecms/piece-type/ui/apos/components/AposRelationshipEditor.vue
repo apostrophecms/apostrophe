@@ -7,13 +7,13 @@
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Cancel"
+        type="default" label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="Save"
+        type="primary" label="apostrophe:save"
         :disabled="docFields.hasErrors"
         @click="submit"
       />
@@ -87,7 +87,10 @@ export default {
         type: 'overlay',
         showModal: true
       },
-      modalTitle: `Edit Relationship for ${this.title}`
+      modalTitle: {
+        key: 'apostrophe:editRelationshipFor',
+        title: this.title
+      }
     };
   },
   async mounted() {

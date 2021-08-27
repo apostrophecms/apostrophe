@@ -23,7 +23,7 @@ export default {
     return {
       menu: [
         {
-          label: 'Log out',
+          label: 'apostrophe:logOut',
           name: 'logOut',
           action: 'user-logout'
         }
@@ -33,7 +33,10 @@ export default {
   computed: {
     button() {
       return {
-        label: this.user.title || '',
+        label: {
+          key: this.user.title || '',
+          localize: false
+        },
         icon: 'chevron-down-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'

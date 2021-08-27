@@ -8,7 +8,8 @@ module.exports = {
     editRole: 'contributor',
     publishRole: 'editor',
     viewRole: false,
-    previewDraft: true
+    previewDraft: true,
+    relatedDocType: null
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -16,7 +17,7 @@ module.exports = {
       add: {
         title: {
           type: 'string',
-          label: 'Title',
+          label: 'apostrophe:title',
           required: true,
           // Generate a titleSort property which can be sorted
           // in a human-friendly way (case insensitive, ignores the
@@ -25,37 +26,37 @@ module.exports = {
         },
         slug: {
           type: 'slug',
-          label: 'Slug',
+          label: 'apostrophe:slug',
           following: [ 'title', 'archived' ],
           required: true
         },
         archived: {
           type: 'boolean',
-          label: 'Archived',
+          label: 'apostrophe:archived',
           contextual: true,
           def: false
         },
         visibility: {
           type: 'select',
-          label: 'Visibility',
-          help: 'Select whether this content is public or private',
+          label: 'apostrophe:visibility',
+          help: 'apostrophe:visibilityHelp',
           def: 'public',
           required: true,
           choices: [
             {
               value: 'public',
-              label: 'Public'
+              label: 'apostrophe:public'
             },
             {
               value: 'loginRequired',
-              label: 'Login Required'
+              label: 'apostrophe:loginRequired'
             }
           ]
         }
       },
       group: {
         basics: {
-          label: 'Basics',
+          label: 'apostrophe:basics',
           fields: [
             'title'
           ]
@@ -391,8 +392,8 @@ module.exports = {
         });
         if (self.options.slugPrefix) {
           if (self.options.slugPrefix === 'deduplicate-') {
-            // TODO: i18n
-            throw self.apos.error('invalid', 'The deduplicate- slug is reserved.');
+            const req = self.apos.task.getReq();
+            throw self.apos.error('invalid', req.t('apostrophe:deduplicateSlugReserved'));
           }
           const slug = self.schema.find(field => field.name === 'slug');
           if (slug) {
@@ -656,6 +657,9 @@ module.exports = {
             aposLocale: publishedLocale,
             lastPublishedAt
           };
+          // Might be omitted for editing purposes, but must exist
+          // in the database (global doc for instance)
+          published.slug = draft.slug;
           self.copyForPublication(req, draft, published);
           await self.emit('beforePublish', req, {
             draft,
@@ -729,6 +733,114 @@ module.exports = {
           firstTime
         });
         return draft;
+      },
+      // Localize (export) the given draft to another locale, creating the document in the
+      // other locale if necessary. By default, if the document already exists in the
+      // other locale, it is not ovewritten. Use the `update: true` option to change that.
+      // You can localize starting from either draft or published content. Either way what
+      // gets created or updated in the other locale is a draft.
+      async localize(req, draft, toLocale, options = { update: false }) {
+        if (!self.isLocalized()) {
+          throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
+        }
+        const toReq = req.clone({
+          locale: toLocale,
+          mode: 'draft'
+        });
+        const toId = draft._id.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
+        const actionModule = self.apos.page.isPage(draft) ? self.apos.page : self;
+        const existing = await actionModule.findForEditing(toReq, {
+          _id: toId
+        }).toObject();
+        // We only want to copy schema properties, leave non-schema
+        // properties of the source document alone
+        const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
+        // We need a slug even if removed from the schema for editing purposes
+        data.slug = draft.slug;
+        let result;
+        if (!existing) {
+          if (self.apos.page.isPage(draft)) {
+            if (!draft.level) {
+              // Replicating the home page for the first time
+              result = await self.apos.doc.insert(toReq, {
+                ...data,
+                aposDocId: draft.aposDocId,
+                aposLocale: `${toLocale}:draft`,
+                _id: toId,
+                path: draft.path,
+                level: draft.level,
+                rank: draft.rank,
+                parked: draft.parked,
+                parkedId: draft.parkedId
+              });
+            } else {
+              // A page that is not the home page, being replicated for the first time
+              const lastTargetId = draft.aposLastTargetId;
+              let lastPosition = draft.aposLastPosition;
+              let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
+              const localizedTarget = await actionModule.find(toReq, self.apos.page.getIdCriteria(localizedTargetId)).archived(null).areas(false).relationships(false).toObject();
+              if (!localizedTarget) {
+                if ((lastPosition === 'firstChild') || (lastPosition === 'lastChild')) {
+                  throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
+                    // Also provide as data for code that prefers to localize client side
+                    // when it is certain an error message is user friendly
+                    parentNotLocalized: true
+                  });
+                } else {
+                  const originalTarget = await actionModule.find(req, self.apos.page.getIdCriteria(lastTargetId)).archived(null).areas(false).relationships(false).toObject();
+                  if (!originalTarget) {
+                    // Almost impossible (race conditions like someone removing it while we're in the modal)
+                    throw self.apos.error('notfound');
+                  }
+                  const localizedTarget = await actionModule.find(toReq, {
+                    path: self.apos.page.getParentPath(originalTarget)
+                  }).archived(null).areas(false).relationships(false).toObject();
+                  if (!localizedTarget) {
+                    throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
+                      // Also provide as data for code that prefers to localize client side
+                      // when it is certain an error message is user friendly
+                      parentNotLocalized: true
+                    });
+                  }
+                  localizedTargetId = localizedTarget._id;
+                  lastPosition = 'lastChild';
+                }
+              }
+              result = await actionModule.insert(toReq,
+                localizedTargetId,
+                lastPosition,
+                {
+                  ...data,
+                  aposLocale: `${toLocale}:draft`,
+                  _id: toId,
+                  parked: draft.parked,
+                  parkedId: draft.parkedId
+                }
+              );
+            }
+          } else {
+            result = await actionModule.insert(toReq, {
+              ...data,
+              aposDocId: draft.aposDocId,
+              aposLocale: `${toLocale}:draft`,
+              _id: toId
+            });
+          }
+        } else {
+          if (!options.update) {
+            throw self.apos.error('conflict');
+          }
+          const update = {
+            ...existing,
+            ...data,
+            _id: toId,
+            aposDocId: draft.aposDocId,
+            aposLocale: `${toLocale}:draft`,
+            metaType: 'doc'
+          };
+          result = await actionModule.update(toReq, update);
+        }
+        return result;
       },
       // Reverts the given draft to the most recent publication.
       //
@@ -1010,6 +1122,7 @@ module.exports = {
           name,
           label,
           pluralLabel,
+          relatedDocument: self.options.relatedDocument,
           canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
         browserOptions.action = self.action;
@@ -1422,11 +1535,11 @@ module.exports = {
             return [
               {
                 value: '0',
-                label: 'No'
+                label: 'apostrophe:no'
               },
               {
                 value: '1',
-                label: 'Yes'
+                label: 'apostrophe:yes'
               }
             ];
           }
@@ -1654,8 +1767,7 @@ module.exports = {
           after(results) {
             for (const result of results) {
               if ((!result.archived) && result.slug && self.apos.page.isPage(result)) {
-                const url = self.apos.page.getBaseUrl(query.req);
-                result._url = url + self.apos.prefix + result.slug;
+                result._url = `${query.req.prefix}${result.slug}`;
               }
             }
           }
@@ -1812,20 +1924,20 @@ module.exports = {
         },
 
         locale: {
-          def: null,
-          launder(locale) {
-            return self.apos.launder.string(locale);
-          },
+          def: false,
           finalize() {
             if (!self.isLocalized()) {
               return;
             }
-            const locale = query.get('locale') || `${query.req.locale}:${query.req.mode}`;
-            if (locale) {
+            let queryLocale = query.get('locale');
+            if (queryLocale === false) {
+              queryLocale = `${query.req.locale}:${query.req.mode}`;
+            }
+            if (queryLocale) {
               query.and({
                 $or: [
                   {
-                    aposLocale: locale
+                    aposLocale: queryLocale
                   },
                   {
                     aposLocale: null
@@ -1960,12 +2072,12 @@ module.exports = {
             results = results.map(result => {
               if (result === true) {
                 return {
-                  label: 'Yes',
+                  label: 'apostrophe:yes',
                   value: true
                 };
               } else if (result === false) {
                 return {
-                  label: 'No',
+                  label: 'apostrophe:no',
                   value: false
                 };
               } else {

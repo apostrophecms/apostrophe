@@ -31,21 +31,21 @@
       <ul class="apos-media-editor__links">
         <li class="apos-media-editor__link" aria-hidden="true">
           <AposButton
-            type="quiet" label="Replace"
+            type="quiet" label="apostrophe:replace"
             @click="showReplace = true"
             :disabled="isArchived"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
-            type="quiet" label="View"
+            type="quiet" label="apostrophe:view"
             @click="viewMedia"
             :disabled="isArchived"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
-            type="quiet" label="Download"
+            type="quiet" label="apostrophe:download"
             :href="!isArchived ? activeMedia.attachment._urls.original : false"
             :disabled="isArchived"
             download
@@ -72,7 +72,7 @@
         <AposContextMenu
           v-if="!restoreOnly"
           :button="{
-            label: 'More operations',
+            label: 'apostrophe:moreOperations',
             iconOnly: true,
             icon: 'dots-vertical-icon',
             type: 'subtle',
@@ -85,7 +85,7 @@
         <AposButton
           @click="save" class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          :label="restoreOnly ? 'Restore' : 'Save'" type="primary"
+          :label="restoreOnly ? 'apostrophe:restore' : 'apostrophe:save'" type="primary"
         />
       </div>
     </AposModalLip>
@@ -149,12 +149,12 @@ export default {
     },
     moreMenu() {
       const menu = [ {
-        label: 'Discard Changes',
+        label: 'apostrophe:discardChanges',
         action: 'cancel'
       } ];
       if (this.activeMedia._id && !this.restoreOnly) {
         menu.push({
-          label: 'Archive Image',
+          label: 'apostrophe:archiveImage',
           action: 'archive',
           modifiers: [ 'danger' ]
         });
@@ -239,8 +239,8 @@ export default {
     },
     async archive() {
       if (!await apos.confirm({
-        heading: 'Are You Sure?',
-        description: 'This will move the image to the archive.'
+        heading: 'apostrophe:areYouSure',
+        description: 'apostrophe:willMoveImageToArchive'
       })) {
         return;
       }
@@ -267,7 +267,7 @@ export default {
 
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
-          await apos.notify('Resolve errors before saving.', {
+          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
             type: 'warning',
             icon: 'alert-circle-icon',
             dismiss: true

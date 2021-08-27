@@ -20,7 +20,7 @@
               :size="iconSize(header)"
               class="apos-table__header-icon"
             />
-            {{ header.label }}
+            {{ $t(header.label) }}
           </component>
         </th>
         <th class="apos-table__header" key="contextMenu">
@@ -28,7 +28,7 @@
             :is="getEl({})"
             class="apos-table__header-label is-hidden"
           >
-            More Operations
+            {{ $t('apostrophe:moreOperations') }}
           </component>
         </th>
       </tr>
@@ -53,7 +53,7 @@
                 (options.disableUnchecked && !checkProxy.includes(item._id)) ||
                 (options.disableUnpublished && !item.lastPublishedAt)
             }"
-            v-tooltip="options.disableUnpublished && !item.lastPublishedAt ? 'Publish this content before using it in a relationship' : null"
+            v-apos-tooltip="options.disableUnpublished && !item.lastPublishedAt ? 'apostrophe:publishBeforeUsingTooltip' : null"
             :choice="{ value: item._id }"
             v-model="checkProxy"
             @updated="emitUpdated(item._id)"

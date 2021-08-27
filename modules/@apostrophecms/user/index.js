@@ -38,8 +38,8 @@ module.exports = {
   options: {
     alias: 'user',
     name: '@apostrophecms/user',
-    label: 'User',
-    pluralLabel: 'Users',
+    label: 'apostrophe:user',
+    pluralLabel: 'apostrophe:users',
     quickCreate: false,
     searchable: false,
     slugPrefix: 'user-',
@@ -54,45 +54,45 @@ module.exports = {
       add: {
         title: {
           type: 'string',
-          label: 'Display Name',
+          label: 'apostrophe:displayName',
           required: true
         },
         disabled: {
           type: 'boolean',
-          label: 'Login Disabled',
+          label: 'apostrophe:loginDisabled',
           def: false
         },
         username: {
           type: 'string',
-          label: 'Username',
+          label: 'apostrophe:username',
           required: true,
           following: 'title'
         },
         email: {
           type: 'string',
-          label: 'Email'
+          label: 'apostrophe:email'
         },
         password: {
           type: 'password',
-          label: 'Password'
+          label: 'apostrophe:password'
         },
         role: {
           type: 'role',
           choices: [
             {
-              label: 'Guest',
+              label: 'apostrophe:guest',
               value: 'guest'
             },
             {
-              label: 'Contributor',
+              label: 'apostrophe:contributor',
               value: 'contributor'
             },
             {
-              label: 'Editor',
+              label: 'apostrophe:editor',
               value: 'editor'
             },
             {
-              label: 'Admin',
+              label: 'apostrophe:admin',
               value: 'admin'
             }
           ],
@@ -103,7 +103,7 @@ module.exports = {
       remove: [ 'visibility' ],
       group: {
         basics: {
-          label: 'Basics',
+          label: 'apostrophe:basics',
           fields: [
             'title'
           ]
@@ -118,7 +118,7 @@ module.exports = {
           ]
         },
         permissions: {
-          label: 'Permissions',
+          label: 'apostrophe:permissions',
           fields: [
             'disabled',
             'role'

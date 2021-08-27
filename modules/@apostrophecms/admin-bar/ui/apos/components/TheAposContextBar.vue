@@ -48,8 +48,9 @@ export default {
     // If the URL references a draft, go into draft mode but then clean up the URL
     const draftMode = query.aposMode || 'published';
     if (draftMode === 'draft') {
-      delete query.aposMode;
-      history.replaceState(null, '', apos.http.addQueryToUrl(location.href, query));
+      const newQuery = { ... query };
+      delete newQuery.aposMode;
+      history.replaceState(null, '', apos.http.addQueryToUrl(location.href, newQuery));
     }
     return {
       patchesSinceLoaded: [],
@@ -57,6 +58,7 @@ export default {
       patchesSinceSave: [],
       editMode: false,
       draftMode,
+      queryDraftMode: query.aposMode,
       original: null,
       saving: false,
       editing: false,
@@ -149,6 +151,8 @@ export default {
     window.apos.adminBar.tabId = tabId;
     window.apos.adminBar.editMode = false;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
+    // Explicit query parameter beats our state on the previous page
+    lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
     if (lastBaseContext.aposDocId === this.context.aposDocId) {
       if (lastBaseContext.draftMode !== this.draftMode) {
         await this.setContext({ mode: lastBaseContext.draftMode });
@@ -354,9 +358,9 @@ export default {
       navigate = false
     }) {
       mode = mode || this.draftMode;
-      locale = locale || apos.locale;
+      locale = locale || apos.i18n.locale;
       doc = doc || this.context;
-      if ((mode === this.draftMode) && (locale === apos.locale)) {
+      if ((mode === this.draftMode) && (locale === apos.i18n.locale)) {
         if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
           return;
         } else if (navigate && this.urlDiffers(doc._url)) {
@@ -378,8 +382,12 @@ export default {
         });
         if (navigate && (!modeDoc._url)) {
           await apos.alert({
-            heading: 'Page Does Not Exist Yet',
-            description: `The page that provides a listing for this type of piece is not yet available as ${mode} in the ${locale} locale.`
+            heading: 'apostrophe:pageDoesNotExistYet',
+            description: 'apostrophe:pageDoesNotExistYetDescription',
+            interpolate: {
+              mode,
+              locale
+            }
           });
           return;
         }
@@ -421,13 +429,13 @@ export default {
         if (e.status === 404) {
           // TODO don't get this far, check this in advance and disable it in the UI
           await apos.alert({
-            heading: 'Does Not Exist Yet',
-            description: `That document is not yet available as ${mode} in the ${locale} locale.`
+            heading: 'apostrophe:doesNotExistYet',
+            description: 'apostrophe:doesNotExistYetDescription'
           });
         } else {
           await apos.alert({
-            heading: 'An Error Occurred',
-            description: 'Unable to switch modes.'
+            heading: 'apostrophe:error',
+            description: 'apostrophe:unableToSwitchModes'
           });
         }
       }
@@ -545,7 +553,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('Restored previously published version.', {
+        apos.notify('apostrophe:restoredPrevious', {
           type: 'success',
           dismiss: true
         });
@@ -567,8 +575,9 @@ export default {
         }
       } catch (e) {
         await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while restoring the previously published version.'
+          heading: this.$t('apostrophe:error'),
+          description: e.message || this.$t('apostrophe:errorWhileRestoring'),
+          localize: false
         });
       }
     },
@@ -578,7 +587,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('No longer published.', {
+        apos.notify('apostrophe:noLongerPublished', {
           type: 'success',
           dismiss: true
         });
@@ -597,20 +606,21 @@ export default {
         }
       } catch (e) {
         await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while unpublishing the document.'
+          heading: this.$t('apostrophe:error'),
+          description: e.message || this.$t('apostrophe:errorWhileUnpublishing'),
+          localize: false
         });
       }
     },
     async undo() {
       this.undone.push(this.patchesSinceLoaded.pop());
-      await this.refreshAfterHistoryChange('The operation could not be undone.');
+      await this.refreshAfterHistoryChange('apostrophe:undoFailed');
     },
     async redo() {
       this.patchesSinceLoaded.push(this.undone.pop());
-      await this.refreshAfterHistoryChange('The operation could not be redone.');
+      await this.refreshAfterHistoryChange('apostrophe:redoFailed');
     },
-    async refreshAfterHistoryChange(errorMessage) {
+    async refreshAfterHistoryChange(errorMessageKey) {
       this.saving = true;
       try {
         const updated = await apos.http.patch(`${this.action}/${this.context._id}`, {
@@ -634,7 +644,7 @@ export default {
         }
       } catch (e) {
         console.error(e);
-        apos.notify(errorMessage, { type: 'error' });
+        apos.notify(errorMessageKey, { type: 'error' });
       } finally {
         this.saving = false;
       }

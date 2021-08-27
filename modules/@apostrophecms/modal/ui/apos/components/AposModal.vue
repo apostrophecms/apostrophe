@@ -21,35 +21,50 @@
           v-if="modal.showModal" :class="innerClasses"
           class="apos-modal__inner" data-apos-modal-inner
         >
-          <header class="apos-modal__header" v-if="!modal.disableHeader">
-            <div class="apos-modal__header__main">
-              <div v-if="hasSecondaryControls" class="apos-modal__controls--secondary">
-                <slot name="secondaryControls" />
+          <template v-if="modal.busy">
+            <div class="apos-modal__busy">
+              <p class="apos-modal__busy-text">
+                {{ modal.busyTitle }}
+              </p>
+              <AposSpinner :weight="'heavy'" class="apos-busy__spinner" />
+            </div>
+          </template>
+          <template v-else>
+            <header class="apos-modal__header" v-if="!modal.disableHeader">
+              <div class="apos-modal__header__main">
+                <div v-if="hasSecondaryControls" class="apos-modal__controls--secondary">
+                  <slot name="secondaryControls" />
+                </div>
+                <h2 :id="id" class="apos-modal__heading">
+                  <span v-if="modal.a11yTitle" class="apos-sr-only">
+                    {{ $t(modal.a11yTitle) }}
+                  </span>
+                  {{ $t(modalTitle) }}
+                </h2>
+                <div class="apos-modal__controls--header" v-if="hasBeenLocalized || hasPrimaryControls">
+                  <div class="apos-modal__locale" v-if="hasBeenLocalized">
+                    <span class="apos-modal__locale-label">{{ $t('apostrophe:locale')}}:</span> <span class="apos-modal__locale-name">{{ currentLocale }}</span>
+                  </div>
+                  <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
+                    <slot name="primaryControls" />
+                  </div>
+                </div>
               </div>
-              <h2 :id="id" class="apos-modal__heading">
-                <span v-if="modal.a11yTitle" class="apos-sr-only">
-                  {{ modal.a11yTitle }}
-                </span>
-                {{ modalTitle }}
-              </h2>
-              <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
-                <slot name="primaryControls" />
+              <div class="apos-modal__breadcrumbs" v-if="hasBreadcrumbs">
+                <slot class="apos-modal__breadcrumbs" name="breadcrumbs" />
               </div>
+            </header>
+            <div class="apos-modal__main" :class="gridModifier">
+              <slot v-if="hasLeftRail" name="leftRail" />
+              <slot name="main" />
+              <slot name="rightRail" />
             </div>
-            <div class="apos-modal__breadcrumbs" v-if="hasBreadcrumbs">
-              <slot class="apos-modal__breadcrumbs" name="breadcrumbs" />
-            </div>
-          </header>
-          <div class="apos-modal__main" :class="gridModifier">
-            <slot v-if="hasLeftRail" name="leftRail" />
-            <slot name="main" />
-            <slot name="rightRail" />
-          </div>
-          <footer v-if="hasFooter" class="apos-modal__footer">
-            <div class="apos-modal__footer__inner">
-              <slot name="footer" />
-            </div>
-          </footer>
+            <footer v-if="hasFooter" class="apos-modal__footer">
+              <div class="apos-modal__footer__inner">
+                <slot name="footer" />
+              </div>
+            </footer>
+          </template>
         </div>
       </transition>
     </section>
@@ -74,18 +89,18 @@ export default {
       required: true
     },
     modalTitle: {
-      type: String,
+      type: [ String, Object ],
       default: ''
     }
   },
   emits: [ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ],
+  data() {
+    return {
+      // For aria purposes
+      id: 'modal:' + Math.random().toString().replace('.', '')
+    };
+  },
   computed: {
-    id() {
-      const rand = (Math.floor(Math.random() * Math.floor(10000)));
-      // replace everything not A-Za-z0-9_ with _
-      const title = this.modalTitle.replace(/\W/g, '_');
-      return `${title}-${rand}`;
-    },
     transitionType: function () {
       if (this.modal.type === 'slide') {
         return 'slide';
@@ -95,6 +110,12 @@ export default {
     },
     modalReady () {
       return this.modal.active;
+    },
+    hasBeenLocalized: function() {
+      return Object.keys(apos.i18n.locales).length > 1;
+    },
+    currentLocale: function() {
+      return apos.i18n.locale;
     },
     hasPrimaryControls: function () {
       return !!this.$slots.primaryControls;
@@ -119,6 +140,9 @@ export default {
       classes.push(`apos-modal--${this.modal.type}`);
       if (this.modal.type === 'slide') {
         classes.push('apos-modal--full-height');
+      }
+      if (this.modal.busy) {
+        classes.push('apos-modal--busy');
       }
       return classes.join(' ');
     },
@@ -370,13 +394,14 @@ export default {
     background-color: var(--a-white);
   }
 
+  .apos-modal__controls--header,
   .apos-modal__controls--primary,
   .apos-modal__controls--secondary {
     display: flex;
     align-items: center;
   }
 
-  .apos-modal__controls--primary {
+  .apos-modal__controls--header {
     justify-content: flex-end;
     flex-grow: 1;
   }
@@ -385,6 +410,16 @@ export default {
     & > .apos-context-menu {
       margin-left: 7.5px;
     }
+  }
+
+  .apos-modal__locale {
+    @include type-base;
+    margin-right: $spacing-double;
+    font-weight: var(--a-weight-bold);
+  }
+
+  .apos-modal__locale-name {
+    color: var(--a-primary);
   }
 
   .apos-modal__heading {
@@ -406,5 +441,22 @@ export default {
 
   .apos-modal__main--with-right-rail {
     grid-template-columns: 78% $modal-rail-right-w;
+  }
+
+  .apos-modal--busy .apos-modal__inner {
+    $height: 190px;
+    top: 50%;
+    bottom: -50%;
+    height: $height;
+    transform: translateY(math.div($height, 2) * -1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .apos-modal__busy-text {
+    margin-bottom: $spacing-triple;
+    font-size: var(--a-type-heading);
   }
 </style>

@@ -5,14 +5,23 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-input-wrapper">
+      <div :class="wrapperClasses">
+        <span
+          class="apos-input__slug-locale-prefix"
+          v-if="localePrefix"
+          @click="passFocus"
+          v-apos-tooltip="'apostrophe:cannotChangeSlugPrefix'"
+        >
+          {{ localePrefix }}
+        </span>
         <input
           :class="classes"
           v-model="next" :type="type"
-          :placeholder="field.placeholder"
+          :placeholder="$t(field.placeholder)"
           @keydown.enter="$emit('return')"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
+          ref="input"
         >
         <component
           v-if="icon"
@@ -56,7 +65,10 @@ export default {
       }
     },
     classes () {
-      return [ 'apos-input', 'apos-input--text' ];
+      return [ 'apos-input', 'apos-input--text', 'apos-input--slug' ];
+    },
+    wrapperClasses () {
+      return [ 'apos-input-wrapper' ].concat(this.localePrefix ? [ 'apos-input-wrapper--with-prefix' ] : []);
     },
     icon () {
       if (this.error) {
@@ -73,6 +85,9 @@ export default {
     },
     prefix () {
       return this.field.prefix || '';
+    },
+    localePrefix() {
+      return this.field.page && apos.i18n.locales[apos.i18n.locale].prefix;
     }
   },
   watch: {
@@ -137,7 +152,7 @@ export default {
       if (this.conflict) {
         return {
           name: 'conflict',
-          message: 'Slug already in use'
+          message: 'apostrophe:slugInUse'
         };
       }
       if (this.field.required) {
@@ -271,33 +286,35 @@ export default {
           throw e;
         }
       }
+    },
+    passFocus() {
+      this.$refs.input.focus();
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-input--date,
-  .apos-input--time {
-    // lame magic number ..
-    // height of date/time input is slightly larger than others due to the browser spinner ui
-    height: 46px;
-  }
-  .apos-input--date {
-    // padding is lessend to overlap with calendar UI
-    padding-right: $input-padding * 1.4;
-    &::-webkit-calendar-picker-indicator { opacity: 0; }
-    &::-webkit-clear-button {
-      position: relative;
-      right: 5px;
+  .apos-input-wrapper--with-prefix {
+    @include apos-input();
+    display: flex;
+    align-items: center;
+    color: var(--a-base-4);
+    .apos-input {
+      border: none;
+      padding-left: 0;
+      &:hover,
+      &:focus {
+        border: none;
+        box-shadow: none;
+      }
     }
   }
-  .apos-input--time {
-    padding-right: $input-padding * 2.5;
+  .apos-input__slug-locale-prefix {
+    display: inline-block;
+    padding-left: 20px;
   }
-
-  .apos-field--small .apos-input--date,
-  .apos-field--small .apos-input--time {
-    height: 33px;
+  .apos-field--inverted .apos-input-wrapper--with-prefix {
+    background-color: var(--a-background-primary);
   }
 </style>

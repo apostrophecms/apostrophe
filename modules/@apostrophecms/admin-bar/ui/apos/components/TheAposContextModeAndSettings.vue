@@ -16,10 +16,10 @@
     >
       <AposButton
         class="apos-admin-bar__context-button"
-        label="Edit" type="subtle"
+        label="apostrophe:edit" type="subtle"
         :modifiers="['small', 'no-motion']"
         :tooltip="{
-          content: 'Toggle Edit Mode',
+          content: 'apostrophe:toggleEditMode',
           placement: 'bottom'
         }"
         @click="switchEditMode(true)"
@@ -38,8 +38,8 @@
       <AposButton
         v-if="!hasCustomUi"
         class="apos-admin-bar__context-button"
-        label="Preview" :tooltip="{
-          content: 'Toggle Preview Mode',
+        label="apostrophe:preview" :tooltip="{
+          content: 'apostrophe:previewTooltip',
           placement: 'bottom'
         }"
         type="subtle" :modifiers="['small', 'no-motion']"
@@ -99,29 +99,29 @@ export default {
         if (this.context.lastPublishedAt) {
           // Document went from unpublished to published and has nothing staged
           if (this.hasBeenPublishedThisPageload && !this.readyToPublish && this.hasBeenPublishedButNotUpdated) {
-            return 'Published';
+            return 'apostrophe:published';
           // Document *has* had changes published this page load, but nothing staged now
           } else if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
-            return 'Updated';
+            return 'apostrophe:updated';
           // Document has been published and has staged changes
           } else {
-            return 'Update';
+            return 'apostrophe:update';
           }
         // Document has never been published and has staged changes
         } else {
-          return 'Publish';
+          return 'apostrophe:publish';
         }
       } else {
         // Document has been submitted this page load and has nothing staged
         if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
-          return 'Submitted';
+          return 'apostrophe:submitted';
         }
         // Document has been previously published and contributor has staged changes
         if (this.context.lastPublishedAt) {
-          return 'Submit Update';
+          return 'apostrophe:submitUpdate';
         } else {
         // Document has never been published and has staged changes
-          return 'Submit';
+          return 'apostrophe:submit';
         }
       }
     },
@@ -143,6 +143,9 @@ export default {
         this.hasBeenPublishedButNotUpdated = false;
       }
       this.$emit('publish');
+    },
+    emitEvent(name) {
+      apos.bus.$emit('admin-menu-click', name);
     }
   }
 };

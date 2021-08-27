@@ -1,9 +1,9 @@
 <template>
   <span
     class="apos-label" :class="modifiers"
-    v-tooltip="tooltip"
+    v-apos-tooltip="tooltip"
   >
-    {{ label }}
+    {{ $t(label) }}
   </span>
 </template>
 

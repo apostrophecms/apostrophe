@@ -1,33 +1,33 @@
 <template>
   <AposModal
-    :modal="modal" class="apos-confirm"
-    v-on="mode !== 'alert' ? { 'esc': cancel } : null"
+    :modal="modal"
+    class="apos-confirm"
+    v-on="mode !== 'alert' ? { esc: cancel } : null"
     @no-modal="$emit('safe-close')"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
     @ready="ready"
   >
     <template #main>
       <AposModalBody>
         <template #bodyMain>
           <img
-            v-if="content.icon" class="apos-confirm__custom-logo"
-            :src="content.icon" alt=""
+            v-if="content.icon"
+            class="apos-confirm__custom-logo"
+            :src="content.icon"
+            alt=""
           >
           <AposLogoIcon
-            v-else-if="content.icon !== false" class="apos-confirm__logo"
+            v-else-if="content.icon !== false"
+            class="apos-confirm__logo"
           />
-          <h2
-            v-if="content.heading"
-            class="apos-confirm__heading"
-          >
-            {{ content.heading }}
+          <h2 v-if="content.heading" class="apos-confirm__heading">
+            {{ localize(content.heading) }}
           </h2>
-          <p
-            class="apos-confirm__description"
-            v-if="content.description"
-          >
-            {{ content.description }}
+          <p v-if="content.description" class="apos-confirm__description">
+            {{ localize(content.description) }}
           </p>
+          <Component v-if="content.body" :is="content.body.component" v-bind="content.body.props" />
           <div v-if="content.form" class="apos-confirm__schema">
             <AposSchema
               v-if="formValues"
@@ -40,7 +40,8 @@
             <AposButton
               v-if="mode !== 'alert'"
               class="apos-confirm__btn"
-              :label="content.negativeLabel || 'Cancel'" @click="cancel"
+              :label="content.negativeLabel || 'apostrophe:cancel'"
+              @click="cancel"
             />
             <AposButton
               class="apos-confirm__btn"
@@ -51,11 +52,8 @@
               ref="confirm"
             />
           </div>
-          <p
-            class="apos-confirm__note"
-            v-if="content.note"
-          >
-            {{ content.note }}
+          <p class="apos-confirm__note" v-if="content.note">
+            {{ localize(content.note) }}
           </p>
         </template>
       </AposModalBody>
@@ -64,7 +62,6 @@
 </template>
 
 <script>
-
 export default {
   props: {
     mode: {
@@ -78,6 +75,12 @@ export default {
     callbackName: {
       type: String,
       default: ''
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'safe-close', 'confirm-response', 'modal-result' ],
@@ -97,9 +100,11 @@ export default {
   computed: {
     affirmativeLabel() {
       if (this.mode === 'confirm') {
-        return this.content.affirmativeLabel || 'Confirm';
+        return (
+          this.localize(this.content.affirmativeLabel) || this.$t('Confirm')
+        );
       } else {
-        return this.content.affirmativeLabel || 'OK';
+        return this.localize(this.content.affirmativeLabel) || this.$t('OK');
       }
     },
     isDisabled() {
@@ -136,6 +141,13 @@ export default {
     async cancel() {
       this.modal.showModal = false;
       this.$emit('modal-result', false);
+    },
+    localize(s) {
+      if (this.options.localize === false) {
+        return s;
+      } else {
+        return this.$t(s, this.options.interpolate || {});
+      }
     }
   }
 };
