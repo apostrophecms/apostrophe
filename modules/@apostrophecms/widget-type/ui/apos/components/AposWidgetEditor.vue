@@ -105,7 +105,7 @@ export default {
       } else {
         return {
           key: 'apostrophe:editType',
-          typeLabel: this.$t(this.typeLabel)
+          type: this.$t(this.typeLabel)
         };
       }
     },
@@ -115,7 +115,7 @@ export default {
       } else {
         return {
           key: 'apostrophe:saveType',
-          typeLabel: this.$t(this.typeLabel)
+          type: this.$t(this.typeLabel)
         };
       }
     },

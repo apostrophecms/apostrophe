@@ -279,7 +279,7 @@
   "richText": "Rich Text",
   "safeModeActive": "Running in safe mode, not showing raw HTML.",
   "save": "Save",
-  "saveType": "Save {{ typeLabel }}",
+  "saveType": "Save {{ type }}",
   "saveDraft": "Save Draft",
   "saveDraftDescription": "Save as a draft to publish later.",
   "saveDraftAndCreateNew": "Save Draft and Create New",
