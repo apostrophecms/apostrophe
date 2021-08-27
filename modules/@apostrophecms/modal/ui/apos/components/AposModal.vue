@@ -26,7 +26,7 @@
               <p class="apos-modal__busy-text">
                 {{ modal.busyTitle }}
               </p>
-              <AposSpinner class="apos-busy__spinner" />
+              <AposSpinner :weight="'heavy'" class="apos-busy__spinner" />
             </div>
           </template>
           <template v-else>
