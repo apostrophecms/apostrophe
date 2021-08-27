@@ -360,6 +360,8 @@
   "view": "View",
   "visibility": "Visibility",
   "visibilityLabel": "Who can view this?",
+  "widgetTypeEdit": "Edit {{ typeLabel }}",
+  "widgetTypeSave": "Save {{ typeLabel }}",
   "willMoveImageToArchive": "This will move the image to the archive.",
   "yes": "Yes",
   "yesLocalizeAndSwitchLocales": "Yes, localize this page and switch locales",

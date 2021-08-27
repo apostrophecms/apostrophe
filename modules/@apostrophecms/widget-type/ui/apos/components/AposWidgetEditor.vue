@@ -103,14 +103,20 @@ export default {
       if (this.moduleOptions.editLabel) {
         return this.moduleOptions.editLabel;
       } else {
-        return `Edit ${this.typeLabel}`;
+        return {
+          key: 'apostrophe:widgetTypeEdit',
+          typeLabel: this.$t(this.typeLabel)
+        };
       }
     },
     saveLabel() {
       if (this.moduleOptions.saveLabel) {
         return this.moduleOptions.saveLabel;
       } else {
-        return `Save ${this.typeLabel}`;
+        return {
+          key: 'apostrophe:widgetTypeSave',
+          typeLabel: this.$t(this.typeLabel)
+        };
       }
     },
     schema() {
