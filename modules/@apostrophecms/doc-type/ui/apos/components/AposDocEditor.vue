@@ -275,7 +275,7 @@ export default {
     modalTitle() {
       if (this.docId) {
         return {
-          key: 'apostrophe:editDocType',
+          key: 'apostrophe:editType',
           type: this.$t(this.moduleOptions.label)
         };
       } else {
