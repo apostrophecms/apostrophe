@@ -56,7 +56,6 @@
                 v-model="wizard.values.toLocalize"
               />
               <p
-                v-if="relatedDocTypes.length > 0"
                 class="apos-wizard__help-text"
               >
                 <InformationIcon :size="16" />
