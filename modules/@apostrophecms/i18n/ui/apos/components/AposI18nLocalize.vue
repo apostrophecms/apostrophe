@@ -267,7 +267,7 @@ export default {
           selectContent: {
             title: this.$t('apostrophe:selectContent'),
             if() {
-              if (!this.fullDoc) {
+              if (!this.allRelatedDocsKnown) {
                 // We can't rule it out yet
                 return true;
               }
@@ -312,6 +312,7 @@ export default {
       // Includes those that aren't new, even if we are only expressing
       // interest in new docs
       allRelatedDocs: [],
+      allRelatedDocsKnown: false,
       docTypesSeen: []
     };
     return result;
@@ -703,6 +704,7 @@ export default {
       }
       let relatedDocs = await this.getRelatedDocs(this.fullDoc);
       this.allRelatedDocs = relatedDocs;
+      this.allRelatedDocsKnown = true;
       if (this.wizard.values.relatedDocSettings.data === 'localizeNewRelated') {
         // Find the ids that are unlocalized in at least one of the target locales
         let unlocalizedIds = new Set();
