@@ -653,7 +653,7 @@ export default {
         if (doc._url) {
           window.location = doc._url;
         } else {
-          await apos.notify(andPublish ? 'apostrophe:documentPublishedButNoPreview' : 'apostrophe:draftSavedButNoPreview', {
+          await apos.notify(andPublish ? 'apostrophe:documentPublishedNoPreview' : 'apostrophe:draftSavedNoPreview', {
             type: 'warning',
             icon: 'alert-circle-icon'
           });
@@ -753,7 +753,7 @@ export default {
           action: 'onSave',
           description: {
             ...description,
-            key: isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn',
+            key: isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn'
           },
           def: true
         }
@@ -788,14 +788,14 @@ export default {
         menu.push({
           label: 'apostrophe:saveDraft',
           action: 'onSaveDraft',
-          description: 'apostrophe:saveAsDraft'
+          description: 'apostrophe:saveDraftDescription'
         });
       }
       if (this.manuallyPublished && canPreview) {
         menu.push({
           label: 'apostrophe:saveDraftAndPreview',
           action: 'onSaveDraftAndView',
-          description: 'apostrophe:saveAsDraftAndPreview',
+          description: 'apostrophe:saveDraftAndPreviewDescription',
           typeLabel: this.$t(typeLabel)
         });
       };
@@ -803,7 +803,7 @@ export default {
         menu.push({
           label: 'apostrophe:saveDraftAndCreateNew',
           action: 'onSaveDraftAndNew',
-          description: 'apostrophe:saveAsDraftAndNew',
+          description: 'apostrophe:saveDraftAndCreateNewDescription',
           typeLabel: this.$t(typeLabel)
         });
       }

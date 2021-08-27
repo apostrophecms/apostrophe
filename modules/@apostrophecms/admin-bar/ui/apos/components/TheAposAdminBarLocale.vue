@@ -28,7 +28,7 @@
             <CheckIcon
               v-if="isActive(locale)"
               class="apos-check"
-              title="$t('apostrophe:currentlySelectedLocale')"
+              title="$t('apostrophe:currentLocale')"
               :size="12"
             />
             {{ locale.label }}
@@ -41,7 +41,7 @@
       </ul>
       <div class="apos-available-locales">
         <p class="apos-available-description">
-          {{ $t('apostrophe:thisDocumentExistsIn') }}
+          {{ $t('apostrophe:documentExistsInLocales') }}
         </p>
         <span
           v-for="locale in availableLocales"
@@ -153,9 +153,9 @@ export default {
           {
             icon: false,
             heading: 'apostrophe:switchLocalesAndLocalizePage',
-            description: 'apostrophe:currentPageDoesntExistInLocale',
-            negativeLabel: 'No, just switch locales',
-            affirmativeLabel: 'Yes, localize this page and switch locales'
+            description: 'apostrophe:notInLocale',
+            negativeLabel: 'apostrophe:noJustSwitchLocales',
+            affirmativeLabel: 'apostrophe:yesLocalizeAndSwitchLocales'
           },
           {
             interpolate: {

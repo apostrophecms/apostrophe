@@ -245,7 +245,7 @@ export default {
         if (style.type) {
           enhanced.push(style);
         } else {
-          apos.notify('apostrophe:misconfiguredRichTextStyle', {
+          apos.notify('apostrophe:richTextStyleConfigWarning', {
             type: 'warning',
             dismiss: true,
             icon: 'text-box-remove-icon',

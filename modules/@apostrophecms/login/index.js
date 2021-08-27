@@ -122,7 +122,7 @@ module.exports = {
           const user = await self.apos.login.verifyLogin(username, password);
           if (!user) {
             // For security reasons we may not tell the user which case applies
-            throw self.apos.error('invalid', req.t('apostrophe:loginPageIncorrectOrNoSuchUser'));
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
           }
           if (session) {
             const passportLogin = (user) => {

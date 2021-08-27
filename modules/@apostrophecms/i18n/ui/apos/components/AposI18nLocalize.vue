@@ -50,7 +50,7 @@
               <AposInputRadio
                 :field="{
                   name: 'toLocalize',
-                  label: 'apostrophe:whatContentToLocalize',
+                  label: 'apostrophe:selectContentToLocalize',
                   choices: toLocalizeChoices
                 }"
                 v-model="wizard.values.toLocalize"
@@ -60,7 +60,7 @@
                 class="apos-wizard__help-text"
               >
                 <InformationIcon :size="16" />
-                {{ $t('apostrophe:relatedDocumentsAre') }}
+                {{ $t('apostrophe:relatedDocsDefinition') }}
               </p>
             </fieldset>
 
@@ -151,7 +151,7 @@
                 class="apos-wizard__field-group"
               >
                 <p class="apos-wizard__field-group-heading">
-                  {{ $t('apostrophe:relatedDocumentSettings') }}
+                  {{ $t('apostrophe:relatedDocSettings') }}
                   <span v-apos-tooltip.top="tooltips.relatedDocSettings"
                     ><InformationIcon :size="14"
                   /></span>
@@ -163,12 +163,11 @@
                     choices: [
                       {
                         value: 'localizeNewRelated',
-                        label: 'Localize new related documents',
+                        label: 'apostrophe:localizeNewRelated',
                       },
                       {
                         value: 'localizeAllRelatedAndOverwriteExisting',
-                        label:
-                          'Localize all related documents and overwrite existing documents',
+                        label: 'apostrophe:localizeAllRelated',
                         tooltip: tooltips.localizeAllAndOverwrite,
                       },
                     ],
@@ -244,7 +243,7 @@ export default {
     const result = {
       modal: {
         busy: false,
-        busyTitle: this.$t('apostrophe:localizingContent'),
+        busyTitle: this.$t('apostrophe:localizingBusy'),
         disableHeader: true,
         active: false,
         showModal: false
@@ -259,8 +258,8 @@ export default {
       ),
       localized: {},
       tooltips: {
-        relatedDocSettings: this.$t('apostrophe:relatedDocumentsAre'),
-        localizeAllAndOverwrite: this.$t('apostrophe:ifRelatedDocumentExists')
+        relatedDocSettings: this.$t('apostrophe:relatedDocsDefinition'),
+        localizeAllAndOverwrite: this.$t('apostrophe:relatedDocOverwriteWarning')
       },
       wizard: {
         step: 'selectContent',
@@ -276,7 +275,11 @@ export default {
               // exist, as the user might opt in step three
               // to express an interest in previously
               // replicated related docs
-              return this.allRelatedDocs.length > 0;
+              const hasRelated = this.allRelatedDocs.length > 0;
+              if (!hasRelated) {
+                this.wizard.values.toLocalize.data = 'thisDoc';
+              }
+              return hasRelated;
             }
           },
           selectLocales: {
@@ -358,7 +361,7 @@ export default {
         },
         {
           value: 'relatedDocsOnly',
-          label: 'apostrophe:relatedDocumentsOnly',
+          label: 'apostrophe:relatedDocsOnly',
         }
       ];
     },
@@ -425,7 +428,7 @@ export default {
     relatedDocypesField() {
       return {
         name: 'relatedDocTypesToLocalize',
-        label: 'Related document types to localize',
+        label: 'apostrophe:relatedDocTypesToLocalize',
         choices: relatedDocTypes,
       };
     }
@@ -489,7 +492,7 @@ export default {
       return !!this.localized[locale.name];
     },
     selectAll() {
-      this.wizard.values.toLocales.data = [ ...this.locales ];
+      this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale));
     },
     selectLocale(locale) {
       if (!this.isSelected(locale) && !this.isCurrentLocale(locale)) {
@@ -547,6 +550,8 @@ export default {
     },
     async submit() {
       let docs = [];
+      const notifications = [];
+
       if (this.wizard.values.toLocalize.data !== 'relatedDocsOnly') {
         docs.push(this.fullDoc);
       }
@@ -573,15 +578,9 @@ export default {
               },
               busy: true
             });
-            await apos.notify('apostrophe:localized', {
-              type: 'success',
-              interpolate: {
-                type: this.$t(this.singular(doc.type)),
-                title: doc.title,
-                locale: locale.name
-              },
-              dismiss: true
-            });
+
+            notifications.push({ type: 'success', locale, doc })
+
             if (this.locale) {
               // Ask for the redirect URL, this way it still works if we
               // need to carry a session across hostnames
@@ -600,16 +599,47 @@ export default {
             // Status code 409 (conflict) means an existing document
             // we opted not to overwrite
             if (e.status !== 409) {
-              await apos.notify('apostrophe:notLocalized', {
+              notifications.push({
                 type: 'error',
-                interpolate: {
-                  type: this.$t(this.singular(doc.type)),
-                  title: doc.title,
-                  locale: locale.name
-                }
+                locale,
+                doc,
+                detail: e?.body?.data?.parentNotLocalized && 'apostrophe:parentNotLocalized'
               });
             }
           }
+        }
+      }
+
+      if (notifications.some(({ type }) => type === 'error')) {
+        this.modal.busy = false;
+        this.close();
+
+        await apos.alert(
+          {
+            icon: false,
+            heading: 'apostrophe:localizingBusy',
+            description: 'apostrophe:thereWasAnIssueLocalizing',
+            body: {
+              component: 'AposI18nLocalizeErrors',
+              props: {
+                notifications
+              }
+            },
+            affirmativeLabel: 'apostrophe:close'
+          }
+        );
+
+      } else {
+        for (const item of notifications) {
+          await apos.notify('apostrophe:localized', {
+            type: 'success',
+            interpolate: {
+              type: this.$t(this.singular(item.doc.type)),
+              title: item.doc.title,
+              locale: item.locale.name
+            },
+            dismiss: true
+          });
         }
       }
 

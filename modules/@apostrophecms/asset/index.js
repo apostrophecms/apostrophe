@@ -171,7 +171,7 @@ module.exports = {
           }
 
           async function build(name, options) {
-            self.apos.util.log(req.t('apostrophe:buildingTheAssetType', {
+            self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
               label: req.t(options.label)
             }));
             const modulesDir = `${buildDir}/${name}/modules`;
@@ -587,7 +587,7 @@ module.exports = {
             scenes: [ 'public', 'apos' ],
             webpack: true,
             outputs: [ 'css', 'js' ],
-            label: 'apostrophe:publicFacingModernJavaScriptAndSass',
+            label: 'apostrophe:modernBuild',
             // Load index.js and index.scss from each module
             index: true,
             // Load only in browsers that support ES6 modules
@@ -601,7 +601,7 @@ module.exports = {
             scenes: [ 'public', 'apos' ],
             // The CSS from the src build is identical, do not duplicate it
             outputs: [ 'js' ],
-            label: 'apostrophe:publicFacingModernJavaScriptAndSassIe11Build',
+            label: 'apostrophe:ie11Build',
             // Load index.js and index.scss from each module
             index: true,
             // The polyfills babel will be expecting
