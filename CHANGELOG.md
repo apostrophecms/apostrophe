@@ -1,6 +1,8 @@
 # Changelog
 
 ## UNRELEASED
+### Adds
+* `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity.
 
 ### Fixes
 
