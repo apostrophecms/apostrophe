@@ -157,6 +157,9 @@ export default () => {
     }
   };
 
+  // Alias for onReadyAndRefresh
+  apos.util.onReady = apos.util.onReadyAndRefresh.bind(apos.util.onReadyAndRefresh);
+
   // Run all the players that haven't been run. Invoked for you at DOMready
   // time. You may also invoke it if you just AJAXed in some content and
   // have reason to suspect there could be widgets in there. You may pass:
