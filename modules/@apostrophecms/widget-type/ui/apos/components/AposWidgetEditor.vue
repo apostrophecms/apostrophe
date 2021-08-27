@@ -104,7 +104,7 @@ export default {
         return this.moduleOptions.editLabel;
       } else {
         return {
-          key: 'apostrophe:widgetTypeEdit',
+          key: 'apostrophe:editType',
           typeLabel: this.$t(this.typeLabel)
         };
       }
@@ -114,7 +114,7 @@ export default {
         return this.moduleOptions.saveLabel;
       } else {
         return {
-          key: 'apostrophe:widgetTypeSave',
+          key: 'apostrophe:saveType',
           typeLabel: this.$t(this.typeLabel)
         };
       }
