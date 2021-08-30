@@ -232,7 +232,7 @@ module.exports = {
             self.apos.i18n.setPrefixUrls(_req);
             addCloneMethod(_req);
             return _req;
-          }
+          };
         }
       },
 
