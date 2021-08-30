@@ -50,7 +50,7 @@ export default {
         if (value && value.content) {
           return {
             ...value,
-            content: instance.$t(value.content)
+            content: (value.localize === false) ? value.content : instance.$t(value.content)
           };
         } else {
           return value;
