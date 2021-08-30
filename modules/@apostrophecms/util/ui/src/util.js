@@ -136,8 +136,9 @@ export default () => {
   // when the main content area has been refreshed by the editor.
   // Note that you don't need this for widgets; see widget players.
 
-  // Note: onReadyAndRefresh has been aliased to apos.util.onReady,
+  // NOTE: onReadyAndRefresh has been aliased to apos.util.onReady,
   // which is the recommended way to call this functionality.
+  // onReadyAndRefresh will be deprecated in the next major version.
 
   apos.util.onReadyAndRefresh = function(fn) {
     onReady(fn);

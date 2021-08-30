@@ -1,8 +1,11 @@
 # Changelog
 
 ## UNRELEASED
+
 ### Adds
-* `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity.
+
+* `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity. The `apos.util.onReadyAndRefresh` method name will be deprecated in the next major version.
+
 ## 3.3.0 - 2021-08-30
 
 ### Fixes
