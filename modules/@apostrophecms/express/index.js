@@ -341,7 +341,7 @@ module.exports = {
       }),
       bodyParserJson: bodyParser.json({
         limit: '16mb',
-        ..._(self.options.bodyParser && self.options.bodyParser.json)
+        ...(self.options.bodyParser && self.options.bodyParser.json)
       })
     };
   },
