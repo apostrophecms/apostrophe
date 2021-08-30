@@ -1035,10 +1035,7 @@ module.exports = {
               if (!existing.find(doc => doc.aposLocale === locale)) {
                 const module = self.getManager(sourceDoc.type);
                 const localized = await module.localize(req, sourceDoc, locale);
-                await module.publish({
-                  ...req,
-                  locale
-                }, localized);
+                await module.publish(req.clone({ locale }), localized);
               }
             }
           }
