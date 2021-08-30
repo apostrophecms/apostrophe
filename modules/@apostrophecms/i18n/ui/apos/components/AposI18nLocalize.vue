@@ -198,7 +198,8 @@
             v-else
             type="primary"
             @click="goToNext()"
-            icon-after="arrow-right-icon"
+            icon="arrow-right-icon"
+            :modifiers="['icon-right']"
             :disabled="!complete()"
             :icon-size="12"
             label="apostrophe:next"
