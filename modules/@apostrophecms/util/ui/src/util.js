@@ -136,6 +136,9 @@ export default () => {
   // when the main content area has been refreshed by the editor.
   // Note that you don't need this for widgets; see widget players.
 
+  // Note: onReadyAndRefresh has been aliased to apos.util.onReady,
+  // which is the recommended way to call this functionality.
+
   apos.util.onReadyAndRefresh = function(fn) {
     onReady(fn);
     // Allow Apostrophe to create the bus first
@@ -157,7 +160,7 @@ export default () => {
     }
   };
 
-  // Alias for onReadyAndRefresh
+  // Alias for onReadyAndRefresh, the recommended way to use and document this functionality
   apos.util.onReady = apos.util.onReadyAndRefresh.bind(apos.util.onReadyAndRefresh);
 
   // Run all the players that haven't been run. Invoked for you at DOMready

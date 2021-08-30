@@ -3,6 +3,7 @@
 ## UNRELEASED
 ### Adds
 * `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity.
+## 3.3.0 - 2021-08-30
 
 ### Fixes
 
@@ -13,7 +14,9 @@
 
 ### Adds
 
-* The home page, other parked pages, and the global document are automatically replicated to all configured locales at startup. Parked properties are refreshed if needed.
+* This version achieves localization (l10n) through a rich set of internationalization (i18n) features. For more information, [see the documentation](https://v3.docs.apostrophecms.org/).
+* There is support for both static string localization and dynamic content localization.
+* The home page, other parked pages, and the global document are automatically replicated to all configured locales at startup. Parked properties are refreshed if needed. Other pages and pieces are replicated if and when an editor chooses to do so.
 * An API route has been added for voluntary replication, i.e. when deciding a document should exist in a second locale, or desiring to overwrite the current draft contents in locale `B` with the draft contents of locale `A`.
 * Locales can specify `prefix` and `hostname` options, which are automatically recognized by middleware that removes the prefix dynamically where appropriate and sets `req.locale`. In 3.x this works more like the global site `prefix` option. This is a departure from 2.x which stored the prefix directly in the slug, creating maintenance issues.
 * Locales are stateless: they are never recorded in the session. This eliminates many avenues for bugs and bad SEO. However, this also means the developer must fully distinguish them from the beginning via either `prefix` or `hostname`. A helpful error message is displayed if this is not the case.
