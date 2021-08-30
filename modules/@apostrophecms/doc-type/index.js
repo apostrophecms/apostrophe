@@ -2494,7 +2494,7 @@ module.exports = {
           };
           if (direction === -1) {
             // Flip the sort, we need to look backwards
-            for (const [ key, val ] of sort) {
+            for (const [ key, val ] of Object.entries(sort)) {
               if (typeof (val) === 'number') {
                 sort[key] = -val;
               }
