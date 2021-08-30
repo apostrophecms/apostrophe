@@ -6,7 +6,7 @@ let apos;
 
 describe('Login', function() {
 
-  this.timeout(20000);
+  this.timeout(60000);
 
   after(function(done) {
     return t.destroy(apos, done);
