@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.1 - 2021-08-30
+
+### Fixes
+
+* Permissions roles UI localized correctly.
+
 ## 3.3.0 - 2021-08-30
 
 ### Fixes
