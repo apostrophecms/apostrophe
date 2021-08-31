@@ -197,6 +197,7 @@ export default {
   }
 
   .apos-input__role__permission-grid__set-name {
+    @include type-title;
     display: inline-flex;
     margin: 0 0 $spacing-double;
   }
