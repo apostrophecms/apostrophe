@@ -1,9 +1,13 @@
 # Changelog
 
-## 3.3.1 - 2021-08-30
+## Unreleased
 
 ### Fixes
+* Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
 
+## 3.3.1 - 2021-08-31
+
+### Fixes
 * Permissions roles UI localized correctly.
 
 ## 3.3.0 - 2021-08-30
@@ -14,7 +18,6 @@
 * Resolves slug-related bug when switching between images in the archived view of the media manager. The slug field was not taking into account the double slug prefix case.
 * Fixes migration task crash when parking new page. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
 * Fixes incorrect month name in `AposCellDate`, which can be optionally used in manage views of pieces. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
-* Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
 
 ### Adds
 
