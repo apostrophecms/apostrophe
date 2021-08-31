@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+* Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
+
 ## 3.3.0 - 2021-08-30
 
 ### Fixes
