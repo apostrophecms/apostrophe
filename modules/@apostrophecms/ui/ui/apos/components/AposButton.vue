@@ -36,13 +36,6 @@
             {{ $t(label, interpolate) }}
           </span>
         </slot>
-        <AposIndicator
-          v-if="iconAfter"
-          :icon="iconAfter"
-          :icon-size="iconSize"
-          class="apos-button__icon-right"
-          fill-color="currentColor"
-        />
       </div>
     </component>
   </span>
@@ -85,10 +78,6 @@ export default {
     disabled: Boolean,
     busy: Boolean,
     icon: {
-      type: String,
-      default: null
-    },
-    iconAfter: {
       type: String,
       default: null
     },
@@ -410,6 +399,16 @@ export default {
     max-width: 400px;
   }
 
+  .apos-button--icon-right {
+    .apos-button__content {
+      flex-direction: row-reverse;
+    }
+    .apos-button__icon {
+      margin-right: 0;
+      margin-left: 5px;
+    }
+  }
+
   .apos-button--outline {
     &:hover {
       background-color: var(--a-base-9);
@@ -554,18 +553,13 @@ export default {
     transition: opacity 0.2s ease;
   }
 
-  .apos-button__icon,
-  .apos-button__icon-right {
+  .apos-button__icon {
     display: inline-flex;
     align-items: center;
   }
 
   .apos-button__icon {
     margin-right: 5px;
-  }
-
-  .apos-button__icon-right {
-    margin-left: 5px;
   }
 
   .apos-button--danger-on-hover:hover {

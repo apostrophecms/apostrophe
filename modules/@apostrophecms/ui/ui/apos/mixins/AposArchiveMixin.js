@@ -30,7 +30,7 @@ export default {
         const action = window.apos.modules[doc.type].action;
         const isPublished = !!doc.lastPublishedAt;
         const isCurrentContext = doc.aposDocId === window.apos.adminBar.context.aposDocId;
-        const plainType = isPage ? this.$t('apostrophe:page') : (moduleOptions.label || this.$t('apostrophe:document'));
+        const plainType = isPage ? this.$t('apostrophe:page') : (this.$t(moduleOptions.label) || this.$t('apostrophe:document'));
 
         const sentences = [];
 
@@ -53,7 +53,7 @@ export default {
 
         if (isPublished) {
           sentences.push(this.$t('apostrophe:archivingWillUnpublish', {
-            type: plainType
+            type: this.$t(plainType)
           }));
         }
 
