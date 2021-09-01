@@ -7,6 +7,11 @@
 * Do not crash on startup if users have a relationship to another type. This was caused by the code that checks whether any users exist to present a warning to developers. That code was running too early for relationships to work due to event timing issues.
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
 
+## 3.3.1 - 2021-08-31
+
+### Fixes
+* Permissions roles UI localized correctly.
+
 ## 3.3.0 - 2021-08-30
 
 ### Fixes
