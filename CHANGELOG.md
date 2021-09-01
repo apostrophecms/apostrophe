@@ -6,6 +6,7 @@
 * Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
 * Do not crash on startup if users have a relationship to another type. This was caused by the code that checks whether any users exist to present a warning to developers. That code was running too early for relationships to work due to event timing issues.
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
+* In some situations it was possible for a relationship with just one selected document to list that document several times in the returned result, resulting in very large responses.
 
 ## 3.3.1 - 2021-08-31
 
