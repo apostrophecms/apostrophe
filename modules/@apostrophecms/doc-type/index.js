@@ -699,10 +699,9 @@ module.exports = {
           });
           published.lastPublishedAt = lastPublishedAt;
           try {
-            published = await self.update({
-              ...req,
+            published = await self.update(req.clone({
               mode: 'published'
-            }, published, options);
+            }), published, options);
           } catch (e) {
             if (oldPreviousPublished) {
               await self.apos.doc.db.replaceOne({
@@ -887,10 +886,9 @@ module.exports = {
         // guarantees no small discrepancy breaking equality comparisons
         draft.updatedAt = draft.lastPublishedAt;
         draft.updatedBy = published.updatedBy;
-        draft = await self.update({
-          ...req,
+        draft = await self.update(req.clone({
           mode: 'draft'
-        }, draft, {
+        }), draft, {
           setModified: false,
           setUpdatedAtAndBy: false
         });
@@ -929,10 +927,9 @@ module.exports = {
 
         self.copyForPublication(req, previous, published);
         published.lastPublishedAt = previous.lastPublishedAt;
-        published = await self.update({
-          ...req,
+        published = await self.update(req.clone({
           mode: 'published'
-        }, published);
+        }), published);
         self.apos.doc.db.removeOne({
           _id: previousId
         });
@@ -1632,10 +1629,9 @@ module.exports = {
             if (!results.length) {
               return;
             }
-            const _req = {
-              ...query.req,
+            const _req = query.req.clone({
               mode: 'published'
-            };
+            });
             const publishedDocs = await self.find(_req)._ids(results.map(result => result._id.replace(':draft', ':published'))).project(query.get('project')).toArray();
             for (const doc of results) {
               const publishedDoc = publishedDocs.find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
