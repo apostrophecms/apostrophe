@@ -247,10 +247,9 @@ describe('Draft / Published', function() {
     // Make sure the slug is no longer deduplicated
     assert(published.slug === 'test-product');
     assert(published.title === 'Test Product');
-    testDraftProduct = await apos.product.findOneForEditing({
-      ...req,
+    testDraftProduct = await apos.product.findOneForEditing(req.clone({
       mode: 'draft'
-    }, {
+    }), {
       _id: testDraftProduct._id
     });
     assert(testDraftProduct);
@@ -406,10 +405,9 @@ describe('Draft / Published', function() {
     }), published);
     assert(published);
     assert(published.title === 'Parent');
-    parent = await apos.page.findOneForEditing({
-      ...req,
+    parent = await apos.page.findOneForEditing(req.clone({
       mode: 'draft'
-    }, {
+    }), {
       _id: parent._id
     });
     assert(parent);

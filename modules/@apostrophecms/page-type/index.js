@@ -109,19 +109,17 @@ module.exports = {
           if (!doc._id.includes(':draft')) {
             return;
           }
-          const published = await self.findOneForEditing({
-            ...req,
+          const published = await self.findOneForEditing(req.clone({
             mode: 'published'
-          }, {
+          }), {
             _id: doc._id.replace(':draft', ':published')
           }, {
             permission: false
           });
           if (published && doc.aposLastTargetId) {
-            return self.apos.page.move({
-              ...req,
+            return self.apos.page.move(req.clone({
               mode: 'published'
-            }, published._id, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition);
+            }), published._id, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition);
           }
         }
       },
@@ -177,10 +175,9 @@ module.exports = {
       },
       afterRevertPublishedToPrevious: {
         async replayMoveAfterRevert(req, result) {
-          const publishedReq = {
-            ...req,
+          const publishedReq = req.clone({
             mode: 'published'
-          };
+          });
           if (result.published.level === 0) {
             // The home page cannot move, so there is no
             // chance we need to "replay" such a move
@@ -296,10 +293,9 @@ module.exports = {
       // the published locale, to ensure there is an equivalent
       // draft page. You don't need to invoke this.
       async insertDraftOf(req, doc, draft, options) {
-        const _req = {
-          ...req,
+        const _req = req.clone({
           mode: 'draft'
-        };
+        });
         options = {
           ...options,
           setModified: false
@@ -318,10 +314,9 @@ module.exports = {
       // the published locale, to ensure there is an equivalent
       // draft page. You don't need to invoke this.
       async insertPublishedOf(req, doc, published, options = {}) {
-        const _req = {
-          ...req,
+        const _req = req.clone({
           mode: 'published'
-        };
+        });
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale
           return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition, published, options);
