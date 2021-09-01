@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.3.1 - 2021-09-01
+
+### Fixes
+
+* In some situations it was possible for a relationship with just one selected document to list that document several times in the returned result, resulting in very large responses.
+* Permissions roles UI localized correctly.
+* Do not crash on startup if users have a relationship to another type. This was caused by the code that checks whether any users exist to present a warning to developers. That code was running too early for relationships to work due to event timing issues.
+
 ## 3.3.0 - 2021-08-30
 
 ### Fixes
