@@ -19,6 +19,12 @@
 
 ### Fixes
 
+* Fixes bug in the "select all" relationship chooser UI where it selected unpublished items.
+
+## UNRELEASED
+
+### Fixes
+
 * Addresses the page jump when using the in-context undo/redo feature. The page will immediately return users to their origin scroll position after the content refreshes.
 * Resolves slug-related bug when switching between images in the archived view of the media manager. The slug field was not taking into account the double slug prefix case.
 * Fixes migration task crash when parking new page. Thanks to [Miro Yovchev](https://www.corllete.com/) for this fix.
