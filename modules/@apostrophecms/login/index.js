@@ -357,20 +357,20 @@ module.exports = {
         return 1000 * 60 * 60 * (self.options.passwordResetHours || 48);
       },
 
-      // Invoked by passport after an authentication strategy succeeds
-      // and the user has been logged in. Invokes `loginAfterLogin` on
-      // any modules that have one and redirects to `req.redirect` or,
-      // if it is not set, to `/`.
+      // // Invoked by passport after an authentication strategy succeeds
+      // // and the user has been logged in. Invokes `loginAfterLogin` on
+      // // any modules that have one and redirects to `req.redirect` or,
+      // // if it is not set, to `/`.
 
-      async afterLogin(req, res) {
-        try {
-          await self.emit('after', req);
-        } catch (e) {
-          self.apos.util.error(e);
-          return res.redirect('/');
-        }
-        return res.redirect(req.redirect || '/');
-      },
+      // async afterLogin(req, res) {
+      //   try {
+      //     await self.emit('after', req);
+      //   } catch (e) {
+      //     self.apos.util.error(e);
+      //     return res.redirect('/');
+      //   }
+      //   return res.redirect(req.redirect || '/');
+      // },
 
       getBrowserData(req) {
         return {
