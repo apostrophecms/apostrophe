@@ -6,6 +6,7 @@
 
 * Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
+* Fixes bug in "next" and "previous" query builders.
 
 ## 3.3.1 - 2021-09-01
 
