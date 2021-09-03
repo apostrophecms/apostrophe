@@ -340,7 +340,6 @@ module.exports = async function(options) {
     const dirs = fs.readdirSync(self.localModules);
     for (const dir of dirs) {
       if (dir.match(/^@/)) {
-        // Check if hte namespace contains non dash punctuation.
         const nsDirs = fs.readdirSync(`${self.localModules}/${dir}`);
         for (let nsDir of nsDirs) {
           nsDir = `${dir}/${nsDir}`;
