@@ -255,10 +255,10 @@ module.exports = {
         // the published doc's content. Note that deleting a draft recursively
         // deletes both the published and previous docs.
         async deleteOtherModes(req, doc, options) {
-          if (doc.aposLocale.endsWith(':draft')) {
+          if (doc.aposLocale && doc.aposLocale.endsWith(':draft')) {
             return cleanup('published');
           }
-          if (doc.aposLocale.endsWith(':published')) {
+          if (doc.aposLocale && doc.aposLocale.endsWith(':published')) {
             return cleanup('previous');
           }
           async function cleanup(mode) {

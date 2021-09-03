@@ -8,6 +8,7 @@
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
 * Fixes bug in the "select all" relationship chooser UI where it selected unpublished items.
 * Fixes bug in "next" and "previous" query builders.
+* The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.
 
 ## 3.3.1 - 2021-09-01
 
