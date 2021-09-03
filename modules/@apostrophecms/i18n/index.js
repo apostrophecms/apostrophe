@@ -259,7 +259,7 @@ module.exports = {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
           // Clipboards transferring between locales needs to jump
           // from LocalStorage to the cross-domain session cache
-          const clipboard = req.body.clipboard;
+          let clipboard = req.body.clipboard;
           if (clipboard && ((typeof clipboard) !== 'string')) {
             // Clipboard re-validation doesn't have to be more detailed here because
             // on any actual paste attempt it will go through server side validation
