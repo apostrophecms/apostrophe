@@ -413,8 +413,8 @@ module.exports = async function(options) {
         self.util.warnDevOnce(
           'module-name-periods',
           stripIndent`
-          You have configured a module named ${name}. Modules names may not
-          include periods. Please change this to avoid bugs.
+            You have configured a module named ${name}.
+            Modules names may not include periods. Please change this to avoid bugs.
           `
         );
       }
@@ -474,7 +474,9 @@ module.exports = async function(options) {
     }
 
     function lint(s) {
-      self.util.warnDev('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+      self.util.warnDev(stripIndent`
+        It looks like you may have made a mistake in your code:\n${s}
+      `);
     }
   }
 
