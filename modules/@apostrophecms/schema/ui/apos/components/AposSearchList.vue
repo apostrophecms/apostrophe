@@ -1,8 +1,9 @@
 <template>
   <ul class="apos-search">
     <li
-      class="apos-search__item item" v-for="item in list"
-      :key="item._id" @click="select(item)"
+      :class="getClasses(item)" v-for="item in list"
+      :key="item._id" @click="select(item, $event)"
+      v-apos-tooltip="item.disabled ? disabledTooltip : null"
     >
       <div class="item__main">
         <div class="item__title">
@@ -32,16 +33,37 @@ export default {
       default() {
         return [];
       }
+    },
+    disabledTooltip: {
+      type: String,
+      required: false
     }
   },
   emits: [ 'select' ],
   methods: {
-    select(item) {
+    select(item, $event) {
+      if (item.disabled) {
+        $event.stopPropagation();
+        return;
+      }
       const selectedItems = this.selectedItems;
       if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
         // Never modify a prop
         this.$emit('select', [ ...selectedItems, item ]);
       }
+    },
+    getClasses(item) {
+      const classes = {
+        'apos-search__item': true,
+        'item': true
+      };
+      if (item.disabled) {
+        classes.disabled = true;
+      } else {
+        // Avoids writing brittle styles to shut off our other styles
+        classes.enabled = true;
+      }
+      return classes;
     }
   }
 };
@@ -81,7 +103,7 @@ export default {
     pointer-events: none;
   }
 
-  &:hover {
+  &:hover.enabled {
     padding: 9px 19px;
     border: 1px solid var(--a-base-5);
     background-color: var(--a-base-10);
@@ -107,5 +129,15 @@ export default {
     @include type-base;
     color: var(--a-base-2);
   }
+
+  &.disabled {
+    .item__title {
+      color: $input-color-disabled;
+    }
+    .item__slug {
+      color: $input-color-disabled;
+    }
+  }
+
 }
 </style>

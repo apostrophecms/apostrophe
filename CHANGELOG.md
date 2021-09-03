@@ -8,6 +8,8 @@
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
 * Fixes bug in the "select all" relationship chooser UI where it selected unpublished items.
 * Fixes bug in "next" and "previous" query builders.
+* Unlocalized piece types, such as users, may now be selected as part of a relationship when browsing.
+* Unpublished localized piece types may not be selected via the autocomplete feature of the relationship input field, which formerly ignored this requirement, although the browse button enforced it.
 
 ## 3.3.1 - 2021-09-01
 
