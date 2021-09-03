@@ -7,6 +7,7 @@
 * Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
 * Fixes bug in "next" and "previous" query builders.
+* Cutting and pasting widgets now works between locales that do not share a hostname, provided that you switch locales after cutting (it does not work between tabs that are already open on separate hostnames).
 
 ## 3.3.1 - 2021-09-01
 
