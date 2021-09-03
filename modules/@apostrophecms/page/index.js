@@ -228,7 +228,8 @@ module.exports = {
           }
           await manager.convert(req, input, page, {
             onlyPresentFields: true,
-            copyingId
+            copyingId,
+            isPage: true
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
           return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
@@ -287,9 +288,12 @@ module.exports = {
               force
             });
           }
+
           self.enforceParkedProperties(req, page, input);
-          await manager.convert(req, input, page);
+
+          await manager.convert(req, input, page, { isPage: true });
           await self.update(req, page);
+
           if (input._targetId) {
             const targetId = self.apos.launder.string(input._targetId);
             const position = self.apos.launder.string(input._position);
@@ -745,7 +749,7 @@ database.`);
         _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
         _.defaults(browserOptions, {
           label: 'apostrophe:page',
-          pluralLabel: 'Pages',
+          pluralLabel: 'apostrophe:pages',
           components: {}
         });
         _.defaults(browserOptions.components, {

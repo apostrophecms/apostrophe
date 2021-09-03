@@ -520,11 +520,17 @@ module.exports = {
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
-        copyingId: false
+        copyingId: false,
+        isPage: false
       }) {
-        const fullSchema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        let fullSchema;
         let schema;
         let copyOf;
+        if (options.isPage) {
+          fullSchema = self.apos.page.allowedSchema(req, doc);
+        } else {
+          fullSchema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        }
         if (options.presentFieldsOnly) {
           schema = self.apos.schema.subset(fullSchema, self.fieldsPresent(input));
         } else {
@@ -540,13 +546,14 @@ module.exports = {
             ...input
           };
         }
+
         await self.apos.schema.convert(req, schema, input, doc);
+
         doc.copyOfId = copyOf && copyOf._id;
         if (copyOf) {
           self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
       },
-
       // Return the names of all schema fields present in the `input` object,
       // taking into account issues like relationship fields keeping their data in
       // a separate ids property, etc.
