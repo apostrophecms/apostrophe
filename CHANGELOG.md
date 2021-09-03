@@ -9,6 +9,11 @@
 * Fixes bug in the "select all" relationship chooser UI where it selected unpublished items.
 * Fixes bug in "next" and "previous" query builders.
 
+### Adds
+
+* Adds a linter to warn in dev mode when a module name include a period.
+* Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
+
 ## 3.3.1 - 2021-09-01
 
 ### Fixes

@@ -408,6 +408,16 @@ module.exports = async function(options) {
           `
         );
       }
+      const moduleNameRegex = /\./;
+      if (name.match(moduleNameRegex)) {
+        self.util.warnDevOnce(
+          'module-name-periods',
+          stripIndent`
+          You have configured a module named ${name}. Modules names may not
+          include periods. Please change this to avoid bugs.
+          `
+        );
+      }
 
       if (module.options.extends && ((typeof module.options.extends) === 'string')) {
         lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
