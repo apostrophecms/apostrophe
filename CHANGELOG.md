@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.2 - 2021-09-07
+
+### Security
+
+Users with permission to upload SVG files were previously able to do so even if they contained XSS attacks. In Apostrophe 3.x, the general public so far never has access to upload SVG files, so the risk is minor but could be used to phish access from an admin user uploading a file. While Apostrophe typically displays SVG files using the `img` tag, which ignores XSS vectors, an XSS attack could still be carried out if the image were opened directly via the Apostrophe media library's convenience link for doing so. Beginning in version 3.3.2 all SVG uploads are sanitized via DOMPurify to remove XSS attack vectors. In addition, all existing SVG attachments not already validated are passed through DOMPurify during a migration upon deployment of version 3.3.2. 
+
 ## 3.3.1 - 2021-09-01
 
 ### Fixes

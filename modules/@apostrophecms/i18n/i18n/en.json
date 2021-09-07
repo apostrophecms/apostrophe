@@ -128,6 +128,7 @@
   "fileTag": "File Tag",
   "fileTags": "File Tags",
   "fileTypeNotAccepted": "File type was not accepted. Allowed extensions: {{ extensions }}",
+  "fileInvalid": "File was not accepted. It may be corrupted or its content may not match its file extension.",
   "files": "Files",
   "filter": "Filter",
   "filterByTag": "Filter by Tag",
