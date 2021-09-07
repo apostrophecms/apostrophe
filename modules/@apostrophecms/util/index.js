@@ -555,8 +555,7 @@ module.exports = {
       // called for situations less dire than
       // `apos.util.error`.
       warn(msg) {
-        const args = [ '\n⚠️', ...arguments ];
-        self.logger.warn.apply(self.logger, args);
+        self.logger.warn.apply(self.logger, arguments);
       },
 
       // Identical to `apos.util.warn`, except that the warning is
@@ -568,7 +567,8 @@ module.exports = {
         if (process.env.NODE_ENV === 'production') {
           return;
         }
-        self.warn.apply(self, arguments);
+        const args = [ '\n⚠️', ...arguments ];
+        self.warn.apply(self, args);
       },
 
       // Identical to `apos.util.warnDev`, except that the warning is
