@@ -407,7 +407,7 @@ module.exports = {
         info.md5 = await self.apos.util.md5File(file.path);
         if (info.extension === 'svg') {
           try {
-            await self.sanitizeSvg(file, info);
+            await self.sanitizeSvg(file.path);
           } catch (e) {
             // Currently DOMPurify passes invalid SVG content without comment as long
             // as it's not an SVG XSS attack vector, but make provision to report
