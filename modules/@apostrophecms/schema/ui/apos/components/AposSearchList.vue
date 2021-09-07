@@ -1,14 +1,15 @@
 <template>
   <ul class="apos-search">
     <li
-      class="apos-search__item item" v-for="item in list"
-      :key="item._id" @click="select(item)"
+      :class="getClasses(item)" v-for="item in list"
+      :key="item._id" @click="select(item, $event)"
+      v-apos-tooltip="item.disabled ? disabledTooltip : null"
     >
-      <div class="item__main">
-        <div class="item__title">
+      <div class="apos-search__item__main">
+        <div class="apos-search__item__title">
           {{ item.title }}
         </div>
-        <div class="item__slug">
+        <div class="apos-search__item__slug">
           {{ item.slug }}
         </div>
       </div>
@@ -32,16 +33,33 @@ export default {
       default() {
         return [];
       }
+    },
+    disabledTooltip: {
+      type: String,
+      required: false
     }
   },
   emits: [ 'select' ],
   methods: {
-    select(item) {
+    select(item, $event) {
+      if (item.disabled) {
+        $event.stopPropagation();
+        return;
+      }
       const selectedItems = this.selectedItems;
       if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
         // Never modify a prop
         this.$emit('select', [ ...selectedItems, item ]);
       }
+    },
+    getClasses(item) {
+      const classes = {
+        'apos-search__item': true
+      };
+      if (item.disabled) {
+        classes['apos-search__item--disabled'] = true;
+      }
+      return classes;
     }
   }
 };
@@ -69,7 +87,20 @@ export default {
   }
 }
 
-.item {
+@mixin disabled {
+  padding: 10px 20px;
+  border: none;
+  background-color: var(--a-background-primary);
+  cursor: auto;
+  .apos-search__item__title {
+    color: $input-color-disabled;
+  }
+  .apos-search__item__slug {
+    color: $input-color-disabled;
+  }
+}
+
+.apos-search__item {
   display: flex;
   justify-content: space-between;
   margin: 10px;
@@ -81,15 +112,21 @@ export default {
     pointer-events: none;
   }
 
-  &:hover {
+  &:hover.apos-search__item {
     padding: 9px 19px;
     border: 1px solid var(--a-base-5);
     background-color: var(--a-base-10);
     cursor: pointer;
-
-    .item__type {
-      display: none;
+    &.apos-search__item--disabled {
+      @include disabled;
     }
+  }
+
+  &:hover.apos-search__item {
+    padding: 9px 19px;
+    border: 1px solid var(--a-base-5);
+    background-color: var(--a-base-10);
+    cursor: pointer;
   }
 
   &__main {
@@ -107,5 +144,10 @@ export default {
     @include type-base;
     color: var(--a-base-2);
   }
+
+  &.apos-search__item--disabled {
+    @include disabled;
+  }
+
 }
 </style>

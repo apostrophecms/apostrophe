@@ -46,6 +46,7 @@
           :list="searchList"
           @select="updateSelected"
           :selected-items="next"
+          disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
         />
       </div>
     </template>
@@ -102,6 +103,9 @@ export default {
     },
     chooserComponent () {
       return apos.modules[this.field.withType].components.managerModal;
+    },
+    disableUnpublished() {
+      return apos.modules[this.field.withType].localized;
     }
   },
   watch: {
@@ -146,10 +150,14 @@ export default {
             busy: false,
             draft: true
           });
-
           // filter items already selected
           this.searchList = list.results.filter(item => {
             return !this.next.map(i => i._id).includes(item._id);
+          }).map(item => {
+            return {
+              ...item,
+              disabled: this.disableUnpublished && !item.lastPublishedAt
+            };
           });
           this.searching = false;
         } else {
