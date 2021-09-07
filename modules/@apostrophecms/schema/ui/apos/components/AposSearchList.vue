@@ -5,11 +5,11 @@
       :key="item._id" @click="select(item, $event)"
       v-apos-tooltip="item.disabled ? disabledTooltip : null"
     >
-      <div class="item__main">
-        <div class="item__title">
+      <div class="apos-search__item__main">
+        <div class="apos-search__item__title">
           {{ item.title }}
         </div>
-        <div class="item__slug">
+        <div class="apos-search__item__slug">
           {{ item.slug }}
         </div>
       </div>
@@ -54,14 +54,10 @@ export default {
     },
     getClasses(item) {
       const classes = {
-        'apos-search__item': true,
-        'item': true
+        'apos-search__item': true
       };
       if (item.disabled) {
-        classes.disabled = true;
-      } else {
-        // Avoids writing brittle styles to shut off our other styles
-        classes.enabled = true;
+        classes['apos-search__item--disabled'] = true;
       }
       return classes;
     }
@@ -91,7 +87,20 @@ export default {
   }
 }
 
-.item {
+@mixin disabled {
+  padding: 10px 20px;
+  border: none;
+  background-color: var(--a-background-primary);
+  cursor: auto;
+  .apos-search__item__title {
+    color: $input-color-disabled;
+  }
+  .apos-search__item__slug {
+    color: $input-color-disabled;
+  }
+}
+
+.apos-search__item {
   display: flex;
   justify-content: space-between;
   margin: 10px;
@@ -103,15 +112,21 @@ export default {
     pointer-events: none;
   }
 
-  &:hover.enabled {
+  &:hover.apos-search__item {
     padding: 9px 19px;
     border: 1px solid var(--a-base-5);
     background-color: var(--a-base-10);
     cursor: pointer;
-
-    .item__type {
-      display: none;
+    &.apos-search__item--disabled {
+      @include disabled;
     }
+  }
+
+  &:hover.apos-search__item {
+    padding: 9px 19px;
+    border: 1px solid var(--a-base-5);
+    background-color: var(--a-base-10);
+    cursor: pointer;
   }
 
   &__main {
@@ -130,13 +145,8 @@ export default {
     color: var(--a-base-2);
   }
 
-  &.disabled {
-    .item__title {
-      color: $input-color-disabled;
-    }
-    .item__slug {
-      color: $input-color-disabled;
-    }
+  &.apos-search__item--disabled {
+    @include disabled;
   }
 
 }
