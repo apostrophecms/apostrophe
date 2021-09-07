@@ -1107,7 +1107,7 @@ module.exports = {
             extension: 'svg',
             sanitized: {
               $ne: true
-            },
+            }
           }, 1, async attachment => {
             const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + attachment.extension;
             const copyIn = require('util').promisify(self.uploadfs.copyIn);
