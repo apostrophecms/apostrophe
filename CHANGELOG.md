@@ -10,6 +10,12 @@
 * Fixes bug in "next" and "previous" query builders.
 * The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.
 
+### Adds
+
+* Adds a linter to warn in dev mode when a module name include a period.
+* Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
+* Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
+
 ## 3.3.1 - 2021-09-01
 
 ### Fixes

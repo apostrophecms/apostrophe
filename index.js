@@ -4,6 +4,7 @@ const argv = require('boring')({ end: true });
 const fs = require('fs');
 const npmResolve = require('resolve');
 let defaults = require('./defaults.js');
+const { stripIndent } = require('common-tags');
 
 // **Awaiting the Apostrophe function is optional**
 //
@@ -342,13 +343,13 @@ module.exports = async function(options) {
         const nsDirs = fs.readdirSync(`${self.localModules}/${dir}`);
         for (let nsDir of nsDirs) {
           nsDir = `${dir}/${nsDir}`;
-          test(nsDir);
+          testDir(nsDir);
         }
       } else {
-        test(dir);
+        testDir(dir);
       }
     }
-    function test(name) {
+    function testDir(name) {
       // Projects that have different theme modules activated at different times
       // are a frequent source of false positives for this warning, so ignore
       // seemingly unused modules with "theme" in the name
@@ -362,14 +363,25 @@ module.exports = async function(options) {
           // index.js might not exist, that's fine for our purposes
         }
         if (name.match(/^apostrophe-/)) {
-          warn('namespace-apostrophe-modules', `You have a ${self.localModules}/${name} folder. You are probably trying to configure an official Apostrophe module, but those are namespaced now. Your directory should be renamed ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}\n\nIf you get this warning for your own, original module, do not use the apostrophe- prefix. It is reserved.`);
+          warn(
+            'namespace-apostrophe-modules',
+            stripIndent`
+              You have a ${self.localModules}/${name} folder.
+              You are probably trying to configure an official Apostrophe module, but those
+              are namespaced now. Your directory should be renamed
+              ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}
+
+              If you get this warning for your own, original module, do not use the
+              "apostrophe-" prefix. It is reserved.
+            `
+          );
         } else {
           warn('orphan-modules', `You have a ${self.localModules}/${name} folder, but that module is not activated in app.js and it is not a base class of any other active module. Right now that code doesn't do anything.`);
         }
       }
       function warn(name, message) {
-        if (self.utils) {
-          self.utils.warnDevOnce(name, message);
+        if (self.util) {
+          self.util.warnDevOnce(name, message);
         } else {
           // apos.util not in play, this can be the case in our bootstrap tests
           if (self.argv[`ignore-${name}`]) {
@@ -382,6 +394,30 @@ module.exports = async function(options) {
     }
 
     for (const [ name, module ] of Object.entries(self.modules)) {
+      if (name.match(/^apostrophe-/)) {
+        self.util.warnDevOnce(
+          'namespace-apostrophe-modules',
+          stripIndent`
+            You have configured an ${name} module.
+            You are probably trying to configure an official Apostrophe module, but those
+            are namespaced now. Your module should be renamed ${name.replace(/^apostrophe-/, '@apostrophecms/')}
+
+            If you get this warning for your own original module, do not use the
+            "apostrophe-" prefix. It is reserved.
+          `
+        );
+      }
+      const moduleNameRegex = /\./;
+      if (name.match(moduleNameRegex)) {
+        self.util.warnDevOnce(
+          'module-name-periods',
+          stripIndent`
+            You have configured a module named ${name}.
+            Modules names may not include periods. Please change this to avoid bugs.
+          `
+        );
+      }
+
       if (module.options.extends && ((typeof module.options.extends) === 'string')) {
         lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
       }
@@ -437,7 +473,9 @@ module.exports = async function(options) {
     }
 
     function lint(s) {
-      self.util.warnDev('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+      self.util.warnDev(stripIndent`
+        It looks like you may have made a mistake in your code:\n${s}
+      `);
     }
   }
 
