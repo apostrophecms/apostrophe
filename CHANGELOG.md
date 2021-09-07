@@ -16,6 +16,10 @@
 * Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
 * Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
 
+### Changes
+
+* Removes the temporary `trace` method from the `@apostrophecms/db` module.
+
 ## 3.3.1 - 2021-09-01
 
 ### Fixes
