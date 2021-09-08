@@ -407,6 +407,49 @@ module.exports = {
             throw new Error('Page type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
+      },
+      // Given a page and its parent (if any), returns a schema that  is
+      // filtered appropriately to that page's type, taking into account whether
+      // the page is new, whether it is parked, and the parent's allowed subpage
+      // types.
+      allowedSchema(_super, req, page = {}, parentPage = {}) {
+        let schema = _super(req);
+
+        const typeField = _.find(schema, { name: 'type' });
+        if (typeField) {
+          const allowed = self.apos.page.allowedChildTypes(parentPage);
+          // For a preexisting page, we can't forbid the type it currently has
+          if (page._id && !_.includes(allowed, page.type)) {
+            allowed.unshift(page.type);
+          }
+          typeField.choices = _.map(allowed, function (name) {
+            return {
+              value: name,
+              label: getLabel(name)
+            };
+          });
+        }
+        if (page._id) {
+          // Preexisting page
+          schema = self.apos.page.addApplyToSubpagesToSchema(schema);
+          schema = self.apos.page.removeParkedPropertiesFromSchema(page, schema);
+        }
+        return schema;
+        function getLabel(name) {
+          const choice = _.find(self.apos.page.typeChoices, { name: name });
+          let label = choice && choice.label;
+          if (!label) {
+            const manager = self.apos.doc.getManager(name);
+            if (!manager) {
+              throw new Error(`There is no page type ${name} but it is configured in the types option`);
+            }
+            label = manager.label;
+          }
+          if (!label) {
+            label = name;
+          }
+          return label;
+        }
       }
     };
   }

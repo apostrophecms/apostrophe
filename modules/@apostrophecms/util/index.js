@@ -567,7 +567,8 @@ module.exports = {
         if (process.env.NODE_ENV === 'production') {
           return;
         }
-        self.warn.apply(self, arguments);
+        const args = [ '\n⚠️', ...arguments ];
+        self.warn.apply(self, args);
       },
 
       // Identical to `apos.util.warnDev`, except that the warning is
@@ -590,7 +591,10 @@ module.exports = {
           self.warn.apply(self, Array.prototype.slice.call(arguments, 1));
           if (!always) {
             self.warnedDev[name] = true;
-            self.warn('\nThis warning appears only once to save space. Pass --all-' + name + '\non the command line to see the warning for all cases.');
+            self.info(stripIndent`
+              This warning appears only once to save space. Pass --all-${name}
+              on the command line to see the warning for all cases.
+            `);
           }
         }
       },

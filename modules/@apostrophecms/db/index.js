@@ -59,11 +59,6 @@ module.exports = {
   async init(self) {
     await self.connectToMongo();
     await self.versionCheck();
-    // TODO: Remove this conditional and `self.trace` if not necessary or add
-    // documentation explaining utility and usage.
-    if (process.env.APOS_TRACE_DB) {
-      self.trace();
-    }
   },
   handlers(self) {
     return {
@@ -151,45 +146,6 @@ module.exports = {
 This database contains an Apostrophe 2.x website. Exiting to avoid content loss.`);
         }
       },
-      // TODO: Remove this function if not necessary. Created for debugging during
-      // test conversion. If no conditional in `afterConstruct` above using this,
-      // it can be safely removed.
-      trace() {
-        const superCollection = self.apos.db.collection;
-        self.apos.db.collection = function (name, options, callback) {
-          if (callback) {
-            return superCollection.call(self.apos.db, name, options, function (err, collection) {
-              if (err) {
-                return callback(err);
-              }
-              decorate(collection);
-              return callback(null, collection);
-            });
-          } else {
-            const collection = superCollection.apply(self.apos.db, arguments);
-            decorate(collection);
-            return collection;
-          }
-          function decorate(collection) {
-            wrap('insert');
-            wrap('update');
-            wrap('remove');
-            wrap('aggregate');
-            wrap('count');
-            wrap('find');
-            wrap('createIndex');
-            function wrap(method) {
-              const superMethod = collection[method];
-              collection[method] = function () {
-                /* eslint-disable-next-line no-console */
-                console.trace(method);
-                return superMethod.apply(collection, arguments);
-              };
-            }
-          }
-        };
-      },
-
       async dropAllCollections() {
         const collections = await self.apos.db.collections();
         for (const collection of collections) {

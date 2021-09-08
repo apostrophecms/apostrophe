@@ -91,7 +91,7 @@
               ...moduleOptions,
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField,
-              disableUnpublished: !!relationshipField,
+              disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
           />
@@ -187,6 +187,9 @@ export default {
         message: '',
         emoji: '📄'
       };
+    },
+    disableUnpublished() {
+      return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
     }
   },
   created() {
