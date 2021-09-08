@@ -60,6 +60,9 @@
         @add="add"
       />
     </div>
+    <!-- <style>
+      body { border: 10px solid gold; }
+    </style> -->
   </div>
 </template>
 
@@ -196,6 +199,7 @@ export default {
     apos.bus.$on('widget-hover', this.updateWidgetHovered);
     apos.bus.$on('widget-focus', this.updateWidgetFocused);
     this.bindEventListeners();
+    document.documentElement.style.setProperty('--a-widget-margin', apos.ui.widgetMargin);
   },
   beforeDestroy() {
     apos.bus.$off('area-updated', this.areaUpdatedHandler);
