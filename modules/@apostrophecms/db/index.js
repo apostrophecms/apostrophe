@@ -1,4 +1,4 @@
-// This module establishes `apos.db`, the mongodb driver connection object.
+// This module establishes `apos.db`, the MongoDB database object.
 //
 // ## Options
 //
@@ -20,8 +20,7 @@
 //
 // ### `client`
 //
-// An existing MongoDB connection (MongoClient) object. If present, a new
-// connection instance is created that reuses the same sockets,
+// An existing MongoDB connection (MongoClient) object. If present, it is used
 // and `uri`, `host`, `connect`, etc. are ignored.
 //
 // ### `versionCheck`
@@ -40,7 +39,7 @@
 // allow other modules to drop related non-MongoDB resources at the
 // same time, if desired.
 //
-// Note that `apos.db` is the mongodb database object, not this module.
+// Note that `apos.db` is the MongoDB database object, not this module.
 // You shouldn't need to talk to this module after startup, but you can
 // access it as `apos.modules['@apostrophecms/db']` if you wish. You can
 // also access `apos.dbClient` if you need the MongoClient object.
@@ -81,8 +80,8 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Open the database connection. Always use MongoClient with its
-      // sensible defaults. Build a URI if we need to, so we can call it
+      // Open the database connection. Always uses MongoClient with its
+      // sensible defaults. Builds a URI if necessary, so we can call it
       // in a consistent way.
       //
       // One default we override: if the connection is lost, we keep
