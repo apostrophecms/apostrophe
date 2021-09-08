@@ -2062,8 +2062,10 @@ database.`);
           await change(req, page, data);
         }
       },
-      // Backward compatible method following moving this to page-type module.
-      // This page module method may be deprecated in the next major version.
+      // Given a page and its parent (if any), returns a schema that
+      // is filtered appropriately to that page's type, taking into
+      // account whether the page is new and the parent's allowed
+      // subpage types
       allowedSchema(req, page, parentPage) {
         return self.apos.doc.getManager(page.type)
           .allowedSchema(req, page, parentPage);
