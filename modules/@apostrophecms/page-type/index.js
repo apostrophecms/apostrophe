@@ -215,6 +215,45 @@ module.exports = {
   },
   methods(self) {
     return {
+      allowedSchema(req, page = {}, parentPage = {}) {
+        let schema = self.schema;
+
+        const typeField = _.find(schema, { name: 'type' });
+        if (typeField) {
+          const allowed = self.apos.page.allowedChildTypes(parentPage);
+          // For a preexisting page, we can't forbid the type it currently has
+          if (page._id && !_.includes(allowed, page.type)) {
+            allowed.unshift(page.type);
+          }
+          typeField.choices = _.map(allowed, function (name) {
+            return {
+              value: name,
+              label: getLabel(name)
+            };
+          });
+        }
+        if (page._id) {
+          // Preexisting page
+          schema = self.apos.page.addApplyToSubpagesToSchema(schema);
+          schema = self.apos.page.removeParkedPropertiesFromSchema(page, schema);
+        }
+        return schema;
+        function getLabel(name) {
+          const choice = _.find(self.apos.page.typeChoices, { name: name });
+          let label = choice && choice.label;
+          if (!label) {
+            const manager = self.apos.doc.getManager(name);
+            if (!manager) {
+              throw new Error(`There is no page type ${name} but it is configured in the types option`);
+            }
+            label = manager.label;
+          }
+          if (!label) {
+            label = name;
+          }
+          return label;
+        }
+      },
       dispatchAll() {
         self.dispatch('/', req => self.setTemplate(req, 'page'));
       },

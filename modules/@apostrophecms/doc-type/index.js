@@ -520,17 +520,13 @@ module.exports = {
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
-        copyingId: false,
-        isPage: false
+        copyingId: false
       }) {
-        let fullSchema;
+        const fullSchema = self.apos.doc.getManager(options.type || self.name)
+          .allowedSchema(req, doc);
         let schema;
         let copyOf;
-        if (options.isPage) {
-          fullSchema = self.apos.page.allowedSchema(req, doc);
-        } else {
-          fullSchema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
-        }
+
         if (options.presentFieldsOnly) {
           schema = self.apos.schema.subset(fullSchema, self.fieldsPresent(input));
         } else {
