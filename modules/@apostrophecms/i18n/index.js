@@ -467,9 +467,9 @@ module.exports = {
           debug: self.debug,
           show: self.show,
           action: self.action,
-          crossDomainClipboard: req.session.aposCrossDomainClipboard
+          crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard
         };
-        if (req.session.aposCrossDomainClipboard) {
+        if (req.session && req.session.aposCrossDomainClipboard) {
           req.session.aposCrossDomainClipboard = null;
         }
         return result;
