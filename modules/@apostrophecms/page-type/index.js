@@ -215,6 +215,10 @@ module.exports = {
   },
   methods(self) {
     return {
+      // Given a page and its parent (if any), returns a schema that  is
+      // filtered appropriately to that page's type, taking into account whether
+      // the page is new, whether it is parked, and the parent's allowed subpage
+      // types.
       allowedSchema(req, page = {}, parentPage = {}) {
         let schema = self.schema;
 
