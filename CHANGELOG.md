@@ -18,6 +18,10 @@
 * Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
 * Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
 
+### Changes
+
+* Beginning with this release, the `apostrophe:modulesReady` event has been renamed `apostrophe:modulesRegistered`, and the `apostrophe:afterInit` event has been renamed `apostrophe:ready`. This better reflects their actual roles. The old event names are accepted for backwards compatibility. See the documentation for more information.
+
 ## 3.3.1 - 2021-09-01
 
 ### Fixes

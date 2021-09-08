@@ -69,7 +69,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:afterInit': {
+      'apostrophe:ready': {
         wrapHelpersForTemplateAposObject() {
           wrapFunctions(self.templateApos);
           _.each(self.templateApos.modules, function (helpers, moduleName) {

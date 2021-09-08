@@ -515,7 +515,7 @@ module.exports = {
           req.data.home = await query.toObject();
         }
       },
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         validateTypeChoices() {
           for (const choice of self.typeChoices) {
             if (!choice.name) {
@@ -571,45 +571,9 @@ database.`);
           }
         }
       },
-      'apostrophe:afterInit': {
+      'apostrophe:ready': {
         addServeRoute() {
           self.apos.app.get('*', self.serve);
-        }
-      },
-      '@apostrophecms/migration:after': {
-        async implementParkAllInDefaultLocale() {
-          for (const mode of [ 'published', 'draft' ]) {
-            const req = self.apos.task.getReq({
-              mode
-            });
-            for (const item of self.parked) {
-              await self.implementParkOne(req, item);
-            }
-          }
-          // Triggers replicate in the doc module
-          return self.emit('afterParkAll');
-        }
-      },
-      '@apostrophecms/doc:afterReplicate': {
-        async implementParkAllInOtherLocales() {
-          // Now that replication has occurred, we can
-          // park in the other locales and we'll just
-          // reset the parked properties without
-          // destroying the locale relationships
-          for (const locale of Object.keys(self.apos.i18n.locales)) {
-            for (const mode of [ 'published', 'draft' ]) {
-              if (locale === self.apos.i18n.defaultLocale) {
-                continue;
-              }
-              const req = self.apos.task.getReq({
-                locale,
-                mode
-              });
-              for (const item of self.parked) {
-                await self.implementParkOne(req, item);
-              }
-            }
-          }
         }
       }
     };
@@ -2177,6 +2141,36 @@ database.`);
       enforceParkedProperties(req, page, input) {
         for (const field of (page.parked || [])) {
           input[field] = page[field];
+        }
+      },
+      async implementParkAllInDefaultLocale() {
+        for (const mode of [ 'published', 'draft' ]) {
+          const req = self.apos.task.getReq({
+            mode
+          });
+          for (const item of self.parked) {
+            await self.implementParkOne(req, item);
+          }
+        }
+      },
+      async implementParkAllInOtherLocales() {
+        // Now that replication has occurred, we can
+        // park in the other locales and we'll just
+        // reset the parked properties without
+        // destroying the locale relationships
+        for (const locale of Object.keys(self.apos.i18n.locales)) {
+          for (const mode of [ 'published', 'draft' ]) {
+            if (locale === self.apos.i18n.defaultLocale) {
+              continue;
+            }
+            const req = self.apos.task.getReq({
+              locale,
+              mode
+            });
+            for (const item of self.parked) {
+              await self.implementParkOne(req, item);
+            }
+          }
         }
       },
       ...require('./lib/legacy-migrations')(self)

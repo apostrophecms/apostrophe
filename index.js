@@ -103,13 +103,23 @@ module.exports = async function(options) {
     // are out there and what icons they need without
     // actually instantiating them
     self.modulesToBeInstantiated = modulesToBeInstantiated;
+    self.eventAliases = {};
+    self.alias('modulesReady', 'modulesRegistered');
+    self.alias('afterInit', 'ready');
 
     defineModules();
 
     await instantiateModules();
     lintModules();
-    await self.emit('modulesReady');
-    await self.emit('afterInit');
+    await self.emit('modulesRegistered'); // formerly modulesReady
+    await self.apos.migration.migrate(); // emits before and after events, inside the lock
+    await self.apos.global.insertIfMissing();
+    await self.apos.page.implementParkAllInDefaultLocale();
+    await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
+    // Replicate will have created the parked pages across locales if needed, but we may
+    // still need to reset parked properties
+    await self.apos.page.implementParkAllInOtherLocales();
+    await self.emit('ready'); // formerly afterInit
     if (self.taskRan) {
       process.exit(0);
     } else {

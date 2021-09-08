@@ -62,7 +62,7 @@ module.exports = {
 
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         patchTypeField() {
           const typeField = self.schema.find(field => field.name === '_type');
           const managers = Object.values(self.apos.doc.managers);

@@ -85,7 +85,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         determineTypes() {
           self.types = self.options.types || _.map(self.apos.page.typeChoices, 'name');
           if (self.options.types) {

@@ -19,7 +19,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:afterInit': {
+      'apostrophe:ready': {
         addSortifyMigrations() {
           const managers = self.apos.doc.managers;
           _.each(managers, function (manager, name) {
@@ -232,6 +232,7 @@ module.exports = {
       // the @apostrophecms/migration:migrate task
       async migrate(options) {
         await self.apos.lock.lock(self.__meta.name);
+        await self.emit('before');
         try {
           if (self.apos.isNew) {
             // Since the site is brand new (zero documents), we may assume

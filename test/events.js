@@ -47,7 +47,7 @@ describe('Promisified Events Core', function() {
                   niceFinished = true;
                 }
               },
-              'apostrophe:modulesReady': {
+              'apostrophe:modulesRegistered': {
                 async testHandlers() {
                   const context = {};
                   await self.emit('ready1', context);

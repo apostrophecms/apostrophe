@@ -74,7 +74,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         addModal() {
           self.addLocalizeModal();
         }
