@@ -9,7 +9,7 @@ module.exports = function(self) {
     // Currently supported for Apostrophe core module events only. Not to be
     // used for module-specific events. Call with just the event name,
     // not the `apostrophe:` part.
-    alias(oldName, newName) {
+    aliasEvent(oldName, newName) {
       self.apos.eventAliases[`apostrophe:${oldName}`] = newName;
     },
 

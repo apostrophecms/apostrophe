@@ -104,8 +104,8 @@ module.exports = async function(options) {
     // actually instantiating them
     self.modulesToBeInstantiated = modulesToBeInstantiated;
     self.eventAliases = {};
-    self.alias('modulesReady', 'modulesRegistered');
-    self.alias('afterInit', 'ready');
+    self.aliasEvent('modulesReady', 'modulesRegistered');
+    self.aliasEvent('afterInit', 'ready');
 
     defineModules();
 
