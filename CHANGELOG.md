@@ -24,6 +24,7 @@
 * Adds a linter to warn in dev mode when a module name include a period.
 * Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
 * Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
+* `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity. The `apos.util.onReadyAndRefresh` method name will be deprecated in the next major version.
 
 ### Changes
 
