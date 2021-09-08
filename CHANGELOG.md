@@ -1,10 +1,42 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
+
+### Security
+
+* Users with permission to upload SVG files were previously able to do so even if they contained XSS attacks. In Apostrophe 3.x, the general public so far never has access to upload SVG files, so the risk is minor but could be used to phish access from an admin user by encouraging them to upload a specially crafted SVG file. While Apostrophe typically displays SVG files using the `img` tag, which ignores XSS vectors, an XSS attack might still be possible if the image were opened directly via the Apostrophe media library's convenience link for doing so. All SVG uploads are now sanitized via DOMPurify to remove XSS attack vectors. In addition, all existing SVG attachments not already validated are passed through DOMPurify during a one-time migration.
+
+### Fixes
+
+* The `apos.attachment.each` method, intended for migrations, now respects its `criteria` argument. This was necessary to the above security fix.
+* Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
+* Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
+* Fixes bug in the "select all" relationship chooser UI where it selected unpublished items.
+* Fixes bug in "next" and "previous" query builders.
+* Cutting and pasting widgets now works between locales that do not share a hostname, provided that you switch locales after cutting (it does not work between tabs that are already open on separate hostnames).
+* The `req.session` object now exists in task `req` objects, for better compatibility. It has no actual persistence.
+* Unlocalized piece types, such as users, may now be selected as part of a relationship when browsing.
+* Unpublished localized piece types may not be selected via the autocomplete feature of the relationship input field, which formerly ignored this requirement, although the browse button enforced it.
+* The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.
 
 ### Adds
 
+* Adds a linter to warn in dev mode when a module name include a period.
+* Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
+* Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
 * `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity. The `apos.util.onReadyAndRefresh` method name will be deprecated in the next major version.
+
+### Changes
+
+* Removes the temporary `trace` method from the `@apostrophecms/db` module.
+
+## 3.3.1 - 2021-09-01
+
+### Fixes
+
+* In some situations it was possible for a relationship with just one selected document to list that document several times in the returned result, resulting in very large responses.
+* Permissions roles UI localized correctly.
+* Do not crash on startup if users have a relationship to another type. This was caused by the code that checks whether any users exist to present a warning to developers. That code was running too early for relationships to work due to event timing issues.
 
 ## 3.3.0 - 2021-08-30
 

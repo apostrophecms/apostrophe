@@ -245,10 +245,9 @@ module.exports = {
       post: {
         ':_id/publish': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const draft = await self.findOneForEditing({
-            ...req,
+          const draft = await self.findOneForEditing(req.clone({
             mode: 'draft'
-          }, {
+          }), {
             aposDocId: _id.split(':')[0]
           });
           if (!draft) {
@@ -262,10 +261,9 @@ module.exports = {
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const draft = await self.findOneForEditing({
-            ...req,
+          const draft = await self.findOneForEditing(req.clone({
             mode: 'draft'
-          }, {
+          }), {
             aposDocId: _id.split(':')[0]
           });
           if (!draft) {
@@ -287,10 +285,9 @@ module.exports = {
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
           const aposDocId = _id.replace(/:.*$/, '');
-          const published = await self.findOneForEditing({
-            ...req,
+          const published = await self.findOneForEditing(req.clone({
             mode: 'published'
-          }, {
+          }), {
             aposDocId
           });
           if (!published) {
@@ -298,10 +295,9 @@ module.exports = {
           }
           const manager = self.apos.doc.getManager(published.type);
           manager.emit('beforeUnpublish', req, published);
-          await self.apos.doc.delete({
-            ...req,
+          await self.apos.doc.delete(req.clone({
             mode: 'published'
-          }, published);
+          }), published);
           await self.apos.doc.db.updateOne({
             _id: published._id.replace(':published', ':draft')
           }, {
@@ -316,10 +312,9 @@ module.exports = {
         },
         ':_id/submit': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const draft = await self.findOneForEditing({
-            ...req,
+          const draft = await self.findOneForEditing(req.clone({
             mode: 'draft'
-          }, {
+          }), {
             aposDocId: _id.split(':')[0]
           });
           if (!draft) {
@@ -329,10 +324,9 @@ module.exports = {
         },
         ':_id/dismiss-submission': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const draft = await self.findOneForEditing({
-            ...req,
+          const draft = await self.findOneForEditing(req.clone({
             mode: 'draft'
-          }, {
+          }), {
             aposDocId: _id.split(':')[0]
           });
           if (!draft) {
@@ -342,10 +336,9 @@ module.exports = {
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const draft = await self.findOneForEditing({
-            ...req,
+          const draft = await self.findOneForEditing(req.clone({
             mode: 'draft'
-          }, {
+          }), {
             aposDocId: _id.split(':')[0]
           });
           if (!draft) {
@@ -359,10 +352,9 @@ module.exports = {
         },
         ':_id/revert-published-to-previous': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const published = await self.findOneForEditing({
-            ...req,
+          const published = await self.findOneForEditing(req.clone({
             mode: 'published'
-          }, {
+          }), {
             aposDocId: _id.split(':')[0]
           });
           if (!published) {
@@ -429,18 +421,16 @@ module.exports = {
           ...options,
           setModified: false
         };
-        const inserted = await self.insert({
-          ...req,
+        const inserted = await self.insert(req.clone({
           mode: 'draft'
-        }, draft, options);
+        }), draft, options);
         return inserted;
       },
       // Similar to insertDraftOf, invoked on first publication.
       insertPublishedOf(req, doc, published, options) {
-        return self.insert({
-          ...req,
+        return self.insert(req.clone({
           mode: 'published'
-        }, published, options);
+        }), published, options);
       },
       // Returns one editable piece matching the criteria, throws `notfound`
       // if none match

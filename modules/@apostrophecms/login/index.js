@@ -388,10 +388,10 @@ module.exports = {
 
       async checkForUserAndAlert() {
         const adminReq = self.apos.task.getReq();
-        const user = await self.apos.user.find(adminReq, {}).limit(1).toObject();
+        const user = await self.apos.user.find(adminReq, {}).relationships(false).limit(1).toObject();
 
         if (!user) {
-          self.apos.util.warn('⚠️  There are no users created for this installation of ApostropheCMS yet.');
+          self.apos.util.warnDev('There are no users created for this installation of ApostropheCMS yet.');
         }
       },
 

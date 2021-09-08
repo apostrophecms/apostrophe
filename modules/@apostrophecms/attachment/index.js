@@ -2,6 +2,8 @@ const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 const Promise = require('bluebird');
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
 
 module.exports = {
   options: { alias: 'attachment' },
@@ -108,6 +110,7 @@ module.exports = {
     await self.db.createIndex({ docIds: 1 });
     await self.db.createIndex({ archivedDocIds: 1 });
     self.addLegacyMigrations();
+    self.addSvgSanitizationMigration();
   },
 
   tasks(self) {
@@ -402,6 +405,16 @@ module.exports = {
         }
         info.length = await self.apos.util.fileLength(file.path);
         info.md5 = await self.apos.util.md5File(file.path);
+        if (info.extension === 'svg') {
+          try {
+            await self.sanitizeSvg(file.path);
+          } catch (e) {
+            // Currently DOMPurify passes invalid SVG content without comment as long
+            // as it's not an SVG XSS attack vector, but make provision to report
+            // a relevant error if that changes
+            throw self.apos.error('invalid', req.t('apostrophe:fileInvalid'));
+          }
+        }
         if (self.isSized(extension)) {
           // For images we correct automatically for common file extension mistakes
           const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name, { sizes: self.imageSizes });
@@ -422,6 +435,20 @@ module.exports = {
         info.createdAt = new Date();
         await self.db.insertOne(info);
         return info;
+      },
+      // Given a path to a local svg file, sanitize any XSS attack vectors that
+      // may be present in the file. The caller is responsible for catching any
+      // exception thrown and treating that as an invalid file but there is no
+      // guarantee that invalid SVG files will be detected or cleaned up, only
+      // XSS attacks.
+      async sanitizeSvg(path) {
+        const readFile = require('util').promisify(fs.readFile);
+        const writeFile = require('util').promisify(fs.writeFile);
+        const window = new JSDOM('').window;
+        const DOMPurify = createDOMPurify(window);
+        const dirty = await readFile(path);
+        const clean = DOMPurify.sanitize(dirty);
+        return writeFile(path, clean);
       },
       getFileGroup(extension) {
         return _.find(self.fileGroups, function (group) {
@@ -707,7 +734,10 @@ module.exports = {
         const batchSize = 100;
         let lastId = '';
         while (true) {
-          const docs = await self.db.find({ _id: { $gt: lastId } }).limit(batchSize).sort({ _id: 1 }).toArray();
+          const docs = await self.db.find({
+            ...(criteria || {}),
+            _id: { $gt: lastId }
+          }).limit(batchSize).sort({ _id: 1 }).toArray();
           if (!docs.length) {
             return;
           }
@@ -1070,6 +1100,38 @@ module.exports = {
           }
           return bulk.execute();
         }
+      },
+      async addSvgSanitizationMigration() {
+        self.apos.migration.add('svg-sanitization', async () => {
+          return self.each({
+            extension: 'svg',
+            sanitized: {
+              $ne: true
+            }
+          }, 1, async attachment => {
+            const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + attachment.extension;
+            const copyIn = require('util').promisify(self.uploadfs.copyIn);
+            const copyOut = require('util').promisify(self.uploadfs.copyOut);
+            const uploadfsPath = self.url(attachment, { uploadfsPath: true });
+            try {
+              await copyOut(uploadfsPath, tempFile);
+              await self.sanitizeSvg(tempFile);
+              await copyIn(tempFile, uploadfsPath);
+              await self.db.update({
+                _id: attachment._id
+              }, {
+                $set: {
+                  sanitized: true
+                }
+              });
+            } catch (e) {
+              console.error(e);
+              // This condition shouldn't occur, but do warn the operator if it does
+              // (possibly on input that is not really an SVG file at all)
+              self.apos.util.error(`Warning: unable to sanitize SVG file ${uploadfsPath}`);
+            }
+          });
+        });
       },
       ...require('./lib/legacy-migrations')(self)
     };

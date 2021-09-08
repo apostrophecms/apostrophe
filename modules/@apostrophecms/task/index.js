@@ -208,25 +208,33 @@ module.exports = {
           mode: 'published',
           aposNeverLoad: {},
           aposStack: [],
-          clone(properties = {}) {
-            return {
-              ...req,
-              ...properties
-            };
-          },
           __(key) {
             self.apos.util.warnDevOnce('old-i18n-req-helper', stripIndent`
               The req.__() and res.__() functions are deprecated and do not localize in A3.
               Use req.t instead.
             `);
             return key;
-          }
+          },
+          session: {}
         };
+        addCloneMethod(req);
         req.res.__ = req.__;
         const { role, ..._properties } = options || {};
         Object.assign(req, _properties);
         self.apos.i18n.setPrefixUrls(req);
         return req;
+
+        function addCloneMethod(req) {
+          req.clone = (properties = {}) => {
+            const _req = {
+              ...req,
+              ...properties
+            };
+            self.apos.i18n.setPrefixUrls(_req);
+            addCloneMethod(_req);
+            return _req;
+          };
+        }
       },
 
       // Convenience wrapper for `getReq`. Returns a request

@@ -18,7 +18,7 @@
             :value="JSON.stringify(choice.value)"
             :selected="choice.value === value.data"
           >
-            {{ choice.label }}
+            {{ $t(choice.label) }}
           </option>
         </select>
         <AposIndicator
@@ -34,7 +34,7 @@
           class="apos-input__role__permission-grid__set"
         >
           <h4 class="apos-input__role__permission-grid__set-name">
-            {{ permissionSet.label }}
+            {{ $t(permissionSet.label) }}
             <AposIndicator
               v-if="permissionSet.includes"
               icon="help-circle-icon"
@@ -56,14 +56,14 @@
                   :icon-color="permission.value ? 'var(--a-success)' : 'var(--a-base-5)'"
                 />
                 <span v-if="permission.value" class="apos-sr-only">
-                  Enabled
+                  {{ $t('apostrophe:enabled') }}
                 </span>
                 <span v-else class="apos-sr-only">
-                  Disabled
+                  {{ $t('apostrophe:disabled') }}
                 </span>
               </dd>
               <dt class="apos-input__role__permission-grid__label">
-                {{ permission.label }}
+                {{ $t(permission.label) }}
               </dt>
             </div>
           </dl>
@@ -127,22 +127,17 @@ export default {
       const intro = document.createElement('p');
       const followUp = document.createElement('p');
       const link = document.createElement('a');
-      intro.appendChild(document.createTextNode('Pieces are structured content. They are often used for content like articles, events, products, categories, etc.'));
-      followUp.appendChild(document.createTextNode('Pieces for this site include:'));
-      link.appendChild(document.createTextNode('Explanation of Pieces'));
-      link.setAttribute('href', 'https://a3.docs.apostrophecms.org/reference/glossary.html#piece');
-      link.setAttribute('_target', 'blank');
+      intro.appendChild(document.createTextNode(this.$t('apostrophe:piecePermissionsIntro')));
+      followUp.appendChild(document.createTextNode(this.$t('apostrophe:piecePermissionsPieceTypeList')));
       html.appendChild(intro);
       html.appendChild(followUp);
       includes.forEach(item => {
         const li = document.createElement('li');
-        li.appendChild(document.createTextNode(item));
+        li.appendChild(document.createTextNode(this.$t(item)));
         list.appendChild(li);
       });
       html.appendChild(list);
-      // TODO append this link when doc urls are more stable
-      // html.appendChild(link);
-      return { content: html };
+      return { content: html, localize: false };
     },
     validate(value) {
       if (this.field.required && !value.length) {
@@ -197,6 +192,7 @@ export default {
   }
 
   .apos-input__role__permission-grid__set-name {
+    @include type-title;
     display: inline-flex;
     margin: 0 0 $spacing-double;
   }

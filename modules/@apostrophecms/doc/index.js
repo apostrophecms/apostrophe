@@ -255,10 +255,10 @@ module.exports = {
         // the published doc's content. Note that deleting a draft recursively
         // deletes both the published and previous docs.
         async deleteOtherModes(req, doc, options) {
-          if (doc.aposLocale.endsWith(':draft')) {
+          if (doc.aposLocale && doc.aposLocale.endsWith(':draft')) {
             return cleanup('published');
           }
-          if (doc.aposLocale.endsWith(':published')) {
+          if (doc.aposLocale && doc.aposLocale.endsWith(':published')) {
             return cleanup('previous');
           }
           async function cleanup(mode) {
@@ -1035,10 +1035,7 @@ module.exports = {
               if (!existing.find(doc => doc.aposLocale === locale)) {
                 const module = self.getManager(sourceDoc.type);
                 const localized = await module.localize(req, sourceDoc, locale);
-                await module.publish({
-                  ...req,
-                  locale
-                }, localized);
+                await module.publish(req.clone({ locale }), localized);
               }
             }
           }

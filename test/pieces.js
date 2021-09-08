@@ -230,6 +230,8 @@ describe('Pieces', function() {
     foo: 'bar'
   };
 
+  let insertedOne, insertedTwo;
+
   const additionalThings = [
     {
       _id: 'thing1:en:published',
@@ -265,7 +267,16 @@ describe('Pieces', function() {
   // Test pieces.insert()
   it('should be able to insert a piece into the database', async () => {
     assert(apos.modules.thing.insert);
-    await apos.modules.thing.insert(apos.task.getReq(), testThing);
+    insertedOne = await apos.modules.thing.insert(apos.task.getReq(), testThing);
+  });
+
+  it('should be able to insert a second piece into the database', async () => {
+    assert(apos.modules.thing.insert);
+    const template = { ...testThing };
+    template._id = null;
+    template.aposDocId = null;
+    template.title = 'hello #2';
+    insertedTwo = await apos.modules.thing.insert(apos.task.getReq(), template);
   });
 
   it('should be able to retrieve a piece by id from the database', async () => {
@@ -276,6 +287,20 @@ describe('Pieces', function() {
     assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.title === 'hello');
     assert(req.piece.foo === 'bar');
+  });
+
+  it('should be able to retrieve the next piece from the database per sort order', async () => {
+    const req = apos.task.getReq();
+    // The default sort order is reverse chronological, so "next" is older, not newer
+    const next = await apos.modules.thing.find(req).next(insertedTwo).toObject();
+    assert(next.title === 'hello');
+  });
+
+  it('should be able to retrieve the previous piece from the database', async () => {
+    const req = apos.task.getReq();
+    // The default sort order is reverse chronological, so "previous" is newer, not older
+    const previous = await apos.modules.thing.find(req).previous(insertedOne).toObject();
+    assert(previous.title === 'hello #2');
   });
 
   // Test pieces.update()
