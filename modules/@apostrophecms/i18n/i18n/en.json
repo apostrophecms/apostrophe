@@ -293,6 +293,7 @@
   "saveDraftAndPreviewDescription": "Save as a draft and preview the {{ typeLabel }}.",
   "savingDocument": "Saving document...",
   "searchDocType": "Search {{ type }}",
+  "searchLabel": "Search Page",
   "searchLocales": "Search Locales",
   "searchLocalesPlaceholder": "Search locales...",
   "select": "Select",
