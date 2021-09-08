@@ -122,7 +122,9 @@ export default {
     selectAll() {
       if (!this.checked.length) {
         this.items.forEach((item) => {
-          if (this.relationshipField && this.relationshipErrors === 'max') {
+          const relationshipsMaxed = this.relationshipField && this.maxReached();
+
+          if (relationshipsMaxed || !item.lastPublishedAt) {
             return;
           }
 
