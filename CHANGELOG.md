@@ -8,6 +8,8 @@
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
 * Fixes bug in the "select all" relationship chooser UI where it selected unpublished items.
 * Fixes bug in "next" and "previous" query builders.
+* Cutting and pasting widgets now works between locales that do not share a hostname, provided that you switch locales after cutting (it does not work between tabs that are already open on separate hostnames).
+* The `req.session` object now exists in task `req` objects, for better compatibility. It has no actual persistence.
 * Unlocalized piece types, such as users, may now be selected as part of a relationship when browsing.
 * Unpublished localized piece types may not be selected via the autocomplete feature of the relationship input field, which formerly ignored this requirement, although the browse button enforced it.
 * The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.

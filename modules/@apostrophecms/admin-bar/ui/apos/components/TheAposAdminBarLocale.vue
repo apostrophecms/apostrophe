@@ -136,7 +136,8 @@ export default {
       const result = await apos.http.post(`${apos.i18n.action}/locale`, {
         body: {
           contextDocId: apos.adminBar.context && apos.adminBar.context._id,
-          locale: name
+          locale: name,
+          clipboard: localStorage.getItem('aposWidgetClipboard')
         }
       });
 
