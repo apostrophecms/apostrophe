@@ -60,9 +60,6 @@
         @add="add"
       />
     </div>
-    <!-- <style>
-      body { border: 10px solid gold; }
-    </style> -->
   </div>
 </template>
 
