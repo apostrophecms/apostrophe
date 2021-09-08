@@ -228,8 +228,7 @@ module.exports = {
           }
           await manager.convert(req, input, page, {
             onlyPresentFields: true,
-            copyingId,
-            isPage: true
+            copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
           return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
@@ -291,7 +290,7 @@ module.exports = {
 
           self.enforceParkedProperties(req, page, input);
 
-          await manager.convert(req, input, page, { isPage: true });
+          await manager.convert(req, input, page);
           await self.update(req, page);
 
           if (input._targetId) {
@@ -732,7 +731,7 @@ database.`);
         }
         self.apos.schema.implementPatchOperators(input, page);
         const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
-        const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req, {
+        const schema = self.apos.schema.subsetSchemaForPatch(manager.allowedSchema(req, {
           ...page,
           type: manager.name
         }, parentPage), input);
@@ -2062,47 +2061,11 @@ database.`);
           await change(req, page, data);
         }
       },
-      // Given a page and its parent (if any), returns a schema that
-      // is filtered appropriately to that page's type, taking into
-      // account whether the page is new and the parent's allowed
-      // subpage types
+      // Backward compatible method following moving this to page-type module.
+      // This page module method may be deprecated in the next major version.
       allowedSchema(req, page, parentPage) {
-        let schema = self.apos.doc.getManager(page.type).allowedSchema(req);
-        const typeField = _.find(schema, { name: 'type' });
-        if (typeField) {
-          const allowed = self.allowedChildTypes(parentPage);
-          // For a preexisting page, we can't forbid the type it currently has
-          if (page._id && !_.includes(allowed, page.type)) {
-            allowed.unshift(page.type);
-          }
-          typeField.choices = _.map(allowed, function (name) {
-            return {
-              value: name,
-              label: getLabel(name)
-            };
-          });
-        }
-        if (page._id) {
-          // Preexisting page
-          schema = self.addApplyToSubpagesToSchema(schema);
-          schema = self.removeParkedPropertiesFromSchema(page, schema);
-        }
-        return schema;
-        function getLabel(name) {
-          const choice = _.find(self.typeChoices, { name: name });
-          let label = choice && choice.label;
-          if (!label) {
-            const manager = self.apos.doc.getManager(name);
-            if (!manager) {
-              throw new Error(`There is no page type ${name} but it is configured in the types option`);
-            }
-            label = manager.label;
-          }
-          if (!label) {
-            label = name;
-          }
-          return label;
-        }
+        return self.apos.doc.getManager(page.type)
+          .allowedSchema(req, page, parentPage);
       },
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
