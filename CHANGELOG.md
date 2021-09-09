@@ -25,10 +25,12 @@
 * Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
 * Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
 * `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity. The `apos.util.onReadyAndRefresh` method name will be deprecated in the next major version.
-
+* Adds 'no-search' modifier to relationship fields as a UI simplification option
+* Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
 ### Changes
 
 * Removes the temporary `trace` method from the `@apostrophecms/db` module.
+* AposButton's `block` modifier now less login-specific
 
 ### Changes
 
