@@ -112,6 +112,8 @@ module.exports = async function(options) {
     await instantiateModules();
     lintModules();
     await self.emit('modulesRegistered'); // formerly modulesReady
+    self.apos.schema.validateAllSchemas();
+    self.apos.schema.registerAllSchemas();
     await self.apos.migration.migrate(); // emits before and after events, inside the lock
     await self.apos.global.insertIfMissing();
     await self.apos.page.implementParkAllInDefaultLocale();
