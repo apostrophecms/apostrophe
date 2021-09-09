@@ -40,6 +40,7 @@
     "cuid": "^1.3.8",
     "deep-get-set": "^0.1.1",
     "diff": "^4.0.1",
+    "dompurify": "^2.3.1",
     "emulate-mongo-2-driver": "^1.2.3",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
