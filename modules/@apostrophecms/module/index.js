@@ -639,7 +639,7 @@ module.exports = {
 
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         addHelpers() {
           // We check this just to allow init in bootstrap tests that
           // have no templates module

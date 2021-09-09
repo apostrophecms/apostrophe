@@ -72,7 +72,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         addSecret() {
           // So this property is hashed and the hash kept in the safe,
           // rather than ever being stored literally

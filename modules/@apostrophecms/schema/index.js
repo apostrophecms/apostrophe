@@ -1084,7 +1084,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:afterInit': {
+      'apostrophe:ready': {
         validateAllSchemas() {
           _.each(self.apos.doc.managers, function (manager, type) {
             self.validate(manager.schema, {

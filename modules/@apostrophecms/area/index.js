@@ -71,7 +71,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         getRichTextWidgetTypes() {
           _.each(self.widgetManagers, function (manager, name) {
             if (manager.getRichText) {

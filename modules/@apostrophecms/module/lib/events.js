@@ -4,6 +4,15 @@ module.exports = function(self) {
 
   return {
 
+    // Register an old event name to be accepted for a new event name.
+    // If newName is emitted, oldName will be accepted as a synonym in handlers.
+    // Currently supported for Apostrophe core module events only. Not to be
+    // used for module-specific events. Call with just the event name,
+    // not the `apostrophe:` part.
+    aliasEvent(oldName, newName) {
+      self.apos.eventAliases[`apostrophe:${oldName}`] = newName;
+    },
+
     // Emit an event from this module.
     //
     // This is an async function and must be awaited. It will
@@ -82,6 +91,7 @@ module.exports = function(self) {
       if (_.camelCase(eventName) === _.camelCase(handlerName)) {
         throw new Error('The handler name ' + handlerName + ' is essentially identical to the event name, ' + eventName + '. To prevent conflicts with other handlers, you must give it a distinct name expressing what it actually does with the event.');
       }
+      eventName = self.apos.eventAliases[`${moduleName}:${eventName}`] || eventName;
       self.apos.eventHandlers[moduleName] = self.apos.eventHandlers[moduleName] || {};
       const eh = self.apos.eventHandlers[moduleName];
       eh[eventName] = eh[eventName] || [];
