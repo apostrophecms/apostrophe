@@ -62,7 +62,8 @@ module.exports = {
       _tags: {
         type: 'relationship',
         label: 'apostrophe:tags',
-        withType: '@apostrophecms/image-tag'
+        withType: '@apostrophecms/image-tag',
+        modifiers: [ 'no-search' ]
       }
     },
     group: {

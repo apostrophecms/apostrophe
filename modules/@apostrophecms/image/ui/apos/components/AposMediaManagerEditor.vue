@@ -217,6 +217,7 @@ export default {
   mounted() {
     this.generateLipKey();
     this.$emit('modified', false);
+    console.log(this.schema);
   },
   methods: {
     moreMenuHandler(action) {

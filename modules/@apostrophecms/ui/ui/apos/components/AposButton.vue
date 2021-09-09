@@ -395,8 +395,6 @@ export default {
     box-sizing: border-box;
     display: block;
     width: 100%;
-    height: 47px;
-    max-width: 400px;
   }
 
   .apos-button--icon-right {

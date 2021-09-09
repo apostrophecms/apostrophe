@@ -38,6 +38,9 @@
                   label="apostrophe:login"
                   button-type="submit"
                   :modifiers="['gradient-on-hover', 'block']"
+                  :attrs="{
+                    'style': 'height: 47px'
+                  }"
                   @click="submit"
                 />
               </form>
