@@ -1082,34 +1082,7 @@ module.exports = {
 
     self.validatedSchemas = {};
   },
-  handlers(self) {
-    return {
-      'apostrophe:ready': {
-        validateAllSchemas() {
-          _.each(self.apos.doc.managers, function (manager, type) {
-            self.validate(manager.schema, {
-              type: 'doc type',
-              subtype: type
-            });
-          });
-          _.each(self.apos.area.widgetManagers, function (manager, type) {
-            self.validate(manager.schema, {
-              type: 'widget type',
-              subtype: type
-            });
-          });
-        },
-        registerAllSchemas() {
-          _.each(self.apos.doc.managers, function (manager, type) {
-            self.register('doc', type, manager.schema);
-          });
-          _.each(self.apos.area.widgetManagers, function (manager, type) {
-            self.register('widget', type, manager.schema);
-          });
-        }
-      }
-    };
-  },
+
   methods(self) {
     const defaultGroup = self.options.defaultGroup || {
       name: 'ungrouped',
@@ -2525,7 +2498,32 @@ module.exports = {
           // We don't want to regenerate attachment ids. They correspond to
           // actual files, and the reference count will update automatically
         }
+      },
+
+      validateAllSchemas() {
+        _.each(self.apos.doc.managers, function (manager, type) {
+          self.validate(manager.schema, {
+            type: 'doc type',
+            subtype: type
+          });
+        });
+        _.each(self.apos.area.widgetManagers, function (manager, type) {
+          self.validate(manager.schema, {
+            type: 'widget type',
+            subtype: type
+          });
+        });
+      },
+
+      registerAllSchemas() {
+        _.each(self.apos.doc.managers, function (manager, type) {
+          self.register('doc', type, manager.schema);
+        });
+        _.each(self.apos.area.widgetManagers, function (manager, type) {
+          self.register('widget', type, manager.schema);
+        });
       }
+
     };
   },
   extendMethods(self) {
