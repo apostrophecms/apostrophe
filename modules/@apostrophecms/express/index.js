@@ -187,7 +187,7 @@ module.exports = {
           return require('util').promisify(self.server.destroy)();
         }
       },
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         addCsrf() {
           self.enableCsrf();
         },

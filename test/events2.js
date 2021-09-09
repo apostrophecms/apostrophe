@@ -30,7 +30,7 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
                   }
                 }
               },
-              'apostrophe:modulesReady': {
+              'apostrophe:modulesRegistered': {
                 modulesReadyCoreEventsWork() {
                   coreEventsWork = true;
                 }

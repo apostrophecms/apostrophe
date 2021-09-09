@@ -6,6 +6,8 @@ describe('Promisified Events Core', function() {
   this.timeout(50000);
 
   let apos;
+  let modulesReadyStillFires;
+  let afterInitStillFires;
 
   after(function() {
     return t.destroy(apos);
@@ -47,7 +49,7 @@ describe('Promisified Events Core', function() {
                   niceFinished = true;
                 }
               },
-              'apostrophe:modulesReady': {
+              'apostrophe:modulesRegistered': {
                 async testHandlers() {
                   const context = {};
                   await self.emit('ready1', context);
@@ -66,6 +68,17 @@ describe('Promisified Events Core', function() {
                   assert(context.c);
                   assert(context.d);
                   assert(niceFinished);
+                }
+              },
+              // Verify legacy event name aliases still work
+              'apostrophe:modulesReady': {
+                async stillFires() {
+                  modulesReadyStillFires = true;
+                }
+              },
+              'apostrophe:afterInit': {
+                async stillFires() {
+                  afterInitStillFires = true;
                 }
               }
             };
@@ -93,5 +106,7 @@ describe('Promisified Events Core', function() {
       }
     });
     assert(niceFinished);
+    assert(modulesReadyStillFires);
+    assert(afterInitStillFires);
   });
 });

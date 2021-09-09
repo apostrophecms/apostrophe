@@ -32,7 +32,7 @@ module.exports = {
   },
   handlers (self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         async runUiBuildTask() {
           if (
             // Do not automatically build the UI if we're starting from a task

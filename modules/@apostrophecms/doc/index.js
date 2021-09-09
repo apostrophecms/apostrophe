@@ -271,13 +271,6 @@ module.exports = {
             }
           }
         }
-      },
-      // Happens within the migration process, but specifically after
-      // parked pages exist so they can be replicated
-      '@apostrophecms/page:afterParkAll': {
-        async replicate() {
-          return self.replicate();
-        }
       }
     };
   },
@@ -990,7 +983,11 @@ module.exports = {
       // across all locales: parked pages, and piece types with the
       // replicate: true option. The latter currently must be singletons
       // like the global doc or the palette doc, they cannot be types
-      // with more than one instance per locale
+      // with more than one instance per locale. Emits
+      // `@apostrophecms/doc:beforeReplicate` with an array of criteria
+      // to be used to locate docs that require replication, which can
+      // be modified by event handlers. Also emits `@apostrophecms/doc:afterReplicate`
+      // when replication is complete.
       async replicate() {
         const localeNames = Object.keys(self.apos.i18n.locales);
         if (localeNames.length === 1) {
@@ -1008,6 +1005,8 @@ module.exports = {
             type: module.name
           });
         }
+        // Include the criteria array in the event so that more entries can be pushed to it
+        await self.emit('beforeReplicate', criteria);
         for (const criterion of criteria) {
           const existing = await self.apos.doc.db.find({
             ...criterion,
