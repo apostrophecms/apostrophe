@@ -1,3 +1,4 @@
+/test/package.json
 *.swp
 package-lock.json
 test/public/modules/*
