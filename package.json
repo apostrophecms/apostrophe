@@ -4,9 +4,10 @@
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "test": "npm run lint && npm run audit && mocha --timeout 50000",
+    "test": "npm run build-test-package-json && npm run lint && npm run audit && mocha --timeout 50000",
     "audit": "npm audit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build-test-package-json": "node ./test-lib/build-test-package-json.js"
   },
   "repository": {
     "type": "git",
