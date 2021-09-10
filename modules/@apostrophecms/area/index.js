@@ -26,6 +26,7 @@ module.exports = {
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
     self.enableBrowserData();
+    self.addDuplicateWidgetIdsMigration();
   },
   apiRoutes(self) {
     return {
@@ -567,6 +568,25 @@ module.exports = {
           widgetManagers,
           action: self.action
         };
+      },
+      async addDuplicateWidgetIdsMigration() {
+        self.apos.migration.add('deduplicate-widget-ids', () => {
+          const seen = new Set();
+          return self.apos.migration.eachWidget({}, async (doc, widget, dotPath) => {
+            if ((!widget._id) || seen.has(widget._id)) {
+              const _id = self.apos.util.generateId();
+              return self.apos.doc.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: {
+                  [`${dotPath}._id`]: _id
+                }
+              });
+            } else {
+              seen.add(widget._id);
+            }
+          });
+        });
       }
     };
   },

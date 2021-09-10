@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const cuid = require('cuid');
 
 // This module is responsible for managing all of the documents (apostrophe "docs")
 // in the `aposDocs` mongodb collection.
@@ -198,6 +199,9 @@ module.exports = {
               username: 'ApostropheCMS'
             };
           }
+        },
+        deduplicateWidgetIds(req, doc, options) {
+          this.deduplicateWidgetIds(doc);
         }
       },
       '@apostrophecms/doc-type:afterInsert': {
@@ -1058,6 +1062,18 @@ module.exports = {
           aposLocale: 1
         }).toArray();
         return existing;
+      },
+      deduplicateWidgetIds(doc) {
+        const seen = new Set();
+        self.apos.area.walk(doc, area => {
+          for (const widget of area.items || []) {
+            if ((!widget._id) || seen.has(widget._id)) {
+              widget._id = cuid();
+            } else {
+              seen.add(widget._id);
+            }
+          }
+        });
       },
       ...require('./lib/legacy-migrations')(self)
     };

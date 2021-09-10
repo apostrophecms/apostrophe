@@ -67,10 +67,11 @@
 import cuid from 'cuid';
 import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import AposRegenerateIdsMixin from 'Modules/@apostrophecms/ui/mixins/AposRegenerateIdsMixin';
 
 export default {
   name: 'AposAreaEditor',
-  mixins: [ AposThemeMixin ],
+  mixins: [ AposThemeMixin, AposRegenerateIdsMixin ],
   props: {
     docId: {
       type: String,
@@ -362,28 +363,6 @@ export default {
         widget,
         index
       });
-    },
-    // Regenerate all array item, area and widget ids so they are considered
-    // new. Useful when copying a widget with nested content.
-    regenerateIds(schema, object) {
-      object._id = cuid();
-      for (const field of schema) {
-        if (field.type === 'array') {
-          for (const item of (object[field.name] || [])) {
-            this.regenerateIds(field.schema, item);
-          }
-        } else if (field.type === 'area') {
-          if (object[field.name]) {
-            object[field.name]._id = cuid();
-            for (const item of (object[field.name].items || [])) {
-              const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
-              this.regenerateIds(schema, item);
-            }
-          }
-        }
-        // We don't want to regenerate attachment ids. They correspond to
-        // actual files, and the reference count will update automatically
-      }
     },
     async update(widget) {
       if (this.docId === window.apos.adminBar.contextId) {
