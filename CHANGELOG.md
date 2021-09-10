@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.220.6 (2021-09-10)
+
+## Security
+
+* SVG files can contain XSS attack vectors. Fortunately, these cannot be exploited when the SVG file is used in an `img` tag or as a CSS background, which is normally the case for SVGs uploaded to Apostrophe. However, Apostrophe does provide a "View File" button in the media manager which could load the file in a way that could trigger XSS attacks in a carefully crafted SVG intentionally designed to phish Apostrophe admins. To mitigate this risk, starting with version 2.220.6 the "View File" button downloads the SVG file to the local computer as an attachment. This removes it from the domain of the website, so that any embedded JavaScript cannot be used to trigger actions in Apostrophe. However please note that it is your responsibility to avoid the use of inline `svg` with untrusted SVG files, or the use of `iframe`, `embed` or `object` tags with untrusted SVG files. If you have not enabled the `svgImages` option to `apostrophe-attachments`, then your site does not accept SVG uploads and this risk is not relevant to you.
+
+## Fixes
+
+* At least in a nightwatch regression testing context, `transitionend` events have been observed not to fire, resulting in unreliable test suites. A change has been made to accommodate this scenario with a fallback timer relating to indicating the current topmost modal.
+
 ## 2.220.5 (2021-08-30)
 
 ## Fixes
