@@ -29,10 +29,8 @@
 ### Changes
 
 * Removes the temporary `trace` method from the `@apostrophecms/db` module.
-
-### Changes
-
 * Beginning with this release, the `apostrophe:modulesReady` event has been renamed `apostrophe:modulesRegistered`, and the `apostrophe:afterInit` event has been renamed `apostrophe:ready`. This better reflects their actual roles. The old event names are accepted for backwards compatibility. See the documentation for more information.
+* Only autofocuses rich text editors when they are empty.
 
 ## 3.3.1 - 2021-09-01
 
