@@ -26,7 +26,7 @@ module.exports = {
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
     self.enableBrowserData();
-    self.addDuplicateWidgetIdsMigration();
+    self.addDeduplicateWidgetIdsMigration();
   },
   apiRoutes(self) {
     return {
@@ -569,7 +569,7 @@ module.exports = {
           action: self.action
         };
       },
-      async addDuplicateWidgetIdsMigration() {
+      async addDeduplicateWidgetIdsMigration() {
         self.apos.migration.add('deduplicate-widget-ids', () => {
           // Make them globally unique because that is easiest to
           // definitely get correct for this one-time migration, although
