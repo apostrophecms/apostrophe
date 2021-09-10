@@ -52,6 +52,9 @@ module.exports = {
           widget = await sanitize(widget);
           widget._edit = true;
           widget._docId = _docId;
+          // So that carrying out relationship loading again can yield results
+          // (the idsStorage must be populated as if we were saving)
+          self.apos.schema.prepareForStorage(req, widget);
           await load();
           return render();
           async function sanitize(widget) {
