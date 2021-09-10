@@ -1,7 +1,6 @@
 /test/package.json
 *.swp
 package-lock.json
-/test/package.json
 test/public/modules/*
 test/public/css/master-*
 npm-debug.log
