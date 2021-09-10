@@ -107,7 +107,6 @@ import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
-import AposRegenerateIdsMixin from 'Modules/@apostrophecms/ui/mixins/AposRegenerateIdsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import cuid from 'cuid';
@@ -120,8 +119,7 @@ export default {
     AposEditorMixin,
     AposPublishMixin,
     AposAdvisoryLockMixin,
-    AposArchiveMixin,
-    AposRegenerateIdsMixin
+    AposArchiveMixin
   ],
   props: {
     moduleName: {
@@ -403,7 +401,6 @@ export default {
       }
     } else if (this.copyOf) {
       const newInstance = klona(this.copyOf);
-      this.regenerateIds(apos.modules[newInstance.type].schema, newInstance);
       delete newInstance.parked;
       newInstance.title = `Copy of ${this.copyOf.title}`;
       if (this.copyOf.slug.startsWith('/')) {

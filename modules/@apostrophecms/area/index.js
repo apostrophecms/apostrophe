@@ -571,6 +571,11 @@ module.exports = {
       },
       async addDuplicateWidgetIdsMigration() {
         self.apos.migration.add('deduplicate-widget-ids', () => {
+          // Make them globally unique because that is easiest to
+          // definitely get correct for this one-time migration, although
+          // there is no guarantee that widget ids are unique between
+          // separate documents going forward. The guarantee is that they
+          // will be unique within documents
           const seen = new Set();
           return self.apos.migration.eachWidget({}, async (doc, widget, dotPath) => {
             if ((!widget._id) || seen.has(widget._id)) {
