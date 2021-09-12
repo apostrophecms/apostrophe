@@ -512,7 +512,7 @@ export default {
 
       if (refreshable) {
         refreshable.innerHTML = content;
-        if (!this.original) {
+        if (this.editMode && (!this.original)) {
           // the first time we enter edit mode on the page, we need to
           // establish a baseline for undo/redo. Use our
           // "@ notation" PATCH feature. Sort the areas by DOM depth
