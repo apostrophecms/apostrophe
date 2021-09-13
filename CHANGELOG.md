@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.4.0 - 2021-09-13
 
 ### Security
 
