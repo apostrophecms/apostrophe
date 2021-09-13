@@ -18,6 +18,10 @@
 * Unlocalized piece types, such as users, may now be selected as part of a relationship when browsing.
 * Unpublished localized piece types may not be selected via the autocomplete feature of the relationship input field, which formerly ignored this requirement, although the browse button enforced it.
 * The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.
+* Starting in version 3.3.1, a newly added image widget did not display its image until the page was refreshed. This has been fixed.
+* A bug that prevented Undo operations from working properly and resulted in duplicate widget _id properties has been fixed.
+* Duplicate widget _id properties within the same document are now prevented on the server side at save time.
+* Existing duplicate widget _id properties are corrected by a one-time migration.
 
 ### Adds
 
@@ -29,6 +33,8 @@
 ### Changes
 
 * Removes the temporary `trace` method from the `@apostrophecms/db` module.
+* Beginning with this release, the `apostrophe:modulesReady` event has been renamed `apostrophe:modulesRegistered`, and the `apostrophe:afterInit` event has been renamed `apostrophe:ready`. This better reflects their actual roles. The old event names are accepted for backwards compatibility. See the documentation for more information.
+* Only autofocuses rich text editors when they are empty.
 
 ## 3.3.1 - 2021-09-01
 
