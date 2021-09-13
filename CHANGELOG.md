@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.4.1 - 2021-09-13
+
+No changes. Publishing to correctly mark the latest 3.x release as "latest" in npm.
+
 ## 3.4.0 - 2021-09-13
 
 ### Security
