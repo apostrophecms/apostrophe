@@ -29,12 +29,14 @@
 * Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
 * Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
 * `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity. The `apos.util.onReadyAndRefresh` method name will be deprecated in the next major version.
+* Adds a developer setting that applies a margin between parent and child areas, allowing developers to change the default spacing in nested areas.
 
 ### Changes
 
 * Removes the temporary `trace` method from the `@apostrophecms/db` module.
 * Beginning with this release, the `apostrophe:modulesReady` event has been renamed `apostrophe:modulesRegistered`, and the `apostrophe:afterInit` event has been renamed `apostrophe:ready`. This better reflects their actual roles. The old event names are accepted for backwards compatibility. See the documentation for more information.
 * Only autofocuses rich text editors when they are empty.
+* Nested areas now have a vertical margin applied when editing, allowing easier access to the parent area's controls.
 
 ## 3.3.1 - 2021-09-01
 

@@ -1,7 +1,7 @@
 module.exports = {
   options: {
     alias: 'ui',
-    widgetMargin: '0'
+    widgetMargin: '20px 0'
   },
   icons: {
     'earth-icon': 'Earth',
