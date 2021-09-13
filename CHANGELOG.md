@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized. 
+
 ## 3.4.1 - 2021-09-13
 
 No changes. Publishing to correctly mark the latest 3.x release as "latest" in npm.
