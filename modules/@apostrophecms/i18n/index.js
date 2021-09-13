@@ -74,7 +74,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         addModal() {
           self.addLocalizeModal();
         }
@@ -257,6 +257,15 @@ module.exports = {
       post: {
         async locale(req) {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
+          // Clipboards transferring between locales needs to jump
+          // from LocalStorage to the cross-domain session cache
+          let clipboard = req.body.clipboard;
+          if (clipboard && ((typeof clipboard) !== 'string')) {
+            // Clipboard re-validation doesn't have to be more detailed here because
+            // on any actual paste attempt it will go through server side validation
+            // like any normal insert of a widget
+            clipboard = null;
+          }
           const _id = self.apos.launder.id(req.body.contextDocId);
           let doc;
           const localeReq = req.clone({
@@ -286,7 +295,11 @@ module.exports = {
           };
           if (self.locales[localeReq.locale].hostname !== self.locales[req.locale].hostname) {
             const crossDomainSessionToken = self.apos.util.generateId();
-            await self.apos.cache.set('@apostrophecms/i18n:cross-domain-sessions', crossDomainSessionToken, req.session, 60 * 60);
+            const session = {
+              ...req.session,
+              aposCrossDomainClipboard: clipboard
+            };
+            await self.apos.cache.set('@apostrophecms/i18n:cross-domain-sessions', crossDomainSessionToken, session, 60 * 60);
             result.redirectTo = self.apos.url.build(result.redirectTo, {
               aposCrossDomainSessionToken: crossDomainSessionToken
             });
@@ -453,8 +466,12 @@ module.exports = {
           locales: self.locales,
           debug: self.debug,
           show: self.show,
-          action: self.action
+          action: self.action,
+          crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard
         };
+        if (req.session && req.session.aposCrossDomainClipboard) {
+          req.session.aposCrossDomainClipboard = null;
+        }
         return result;
       },
       getBrowserBundles(locale) {

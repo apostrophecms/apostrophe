@@ -386,7 +386,7 @@ module.exports = {
           piece.type = self.name;
         }
       },
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         composeBatchOperations() {
           self.batchOperations = Object.keys(self.batchOperations).map(key => ({
             name: key,

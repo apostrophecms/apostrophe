@@ -214,7 +214,8 @@ module.exports = {
               Use req.t instead.
             `);
             return key;
-          }
+          },
+          session: {}
         };
         addCloneMethod(req);
         req.res.__ = req.__;

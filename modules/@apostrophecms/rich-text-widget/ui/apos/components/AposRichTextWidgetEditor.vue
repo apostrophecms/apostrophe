@@ -153,7 +153,7 @@ export default {
   mounted() {
     this.editor = new Editor({
       content: this.initialContent,
-      autofocus: true,
+      autofocus: !this.initialContent,
       onUpdate: this.editorUpdate,
       extensions: [
         StarterKit,

@@ -21,7 +21,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:afterInit': {
+      'apostrophe:ready': {
         orderAndGroupItems() {
           self.orderItems();
           self.groupItems();
