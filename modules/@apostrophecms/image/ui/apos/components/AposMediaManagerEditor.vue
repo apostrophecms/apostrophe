@@ -191,7 +191,7 @@ export default {
       if (!this.activeMedia.attachment || !this.activeMedia.attachment.createdAt) {
         return '';
       }
-      return dayjs(this.activeMedia.attachment.createdAt).format(this.$t('apostrophe:mediaCreatedDateDayjsFormat'));
+      return dayjs(this.activeMedia.attachment.createdAt).format(this.$t('apostrophe:dayjsMediaCreatedDateFormat'));
     },
     isArchived() {
       return this.media.archived;
