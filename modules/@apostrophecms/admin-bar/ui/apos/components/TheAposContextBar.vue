@@ -442,6 +442,7 @@ export default {
       this.rememberLastBaseContext();
     },
     onContextEdited(patch) {
+      patch = klona(patch);
       this.patchesSinceLoaded.push(patch);
       this.patchesSinceSave.push(patch);
       this.undone = [];

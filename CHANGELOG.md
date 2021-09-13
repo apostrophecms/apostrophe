@@ -20,6 +20,7 @@
 * The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.
 * Starting in version 3.3.1, a newly added image widget did not display its image until the page was refreshed. This has been fixed.
 * A bug that prevented Undo operations from working properly and resulted in duplicate widget _id properties has been fixed.
+* A bug that caused problems for Undo operations in nested widgets, i.e. layout or multicolumn widgets, has been fixed.
 * Duplicate widget _id properties within the same document are now prevented on the server side at save time.
 * Existing duplicate widget _id properties are corrected by a one-time migration.
 
