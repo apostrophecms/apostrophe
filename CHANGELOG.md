@@ -4,7 +4,11 @@
 
 ### Fixes
 
-* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized. 
+* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
+
+### Changes
+
+* Cascade grouping (e.g., grouping fields) will now concatenate a group's field name array with the field name array of an existing group of the same name. Put simply, if a new piece module adds their custom fields to a `basics` group, that field will be added to the default `basics` group fields. Previously the new group would have replaced the old, leaving inherited fields in the "Ungrouped" section.
 
 ## 3.4.1 - 2021-09-13
 
