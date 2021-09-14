@@ -15,17 +15,21 @@
       </div>
       <ul class="apos-media-editor__details">
         <li class="apos-media-editor__detail" v-if="createdDate">
-          Uploaded: {{ createdDate }}
+          {{ $t('apostrophe:mediaCreatedDate', { createdDate }) }}
         </li>
         <li class="apos-media-editor__detail" v-if="fileSize">
-          File Size: {{ fileSize }}
+          {{ $t('apostrophe:mediaFileSize', { fileSize }) }}
         </li>
         <li
           class="apos-media-editor__detail"
           v-if="activeMedia.attachment && activeMedia.attachment.width"
         >
-          Dimensions: {{ activeMedia.attachment.width }} 𝗑
-          {{ activeMedia.attachment.height }}
+          {{
+            $t('apostrophe:mediaDimensions', {
+              width: activeMedia.attachment.width,
+              height: activeMedia.attachment.height
+            })
+          }}
         </li>
       </ul>
       <ul class="apos-media-editor__links">
@@ -163,25 +167,31 @@ export default {
     },
     fileSize() {
       if (
-        !this.activeMedia.attachment || !this.activeMedia.attachment.length ||
-        !this.activeMedia.attachment.length.size
+        !this.activeMedia.attachment || !this.activeMedia.attachment.length
       ) {
         return '';
       }
-
-      const size = this.activeMedia.attachment.length.size;
-
+      const size = this.activeMedia.attachment.length;
+      const formatter = new Intl.NumberFormat(apos.locale, {
+        maximumFractionDigits: 2
+      });
       if (size >= 1000000) {
-        return `${(size / 1000000).toFixed(2)}MB`;
+        const formatted = formatter.format(size / 1000000);
+        return this.$t('apostrophe:mediaMB', {
+          size: formatted
+        });
       } else {
-        return `${Math.round(size / 1000)}KB`;
+        const formatted = formatter.format(size / 1000);
+        return this.$t('apostrophe:mediaKB', {
+          size: formatted
+        });
       }
     },
     createdDate() {
       if (!this.activeMedia.attachment || !this.activeMedia.attachment.createdAt) {
         return '';
       }
-      return dayjs(this.activeMedia.attachment.createdAt).format('MMM Do, YYYY');
+      return dayjs(this.activeMedia.attachment.createdAt).format(this.$t('apostrophe:dayjsMediaCreatedDateFormat'));
     },
     isArchived() {
       return this.media.archived;
