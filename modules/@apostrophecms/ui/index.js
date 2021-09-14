@@ -1,6 +1,7 @@
 module.exports = {
   options: {
-    alias: 'ui'
+    alias: 'ui',
+    widgetMargin: '20px 0'
   },
   icons: {
     'earth-icon': 'Earth',
@@ -21,7 +22,10 @@ module.exports = {
         if (req.data.user && req.data.user.aposThemePrimary) {
           theme.primary = req.data.user.aposThemePrimary;
         }
-        return { theme };
+        return {
+          theme,
+          widgetMargin: self.options.widgetMargin
+        };
       }
     };
   }
