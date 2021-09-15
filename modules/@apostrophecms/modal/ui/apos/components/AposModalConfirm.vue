@@ -171,7 +171,7 @@ export default {
   right: auto;
   bottom: auto;
   left: auto;
-  width: 550px;
+  max-width: 700px;
   height: auto;
   text-align: center;
 }
