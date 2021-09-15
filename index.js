@@ -254,6 +254,8 @@ module.exports = async function(options) {
   // when options.testModule is true. There must be a
   // test/ or tests/ subdir of the module containing
   // a test.js file that runs under mocha via devDependencies.
+  // If `options.testModule` is a string it will be used as a
+  // namespace for the test module.
 
   function testModule() {
     if (!options.testModule) {
@@ -278,8 +280,8 @@ module.exports = async function(options) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
     if (!fs.existsSync(testDir + '/node_modules')) {
-      fs.mkdirSync(testDir + '/node_modules');
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
+      fs.mkdirSync(testDir + '/node_modules' + addAposIfApos(options.testModule), { recursive: true });
+      fs.symlinkSync(moduleDir, testDir + '/node_modules' + addAposIfApos(options.testModule) + '/' + require('path').basename(moduleDir), 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but
@@ -296,6 +298,10 @@ module.exports = async function(options) {
           throw new Error('mocha does not seem to be running, is this really a test?');
         }
       }
+    }
+
+    function addAposIfApos (testType) {
+      return typeof testType === 'string' ? `/${testType}` : '';
     }
   }
 

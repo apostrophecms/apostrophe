@@ -4,7 +4,11 @@
 
 ### Fixes
 
-* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized. 
+* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
+
+### Adds
+
+* If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
 
 ## 3.4.1 - 2021-09-13
 
