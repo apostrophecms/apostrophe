@@ -279,9 +279,17 @@ module.exports = async function(options) {
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
+
+    const pkgName = require(`${moduleDir}/package.json`).name;
+    let pkgNamespace = '';
+    if (pkgName.includes('/')) {
+      const parts = pkgName.split('/');
+      pkgNamespace = '/' + parts.slice(0, parts.length - 1).join('/');
+    }
+
     if (!fs.existsSync(testDir + '/node_modules')) {
-      fs.mkdirSync(testDir + '/node_modules' + addDirNamespace(options.testModule), { recursive: true });
-      fs.symlinkSync(moduleDir, testDir + '/node_modules' + addDirNamespace(options.testModule) + '/' + require('path').basename(moduleDir), 'dir');
+      fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
+      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but
@@ -298,10 +306,6 @@ module.exports = async function(options) {
           throw new Error('mocha does not seem to be running, is this really a test?');
         }
       }
-    }
-
-    function addDirNamespace (testType) {
-      return typeof testType === 'string' ? `/${testType}` : '';
     }
   }
 
