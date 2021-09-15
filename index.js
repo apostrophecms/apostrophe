@@ -280,8 +280,8 @@ module.exports = async function(options) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
     if (!fs.existsSync(testDir + '/node_modules')) {
-      fs.mkdirSync(testDir + '/node_modules' + addAposIfApos(options.testModule), { recursive: true });
-      fs.symlinkSync(moduleDir, testDir + '/node_modules' + addAposIfApos(options.testModule) + '/' + require('path').basename(moduleDir), 'dir');
+      fs.mkdirSync(testDir + '/node_modules' + addDirNamespace(options.testModule), { recursive: true });
+      fs.symlinkSync(moduleDir, testDir + '/node_modules' + addDirNamespace(options.testModule) + '/' + require('path').basename(moduleDir), 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but
@@ -300,7 +300,7 @@ module.exports = async function(options) {
       }
     }
 
-    function addAposIfApos (testType) {
+    function addDirNamespace (testType) {
       return typeof testType === 'string' ? `/${testType}` : '';
     }
   }
