@@ -351,21 +351,6 @@ module.exports = {
   },
   methods(self) {
     return {
-      addToAdminBar() {
-        self.apos.adminBar.add(
-          `${self.__meta.name}:manager`,
-          self.pluralLabel,
-          {
-            action: 'edit',
-            type: self.name
-          },
-          {
-            component: 'AposSubmittedDraftIcon',
-            contextUtility: true,
-            tooltip: 'Submitted Drafts'
-          }
-        );
-      },
       // Add the i18next resources provided by the specified module,
       // merging with any existing phrases for the same locales and namespaces
       addResourcesForModule(module) {
