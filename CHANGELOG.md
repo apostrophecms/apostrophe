@@ -4,7 +4,8 @@
 
 ### Fixes
 
-* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized. 
+* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
+* Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
 
 ## 3.4.1 - 2021-09-13
 
