@@ -7,6 +7,10 @@
 * The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
 * Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
 
+### Adds
+
+* If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
+
 ## 3.4.1 - 2021-09-13
 
 No changes. Publishing to correctly mark the latest 3.x release as "latest" in npm.
