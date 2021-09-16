@@ -44,7 +44,6 @@ import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import TextStyle from '@tiptap/extension-text-style';
-import Placeholder from '@tiptap/extension-placeholder';
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
