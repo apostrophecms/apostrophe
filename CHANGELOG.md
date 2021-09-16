@@ -5,10 +5,15 @@
 ### Fixes
 
 * The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
+* Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
 
 ### Changes
 
 * Cascade grouping (e.g., grouping fields) will now concatenate a group's field name array with the field name array of an existing group of the same name. Put simply, if a new piece module adds their custom fields to a `basics` group, that field will be added to the default `basics` group fields. Previously the new group would have replaced the old, leaving inherited fields in the "Ungrouped" section.
+
+### Adds
+
+* If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
 
 ## 3.4.1 - 2021-09-13
 

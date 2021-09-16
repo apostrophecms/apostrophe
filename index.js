@@ -254,6 +254,8 @@ module.exports = async function(options) {
   // when options.testModule is true. There must be a
   // test/ or tests/ subdir of the module containing
   // a test.js file that runs under mocha via devDependencies.
+  // If `options.testModule` is a string it will be used as a
+  // namespace for the test module.
 
   function testModule() {
     if (!options.testModule) {
@@ -277,9 +279,17 @@ module.exports = async function(options) {
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
+
+    const pkgName = require(`${moduleDir}/package.json`).name;
+    let pkgNamespace = '';
+    if (pkgName.includes('/')) {
+      const parts = pkgName.split('/');
+      pkgNamespace = '/' + parts.slice(0, parts.length - 1).join('/');
+    }
+
     if (!fs.existsSync(testDir + '/node_modules')) {
-      fs.mkdirSync(testDir + '/node_modules');
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
+      fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
+      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but
