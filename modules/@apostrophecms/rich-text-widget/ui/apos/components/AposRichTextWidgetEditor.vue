@@ -28,7 +28,6 @@
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
-    <!-- Using actual DOM element rather than :after to ease localization -->
     <div class="apos-rich-text-editor__editor_after" :class="editorModifiers">
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
@@ -45,6 +44,7 @@ import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import TextStyle from '@tiptap/extension-text-style';
+import Placeholder from '@tiptap/extension-placeholder';
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -219,7 +219,7 @@ export default {
       const self = this;
       const enhanced = [];
       (styles || []).forEach(style => {
-        style.options = {};
+        style.options = { attrs: {} };
         for (const key in self.tiptapTextCommands) {
           if (self.tiptapTextCommands[key].includes(style.tag)) {
             style.command = key;
@@ -239,7 +239,7 @@ export default {
 
         // Handle custom attributes
         if (style.class) {
-          style.options.class = style.class;
+          style.options.attrs.class = style.class;
         }
 
         if (style.type) {
