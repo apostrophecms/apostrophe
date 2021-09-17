@@ -1,20 +1,11 @@
-// Acts a custom Document extension
+// Acts as a custom Document extension
 import { Node } from '@tiptap/core';
 export default (options) => {
-  const defNode = options.styles.filter(style => style.def)[0];
-  const defNodeType = defNode ? defNode.type : null;
-  const hasParagraph = !!options.styles.filter(style => style.type === 'paragraph').length;
+  const def = options.styles.filter(style => style.def)[0];
   let content = 'block+'; // one or more block nodes (default Document setting)
-  if (defNodeType) {
-    if (defNodeType === 'heading') {
-      if (hasParagraph) {
-        // one or more headings or block nodes (prioritizes headings)
-        content = '(heading|block)+';
-      } else {
-        // one or more heading nodes
-        content = 'heading+';
-      }
-    }
+  if (def) {
+    // one/more defaultNodes (created in ./Default) or one/more other block nodes
+    content = '(defaultNode|block)+';
   }
   return Node.create({
     name: 'doc',

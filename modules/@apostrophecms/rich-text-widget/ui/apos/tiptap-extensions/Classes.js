@@ -36,13 +36,11 @@ export default (options) => {
                 // If no valid classes for this parse, default to the
                 // the first setting for this tag (including null for tags defined without classes).
                 // else, remove classes.
-                return {
-                  class: classes.length
-                    ? classes.join(' ')
-                    : (
-                      allow[tag].length ? allow[tag][0] : null
-                    )
-                };
+                return classes.length
+                  ? classes.join(' ')
+                  : (
+                    allow[tag].length ? allow[tag][0] : null
+                  );
               }
             }
           }

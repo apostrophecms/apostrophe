@@ -216,9 +216,8 @@ export default {
     // commands and parameters used internally.
     enhanceStyles(styles) {
       const self = this;
-      const enhanced = [];
       (styles || []).forEach(style => {
-        style.options = { attrs: {} };
+        style.options = {};
         for (const key in self.tiptapTextCommands) {
           if (self.tiptapTextCommands[key].includes(style.tag)) {
             style.command = key;
@@ -238,12 +237,10 @@ export default {
 
         // Handle custom attributes
         if (style.class) {
-          style.options.attrs.class = style.class;
+          style.options.class = style.class;
         }
 
-        if (style.type) {
-          enhanced.push(style);
-        } else {
+        if (!style.type) {
           apos.notify('apostrophe:richTextStyleConfigWarning', {
             type: 'warning',
             dismiss: true,
@@ -255,6 +252,18 @@ export default {
           });
         }
       });
+
+      // ensure a default so we can rely on it throughout
+      const hasDefault = !!styles.find(style => style.def);
+      if (!hasDefault && styles.length) {
+        // If no dev set default, use the first paragraph we can find
+        if (styles.filter(style => style.type === 'paragraph').length) {
+          styles.filter(style => style.type === 'paragraph')[0].def = true;
+        } else {
+          // Otherwise, set the first style
+          styles[0].def = true;
+        }
+      }
       return styles;
     }
   }
