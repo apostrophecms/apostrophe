@@ -37,10 +37,8 @@
                   type="primary"
                   label="apostrophe:login"
                   button-type="submit"
+                  class="apos-login__submit"
                   :modifiers="['gradient-on-hover', 'block']"
-                  :attrs="{
-                    'style': 'height: 47px'
-                  }"
                   @click="submit"
                 />
               </form>
@@ -300,5 +298,9 @@ export default {
       margin-right: 0;
       margin-left: auto;
     }
+  }
+
+  .apos-login__submit ::v-deep .apos-button {
+    height: 47px;
   }
 </style>
