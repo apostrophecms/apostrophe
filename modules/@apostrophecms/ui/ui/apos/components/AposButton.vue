@@ -1,5 +1,9 @@
 <template>
-  <span v-apos-tooltip="tooltip" class="apos-button__wrapper">
+  <span
+    v-apos-tooltip="tooltip"
+    class="apos-button__wrapper"
+    :class="{ 'apos-button__wrapper--block': modifiers.includes('block') }"
+  >
     <component
       :is="href ? 'a' : 'button'"
       v-on="href ? {} : {click: click}"
@@ -332,6 +336,9 @@ export default {
         color: var(--a-base-5);
       }
     }
+    .apos-button__label {
+      line-height: var(--a-line-tall);
+    }
   }
 
   .apos-button--subtle {
@@ -574,6 +581,10 @@ export default {
     padding: 3px;
   }
 
+  .apos-button--uppercase .apos-button__label {
+    text-transform: uppercase;
+  }
+
   .apos-button--inline {
     padding: 0;
     &, &[disabled], &:hover, &:active, &:focus {
@@ -603,6 +614,10 @@ export default {
 
   .apos-button__wrapper {
     display: inline-block;
+  }
+
+  .apos-button__wrapper--block {
+    display: block;
   }
 
   @keyframes animateGradient {

@@ -25,13 +25,18 @@
           @click="switchLocale(locale)"
         >
           <span class="apos-locale">
-            <CheckIcon
+            <AposIndicator
               v-if="isActive(locale)"
+              icon="check-bold-icon"
+              fill-color="var(--a-primary)"
               class="apos-check"
-              title="$t('apostrophe:currentLocale')"
-              :size="12"
+              :icon-size="12"
+              :title="$t('apostrophe:currentLocale')"
             />
             {{ locale.label }}
+            <span class="apos-locale-name">
+              ({{ locale.name }})
+            </span>
             <span
               class="apos-locale-localized"
               :class="{ 'apos-state-is-localized': isLocalized(locale) }"
@@ -43,24 +48,23 @@
         <p class="apos-available-description">
           {{ $t('apostrophe:documentExistsInLocales') }}
         </p>
-        <span
+        <AposButton
           v-for="locale in availableLocales"
           :key="locale.name"
           class="apos-available-locale"
-        >
-          {{ locale.label }}
-        </span>
+          :label="locale.label"
+          type="quiet"
+          :modifiers="['no-motion']"
+          @click="switchLocale(locale)"
+        />
       </div>
     </div>
   </AposContextMenu>
 </template>
 
 <script>
-import CheckIcon from 'vue-material-design-icons/Check.vue';
-
 export default {
   name: 'TheAposAdminBarLocale',
-  components: { CheckIcon },
   data() {
     return {
       search: '',
@@ -79,11 +83,11 @@ export default {
     button() {
       return {
         label: {
-          key: window.apos.i18n.locale,
+          key: apos.i18n.locale,
           localize: false
         },
         icon: 'chevron-down-icon',
-        modifiers: [ 'icon-right', 'no-motion' ],
+        modifiers: [ 'icon-right', 'no-motion', 'uppercase' ],
         type: 'quiet'
       };
     },
@@ -149,7 +153,7 @@ export default {
         }
       } else {
         const currentLocale = apos.i18n.locales[apos.locale];
-
+        this.$refs.menu.hide();
         const toLocalize = await apos.confirm(
           {
             icon: false,
@@ -207,6 +211,13 @@ export default {
   &::after {
     right: 0;
   }
+
+  &::v-deep .apos-button__label {
+    @include type-small;
+    color: var(--a-primary);
+    font-weight: var(--a-weight-bold);
+    letter-spacing: 1px;
+  }
 }
 
 .apos-locales-picker {
@@ -214,15 +225,14 @@ export default {
 }
 
 .apos-locales-filter {
+  @include type-large;
   box-sizing: border-box;
   width: 100%;
-  padding: 25px 45px 20px 20px;
-  font-size: 14px;
+  padding: 20px 45px 20px 20px;
   border-top: 0;
   border-right: 0;
   border-bottom: 1px solid var(--a-base-9);
   border-left: 0;
-  color: var(--a-text-primary);
   border-top-right-radius: var(--a-border-radius);
   border-top-left-radius: var(--a-border-radius);
 
@@ -242,8 +252,7 @@ export default {
   max-height: 350px;
   overflow-y: scroll;
   padding-left: 0;
-  margin-top: 0;
-  margin-bottom: 0;
+  margin: $spacing-base 0;
   font-weight: var(--a-weight-base);
 }
 
@@ -264,7 +273,7 @@ export default {
   .apos-check {
     position: absolute;
     top: 50%;
-    left: 20px;
+    left: 18px;
     transform: translateY(-50%);
     color: var(--a-primary);
     stroke: var(--a-primary);
@@ -279,11 +288,12 @@ export default {
   .apos-locale-localized {
     position: relative;
     top: -1px;
+    left: 5px;
     display: inline-block;
-    height: 5px;
-    width: 5px;
+    width: 3px;
+    height: 3px;
     border: 1px solid var(--a-base-5);
-    border-radius: 3px;
+    border-radius: 50%;
 
     &.apos-state-is-localized {
       background-color: var(--a-success);
@@ -293,7 +303,7 @@ export default {
 }
 
 .apos-available-locales {
-  padding: 20px;
+  padding: $spacing-double;
   border-top: 1px solid var(--a-base-9);
 }
 
@@ -307,4 +317,13 @@ export default {
   margin-right: 10px;
   margin-bottom: 5px;
 }
+
+.apos-available-description {
+  margin-top: 0;
+}
+
+.apos-locale-name {
+  text-transform: uppercase;
+}
+
 </style>

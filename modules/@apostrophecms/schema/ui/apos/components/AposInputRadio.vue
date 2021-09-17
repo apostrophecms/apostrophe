@@ -26,11 +26,14 @@
             :size="8" v-if="next === choice.value"
           />
         </span>
-        <span class="apos-choice-label-text" v-apos-tooltip.top="choice.tooltip">
+        <span class="apos-choice-label-text">
           {{ $t(choice.label) }}
-          <InformationIcon
+          <AposIndicator
             v-if="choice.tooltip"
-            :size="14"
+            class="apos-choice-label-info"
+            :tooltip="choice.tooltip"
+            :icon-size="14"
+            icon="information-icon"
           />
         </span>
       </label>
@@ -75,8 +78,8 @@ export default {
       border-radius: 50%;
     }
   }
-  .information-icon {
+  .apos-choice-label-info {
     position: relative;
-    top: 2px;
+    top: 3px;
   }
 </style>

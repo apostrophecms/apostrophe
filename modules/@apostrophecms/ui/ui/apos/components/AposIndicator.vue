@@ -7,6 +7,7 @@
     <component
       :is="icon"
       :size="iconSize"
+      :title="title ? title : ''"
       class="apos-indicator__icon"
       :fill-color="iconColor"
     />
@@ -28,6 +29,10 @@ export default {
     },
     tooltip: {
       type: [ String, Object, Boolean ],
+      default: false
+    },
+    title: {
+      type: [ String, Boolean ],
       default: false
     },
     iconColor: {
