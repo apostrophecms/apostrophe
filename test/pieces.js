@@ -557,7 +557,11 @@ describe('Pieces', function() {
 
   it('can POST products with a session, some visible', async () => {
     // range is exclusive at the top end, I want 10 things
+    let widgetId;
     for (let i = 1; (i <= 10); i++) {
+      if (i === 1) {
+        widgetId = cuid();
+      }
       const response = await apos.http.post('/api/v1/product', {
         body: {
           title: 'Cool Product #' + i,
@@ -568,8 +572,15 @@ describe('Pieces', function() {
               {
                 metaType: 'widget',
                 type: '@apostrophecms/rich-text',
-                id: cuid(),
+                _id: (i === 1) ? widgetId : null,
                 content: '<p>This is thing ' + i + '</p>'
+              },
+              // Intentional attempt to use duplicate _id
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                _id: (i === 1) ? widgetId : null,
+                content: '<p>This is thing ' + i + ' second widget</p>'
               }
             ]
           }
@@ -582,8 +593,21 @@ describe('Pieces', function() {
       assert(response.title === 'Cool Product #' + i);
       assert(response.slug === 'cool-product-' + i);
       assert(response.type === 'product');
+      assert(response.body.items[0].content === `<p>This is thing ${i}</p>`);
+      assert(response.body.items[1].content === `<p>This is thing ${i} second widget</p>`);
       if (i === 1) {
+        // Deduplicate any duplicate ids we specified at doc level
+        assert(response.body.items[0]._id === widgetId);
+        assert(response.body.items[1]._id);
+        // Quietly deduplicated for us
+        assert(response.body.items[1]._id !== widgetId);
         updateProduct = response;
+      } else {
+        // All new _ids if we did not specify
+        assert(response.body.items[0]._id);
+        assert(response.body.items[1]._id);
+        assert(response.body.items[0]._id !== response.body.items[1]._id);
+        assert(response.body.items[0]._id !== widgetId);
       }
     }
   });

@@ -26,6 +26,7 @@ module.exports = {
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
     self.enableBrowserData();
+    self.addDeduplicateWidgetIdsMigration();
   },
   apiRoutes(self) {
     return {
@@ -52,6 +53,9 @@ module.exports = {
           widget = await sanitize(widget);
           widget._edit = true;
           widget._docId = _docId;
+          // So that carrying out relationship loading again can yield results
+          // (the idsStorage must be populated as if we were saving)
+          self.apos.schema.prepareForStorage(req, widget);
           await load();
           return render();
           async function sanitize(widget) {
@@ -564,6 +568,30 @@ module.exports = {
           widgetManagers,
           action: self.action
         };
+      },
+      async addDeduplicateWidgetIdsMigration() {
+        self.apos.migration.add('deduplicate-widget-ids', () => {
+          // Make them globally unique because that is easiest to
+          // definitely get correct for this one-time migration, although
+          // there is no guarantee that widget ids are unique between
+          // separate documents going forward. The guarantee is that they
+          // will be unique within documents
+          const seen = new Set();
+          return self.apos.migration.eachWidget({}, async (doc, widget, dotPath) => {
+            if ((!widget._id) || seen.has(widget._id)) {
+              const _id = self.apos.util.generateId();
+              return self.apos.doc.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: {
+                  [`${dotPath}._id`]: _id
+                }
+              });
+            } else {
+              seen.add(widget._id);
+            }
+          });
+        });
       }
     };
   },

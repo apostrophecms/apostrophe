@@ -1,6 +1,28 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
+
+### Fixes
+
+* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
+* Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
+
+### Changes
+
+* Cascade grouping (e.g., grouping fields) will now concatenate a group's field name array with the field name array of an existing group of the same name. Put simply, if a new piece module adds their custom fields to a `basics` group, that field will be added to the default `basics` group fields. Previously the new group would have replaced the old, leaving inherited fields in the "Ungrouped" section.
+* AposButton's `block` modifier now less login-specific
+
+### Adds
+
+* If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
+* Adds 'no-search' modifier to relationship fields as a UI simplification option
+* Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
+
+## 3.4.1 - 2021-09-13
+
+No changes. Publishing to correctly mark the latest 3.x release as "latest" in npm.
+
+## 3.4.0 - 2021-09-13
 
 ### Security
 
@@ -18,6 +40,11 @@
 * Unlocalized piece types, such as users, may now be selected as part of a relationship when browsing.
 * Unpublished localized piece types may not be selected via the autocomplete feature of the relationship input field, which formerly ignored this requirement, although the browse button enforced it.
 * The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.
+* Starting in version 3.3.1, a newly added image widget did not display its image until the page was refreshed. This has been fixed.
+* A bug that prevented Undo operations from working properly and resulted in duplicate widget _id properties has been fixed.
+* A bug that caused problems for Undo operations in nested widgets, i.e. layout or multicolumn widgets, has been fixed.
+* Duplicate widget _id properties within the same document are now prevented on the server side at save time.
+* Existing duplicate widget _id properties are corrected by a one-time migration.
 
 ### Adds
 
@@ -25,16 +52,14 @@
 * Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
 * Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
 * `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity. The `apos.util.onReadyAndRefresh` method name will be deprecated in the next major version.
-* Adds 'no-search' modifier to relationship fields as a UI simplification option
-* Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
+* Adds a developer setting that applies a margin between parent and child areas, allowing developers to change the default spacing in nested areas.
+
 ### Changes
 
 * Removes the temporary `trace` method from the `@apostrophecms/db` module.
-* AposButton's `block` modifier now less login-specific
-
-### Changes
-
 * Beginning with this release, the `apostrophe:modulesReady` event has been renamed `apostrophe:modulesRegistered`, and the `apostrophe:afterInit` event has been renamed `apostrophe:ready`. This better reflects their actual roles. The old event names are accepted for backwards compatibility. See the documentation for more information.
+* Only autofocuses rich text editors when they are empty.
+* Nested areas now have a vertical margin applied when editing, allowing easier access to the parent area's controls.
 
 ## 3.3.1 - 2021-09-01
 

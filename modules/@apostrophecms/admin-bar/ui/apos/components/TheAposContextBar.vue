@@ -48,7 +48,7 @@ export default {
     // If the URL references a draft, go into draft mode but then clean up the URL
     const draftMode = query.aposMode || 'published';
     if (draftMode === 'draft') {
-      const newQuery = { ... query };
+      const newQuery = { ...query };
       delete newQuery.aposMode;
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, newQuery));
     }
@@ -442,6 +442,7 @@ export default {
       this.rememberLastBaseContext();
     },
     onContextEdited(patch) {
+      patch = klona(patch);
       this.patchesSinceLoaded.push(patch);
       this.patchesSinceSave.push(patch);
       this.undone = [];
@@ -512,7 +513,7 @@ export default {
 
       if (refreshable) {
         refreshable.innerHTML = content;
-        if (!this.original) {
+        if (this.editMode && (!this.original)) {
           // the first time we enter edit mode on the page, we need to
           // establish a baseline for undo/redo. Use our
           // "@ notation" PATCH feature. Sort the areas by DOM depth

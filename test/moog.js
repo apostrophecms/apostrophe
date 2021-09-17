@@ -237,6 +237,53 @@ describe('moog', function() {
       assert(myObject.extended(5) === 20);
     });
 
+    it('should support inheriting field group fields rather than requiring all fields to be restated', async function() {
+      const moog = require('../lib/moog.js')({});
+
+      moog.define('myObject', {
+        cascades: [ 'fields' ],
+        fields: {
+          add: {
+            one: { type: 'string' },
+            two: { type: 'string' },
+            three: { type: 'string' }
+          },
+          group: {
+            basics: {
+              fields: [ 'one', 'two', 'three' ]
+            }
+          }
+        }
+      });
+
+      moog.define('myObject', {
+        fields: {
+          add: {
+            four: { type: 'string' },
+            five: { type: 'string' }
+          },
+          group: {
+            basics: {
+              fields: [ 'four', 'five' ]
+            },
+            other: {
+              fields: [ 'one' ]
+            }
+          }
+        }
+      });
+
+      const myObject = await moog.create('myObject', {});
+      assert(myObject);
+      assert(myObject.fieldsGroups);
+      assert(!myObject.fieldsGroups.basics.fields.includes('one'));
+      assert(myObject.fieldsGroups.other.fields.includes('one'));
+      assert(myObject.fieldsGroups.basics.fields.includes('two'));
+      assert(myObject.fieldsGroups.basics.fields.includes('three'));
+      assert(myObject.fieldsGroups.basics.fields.includes('four'));
+      assert(myObject.fieldsGroups.basics.fields.includes('five'));
+    });
+
     // ==================================================
     // `redefine` AND `isDefined`
     // ==================================================
