@@ -305,6 +305,7 @@
   "select": "Select",
   "selectedMenuItem": "✓ {{ label }}",
   "selectAll": "Select All",
+  "deselectAll": "Deselect All",
   "selectContent": "Select Content",
   "selectContentToLocalize": "What content do you want to localize?",
   "selectPage": "Select Page",
