@@ -6,6 +6,7 @@
 
 * The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
 * Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
+* Rich Text widgets now instantiate with a valid element from the `styles` option rather than always starting with an unclassed `<p>` tag.
 
 ### Changes
 
@@ -14,6 +15,7 @@
 ### Adds
 
 * If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
+* Rich Text widget's styles support a `def` property for specifying the default style the editor should instantiate with.
 
 ## 3.4.1 - 2021-09-13
 

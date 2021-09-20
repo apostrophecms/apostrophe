@@ -28,7 +28,6 @@
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
-    <!-- Using actual DOM element rather than :after to ease localization -->
     <div class="apos-rich-text-editor__editor_after" :class="editorModifiers">
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
@@ -217,7 +216,6 @@ export default {
     // commands and parameters used internally.
     enhanceStyles(styles) {
       const self = this;
-      const enhanced = [];
       (styles || []).forEach(style => {
         style.options = {};
         for (const key in self.tiptapTextCommands) {
@@ -242,9 +240,7 @@ export default {
           style.options.class = style.class;
         }
 
-        if (style.type) {
-          enhanced.push(style);
-        } else {
+        if (!style.type) {
           apos.notify('apostrophe:richTextStyleConfigWarning', {
             type: 'warning',
             dismiss: true,
@@ -256,6 +252,18 @@ export default {
           });
         }
       });
+
+      // ensure a default so we can rely on it throughout
+      const hasDefault = !!styles.find(style => style.def);
+      if (!hasDefault && styles.length) {
+        // If no dev set default, use the first paragraph we can find
+        if (styles.filter(style => style.type === 'paragraph').length) {
+          styles.filter(style => style.type === 'paragraph')[0].def = true;
+        } else {
+          // Otherwise, set the first style
+          styles[0].def = true;
+        }
+      }
       return styles;
     }
   }
