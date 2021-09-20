@@ -359,6 +359,11 @@ module.exports = async function(options) {
         validSteps.push(step.name);
       }
     }
+
+    if (!fs.existsSync(self.localModules)) {
+      return;
+    }
+
     const dirs = fs.readdirSync(self.localModules);
     for (const dir of dirs) {
       if (dir.match(/^@/)) {
