@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.5.0 - 2021-09-22
 
 ### Fixes
 
