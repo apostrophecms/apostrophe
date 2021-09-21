@@ -11,6 +11,7 @@
 * Since version 3.2.0, apostrophe modules to be loaded via npm must appear as explicit npm dependencies of the project. This is a necessary security and stability improvement, but it was slightly too strict. Starting with this release, if the project has no `package.json` in its root directory, the `package.json` in the closest ancestor directory is consulted.
 * Fixes a bug where having no project modules directory would throw an error. This is primarily a concern for module unit tests where there are no additional modules involved.
 * `css-loader` now ignores `url()` in css files inside `assets` so that paths are left intact, i.e. `url(/images/file.svg)` will now find a static file at `/public/images/file.svg` (static assets in `/public` are served by `express.static`). Thanks to Matic Tersek.
+* Apostrophe module aliases and the data attached to them are now visible immediately to `ui/src/index.js` JavaScript code, i.e. you can write `apos.alias` where `alias` matches the `alias` option configured for that module. Previously one had to write `apos.modules['module-name']` or wait until next tick. However, note that most modules do not push any data to the browser when a user is not logged in. You can do so in a custom module by calling `self.enableBrowserData('public')` from `init` and implementing or extending the `getBrowserData(req)` method (note that page, piece and widget types already have one, so it is important to extend in those cases).
 
 ### Changes
 
