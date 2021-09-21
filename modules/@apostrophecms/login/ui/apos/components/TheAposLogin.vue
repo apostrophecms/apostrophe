@@ -2,12 +2,12 @@
   <transition name="fade-stage">
     <div
       class="apos-login apos-theme-dark"
-      v-show="loaded"
+      v-show="showStage"
       :class="themeClass"
     >
       <div class="apos-login__wrapper">
         <transition name="fade-body">
-          <div class="apos-login__upper" v-show="loaded">
+          <div class="apos-login__upper" v-show="showContent">
             <div class="apos-login__header">
               <label
                 class="apos-login__project apos-login__project-env"
@@ -22,8 +22,9 @@
                 {{ error }}
               </label>
             </div>
+            <button @click="test">push me</button>
 
-            <div class="apos-login__body" v-show="loaded">
+            <div class="apos-login__body">
               <form @submit.prevent="submit">
                 <AposSchema
                   :schema="schema"
@@ -46,7 +47,7 @@
         </transition>
       </div>
       <transition name="fade-footer">
-        <div class="apos-login__footer" v-show="loaded">
+        <div class="apos-login__footer" v-show="showContent">
           <AposLogo class="apos-login__logo" />
           <label class="apos-login__project-version">
             Version {{ context.version }}
@@ -65,7 +66,8 @@ export default {
   mixins: [ AposThemeMixin ],
   data() {
     return {
-      loaded: false,
+      showContent: false,
+      showStage: false,
       error: '',
       busy: false,
       doc: {
@@ -104,6 +106,7 @@ export default {
       if (stateChange && lastModified && (lastModified < stateChange)) {
         seen[window.location.href] = true;
         window.sessionStorage.setItem('aposStateChangeSeen', JSON.stringify(seen));
+        console.log('reload!!!');
         location.reload();
         return;
       }
@@ -117,13 +120,21 @@ export default {
     }
   },
   mounted() {
-    this.loaded = true;
+    this.showContent = true;
+    this.showStage = true;
   },
   methods: {
+    test() {
+      this.showContent = false;
+    },
     async submit() {
+      if (this.busy) {
+        return;
+      }
       this.busy = true;
       this.error = '';
       try {
+        console.log('try');
         await apos.http.post(`${apos.login.action}/login`, {
           busy: true,
           body: {
@@ -135,8 +146,14 @@ export default {
         window.sessionStorage.setItem('aposStateChangeSeen', '{}');
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
-        location.assign(`${apos.prefix}/`);
+        this.show = false;
+        setTimeout(() => {
+          console.log('ASSIGN');
+          location.assign(`${apos.prefix}/`);  
+        }, 300);
+        
       } catch (e) {
+        console.log(e);
         this.error = e.message || 'An error occurred. Please try again.';
       } finally {
         this.busy = false;
@@ -160,15 +177,25 @@ export default {
     max-width: 150px;
   }
 
-  .fade-stage-enter-active {
+  .fade-stage-enter-active,
+  .fade-stage-leave-active {
     transition: opacity 0.2s linear;
     transition-delay: 0.3s;
   }
 
   .fade-stage-enter-to,
   .fade-body-enter-to,
-  .fade-footer-enter-to {
+  .fade-footer-enter-to,
+  .fade-stage-leave,
+  .fade-body-leave,
+  .fade-footer-leave {
     opacity: 1;
+  }
+
+  .fade-stage-leave-to,
+  .fade-body-leave-to,
+  .fade-footer-leave-to {
+    opacity: 0;
   }
 
   .fade-stage-enter,
@@ -182,17 +209,29 @@ export default {
     transition-delay: 0.6s;
   }
 
-  .fade-body-enter-to {
+  .fade-body-leave-active {
+    transition: all 0.15s linear;
+    transition-delay: 0;
+  }
+
+  .fade-body-enter-to,
+  .fade-body-leave {
     transform: translateY(0);
   }
 
-  .fade-body-enter {
+  .fade-body-enter,
+  .fade-body-leave-to {
     transform: translateY(4px);
   }
 
   .fade-footer-enter-active {
     transition: opacity 0.4s linear;
     transition-delay: 1s;
+  }
+
+  .fade-footer-leave-active {
+    transition: opacity 0.4s linear;
+    transition-delay: 0.2s;
   }
 
   .apos-login {
