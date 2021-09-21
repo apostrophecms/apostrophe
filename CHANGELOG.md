@@ -9,6 +9,7 @@
 * Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
 * Rich Text widgets now instantiate with a valid element from the `styles` option rather than always starting with an unclassed `<p>` tag.
 * Fixes a bug where having no project modules directory would throw an error. This is primarily a concern for module unit tests where there are no additional modules involved.
+* `css-loader` now ignores `url()` in css files inside `assets` so webpack handles path resolution in them.
 
 ### Changes
 
