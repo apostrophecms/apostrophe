@@ -32,6 +32,7 @@ No changes. Publishing to correctly mark the latest 3.x release as "latest" in n
 
 ### Security
 
+* Changing a user's password or marking their account as disabled now immediately terminates any active sessions or bearer tokens for that user. Thanks to Daniel Elkabes for pointing out the issue. To ensure all sessions have the necessary data for this, all users logged in via sessions at the time of this upgrade will need to log in again.
 * Users with permission to upload SVG files were previously able to do so even if they contained XSS attacks. In Apostrophe 3.x, the general public so far never has access to upload SVG files, so the risk is minor but could be used to phish access from an admin user by encouraging them to upload a specially crafted SVG file. While Apostrophe typically displays SVG files using the `img` tag, which ignores XSS vectors, an XSS attack might still be possible if the image were opened directly via the Apostrophe media library's convenience link for doing so. All SVG uploads are now sanitized via DOMPurify to remove XSS attack vectors. In addition, all existing SVG attachments not already validated are passed through DOMPurify during a one-time migration.
 
 ### Fixes
