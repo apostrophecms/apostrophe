@@ -10,6 +10,7 @@
 * Rich Text widgets now instantiate with a valid element from the `styles` option rather than always starting with an unclassed `<p>` tag.
 * Fixes a bug where having no project modules directory would throw an error. This is primarily a concern for module unit tests where there are no additional modules involved.
 * `css-loader` now ignores `url()` in css files inside `assets` so that paths are left intact, i.e. `url(/images/file.svg)` will now find a static file at `/public/images/file.svg` (static assets in `/public` are served by `express.static`). Thanks to Matic Tersek.
+* Restored support for clicking on a "foreign" area, i.e. an area displayed on the page whose content comes from a piece, in order to edit it in an appropriate way.
 
 ### Changes
 
@@ -19,6 +20,7 @@
 
 * If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
 * Rich Text widget's styles support a `def` property for specifying the default style the editor should instantiate with.
+* A more helpful error message if a field of type `area` is missing its `options` property.
 
 ## 3.4.1 - 2021-09-13
 

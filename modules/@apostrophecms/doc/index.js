@@ -38,11 +38,19 @@ module.exports = {
   restApiRoutes(self) {
     return {
       // GET /api/v1/@apostrophecms/doc/_id supports only the universal query
-      // features, but works for any document type, Simplifies browser-side
-      // logic for redirects to foreign documents; the frontend only has to
+      // features, but works for any document type. Simplifies browser-side
+      // logic for redirects to foreign documents. The frontend only has to
       // know the doc _id.
+      //
+      // Since this API is solely for editing purposes you will receive
+      // a 404 if you request a document you cannot edit.
       async getOne(req, _id) {
-        return self.find(req, { _id }).toObject();
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        const doc = await self.find(req, { _id }).permission('edit').toObject();
+        if (!doc) {
+          throw self.apos.error('notfound');
+        }
+        return doc;
       }
     };
   },
