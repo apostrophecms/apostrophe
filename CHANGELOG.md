@@ -13,6 +13,7 @@
 * `css-loader` now ignores `url()` in css files inside `assets` so that paths are left intact, i.e. `url(/images/file.svg)` will now find a static file at `/public/images/file.svg` (static assets in `/public` are served by `express.static`). Thanks to Matic Tersek.
 * Restored support for clicking on a "foreign" area, i.e. an area displayed on the page whose content comes from a piece, in order to edit it in an appropriate way.
 * Apostrophe module aliases and the data attached to them are now visible immediately to `ui/src/index.js` JavaScript code, i.e. you can write `apos.alias` where `alias` matches the `alias` option configured for that module. Previously one had to write `apos.modules['module-name']` or wait until next tick. However, note that most modules do not push any data to the browser when a user is not logged in. You can do so in a custom module by calling `self.enableBrowserData('public')` from `init` and implementing or extending the `getBrowserData(req)` method (note that page, piece and widget types already have one, so it is important to extend in those cases).
+* Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
 
 ### Changes
 
