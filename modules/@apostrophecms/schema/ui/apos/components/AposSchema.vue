@@ -11,7 +11,7 @@
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
         :following-values="followingValues[field.name]"
-        :conditional="conditionalFields[field.name]"
+        :condition-met="conditionalFields[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"

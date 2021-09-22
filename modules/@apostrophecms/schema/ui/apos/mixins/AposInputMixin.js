@@ -22,7 +22,7 @@ export default {
       type: Object,
       required: false
     },
-    conditional: {
+    conditionMet: {
       type: Boolean,
       required: false
     },
@@ -122,7 +122,7 @@ export default {
     // internal representation used for editing (a string, for instance)
     validateAndEmit () {
       // If the field is conditional and isn't shown, disregard any errors.
-      const error = this.conditional === false ? false
+      const error = this.conditionMet === false ? false
         : this.validate(this.next);
       this.$emit('input', {
         data: error ? this.next : this.convert(this.next),
