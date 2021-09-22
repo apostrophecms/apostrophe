@@ -4,6 +4,12 @@
 
 ### Fixes
 
+* Array input component edit button label is now propertly localized.
+
+## UNRELEASED
+
+### Fixes
+
 * Pinned dependency on `vue-material-design-icons` to fix `apos-build.js` build error in production.
 * The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
 * Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
