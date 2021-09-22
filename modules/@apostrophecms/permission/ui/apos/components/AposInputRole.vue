@@ -126,7 +126,6 @@ export default {
       const list = document.createElement('ul');
       const intro = document.createElement('p');
       const followUp = document.createElement('p');
-      const link = document.createElement('a');
       intro.appendChild(document.createTextNode(this.$t('apostrophe:piecePermissionsIntro')));
       followUp.appendChild(document.createTextNode(this.$t('apostrophe:piecePermissionsPieceTypeList')));
       html.appendChild(intro);
@@ -137,7 +136,10 @@ export default {
         list.appendChild(li);
       });
       html.appendChild(list);
-      return { content: html, localize: false };
+      return {
+        content: html,
+        localize: false
+      };
     },
     validate(value) {
       if (this.field.required && !value.length) {
