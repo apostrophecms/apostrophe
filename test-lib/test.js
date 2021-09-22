@@ -20,16 +20,16 @@ const packageJson = path.join(__dirname, '/../test/package.json');
 // which would break
 fs.removeSync(packageJson);
 const packageJsonInfo = {
-  "name": "test",
-  "dependencies": {
-    "apostrophe": "^3.0.0"
+  name: 'test',
+  dependencies: {
+    apostrophe: '^3.0.0'
   },
-  "devDependencies": {
-    "test-bundle": "1.0.0"
+  devDependencies: {
+    'test-bundle': '1.0.0'
   }
 };
 for (const dir of dirs) {
-  packageJsonInfo.dependencies[dir] = "1.0.0";
+  packageJsonInfo.dependencies[dir] = '1.0.0';
 }
 
 fs.writeFileSync(packageJson, JSON.stringify(packageJsonInfo, null, '  '));
