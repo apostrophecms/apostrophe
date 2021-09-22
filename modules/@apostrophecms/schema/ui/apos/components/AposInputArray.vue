@@ -40,7 +40,7 @@ export default {
   },
   computed: {
     editLabel () {
-      return `Edit ${this.field.label}`;
+      return `Edit ${this.$t(this.field.label)}`;
     }
   },
   methods: {
