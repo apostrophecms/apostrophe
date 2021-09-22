@@ -14,7 +14,7 @@ describe('Basic reverse relationships', function() {
 
   this.timeout(t.timeout);
 
-  it('basic reverse relationship query works', async () => {
+  it('basic reverse relationship query works', async function () {
     let apos;
     try {
       apos = await t.create({
@@ -86,7 +86,7 @@ describe('Reverse relationships plus an extra relationship', function() {
 
   this.timeout(t.timeout);
 
-  it('basic reverse relationship query works in the presence of an extra relationship with the types configured in an unexpected order', async () => {
+  it('basic reverse relationship query works in the presence of an extra relationship with the types configured in an unexpected order', async function () {
     let apos;
     try {
       apos = await t.create({
