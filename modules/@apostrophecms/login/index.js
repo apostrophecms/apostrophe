@@ -266,6 +266,9 @@ module.exports = {
       enableDeserializeUsers() {
         self.passport.deserializeUser(function (id, cb) {
           self.deserializeUser(id).then(function (user) {
+            if (user) {
+              user._viaSession = true;
+            }
             return cb(null, user);
           }).catch(cb);
         });
@@ -283,7 +286,12 @@ module.exports = {
 
       async deserializeUser(id) {
         const req = self.apos.task.getReq();
-        const user = await self.apos.user.find(req, { _id: id }).toObject();
+        const user = await self.apos.user.find(req, {
+          _id: id,
+          disabled: {
+            $ne: true
+          }
+        }).toObject();
         if (!user) {
           return null;
         }
@@ -408,9 +416,35 @@ module.exports = {
         before: '@apostrophecms/i18n',
         middleware: self.passport.initialize()
       },
+      passportExtendLogin: {
+        before: '@apostrophecms/i18n',
+        middleware(req, res, next) {
+          const superLogin = req.login.bind(req);
+          req.login = (user, callback) => {
+            return superLogin(user, (err) => {
+              if (err) {
+                return callback(err);
+              }
+              req.session.loginAt = Date.now();
+              return callback(null);
+            });
+          };
+          return next();
+        }
+      },
       passportSession: {
         before: '@apostrophecms/i18n',
         middleware: self.passport.session()
+      },
+      honorLoginInvalidBefore: {
+        before: '@apostrophecms/i18n',
+        middleware(req, res, next) {
+          if (req.user && req.user._viaSession && req.user.loginInvalidBefore && ((!req.session.loginAt) || (req.session.loginAt < req.user.loginInvalidBefore))) {
+            req.session.destroy();
+            delete req.user;
+          }
+          return next();
+        }
       },
       addUserToData: {
         before: '@apostrophecms/i18n',
