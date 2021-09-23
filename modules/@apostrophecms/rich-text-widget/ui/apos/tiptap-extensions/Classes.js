@@ -25,9 +25,7 @@ export default (options) => {
                 const tag = element.tagName.toLowerCase();
                 // This tag is not configured
                 if (!allow[tag]) {
-                  return {
-                    class: null
-                  };
+                  return null;
                 }
                 const classes = (element.getAttribute('class') || '')
                   .split(' ')
@@ -37,10 +35,10 @@ export default (options) => {
                 // the first setting for this tag (including null for tags defined without classes).
                 // else, remove classes.
                 return classes.length
-                  ? classes.join(' ')
-                  : (
-                    allow[tag].length ? allow[tag][0] : null
-                  );
+                ? classes.join(' ')
+                : (
+                  allow[tag].length ? allow[tag][0] : null
+                );
               }
             }
           }
