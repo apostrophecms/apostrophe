@@ -3,9 +3,11 @@
 ## UNRELEASED
 
 ### Adds
-
 * Adds 'no-search' modifier to relationship fields as a UI simplification option.
 * Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
+
+### Fixes
+* Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
 
 ## 3.5.0 - 2021-09-23
 
