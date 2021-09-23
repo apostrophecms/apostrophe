@@ -211,7 +211,10 @@ export default {
       // Add computed singular label to context menu
       this.moreMenu.menu.unshift({
         action: 'new',
-        label: `New ${this.moduleLabels.singular}`
+        label: {
+          key: 'apostrophe:newDocType',
+          type: this.$t(this.moduleLabels.singular)
+        }
       });
     }
     apos.bus.$on('content-changed', this.getPieces);
