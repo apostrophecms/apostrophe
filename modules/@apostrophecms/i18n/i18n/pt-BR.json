@@ -56,7 +56,7 @@
   "cut": "Cortar",
   "copy": "Copiar",
   "dayjsRelativeTimeFormat": "apostrophe",
-  "dayjsTitleDateFormat": "ddd MMMM D [at] HH:mm",
+  "dayjsTitleDateFormat": "ddd MMMM D [às] HH:mm",
   "dayjsCellDateFormat": "apostrophe",
   "dayjsMediaCreatedDateFormat": "D MMM, YYYY",
   "deduplicateSlugReserved": "O slug deduplicate- é reservado.",
