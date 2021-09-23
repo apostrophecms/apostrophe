@@ -587,7 +587,7 @@ export default {
       return module.pluralLabel || module.label || name;
     },
     updateFilter(event) {
-      if (event && event.data) {
+      if (event && event.data !== undefined) {
         this.wizard.sections.selectLocales.filter = event.data
       }
     },
