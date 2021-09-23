@@ -35,10 +35,10 @@ export default (options) => {
                 // the first setting for this tag (including null for tags defined without classes).
                 // else, remove classes.
                 return classes.length
-                ? classes.join(' ')
-                : (
-                  allow[tag].length ? allow[tag][0] : null
-                );
+                  ? classes.join(' ')
+                  : (
+                    allow[tag].length ? allow[tag][0] : null
+                  );
               }
             }
           }
