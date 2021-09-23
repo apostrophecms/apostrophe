@@ -22,7 +22,7 @@ describe('Basic reverse relationships', function() {
         modules: {
           product: {
             options: {
-              alias: 'product',
+              alias: 'product'
             },
             extend: '@apostrophecms/piece-type',
             fields: {
@@ -36,7 +36,7 @@ describe('Basic reverse relationships', function() {
           },
           salesperson: {
             options: {
-              alias: 'salesperson',
+              alias: 'salesperson'
             },
             extend: '@apostrophecms/piece-type',
             fields: {
@@ -56,14 +56,14 @@ describe('Basic reverse relationships', function() {
       const salesperson = await apos.salesperson.insert(req, {
         title: 'Willie Loman'
       });
-      const salesperson2 = await apos.salesperson.insert(req, {
+      await apos.salesperson.insert(req, {
         title: 'Bernie Sanders'
       });
-      const product = await apos.product.insert(req, {
+      await apos.product.insert(req, {
         title: 'Soap',
         _salespeople: [ salesperson ]
       });
-      const product2 = await apos.product.insert(req, {
+      await apos.product.insert(req, {
         title: 'Rope'
       });
       const fetched = await apos.salesperson.find(req, {
@@ -94,7 +94,7 @@ describe('Reverse relationships plus an extra relationship', function() {
         modules: {
           salesperson: {
             options: {
-              alias: 'salesperson',
+              alias: 'salesperson'
             },
             extend: '@apostrophecms/piece-type',
             fields: {
@@ -115,7 +115,7 @@ describe('Reverse relationships plus an extra relationship', function() {
           },
           product: {
             options: {
-              alias: 'product',
+              alias: 'product'
             },
             extend: '@apostrophecms/piece-type',
             fields: {
@@ -138,14 +138,14 @@ describe('Reverse relationships plus an extra relationship', function() {
       const salesperson = await apos.salesperson.insert(req, {
         title: 'Willie Loman'
       });
-      const salesperson2 = await apos.salesperson.insert(req, {
+      await apos.salesperson.insert(req, {
         title: 'Bernie Sanders'
       });
-      const product = await apos.product.insert(req, {
+      await apos.product.insert(req, {
         title: 'Soap',
         _salespeople: [ salesperson ]
       });
-      const product2 = await apos.product.insert(req, {
+      await apos.product.insert(req, {
         title: 'Rope'
       });
       const fetched = await apos.salesperson.find(req, {
