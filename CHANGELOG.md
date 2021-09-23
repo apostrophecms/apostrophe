@@ -2,7 +2,13 @@
 
 ## UNRELEASED
 
+## Fixes
+
 * Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
+
+## Changes
+
+* No longer logs a warning about no users if `testModule` is true on the app.
 
 ## 3.5.0 - 2021-09-23
 
@@ -22,7 +28,6 @@
 ### Changes
 
 * Cascade grouping (e.g., grouping fields) will now concatenate a group's field name array with the field name array of an existing group of the same name. Put simply, if a new piece module adds their custom fields to a `basics` group, that field will be added to the default `basics` group fields. Previously the new group would have replaced the old, leaving inherited fields in the "Ungrouped" section.
-* No longer logs a warning about no users if `testModule` is true on the app.
 
 ### Adds
 

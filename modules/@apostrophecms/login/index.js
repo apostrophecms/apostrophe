@@ -398,7 +398,7 @@ module.exports = {
         const adminReq = self.apos.task.getReq();
         const user = await self.apos.user.find(adminReq, {}).relationships(false).limit(1).toObject();
 
-        if (!user && !self.options.apos.options.testModule) {
+        if (!user && !self.apos.options.test) {
           self.apos.util.warnDev('There are no users created for this installation of ApostropheCMS yet.');
         }
       },
