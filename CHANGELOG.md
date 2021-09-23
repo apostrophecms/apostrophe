@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+* Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
+
 ## 3.5.0 - 2021-09-23
 
 ### Fixes
