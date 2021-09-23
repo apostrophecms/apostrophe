@@ -185,6 +185,19 @@ module.exports = {
           if (![ 'guest', 'editor', 'contributor', 'admin' ].includes(doc.role)) {
             throw self.apos.error('invalid', 'The role property of a user must be guest, editor, contributor or admin');
           }
+        },
+        async invalidatePriorLogins(req, doc, options) {
+          const effectiveUserId = req.user && req.user._id;
+          // Invalidate prior login sessions if the password field changes or
+          // the user is newly marked as disabled.
+          if (doc._id && doc._passwordUpdated && (effectiveUserId !== doc._id)) {
+            // Invalidate old sessions
+            doc.loginInvalidBefore = Date.now();
+            // Just delete old bearer tokens
+            return self.apos.login.bearerTokens.removeMany({
+              userId: doc._id
+            });
+          }
         }
       },
       // Reflect email and username changes in the safe after deduplicating in the piece
@@ -347,6 +360,13 @@ module.exports = {
       // alone and `safeUser` is not updated.
       //
       // Called automatically by `hashSecrets`, above.
+      //
+      // The secret property itself is immediately deleted from doc
+      // to avoid any risk of accidentally storing it in cleartext.
+      // However there is a way to detect that it was updated:
+      // if `secret` is `password`, then the `_passwordUpdated` temporary
+      // property is set to true. This provides a way to take additional
+      // actions stemming from this change in a `beforeSave` handler, etc.
 
       async hashSecret(doc, safeUser, secret) {
         if (!doc[secret]) {
@@ -355,6 +375,7 @@ module.exports = {
         const hash = await require('util').promisify(self.pw.hash)(doc[secret]);
         delete doc[secret];
         safeUser[secret + 'Hash'] = hash;
+        doc[`_${secret}Updated`] = true;
       },
 
       // Verify the given password by checking it against the

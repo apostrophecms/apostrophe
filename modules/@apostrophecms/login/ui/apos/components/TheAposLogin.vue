@@ -122,6 +122,9 @@ export default {
   },
   methods: {
     async submit() {
+      if (this.busy) {
+        return;
+      }
       this.busy = true;
       this.error = '';
       try {

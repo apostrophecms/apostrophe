@@ -9,8 +9,11 @@ module.exports = (options, apos) => {
           use: [
             // Instead of style-loader, to avoid FOUC
             MiniCssExtractPlugin.loader,
-            // Parses CSS imports
-            'css-loader',
+            // Parses CSS imports and make css-loader ignore urls. Urls will still be handled by webpack
+            {
+              loader: 'css-loader',
+              options: { url: false }
+            },
             // Provides autoprefixing
             {
               loader: 'postcss-loader',
