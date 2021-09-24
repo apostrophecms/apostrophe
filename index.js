@@ -334,6 +334,10 @@ module.exports = async function(options) {
       synth.define(name, options);
     });
 
+    // Apostrophe prefers that any improvements to @apostrophecms/global
+    // be applied before any project level version of @apostrophecms/global
+    synth.applyImprovementsBeforeProjectLevel();
+
     return synth;
   }
 
