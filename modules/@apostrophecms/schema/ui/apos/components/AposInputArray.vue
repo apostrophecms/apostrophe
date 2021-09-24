@@ -40,7 +40,10 @@ export default {
   },
   computed: {
     editLabel () {
-      return `Edit ${this.$t(this.field.label)}`;
+      return {
+        key: 'apostrophe:editType',
+        type: this.$t(this.field.label)
+      };
     }
   },
   methods: {
