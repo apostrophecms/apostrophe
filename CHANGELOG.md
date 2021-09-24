@@ -2,17 +2,19 @@
 
 ## UNRELEASED
 
-## Fixes
+### Adds
+
+* The `context-editing` apostrophe admin UI bus event can now take a boolean parameter, explicitly indicating whether the user is actively typing or performing a similar active manipulation of controls right now. If a boolean parameter is not passed, the existing 1100-millisecond debounced timeout is used.
+* Adds 'no-search' modifier to relationship fields as a UI simplification option.
+* Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
+
+### Fixes
 
 * Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
 * Piece types with relationships to multiple other piece types may now be configured in any order, relative to the other piece types. This sometimes appeared to be a bug in reverse relationships.
 * Code at the project level now overrides code found in modules that use `improve` for the same module name. For example, options set by the `@apostrophecms/seo-global` improvement that ships with `@apostrophecms/seo` can now be overridden at project level by `/modules/@apostrophecms/global/index.js` in the way one would expect.
 
-## Adds
-
-* The `context-editing` apostrophe admin UI bus event can now take a boolean parameter, explicitly indicating whether the user is actively typing or performing a similar active manipulation of controls right now. If a boolean parameter is not passed, the existing 1100-millisecond debounced timeout is used.
-
-## Changes
+### Changes
 
 * No longer logs a warning about no users if `testModule` is true on the app.
 
@@ -34,6 +36,7 @@
 ### Changes
 
 * Cascade grouping (e.g., grouping fields) will now concatenate a group's field name array with the field name array of an existing group of the same name. Put simply, if a new piece module adds their custom fields to a `basics` group, that field will be added to the default `basics` group fields. Previously the new group would have replaced the old, leaving inherited fields in the "Ungrouped" section.
+* AposButton's `block` modifier now less login-specific
 
 ### Adds
 
