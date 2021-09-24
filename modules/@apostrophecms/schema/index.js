@@ -2179,13 +2179,14 @@ module.exports = {
       // of a `relationship` field, or the `label` property of anything.
 
       validate(schema, options) {
-        // Infinite recursion prevention
-        if (self.validatedSchemas[options.type + ':' + options.subtype]) {
-          return;
-        }
-        self.validatedSchemas[options.type + ':' + options.subtype] = true;
-
-        schema.forEach(field => self.validateField(field, options));
+        schema.forEach(field => {
+          // Infinite recursion prevention
+          const key = `${options.type}:${options.subtype}.${field.name}`;
+          if (!self.validatedSchemas[key]) {
+            self.validatedSchemas[key] = true;
+            self.validateField(field, options);
+          }
+        });
       },
 
       // Validates a single schema field. See `validate`.

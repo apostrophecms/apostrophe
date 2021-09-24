@@ -28,7 +28,7 @@ export default (options) => {
         name: nodeName,
         defaultOptions: {
           HTMLAttributes: attrs,
-          levels: def.options.levels ? [ def.options.levels ] : null
+          levels: def.options.level ? [ def.options.level ] : null
         }
       });
     }

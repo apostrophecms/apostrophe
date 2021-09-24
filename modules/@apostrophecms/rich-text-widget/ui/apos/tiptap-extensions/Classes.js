@@ -25,9 +25,7 @@ export default (options) => {
                 const tag = element.tagName.toLowerCase();
                 // This tag is not configured
                 if (!allow[tag]) {
-                  return {
-                    class: null
-                  };
+                  return null;
                 }
                 const classes = (element.getAttribute('class') || '')
                   .split(' ')
