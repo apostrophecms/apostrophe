@@ -8,6 +8,10 @@
 * Piece types with relationships to multiple other piece types may now be configured in any order, relative to the other piece types. This sometimes appeared to be a bug in reverse relationships.
 * Code at the project level now overrides code found in modules that use `improve` for the same module name. For example, options set by the `@apostrophecms/seo-global` improvement that ships with `@apostrophecms/seo` can now be overridden at project level by `/modules/@apostrophecms/global/index.js` in the way one would expect.
 
+## Adds
+
+* The `context-editing` apostrophe admin UI bus event can now take a boolean parameter, explicitly indicating whether the user is actively typing or performing a similar active manipulation of controls right now. If a boolean parameter is not passed, the existing 1100-millisecond debounced timeout is used.
+
 ## Changes
 
 * No longer logs a warning about no users if `testModule` is true on the app.
