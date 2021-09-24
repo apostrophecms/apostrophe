@@ -131,7 +131,7 @@
   "fileTypeNotAccepted": "Typ súboru nebol prijatý. Povolené rozšírenia: {{ extensions }}",
   "fileInvalid": "Súbor nebol prijatý. Môže byť poškodený alebo sa jeho obsah nemusí zhodovať s príponou súboru.",
   "files": "Súbory",
-  "filter": "Filter",
+  "filter": "filtrovať",
   "filterByTag": "Filtrovať podľa značky",
   "filterResultsByType": "Filtrovať výsledky podľa typu",
   "findOrAddTag": "Nájdite existujúcu značku alebo pridajte novú",
