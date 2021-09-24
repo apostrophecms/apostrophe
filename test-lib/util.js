@@ -37,6 +37,7 @@ async function create(options) {
       _: [],
       'ignore-orphan-modules': true
     },
+    test: true,
     autoBuild: false,
     ...options
   };
