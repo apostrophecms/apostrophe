@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 * Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
+* Piece types with relationships to multiple other piece types may now be configured in any order, relative to the other piece types. This sometimes appeared to be a bug in reverse relationships.
 
 ## 3.5.0 - 2021-09-23
 
