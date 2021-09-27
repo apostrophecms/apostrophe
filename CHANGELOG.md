@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+## Fixes
+
+* Avoid 500 errors when `joinByOne` field is hidden and required.
+
 ## 2.220.6 (2021-09-13)
 
 ## Security
