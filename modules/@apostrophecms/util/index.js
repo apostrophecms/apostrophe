@@ -414,7 +414,7 @@ module.exports = {
           return self.insensitiveSortCompare(a[property], b[property]);
         });
       },
-      // Copmpare two strings in a case-insensitive way, returning -1, 0 or 1, suitable for use with sort().
+      // Compare two strings in a case-insensitive way, returning -1, 0 or 1, suitable for use with sort().
       // If the two strings represent numbers, compare them as numbers for a natural sort order
       // when comparing strings like '4' and '10'.
       insensitiveSortCompare(a, b) {
@@ -858,7 +858,7 @@ module.exports = {
         return _.startCase(o);
       },
 
-      // check if something is a function (as opposd to property)
+      // check if something is a function (as opposed to property)
       isFunction: function(o) {
         return (typeof o === 'function');
       },
