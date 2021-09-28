@@ -43,7 +43,11 @@
                 </h2>
                 <div class="apos-modal__controls--header" v-if="hasBeenLocalized || hasPrimaryControls">
                   <div class="apos-modal__locale" v-if="hasBeenLocalized">
-                    <span class="apos-modal__locale-label">{{ $t('apostrophe:locale')}}:</span> <span class="apos-modal__locale-name">{{ currentLocale }}</span>
+                    <span class="apos-modal__locale-label">
+                      {{ $t('apostrophe:locale') }}:
+                    </span> <span class="apos-modal__locale-name">
+                      {{ currentLocale }}
+                    </span>
                   </div>
                   <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
                     <slot name="primaryControls" />
@@ -447,9 +451,9 @@ export default {
     $height: 190px;
     top: 50%;
     bottom: -50%;
+    display: flex;
     height: $height;
     transform: translateY(math.div($height, 2) * -1);
-    display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;

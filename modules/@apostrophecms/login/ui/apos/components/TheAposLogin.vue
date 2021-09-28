@@ -37,6 +37,7 @@
                   type="primary"
                   label="apostrophe:login"
                   button-type="submit"
+                  class="apos-login__submit"
                   :modifiers="['gradient-on-hover', 'block']"
                   @click="submit"
                 />
@@ -121,6 +122,9 @@ export default {
   },
   methods: {
     async submit() {
+      if (this.busy) {
+        return;
+      }
       this.busy = true;
       this.error = '';
       try {
@@ -297,5 +301,9 @@ export default {
       margin-right: 0;
       margin-left: auto;
     }
+  }
+
+  .apos-login__submit ::v-deep .apos-button {
+    height: 47px;
   }
 </style>

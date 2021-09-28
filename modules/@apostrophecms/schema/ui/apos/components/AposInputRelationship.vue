@@ -3,6 +3,7 @@
     :field="field" :error="effectiveError"
     :uid="uid" :items="next"
     :display-options="displayOptions"
+    :modifiers="modifiers"
   >
     <template #additional>
       <AposMinMaxCount
@@ -14,6 +15,7 @@
       <div class="apos-input-wrapper apos-input-relationship">
         <div class="apos-input-relationship__input-wrapper">
           <input
+            v-if="!modifiers.includes('no-search')"
             class="apos-input apos-input--text apos-input--relationship"
             v-model="searchTerm" type="text"
             :placeholder="$t(placeholder)"
@@ -28,7 +30,7 @@
             class="apos-input-relationship__button"
             :disabled="field.readOnly || limitReached"
             :label="browseLabel"
-            :modifiers="['small']"
+            :modifiers="buttonModifiers"
             type="input"
             @click="choose"
           />
@@ -106,6 +108,13 @@ export default {
     },
     disableUnpublished() {
       return apos.modules[this.field.withType].localized;
+    },
+    buttonModifiers() {
+      const modifiers = [ 'small' ];
+      if (this.modifiers.includes('no-search')) {
+        modifiers.push('block');
+      }
+      return modifiers;
     }
   },
   watch: {
@@ -225,6 +234,19 @@ export default {
 
   .apos-input-relationship__items {
     padding: relative;
-    margin-top: 10px;
+    margin-top: $spacing-base;
+  }
+
+  .apos-field--small {
+    .apos-input-relationship__button {
+      padding: $spacing-half;
+    }
+  }
+  .apos-field--no-search {
+    .apos-input-relationship__button {
+      position: relative;
+      width: 100%;
+      padding: 0;
+    }
   }
 </style>

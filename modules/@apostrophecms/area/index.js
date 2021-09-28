@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const deep = require('deep-get-set');
+const { stripIndent } = require('common-tags');
 
 // An area is a series of zero or more widgets, in which users can add
 // and remove widgets and drag them to reorder them. This module implements
@@ -131,6 +132,14 @@ module.exports = {
         const field = self.apos.schema.getFieldById(area._fieldId);
 
         const options = field.options;
+        if (!options) {
+          throw new Error(stripIndent`
+            The area field ${field.name} has no options property.
+
+            You probably forgot to nest the widgets property
+            in an options property.
+          `);
+        }
         _.each(options.widgets, function (options, name) {
           const manager = self.widgetManagers[name];
           if (manager) {

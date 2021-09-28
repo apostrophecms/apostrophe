@@ -112,7 +112,10 @@ export default {
           data: this.value[item.name]
         };
         fields[item.name].serverError = this.serverErrors && this.serverErrors[item.name];
-        fields[item.name].modifiers = this.modifiers;
+        fields[item.name].modifiers = [
+          ...(this.modifiers || []),
+          ...(item.modifiers || [])
+        ];
       });
       return fields;
     }

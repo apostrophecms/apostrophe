@@ -2,18 +2,52 @@
 
 ## UNRELEASED
 
+### Adds
+
+* The `context-editing` apostrophe admin UI bus event can now take a boolean parameter, explicitly indicating whether the user is actively typing or performing a similar active manipulation of controls right now. If a boolean parameter is not passed, the existing 1100-millisecond debounced timeout is used.
+* Adds 'no-search' modifier to relationship fields as a UI simplification option.
+* Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
+
 ### Fixes
 
+* Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
+* Piece types with relationships to multiple other piece types may now be configured in any order, relative to the other piece types. This sometimes appeared to be a bug in reverse relationships.
+* Code at the project level now overrides code found in modules that use `improve` for the same module name. For example, options set by the `@apostrophecms/seo-global` improvement that ships with `@apostrophecms/seo` can now be overridden at project level by `/modules/@apostrophecms/global/index.js` in the way one would expect.
+
+### Changes
+
+* No longer logs a warning about no users if `testModule` is true on the app.
+
+## 3.5.0 - 2021-09-23
+
+### Fixes
+
+* Array input component edit button label is now propertly localized.
+
+## UNRELEASED
+
+### Fixes
+
+* Pinned dependency on `vue-material-design-icons` to fix `apos-build.js` build error in production.
 * The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
 * Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
+* Rich Text widgets now instantiate with a valid element from the `styles` option rather than always starting with an unclassed `<p>` tag.
+* Since version 3.2.0, apostrophe modules to be loaded via npm must appear as explicit npm dependencies of the project. This is a necessary security and stability improvement, but it was slightly too strict. Starting with this release, if the project has no `package.json` in its root directory, the `package.json` in the closest ancestor directory is consulted.
+* Fixes a bug where having no project modules directory would throw an error. This is primarily a concern for module unit tests where there are no additional modules involved.
+* `css-loader` now ignores `url()` in css files inside `assets` so that paths are left intact, i.e. `url(/images/file.svg)` will now find a static file at `/public/images/file.svg` (static assets in `/public` are served by `express.static`). Thanks to Matic Tersek.
+* Restored support for clicking on a "foreign" area, i.e. an area displayed on the page whose content comes from a piece, in order to edit it in an appropriate way.
+* Apostrophe module aliases and the data attached to them are now visible immediately to `ui/src/index.js` JavaScript code, i.e. you can write `apos.alias` where `alias` matches the `alias` option configured for that module. Previously one had to write `apos.modules['module-name']` or wait until next tick. However, note that most modules do not push any data to the browser when a user is not logged in. You can do so in a custom module by calling `self.enableBrowserData('public')` from `init` and implementing or extending the `getBrowserData(req)` method (note that page, piece and widget types already have one, so it is important to extend in those cases).
+* `options.testModule` works properly when implementing unit tests for an npm module that is namespaced.
 
 ### Changes
 
 * Cascade grouping (e.g., grouping fields) will now concatenate a group's field name array with the field name array of an existing group of the same name. Put simply, if a new piece module adds their custom fields to a `basics` group, that field will be added to the default `basics` group fields. Previously the new group would have replaced the old, leaving inherited fields in the "Ungrouped" section.
+* AposButton's `block` modifier now less login-specific
 
 ### Adds
 
-* If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
+* Rich Text widget's styles support a `def` property for specifying the default style the editor should instantiate with.
+* A more helpful error message if a field of type `area` is missing its `options` property.
 
 ## 3.4.1 - 2021-09-13
 
@@ -23,6 +57,7 @@ No changes. Publishing to correctly mark the latest 3.x release as "latest" in n
 
 ### Security
 
+* Changing a user's password or marking their account as disabled now immediately terminates any active sessions or bearer tokens for that user. Thanks to Daniel Elkabes for pointing out the issue. To ensure all sessions have the necessary data for this, all users logged in via sessions at the time of this upgrade will need to log in again.
 * Users with permission to upload SVG files were previously able to do so even if they contained XSS attacks. In Apostrophe 3.x, the general public so far never has access to upload SVG files, so the risk is minor but could be used to phish access from an admin user by encouraging them to upload a specially crafted SVG file. While Apostrophe typically displays SVG files using the `img` tag, which ignores XSS vectors, an XSS attack might still be possible if the image were opened directly via the Apostrophe media library's convenience link for doing so. All SVG uploads are now sanitized via DOMPurify to remove XSS attack vectors. In addition, all existing SVG attachments not already validated are passed through DOMPurify during a one-time migration.
 
 ### Fixes
