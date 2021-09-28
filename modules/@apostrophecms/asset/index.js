@@ -580,7 +580,14 @@ module.exports = {
             if (data) {
               document.body.removeAttribute('data-apos');
             }
-          })();
+            if (window.apos.modules) {
+              for (const module of Object.values(window.apos.modules)) {
+                if (module.alias) {
+                  window.apos[module.alias] = module;
+                }
+              }
+            }
+        })();
         `;
         self.builds = {
           src: {
@@ -632,13 +639,6 @@ module.exports = {
             prologue: stripIndent`
               import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
               import Vue from 'Modules/@apostrophecms/ui/lib/vue';
-              if (window.apos.modules) {
-                for (const module of Object.values(window.apos.modules)) {
-                  if (module.alias) {
-                    window.apos[module.alias] = module;
-                  }
-                }
-              }
               window.apos.bus = new Vue();
             `,
             // Load only in browsers that support ES6 modules

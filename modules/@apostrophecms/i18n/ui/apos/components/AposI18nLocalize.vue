@@ -82,6 +82,7 @@
                 :field="searchField"
                 @input="updateFilter"
                 class="apos-locales-filter"
+                ref="searchInput"
               />
               <transition-group tag="ul" name="selected-list" class="apos-selected-locales">
                 <li
@@ -529,6 +530,12 @@ export default {
       } else if (this.isSelected(locale)) {
        this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(l => l !== locale);
       }
+      // Reset search filter
+      if (this.filteredLocales.length < 2) {
+        this.wizard.sections.selectLocales.filter = '';
+        this.searchValue.data = '';
+        this.$refs.searchInput.$el.querySelector('input').focus();
+      }
     },
     removeLocale(locale) {
       this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(
@@ -580,8 +587,8 @@ export default {
       return module.pluralLabel || module.label || name;
     },
     updateFilter(event) {
-      if (event && event.data) {
-        wizard.sections.selectLocales.filter = event.data
+      if (event && event.data !== undefined) {
+        this.wizard.sections.selectLocales.filter = event.data
       }
     },
     async submit() {
