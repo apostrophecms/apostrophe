@@ -17,6 +17,7 @@
 
 ### Adds
 
+* Adds a Slovak localization file. Activate the `sk` locale to use this. Many thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
 * If `options.testModule` on the app is a string it will be used as an npm namespace when creating a symlink test module.
 * Rich Text widget's styles support a `def` property for specifying the default style the editor should instantiate with.
 
