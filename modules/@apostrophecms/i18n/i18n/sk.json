@@ -339,7 +339,7 @@
   "toggleSection": "Prepnúť sekciu",
   "toggleSelectionOf": "Prepnúť výber z {{ title }}",
   "treeError": "Pri aktualizácii stromu stránok sa vyskytla chyba.",
-  "type": "Napíšte",
+  "type": "Typ",
   "typeWithCount": "{{ type }} ({{ count }})",
   "unableToSwitchModes": "Režimy nie je možné prepnúť.",
   "undo": "Vrátenie späť",
