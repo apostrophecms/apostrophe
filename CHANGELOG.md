@@ -5,6 +5,7 @@
 ## Fixes
 
 * Avoid 500 errors when `joinByOne` field is hidden and required.
+* `options.testModule` works properly when implementing unit tests for an npm module that is namespaced.
 
 ## 2.220.6 (2021-09-13)
 

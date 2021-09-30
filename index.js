@@ -11,6 +11,7 @@ var async = require('async');
 var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
 var glob = require('glob');
+const mkdirp = require('mkdirp');
 
 module.exports = function(options) {
 
@@ -377,6 +378,12 @@ module.exports = function(options) {
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
+    const pkgName = require(`${moduleDir}/package.json`).name;
+    let pkgNamespace = '';
+    if (pkgName.includes('/')) {
+      const parts = pkgName.split('/');
+      pkgNamespace = '/' + parts.slice(0, parts.length - 1).join('/');
+    }    
     var moduleName = require('path').basename(moduleDir);
     try {
       // Use the given name in the package.json file if it is present
@@ -385,20 +392,10 @@ module.exports = function(options) {
         moduleName = packageName;
       }
     } catch (e) {}
-    var testDependenciesDir = testDir + require("path").normalize('/node_modules/');
+    var testDependenciesDir = testDir + require("path").normalize('/node_modules/' + pkgNamespace);
     if (!fs.existsSync(testDependenciesDir + moduleName)) {
       // Ensure dependencies directory exists
-      if (!fs.existsSync(testDependenciesDir)) {
-        fs.mkdirSync(testDependenciesDir);
-      }
-      // Ensure potential module scope directory exists before the symlink creation
-      if (moduleName.charAt(0) === '@' && moduleName.includes(require("path").sep)) {
-        var scope = moduleName.split(require("path").sep)[0];
-        var scopeDir = testDependenciesDir + scope;
-        if (!fs.existsSync(scopeDir)) {
-          fs.mkdirSync(scopeDir);
-        }
-      }
+      mkdirp(testDependenciesDir);
       // Windows 10 got an issue with permission , known issue at https://github.com/nodejs/node/issues/18518
       // Therefore need to have if else statement to determine type of symlinkSync uses.
       var type;
