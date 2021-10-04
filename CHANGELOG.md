@@ -5,6 +5,7 @@
 ## Fixes
 
 * Avoid 500 errors when `joinByOne` field is hidden and required.
+* Avoid errors at startup when formerly valid locales for the global doc are in the database, but not part of the current configuration.
 
 ## 2.220.6 (2021-09-13)
 
