@@ -124,6 +124,7 @@ module.exports = {
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %} custom tag.
       async renderArea(req, area, _with) {
+        console.log(req.identity);
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }

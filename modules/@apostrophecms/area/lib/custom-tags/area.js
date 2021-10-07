@@ -46,7 +46,8 @@ module.exports = function(self) {
       return { args };
     },
     async run(context, doc, name, _with) {
-      const req = context.env.opts.req;
+      console.log(context);
+      const req = context.ctx.__req;
       let area;
       if ((!doc) || ((typeof doc) !== 'object')) {
         throw usage('You must pass an existing doc or widget as the first argument.');

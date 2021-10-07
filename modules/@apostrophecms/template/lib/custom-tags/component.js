@@ -23,7 +23,8 @@ module.exports = function(self) {
     },
     // Do the actual work
     async run(context, name, data) {
-      const req = context.env.opts.req;
+      const req = context.ctx.__req;
+      console.log(`--> ${req.identity}`);
       if (!data) {
         data = {};
       }

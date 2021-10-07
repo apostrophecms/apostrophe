@@ -66,6 +66,8 @@ module.exports = {
     self.nunjucks = self.options.language || require('nunjucks');
 
     self.insertions = {};
+
+    self.oldEnvs = {};
   },
   handlers(self) {
     return {
@@ -289,6 +291,8 @@ module.exports = {
           `);
           return key;
         };
+        args.__req = req;
+
         if (type === 'file') {
           let finalName = s;
           if (!finalName.match(/\.\w+$/)) {
@@ -316,11 +320,28 @@ module.exports = {
         const name = module.__meta.name;
 
         req.envs = req.envs || {};
-        // Cache for performance
+        // Cache for performance during request lifetime
         if (_.has(req.envs, name)) {
           return req.envs[name];
         }
-        req.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
+        // Hold on to environments no longer needed by past requests
+        // and reuse them (fixes memory leak)
+        self.oldEnvs[name] = self.oldEnvs[name] || [];
+        if (!req.aposTemplateEnvCleanupHandler) {
+          req.identity = (new Date()).toISOString();
+          console.log(`> new req: ${req.identity}`);
+          req.res.on('close', () => {
+            for (const [ moduleName, env ] of Object.entries(req.envs)) {
+              self.oldEnvs[moduleName].push(env);
+            }
+          });
+          req.aposTemplateEnvCleanupHandler = true;
+        }
+        if (self.oldEnvs[name][0]) {
+          req.envs[name] = self.recycleEnv(req, self.oldEnvs[name].pop());
+        } else {
+          req.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
+        }
         return req.envs[name];
       },
 
@@ -365,7 +386,7 @@ module.exports = {
             key = key.substring(colonAt + 1);
             optionModule = self.apos.modules[name];
           }
-          return optionModule.getOption(req, key, def);
+          return optionModule.getOption(env.opts.req, key, def);
         });
 
         self.addStandardFilters(env);
@@ -427,6 +448,12 @@ module.exports = {
           return extension;
         }
 
+        return env;
+      },
+
+      recycleEnv(req, env) {
+        env.opts.req = req;
+        console.log(`* ${env.opts.req.identity}`);
         return env;
       },
 
