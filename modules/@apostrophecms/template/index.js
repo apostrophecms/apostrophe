@@ -66,8 +66,7 @@ module.exports = {
     self.nunjucks = self.options.language || require('nunjucks');
 
     self.insertions = {};
-
-    self.oldEnvs = {};
+  
   },
   handlers(self) {
     return {
@@ -292,6 +291,16 @@ module.exports = {
           return key;
         };
         args.__req = req;
+        args.getOption = (key, def) => {
+          const colonAt = key.indexOf(':');
+          let optionModule = self.apos.modules[module.__meta.name];
+          if (colonAt !== -1) {
+            const name = key.substring(0, colonAt);
+            key = key.substring(colonAt + 1);
+            optionModule = self.apos.modules[name];
+          }
+          return optionModule.getOption(req, key, def);
+        };
 
         if (type === 'file') {
           let finalName = s;
@@ -319,30 +328,11 @@ module.exports = {
       getEnv(req, module) {
         const name = module.__meta.name;
 
-        req.envs = req.envs || {};
-        // Cache for performance during request lifetime
-        if (_.has(req.envs, name)) {
-          return req.envs[name];
+        self.envs = self.envs || {};
+        if (!_.has(self.envs, name)) {
+          self.envs[name] = self.newEnv(name, self.getViewFolders(module));
         }
-        // Hold on to environments no longer needed by past requests
-        // and reuse them (fixes memory leak)
-        self.oldEnvs[name] = self.oldEnvs[name] || [];
-        if (!req.aposTemplateEnvCleanupHandler) {
-          req.identity = (new Date()).toISOString();
-          console.log(`> new req: ${req.identity}`);
-          req.res.on('close', () => {
-            for (const [ moduleName, env ] of Object.entries(req.envs)) {
-              self.oldEnvs[moduleName].push(env);
-            }
-          });
-          req.aposTemplateEnvCleanupHandler = true;
-        }
-        if (self.oldEnvs[name][0]) {
-          req.envs[name] = self.recycleEnv(req, self.oldEnvs[name].pop());
-        } else {
-          req.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
-        }
-        return req.envs[name];
+        return self.envs[name];
       },
 
       getViewFolders(module) {
@@ -366,28 +356,17 @@ module.exports = {
       //
       // apos.template.getEnv(module)
 
-      newEnv(req, moduleName, dirs) {
+      newEnv(moduleName, dirs) {
 
         const loader = self.getLoader(moduleName, dirs);
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
-          req,
           module: self.apos.modules[moduleName]
         });
 
         env.addGlobal('apos', self.templateApos);
         env.addGlobal('module', self.templateApos.modules[moduleName]);
-        env.addGlobal('getOption', function(key, def) {
-          const colonAt = key.indexOf(':');
-          let optionModule = self.apos.modules[moduleName];
-          if (colonAt !== -1) {
-            const name = key.substring(0, colonAt);
-            key = key.substring(colonAt + 1);
-            optionModule = self.apos.modules[name];
-          }
-          return optionModule.getOption(env.opts.req, key, def);
-        });
 
         self.addStandardFilters(env);
 
@@ -448,12 +427,6 @@ module.exports = {
           return extension;
         }
 
-        return env;
-      },
-
-      recycleEnv(req, env) {
-        env.opts.req = req;
-        console.log(`* ${env.opts.req.identity}`);
         return env;
       },
 
