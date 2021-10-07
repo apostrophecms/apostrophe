@@ -327,6 +327,7 @@ module.exports = {
 
       getEnv(req, module) {
         const name = module.__meta.name;
+        req.identity = (new Date()).toISOString();
 
         self.envs = self.envs || {};
         if (!_.has(self.envs, name)) {

@@ -46,7 +46,6 @@ module.exports = function(self) {
       return { args };
     },
     async run(context, doc, name, _with) {
-      console.log(context);
       const req = context.ctx.__req;
       let area;
       if ((!doc) || ((typeof doc) !== 'object')) {
