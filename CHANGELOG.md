@@ -2,18 +2,13 @@
 
 ## UNRELEASED
 
-### Fixes
-
-* Makes the use of `apos.bus.$emit` conditional on `apos.bus` to use `apos.http.remote` when logged out.
-
-## UNRELEASED
-
 ### Adds
 
 * The `context-editing` apostrophe admin UI bus event can now take a boolean parameter, explicitly indicating whether the user is actively typing or performing a similar active manipulation of controls right now. If a boolean parameter is not passed, the existing 1100-millisecond debounced timeout is used.
 * Adds 'no-search' modifier to relationship fields as a UI simplification option.
 * Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
 * Adds a Slovak localization file. Activate the `sk` locale to use this. Many thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
+* Adds a Spanish localization file. Activate the `es` locale to use this. Many thanks to [egonzalezg9](https://github.com/egonzalezg9) for the contribution.
 
 ### Fixes
 
@@ -23,6 +18,7 @@
 * Array input component edit button label is now propertly localized.
 * A memory leak on each request has been fixed, and performance improved, by avoiding the use of new Nunjucks environments for each request. Thanks to Miro Yovchev for pointing out the leak.
 * Fixes field group cascade merging, using the original group label if none is given in the new field group configuration.
+* Makes the use of `apos.bus.$emit` conditional on `apos.bus` to use `apos.http.remote` when logged out.
 
 ### Changes
 
