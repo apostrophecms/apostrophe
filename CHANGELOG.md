@@ -18,7 +18,7 @@
 * Array input component edit button label is now propertly localized.
 * A memory leak on each request has been fixed, and performance improved, by avoiding the use of new Nunjucks environments for each request. Thanks to Miro Yovchev for pointing out the leak.
 * Fixes field group cascade merging, using the original group label if none is given in the new field group configuration.
-* Makes the use of `apos.bus.$emit` conditional on `apos.bus` to use `apos.http.remote` when logged out.
+* Passing `busy: true` to `apos.http.post` and related methods no longer produces an error if invoked when logged out, however note that there will likely never be a UI for this when logged out, so indicate busy state in your own way.
 
 ### Changes
 
