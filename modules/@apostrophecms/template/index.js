@@ -251,6 +251,34 @@ module.exports = {
 
         let result;
 
+        const args = self.getRenderArgs(req, data, module);
+
+        const env = self.getEnv(req, module);
+
+        if (type === 'file') {
+          let finalName = s;
+          if (!finalName.match(/\.\w+$/)) {
+            finalName += '.html';
+          }
+          result = await Promise.promisify(function (finalName, args, callback) {
+            return env.getTemplate(finalName).render(args, callback);
+          })(finalName, args);
+        } else if (type === 'string') {
+          result = await Promise.promisify(function (s, args, callback) {
+            return env.renderString(s, args, callback);
+          })(s, args);
+        } else {
+          throw new Error('renderBody does not support the type ' + type);
+        }
+        return result;
+      },
+
+      // Implementation detail of `renderBody` responsible for
+      // creating the input object passed to Nunjucks for rendering,
+      // with `data` merged into the `.data` property,
+      // `apos` available separately, `__req` available separately, etc.
+
+      getRenderArgs(req, data, module) {
         const merged = {};
 
         if (data) {
@@ -281,8 +309,6 @@ module.exports = {
 
         args.data.locale = args.data.locale || req.locale;
 
-        const env = self.getEnv(req, module);
-
         args.apos = self.templateApos;
         args.__t = req.t;
         args.__ = key => {
@@ -303,23 +329,7 @@ module.exports = {
           }
           return optionModule.getOption(req, key, def);
         };
-
-        if (type === 'file') {
-          let finalName = s;
-          if (!finalName.match(/\.\w+$/)) {
-            finalName += '.html';
-          }
-          result = await Promise.promisify(function (finalName, args, callback) {
-            return env.getTemplate(finalName).render(args, callback);
-          })(finalName, args);
-        } else if (type === 'string') {
-          result = await Promise.promisify(function (s, args, callback) {
-            return env.renderString(s, args, callback);
-          })(s, args);
-        } else {
-          throw new Error('renderBody does not support the type ' + type);
-        }
-        return result;
+        return args;
       },
 
       // Fetch a nunjucks environment in which `include`, `extends`, etc. search
