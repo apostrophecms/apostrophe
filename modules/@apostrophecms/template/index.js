@@ -68,7 +68,7 @@ module.exports = {
     self.nunjucks = self.options.language || require('nunjucks');
 
     self.insertions = {};
-  
+
   },
   handlers(self) {
     return {
