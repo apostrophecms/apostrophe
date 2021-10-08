@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Makes the use of `apos.bus.$emit` conditional on `apos.bus` to use `apos.http.remote` when logged out.
+
+## UNRELEASED
+
 ### Adds
 
 * The `context-editing` apostrophe admin UI bus event can now take a boolean parameter, explicitly indicating whether the user is actively typing or performing a similar active manipulation of controls right now. If a boolean parameter is not passed, the existing 1100-millisecond debounced timeout is used.
