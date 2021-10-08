@@ -98,7 +98,7 @@ module.exports = (self) => {
       const source = info.body();
       const input = createRenderInput(info);
 
-      const req = context.env.opts.req;
+      const req = context.ctx.__req;
       const env = self.getEnv(req, context.env.opts.module);
       input.apos = self.templateApos;
 
@@ -108,6 +108,10 @@ module.exports = (self) => {
       input.rendercaller = rendercaller;
 
       const result = await require('util').promisify((s, args, callback) => {
+        args = {
+          ...args,
+          __req: req
+        };
         return env.renderString(s, args, callback);
       })(source, input);
       return result;
