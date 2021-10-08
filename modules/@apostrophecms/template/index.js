@@ -61,6 +61,8 @@ module.exports = {
       prefix: self.apos.prefix
     };
 
+    self.envs = {};
+
     self.filters = {};
 
     self.nunjucks = self.options.language || require('nunjucks');
@@ -327,9 +329,6 @@ module.exports = {
 
       getEnv(req, module) {
         const name = module.__meta.name;
-        req.identity = (new Date()).toISOString();
-
-        self.envs = self.envs || {};
         if (!_.has(self.envs, name)) {
           self.envs[name] = self.newEnv(name, self.getViewFolders(module));
         }
