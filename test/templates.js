@@ -182,7 +182,6 @@ describe('Templates', function() {
   it('should render fragments containing async components correctly', async () => {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-page'].renderPage(req, 'page');
-
     const aboveFragment = result.indexOf('Above Fragment');
     const beforeComponent = result.indexOf('Before Component');
     const componentText = result.indexOf('Component Text');
@@ -293,6 +292,13 @@ describe('Templates', function() {
       'val_2',
       'val_'
     ]);
+  });
+
+  it('should support apos helpers and localization in fragments', async () => {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'aux-test');
+    assert(result.includes('gee-whiz'));
+    assert(result.includes('Modify / Delete'));
   });
 
 });
