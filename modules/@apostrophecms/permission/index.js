@@ -234,7 +234,7 @@ module.exports = {
         }
         permissions.push({
           name: 'edit',
-          label: module.options.singleton ? 'Modify' : 'Modify / Delete',
+          label: module.options.singleton ? 'apostrophe:modify' : 'apostrophe:modifyOrDelete',
           value: self.can(req, 'edit', module.name)
         });
         permissions.push({

@@ -40,7 +40,7 @@ module.exports = function(self) {
       return { args };
     },
     async run(context, item, options, _with) {
-      const req = context.env.opts.req;
+      const req = context.ctx.__req;
       if (!item) {
         self.apos.util.warn('a null widget was encountered.');
         return '';
