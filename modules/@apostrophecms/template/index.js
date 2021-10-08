@@ -326,11 +326,19 @@ module.exports = {
       // the views directories of the specified module and its ancestors.
       // Typically you will call `self.render` or `self.partial` on your module
       // object rather than calling this directly.
+      //
+      // `req` is effectively here for bc purposes only. This method
+      // does NOT always pass `req` to `newEnv` for every new release, as
+      // `req` is separately supplied to each request to fix a memory leak
+      // that occurs when Nunjucks environments are created for every request.
 
       getEnv(req, module) {
         const name = module.__meta.name;
         if (!_.has(self.envs, name)) {
-          self.envs[name] = self.newEnv(name, self.getViewFolders(module));
+          // Pass the original req for bc purposes only,
+          // note that due to the reuse of envs there is
+          // no guarantee newEnv will be called for every req
+          self.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
         }
         return self.envs[name];
       },
@@ -354,9 +362,16 @@ module.exports = {
       // specified directories are searched for includes,
       // etc. Don't call this directly, use:
       //
-      // apos.template.getEnv(module)
+      // apos.template.getEnv(req, module)
+      //
+      // `req` is effectively here for bc purposes only. Apostrophe
+      // does NOT always pass `req` to `newEnv` for every new release, as
+      // `req` is separately supplied to each request to fix a memory leak
+      // that occurs when Nunjucks environments are created for every request.
+      // If you must access `req` in a custom Nunjucks tag use
+      // `context.ctx.__req`, NOT `env.opts.req` which is no longer provided.
 
-      newEnv(moduleName, dirs) {
+      newEnv(req, moduleName, dirs) {
 
         const loader = self.getLoader(moduleName, dirs);
 

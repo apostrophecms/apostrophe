@@ -108,6 +108,10 @@ module.exports = (self) => {
       input.rendercaller = rendercaller;
 
       const result = await require('util').promisify((s, args, callback) => {
+        args = {
+          ...args,
+          __req: req
+        };
         return env.renderString(s, args, callback);
       })(source, input);
       return result;
