@@ -126,7 +126,9 @@ export default {
         : this.validate(this.next);
       this.$emit('input', {
         data: error ? this.next : this.convert(this.next),
-        error
+        error,
+        ranValidation: this.conditionMet === false ? this.value.ranValidation
+          : true
       });
     },
     watchValue () {

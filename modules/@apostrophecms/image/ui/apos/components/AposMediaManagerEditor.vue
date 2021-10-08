@@ -64,6 +64,7 @@
         :trigger-validation="triggerValidation"
         :doc-id="docFields.data._id"
         :following-values="followingValues()"
+        @validate="triggerValidate"
         @reset="$emit('modified', false)"
         ref="schema"
         :server-errors="serverErrors"
@@ -277,6 +278,7 @@ export default {
 
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
+          this.triggerValidation = false;
           await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
             type: 'warning',
             icon: 'alert-circle-icon',
@@ -332,7 +334,6 @@ export default {
       this.cancel();
     },
     updateActiveAttachment(attachment) {
-      console.info('☄️', attachment);
       this.activeMedia.attachment = attachment;
     },
     viewMedia () {
