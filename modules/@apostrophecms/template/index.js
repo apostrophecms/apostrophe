@@ -61,11 +61,14 @@ module.exports = {
       prefix: self.apos.prefix
     };
 
+    self.envs = {};
+
     self.filters = {};
 
     self.nunjucks = self.options.language || require('nunjucks');
 
     self.insertions = {};
+
   },
   handlers(self) {
     return {
@@ -289,6 +292,18 @@ module.exports = {
           `);
           return key;
         };
+        args.__req = req;
+        args.getOption = (key, def) => {
+          const colonAt = key.indexOf(':');
+          let optionModule = self.apos.modules[module.__meta.name];
+          if (colonAt !== -1) {
+            const name = key.substring(0, colonAt);
+            key = key.substring(colonAt + 1);
+            optionModule = self.apos.modules[name];
+          }
+          return optionModule.getOption(req, key, def);
+        };
+
         if (type === 'file') {
           let finalName = s;
           if (!finalName.match(/\.\w+$/)) {
@@ -311,17 +326,21 @@ module.exports = {
       // the views directories of the specified module and its ancestors.
       // Typically you will call `self.render` or `self.partial` on your module
       // object rather than calling this directly.
+      //
+      // `req` is effectively here for bc purposes only. This method
+      // does NOT always pass `req` to `newEnv` for every new release, as
+      // `req` is separately supplied to each request to fix a memory leak
+      // that occurs when Nunjucks environments are created for every request.
 
       getEnv(req, module) {
         const name = module.__meta.name;
-
-        req.envs = req.envs || {};
-        // Cache for performance
-        if (_.has(req.envs, name)) {
-          return req.envs[name];
+        if (!_.has(self.envs, name)) {
+          // Pass the original req for bc purposes only,
+          // note that due to the reuse of envs there is
+          // no guarantee newEnv will be called for every req
+          self.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
         }
-        req.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
-        return req.envs[name];
+        return self.envs[name];
       },
 
       getViewFolders(module) {
@@ -343,7 +362,14 @@ module.exports = {
       // specified directories are searched for includes,
       // etc. Don't call this directly, use:
       //
-      // apos.template.getEnv(module)
+      // apos.template.getEnv(req, module)
+      //
+      // `req` is effectively here for bc purposes only. Apostrophe
+      // does NOT always pass `req` to `newEnv` for every new release, as
+      // `req` is separately supplied to each request to fix a memory leak
+      // that occurs when Nunjucks environments are created for every request.
+      // If you must access `req` in a custom Nunjucks tag use
+      // `context.ctx.__req`, NOT `env.opts.req` which is no longer provided.
 
       newEnv(req, moduleName, dirs) {
 
@@ -351,22 +377,11 @@ module.exports = {
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
-          req,
           module: self.apos.modules[moduleName]
         });
 
         env.addGlobal('apos', self.templateApos);
         env.addGlobal('module', self.templateApos.modules[moduleName]);
-        env.addGlobal('getOption', function(key, def) {
-          const colonAt = key.indexOf(':');
-          let optionModule = self.apos.modules[moduleName];
-          if (colonAt !== -1) {
-            const name = key.substring(0, colonAt);
-            key = key.substring(colonAt + 1);
-            optionModule = self.apos.modules[name];
-          }
-          return optionModule.getOption(req, key, def);
-        });
 
         self.addStandardFilters(env);
 
