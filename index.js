@@ -43,7 +43,7 @@ let defaults = require('./defaults.js');
 // The apos function is async, but in typical cases you do not
 // need to await it. If you simply call it, Apostrophe will
 // start up and listen for connections forever, or run a
-// task and shut down, as appropriate. On failure, the error is
+// task and exit, as appropriate. On failure, the error is
 // printed to stderr and the process exits.
 //
 // If you do `await` the function, then your code will continue
