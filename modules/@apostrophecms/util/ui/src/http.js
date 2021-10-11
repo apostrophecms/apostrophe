@@ -150,10 +150,12 @@ export default () => {
     if (options.busy) {
       if (!busyActive[busyName]) {
         busyActive[busyName] = 0;
-        apos.bus.$emit('busy', {
-          active: true,
-          name: busyName
-        });
+        if (apos.bus) {
+          apos.bus.$emit('busy', {
+            active: true,
+            name: busyName
+          });
+        }
       }
       // keep track of nested calls
       busyActive[busyName]++;
@@ -240,10 +242,12 @@ export default () => {
         busyActive[busyName]--;
         if (!busyActive[busyName]) {
           // if no nested calls, disable the "busy" state
-          apos.bus.$emit('busy', {
-            active: false,
-            name: busyName
-          });
+          if (apos.bus) {
+            apos.bus.$emit('busy', {
+              active: false,
+              name: busyName
+            });
+          }
         }
       }
     });
