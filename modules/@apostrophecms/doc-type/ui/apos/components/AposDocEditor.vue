@@ -68,6 +68,7 @@
               :doc-id="docId"
               :value="docFields"
               @input="updateDocFields"
+              @validate="triggerValidate"
               :server-errors="serverErrors"
               :ref="tab.name"
             />
@@ -90,6 +91,7 @@
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
+            @validate="triggerValidate"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
             :server-errors="serverErrors"
@@ -444,6 +446,7 @@ export default {
         if (!this.errorCount) {
           this[action]();
         } else {
+          this.triggerValidation = false;
           await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
             type: 'warning',
             icon: 'alert-circle-icon',

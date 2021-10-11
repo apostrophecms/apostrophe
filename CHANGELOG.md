@@ -19,6 +19,7 @@
 * A memory leak on each request has been fixed, and performance improved, by avoiding the use of new Nunjucks environments for each request. Thanks to Miro Yovchev for pointing out the leak.
 * Fragments now have access to `__t()`, `getOptions` and other features passed to regular templates.
 * Fixes field group cascade merging, using the original group label if none is given in the new field group configuration.
+* If a field is conditional (using an `if` option), is required, but the condition has not been met, it no longer throws a validation error.
 * Passing `busy: true` to `apos.http.post` and related methods no longer produces an error if invoked when logged out, however note that there will likely never be a UI for this when logged out, so indicate busy state in your own way.
 
 ### Changes
