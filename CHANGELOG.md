@@ -8,6 +8,7 @@
 * Adds 'no-search' modifier to relationship fields as a UI simplification option.
 * Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
 * Adds a Slovak localization file. Activate the `sk` locale to use this. Many thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
+* Adds a Spanish localization file. Activate the `es` locale to use this. Many thanks to [egonzalezg9](https://github.com/egonzalezg9) for the contribution.
 
 ### Fixes
 
@@ -18,6 +19,7 @@
 * A memory leak on each request has been fixed, and performance improved, by avoiding the use of new Nunjucks environments for each request. Thanks to Miro Yovchev for pointing out the leak.
 * Fragments now have access to `__t()`, `getOptions` and other features passed to regular templates.
 * Fixes field group cascade merging, using the original group label if none is given in the new field group configuration.
+* Passing `busy: true` to `apos.http.post` and related methods no longer produces an error if invoked when logged out, however note that there will likely never be a UI for this when logged out, so indicate busy state in your own way.
 
 ### Changes
 
