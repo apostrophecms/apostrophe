@@ -100,7 +100,6 @@ module.exports = (self) => {
 
       const req = context.ctx.__req;
       const env = self.getEnv(req, context.env.opts.module);
-      input.apos = self.templateApos;
 
       // attach the render caller as a function
       // it's just a string, but we keep
@@ -109,8 +108,9 @@ module.exports = (self) => {
 
       const result = await require('util').promisify((s, args, callback) => {
         args = {
-          ...args,
-          __req: req
+          ...self.getRenderArgs(req, {}, context.env.opts.module),
+          // Parameters to fragments are top level, they are not in `data`
+          ...args
         };
         return env.renderString(s, args, callback);
       })(source, input);
