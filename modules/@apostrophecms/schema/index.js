@@ -1473,10 +1473,8 @@ module.exports = {
         for (const field of schema) {
           const fieldType = self.fieldTypes[field.type];
           if (!fieldType.isEqual) {
-            if ((one[field.name] == null) && (two[field.name] == null)) {
-              return true;
-            }
-            if (!_.isEqual(one[field.name], two[field.name])) {
+            if ((!_.isEqual(one[field.name], two[field.name])) &&
+              !((one[field.name] == null) && (two[field.name] == null))) {
               return false;
             }
           } else {
