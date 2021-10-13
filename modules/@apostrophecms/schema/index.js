@@ -988,11 +988,15 @@ module.exports = {
         }
       },
       isEqual(req, field, one, two) {
-        if (!_.isEqual(one[field.idsStorage], two[field.idsStorage])) {
+        const ids1 = one[field.idsStorage] || [];
+        const ids2 = two[field.idsStorage] || [];
+        if (!_.isEqual(ids1, ids2)) {
           return false;
         }
         if (field.fieldsStorage) {
-          if (!_.isEqual(one[field.fieldsStorage], two[field.fieldsStorage])) {
+          const fields1 = one[field.fieldsStorage] || {};
+          const fields2 = two[field.fieldsStorage] || {};
+          if (!_.isEqual(fields1, fields2)) {
             return false;
           }
         }

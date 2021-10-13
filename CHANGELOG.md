@@ -21,7 +21,7 @@
 * Fixes field group cascade merging, using the original group label if none is given in the new field group configuration.
 * If a field is conditional (using an `if` option), is required, but the condition has not been met, it no longer throws a validation error.
 * Passing `busy: true` to `apos.http.post` and related methods no longer produces an error if invoked when logged out, however note that there will likely never be a UI for this when logged out, so indicate busy state in your own way.
-* A bug causing draft and published documents to be regarded as identical if at least one field is "nullish" in both documents has been fixed. This caused edge cases where modifications were not detected and the "Update" button did not appear.
+* Bugs in document modification detection have been fixed. These bugs caused edge cases where modifications were not detected and the "Update" button did not appear, and could cause false positives as well.
 
 ### Changes
 
