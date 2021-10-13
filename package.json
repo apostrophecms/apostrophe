@@ -1,11 +1,11 @@
 {
   "name": "apostrophe",
-  "version": "2.220.6",
+  "version": "2.220.7",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
     "test": "npm run build-test-package-json && npm run lint && npm run audit && mocha --timeout 50000",
-    "audit": "npm audit",
+    "audit": "npm audit --production",
     "lint": "eslint .",
     "build-test-package-json": "node ./test-lib/build-test-package-json.js"
   },
@@ -33,13 +33,12 @@
     "body-parser": "^1.19.0",
     "cheerio": "^1.0.0-rc.10",
     "chokidar": "^3.5.1",
-    "cli-progress": "^2.1.1",
     "connect-flash": "^0.1.1",
     "connect-multiparty": "^2.2.0",
     "cookie-parser": "^1.4.5",
     "credential": "^2.0.0",
     "cuid": "^1.3.8",
-    "deep-get-set": "^0.1.1",
+    "deep-get-set": "^1.1.1",
     "diff": "^4.0.1",
     "emulate-mongo-2-driver": "^1.2.3",
     "express": "^4.17.1",
@@ -81,7 +80,7 @@
     "tinycolor2": "^1.4.1",
     "uglify-js": "^2.8.29",
     "underscore.string": "^3.3.5",
-    "uploadfs": "^1.17.2",
+    "uploadfs": "^1.18.4",
     "xregexp": "^2.0.0",
     "yargs": "^3.32.0"
   },
