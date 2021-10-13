@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.6.0 - 2021-10-13
 
 ### Adds
 
