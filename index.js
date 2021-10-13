@@ -66,21 +66,30 @@ module.exports = async function(options) {
     };
   }
   if (process.env.NODE_ENV !== 'production') {
-    console.log('NODE_ENV is not set to production, disabling the cluster module');
+    console.log('NODE_ENV is not set to production, disabling cluster mode');
     options.cluster = false;
   }
   if (options.cluster && !argv._.length) {
     // For bc with node 14 and below we need to check both
     if (cluster.isPrimary || cluster.isMaster) {
-      console.log('Cluster primary started');
       let processes = options.cluster.processes || cpus().length;
-      if (processes < 0) {
+      if (processes <= 0) {
         processes = cpus().length + processes;
+      }
+      let capped = '';
+      if (processes > cpus().length) {
+        processes = cpus().length;
+        capped = ' (capped to number of CPU cores)';
       }
       if (processes < 2) {
         processes = 2;
+        if (capped) {
+          capped = ' (less than 2 cores, capped to minimum of 2)';
+        } else {
+          capped = ' (using minimum of 2)';
+        }
       }
-      console.log(`Starting ${processes} cluster child processes`);
+      console.log(`Starting ${processes} cluster child processes${capped}`);
       for (let i = 0; i < processes; i++) {
         clusterFork();
       }

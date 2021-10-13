@@ -10,8 +10,9 @@
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
-        :following-values="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
+        :following-values="followingValues[field.name]"
+        :condition-met="conditionalFields[field.name]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
@@ -89,7 +90,11 @@ export default {
       }
     }
   },
-  emits: [ 'input', 'reset' ],
+  emits: [
+    'input',
+    'reset',
+    'validate'
+  ],
   data() {
     return {
       schemaReady: false,
@@ -143,6 +148,20 @@ export default {
         ) {
           // repopulate the schema.
           this.populateDocData();
+        }
+      }
+    },
+    conditionalFields(newVal, oldVal) {
+      for (const field in oldVal) {
+        if (!this.fieldState[field] || (newVal[field] === oldVal[field]) || !this.fieldState[field].ranValidation) {
+          continue;
+        }
+
+        if (
+          (newVal[field] === false) ||
+          (newVal[field] && this.fieldState[field].ranValidation)
+        ) {
+          this.$emit('validate');
         }
       }
     }
