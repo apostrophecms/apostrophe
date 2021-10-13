@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Rich text editor style labels are now run through a localization method to get the translated strings from their l10n keys.
+
 ## 3.6.0 - 2021-10-13
 
 ### Adds

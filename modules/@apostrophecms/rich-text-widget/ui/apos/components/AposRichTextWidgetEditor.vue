@@ -135,7 +135,7 @@ export default {
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
-          styles: this.editorOptions.styles,
+          styles: this.localizeStyles(this.editorOptions.styles),
           types: this.tiptapTypes
         }));
     }
@@ -264,6 +264,13 @@ export default {
           styles[0].def = true;
         }
       }
+      return styles;
+    },
+    localizeStyles(styles) {
+      styles.forEach(style => {
+        style.label = this.$t(style.label);
+      });
+
       return styles;
     }
   }
