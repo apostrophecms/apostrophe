@@ -980,6 +980,12 @@ module.exports = {
         if (field.schema && !Array.isArray(field.schema)) {
           fail('schema property should be an array if present at this stage');
         }
+        if (field.filters) {
+          fail('"filters" property should be changed to "builders" for 3.x');
+        }
+        if (field.builders && field.builders.projection) {
+          fail('"projection" property should be changed to "project" for 3.x');
+        }
         function lintType(type) {
           type = self.apos.doc.normalizeType(type);
           if (!_.find(self.apos.doc.managers, { name: type })) {
