@@ -2,11 +2,43 @@ const path = require('path');
 const _ = require('lodash');
 const argv = require('boring')({ end: true });
 const fs = require('fs');
-const npmResolve = require('resolve');
-let defaults = require('./defaults.js');
 const { stripIndent } = require('common-tags');
+const cluster = require('cluster');
+const { cpus } = require('os');
+const process = require('process');
+const npmResolve = require('resolve');
 
-// **Awaiting the Apostrophe function is optional**
+let defaults = require('./defaults.js');
+
+// ## Top-level options
+//
+// `cluster`
+//
+// If set to `true`, Apostrophe will spawn as many processes as
+// there are CPU cores on the server, or a minimum of 2, and balance
+// incoming connections among them. This ensures availability while one
+// process is restarting due to a crash and also increases scalability if
+// the server has multiple CPU cores.
+//
+// If set to an object with a `processes` property, that many
+// processes are started. If `processes` is 0 or a negative number,
+// it is added to the number of CPU cores reported by the server.
+// Notably, `-1` can be a good way to reserve one CPU core for MongoDB
+// in a single-server deployment.
+//
+// However when in cluster mode no fewer than 2 processes will be
+// started as there is no availability benefit without at least 2.
+//
+// If a child process exits with a failure status code it will be
+// restarted. However, if it exits in less than 20 seconds after
+// startup there will be a 20 second delay to avoid flooding logs
+// and pinning the CPU.
+//
+// Alternatively the `APOS_CLUSTER_PROCESSES` environment variable
+// can be set to a number, which will effectively set the cluster
+// option to `cluster: { processes: n }`.
+//
+// ## Awaiting the Apostrophe function
 //
 // The apos function is async, but in typical cases you do not
 // need to await it. If you simply call it, Apostrophe will
@@ -21,8 +53,63 @@ const { stripIndent } = require('common-tags');
 // To avoid exiting on errors, pass the `exit: false` option.
 // This can option also can be used to allow awaiting a command line
 // task, as they also normally exit on completion.
+//
+// If `options.cluster` is truthy, the function quickly resolves to
+// `null` in the primary process. In the child process it resolves as
+// documented above.
 
 module.exports = async function(options) {
+  const guardTime = 20000;
+  if (process.env.APOS_CLUSTER_PROCESSES) {
+    options.cluster = {
+      processes: parseInt(process.env.APOS_CLUSTER_PROCESSES)
+    };
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('NODE_ENV is not set to production, disabling cluster mode');
+    options.cluster = false;
+  }
+  if (options.cluster && !argv._.length) {
+    // For bc with node 14 and below we need to check both
+    if (cluster.isPrimary || cluster.isMaster) {
+      let processes = options.cluster.processes || cpus().length;
+      if (processes <= 0) {
+        processes = cpus().length + processes;
+      }
+      let capped = '';
+      if (processes > cpus().length) {
+        processes = cpus().length;
+        capped = ' (capped to number of CPU cores)';
+      }
+      if (processes < 2) {
+        processes = 2;
+        if (capped) {
+          capped = ' (less than 2 cores, capped to minimum of 2)';
+        } else {
+          capped = ' (using minimum of 2)';
+        }
+      }
+      console.log(`Starting ${processes} cluster child processes${capped}`);
+      for (let i = 0; i < processes; i++) {
+        clusterFork();
+      }
+      cluster.on('exit', (worker, code, signal) => {
+        if (code !== 0) {
+          if ((Date.now() - worker.bornAt) < guardTime) {
+            console.error(`Worker process ${worker.process.pid} failed in ${seconds(Date.now() - worker.bornAt)}, waiting ${seconds(guardTime)} before restart`);
+            setTimeout(() => {
+              respawn(worker);
+            }, guardTime);
+          } else {
+            respawn(worker);
+          }
+        }
+      });
+      return null;
+    } else {
+      console.log(`Cluster worker ${process.pid} started`);
+    }
+  }
 
   // The core is not a true moog object but it must look enough like one
   // to participate as an async event emitter
@@ -518,3 +605,17 @@ module.exports.bundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'modules'
 };
+
+function seconds(msec) {
+  return (Math.round(msec / 100) / 10) + ' seconds';
+}
+
+function clusterFork() {
+  const worker = cluster.fork();
+  worker.bornAt = Date.now();
+}
+
+function respawn(worker) {
+  console.error(`Respawning worker process ${worker.process.pid}`);
+  clusterFork();
+}
