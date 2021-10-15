@@ -2,11 +2,17 @@
 
 ## Unreleased
 
+### Adds
+
 * Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
 
 ### Fixes
 
 * Fixes README Node version requirement (Node 12+).
+
+### Changes
+
+In 3.x, `relationship` fields have an optional `builders` property, which replaces `filters` from 2.x, and within that an optional `project` property, which replaces `projection` from 2.x (to match MongoDB's `cursor.project`). Prior to this release leaving the old syntax in place could lead to severe performance problems due to a lack of projections. Starting with this release the 2.x syntax results in an error at startup to help the developer correct their code.
 
 ## 3.6.0 - 2021-10-13
 
@@ -17,6 +23,7 @@
 * Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
 * Adds a Slovak localization file. Activate the `sk` locale to use this. Many thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
 * Adds a Spanish localization file. Activate the `es` locale to use this. Many thanks to [egonzalezg9](https://github.com/egonzalezg9) for the contribution.
+* Adds a Brazilian Portuguese localization file. Activate the `pt-BR` locale to use this. Many thanks to [Eugenio Gonzalez](https://github.com/egonzalezg9) for the contribution.
 
 ### Fixes
 
