@@ -18,8 +18,8 @@ In 3.x, `relationship` fields have an optional `builders` property, which replac
 * Adds 'no-search' modifier to relationship fields as a UI simplification option.
 * Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
 * Adds a Slovak localization file. Activate the `sk` locale to use this. Many thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
-* Adds a Spanish localization file. Activate the `es` locale to use this. Many thanks to [egonzalezg9](https://github.com/egonzalezg9) for the contribution.
-* Adds a Brazilian Portuguese localization file. Activate the `pt-BR` locale to use this. Many thanks to [Eugenio Gonzalez](https://github.com/egonzalezg9) for the contribution.
+* Adds a Spanish localization file. Activate the `es` locale to use this. Many thanks to [Eugenio Gonzalez](https://github.com/egonzalezg9) for the contribution.
+* Adds a Brazilian Portuguese localization file. Activate the `pt-BR` locale to use this. Many thanks to [Pietro Rutzen](https://github.com/pietro-rutzen) for the contribution.
 
 ### Fixes
 
