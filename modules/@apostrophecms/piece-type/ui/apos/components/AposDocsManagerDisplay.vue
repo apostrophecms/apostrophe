@@ -27,9 +27,7 @@
           <component
             :is="getEl({})"
             class="apos-table__header-label is-hidden"
-          >
-            {{ $t('apostrophe:moreOperations') }}
-          </component>
+          />
         </th>
       </tr>
       <tr
