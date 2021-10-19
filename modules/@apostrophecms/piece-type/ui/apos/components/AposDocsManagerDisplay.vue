@@ -4,7 +4,6 @@
       <tr>
         <th
           class="apos-table__header"
-          v-if="!options.hideCheckboxes"
         />
         <th
           v-for="header in headers" scope="col"
@@ -41,7 +40,6 @@
       >
         <td
           class="apos-table__cell"
-          v-if="!options.hideCheckboxes"
         >
           <AposCheckbox
             v-if="item._id"
