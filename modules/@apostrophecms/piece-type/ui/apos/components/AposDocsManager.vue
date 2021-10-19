@@ -76,8 +76,11 @@
             @filter="filter"
             :options="{
               disableUnchecked: maxReached(),
-              hideSelectAll: !relationshipField
             }"
+          />
+          <AposDocsManagerSelectBox
+            v-if="selectAllState === 'checked'"
+            :selected-state="selectAllState"
           />
         </template>
         <template #bodyMain>
@@ -90,7 +93,6 @@
             :options="{
               ...moduleOptions,
               disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField,
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
