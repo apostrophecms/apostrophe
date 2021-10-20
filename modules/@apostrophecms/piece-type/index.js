@@ -74,7 +74,7 @@ module.exports = {
         ],
         // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
-        def: true
+        def: null
       },
       archived: {
         label: 'apostrophe:archive',
