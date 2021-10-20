@@ -26,7 +26,7 @@
       </AposContextMenuDialog>
     </bubble-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
-      <editor-content :editor="editor" :class="moduleOptions.className" />
+      <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
     <div class="apos-rich-text-editor__editor_after" :class="editorModifiers">
       {{ $t('apostrophe:emptyRichTextWidget') }}
@@ -101,6 +101,9 @@ export default {
         ? activeOptions.toolbar : this.defaultOptions.toolbar;
 
       activeOptions.styles = this.enhanceStyles(activeOptions.styles || this.defaultOptions.styles);
+
+      activeOptions.className = (activeOptions.className !== undefined)
+        ? activeOptions.className : this.moduleOptions.className;
 
       return activeOptions;
     },
