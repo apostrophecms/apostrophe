@@ -9,6 +9,7 @@
 ### Fixes
 
 * Fixes README Node version requirement (Node 12+).
+* The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
 
 ### Changes
 
