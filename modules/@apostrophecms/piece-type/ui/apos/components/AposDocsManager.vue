@@ -79,8 +79,10 @@
             }"
           />
           <AposDocsManagerSelectBox
-            v-if="selectAllState === 'checked'"
             :selected-state="selectAllState"
+            :module-labels="moduleLabels"
+            :filter-values="filterValues"
+            :checked-ids="checked"
           />
         </template>
         <template #bodyMain>
@@ -338,6 +340,8 @@ export default {
 
       this.getPieces();
       this.headers = this.computeHeaders();
+
+      this.setCheckedDocs([]);
     },
 
     shortcutNew(event) {
