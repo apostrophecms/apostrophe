@@ -9,6 +9,7 @@
 ### Fixes
 
 * Fixes README Node version requirement (Node 12+).
+* Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
 
 ### Changes
 
