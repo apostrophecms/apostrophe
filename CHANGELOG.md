@@ -5,6 +5,7 @@
 ### Adds
 
 * Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
+* Piece types can now extend or (not recommended) overwrite the `registerManagerActions` method, which returns an object of action properties assigned an object containing a `label` subproperty and either another property based on the type of manager action (TBD).
 
 ### Fixes
 
