@@ -10,10 +10,12 @@
 
 * Fixes README Node version requirement (Node 12+).
 * The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
+* Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
 
 ### Changes
 
-In 3.x, `relationship` fields have an optional `builders` property, which replaces `filters` from 2.x, and within that an optional `project` property, which replaces `projection` from 2.x (to match MongoDB's `cursor.project`). Prior to this release leaving the old syntax in place could lead to severe performance problems due to a lack of projections. Starting with this release the 2.x syntax results in an error at startup to help the developer correct their code.
+* In 3.x, `relationship` fields have an optional `builders` property, which replaces `filters` from 2.x, and within that an optional `project` property, which replaces `projection` from 2.x (to match MongoDB's `cursor.project`). Prior to this release leaving the old syntax in place could lead to severe performance problems due to a lack of projections. Starting with this release the 2.x syntax results in an error at startup to help the developer correct their code.
+* The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself.
 
 ## 3.6.0 - 2021-10-13
 
