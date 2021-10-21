@@ -14,7 +14,7 @@
 ### Changes
 
 * In 3.x, `relationship` fields have an optional `builders` property, which replaces `filters` from 2.x, and within that an optional `project` property, which replaces `projection` from 2.x (to match MongoDB's `cursor.project`). Prior to this release leaving the old syntax in place could lead to severe performance problems due to a lack of projections. Starting with this release the 2.x syntax results in an error at startup to help the developer correct their code.
-* The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself.
+* The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to Max Mulatz for this contribution.
 
 ## 3.6.0 - 2021-10-13
 
