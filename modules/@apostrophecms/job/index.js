@@ -88,16 +88,6 @@ module.exports = {
       //
       // *Options*
       //
-      // `options.label` should be passed as an object with
-      // a `title` property, to title the progress modal.
-      // A default is provided but it is not very informative.
-      //
-      // In addition, it may have `failed`, `completed` and
-      // `running` properties to label the progress modal when the job
-      // is in those states, and `good` and `bad` properties to label
-      // the count of items that were successful or had errors.
-      // All of these properties are optional and reasonable
-      // defaults are supplied.
       async run(req, ids, change, options) {
         let job;
         let stopping = false;
@@ -178,23 +168,12 @@ module.exports = {
       //
       // *Options*
       //
-      // `options.label` should be passed as an object with
-      // a `title` property, to title the progress modal.
-      // A default is provided but it is not very informative.
-      //
-      // In addition, it may have `failed`, `completed` and
-      // `running` properties to label the progress modal when the job
-      // is in those states, and `good` and `bad` properties to label
-      // the count of items that were successful or had errors.
-      // All of these properties are optional and reasonable
-      // defaults are supplied.
-      //
       // You may optionally provide `options.stop` or `options.cancel`.
       // These async functions will be invoked and awaited
       // after the user requests to stop the operation. `stop` must cease
       // all operations before resolving, while `cancel` must both cease
       // operations and reverse all changes made before resolving.
-      async runNonBatch(req, doTheWork, options) {
+      async runNonBatch(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
         const canceling = false;
@@ -284,18 +263,6 @@ module.exports = {
       //
       // You should not offer both. If you do, only "Cancel" is presented
       // to the user.
-      //
-      // *Labeling the progress modal: `options.label`*
-      //
-      // `options.label` should be passed as an object with
-      // a `title` property, to title the progress modal.
-      //
-      // In addition, it may have `failed`, `completed` and
-      // `running` properties to label the progress modal when the job
-      // is in those states, and `good` and `bad` properties to label
-      // the count of items that were successful or had errors.
-      // All of these properties are optional and reasonable
-      // defaults are supplied.
       async start(options) {
         const job = {
           _id: self.apos.util.generateId(),
