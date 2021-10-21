@@ -83,6 +83,9 @@
             :module-labels="moduleLabels"
             :filter-values="filterValues"
             :checked-ids="checked"
+            :action="moduleOptions.action"
+            :all-pieces-selection="allPiecesSelection"
+            @set-all-pieces-selection="setAllPiecesSelection"
           />
         </template>
         <template #bodyMain>
@@ -149,7 +152,11 @@ export default {
         },
         menu: []
       },
-      filterChoices: {}
+      filterChoices: {},
+      allPiecesSelection: {
+        isSelected: false,
+        total: 0
+      }
     };
   },
   computed: {
@@ -194,6 +201,17 @@ export default {
     },
     disableUnpublished() {
       return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
+    },
+    selectAllChoice() {
+      const checkCount = this.checked.length;
+      const itemCount = this.allPiecesSelection.isSelected
+        ? this.allPiecesSelection.total
+        : (this.items && this.items.length) || 0;
+
+      return {
+        value: 'checked',
+        indeterminate: checkCount && checkCount !== itemCount
+      };
     }
   },
   created() {
@@ -381,6 +399,21 @@ export default {
           ...this.checkedDocs[index],
           _fields: result
         });
+      }
+    },
+    setAllPiecesSelection ({
+      isSelected, total, docs
+    }) {
+      if (typeof isSelected === 'boolean') {
+        this.allPiecesSelection.isSelected = isSelected;
+      }
+
+      if (typeof total === 'number') {
+        this.allPiecesSelection.total = total;
+      }
+
+      if (docs) {
+        this.setCheckedDocs(docs);
       }
     }
   }
