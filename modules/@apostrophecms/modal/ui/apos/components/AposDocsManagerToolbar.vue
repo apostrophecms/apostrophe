@@ -17,11 +17,12 @@
         :icon-only="true" icon="delete-icon"
         type="outline"
       /> -->
-      <!-- <AposContextMenu
+      <AposContextMenu
+        v-if="more.menu.length"
         :button="more.button"
         :menu="more.menu"
         @item-clicked="managerAction"
-      /> -->
+      />
     </template>
     <template #rightControls>
       <AposPager
@@ -104,25 +105,11 @@ export default {
     'select-click',
     'filter',
     'search',
-    'page-change'
+    'page-change',
+    'manager-action'
   ],
   data() {
     return {
-      // TODO: Uncomment to return this when batch updates are added.
-      // more: {
-      //   button: {
-      //     label: 'apostrophe:moreOperations',
-      //     iconOnly: true,
-      //     icon: 'dots-vertical-icon',
-      //     type: 'outline'
-      //   },
-      //   menu: [
-      //     {
-      //       label: 'Unpublish All',
-      //       action: 'unpublish-all'
-      //     }
-      //   ]
-      // },
       searchField: {
         field: {
           name: 'search',
@@ -147,6 +134,24 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
+    },
+    more () {
+      const config = {
+        button: {
+          label: 'apostrophe:moreOperations',
+          iconOnly: true,
+          icon: 'dots-vertical-icon',
+          type: 'outline'
+        },
+        menu: []
+      };
+
+      if (this.options.moreActions) {
+        config.menu = config.menu.concat(this.options.moreActions);
+      }
+
+      return config;
+
     }
   },
   methods: {
@@ -166,8 +171,7 @@ export default {
       this.$emit('search', value.data);
     },
     managerAction(action) {
-      // TODO: flesh this out.
-      console.info('ACTION: ', action);
+      this.$emit('manager-action', action);
     },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);

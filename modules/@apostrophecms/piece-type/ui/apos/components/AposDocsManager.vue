@@ -74,9 +74,11 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
+            @manager-action="handleManagerAction"
             :options="{
               disableUnchecked: maxReached(),
-              hideSelectAll: !relationshipField
+              hideSelectAll: !relationshipField,
+              moreActions
             }"
           />
         </template>
@@ -190,6 +192,20 @@ export default {
     },
     disableUnpublished() {
       return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
+    },
+    moreActions () {
+      const actions = [];
+
+      if (this.moduleOptions?.managerActions) {
+        for (const action in this.moduleOptions.managerActions) {
+          actions.push({
+            action,
+            label: this.moduleOptions.managerActions[action].label || '⛔️'
+          });
+        }
+      }
+
+      return actions;
     }
   },
   created() {
@@ -376,6 +392,25 @@ export default {
           _fields: result
         });
       }
+    },
+    handleManagerAction(action) {
+      if (!this.moduleOptions?.managerActions?.[action]) {
+        return;
+      }
+
+      const act = this.moduleOptions.managerActions[action];
+
+      // Continue in another method based on what the action wants to do. In
+      // any case the action method will probably make use of the checked items.
+      if (act.modal) {
+        // Use a method that opens a modal
+        this.handleModalAction(act);
+      } else if (act.route) {
+        // Use a method that hits a route.
+      }
+    },
+    handleModalAction (action) {
+      console.info('Execute modal action', action);
     }
   }
 };
