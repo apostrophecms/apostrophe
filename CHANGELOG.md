@@ -5,7 +5,7 @@
 ### Adds
 
 * Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
-* Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route` or `modal` property to lead into action execution.
+* Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
 
 ### Fixes
 
