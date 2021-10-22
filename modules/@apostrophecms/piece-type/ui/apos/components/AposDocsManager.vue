@@ -194,18 +194,25 @@ export default {
       return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
     },
     moreActions () {
-      const actions = [];
+      const actions = this.moduleOptions.batchOperations || [];
 
-      if (this.moduleOptions?.managerActions) {
-        for (const action in this.moduleOptions.managerActions) {
-          actions.push({
-            action,
-            label: this.moduleOptions.managerActions[action].label || '⛔️'
-          });
+      for (const action of this.moduleOptions.batchOperations) {
+        let disableAction = false;
+
+        if (action.unlessFilter) {
+          for (const filter in action.unlessFilter) {
+            if (action.unlessFilter[filter] === this.filterValues[filter]) {
+              disableAction = true;
+            }
+          }
+        }
+
+        if (!disableAction) {
+          actions.push(action);
         }
       }
 
-      return actions;
+      return this.moduleOptions.batchOperations;
     }
   },
   created() {
