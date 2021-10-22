@@ -806,20 +806,6 @@ module.exports = {
             throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
           }
         }
-      },
-      // Enhance this method to add additional action buttons to a piece manager,
-      // letting users take actions using currently selected pieces.
-      // Example:
-      // ```
-      // return {
-      //   export: {
-      //     label: 'Export',
-      //     modal: 'AposExportModal'
-      //   }
-      // }
-      // ```
-      registerManagerActions () {
-        return {};
       }
     };
   },
@@ -847,7 +833,6 @@ module.exports = {
           editorModal: 'AposDocEditor',
           managerModal: 'AposDocsManager'
         });
-        browserOptions.managerActions = self.registerManagerActions();
 
         return browserOptions;
       },
