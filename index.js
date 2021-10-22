@@ -65,7 +65,7 @@ module.exports = async function(options) {
       processes: parseInt(process.env.APOS_CLUSTER_PROCESSES)
     };
   }
-  if (process.env.NODE_ENV !== 'production') {
+  if (options.cluster && (process.env.NODE_ENV !== 'production')) {
     console.log('NODE_ENV is not set to production, disabling cluster mode');
     options.cluster = false;
   }

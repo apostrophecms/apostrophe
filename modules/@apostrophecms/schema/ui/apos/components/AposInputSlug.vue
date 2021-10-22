@@ -73,10 +73,6 @@ export default {
     icon () {
       if (this.error) {
         return 'circle-medium-icon';
-      } else if (this.field.type === 'date') {
-        return 'calendar-icon';
-      } else if (this.field.type === 'time') {
-        return 'clock-icon';
       } else if (this.field.icon) {
         return this.field.icon;
       } else {
