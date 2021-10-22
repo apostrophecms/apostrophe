@@ -143,7 +143,7 @@ export default {
           icon: 'dots-vertical-icon',
           type: 'outline'
         },
-        menu: Array.isArray(this.options.moreActions) || []
+        menu: Array.isArray(this.options.moreActions) ? this.options.moreActions : []
       };
 
       return config;

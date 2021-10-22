@@ -212,7 +212,7 @@ export default {
         }
       }
 
-      return this.moduleOptions.batchOperations;
+      return actions;
     }
   },
   created() {
