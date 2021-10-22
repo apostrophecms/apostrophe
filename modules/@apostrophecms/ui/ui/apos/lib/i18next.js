@@ -14,7 +14,10 @@ export default {
       lng: i18n.locale,
       fallbackLng: i18n.defaultLocale,
       resources: {},
-      debug: i18n.debug
+      debug: i18n.debug,
+      interpolation: {
+        escapeValue: false
+      }
     });
 
     for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.locale])) {
