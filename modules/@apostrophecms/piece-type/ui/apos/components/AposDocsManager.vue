@@ -74,7 +74,7 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
-            @manager-action="handleManagerAction"
+            @batch="handleBatchAction"
             :options="{
               disableUnchecked: maxReached(),
               hideSelectAll: !relationshipField,
@@ -194,7 +194,7 @@ export default {
       return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
     },
     moreActions () {
-      const actions = this.moduleOptions.batchOperations || [];
+      const actions = [];
 
       for (const action of this.moduleOptions.batchOperations) {
         let disableAction = false;
@@ -400,12 +400,16 @@ export default {
         });
       }
     },
-    handleManagerAction(action) {
-      if (!this.moduleOptions?.managerActions?.[action]) {
+    handleBatchAction(action) {
+      if (!action || !this.moduleOptions.batchOperations.find(op => {
+        return op.action === action;
+      })) {
         return;
       }
 
-      const act = this.moduleOptions.managerActions[action];
+      const act = this.moduleOptions.batchOperations.find(o => {
+        return o.action === action;
+      });
 
       // Continue in another method based on what the action wants to do. In
       // any case the action method will probably make use of the checked items.

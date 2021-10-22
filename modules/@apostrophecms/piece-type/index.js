@@ -389,7 +389,7 @@ module.exports = {
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
           self.batchOperations = Object.keys(self.batchOperations).map(key => ({
-            name: key,
+            action: key,
             ...self.batchOperations[key]
           })).filter(batchOperation => {
             // If a `requiredField` is registered, only include the operation

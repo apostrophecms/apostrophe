@@ -21,7 +21,7 @@
         v-if="more.menu.length"
         :button="more.button"
         :menu="more.menu"
-        @item-clicked="managerAction"
+        @item-clicked="batchAction"
       />
     </template>
     <template #rightControls>
@@ -106,7 +106,7 @@ export default {
     'filter',
     'search',
     'page-change',
-    'manager-action'
+    'batch'
   ],
   data() {
     return {
@@ -170,8 +170,8 @@ export default {
 
       this.$emit('search', value.data);
     },
-    managerAction(action) {
-      this.$emit('manager-action', action);
+    batchAction(action) {
+      this.$emit('batch', action);
     },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
