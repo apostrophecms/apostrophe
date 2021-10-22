@@ -143,15 +143,10 @@ export default {
           icon: 'dots-vertical-icon',
           type: 'outline'
         },
-        menu: []
+        menu: Array.isArray(this.options.moreActions) || []
       };
 
-      if (this.options.moreActions) {
-        config.menu = config.menu.concat(this.options.moreActions);
-      }
-
       return config;
-
     }
   },
   methods: {
