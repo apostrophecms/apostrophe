@@ -8,7 +8,7 @@
 
 ### Fixes
 
-* Prevents escaping interpolated localization strings.
+* Prevents escaping interpolated localization strings in the UI.
 * Fixes README Node version requirement (Node 12+).
 * The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
 * Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
