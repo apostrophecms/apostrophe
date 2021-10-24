@@ -115,12 +115,12 @@ export default {
       return result;
     },
     selectAll() {
-
       if (!this.checked.length) {
         this.items.forEach((item) => {
-          const relationshipsMaxed = this.relationshipField && this.maxReached();
+          const relationshipsMaxedOrUnpublished = this.relationshipField &&
+          (this.maxReached() || !item.lastPublishedAt);
 
-          if (relationshipsMaxed || !item.lastPublishedAt) {
+          if (relationshipsMaxedOrUnpublished) {
             return;
           }
 
