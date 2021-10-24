@@ -2,6 +2,7 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
+        v-if="displayedItems"
         label="apostrophe:select"
         type="outline"
         text-color="var(--a-primary)"
@@ -100,6 +101,10 @@ export default {
       default () {
         return {};
       }
+    },
+    displayedItems: {
+      type: Number,
+      required: true
     }
   },
   emits: [
