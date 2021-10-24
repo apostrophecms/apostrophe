@@ -10,7 +10,7 @@
       <div class="apos-select-box__content">
         <h3 v-if="!allPiecesSelection.isSelected" class="apos-select-box__text">
           {{ getPiecesNumber }} on this page selected.
-          <span @click="selectAllPieces" class="apos-select-box__select-all">
+          <span @click="$emit('select-all')" class="apos-select-box__select-all">
             Select all {{ getTotalPiecesNumber }}.
           </span>
         </h3>
@@ -36,16 +36,8 @@ export default {
       type: Object,
       required: true
     },
-    filterValues: {
-      type: Object,
-      required: true
-    },
     checkedIds: {
       type: Array,
-      required: true
-    },
-    action: {
-      type: String,
       required: true
     },
     allPiecesSelection: {
@@ -66,59 +58,7 @@ export default {
         : this.moduleLabels.plural}`.toLowerCase();
     }
   },
-  // watch: {
-  //   checkedIds (newVal) {
-  //     if (!newVal.length) {
-  //       this.clearSelection();
-  //     }
-  //   }
-  // },
-  async mounted () {
-    await this.getAllPiecesTotal();
-  },
   methods: {
-    async getAllPiecesTotal () {
-      const { count: total } = await this.request({ count: 1 });
-
-      this.$emit('set-all-pieces-selection', {
-        total
-      });
-    },
-    async request (mergeOptions) {
-      const options = {
-        ...this.filterValues,
-        withPublished: 1
-      };
-
-      // Avoid undefined properties.
-      const qs = Object.entries(options)
-        .reduce((acc, [ key, val ]) => ({
-          ...acc,
-          ...val !== undefined && { [key]: val }
-        }), {});
-
-      return apos.http.get(
-        this.action, {
-          qs: {
-            ...qs,
-            ...mergeOptions
-          },
-          busy: true,
-          draft: true
-        }
-      );
-    },
-    async selectAllPieces () {
-      const { results: docs } = await this.request({
-        // project,
-        perPage: this.allPiecesSelection.total
-      });
-
-      this.$emit('set-all-pieces-selection', {
-        isSelected: true,
-        docs
-      });
-    },
     clearSelection () {
       this.$emit('set-all-pieces-selection', {
         isSelected: false,
