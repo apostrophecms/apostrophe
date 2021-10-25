@@ -118,7 +118,7 @@ export default {
         // the text align control will not work until the user manually
         // applies a style or refreshes the page
         const defaultStyle = this.editorOptions.styles.find(style => style.def);
-        const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : "";
+        const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
         return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
       } else {
         return content;
@@ -285,7 +285,10 @@ export default {
     localizeStyle(style) {
       style.label = this.$t(style.label);
 
-      return style;
+      return {
+        ...style,
+        label: this.$t(style.label)
+      };
     }
   }
 };
