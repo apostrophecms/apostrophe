@@ -2583,7 +2583,11 @@ module.exports = {
           const id = self.apos.launder.string(req.query.fieldId);
           const field = self.getFieldById(id);
           let choices = [];
-          if (!field) {
+          if (
+            !field ||
+            field.type !== 'select' ||
+            !(field.choices && typeof field.choices === 'string')
+          ) {
             self.apos.error('invalid');
             return choices;
           }
