@@ -205,13 +205,12 @@ export default {
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
-      const itemCount = this.allPiecesSelection.isSelected
-        ? this.allPiecesSelection.total
-        : (this.items && this.items.length) || 0;
+      const pageNotFullyChecked = this.items
+        .some((item) => !this.checked.includes(item._id));
 
       return {
         value: 'checked',
-        indeterminate: checkCount && checkCount !== itemCount
+        indeterminate: checkCount && pageNotFullyChecked
       };
     }
   },
@@ -345,7 +344,9 @@ export default {
     },
     async selectAllPieces () {
       const { results: docs } = await this.request({
-        // project,
+        project: {
+          _id: 1
+        },
         perPage: this.allPiecesSelection.total
       });
 
@@ -388,7 +389,6 @@ export default {
 
       this.setCheckedDocs([]);
     },
-
     shortcutNew(event) {
       const interesting = (event.keyCode === 78 || event.keyCode === 67); // C(reate) or N(ew)
       const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
@@ -400,7 +400,6 @@ export default {
         this.create();
       }
     },
-
     bindShortcuts() {
       window.addEventListener('keydown', this.shortcutNew);
     },
