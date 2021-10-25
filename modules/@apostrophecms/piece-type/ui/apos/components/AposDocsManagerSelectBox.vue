@@ -11,7 +11,7 @@
         <h3 v-if="!allPiecesSelection.isSelected" class="apos-select-box__text">
           {{ getPiecesNumber }} on this page selected.
           <span @click="$emit('select-all')" class="apos-select-box__select-all">
-            Select all {{ getTotalPiecesNumber }}.
+            Select {{ getTotalPiecesNumber }}.
           </span>
         </h3>
         <h3 v-else class="apos-select-box__text">
@@ -48,17 +48,32 @@ export default {
   emits: [ 'select-all', 'clear-select', 'set-all-pieces-selection' ],
   computed: {
     getPiecesNumber () {
-      return `${this.checkedIds.length} ${this.checkedIds.length === 1
-        ? this.moduleLabels.singular
-        : this.moduleLabels.plural}`.toLowerCase();
+      return this.getSingularOrPlural(this.checkedIds.length);
     },
     getTotalPiecesNumber () {
-      return `${this.allPiecesSelection.total} ${this.allPiecesSelection.total === 1
-        ? this.moduleLabels.singular
-        : this.moduleLabels.plural}`.toLowerCase();
+      return this.getSingularOrPlural(this.allPiecesSelection.total, true);
     }
   },
   methods: {
+    getSingularOrPlural (number, allLabel = false) {
+      const aposLabel = 'apostrophe:';
+      const { singular, plural } = this.moduleLabels;
+      const all = allLabel && number !== 1 ? 'all ' : '';
+
+      return `${all}${number} ${this
+      .formatLabel(number === 1 ? singular : plural)}`.toLowerCase();
+    },
+    formatLabel (label) {
+      const aposLabel = 'apostrophe:';
+
+      return [ ...label.replace(aposLabel, '') ].reduce((acc, char) => {
+        if (char !== char.toLocaleUpperCase()) {
+          return `${acc}${char}`;
+        }
+
+        return `${acc} ${char.toLowerCase()}`;
+      }, '');
+    },
     clearSelection () {
       this.$emit('set-all-pieces-selection', {
         isSelected: false,
