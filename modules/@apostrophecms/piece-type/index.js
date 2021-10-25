@@ -558,10 +558,7 @@ module.exports = {
 
         await self.apos.schema.convert(req, schema, req.body, data);
         await self.apos.modules['@apostrophecms/job'].run(req, one, {
-          // TODO: Remove if not configuring job labels like this anymore.
-          labels: {
-            title: batchOperation.buttonLabel || batchOperation.label
-          }
+          // TODO: Update with new progress notification config
         });
         async function one(req, id) {
           const piece = self.findForEditing(req, { _id: id }).toObject();
