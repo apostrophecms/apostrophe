@@ -8,16 +8,21 @@
       class="apos-select-box"
     >
       <div class="apos-select-box__content">
-        <h3 v-if="!allPiecesSelection.isSelected" class="apos-select-box__text">
-          {{ getPiecesNumber }} on this page selected.
-          <span @click="$emit('select-all')" class="apos-select-box__select-all">
-            Select {{ getTotalPiecesNumber }}.
+        <h3 class="apos-select-box__text">
+          {{ selectBoxMessage }}
+          <span
+            v-if="!allPiecesSelection.isSelected"
+            class="apos-select-box__select-all"
+            @click="$emit('select-all')"
+          >
+            {{ selectBoxMessageButton }}
           </span>
-        </h3>
-        <h3 v-else class="apos-select-box__text">
-          All {{ getPiecesNumber }} selected.
-          <span @click="clearSelection" class="apos-select-box__select-all">
-            Clear Selection.
+          <span
+            v-else
+            class="apos-select-box__select-all"
+            @click="clearSelection"
+          >
+            {{ $t('apostrophe:clearSelection') }}.
           </span>
         </h3>
       </div>
@@ -47,32 +52,31 @@ export default {
   },
   emits: [ 'select-all', 'clear-select', 'set-all-pieces-selection' ],
   computed: {
-    getPiecesNumber () {
-      return this.getSingularOrPlural(this.checkedIds.length);
+    selectBoxMessage () {
+      const translationKey = this.allPiecesSelection.isSelected
+        ? 'apostrophe:selectBoxMessageSelected'
+        : 'apostrophe:selectBoxMessage';
+
+      return this.$t(translationKey, {
+        num: this.checkedIds.length,
+        label: this.getLabel(this.checkedIds.length)
+      });
+    },
+    selectBoxMessageButton () {
+      return this.$t('apostrophe:selectBoxMessageButton', {
+        num: this.allPiecesSelection.total,
+        label: this.getLabel(this.allPiecesSelection.total)
+      });
     },
     getTotalPiecesNumber () {
       return this.getSingularOrPlural(this.allPiecesSelection.total, true);
     }
   },
   methods: {
-    getSingularOrPlural (number, allLabel = false) {
-      const aposLabel = 'apostrophe:';
-      const { singular, plural } = this.moduleLabels;
-      const all = allLabel && number !== 1 ? 'all ' : '';
-
-      return `${all}${number} ${this
-      .formatLabel(number === 1 ? singular : plural)}`.toLowerCase();
-    },
-    formatLabel (label) {
-      const aposLabel = 'apostrophe:';
-
-      return [ ...label.replace(aposLabel, '') ].reduce((acc, char) => {
-        if (char !== char.toLocaleUpperCase()) {
-          return `${acc}${char}`;
-        }
-
-        return `${acc} ${char.toLowerCase()}`;
-      }, '');
+    getLabel(number) {
+      return number === 1
+        ? this.$t(this.moduleLabels.singular).toLowerCase()
+        : this.$t(this.moduleLabels.plural).toLowerCase();
     },
     clearSelection () {
       this.$emit('set-all-pieces-selection', {
