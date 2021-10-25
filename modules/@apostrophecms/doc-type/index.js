@@ -1217,6 +1217,23 @@ module.exports = {
         // cursors.
 
         project: {
+          launder (p) {
+            // check that project is an object
+            if (!p || typeof p !== 'object' || Array.isArray(p)) {
+              return {};
+            }
+
+            const projection = Object.entries(p).reduce((acc, [ key, val ]) => {
+              return {
+                ...acc,
+                ...typeof key === 'string' && [ '0', '1' ].includes(val) && {
+                  [key]: parseInt(val, 10)
+                }
+              };
+            }, {});
+
+            return projection;
+          },
           finalize() {
             let projection = query.get('project') || {};
             // Keys beginning with `_` are computed values
