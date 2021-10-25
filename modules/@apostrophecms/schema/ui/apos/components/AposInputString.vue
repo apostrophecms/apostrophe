@@ -71,10 +71,6 @@ export default {
     icon () {
       if (this.error) {
         return 'circle-medium-icon';
-      } else if (this.field.type === 'date') {
-        return 'calendar-icon';
-      } else if (this.field.type === 'time') {
-        return 'clock-icon';
       } else if (this.field.icon) {
         return this.field.icon;
       } else {
@@ -207,9 +203,6 @@ export default {
     // height of date/time input is slightly larger than others due to the browser spinner ui
     height: 46px;
     padding-right: 40px;
-    &::-webkit-calendar-picker-indicator {
-      background: none;
-    }
   }
   .apos-input--date {
     &::-webkit-clear-button {
