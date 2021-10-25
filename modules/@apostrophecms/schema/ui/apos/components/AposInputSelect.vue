@@ -53,13 +53,14 @@ export default {
     let choices;
     if (typeof this.field.choices === 'string') {
       const action = this.options.action;
+      console.log(this.field);
       choices = await apos.http.get(
         `${action}/choices`,
         {
           qs: {
-            methodName: this.field.choices,
-            moduleName: this.field.moduleName
-          }
+            fieldId: this.field._id
+          },
+          busy: true
         }
       );
     } else {
