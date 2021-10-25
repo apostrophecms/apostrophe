@@ -2588,12 +2588,13 @@ module.exports = {
             field.type !== 'select' ||
             !(field.choices && typeof field.choices === 'string')
           ) {
-            self.apos.error('invalid');
-            return choices;
+            throw self.apos.error('invalid');
           }
           choices = await self.apos.modules[field.moduleName][field.choices](req);
           if (Array.isArray(choices)) {
-            return choices;
+            return {
+              choices
+            };
           } else {
             throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
           }

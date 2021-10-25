@@ -53,8 +53,7 @@ export default {
     let choices;
     if (typeof this.field.choices === 'string') {
       const action = this.options.action;
-      console.log(this.field);
-      choices = await apos.http.get(
+      const response = await apos.http.get(
         `${action}/choices`,
         {
           qs: {
@@ -63,6 +62,9 @@ export default {
           busy: true
         }
       );
+      if (response.choices) {
+        choices = response.choices;
+      }
     } else {
       choices = this.field.choices;
     }
