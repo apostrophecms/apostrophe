@@ -2579,9 +2579,20 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
-        async getChoices(req) {
-          // const url = self.apos.launder.string(req.query.url);
-          // console.log('hello world');
+        async choices(req) {
+          const methodName = self.apos.launder.string(req.query.methodName);
+          const moduleName = self.apos.launder.string(req.query.moduleName);
+          let choices = [];
+          if (!methodName || !moduleName) {
+            self.apos.error('invalid');
+            return choices;
+          }
+          choices = await self.apos.modules[moduleName][methodName](req);
+          if (Array.isArray(choices)) {
+            return choices;
+          } else {
+            throw self.apos.error('invalid', `The method ${methodName} from the module ${moduleName} did not return an array`);
+          }
         }
       }
     };

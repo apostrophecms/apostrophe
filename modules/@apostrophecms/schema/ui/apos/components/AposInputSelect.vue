@@ -53,14 +53,12 @@ export default {
     let choices;
     if (typeof this.field.choices === 'string') {
       const action = this.options.action;
-      console.log(action);
-      console.log(this.options);
       choices = await apos.http.get(
-        `${action}/getChoices`,
+        `${action}/choices`,
         {
           qs: {
-            name: this.field.choices,
-            module: this.field.module
+            methodName: this.field.choices,
+            moduleName: this.field.moduleName
           }
         }
       );
@@ -91,7 +89,7 @@ export default {
         return 'required';
       }
 
-      if (value && !this.field.choices.find(choice => choice.value === value)) {
+      if (value && !this.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
 
