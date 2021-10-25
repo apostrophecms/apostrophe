@@ -2576,6 +2576,16 @@ module.exports = {
 
     };
   },
+  apiRoutes(self) {
+    return {
+      get: {
+        async getChoices(req) {
+          // const url = self.apos.launder.string(req.query.url);
+          // console.log('hello world');
+        }
+      }
+    };
+  },
   extendMethods(self) {
     return {
       getBrowserData(_super, req) {
@@ -2590,7 +2600,7 @@ module.exports = {
           }
           fields[name] = component;
         }
-
+        browserOptions.action = self.action;
         browserOptions.components = { fields: fields };
         return browserOptions;
       }

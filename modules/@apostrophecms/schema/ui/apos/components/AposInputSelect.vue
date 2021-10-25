@@ -49,10 +49,26 @@ export default {
       choices: []
     };
   },
-  mounted() {
-    console.log(this.field.choices);
+  async mounted() {
+    let choices;
+    if (typeof this.field.choices === 'string') {
+      const action = this.options.action;
+      console.log(action);
+      console.log(this.options);
+      choices = await apos.http.get(
+        `${action}/getChoices`,
+        {
+          qs: {
+            name: this.field.choices,
+            module: this.field.module
+          }
+        }
+      );
+    } else {
+      choices = this.field.choices;
+    }
     // Add an null option if there isn't one already
-    if (!this.field.required && !this.field.choices.find(choice => {
+    if (!this.field.required && !choices.find(choice => {
       return choice.value === null;
     })) {
       this.choices.push({
@@ -60,12 +76,12 @@ export default {
         value: null
       });
     }
-    this.choices = this.choices.concat(this.field.choices);
+    this.choices = this.choices.concat(choices);
     this.$nextTick(() => {
       // this has to happen on nextTick to avoid emitting before schemaReady is
       // set in AposSchema
-      if (this.field.required && (this.next == null) && (this.field.choices[0] != null)) {
-        this.next = this.field.choices[0].value;
+      if (this.field.required && (this.next == null) && (this.choices[0] != null)) {
+        this.next = this.choices[0].value;
       }
     });
   },
