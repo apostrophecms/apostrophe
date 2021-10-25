@@ -50,6 +50,7 @@ export default {
     };
   },
   mounted() {
+    console.log(this.field.choices);
     // Add an null option if there isn't one already
     if (!this.field.required && !this.field.choices.find(choice => {
       return choice.value === null;

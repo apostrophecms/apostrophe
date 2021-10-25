@@ -324,7 +324,13 @@ module.exports = {
     self.addFieldType({
       name: 'select',
       async convert(req, field, data, destination) {
-        destination[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
+        let choices;
+        if ((typeof field.choices) === 'string') {
+          choices = await self.apos.modules[field.moduleName][field.choices](req, field);
+        } else {
+          choices = field.choices;
+        }
+        destination[field.name] = self.apos.launder.select(data[field.name], choices, field.def);
       },
       index: function (value, field, texts) {
         const silent = field.silent === undefined ? true : field.silent;
@@ -355,7 +361,9 @@ module.exports = {
                 return self.apos.launder.select(v, field.choices, null);
               });
             } else {
-              value = self.apos.launder.select(value, field.choices, null);
+              value = (typeof field.choices) === 'string'
+                ? self.apos.launder.string(value)
+                : self.apos.launder.select(value, field.choices, null);
               if (value === null) {
                 return null;
               }
@@ -363,9 +371,16 @@ module.exports = {
             }
           },
           choices: async function () {
+            let allChoices;
             const values = await query.toDistinct(field.name);
+            if ((typeof field.choices) === 'string') {
+              const req = self.apos.task.getReq();
+              allChoices = await self.apos.modules[field.moduleName][field.choices](req, field);
+            } else {
+              allChoices = field.choices;
+            }
             const choices = _.map(values, function (value) {
-              const choice = _.find(field.choices, { value: value });
+              const choice = _.find(allChoices, { value: value });
               return {
                 value: value,
                 label: choice && (choice.label || value)
@@ -1109,7 +1124,7 @@ module.exports = {
       // alterFields option should be avoided if your needs can be met
       // via another option.
 
-      compose(options) {
+      compose(options, module) {
         let schema = [];
 
         // Useful for finding good unit test cases
@@ -1299,9 +1314,29 @@ module.exports = {
         // like workflow to patch schema fields of various modules
         // without inadvertently impacting other apos instances
         // when running with @apostrophecms/multisite
-        return _.map(schema, function (field) {
+        schema = _.map(schema, function (field) {
           return _.clone(field);
         });
+
+        _.each(schema, function(field) {
+          // For use in resolving options like "choices" when they
+          // contain a method name. For bc don't mess with possible
+          // existing usages in custom schema field types predating
+          // this feature
+          self.setModuleName(field, module);
+        });
+        return schema;
+      },
+
+      // Recursively set moduleName property of the field and any subfields,
+      // as might be found in array or object fields. `module` is an actual module
+      setModuleName(field, module) {
+        field.moduleName = field.moduleName || (module && module.__meta.name);
+        if ((field.type === 'array') || (field.type === 'object')) {
+          _.each(field.schema || [], function(subfield) {
+            self.setModuleName(subfield, module);
+          });
+        }
       },
 
       // refine is like compose, but it starts with an existing schema array
