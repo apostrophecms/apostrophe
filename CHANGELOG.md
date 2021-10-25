@@ -13,6 +13,7 @@
 * Fixes README Node version requirement (Node 12+).
 * The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
 * Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
+* If a static text phrase is unavailable in both the current locale and the default locale, Apostrophe will always fall back to the `en` locale as a last resort, which ensures the admin UI works if it has not been translated.
 * Developers can now `require` their project `app.js` in the Node.js REPL for debugging and inspection
 
 ### Changes
