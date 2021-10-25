@@ -43,7 +43,7 @@ We recommend installing the following with [Homebrew](https://brew.sh/) on macOS
 
 | Software | Minimum Version | Notes
 | ------------- | ------------- | -----
-| Node.js | 10.x | Or better
+| Node.js | 12.x | Or better
 | npm  | 6.x  | Or better
 | MongoDB  | 3.6  | Or better
 | Imagemagick  | Any | Faster image uploads, GIF support (optional)

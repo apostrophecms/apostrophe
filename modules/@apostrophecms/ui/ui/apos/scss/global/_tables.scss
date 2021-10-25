@@ -5,7 +5,7 @@
 
 .apos-table__header {
   margin-bottom: $spacing-base;
-  padding: 12.5px 4.5px;
+  padding: 12.5px 15px;
   border-bottom: 1px solid var(--a-base-8);
   color: var(--a-base-3);
   text-align: left;
@@ -52,12 +52,13 @@ span.apos-table__header-label:hover {
   @include apos-transition(all, 0.05s);
 }
 .apos-table__cell {
-  padding: 5px;
+  padding: 5px 15px;
   border-bottom: 1px solid var(--a-base-10);
 }
 
 .apos-table__cell--context-menu  {
-  width: 40px;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .apos-table__cell-field--context-menu  {

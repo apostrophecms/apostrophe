@@ -65,7 +65,7 @@ module.exports = async function(options) {
       processes: parseInt(process.env.APOS_CLUSTER_PROCESSES)
     };
   }
-  if (process.env.NODE_ENV !== 'production') {
+  if (options.cluster && (process.env.NODE_ENV !== 'production')) {
     console.log('NODE_ENV is not set to production, disabling cluster mode');
     options.cluster = false;
   }
@@ -261,7 +261,7 @@ module.exports = async function(options) {
   function getRoot() {
     let _module = module;
     let m = _module;
-    while (m.parent) {
+    while (m.parent && m.parent.filename) {
       // The test file is the root as far as we are concerned,
       // not mocha itself
       if (m.parent.filename.match(/\/node_modules\/mocha\//)) {

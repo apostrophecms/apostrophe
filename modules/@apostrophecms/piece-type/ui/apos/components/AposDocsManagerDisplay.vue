@@ -26,7 +26,7 @@
         <th class="apos-table__header" key="contextMenu">
           <component
             :is="getEl({})"
-            class="apos-table__header-label is-hidden"
+            class="apos-table__header-label apos-is-hidden"
           >
             {{ $t('apostrophe:moreOperations') }}
           </component>
