@@ -375,7 +375,7 @@ module.exports = {
             const values = await query.toDistinct(field.name);
             if ((typeof field.choices) === 'string') {
               const req = self.apos.task.getReq();
-              allChoices = await self.apos.modules[field.moduleName][field.choices](req, field);
+              allChoices = await self.apos.modules[field.moduleName][field.choices](req);
             } else {
               allChoices = field.choices;
             }
