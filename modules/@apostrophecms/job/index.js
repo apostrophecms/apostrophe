@@ -10,13 +10,13 @@ const _ = require('lodash');
 // The `run` method allows you to implement routes that are designed
 // to be paired with the `progress` method of this module on
 // the browser side. All you need to do is make sure the
-// ids are posted to your route and then write a function that
+// IDs are posted to your route and then write a function that
 // can carry out the operation on one id.
 //
 // If you just want to add a new batch operation for pieces,
-// see the examples already in `@apostrophecms/piece-type` and those added
-// by the `@apostrophecms/workflow` module. You don't need to go
-// directly to this module for that case.
+// see the examples already in `@apostrophecms/piece-type` (e.g.,
+// `batchSimpleRoute`). You don't need to go directly to this module for that
+// case.
 //
 // If your operation doesn't break down neatly into repeated operations
 // on single documents, look into calling the `start` method and friends
@@ -26,7 +26,9 @@ const _ = require('lodash');
 // cron jobs or command line tasks.
 
 module.exports = {
-  options: { collectionName: 'aposJobs' },
+  options: {
+    collectionName: 'aposJobs'
+  },
   async init(self) {
     await self.ensureCollection();
   },
@@ -73,9 +75,10 @@ module.exports = {
       // necessary; this is recorded as a bad item in the job, it does
       // not stop the job. `change` may optionally return a result object.
       //
-      // Returns an object with `{ jobId: 'cxxxx' }` before the work actually
-      // begins. This can then be used for progress monitoring via the
-      // ApostropheJobMonitor Vue component.
+      // This method will return an object with a `jobId` identifier as soon as
+      // the job is ready to start, and the actual job will continue in the
+      // background afterwards. You can pass `jobId` to the `progress` API route
+      // of this module as `_id` on the request body to get job status info.
       //
       // The actual work continues in background after this method returns.
       //
@@ -87,6 +90,8 @@ module.exports = {
       // on a single type of piece.
       //
       // *Options*
+      //
+      // Labeling options TBD.
       //
       async run(req, ids, change, options) {
         let job;
@@ -151,22 +156,20 @@ module.exports = {
       // The `doTheWork` function receives `(req, reporting)` and may optionally invoke
       // `reporting.good()` and `reporting.bad()` to update the progress and error
       // counters, and `reporting.setTotal()` to indicate the total number of
-      // counts expected so a progress meter can be rendered. This is optional and
-      // an indication of progress is still displayed without it.
+      // counts expected so a progress meter can be rendered. This is optional
+      // and an indication of progress is still displayed without it.
+      //
       // `reporting.setResults(object)` may also be called to pass a
-      // `results` object, which is displayed as a table by the
-      // `ApostropheJobMonitor` Vue component on the browser side.
+      // results object, which will be available on the finished job document.
       //
-      // This method will return `{ jobId: 'cxxxx' }` as soon as the job is
-      // ready to start, and the actual job will continue in the background
-      // afterwards. You should pass `jobId` as a prop to the
-      // `ApostropheJobMonitor` Vue component (TODO: write this component
-      // for 3.0).
-      //
-      // After the job status is `completed` that component will emit
-      // suitable events and the `results` object, if any.
+      // This method will return an object with a `jobId` identifier as soon as
+      // the job is ready to start, and the actual job will continue in the
+      // background afterwards. You can pass `jobId` to the `progress` API route
+      // of this module as `_id` on the request body to get job status info.
       //
       // *Options*
+      //
+      // Labeling options TBD.
       //
       // You may optionally provide `options.stop` or `options.cancel`.
       // These async functions will be invoked and awaited
@@ -201,21 +204,21 @@ module.exports = {
           let good = false;
           try {
             await doTheWork(req, {
-              good: function (n) {
+              good (n) {
                 n = n || 1;
                 return self.good(job, n);
               },
-              bad: function (n) {
+              bad (n) {
                 n = n || 1;
                 return self.bad(job, n);
               },
-              setTotal: function (n) {
+              setTotal (n) {
                 return self.setTotal(job, n);
               },
-              setResults: function (_results) {
+              setResults (_results) {
                 results = _results;
               },
-              isCanceling: function () {
+              isCanceling () {
                 return canceling;
               }
             });
@@ -263,6 +266,9 @@ module.exports = {
       //
       // You should not offer both. If you do, only "Cancel" is presented
       // to the user.
+      //
+      // Labeling options TBD.
+      //
       async start(options) {
         const job = {
           _id: self.apos.util.generateId(),
@@ -272,7 +278,6 @@ module.exports = {
           status: 'running',
           ended: false,
           canceling: false,
-          labels: options.labels || {},
           when: new Date(),
           canCancel: !!options.cancel,
           canStop: !!options.stop

@@ -100,7 +100,6 @@ module.exports = {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        inputType: 'radio',
         unlessFilter: {
           archived: true
         }
@@ -110,30 +109,31 @@ module.exports = {
         unlessFilter: {
           archived: false
         }
-      },
-      visibility: {
-        label: 'apostrophe:visibility',
-        requiredField: 'visibility',
-        fields: {
-          add: {
-            visibility: {
-              type: 'select',
-              label: 'apostrophe:visibilityLabel',
-              def: 'public',
-              choices: [
-                {
-                  value: 'public',
-                  label: 'apostrophe:public'
-                },
-                {
-                  value: 'loginRequired',
-                  label: 'apostrophe:loginRequired'
-                }
-              ]
-            }
-          }
-        }
       }
+      // TODO: Implement schema batch operations
+      // visibility: {
+      //   label: 'apostrophe:visibility',
+      //   requiredField: 'visibility',
+      //   fields: {
+      //     add: {
+      //       visibility: {
+      //         type: 'select',
+      //         label: 'apostrophe:visibilityLabel',
+      //         def: 'public',
+      //         choices: [
+      //           {
+      //             value: 'public',
+      //             label: 'apostrophe:public'
+      //           },
+      //           {
+      //             value: 'loginRequired',
+      //             label: 'apostrophe:loginRequired'
+      //           }
+      //         ]
+      //       }
+      //     }
+      //   }
+      // }
     }
   },
   init(self) {
@@ -544,7 +544,7 @@ module.exports = {
       // for the batch operation. If there is no schema it will be
       // an empty object.
       //
-      // Replies immediately to the request with `{ jobId: 'cxxxx' }`.
+      // Replies immediately to the request with `{ jobId: 'xxxxx' }`.
       // This can then be passed to appropriate browser-side APIs
       // to monitor progress.
       //
@@ -558,8 +558,9 @@ module.exports = {
 
         await self.apos.schema.convert(req, schema, req.body, data);
         await self.apos.modules['@apostrophecms/job'].run(req, one, {
+          // TODO: Remove if not configuring job labels like this anymore.
           labels: {
-            title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label
+            title: batchOperation.buttonLabel || batchOperation.label
           }
         });
         async function one(req, id) {
