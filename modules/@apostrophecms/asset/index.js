@@ -118,6 +118,8 @@ module.exports = {
             }
           }
 
+          await collectAssets();
+
           // Discover the set of unique asset scenes that exist (currently
           // just `public` and `apos`) by examining those specified as
           // targets for the various builds
@@ -176,8 +178,7 @@ module.exports = {
             }));
             const modulesDir = `${buildDir}/${name}/modules`;
             const source = options.source || name;
-            await moduleOverrides(modulesDir, source);
-
+            await moduleOverrides(modulesDir, `ui/${source}`);
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.apos) {
               iconImports = getIcons();
@@ -244,7 +245,6 @@ module.exports = {
                 self.apos
               ));
               if (options.apos) {
-                const now = Date.now().toString();
                 fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
               }
             } else {
@@ -454,6 +454,24 @@ module.exports = {
             const pkgTimestamp = pkgStats && pkgStats.mtimeMs;
 
             return pkgTimestamp > parseInt(timestamp);
+          }
+
+          async function collectAssets() {
+            const copied = new Set();
+            const assetDir = `${buildDir}/assets/modules`;
+            await fs.remove(assetDir);
+            await fs.mkdirp(assetDir);
+            for (const name of self.apos.modulesToBeInstantiated()) {
+              const ancestorDirectories = [];
+              const metadata = self.apos.synth.getMetadata(name);
+              for (const entry of metadata.__meta.chain) {
+                if (!map.has(copied, entry.name)) {
+                  const effectiveName = entry.name.replace(/^my-/, '');
+                  await fs.copy(entry.dirname, `${assetDir}/${effectiveName}`);
+                  copied.add(entry.name);
+                }
+              }
+            }
           }
         }
       }
