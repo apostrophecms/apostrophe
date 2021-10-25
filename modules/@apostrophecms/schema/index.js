@@ -326,7 +326,7 @@ module.exports = {
       async convert(req, field, data, destination) {
         let choices;
         if ((typeof field.choices) === 'string') {
-          choices = await self.apos.modules[field.moduleName][field.choices](req, field);
+          choices = await self.apos.modules[field.moduleName][field.choices](req);
         } else {
           choices = field.choices;
         }
