@@ -1,5 +1,9 @@
 # Changelog
 
+### Changes
+
+* Removes Apostrophe 2 documentation and UI configuration from the `@apostrophecms/job` module. These options were not yet in use for A3.
+
 ## Unreleased
 
 ### Adds
