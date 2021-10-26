@@ -17,12 +17,30 @@
         :icon-only="true" icon="delete-icon"
         type="outline"
       /> -->
-      <AposContextMenu
-        v-if="more.menu.length"
-        :button="more.button"
-        :menu="more.menu"
-        @item-clicked="batchAction"
-      />
+      <div
+        v-for="{action, label, icon, operations, unlessFilter} in operations"
+        :key="action"
+      >
+        <AposButton
+          v-if="!operations"
+          label="label"
+          :icon-only="true"
+          :icon="icon"
+          type="outline"
+          @click="$emit('select-click')"
+        />
+        <AposContextMenu
+          v-else
+          :button="{
+            label,
+            icon,
+            iconOnly: true,
+            type: 'outline'
+          }"
+          :menu="formatOperations(operations)"
+          @item-clicked="batchAction"
+        />
+      </div>
     </template>
     <template #rightControls>
       <AposPager
@@ -31,7 +49,7 @@
         :total-pages="totalPages" :current-page="currentPage"
       />
       <AposFilterMenu
-        v-if="filters.length > 0"
+        v-if="filters.length"
         :filters="filters"
         :choices="filterChoices"
         :values="filterValues"
@@ -99,6 +117,10 @@ export default {
       default () {
         return {};
       }
+    },
+    batchOperations: {
+      type: Array,
+      default: () => []
     }
   },
   emits: [
@@ -135,19 +157,22 @@ export default {
         return 'checkbox-blank-icon';
       }
     },
-    more () {
-      const config = {
-        button: {
-          label: 'apostrophe:moreOperations',
-          iconOnly: true,
-          icon: 'dots-vertical-icon',
-          type: 'outline'
-        },
-        menu: Array.isArray(this.options.moreActions) ? this.options.moreActions : []
-      };
-
-      return config;
+    operations () {
+      // const ope = this.batchOperations
     }
+    // more () {
+    //   const config = {
+    //     button: {
+    //       label: 'apostrophe:moreOperations',
+    //       iconOnly: true,
+    //       icon: 'dots-vertical-icon',
+    //       type: 'outline'
+    //     },
+    //     menu: Array.isArray(this.options.moreActions) ? this.options.moreActions : []
+    //   };
+
+    //   return config;
+    // }
   },
   methods: {
     filter(filter, value) {
@@ -170,6 +195,12 @@ export default {
     },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
+    },
+    formatOperations (operations) {
+      return Object.entries(operations).map(([ key, props ]) => ({
+        action: key,
+        ...props
+      }));
     }
   }
 };
