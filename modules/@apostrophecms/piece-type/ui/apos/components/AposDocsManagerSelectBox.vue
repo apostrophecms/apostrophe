@@ -67,9 +67,6 @@ export default {
         num: this.allPiecesSelection.total,
         label: this.getLabel(this.allPiecesSelection.total)
       });
-    },
-    getTotalPiecesNumber () {
-      return this.getSingularOrPlural(this.allPiecesSelection.total, true);
     }
   },
   methods: {
