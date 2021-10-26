@@ -76,7 +76,7 @@
             @page-change="updatePage"
             @filter="filter"
             :options="{
-              disableUnchecked: maxReached(),
+              disableUnchecked: maxReached()
             }"
           />
           <AposDocsManagerSelectBox
@@ -338,7 +338,7 @@ export default {
       const { count: total } = await this.request({ count: 1 });
 
       this.setAllPiecesSelection({
-        selected: false,
+        isSelected: false,
         total
       });
     },

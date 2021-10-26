@@ -8,23 +8,23 @@
       class="apos-select-box"
     >
       <div class="apos-select-box__content">
-        <h3 class="apos-select-box__text">
+        <p class="apos-select-box__text">
           {{ selectBoxMessage }}
-          <span
+          <button
             v-if="!allPiecesSelection.isSelected"
             class="apos-select-box__select-all"
             @click="$emit('select-all')"
           >
             {{ selectBoxMessageButton }}
-          </span>
-          <span
+          </button>
+          <button
             v-else
             class="apos-select-box__select-all"
             @click="clearSelection"
           >
             {{ $t('apostrophe:clearSelection') }}.
-          </span>
-        </h3>
+          </button>
+        </p>
       </div>
     </div>
   </transition>
