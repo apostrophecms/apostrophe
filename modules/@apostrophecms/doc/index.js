@@ -439,6 +439,8 @@ module.exports = {
         await self.insertBody(req, doc, options);
         await m.emit('afterInsert', req, doc, options);
         await m.emit('afterSave', req, doc, options);
+        // TODO: Remove `afterLoad` in next major version. Deprecated.
+        await m.emit('afterLoad', req, [ doc ]);
         return doc;
       },
       // Updates the given document. If the slug is not
@@ -473,6 +475,8 @@ module.exports = {
         await self.updateBody(req, doc, options);
         await m.emit('afterUpdate', req, doc, options);
         await m.emit('afterSave', req, doc, options);
+        // TODO: Remove `afterLoad` in next major version. Deprecated.
+        await m.emit('afterLoad', req, [ doc ]);
         return doc;
       },
 

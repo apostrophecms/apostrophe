@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+* Adds deprecation notes to doc module `afterLoad` events, which are deprecated.
+* Removes unused `afterLogin` method in the login module.
+
 ## 3.7.0 - 2021-10-26
 
 ### Adds
