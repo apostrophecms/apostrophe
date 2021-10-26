@@ -70,6 +70,7 @@
             :filter-choices="filterChoices"
             :filter-values="filterValues"
             :labels="moduleLabels"
+            :batch-operations="moduleOptions.batchOperations"
             @select-click="selectAll"
             @search="search"
             @page-change="updatePage"
@@ -78,7 +79,6 @@
             :options="{
               disableUnchecked: maxReached(),
               hideSelectAll: !relationshipField,
-              moreActions
             }"
           />
         </template>
@@ -192,27 +192,6 @@ export default {
     },
     disableUnpublished() {
       return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
-    },
-    moreActions () {
-      const actions = [];
-
-      for (const action of this.moduleOptions.batchOperations) {
-        let disableAction = false;
-
-        if (action.unlessFilter) {
-          for (const filter in action.unlessFilter) {
-            if (action.unlessFilter[filter] === this.filterValues[filter]) {
-              disableAction = true;
-            }
-          }
-        }
-
-        if (!disableAction) {
-          actions.push(action);
-        }
-      }
-
-      return actions;
     }
   },
   created() {
