@@ -1226,9 +1226,7 @@ module.exports = {
             const projection = Object.entries(p).reduce((acc, [ key, val ]) => {
               return {
                 ...acc,
-                ...typeof key === 'string' && [ '0', '1' ].includes(val) && {
-                  [key]: parseInt(val, 10)
-                }
+                [key]: self.apos.launder.boolean(val)
               };
             }, {});
 
