@@ -384,9 +384,9 @@ export default {
       }
       if (!this.focused) {
         this.state.labels.show = false;
+        this.state.add.top.show = false;
+        this.state.add.bottom.show = false;
       }
-      this.state.add.top.show = false;
-      this.state.add.bottom.show = false;
     },
 
     focus(e) {
@@ -396,8 +396,8 @@ export default {
       this.focused = true;
       this.state.container.focus = true;
       this.state.controls.show = true;
-      this.state.add.top.show = false;
-      this.state.add.bottom.show = false;
+      this.state.add.top.show = true;
+      this.state.add.bottom.show = true;
       this.state.labels.show = true;
       document.addEventListener('click', this.unfocus);
     },
@@ -615,8 +615,8 @@ export default {
   }
 
   .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-primary);
-    & ::v-deep .apos-button {
+    background-color: var(--a-background-inverted);
+    & ::v-deep .apos-button__content {
       color: var(--a-text-inverted);
     }
   }

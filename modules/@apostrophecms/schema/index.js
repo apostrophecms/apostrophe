@@ -18,6 +18,7 @@ const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
 const { klona } = require('klona');
+const { stripIndent } = require('common-tags');
 
 module.exports = {
   options: {
@@ -323,7 +324,13 @@ module.exports = {
     self.addFieldType({
       name: 'select',
       async convert(req, field, data, destination) {
-        destination[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
+        let choices;
+        if ((typeof field.choices) === 'string') {
+          choices = await self.apos.modules[field.moduleName][field.choices](req);
+        } else {
+          choices = field.choices;
+        }
+        destination[field.name] = self.apos.launder.select(data[field.name], choices, field.def);
       },
       index: function (value, field, texts) {
         const silent = field.silent === undefined ? true : field.silent;
@@ -354,7 +361,9 @@ module.exports = {
                 return self.apos.launder.select(v, field.choices, null);
               });
             } else {
-              value = self.apos.launder.select(value, field.choices, null);
+              value = (typeof field.choices) === 'string'
+                ? self.apos.launder.string(value)
+                : self.apos.launder.select(value, field.choices, null);
               if (value === null) {
                 return null;
               }
@@ -362,9 +371,16 @@ module.exports = {
             }
           },
           choices: async function () {
+            let allChoices;
             const values = await query.toDistinct(field.name);
+            if ((typeof field.choices) === 'string') {
+              const req = self.apos.task.getReq();
+              allChoices = await self.apos.modules[field.moduleName][field.choices](req);
+            } else {
+              allChoices = field.choices;
+            }
             const choices = _.map(values, function (value) {
-              const choice = _.find(field.choices, { value: value });
+              const choice = _.find(allChoices, { value: value });
               return {
                 value: value,
                 label: choice && (choice.label || value)
@@ -980,6 +996,12 @@ module.exports = {
         if (field.schema && !Array.isArray(field.schema)) {
           fail('schema property should be an array if present at this stage');
         }
+        if (field.filters) {
+          fail('"filters" property should be changed to "builders" for 3.x');
+        }
+        if (field.builders && field.builders.projection) {
+          fail('"projection" sub-property should be changed to "project" for 3.x');
+        }
         function lintType(type) {
           type = self.apos.doc.normalizeType(type);
           if (!_.find(self.apos.doc.managers, { name: type })) {
@@ -988,11 +1010,15 @@ module.exports = {
         }
       },
       isEqual(req, field, one, two) {
-        if (!_.isEqual(one[field.idsStorage], two[field.idsStorage])) {
+        const ids1 = one[field.idsStorage] || [];
+        const ids2 = two[field.idsStorage] || [];
+        if (!_.isEqual(ids1, ids2)) {
           return false;
         }
         if (field.fieldsStorage) {
-          if (!_.isEqual(one[field.fieldsStorage], two[field.fieldsStorage])) {
+          const fields1 = one[field.fieldsStorage] || {};
+          const fields2 = two[field.fieldsStorage] || {};
+          if (!_.isEqual(fields1, fields2)) {
             return false;
           }
         }
@@ -1082,34 +1108,7 @@ module.exports = {
 
     self.validatedSchemas = {};
   },
-  handlers(self) {
-    return {
-      'apostrophe:afterInit': {
-        validateAllSchemas() {
-          _.each(self.apos.doc.managers, function (manager, type) {
-            self.validate(manager.schema, {
-              type: 'doc type',
-              subtype: type
-            });
-          });
-          _.each(self.apos.area.widgetManagers, function (manager, type) {
-            self.validate(manager.schema, {
-              type: 'widget type',
-              subtype: type
-            });
-          });
-        },
-        registerAllSchemas() {
-          _.each(self.apos.doc.managers, function (manager, type) {
-            self.register('doc', type, manager.schema);
-          });
-          _.each(self.apos.area.widgetManagers, function (manager, type) {
-            self.register('widget', type, manager.schema);
-          });
-        }
-      }
-    };
-  },
+
   methods(self) {
     const defaultGroup = self.options.defaultGroup || {
       name: 'ungrouped',
@@ -1125,7 +1124,7 @@ module.exports = {
       // alterFields option should be avoided if your needs can be met
       // via another option.
 
-      compose(options) {
+      compose(options, module) {
         let schema = [];
 
         // Useful for finding good unit test cases
@@ -1315,9 +1314,29 @@ module.exports = {
         // like workflow to patch schema fields of various modules
         // without inadvertently impacting other apos instances
         // when running with @apostrophecms/multisite
-        return _.map(schema, function (field) {
+        schema = _.map(schema, function (field) {
           return _.clone(field);
         });
+
+        _.each(schema, function(field) {
+          // For use in resolving options like "choices" when they
+          // contain a method name. For bc don't mess with possible
+          // existing usages in custom schema field types predating
+          // this feature
+          self.setModuleName(field, module);
+        });
+        return schema;
+      },
+
+      // Recursively set moduleName property of the field and any subfields,
+      // as might be found in array or object fields. `module` is an actual module
+      setModuleName(field, module) {
+        field.moduleName = field.moduleName || (module && module.__meta.name);
+        if ((field.type === 'array') || (field.type === 'object')) {
+          _.each(field.schema || [], function(subfield) {
+            self.setModuleName(subfield, module);
+          });
+        }
       },
 
       // refine is like compose, but it starts with an existing schema array
@@ -1500,10 +1519,8 @@ module.exports = {
         for (const field of schema) {
           const fieldType = self.fieldTypes[field.type];
           if (!fieldType.isEqual) {
-            if ((one[field.name] == null) && (two[field.name] == null)) {
-              return true;
-            }
-            if (!_.isEqual(one[field.name], two[field.name])) {
+            if ((!_.isEqual(one[field.name], two[field.name])) &&
+              !((one[field.name] == null) && (two[field.name] == null))) {
               return false;
             }
           } else {
@@ -1955,6 +1972,7 @@ module.exports = {
             } else if (field.type === 'array') {
               if (doc[field.name]) {
                 doc[field.name].forEach(item => {
+                  item._id = item._id || self.apos.util.generateId();
                   item.metaType = 'arrayItem';
                   item.scopedArrayName = field.scopedArrayName;
                   forSchema(field.schema, item);
@@ -2206,13 +2224,14 @@ module.exports = {
       // of a `relationship` field, or the `label` property of anything.
 
       validate(schema, options) {
-        // Infinite recursion prevention
-        if (self.validatedSchemas[options.type + ':' + options.subtype]) {
-          return;
-        }
-        self.validatedSchemas[options.type + ':' + options.subtype] = true;
-
-        schema.forEach(field => self.validateField(field, options));
+        schema.forEach(field => {
+          // Infinite recursion prevention
+          const key = `${options.type}:${options.subtype}.${field.name}`;
+          if (!self.validatedSchemas[key]) {
+            self.validatedSchemas[key] = true;
+            self.validateField(field, options);
+          }
+        });
       },
 
       // Validates a single schema field. See `validate`.
@@ -2240,7 +2259,12 @@ module.exports = {
           self.apos.util.error(format(s));
         }
         function format(s) {
-          return '\n' + options.type + ' ' + options.subtype + ', field name ' + field.name + ':\n\n' + s + '\n';
+          return stripIndent`
+            ${options.type} ${options.subtype}, ${field.type} field "${field.name}":
+
+            ${s}
+
+          `;
         }
       },
 
@@ -2525,6 +2549,57 @@ module.exports = {
           // We don't want to regenerate attachment ids. They correspond to
           // actual files, and the reference count will update automatically
         }
+      },
+
+      validateAllSchemas() {
+        _.each(self.apos.doc.managers, function (manager, type) {
+          self.validate(manager.schema, {
+            type: 'doc type',
+            subtype: type
+          });
+        });
+        _.each(self.apos.area.widgetManagers, function (manager, type) {
+          self.validate(manager.schema, {
+            type: 'widget type',
+            subtype: type
+          });
+        });
+      },
+
+      registerAllSchemas() {
+        _.each(self.apos.doc.managers, function (manager, type) {
+          self.register('doc', type, manager.schema);
+        });
+        _.each(self.apos.area.widgetManagers, function (manager, type) {
+          self.register('widget', type, manager.schema);
+        });
+      }
+
+    };
+  },
+  apiRoutes(self) {
+    return {
+      get: {
+        async choices(req) {
+          const id = self.apos.launder.string(req.query.fieldId);
+          const field = self.getFieldById(id);
+          let choices = [];
+          if (
+            !field ||
+            field.type !== 'select' ||
+            !(field.choices && typeof field.choices === 'string')
+          ) {
+            throw self.apos.error('invalid');
+          }
+          choices = await self.apos.modules[field.moduleName][field.choices](req);
+          if (Array.isArray(choices)) {
+            return {
+              choices
+            };
+          } else {
+            throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
+          }
+        }
       }
     };
   },
@@ -2542,7 +2617,7 @@ module.exports = {
           }
           fields[name] = component;
         }
-
+        browserOptions.action = self.action;
         browserOptions.components = { fields: fields };
         return browserOptions;
       }

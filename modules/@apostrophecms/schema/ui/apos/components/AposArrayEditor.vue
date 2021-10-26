@@ -69,6 +69,7 @@
                     :conditional-fields="conditionalFields()"
                     :value="currentDoc"
                     @input="currentDocUpdate"
+                    @validate="triggerValidate"
                     :server-errors="currentDocServerErrors"
                     ref="schema"
                   />

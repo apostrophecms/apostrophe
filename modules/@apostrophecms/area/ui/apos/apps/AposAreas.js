@@ -6,6 +6,9 @@ export default function() {
   createWidgetClipboardApp();
 
   prepareAreas();
+
+  document.documentElement.style.setProperty('--a-widget-margin', apos.ui.widgetMargin);
+
   apos.bus.$on('widget-rendered', function() {
     prepareAreas();
   });

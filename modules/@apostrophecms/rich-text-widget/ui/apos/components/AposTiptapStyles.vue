@@ -52,6 +52,9 @@ export default {
         const style = styles[i];
         if (this.editor.isActive(style.type, (style.options || {}))) {
           return i;
+        } else if (this.editor.state.selection.$head.parent.type.name === 'defaultNode' && style.def) {
+          // Look deeper to see if custom defaultNode is active
+          return i;
         }
       }
       return 0;

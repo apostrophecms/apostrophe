@@ -446,7 +446,7 @@ module.exports = {
       // By default browser data is pushed only for the `apos` scene, so public
       // site pages will not be cluttered with it, except on the /login page and
       // other pages that opt into the `apos` scene. If `scene` is set to `public`
-      // then the data is available al the time.
+      // then the data is available all the time.
       //
       // Be sure to use `extendMethods` when implementing `getBrowserData`
       // as your base class may also implement `getBrowserData`.
@@ -639,7 +639,7 @@ module.exports = {
 
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         addHelpers() {
           // We check this just to allow init in bootstrap tests that
           // have no templates module

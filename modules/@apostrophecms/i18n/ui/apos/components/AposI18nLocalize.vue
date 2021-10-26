@@ -11,16 +11,16 @@
     <template #leftRail>
       <AposModalBody class="apos-wizard__navigation">
         <template #bodyMain>
-          <button
-            v-for="section in visibleSections"
-            :disabled="!completedPrevious(section.name)"
-            :key="section.title"
-            @click="goTo(section.name)"
-            class="apos-wizard__navigation-item"
-            :class="{ 'apos-state-active': isStep(section.name) }"
-          >
-            {{ section.title }}
-          </button>
+          <ul class="apos-wizard__navigation__items">
+            <li
+              v-for="section in visibleSections"
+              :key="section.title"
+              class="apos-wizard__navigation__item"
+              :class="{ 'apos-is-active': isStep(section.name) }"
+            >
+              {{ section.title }}
+            </li>
+          </ul>
         </template>
         <template #footer>
           <div class="apos-modal__footer">
@@ -28,6 +28,7 @@
               type="default"
               label="apostrophe:cancel"
               @click="close"
+              :modifiers="[ 'block' ]"
             />
           </div>
         </template>
@@ -55,10 +56,12 @@
                 }"
                 v-model="wizard.values.toLocalize"
               />
-              <p
-                class="apos-wizard__help-text"
-              >
-                <InformationIcon :size="16" />
+              <p class="apos-wizard__help-text">
+                <AposIndicator
+                  class="apos-wizard__help-text__icon"
+                  icon="information-icon"
+                  :icon-size="16"
+                />
                 {{ $t('apostrophe:relatedDocsDefinition') }}
               </p>
             </fieldset>
@@ -67,20 +70,21 @@
               v-if="isStep('selectLocales')"
               class="apos-wizard__step apos-wizard__step-select-locales"
             >
-              <label for="localeFilter" class="apos-local-filter-label">
-                {{ $t('apostrophe:searchLocales') }}
-              </label>
-              <button @click.prevent="selectAll" class="apos-locale-select-all">
-                {{ $t('apostrophe:selectAll') }}
-              </button>
-              <input
-                v-model="wizard.sections.selectLocales.filter"
-                type="text"
-                name="localeFilter"
-                class="apos-locales-filter"
-                :placeholder="$t('apostrophe:searchLocales')"
+              <AposButton
+                v-on="{ click: allSelected ? deselectAll : selectAll }"
+                class="apos-locale-select-all"
+                :label="allSelected ? $t('apostrophe:deselectAll') : $t('apostrophe:selectAll')"
+                type="quiet"
+                :modifiers="[ 'inline' ]"
               />
-              <ul class="apos-selected-locales">
+              <AposInputString
+                v-model="searchValue"
+                :field="searchField"
+                @input="updateFilter"
+                class="apos-locales-filter"
+                ref="searchInput"
+              />
+              <transition-group tag="ul" name="selected-list" class="apos-selected-locales">
                 <li
                   v-for="locale in selectedLocales"
                   :key="locale.name"
@@ -90,39 +94,45 @@
                     type="primary"
                     @click.prevent="removeLocale(locale)"
                     class="apos-locale-button"
+                    :modifiers="[ 'small' ]"
                     icon="close-icon"
                     :icon-size="12"
                     :label="locale.label"
                   />
                 </li>
-              </ul>
+              </transition-group>
               <ul class="apos-locales">
                 <li
                   v-for="locale in filteredLocales"
                   :key="locale.name"
                   class="apos-locale-item"
                   :class="localeClasses(locale)"
-                  @click="selectLocale(locale)"
+                  @click="toggleLocale(locale)"
                 >
                   <span class="apos-locale">
-                    <FlareIcon
+                    <AposIndicator
                       v-if="isCurrentLocale(locale) && !isSelected(locale)"
+                      icon="map-marker-icon"
                       class="apos-current-locale-icon"
+                      :icon-size="14"
                       title="Default locale"
-                      :size="12"
+                      tooltip="Current Locale"
                     />
-                    <CheckIcon
+                    <AposIndicator
                       v-if="isSelected(locale)"
+                      icon="check-bold-icon"
                       class="apos-check-icon"
+                      :icon-size="10"
                       title="Currently selected locale"
-                      :size="12"
                     />
                     {{ locale.label }}
+                    <span class="apos-locale-name">({{ locale.name }})</span>
                     <span
                       class="apos-locale-localized"
                       :class="{
                         'apos-state-is-localized': isLocalized(locale),
                       }"
+                      v-apos-tooltip="isLocalized(locale) ? 'Localized' : 'Not Yet Localized'"
                     />
                   </span>
                 </li>
@@ -135,13 +145,17 @@
             >
               <ul class="apos-selected-locales">
                 <li
+                  class="apos-locale-item--selected"
                   v-for="locale in selectedLocales"
                   :key="locale.name"
-                  class="apos-locale-item--selected"
                 >
-                  <span class="apos-locale-to-localize">{{
-                    locale.label
-                  }}</span>
+                  <AposButton
+                    type="primary"
+                    class="apos-locale-to-localize"
+                    :modifiers="[ 'small' ]"
+                    :label="locale.label"
+                    :disabled="true"
+                  />
                 </li>
               </ul>
 
@@ -149,11 +163,15 @@
                 v-if="wizard.values.toLocalize.data !== 'thisDoc'"
                 class="apos-wizard__field-group"
               >
-                <p class="apos-wizard__field-group-heading">
+                <p
+                  class="apos-wizard__field-group-heading">
                   {{ $t('apostrophe:relatedDocSettings') }}
-                  <span v-apos-tooltip.top="tooltips.relatedDocSettings"
-                    ><InformationIcon :size="14"
-                  /></span>
+                  <AposIndicator
+                    class="apos-wizard__field-group-heading__info"
+                    icon="information-icon"
+                    :icon-size="14"
+                    :tooltip="tooltips.relatedDocSettings"
+                  />
                 </p>
 
                 <AposInputRadio
@@ -179,7 +197,13 @@
                   :field="relatedDocTypesField"
                   v-model="wizard.values.relatedDocTypesToLocalize"
                 />
-                <p v-else class="apos-wizard__field-group-heading">
+                <p v-else class="apos-wizard__help-text">
+                  <AposIndicator
+                    class="apos-wizard__help-text__icon"
+                    icon="lightbulb-on-icon"
+                    icon-color="var(--a-success)"
+                    :icon-size="16"
+                  />
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
               </div>
@@ -217,17 +241,8 @@
 </template>
 
 <script>
-import CheckIcon from 'vue-material-design-icons/Check.vue';
-import FlareIcon from 'vue-material-design-icons/Flare.vue';
-import InformationIcon from 'vue-material-design-icons/Information.vue';
-
 export default {
   name: 'AposI18nLocalize',
-  components: {
-    CheckIcon,
-    FlareIcon,
-    InformationIcon
-  },
   props: {
     doc: {
       required: true,
@@ -313,7 +328,15 @@ export default {
       // interest in new docs
       allRelatedDocs: [],
       allRelatedDocsKnown: false,
-      docTypesSeen: []
+      docTypesSeen: [],
+      searchField: {
+        label: this.$t('apostrophe:searchLocales'),
+        placeholder: `${this.$t('apostrophe:searchLocales')}...`
+      },
+      searchValue: {
+        value: '',
+        error: false
+      }
     };
     return result;
   },
@@ -349,6 +372,9 @@ export default {
     },
     selectedLocales() {
       return this.wizard.values.toLocales.data;
+    },
+    allSelected() {
+      return this.selectedLocales.length === this.locales.filter(locale => !this.isCurrentLocale(locale)).length;
     },
     toLocalizeChoices() {
       return [
@@ -495,9 +521,20 @@ export default {
     selectAll() {
       this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale));
     },
-    selectLocale(locale) {
+    deselectAll() {
+      this.wizard.values.toLocales.data = [];
+    },
+    toggleLocale(locale) {
       if (!this.isSelected(locale) && !this.isCurrentLocale(locale)) {
         this.wizard.values.toLocales.data.push(locale);
+      } else if (this.isSelected(locale)) {
+       this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(l => l !== locale);
+      }
+      // Reset search filter
+      if (this.filteredLocales.length < 2) {
+        this.wizard.sections.selectLocales.filter = '';
+        this.searchValue.data = '';
+        this.$refs.searchInput.$el.querySelector('input').focus();
       }
     },
     removeLocale(locale) {
@@ -548,6 +585,11 @@ export default {
         return 'apostrophe:pages';
       }
       return module.pluralLabel || module.label || name;
+    },
+    updateFilter(event) {
+      if (event && event.data !== undefined) {
+        this.wizard.sections.selectLocales.filter = event.data
+      }
     },
     async submit() {
       let docs = [];
@@ -743,8 +785,8 @@ export default {
     right: $horizontal-spacing;
     bottom: $vertical-spacing;
     left: $horizontal-spacing;
-    height: calc(100vh - #{$vertical-spacing * 2});
     width: $width;
+    height: calc(100vh - #{$vertical-spacing * 2});
   }
 
   ::v-deep .apos-modal__main--with-left-rail {
@@ -752,7 +794,7 @@ export default {
   }
 
   ::v-deep .apos-modal__body-inner {
-    padding: 30px 30px 20px 30px;
+    padding: $spacing-triple $spacing-triple $spacing-double;
   }
 
   ::v-deep .apos-wizard__content .apos-modal__body-footer {
@@ -770,42 +812,40 @@ export default {
   border-right: 1px solid var(--a-base-9);
 }
 
-.apos-wizard__navigation-item {
-  display: block;
-  padding: 0;
-  text-align: left;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-
-  &.apos-state-active {
+.apos-wizard__navigation__items {
+  @include apos-list-reset();
+  padding: $spacing-base;
+}
+.apos-wizard__navigation__item {
+  @include type-small;
+  margin-bottom: $spacing-base + $spacing-half;
+  &.apos-is-active {
     color: var(--a-primary);
-  }
-
-  &:not(:last-of-type) {
-    margin-bottom: $spacing-double;
   }
 }
 
 .apos-modal__heading {
   @include type-title;
-  margin: 0 0 30px 0;
+  margin: 0 0 $spacing-double 0;
 }
 
 .apos-wizard__step {
-  padding: 0;
+  position: relative;
   margin: 0;
+  padding: 0;
   border: none;
 }
 
 ::v-deep .apos-field--toLocalize {
-  margin-bottom: 30px;
+  margin-bottom: $spacing-triple;
 }
 
 .apos-wizard__help-text {
   text-indent: -20px;
   padding-left: 20px;
   line-height: 1.25;
+  font-weight: 400;
+  color: var(--a-base-3);
 
   ::v-deep .material-design-icon {
     position: relative;
@@ -814,43 +854,14 @@ export default {
   }
 }
 
-.apos-local-filter-label {
-  font-size: var(--a-type-large);
-}
-
 .apos-locale-select-all {
-  float: right;
-  padding: 0;
-  font-size: var(--a-type-base);
-  color: var(--a-primary);
-  background: none;
-  border: 0;
+  z-index: $z-index-default;
+  position: absolute;
+  right: 0;
 }
 
 .apos-locales-filter {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 20px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  font-size: 14px;
-  border-top: 0;
-  border-right: 0;
-  border-bottom: 1px solid var(--a-base-9);
-  border-left: 0;
-  color: var(--a-text-primary);
-  background-color: var(--a-base-10);
-  border-top-right-radius: var(--a-border-radius);
-  border-top-left-radius: var(--a-border-radius);
-
-  &::placeholder {
-    color: var(--a-base-4);
-    font-style: italic;
-  }
-
-  &:focus {
-    outline: none;
-  }
+  margin-bottom: $spacing-base;
 }
 
 .apos-selected-locales,
@@ -859,6 +870,10 @@ export default {
   padding-left: 0;
   margin-top: 0;
   margin-bottom: 0;
+}
+
+.apos-selected-locales {
+  margin-bottom: $spacing-base;
 }
 
 .apos-locales {
@@ -876,14 +891,15 @@ export default {
 }
 
 .apos-locale-button ::v-deep .apos-button {
-  padding: 10px;
   font-size: var(--a-type-small);
 }
 
 .apos-locale-item {
+  @include apos-transition();
   position: relative;
   padding: 12px 35px;
   line-height: 1;
+  border-radius: var(--a-border-radius);
 
   &:not(.apos-current-locale) {
     cursor: pointer;
@@ -893,11 +909,15 @@ export default {
     background-color: var(--a-base-10);
   }
 
+  &:not(.apos-current-locale):active {
+    background-color: var(--a-base-9);
+  }
+
   .apos-check-icon,
   .apos-current-locale-icon {
     position: absolute;
     top: 50%;
-    left: 20px;
+    left: 18px;
     transform: translateY(-50%);
   }
 
@@ -918,11 +938,12 @@ export default {
   .apos-locale-localized {
     position: relative;
     top: -1px;
+    left: 5px;
     display: inline-block;
-    height: 5px;
-    width: 5px;
+    width: 3px;
+    height: 3px;
     border: 1px solid var(--a-base-5);
-    border-radius: 3px;
+    border-radius: 50%;
 
     &.apos-state-is-localized {
       background-color: var(--a-success);
@@ -938,12 +959,16 @@ export default {
 }
 
 .apos-wizard__field-group-heading {
+  @include type-base;
   padding-bottom: $spacing-base;
   margin-bottom: $spacing-base;
-  font-size: var(--a-type-large);
-  font-weight: 600;
   color: var(--a-base-3);
   border-bottom: 1px solid var(--a-base-8);
+}
+
+.apos-wizard__field-group-heading__info {
+  position: relative;
+  top: 3px;
 }
 
 .apos-wizard__step-2 {
@@ -953,16 +978,23 @@ export default {
   }
 }
 
-.apos-locale-to-localize {
-  @include type-small;
-  display: inline-block;
-  position: relative;
-  overflow: hidden;
-  padding: 10px 20px;
-  border: 1px solid var(--a-primary-dark-10);
-  color: var(--a-white);
-  border-radius: var(--a-border-radius);
-  background: var(--a-primary);
-  text-decoration: none;
+.apos-wizard__header {
+  margin-top: $spacing-base;
+}
+
+.selected-list-enter-active, .selected-list-leave-active {
+  @include apos-transition($duration: 0.3s);
+}
+.selected-list-enter, .selected-list-leave-to {
+  opacity: 0;
+  transform: translateY(1px);
+}
+
+.apos-modal__footer {
+  width: 100%;
+}
+
+.apos-locale-name {
+  text-transform: uppercase;
 }
 </style>

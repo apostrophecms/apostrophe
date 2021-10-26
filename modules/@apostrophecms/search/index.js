@@ -50,8 +50,8 @@ module.exports = {
   extend: '@apostrophecms/page-type',
   options: {
     alias: 'search',
-    name: '@apostrophecms/search',
-    perPage: 10
+    perPage: 10,
+    label: 'apostrophe:searchLabel'
   },
   init(self) {
 
@@ -85,7 +85,7 @@ module.exports = {
   },
   handlers(self) {
     return {
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         determineTypes() {
           self.types = self.options.types || _.map(self.apos.page.typeChoices, 'name');
           if (self.options.types) {

@@ -2,10 +2,43 @@ const path = require('path');
 const _ = require('lodash');
 const argv = require('boring')({ end: true });
 const fs = require('fs');
+const { stripIndent } = require('common-tags');
+const cluster = require('cluster');
+const { cpus } = require('os');
+const process = require('process');
 const npmResolve = require('resolve');
+
 let defaults = require('./defaults.js');
 
-// **Awaiting the Apostrophe function is optional**
+// ## Top-level options
+//
+// `cluster`
+//
+// If set to `true`, Apostrophe will spawn as many processes as
+// there are CPU cores on the server, or a minimum of 2, and balance
+// incoming connections among them. This ensures availability while one
+// process is restarting due to a crash and also increases scalability if
+// the server has multiple CPU cores.
+//
+// If set to an object with a `processes` property, that many
+// processes are started. If `processes` is 0 or a negative number,
+// it is added to the number of CPU cores reported by the server.
+// Notably, `-1` can be a good way to reserve one CPU core for MongoDB
+// in a single-server deployment.
+//
+// However when in cluster mode no fewer than 2 processes will be
+// started as there is no availability benefit without at least 2.
+//
+// If a child process exits with a failure status code it will be
+// restarted. However, if it exits in less than 20 seconds after
+// startup there will be a 20 second delay to avoid flooding logs
+// and pinning the CPU.
+//
+// Alternatively the `APOS_CLUSTER_PROCESSES` environment variable
+// can be set to a number, which will effectively set the cluster
+// option to `cluster: { processes: n }`.
+//
+// ## Awaiting the Apostrophe function
 //
 // The apos function is async, but in typical cases you do not
 // need to await it. If you simply call it, Apostrophe will
@@ -20,8 +53,63 @@ let defaults = require('./defaults.js');
 // To avoid exiting on errors, pass the `exit: false` option.
 // This can option also can be used to allow awaiting a command line
 // task, as they also normally exit on completion.
+//
+// If `options.cluster` is truthy, the function quickly resolves to
+// `null` in the primary process. In the child process it resolves as
+// documented above.
 
 module.exports = async function(options) {
+  const guardTime = 20000;
+  if (process.env.APOS_CLUSTER_PROCESSES) {
+    options.cluster = {
+      processes: parseInt(process.env.APOS_CLUSTER_PROCESSES)
+    };
+  }
+  if (options.cluster && (process.env.NODE_ENV !== 'production')) {
+    console.log('NODE_ENV is not set to production, disabling cluster mode');
+    options.cluster = false;
+  }
+  if (options.cluster && !argv._.length) {
+    // For bc with node 14 and below we need to check both
+    if (cluster.isPrimary || cluster.isMaster) {
+      let processes = options.cluster.processes || cpus().length;
+      if (processes <= 0) {
+        processes = cpus().length + processes;
+      }
+      let capped = '';
+      if (processes > cpus().length) {
+        processes = cpus().length;
+        capped = ' (capped to number of CPU cores)';
+      }
+      if (processes < 2) {
+        processes = 2;
+        if (capped) {
+          capped = ' (less than 2 cores, capped to minimum of 2)';
+        } else {
+          capped = ' (using minimum of 2)';
+        }
+      }
+      console.log(`Starting ${processes} cluster child processes${capped}`);
+      for (let i = 0; i < processes; i++) {
+        clusterFork();
+      }
+      cluster.on('exit', (worker, code, signal) => {
+        if (code !== 0) {
+          if ((Date.now() - worker.bornAt) < guardTime) {
+            console.error(`Worker process ${worker.process.pid} failed in ${seconds(Date.now() - worker.bornAt)}, waiting ${seconds(guardTime)} before restart`);
+            setTimeout(() => {
+              respawn(worker);
+            }, guardTime);
+          } else {
+            respawn(worker);
+          }
+        }
+      });
+      return null;
+    } else {
+      console.log(`Cluster worker ${process.pid} started`);
+    }
+  }
 
   // The core is not a true moog object but it must look enough like one
   // to participate as an async event emitter
@@ -102,13 +190,25 @@ module.exports = async function(options) {
     // are out there and what icons they need without
     // actually instantiating them
     self.modulesToBeInstantiated = modulesToBeInstantiated;
+    self.eventAliases = {};
+    self.aliasEvent('modulesReady', 'modulesRegistered');
+    self.aliasEvent('afterInit', 'ready');
 
     defineModules();
 
     await instantiateModules();
     lintModules();
-    await self.emit('modulesReady');
-    await self.emit('afterInit');
+    await self.emit('modulesRegistered'); // formerly modulesReady
+    self.apos.schema.validateAllSchemas();
+    self.apos.schema.registerAllSchemas();
+    await self.apos.migration.migrate(); // emits before and after events, inside the lock
+    await self.apos.global.insertIfMissing();
+    await self.apos.page.implementParkAllInDefaultLocale();
+    await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
+    // Replicate will have created the parked pages across locales if needed, but we may
+    // still need to reset parked properties
+    await self.apos.page.implementParkAllInOtherLocales();
+    await self.emit('ready'); // formerly afterInit
     if (self.taskRan) {
       process.exit(0);
     } else {
@@ -161,7 +261,7 @@ module.exports = async function(options) {
   function getRoot() {
     let _module = module;
     let m = _module;
-    while (m.parent) {
+    while (m.parent && m.parent.filename) {
       // The test file is the root as far as we are concerned,
       // not mocha itself
       if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
@@ -241,6 +341,8 @@ module.exports = async function(options) {
   // when options.testModule is true. There must be a
   // test/ or tests/ subdir of the module containing
   // a test.js file that runs under mocha via devDependencies.
+  // If `options.testModule` is a string it will be used as a
+  // namespace for the test module.
 
   function testModule() {
     if (!options.testModule) {
@@ -264,9 +366,17 @@ module.exports = async function(options) {
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
+
+    const pkgName = require(`${moduleDir}/package.json`).name;
+    let pkgNamespace = '';
+    if (pkgName.includes('/')) {
+      const parts = pkgName.split('/');
+      pkgNamespace = '/' + parts.slice(0, parts.length - 1).join('/');
+    }
+
     if (!fs.existsSync(testDir + '/node_modules')) {
-      fs.mkdirSync(testDir + '/node_modules');
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
+      fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
+      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but
@@ -311,6 +421,10 @@ module.exports = async function(options) {
       synth.define(name, options);
     });
 
+    // Apostrophe prefers that any improvements to @apostrophecms/global
+    // be applied before any project level version of @apostrophecms/global
+    synth.applyImprovementsBeforeProjectLevel();
+
     return synth;
   }
 
@@ -336,19 +450,24 @@ module.exports = async function(options) {
         validSteps.push(step.name);
       }
     }
+
+    if (!fs.existsSync(self.localModules)) {
+      return;
+    }
+
     const dirs = fs.readdirSync(self.localModules);
     for (const dir of dirs) {
       if (dir.match(/^@/)) {
         const nsDirs = fs.readdirSync(`${self.localModules}/${dir}`);
         for (let nsDir of nsDirs) {
           nsDir = `${dir}/${nsDir}`;
-          test(nsDir);
+          testDir(nsDir);
         }
       } else {
-        test(dir);
+        testDir(dir);
       }
     }
-    function test(name) {
+    function testDir(name) {
       // Projects that have different theme modules activated at different times
       // are a frequent source of false positives for this warning, so ignore
       // seemingly unused modules with "theme" in the name
@@ -362,14 +481,25 @@ module.exports = async function(options) {
           // index.js might not exist, that's fine for our purposes
         }
         if (name.match(/^apostrophe-/)) {
-          warn('namespace-apostrophe-modules', `You have a ${self.localModules}/${name} folder. You are probably trying to configure an official Apostrophe module, but those are namespaced now. Your directory should be renamed ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}\n\nIf you get this warning for your own, original module, do not use the apostrophe- prefix. It is reserved.`);
+          warn(
+            'namespace-apostrophe-modules',
+            stripIndent`
+              You have a ${self.localModules}/${name} folder.
+              You are probably trying to configure an official Apostrophe module, but those
+              are namespaced now. Your directory should be renamed
+              ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}
+
+              If you get this warning for your own, original module, do not use the
+              "apostrophe-" prefix. It is reserved.
+            `
+          );
         } else {
           warn('orphan-modules', `You have a ${self.localModules}/${name} folder, but that module is not activated in app.js and it is not a base class of any other active module. Right now that code doesn't do anything.`);
         }
       }
       function warn(name, message) {
-        if (self.utils) {
-          self.utils.warnDevOnce(name, message);
+        if (self.util) {
+          self.util.warnDevOnce(name, message);
         } else {
           // apos.util not in play, this can be the case in our bootstrap tests
           if (self.argv[`ignore-${name}`]) {
@@ -382,6 +512,30 @@ module.exports = async function(options) {
     }
 
     for (const [ name, module ] of Object.entries(self.modules)) {
+      if (name.match(/^apostrophe-/)) {
+        self.util.warnDevOnce(
+          'namespace-apostrophe-modules',
+          stripIndent`
+            You have configured an ${name} module.
+            You are probably trying to configure an official Apostrophe module, but those
+            are namespaced now. Your module should be renamed ${name.replace(/^apostrophe-/, '@apostrophecms/')}
+
+            If you get this warning for your own original module, do not use the
+            "apostrophe-" prefix. It is reserved.
+          `
+        );
+      }
+      const moduleNameRegex = /\./;
+      if (name.match(moduleNameRegex)) {
+        self.util.warnDevOnce(
+          'module-name-periods',
+          stripIndent`
+            You have configured a module named ${name}.
+            Modules names may not include periods. Please change this to avoid bugs.
+          `
+        );
+      }
+
       if (module.options.extends && ((typeof module.options.extends) === 'string')) {
         lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
       }
@@ -437,7 +591,9 @@ module.exports = async function(options) {
     }
 
     function lint(s) {
-      self.util.warnDev('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+      self.util.warnDev(stripIndent`
+        It looks like you may have made a mistake in your code:\n${s}
+      `);
     }
   }
 
@@ -449,3 +605,17 @@ module.exports.bundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'modules'
 };
+
+function seconds(msec) {
+  return (Math.round(msec / 100) / 10) + ' seconds';
+}
+
+function clusterFork() {
+  const worker = cluster.fork();
+  worker.bornAt = Date.now();
+}
+
+function respawn(worker) {
+  console.error(`Respawning worker process ${worker.process.pid}`);
+  clusterFork();
+}

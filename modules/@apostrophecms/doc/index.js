@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const cuid = require('cuid');
 
 // This module is responsible for managing all of the documents (apostrophe "docs")
 // in the `aposDocs` mongodb collection.
@@ -37,11 +38,19 @@ module.exports = {
   restApiRoutes(self) {
     return {
       // GET /api/v1/@apostrophecms/doc/_id supports only the universal query
-      // features, but works for any document type, Simplifies browser-side
-      // logic for redirects to foreign documents; the frontend only has to
+      // features, but works for any document type. Simplifies browser-side
+      // logic for redirects to foreign documents. The frontend only has to
       // know the doc _id.
+      //
+      // Since this API is solely for editing purposes you will receive
+      // a 404 if you request a document you cannot edit.
       async getOne(req, _id) {
-        return self.find(req, { _id }).toObject();
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        const doc = await self.find(req, { _id }).permission('edit').toObject();
+        if (!doc) {
+          throw self.apos.error('notfound');
+        }
+        return doc;
       }
     };
   },
@@ -198,6 +207,9 @@ module.exports = {
               username: 'ApostropheCMS'
             };
           }
+        },
+        deduplicateWidgetIds(req, doc, options) {
+          this.deduplicateWidgetIds(doc);
         }
       },
       '@apostrophecms/doc-type:afterInsert': {
@@ -255,10 +267,10 @@ module.exports = {
         // the published doc's content. Note that deleting a draft recursively
         // deletes both the published and previous docs.
         async deleteOtherModes(req, doc, options) {
-          if (doc.aposLocale.endsWith(':draft')) {
+          if (doc.aposLocale && doc.aposLocale.endsWith(':draft')) {
             return cleanup('published');
           }
-          if (doc.aposLocale.endsWith(':published')) {
+          if (doc.aposLocale && doc.aposLocale.endsWith(':published')) {
             return cleanup('previous');
           }
           async function cleanup(mode) {
@@ -270,13 +282,6 @@ module.exports = {
               await manager.delete(req, peer, options);
             }
           }
-        }
-      },
-      // Happens within the migration process, but specifically after
-      // parked pages exist so they can be replicated
-      '@apostrophecms/page:afterParkAll': {
-        async replicate() {
-          return self.replicate();
         }
       }
     };
@@ -988,12 +993,13 @@ module.exports = {
       // across all locales: parked pages, and piece types with the
       // replicate: true option. The latter currently must be singletons
       // like the global doc or the palette doc, they cannot be types
-      // with more than one instance per locale
+      // with more than one instance per locale. Emits
+      // `@apostrophecms/doc:beforeReplicate` with an array of criteria
+      // to be used to locate docs that require replication, which can
+      // be modified by event handlers. Also emits `@apostrophecms/doc:afterReplicate`
+      // when replication is complete.
       async replicate() {
         const localeNames = Object.keys(self.apos.i18n.locales);
-        if (localeNames.length === 1) {
-          return;
-        }
         const criteria = [];
         for (const parked of self.apos.page.parked) {
           criteria.push({
@@ -1006,34 +1012,43 @@ module.exports = {
             type: module.name
           });
         }
-        for (const criterion of criteria) {
-          const existing = await self.apos.doc.db.find({
-            ...criterion,
-            aposLocale: {
-              // Only interested in valid draft locales
-              $in: Object.keys(self.apos.i18n.locales).map(locale => `${locale}:draft`)
+        // Include the criteria array in the event so that more entries can be pushed to it
+        await self.emit('beforeReplicate', criteria);
+        // We can skip the core work of this method if there is only one locale,
+        // but the events should always be emitted as the guarantee is still there
+        // ("this is before replication if any," "this is after replication if any")
+        // and we otherwise complicate modules that mainly care about not missing
+        // out if there *is* replication
+        if (localeNames.length > 1) {
+          for (const criterion of criteria) {
+            const existing = await self.apos.doc.db.find({
+              ...criterion,
+              aposLocale: {
+                // Only interested in valid draft locales
+                $in: Object.keys(self.apos.i18n.locales).map(locale => `${locale}:draft`)
+              }
+            }).project({
+              _id: 1,
+              aposLocale: 1
+            }).toArray();
+            for (const info of existing) {
+              info.aposLocale = info.aposLocale.replace(':draft', '');
             }
-          }).project({
-            _id: 1,
-            aposLocale: 1
-          }).toArray();
-          for (const info of existing) {
-            info.aposLocale = info.aposLocale.replace(':draft', '');
-          }
-          if ((existing.length > 0) && (existing.length < localeNames.length)) {
-            const sourceInfo = self.apos.util.orderById(localeNames, existing, 'aposLocale')[0];
-            const req = self.apos.task.getReq({
-              locale: sourceInfo.aposLocale,
-              mode: 'draft'
-            });
-            const sourceDoc = await self.apos.doc.find(req, {
-              _id: sourceInfo._id
-            }).archived(null).toObject();
-            for (const locale of localeNames) {
-              if (!existing.find(doc => doc.aposLocale === locale)) {
-                const module = self.getManager(sourceDoc.type);
-                const localized = await module.localize(req, sourceDoc, locale);
-                await module.publish(req.clone({ locale }), localized);
+            if ((existing.length > 0) && (existing.length < localeNames.length)) {
+              const sourceInfo = self.apos.util.orderById(localeNames, existing, 'aposLocale')[0];
+              const req = self.apos.task.getReq({
+                locale: sourceInfo.aposLocale,
+                mode: 'draft'
+              });
+              const sourceDoc = await self.apos.doc.find(req, {
+                _id: sourceInfo._id
+              }).archived(null).toObject();
+              for (const locale of localeNames) {
+                if (!existing.find(doc => doc.aposLocale === locale)) {
+                  const module = self.getManager(sourceDoc.type);
+                  const localized = await module.localize(req, sourceDoc, locale);
+                  await module.publish(req.clone({ locale }), localized);
+                }
               }
             }
           }
@@ -1053,6 +1068,18 @@ module.exports = {
           aposLocale: 1
         }).toArray();
         return existing;
+      },
+      deduplicateWidgetIds(doc) {
+        const seen = new Set();
+        self.apos.area.walk(doc, area => {
+          for (const widget of area.items || []) {
+            if ((!widget._id) || seen.has(widget._id)) {
+              widget._id = cuid();
+            } else {
+              seen.add(widget._id);
+            }
+          }
+        });
       },
       ...require('./lib/legacy-migrations')(self)
     };

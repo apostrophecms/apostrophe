@@ -414,7 +414,7 @@ module.exports = {
           return self.insensitiveSortCompare(a[property], b[property]);
         });
       },
-      // Copmpare two strings in a case-insensitive way, returning -1, 0 or 1, suitable for use with sort().
+      // Compare two strings in a case-insensitive way, returning -1, 0 or 1, suitable for use with sort().
       // If the two strings represent numbers, compare them as numbers for a natural sort order
       // when comparing strings like '4' and '10'.
       insensitiveSortCompare(a, b) {
@@ -567,7 +567,8 @@ module.exports = {
         if (process.env.NODE_ENV === 'production') {
           return;
         }
-        self.warn.apply(self, arguments);
+        const args = [ '\n⚠️', ...arguments ];
+        self.warn.apply(self, args);
       },
 
       // Identical to `apos.util.warnDev`, except that the warning is
@@ -590,7 +591,10 @@ module.exports = {
           self.warn.apply(self, Array.prototype.slice.call(arguments, 1));
           if (!always) {
             self.warnedDev[name] = true;
-            self.warn('\nThis warning appears only once to save space. Pass --all-' + name + '\non the command line to see the warning for all cases.');
+            self.info(stripIndent`
+              This warning appears only once to save space. Pass --all-${name}
+              on the command line to see the warning for all cases.
+            `);
           }
         }
       },
@@ -854,7 +858,7 @@ module.exports = {
         return _.startCase(o);
       },
 
-      // check if something is a function (as opposd to property)
+      // check if something is a function (as opposed to property)
       isFunction: function(o) {
         return (typeof o === 'function');
       },

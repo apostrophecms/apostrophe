@@ -48,7 +48,7 @@ export default {
     // If the URL references a draft, go into draft mode but then clean up the URL
     const draftMode = query.aposMode || 'published';
     if (draftMode === 'draft') {
-      const newQuery = { ... query };
+      const newQuery = { ...query };
       delete newQuery.aposMode;
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, newQuery));
     }
@@ -259,20 +259,32 @@ export default {
       // So that areas revert to being editable
       await this.refresh();
     },
-    async onContextEditing() {
-      // Accept a hint that someone is actively typing in a
-      // rich text editor and a context-edited event is likely
-      // coming; allows continuity of the "Saving..." indicator
-      // so it doesn't flicker once a second as you type
-      this.editing = true;
-      if (this.editingTimeout) {
-        clearTimeout(this.editingTimeout);
+    // Accept a hint that a user is actively typing and/or manipulating controls
+    // and it would best not to enable a save button or a "...Saved" indication yet
+    // to avoid a frenetic display and/or a situation where not everything is ready
+    // to be saved yet.
+    //
+    // If the event is emitted with a boolean value of `true`, the emitter takes
+    // responsibility for later emitting `false` to indicate active typing/manipulating
+    // is no longer in progress. If the event is emitted with no value then there is a
+    // 1100-millisecond, debounced timeout.
+
+    async onContextEditing(state) {
+      if ((typeof state) === 'boolean') {
+        this.editing = state;
+      } else {
+        if (!this.editing) {
+          this.editing = true;
+        }
+        if (this.editingTimeout) {
+          clearTimeout(this.editingTimeout);
+        }
+        this.editingTimeout = setTimeout(() => {
+          this.editing = false;
+          // Wait slightly longer than the rich text editor does
+          // before sending us a context-edited event
+        }, 1100);
       }
-      this.editingTimeout = setTimeout(() => {
-        this.editing = false;
-        // Wait slightly longer than the rich text editor does
-        // before sending us a context-edited event
-      }, 1100);
     },
     async onPublish(e) {
       if (!this.canPublish) {
@@ -442,6 +454,7 @@ export default {
       this.rememberLastBaseContext();
     },
     onContextEdited(patch) {
+      patch = klona(patch);
       this.patchesSinceLoaded.push(patch);
       this.patchesSinceSave.push(patch);
       this.undone = [];
@@ -512,7 +525,7 @@ export default {
 
       if (refreshable) {
         refreshable.innerHTML = content;
-        if (!this.original) {
+        if (this.editMode && (!this.original)) {
           // the first time we enter edit mode on the page, we need to
           // establish a baseline for undo/redo. Use our
           // "@ notation" PATCH feature. Sort the areas by DOM depth

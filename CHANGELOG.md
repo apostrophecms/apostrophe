@@ -1,18 +1,132 @@
 # Changelog
 
-## Unreleased
+## 3.7.0 - 2021-10-26
+
+### Adds
+
+* Schema select field choices can now be populated by a server side function, like an API call. Set the `choices` property to a method name of the calling module. That function should take a single argument of `req`, and return an array of objects with `label` and `value` properties. The function can be async and will be awaited.
+
+* Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
 
 ### Fixes
+
+* Prevents double-escaping interpolated localization strings in the UI.
+* Rich text editor style labels are now run through a localization method to get the translated strings from their l10n keys.
+* Fixes README Node version requirement (Node 12+).
+* The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
+* Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
+* Developers can now `require` their project `app.js` file in the Node.js REPL for debugging and inspection. Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
+* If a static text phrase is unavailable in both the current locale and the default locale, Apostrophe will always fall back to the `en` locale as a last resort, which ensures the admin UI works if it has not been translated.
+* Developers can now `require` their project `app.js` in the Node.js REPL for debugging and inspection
+* Ensure array field items have valid _id prop before storing. Thanks to Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
+
+### Changes
+
+* In 3.x, `relationship` fields have an optional `builders` property, which replaces `filters` from 2.x, and within that an optional `project` property, which replaces `projection` from 2.x (to match MongoDB's `cursor.project`). Prior to this release leaving the old syntax in place could lead to severe performance problems due to a lack of projections. Starting with this release the 2.x syntax results in an error at startup to help the developer correct their code.
+* The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to [Max Mulatz](https://github.com/klappradla) for this contribution.
+
+## 3.6.0 - 2021-10-13
+
+### Adds
+
+* The `context-editing` apostrophe admin UI bus event can now take a boolean parameter, explicitly indicating whether the user is actively typing or performing a similar active manipulation of controls right now. If a boolean parameter is not passed, the existing 1100-millisecond debounced timeout is used.
+* Adds 'no-search' modifier to relationship fields as a UI simplification option.
+* Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
+* Adds a Slovak localization file. Activate the `sk` locale to use this. Many thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
+* Adds a Spanish localization file. Activate the `es` locale to use this. Many thanks to [Eugenio Gonzalez](https://github.com/egonzalezg9) for the contribution.
+* Adds a Brazilian Portuguese localization file. Activate the `pt-BR` locale to use this. Many thanks to [Pietro Rutzen](https://github.com/pietro-rutzen) for the contribution.
+
+### Fixes
+
+* Fixed missing translation for "New Piece" option on the "more" menu of the piece manager, seen when using it as a chooser.
+* Piece types with relationships to multiple other piece types may now be configured in any order, relative to the other piece types. This sometimes appeared to be a bug in reverse relationships.
+* Code at the project level now overrides code found in modules that use `improve` for the same module name. For example, options set by the `@apostrophecms/seo-global` improvement that ships with `@apostrophecms/seo` can now be overridden at project level by `/modules/@apostrophecms/global/index.js` in the way one would expect.
+* Array input component edit button label is now propertly localized.
+* A memory leak on each request has been fixed, and performance improved, by avoiding the use of new Nunjucks environments for each request. Thanks to Miro Yovchev for pointing out the leak.
+* Fragments now have access to `__t()`, `getOptions` and other features passed to regular templates.
+* Fixes field group cascade merging, using the original group label if none is given in the new field group configuration.
+* If a field is conditional (using an `if` option), is required, but the condition has not been met, it no longer throws a validation error.
+* Passing `busy: true` to `apos.http.post` and related methods no longer produces an error if invoked when logged out, however note that there will likely never be a UI for this when logged out, so indicate busy state in your own way.
+* Bugs in document modification detection have been fixed. These bugs caused edge cases where modifications were not detected and the "Update" button did not appear, and could cause false positives as well.
+
+### Changes
+
+* No longer logs a warning about no users if `testModule` is true on the app.
+
+## 3.5.0 - 2021-09-23
+
+* Pinned dependency on `vue-material-design-icons` to fix `apos-build.js` build error in production.
+* The file size of uploaded media is visible again when selected in the editor, and media information such as upload date, dimensions and file size is now properly localized.
+* Fixes moog error messages to reflect the recommended pattern of customization functions only taking `self` as an argument.
+* Rich Text widgets now instantiate with a valid element from the `styles` option rather than always starting with an unclassed `<p>` tag.
+* Since version 3.2.0, apostrophe modules to be loaded via npm must appear as explicit npm dependencies of the project. This is a necessary security and stability improvement, but it was slightly too strict. Starting with this release, if the project has no `package.json` in its root directory, the `package.json` in the closest ancestor directory is consulted.
+* Fixes a bug where having no project modules directory would throw an error. This is primarily a concern for module unit tests where there are no additional modules involved.
+* `css-loader` now ignores `url()` in css files inside `assets` so that paths are left intact, i.e. `url(/images/file.svg)` will now find a static file at `/public/images/file.svg` (static assets in `/public` are served by `express.static`). Thanks to Matic Tersek.
+* Restored support for clicking on a "foreign" area, i.e. an area displayed on the page whose content comes from a piece, in order to edit it in an appropriate way.
+* Apostrophe module aliases and the data attached to them are now visible immediately to `ui/src/index.js` JavaScript code, i.e. you can write `apos.alias` where `alias` matches the `alias` option configured for that module. Previously one had to write `apos.modules['module-name']` or wait until next tick. However, note that most modules do not push any data to the browser when a user is not logged in. You can do so in a custom module by calling `self.enableBrowserData('public')` from `init` and implementing or extending the `getBrowserData(req)` method (note that page, piece and widget types already have one, so it is important to extend in those cases).
+* `options.testModule` works properly when implementing unit tests for an npm module that is namespaced.
+
+### Changes
+
+* Cascade grouping (e.g., grouping fields) will now concatenate a group's field name array with the field name array of an existing group of the same name. Put simply, if a new piece module adds their custom fields to a `basics` group, that field will be added to the default `basics` group fields. Previously the new group would have replaced the old, leaving inherited fields in the "Ungrouped" section.
+* AposButton's `block` modifier now less login-specific
+
+### Adds
+
+* Rich Text widget's styles support a `def` property for specifying the default style the editor should instantiate with.
+* A more helpful error message if a field of type `area` is missing its `options` property.
+
+## 3.4.1 - 2021-09-13
+
+No changes. Publishing to correctly mark the latest 3.x release as "latest" in npm.
+
+## 3.4.0 - 2021-09-13
+
+### Security
+
+* Changing a user's password or marking their account as disabled now immediately terminates any active sessions or bearer tokens for that user. Thanks to Daniel Elkabes for pointing out the issue. To ensure all sessions have the necessary data for this, all users logged in via sessions at the time of this upgrade will need to log in again.
+* Users with permission to upload SVG files were previously able to do so even if they contained XSS attacks. In Apostrophe 3.x, the general public so far never has access to upload SVG files, so the risk is minor but could be used to phish access from an admin user by encouraging them to upload a specially crafted SVG file. While Apostrophe typically displays SVG files using the `img` tag, which ignores XSS vectors, an XSS attack might still be possible if the image were opened directly via the Apostrophe media library's convenience link for doing so. All SVG uploads are now sanitized via DOMPurify to remove XSS attack vectors. In addition, all existing SVG attachments not already validated are passed through DOMPurify during a one-time migration.
+
+### Fixes
+
+* The `apos.attachment.each` method, intended for migrations, now respects its `criteria` argument. This was necessary to the above security fix.
 * Removes a lodash wrapper around `@apostrophecms/express` `bodyParser.json` options that prevented adding custom options to the body parser.
-* Do not crash on startup if users have a relationship to another type. This was caused by the code that checks whether any users exist to present a warning to developers. That code was running too early for relationships to work due to event timing issues.
 * Uses `req.clone` consistently when creating a new `req` object with a different mode or locale for localization purposes, etc.
-* Removes the vestigial `afterLoad` event emitted after saving a document. Used in A2, but no longer relevant and never documented.
-* Remove the A2 afterLogin method from the login module. No longer used in A3.
+* Fixes bug in the "select all" relationship chooser UI where it selected unpublished items.
+* Fixes bug in "next" and "previous" query builders.
+* Cutting and pasting widgets now works between locales that do not share a hostname, provided that you switch locales after cutting (it does not work between tabs that are already open on separate hostnames).
+* The `req.session` object now exists in task `req` objects, for better compatibility. It has no actual persistence.
+* Unlocalized piece types, such as users, may now be selected as part of a relationship when browsing.
+* Unpublished localized piece types may not be selected via the autocomplete feature of the relationship input field, which formerly ignored this requirement, although the browse button enforced it.
+* The server-side JavaScript and REST APIs to delete pieces now work properly for pieces that are not subject to either localization or draft/published workflow at all the (`localize: false` option). UI for this is under discussion, this is just a bug fix for the back end feature which already existed.
+* Starting in version 3.3.1, a newly added image widget did not display its image until the page was refreshed. This has been fixed.
+* A bug that prevented Undo operations from working properly and resulted in duplicate widget _id properties has been fixed.
+* A bug that caused problems for Undo operations in nested widgets, i.e. layout or multicolumn widgets, has been fixed.
+* Duplicate widget _id properties within the same document are now prevented on the server side at save time.
+* Existing duplicate widget _id properties are corrected by a one-time migration.
 
-## 3.3.1 - 2021-08-31
+### Adds
+
+* Adds a linter to warn in dev mode when a module name include a period.
+* Lints module names for `apostrophe-` prefixes even if they don't have a module directory (e.g., only in `app.js`).
+* Starts all `warnDev` messages with a line break and warning symbol (⚠️) to stand out in the console.
+* `apos.util.onReady` aliases `apos.util.onReadyAndRefresh` for brevity. The `apos.util.onReadyAndRefresh` method name will be deprecated in the next major version.
+* Adds a developer setting that applies a margin between parent and child areas, allowing developers to change the default spacing in nested areas.
+
+### Changes
+
+* Removes the temporary `trace` method from the `@apostrophecms/db` module.
+* Beginning with this release, the `apostrophe:modulesReady` event has been renamed `apostrophe:modulesRegistered`, and the `apostrophe:afterInit` event has been renamed `apostrophe:ready`. This better reflects their actual roles. The old event names are accepted for backwards compatibility. See the documentation for more information.
+* Only autofocuses rich text editors when they are empty.
+* Nested areas now have a vertical margin applied when editing, allowing easier access to the parent area's controls.
+
+## 3.3.1 - 2021-09-01
 
 ### Fixes
+
+* In some situations it was possible for a relationship with just one selected document to list that document several times in the returned result, resulting in very large responses.
 * Permissions roles UI localized correctly.
+* Do not crash on startup if users have a relationship to another type. This was caused by the code that checks whether any users exist to present a warning to developers. That code was running too early for relationships to work due to event timing issues.
 
 ## 3.3.0 - 2021-08-30
 

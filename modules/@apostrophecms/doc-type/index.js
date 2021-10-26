@@ -389,7 +389,7 @@ module.exports = {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
-        });
+        }, self);
         if (self.options.slugPrefix) {
           if (self.options.slugPrefix === 'deduplicate-') {
             const req = self.apos.task.getReq();
@@ -522,9 +522,11 @@ module.exports = {
         presentFieldsOnly: false,
         copyingId: false
       }) {
-        const fullSchema = self.apos.doc.getManager(options.type || self.name).allowedSchema(req);
+        const fullSchema = self.apos.doc.getManager(options.type || self.name)
+          .allowedSchema(req, doc);
         let schema;
         let copyOf;
+
         if (options.presentFieldsOnly) {
           schema = self.apos.schema.subset(fullSchema, self.fieldsPresent(input));
         } else {
@@ -540,13 +542,14 @@ module.exports = {
             ...input
           };
         }
+
         await self.apos.schema.convert(req, schema, input, doc);
+
         doc.copyOfId = copyOf && copyOf._id;
         if (copyOf) {
           self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
       },
-
       // Return the names of all schema fields present in the `input` object,
       // taking into account issues like relationship fields keeping their data in
       // a separate ids property, etc.
@@ -2490,7 +2493,7 @@ module.exports = {
           };
           if (direction === -1) {
             // Flip the sort, we need to look backwards
-            for (const [ key, val ] of sort) {
+            for (const [ key, val ] of Object.entries(sort)) {
               if (typeof (val) === 'number') {
                 sort[key] = -val;
               }

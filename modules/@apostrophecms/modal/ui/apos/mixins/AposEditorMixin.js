@@ -188,6 +188,12 @@ export default {
           dismiss: true
         });
       }
+    },
+    triggerValidate() {
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        this.triggerValidation = false;
+      });
     }
 
   }

@@ -62,9 +62,7 @@ const joinr = module.exports = {
     let otherIds = [];
     const othersById = {};
     for (const item of items) {
-      if (!item[objectsField]) {
-        item[objectsField] = [];
-      }
+      item[objectsField] = [];
       if (joinr._has(item, idsStorage)) {
         otherIds = otherIds.concat(joinr._get(item, idsStorage).map(idMapper));
       }

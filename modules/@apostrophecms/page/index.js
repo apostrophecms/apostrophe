@@ -287,9 +287,12 @@ module.exports = {
               force
             });
           }
+
           self.enforceParkedProperties(req, page, input);
+
           await manager.convert(req, input, page);
           await self.update(req, page);
+
           if (input._targetId) {
             const targetId = self.apos.launder.string(input._targetId);
             const position = self.apos.launder.string(input._position);
@@ -515,7 +518,7 @@ module.exports = {
           req.data.home = await query.toObject();
         }
       },
-      'apostrophe:modulesReady': {
+      'apostrophe:modulesRegistered': {
         validateTypeChoices() {
           for (const choice of self.typeChoices) {
             if (!choice.name) {
@@ -571,45 +574,9 @@ database.`);
           }
         }
       },
-      'apostrophe:afterInit': {
+      'apostrophe:ready': {
         addServeRoute() {
           self.apos.app.get('*', self.serve);
-        }
-      },
-      '@apostrophecms/migration:after': {
-        async implementParkAllInDefaultLocale() {
-          for (const mode of [ 'published', 'draft' ]) {
-            const req = self.apos.task.getReq({
-              mode
-            });
-            for (const item of self.parked) {
-              await self.implementParkOne(req, item);
-            }
-          }
-          // Triggers replicate in the doc module
-          return self.emit('afterParkAll');
-        }
-      },
-      '@apostrophecms/doc:afterReplicate': {
-        async implementParkAllInOtherLocales() {
-          // Now that replication has occurred, we can
-          // park in the other locales and we'll just
-          // reset the parked properties without
-          // destroying the locale relationships
-          for (const locale of Object.keys(self.apos.i18n.locales)) {
-            for (const mode of [ 'published', 'draft' ]) {
-              if (locale === self.apos.i18n.defaultLocale) {
-                continue;
-              }
-              const req = self.apos.task.getReq({
-                locale,
-                mode
-              });
-              for (const item of self.parked) {
-                await self.implementParkOne(req, item);
-              }
-            }
-          }
         }
       }
     };
@@ -728,7 +695,7 @@ database.`);
         }
         self.apos.schema.implementPatchOperators(input, page);
         const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
-        const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req, {
+        const schema = self.apos.schema.subsetSchemaForPatch(manager.allowedSchema(req, {
           ...page,
           type: manager.name
         }, parentPage), input);
@@ -745,7 +712,7 @@ database.`);
         _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
         _.defaults(browserOptions, {
           label: 'apostrophe:page',
-          pluralLabel: 'Pages',
+          pluralLabel: 'apostrophe:pages',
           components: {}
         });
         _.defaults(browserOptions.components, {
@@ -2058,47 +2025,11 @@ database.`);
           await change(req, page, data);
         }
       },
-      // Given a page and its parent (if any), returns a schema that
-      // is filtered appropriately to that page's type, taking into
-      // account whether the page is new and the parent's allowed
-      // subpage types
+      // Backward compatible method following moving this to page-type module.
+      // This page module method may be deprecated in the next major version.
       allowedSchema(req, page, parentPage) {
-        let schema = self.apos.doc.getManager(page.type).allowedSchema(req);
-        const typeField = _.find(schema, { name: 'type' });
-        if (typeField) {
-          const allowed = self.allowedChildTypes(parentPage);
-          // For a preexisting page, we can't forbid the type it currently has
-          if (page._id && !_.includes(allowed, page.type)) {
-            allowed.unshift(page.type);
-          }
-          typeField.choices = _.map(allowed, function (name) {
-            return {
-              value: name,
-              label: getLabel(name)
-            };
-          });
-        }
-        if (page._id) {
-          // Preexisting page
-          schema = self.addApplyToSubpagesToSchema(schema);
-          schema = self.removeParkedPropertiesFromSchema(page, schema);
-        }
-        return schema;
-        function getLabel(name) {
-          const choice = _.find(self.typeChoices, { name: name });
-          let label = choice && choice.label;
-          if (!label) {
-            const manager = self.apos.doc.getManager(name);
-            if (!manager) {
-              throw new Error(`There is no page type ${name} but it is configured in the types option`);
-            }
-            label = manager.label;
-          }
-          if (!label) {
-            label = name;
-          }
-          return label;
-        }
+        return self.apos.doc.getManager(page.type)
+          .allowedSchema(req, page, parentPage);
       },
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
@@ -2177,6 +2108,36 @@ database.`);
       enforceParkedProperties(req, page, input) {
         for (const field of (page.parked || [])) {
           input[field] = page[field];
+        }
+      },
+      async implementParkAllInDefaultLocale() {
+        for (const mode of [ 'published', 'draft' ]) {
+          const req = self.apos.task.getReq({
+            mode
+          });
+          for (const item of self.parked) {
+            await self.implementParkOne(req, item);
+          }
+        }
+      },
+      async implementParkAllInOtherLocales() {
+        // Now that replication has occurred, we can
+        // park in the other locales and we'll just
+        // reset the parked properties without
+        // destroying the locale relationships
+        for (const locale of Object.keys(self.apos.i18n.locales)) {
+          for (const mode of [ 'published', 'draft' ]) {
+            if (locale === self.apos.i18n.defaultLocale) {
+              continue;
+            }
+            const req = self.apos.task.getReq({
+              locale,
+              mode
+            });
+            for (const item of self.parked) {
+              await self.implementParkOne(req, item);
+            }
+          }
         }
       },
       ...require('./lib/legacy-migrations')(self)

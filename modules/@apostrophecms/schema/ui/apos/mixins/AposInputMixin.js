@@ -22,6 +22,10 @@ export default {
       type: Object,
       required: false
     },
+    conditionMet: {
+      type: Boolean,
+      required: false
+    },
     triggerValidation: {
       type: Boolean,
       default: false
@@ -117,10 +121,14 @@ export default {
     // You must supply the validate method. It receives the
     // internal representation used for editing (a string, for instance)
     validateAndEmit () {
-      const error = this.validate(this.next);
+      // If the field is conditional and isn't shown, disregard any errors.
+      const error = this.conditionMet === false ? false
+        : this.validate(this.next);
       this.$emit('input', {
         data: error ? this.next : this.convert(this.next),
-        error: this.validate(this.next)
+        error,
+        ranValidation: this.conditionMet === false ? this.value.ranValidation
+          : true
       });
     },
     watchValue () {

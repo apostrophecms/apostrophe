@@ -5,6 +5,7 @@
 {% endif %}
 
 {% set attachment = apos.image.first(data.widget._image) %}
+
 {% if attachment %}
   <img{% if className %} class="{{ className }}"{% endif %}
     srcset="{{ apos.image.srcset(attachment) }}"

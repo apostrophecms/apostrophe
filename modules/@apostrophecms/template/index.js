@@ -61,15 +61,18 @@ module.exports = {
       prefix: self.apos.prefix
     };
 
+    self.envs = {};
+
     self.filters = {};
 
     self.nunjucks = self.options.language || require('nunjucks');
 
     self.insertions = {};
+
   },
   handlers(self) {
     return {
-      'apostrophe:afterInit': {
+      'apostrophe:ready': {
         wrapHelpersForTemplateAposObject() {
           wrapFunctions(self.templateApos);
           _.each(self.templateApos.modules, function (helpers, moduleName) {
@@ -248,6 +251,34 @@ module.exports = {
 
         let result;
 
+        const args = self.getRenderArgs(req, data, module);
+
+        const env = self.getEnv(req, module);
+
+        if (type === 'file') {
+          let finalName = s;
+          if (!finalName.match(/\.\w+$/)) {
+            finalName += '.html';
+          }
+          result = await Promise.promisify(function (finalName, args, callback) {
+            return env.getTemplate(finalName).render(args, callback);
+          })(finalName, args);
+        } else if (type === 'string') {
+          result = await Promise.promisify(function (s, args, callback) {
+            return env.renderString(s, args, callback);
+          })(s, args);
+        } else {
+          throw new Error('renderBody does not support the type ' + type);
+        }
+        return result;
+      },
+
+      // Implementation detail of `renderBody` responsible for
+      // creating the input object passed to Nunjucks for rendering,
+      // with `data` merged into the `.data` property,
+      // `apos` available separately, `__req` available separately, etc.
+
+      getRenderArgs(req, data, module) {
         const merged = {};
 
         if (data) {
@@ -278,8 +309,6 @@ module.exports = {
 
         args.data.locale = args.data.locale || req.locale;
 
-        const env = self.getEnv(req, module);
-
         args.apos = self.templateApos;
         args.__t = req.t;
         args.__ = key => {
@@ -289,39 +318,39 @@ module.exports = {
           `);
           return key;
         };
-        if (type === 'file') {
-          let finalName = s;
-          if (!finalName.match(/\.\w+$/)) {
-            finalName += '.html';
+        args.__req = req;
+        args.getOption = (key, def) => {
+          const colonAt = key.indexOf(':');
+          let optionModule = self.apos.modules[module.__meta.name];
+          if (colonAt !== -1) {
+            const name = key.substring(0, colonAt);
+            key = key.substring(colonAt + 1);
+            optionModule = self.apos.modules[name];
           }
-          result = await Promise.promisify(function (finalName, args, callback) {
-            return env.getTemplate(finalName).render(args, callback);
-          })(finalName, args);
-        } else if (type === 'string') {
-          result = await Promise.promisify(function (s, args, callback) {
-            return env.renderString(s, args, callback);
-          })(s, args);
-        } else {
-          throw new Error('renderBody does not support the type ' + type);
-        }
-        return result;
+          return optionModule.getOption(req, key, def);
+        };
+        return args;
       },
 
       // Fetch a nunjucks environment in which `include`, `extends`, etc. search
       // the views directories of the specified module and its ancestors.
       // Typically you will call `self.render` or `self.partial` on your module
       // object rather than calling this directly.
+      //
+      // `req` is effectively here for bc purposes only. This method
+      // does NOT always pass `req` to `newEnv` for every new release, as
+      // `req` is separately supplied to each request to fix a memory leak
+      // that occurs when Nunjucks environments are created for every request.
 
       getEnv(req, module) {
         const name = module.__meta.name;
-
-        req.envs = req.envs || {};
-        // Cache for performance
-        if (_.has(req.envs, name)) {
-          return req.envs[name];
+        if (!_.has(self.envs, name)) {
+          // Pass the original req for bc purposes only,
+          // note that due to the reuse of envs there is
+          // no guarantee newEnv will be called for every req
+          self.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
         }
-        req.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
-        return req.envs[name];
+        return self.envs[name];
       },
 
       getViewFolders(module) {
@@ -343,7 +372,14 @@ module.exports = {
       // specified directories are searched for includes,
       // etc. Don't call this directly, use:
       //
-      // apos.template.getEnv(module)
+      // apos.template.getEnv(req, module)
+      //
+      // `req` is effectively here for bc purposes only. Apostrophe
+      // does NOT always pass `req` to `newEnv` for every new release, as
+      // `req` is separately supplied to each request to fix a memory leak
+      // that occurs when Nunjucks environments are created for every request.
+      // If you must access `req` in a custom Nunjucks tag use
+      // `context.ctx.__req`, NOT `env.opts.req` which is no longer provided.
 
       newEnv(req, moduleName, dirs) {
 
@@ -351,22 +387,11 @@ module.exports = {
 
         const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
-          req,
           module: self.apos.modules[moduleName]
         });
 
         env.addGlobal('apos', self.templateApos);
         env.addGlobal('module', self.templateApos.modules[moduleName]);
-        env.addGlobal('getOption', function(key, def) {
-          const colonAt = key.indexOf(':');
-          let optionModule = self.apos.modules[moduleName];
-          if (colonAt !== -1) {
-            const name = key.substring(0, colonAt);
-            key = key.substring(colonAt + 1);
-            optionModule = self.apos.modules[name];
-          }
-          return optionModule.getOption(req, key, def);
-        });
 
         self.addStandardFilters(env);
 

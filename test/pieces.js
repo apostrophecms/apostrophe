@@ -230,6 +230,8 @@ describe('Pieces', function() {
     foo: 'bar'
   };
 
+  let insertedOne, insertedTwo;
+
   const additionalThings = [
     {
       _id: 'thing1:en:published',
@@ -265,7 +267,16 @@ describe('Pieces', function() {
   // Test pieces.insert()
   it('should be able to insert a piece into the database', async () => {
     assert(apos.modules.thing.insert);
-    await apos.modules.thing.insert(apos.task.getReq(), testThing);
+    insertedOne = await apos.modules.thing.insert(apos.task.getReq(), testThing);
+  });
+
+  it('should be able to insert a second piece into the database', async () => {
+    assert(apos.modules.thing.insert);
+    const template = { ...testThing };
+    template._id = null;
+    template.aposDocId = null;
+    template.title = 'hello #2';
+    insertedTwo = await apos.modules.thing.insert(apos.task.getReq(), template);
   });
 
   it('should be able to retrieve a piece by id from the database', async () => {
@@ -276,6 +287,20 @@ describe('Pieces', function() {
     assert(req.piece._id === 'testThing:en:published');
     assert(req.piece.title === 'hello');
     assert(req.piece.foo === 'bar');
+  });
+
+  it('should be able to retrieve the next piece from the database per sort order', async () => {
+    const req = apos.task.getReq();
+    // The default sort order is reverse chronological, so "next" is older, not newer
+    const next = await apos.modules.thing.find(req).next(insertedTwo).toObject();
+    assert(next.title === 'hello');
+  });
+
+  it('should be able to retrieve the previous piece from the database', async () => {
+    const req = apos.task.getReq();
+    // The default sort order is reverse chronological, so "previous" is newer, not older
+    const previous = await apos.modules.thing.find(req).previous(insertedOne).toObject();
+    assert(previous.title === 'hello #2');
   });
 
   // Test pieces.update()
@@ -532,7 +557,11 @@ describe('Pieces', function() {
 
   it('can POST products with a session, some visible', async () => {
     // range is exclusive at the top end, I want 10 things
+    let widgetId;
     for (let i = 1; (i <= 10); i++) {
+      if (i === 1) {
+        widgetId = cuid();
+      }
       const response = await apos.http.post('/api/v1/product', {
         body: {
           title: 'Cool Product #' + i,
@@ -543,8 +572,15 @@ describe('Pieces', function() {
               {
                 metaType: 'widget',
                 type: '@apostrophecms/rich-text',
-                id: cuid(),
+                _id: (i === 1) ? widgetId : null,
                 content: '<p>This is thing ' + i + '</p>'
+              },
+              // Intentional attempt to use duplicate _id
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                _id: (i === 1) ? widgetId : null,
+                content: '<p>This is thing ' + i + ' second widget</p>'
               }
             ]
           }
@@ -557,8 +593,21 @@ describe('Pieces', function() {
       assert(response.title === 'Cool Product #' + i);
       assert(response.slug === 'cool-product-' + i);
       assert(response.type === 'product');
+      assert(response.body.items[0].content === `<p>This is thing ${i}</p>`);
+      assert(response.body.items[1].content === `<p>This is thing ${i} second widget</p>`);
       if (i === 1) {
+        // Deduplicate any duplicate ids we specified at doc level
+        assert(response.body.items[0]._id === widgetId);
+        assert(response.body.items[1]._id);
+        // Quietly deduplicated for us
+        assert(response.body.items[1]._id !== widgetId);
         updateProduct = response;
+      } else {
+        // All new _ids if we did not specify
+        assert(response.body.items[0]._id);
+        assert(response.body.items[1]._id);
+        assert(response.body.items[0]._id !== response.body.items[1]._id);
+        assert(response.body.items[0]._id !== widgetId);
       }
     }
   });
