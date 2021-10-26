@@ -75,8 +75,10 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
+            @batch="handleBatchAction"
             :options="{
-              disableUnchecked: maxReached()
+              disableUnchecked: maxReached(),
+              moreActions
             }"
           />
           <AposDocsManagerSelectBox
@@ -212,6 +214,27 @@ export default {
         value: 'checked',
         indeterminate: checkCount && pageNotFullyChecked
       };
+    },
+    moreActions () {
+      const actions = [];
+
+      for (const action of this.moduleOptions.batchOperations) {
+        let disableAction = false;
+
+        if (action.unlessFilter) {
+          for (const filter in action.unlessFilter) {
+            if (action.unlessFilter[filter] === this.filterValues[filter]) {
+              disableAction = true;
+            }
+          }
+        }
+
+        if (!disableAction) {
+          actions.push(action);
+        }
+      }
+
+      return actions;
     }
   },
   created() {
@@ -441,6 +464,29 @@ export default {
       if (docs) {
         this.setCheckedDocs(docs);
       }
+    },
+    handleBatchAction(action) {
+      if (!action || !this.moduleOptions.batchOperations.find(op => {
+        return op.action === action;
+      })) {
+        return;
+      }
+
+      const act = this.moduleOptions.batchOperations.find(o => {
+        return o.action === action;
+      });
+
+      // Continue in another method based on what the action wants to do. In
+      // any case the action method will probably make use of the checked items.
+      if (act.modal) {
+        // Use a method that opens a modal
+        this.handleModalAction(act);
+      } else if (act.route) {
+        // Use a method that hits a route.
+      }
+    },
+    handleModalAction (action) {
+      console.info('Execute modal action', action);
     }
   }
 };

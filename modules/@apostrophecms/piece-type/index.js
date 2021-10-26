@@ -389,17 +389,17 @@ module.exports = {
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
           self.batchOperations = Object.keys(self.batchOperations).map(key => ({
-            name: key,
+            action: key,
             ...self.batchOperations[key]
           })).filter(batchOperation => {
-            if (batchOperation.requiredField && !_.find(self.schema, { name: batchOperation.requiredField })) {
+            // If a `requiredField` is registered, only include the operation
+            // if that field is present on the schema.
+            if (batchOperation.requiredField && !_.find(self.schema, {
+              name: batchOperation.requiredField
+            })) {
               return false;
             }
-            if (batchOperation.onlyIf) {
-              if (!batchOperation.onlyIf(self.name)) {
-                return false;
-              }
-            }
+
             return true;
           });
         }
@@ -538,7 +538,7 @@ module.exports = {
       // Pass `req`, the `name` of a configured batch operation, and
       // and a function that accepts (req, piece, data),
       // and returns a promise to perform the modification on that
-      // one piece (including calling`update` if appropriate).
+      // one piece (including calling `update` if appropriate).
       //
       // `data` is an object containing any schema fields specified
       // for the batch operation. If there is no schema it will be
@@ -555,8 +555,13 @@ module.exports = {
         const batchOperation = _.find(self.batchOperations, { name: name });
         const schema = batchOperation.schema || [];
         const data = self.apos.schema.newInstance(schema);
+
         await self.apos.schema.convert(req, schema, req.body, data);
-        await self.apos.modules['@apostrophecms/job'].run(req, one, { labels: { title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label } });
+        await self.apos.modules['@apostrophecms/job'].run(req, one, {
+          labels: {
+            title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label
+          }
+        });
         async function one(req, id) {
           const piece = self.findForEditing(req, { _id: id }).toObject();
           if (!piece) {
@@ -828,6 +833,7 @@ module.exports = {
           editorModal: 'AposDocEditor',
           managerModal: 'AposDocsManager'
         });
+
         return browserOptions;
       },
       find(_super, req, criteria, projection) {
