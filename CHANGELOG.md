@@ -10,6 +10,7 @@
 
 ### Fixes
 
+* Rich text editor style labels are now run through a localization method to get the translated strings from their l10n keys.
 * Fixes README Node version requirement (Node 12+).
 * The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
 * Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
