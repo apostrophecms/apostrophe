@@ -18,7 +18,7 @@
 * Developers can now `require` their project `app.js` file in the Node.js REPL for debugging and inspection. Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
 * If a static text phrase is unavailable in both the current locale and the default locale, Apostrophe will always fall back to the `en` locale as a last resort, which ensures the admin UI works if it has not been translated.
 * Developers can now `require` their project `app.js` in the Node.js REPL for debugging and inspection
-* Ensure array field items have valid _id prop before storing
+* Ensure array field items have valid _id prop before storing. Thanks to Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
 
 ### Changes
 
