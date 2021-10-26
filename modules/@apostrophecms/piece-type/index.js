@@ -773,7 +773,7 @@ module.exports = {
             query.and({
               _id: null
             });
-          } else {
+          } else if (!query.state.project) {
             query.project(self.options.publicApiProjection);
           }
         }
