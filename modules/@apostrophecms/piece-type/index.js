@@ -100,40 +100,50 @@ module.exports = {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        inputType: 'radio',
+        icon: 'archive-arrow-down-icon',
         unlessFilter: {
           archived: true
         }
       },
       restore: {
         label: 'apostrophe:restore',
+        icon: 'archive-arrow-up-icon',
         unlessFilter: {
           archived: false
         }
       },
-      visibility: {
-        label: 'apostrophe:visibility',
-        requiredField: 'visibility',
-        fields: {
-          add: {
-            visibility: {
-              type: 'select',
-              label: 'apostrophe:visibilityLabel',
-              def: 'public',
-              choices: [
-                {
-                  value: 'public',
-                  label: 'apostrophe:public'
-                },
-                {
-                  value: 'loginRequired',
-                  label: 'apostrophe:loginRequired'
-                }
-              ]
-            }
+      more: {
+        label: 'apostrophe:moreOperations',
+        icon: 'dots-vertical-icon',
+        operations: {
+          test: {
+            label: 'Test operations'
           }
         }
       }
+      // visibility: {
+      //   label: 'apostrophe:visibility',
+      //   requiredField: 'visibility',
+      //   fields: {
+      //     add: {
+      //       visibility: {
+      //         type: 'select',
+      //         label: 'apostrophe:visibilityLabel',
+      //         def: 'public',
+      //         choices: [
+      //           {
+      //             value: 'public',
+      //             label: 'apostrophe:public'
+      //           },
+      //           {
+      //             value: 'loginRequired',
+      //             label: 'apostrophe:loginRequired'
+      //           }
+      //         ]
+      //       }
+      //     }
+      //   }
+      // }
     }
   },
   init(self) {
@@ -388,20 +398,19 @@ module.exports = {
       },
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
-          self.batchOperations = Object.keys(self.batchOperations).map(key => ({
-            action: key,
-            ...self.batchOperations[key]
-          })).filter(batchOperation => {
-            // If a `requiredField` is registered, only include the operation
-            // if that field is present on the schema.
-            if (batchOperation.requiredField && !_.find(self.schema, {
-              name: batchOperation.requiredField
-            })) {
-              return false;
-            }
+          self.batchOperations = Object.entries(self.batchOperations)
+            .reduce((acc, [ action, properties ]) => {
+              const requiredFieldNotFound = properties.requiredField && !self.schema
+                .some((field) => field.name === properties.requiredField);
 
-            return true;
-          });
+              return requiredFieldNotFound ? acc : [
+                ...acc,
+                {
+                  action,
+                  ...properties
+                }
+              ];
+            }, []);
         }
       }
     };
