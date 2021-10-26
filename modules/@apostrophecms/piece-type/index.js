@@ -74,7 +74,7 @@ module.exports = {
         ],
         // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
-        def: true
+        def: null
       },
       archived: {
         label: 'apostrophe:archive',
@@ -778,7 +778,7 @@ module.exports = {
             query.and({
               _id: null
             });
-          } else {
+          } else if (!query.state.project) {
             query.project(self.options.publicApiProjection);
           }
         }

@@ -2,9 +2,12 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
-        v-if="!options.hideSelectAll"
-        label="apostrophe:select" :icon-only="true"
-        :icon="checkboxIcon" type="outline"
+        v-if="displayedItems"
+        label="apostrophe:select"
+        type="outline"
+        text-color="var(--a-primary)"
+        :icon-only="true"
+        :icon="checkboxIcon"
         @click="$emit('select-click')"
       />
       <!-- TODO: Return this delete button when batch updates are added.
@@ -99,6 +102,10 @@ export default {
       default () {
         return {};
       }
+    },
+    displayedItems: {
+      type: Number,
+      required: true
     }
   },
   emits: [
