@@ -10,9 +10,15 @@ export default {
   install(Vue, options) {
     const i18n = options.i18n;
 
+    const fallbackLng = [ i18n.defaultLocale ];
+    // In case the default locale also has inadequate admin UI phrases
+    if (fallbackLng[0] !== 'en') {
+      fallbackLng.push('en');
+    }
+
     i18next.init({
       lng: i18n.locale,
-      fallbackLng: i18n.defaultLocale,
+      fallbackLng,
       resources: {},
       debug: i18n.debug,
       interpolation: {
@@ -26,6 +32,11 @@ export default {
     if (i18n.locale !== i18n.defaultLocale) {
       for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.defaultLocale])) {
         i18next.addResourceBundle(i18n.defaultLocale, ns, phrases, true, true);
+      }
+    }
+    if ((i18n.locale !== 'en') && (i18n.defaultLocale !== 'en')) {
+      for (const [ ns, phrases ] of Object.entries(i18n.i18n.en)) {
+        i18next.addResourceBundle('en', ns, phrases, true, true);
       }
     }
 
