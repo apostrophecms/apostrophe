@@ -13,6 +13,7 @@
 * Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
 * If a static text phrase is unavailable in both the current locale and the default locale, Apostrophe will always fall back to the `en` locale as a last resort, which ensures the admin UI works if it has not been translated.
 * Developers can now `require` their project `app.js` in the Node.js REPL for debugging and inspection
+* Ensure array field items have valid _id prop before storing
 
 ### Changes
 
