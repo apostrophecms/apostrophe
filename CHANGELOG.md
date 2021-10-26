@@ -4,6 +4,8 @@
 
 ### Adds
 
+* Schema select field choices can now be populated by a server side function, like an API call. Set the `choices` property to a method name of the calling module. That function should take a single argument of `req`, and return an array of objects with `label` and `value` properties. The function can be async and will be awaited.
+
 * Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
 
 ### Fixes
@@ -11,7 +13,9 @@
 * Fixes README Node version requirement (Node 12+).
 * The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
 * Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
-* Developers can now `require` their project `app.js` file in the Node.js REPL for debugging and inspection. Thanks to Matthew Francis Brunetti.
+* Developers can now `require` their project `app.js` file in the Node.js REPL for debugging and inspection. Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
+* If a static text phrase is unavailable in both the current locale and the default locale, Apostrophe will always fall back to the `en` locale as a last resort, which ensures the admin UI works if it has not been translated.
+* Developers can now `require` their project `app.js` in the Node.js REPL for debugging and inspection
 
 ### Changes
 
