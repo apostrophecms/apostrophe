@@ -183,6 +183,8 @@ module.exports = {
       // If it is set to a number of seconds, it will dismiss after that number of seconds.
       // Otherwise it will not dismiss unless clicked.
       //
+      // `options.progress` will
+      //
       // If `options.buttons` is present, it must be an array of objects
       // with `type` and `label` properties. If `type` is `'event'` then the object must have
       // `name` and `data` properties, and when clicked the button will trigger an
@@ -203,6 +205,9 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options = {}, interpolate = {}) {
+        const returnId = options.return;
+        delete options.return;
+
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
           req = { user: { _id: req } };
@@ -221,7 +226,9 @@ module.exports = {
           message,
           interpolate: interpolate || options.interpolate || {},
           // Defaults to true, otherwise launder as boolean
-          localize: has(req.body, 'localize') ? self.apos.launder.boolean(req.body.localize) : true
+          localize: has(req.body, 'localize')
+            ? self.apos.launder.boolean(req.body.localize) : true,
+          progress: options.progress !== undefined ? options.progress : null
         };
 
         if (options.dismiss === true) {
@@ -243,8 +250,50 @@ module.exports = {
             upsert: true
           }
         );
+
+        if (returnId) {
+          return {
+            noteId: notification._id
+          };
+        }
       },
 
+      async dismiss (req, noteId, delay) {
+        if (!req.user) {
+          throw self.apos.error('forbidden');
+        }
+
+        await pause(delay);
+
+        try {
+          await self.db.updateOne(
+            {
+              _id: noteId
+            },
+            {
+              $set: {
+                dismissed: true
+              },
+              $currentDate: {
+                updatedAt: true
+              }
+            }, {
+              upsert: true
+            }
+          );
+        } catch (error) {
+          // Most likely the ID did not belong to an actual notification.
+          throw self.apos.error('invalid');
+        }
+
+        async function pause (delay) {
+          if (!delay) {
+            return;
+          }
+
+          return new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      },
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
@@ -256,8 +305,16 @@ module.exports = {
         try {
           const results = await self.db.find({
             userId: req.user._id,
-            ...(options.modifiedOnOrSince && { updatedAt: { $gte: new Date(options.modifiedOnOrSince) } }),
-            ...(options.seenIds && { _id: { $nin: options.seenIds } })
+            ...(options.modifiedOnOrSince && {
+              updatedAt: {
+                $gte: new Date(options.modifiedOnOrSince)
+              }
+            }),
+            ...(options.seenIds && {
+              _id: {
+                $nin: options.seenIds
+              }
+            })
           }).sort({ createdAt: 1 }).toArray();
 
           const notifications = results.filter(result => !result.dismissed);
