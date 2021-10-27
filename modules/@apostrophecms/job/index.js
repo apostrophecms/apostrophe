@@ -3,8 +3,7 @@ const _ = require('lodash');
 // to user actions. Batch operations on pieces are a good example.
 //
 // The `@apostrophecms/job` module makes it simple to implement
-// progress display, avoid server timeouts during long operations,
-// and implement a "stop" button.
+// progress display, and avoid server timeouts during long operations.
 //
 // See the `run` method for the easiest way to use this module.
 // The `run` method allows you to implement routes that are designed
@@ -38,7 +37,11 @@ module.exports = {
       post: {
         async cancel(req) {
           const _id = self.apos.launder.id(req.body._id);
-          const count = await self.db.updateOne({ _id: _id }, { $set: { canceling: true } });
+          const count = await self.db.updateOne({ _id: _id }, {
+            $set: {
+              canceling: true
+            }
+          });
           if (!count) {
             throw self.apos.error('notfound');
           }
@@ -95,7 +98,7 @@ module.exports = {
       //
       async run(req, ids, change, options) {
         let job;
-        let stopping = false;
+
         const results = {};
         const res = req.res;
         try {
@@ -118,11 +121,7 @@ module.exports = {
           }
         }
         async function startJob() {
-          job = await self.start(_.assign({}, options, {
-            stop: function (job) {
-              stopping = true;
-            }
-          }));
+          job = await self.start(_.assign({}, options));
           self.setTotal(job, ids.length);
           return { jobId: job._id };
         }
@@ -130,9 +129,6 @@ module.exports = {
           let good = false;
           try {
             for (const id of ids) {
-              if (stopping) {
-                return;
-              }
               try {
                 const result = await change(req, id);
                 self.good(job);
@@ -169,13 +165,8 @@ module.exports = {
       //
       // *Options*
       //
-      // Labeling options TBD.
+      // TODO: Labeling options TBD.
       //
-      // You may optionally provide `options.stop` or `options.cancel`.
-      // These async functions will be invoked and awaited
-      // after the user requests to stop the operation. `stop` must cease
-      // all operations before resolving, while `cancel` must both cease
-      // operations and reverse all changes made before resolving.
       async runNonBatch(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
@@ -217,9 +208,6 @@ module.exports = {
               },
               setResults (_results) {
                 results = _results;
-              },
-              isCanceling () {
-                return canceling;
               }
             });
             good = true;
@@ -246,28 +234,7 @@ module.exports = {
       // processed, and you *may* call `setTotal(job, n)` to indicate
       // how many rows to expect for better progress display.
       //
-      // *Canceling and stopping jobs*
-      //
-      // If `options.cancel` is passed, the user may cancel (undo) the job.
-      // If they do `options.cancel` will be invoked with `(job)` and
-      // it *must undo what was done*. `cancel` must be async and will
-      // be awaited. If it throws an error, the job will be stopped
-      // with no further progress in the undo operation.
-      //
-      // If `options.stop` is passed, the user may stop (halt) the operation.
-      // If they do `options.stop` will be invoked with `(job)` and
-      // it *must stop processing new items*. This function may be
-      // async and it must not resolve until it is guaranteed that
-      // *no more operations will run*.
-      //
-      // The difference between stop and cancel is the lack of undo with "stop".
-      // Implement the one that is practical for you. Users like to be able to
-      // undo things fully, of course.
-      //
-      // You should not offer both. If you do, only "Cancel" is presented
-      // to the user.
-      //
-      // Labeling options TBD.
+      // TODO: Labeling options TBD.
       //
       async start(options) {
         const job = {
@@ -278,19 +245,13 @@ module.exports = {
           status: 'running',
           ended: false,
           canceling: false,
-          when: new Date(),
-          canCancel: !!options.cancel,
-          canStop: !!options.stop
+          when: new Date()
         };
         const context = {
           _id: job._id,
           options: options
         };
-        if (options.cancel || options.stop) {
-          context.interval = setInterval(function () {
-            self.checkStop(context);
-          }, 250);
-        }
+
         await self.db.insertOne(job);
         return context;
       },
@@ -378,61 +339,6 @@ module.exports = {
       },
       async ensureCollection() {
         self.db = await self.apos.db.collection(self.options.collectionName);
-      },
-      // Periodically invoked to check whether
-      // a request to cancel or stop the job has been made.
-      // If it has we invoke options.cancel or options.stop to
-      // actually cancel it, preferably the former. This method is invoked
-      // by an interval timer installed by `self.start`.
-      // This allows a possibly different apostrophe process
-      // to request a cancellation by setting the `canceling` property;
-      // the original process actually running the job
-      // cancels and then acknowledges this by setting status to `canceled`
-      // or `stopped` according to which operation is
-      // actually supported by the job.
-      async checkStop(context) {
-        if (context.checkingStop || context.ended) {
-          return;
-        }
-        context.checkingStop = true;
-        let job;
-        try {
-          job = await self.db.findOne({ _id: context._id });
-          if (!job) {
-            self.apos.util.error('job never found');
-            return;
-          }
-          if (job.canceling) {
-            if (job.canCancel) {
-              return await halt('cancel', 'canceled');
-            } else if (job.canStop) {
-              return await halt('stop', 'stopped');
-            }
-          }
-        } catch (err) {
-          self.apos.util.error(err);
-          await self.db.updateOne({ _id: context._id }, {
-            $set: {
-              ended: true,
-              canceling: false,
-              status: 'failed'
-            }
-          });
-        } finally {
-          context.checkingStop = false;
-          if (job && job.ended) {
-            clearInterval(context.interval);
-          }
-        }
-        async function halt(verb, status) {
-          await context.options[verb](job);
-          const $set = {
-            ended: true,
-            canceling: false,
-            status: status
-          };
-          await self.db.updateOne({ _id: job._id }, { $set: $set });
-        }
       }
     };
   }
