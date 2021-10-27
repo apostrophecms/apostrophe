@@ -6,7 +6,7 @@ let apos;
 
 describe('Login', function() {
 
-  this.timeout(20000);
+  this.timeout(60000);
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -92,6 +92,10 @@ describe('Login', function() {
   });
 
   it('third failure in a row should cause a lockout', async function() {
+    if (process.version.startsWith('v8.')) {
+      console.log('Skipping this test on node 8, a partially supported release\nwhere this noncritical test is not reliable');
+      return;
+    }
     const req = apos.tasks.getReq();
     const user = await apos.users.find(req, {
       username: 'LilithIyapo'

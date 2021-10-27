@@ -1,10 +1,9 @@
 
-[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/master.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/master)
-[<img src="./badges/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit)
+[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/2.0.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/2.0)
 [![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.org)
 
 <p align="center">
-  <a href="https://github.com/github_username/repo_name">
+  <a href="https://github.com/apostrophecms/apostrophe/tree/2.0">
     <img src="logo.svg" alt="Logo" width="80" height="80">
   </a>
 
