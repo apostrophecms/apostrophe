@@ -1,5 +1,11 @@
 # Changelog
 
+## Future Unreleased
+
+### Fixes
+
+* Properly localizes notification message "interpolate" object values.
+
 ## Unreleased
 
 ### Adds

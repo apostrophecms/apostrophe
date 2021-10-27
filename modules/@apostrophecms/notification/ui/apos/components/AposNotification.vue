@@ -109,8 +109,17 @@ export default {
     },
     localize(s) {
       let result;
+      let interpolate = this.notification.interpolate;
+
+      if (interpolate && Object.keys(interpolate)[0]) {
+        interpolate = Object.fromEntries(Object.entries(interpolate)
+          .map(([ key, value ]) => {
+            return [ key, this.$t(value) ];
+          }));
+      }
+
       if (this.notification.localize !== false) {
-        result = this.$t(s, this.notification.interpolate || {});
+        result = this.$t(s, interpolate || {});
       } else {
         // Any interpolation was done before insertion
         result = s;
