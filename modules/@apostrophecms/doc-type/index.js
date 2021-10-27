@@ -389,7 +389,7 @@ module.exports = {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
-        });
+        }, self);
         if (self.options.slugPrefix) {
           if (self.options.slugPrefix === 'deduplicate-') {
             const req = self.apos.task.getReq();
@@ -1217,6 +1217,21 @@ module.exports = {
         // cursors.
 
         project: {
+          launder (p) {
+            // check that project is an object
+            if (!p || typeof p !== 'object' || Array.isArray(p)) {
+              return {};
+            }
+
+            const projection = Object.entries(p).reduce((acc, [ key, val ]) => {
+              return {
+                ...acc,
+                [key]: self.apos.launder.boolean(val)
+              };
+            }, {});
+
+            return projection;
+          },
           finalize() {
             let projection = query.get('project') || {};
             // Keys beginning with `_` are computed values
