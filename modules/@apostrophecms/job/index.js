@@ -35,17 +35,6 @@ module.exports = {
   apiRoutes(self) {
     return {
       post: {
-        async cancel(req) {
-          const _id = self.apos.launder.id(req.body._id);
-          const count = await self.db.updateOne({ _id: _id }, {
-            $set: {
-              canceling: true
-            }
-          });
-          if (!count) {
-            throw self.apos.error('notfound');
-          }
-        },
         async progress(req) {
           const _id = self.apos.launder.id(req.body._id);
           const job = await self.db.findOne({ _id: _id });
@@ -170,7 +159,7 @@ module.exports = {
       async runNonBatch(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
-        const canceling = false;
+
         try {
           const info = await startJob();
           run();
@@ -244,7 +233,6 @@ module.exports = {
           processed: 0,
           status: 'running',
           ended: false,
-          canceling: false,
           when: new Date()
         };
         const context = {
