@@ -27,6 +27,10 @@ const _ = require('lodash');
 
 module.exports = {
   options: { collectionName: 'aposJobs' },
+  icons: {
+    // TODO: Figure out why the icon isn't working for notifications
+    'database-export-icon': 'DatabaseExport'
+  },
   async init(self) {
     await self.ensureCollection();
   },
@@ -197,6 +201,8 @@ module.exports = {
       async runNonBatch(req, doTheWork, options) {
         const res = req.res;
         let job;
+        let notification;
+
         const canceling = false;
         try {
           const info = await startJob();
@@ -215,7 +221,14 @@ module.exports = {
         }
         async function startJob() {
           job = await self.start(options);
-          return { jobId: job._id };
+
+          notification = await self.triggerNotification(req, 'progress', {
+            progress: 0
+          });
+
+          return {
+            jobId: job._id
+          };
         }
         async function run() {
           let results;
@@ -239,12 +252,41 @@ module.exports = {
               isCanceling: function () {
                 return canceling;
               }
-            });
+            }, notification); // TODO: Use notification in doTheWork
             good = true;
           } finally {
             await self.end(job, good, results);
+
+            // Trigger the completed notification.
+            await self.triggerNotification(req, 'completed', {
+              dismiss: true
+            });
+            // Dismiss the progress notification. It will delay 4 seconds
+            // because "completed" notification will dismiss in 5 and we want
+            // to maintain the feeling of process order for users.
+            await self.apos.notification.dismiss(req, notification.noteId, 4000);
           }
         }
+      },
+      async triggerNotification(req, stage, options = {}) {
+        if (!req.body || !req.body.messages) {
+          return {};
+        }
+
+        return self.apos.notification.trigger(req, req.body.messages[stage], {
+          interpolate: {
+            count: req.body._ids.length,
+            type: req.body.type || 'apostrophe:document'
+          },
+          dismiss: options.dismiss,
+          icon: req.body.messages.icon, // This isn't working...
+          type: 'info',
+          return: true
+        });
+      },
+      // TODO: Update notification progress method
+      updateNotification () {
+
       },
       // Start tracking a long-running job. Called by routes
       // that require progress display and/or the ability to take longer
