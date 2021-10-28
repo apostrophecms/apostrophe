@@ -36,7 +36,7 @@
         <p
           v-if="(field.help || field.htmlHelp) && !displayOptions.helpTooltip"
           class="apos-field__help"
-          v-html="$t(field.help || field.htmlHelp)"
+          v-html="$t(field.help) || field.htmlHelp"
         />
         <slot name="additional" />
       </div>
