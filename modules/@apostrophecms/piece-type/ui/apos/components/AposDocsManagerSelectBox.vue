@@ -53,8 +53,12 @@ export default {
   emits: [ 'select-all', 'clear-select', 'set-all-pieces-selection' ],
   computed: {
     selectBoxMessage () {
+      const showAllWord = (this.checkedIds.length === this.allPiecesSelection.total) &&
+        this.checkedIds.length !== 1;
       const translationKey = this.allPiecesSelection.isSelected
-        ? 'apostrophe:selectBoxMessageSelected'
+        ? showAllWord
+          ? 'apostrophe:selectBoxMessageAllSelected'
+          : 'apostrophe:selectBoxMessageSelected'
         : 'apostrophe:selectBoxMessage';
 
       return this.$t(translationKey, {
@@ -63,7 +67,11 @@ export default {
       });
     },
     selectBoxMessageButton () {
-      return this.$t('apostrophe:selectBoxMessageButton', {
+      const translationKey = this.allPiecesSelection.total === 1
+        ? 'apostrophe:selectBoxMessageButton'
+        : 'apostrophe:selectBoxMessageAllButton';
+
+      return this.$t(translationKey, {
         num: this.allPiecesSelection.total,
         label: this.getLabel(this.allPiecesSelection.total)
       });
@@ -112,6 +120,7 @@ export default {
       color: var(--a-primary);
       cursor: pointer;
       margin-left: 0.4rem;
+      border: none;
 
       &:hover {
         text-decoration: underline;
