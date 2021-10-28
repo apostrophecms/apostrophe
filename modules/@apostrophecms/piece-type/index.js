@@ -101,50 +101,63 @@ module.exports = {
       archive: {
         label: 'apostrophe:archive',
         icon: 'archive-arrow-down-icon',
-        unlessFilter: {
+        if: {
           archived: true
+          // visibility: [ null, 'public' ]
         }
       },
       restore: {
         label: 'apostrophe:restore',
         icon: 'archive-arrow-up-icon',
-        unlessFilter: {
-          archived: false
+        if: {
+          archived: true
         }
       },
-      more: {
-        label: 'apostrophe:moreOperations',
-        icon: 'dots-vertical-icon',
-        operations: {
-          test: {
-            label: 'Test operations'
-          }
+      test1: {
+        label: 'operation 1',
+        icon: 'archive-arrow-up-icon',
+        if: {
+          archived: true
         }
+      },
+      test2: {
+        label: 'operation 2',
+        icon: 'archive-arrow-up-icon'
       }
-      // visibility: {
-      //   label: 'apostrophe:visibility',
-      //   requiredField: 'visibility',
-      //   fields: {
-      //     add: {
-      //       visibility: {
-      //         type: 'select',
-      //         label: 'apostrophe:visibilityLabel',
-      //         def: 'public',
-      //         choices: [
-      //           {
-      //             value: 'public',
-      //             label: 'apostrophe:public'
-      //           },
-      //           {
-      //             value: 'loginRequired',
-      //             label: 'apostrophe:loginRequired'
-      //           }
-      //         ]
-      //       }
-      //     }
-      //   }
-      // }
+    },
+    group: {
+      more: {
+        icon: 'dots-vertical-icon',
+        operations: [ 'test1', 'test2' ]
+      },
+      toto: {
+        icon: 'dots-vertical-icon',
+        operations: [ 'restore' ]
+      }
     }
+    // visibility: {
+    //   label: 'apostrophe:visibility',
+    //   requiredField: 'visibility',
+    //   fields: {
+    //     add: {
+    //       visibility: {
+    //         type: 'select',
+    //         label: 'apostrophe:visibilityLabel',
+    //         def: 'public',
+    //         choices: [
+    //           {
+    //             value: 'public',
+    //             label: 'apostrophe:public'
+    //           },
+    //           {
+    //             value: 'loginRequired',
+    //             label: 'apostrophe:loginRequired'
+    //           }
+    //         ]
+    //       }
+    //     }
+    //   }
+    // }
   },
   init(self) {
     if (!self.options.name) {
@@ -398,19 +411,62 @@ module.exports = {
       },
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
-          self.batchOperations = Object.entries(self.batchOperations)
-            .reduce((acc, [ action, properties ]) => {
+
+          const groupedOperations = Object.entries(self.batchOperations)
+            .reduce((acc, [ opeName, properties ]) => {
               const requiredFieldNotFound = properties.requiredField && !self.schema
                 .some((field) => field.name === properties.requiredField);
 
-              return requiredFieldNotFound ? acc : [
+              if (requiredFieldNotFound) {
+                return acc;
+              }
+
+              const associatedGroup = getAssociatedGroup(opeName);
+              const currentOperation = {
+                name: opeName,
+                ...properties
+              };
+              const { name, ...props } = getCurrentOrGroup(
+                currentOperation,
+                associatedGroup,
+                acc
+              );
+
+              return {
                 ...acc,
-                {
-                  action,
-                  ...properties
+                [name]: {
+                  ...props
                 }
-              ];
-            }, []);
+              };
+            }, {});
+
+          self.batchOperations = Object.entries(groupedOperations)
+            .map(([ name, properties ]) => ({
+              name,
+              ...properties
+            }));
+
+          function getCurrentOrGroup (currentOpe, [ groupName, groupProperties ], acc) {
+            if (!groupName) {
+              return currentOpe;
+            }
+
+            return {
+              name: groupName,
+              ...groupProperties,
+              operations: [
+                ...acc[groupName]?.operations || [],
+                currentOpe
+              ]
+            };
+          }
+
+          function getAssociatedGroup (operation) {
+            return Object.entries(self.batchOperationsGroups)
+              .find(([ _, { operations } ]) => {
+                return operations.includes(operation);
+              }) || [];
+          }
         }
       }
     };
