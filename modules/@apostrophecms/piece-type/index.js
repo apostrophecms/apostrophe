@@ -100,11 +100,17 @@ module.exports = {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        icon: 'archive-arrow-down-icon'
+        icon: 'archive-arrow-down-icon',
+        if: {
+          archived: false
+        }
       },
       restore: {
         label: 'apostrophe:restore',
-        icon: 'archive-arrow-up-icon'
+        icon: 'archive-arrow-up-icon',
+        if: {
+          archived: true
+        }
       }
     },
     group: {
