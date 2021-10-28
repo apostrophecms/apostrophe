@@ -21,16 +21,16 @@
         type="outline"
       /> -->
       <div
-        v-for="{action, label, icon, operations, unlessFilter} in operations"
+        v-for="{action, label, icon, operations: subOpes} in showedOperations"
         :key="action"
       >
         <AposButton
-          v-if="!operations"
+          v-if="!subOpes"
           label="label"
           :icon-only="true"
           :icon="icon"
           type="outline"
-          @click="$emit('select-click')"
+          @click="() => {}"
         />
         <AposContextMenu
           v-else
@@ -40,7 +40,7 @@
             iconOnly: true,
             type: 'outline'
           }"
-          :menu="formatOperations(operations)"
+          :menu="subOpes"
           @item-clicked="batchAction"
         />
       </div>
@@ -151,7 +151,8 @@ export default {
         },
         status: {},
         value: { data: '' }
-      }
+      },
+      showedOperations: []
     };
   },
   computed: {
@@ -163,27 +164,47 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
-    },
-    operations () {
-      // const ope = this.batchOperations
     }
-    // more () {
-    //   const config = {
-    //     button: {
-    //       label: 'apostrophe:moreOperations',
-    //       iconOnly: true,
-    //       icon: 'dots-vertical-icon',
-    //       type: 'outline'
-    //     },
-    //     menu: Array.isArray(this.options.moreActions) ? this.options.moreActions : []
-    //   };
-
-    //   return config;
-    // }
+  },
+  mounted () {
+    this.computeShowedOperations();
   },
   methods: {
+    computeShowedOperations () {
+      this.showedOperations = this.batchOperations.map(({ operations, ...rest }) => {
+        if (!operations) {
+          return {
+            ...rest,
+            operations
+          };
+        }
+
+        return {
+          operations: operations.filter((ope) => this.showOperation(ope)),
+          ...rest
+        };
+
+      }).filter((operation) => {
+        if (operation.operations && !operation.operations.length) {
+          return false;
+        }
+
+        return this.showOperation(operation);
+      });
+    },
+    showOperation (operation) {
+      return Object.entries(operation.if || {})
+        .every(([ filter, val ]) => {
+          if (Array.isArray(val)) {
+            return val.includes(this.filterValues[filter]);
+          }
+
+          return this.filterValues[filter] === val;
+        });
+    },
     filter(filter, value) {
       this.$emit('filter', filter, value.data);
+      this.computeShowedOperations();
     },
     search(value, force) {
       if ((force && !value) || value.data === '') {
@@ -202,12 +223,6 @@ export default {
     },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
-    },
-    formatOperations (operations) {
-      return Object.entries(operations).map(([ key, props ]) => ({
-        action: key,
-        ...props
-      }));
     }
   }
 };
