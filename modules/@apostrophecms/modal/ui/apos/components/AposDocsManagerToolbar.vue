@@ -21,7 +21,7 @@
         type="outline"
       /> -->
       <div
-        v-for="{action, label, icon, operations: subOpes} in showedOperations"
+        v-for="{action, label, icon, operations} in showedOperations"
         :key="action"
       >
         <AposButton
@@ -40,7 +40,7 @@
             iconOnly: true,
             type: 'outline'
           }"
-          :menu="subOpes"
+          :menu="operations"
           @item-clicked="batchAction"
         />
       </div>
