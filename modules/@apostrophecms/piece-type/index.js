@@ -100,39 +100,17 @@ module.exports = {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        icon: 'archive-arrow-down-icon',
-        if: {
-          archived: true
-          // visibility: [ null, 'public' ]
-        }
+        icon: 'archive-arrow-down-icon'
       },
       restore: {
         label: 'apostrophe:restore',
-        icon: 'archive-arrow-up-icon',
-        if: {
-          archived: true
-        }
-      },
-      test1: {
-        label: 'operation 1',
-        icon: 'archive-arrow-up-icon',
-        if: {
-          archived: true
-        }
-      },
-      test2: {
-        label: 'operation 2',
         icon: 'archive-arrow-up-icon'
       }
     },
     group: {
       more: {
         icon: 'dots-vertical-icon',
-        operations: [ 'test1', 'test2' ]
-      },
-      toto: {
-        icon: 'dots-vertical-icon',
-        operations: [ 'restore' ]
+        operations: []
       }
     }
     // visibility: {
@@ -411,7 +389,6 @@ module.exports = {
       },
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
-
           const groupedOperations = Object.entries(self.batchOperations)
             .reduce((acc, [ opeName, properties ]) => {
               const requiredFieldNotFound = properties.requiredField && !self.schema
