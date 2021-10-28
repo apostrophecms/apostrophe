@@ -183,7 +183,6 @@ export default {
           operations: operations.filter((ope) => this.showOperation(ope)),
           ...rest
         };
-
       }).filter((operation) => {
         if (operation.operations && !operation.operations.length) {
           return false;

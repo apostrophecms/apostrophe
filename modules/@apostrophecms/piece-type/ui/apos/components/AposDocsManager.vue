@@ -78,7 +78,7 @@
             @filter="filter"
             @batch="handleBatchAction"
             :options="{
-              disableUnchecked: maxReached(),
+              disableUnchecked: maxReached()
             }"
           />
           <AposDocsManagerSelectBox
