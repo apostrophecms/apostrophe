@@ -25,7 +25,7 @@
         :key="action"
       >
         <AposButton
-          v-if="!subOpes"
+          v-if="!operations"
           label="label"
           :icon-only="true"
           :icon="icon"
