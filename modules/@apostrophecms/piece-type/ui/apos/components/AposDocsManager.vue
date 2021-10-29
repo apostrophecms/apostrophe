@@ -76,12 +76,13 @@
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
-            @start-job="startJob"
             :options="{
               disableUnchecked: maxReached(),
               moreActions
             }"
+            @start-job="startJob"
           />
+          <!-- TEMP @start-job -->
           <AposDocsManagerSelectBox
             :selected-state="selectAllState"
             :module-labels="moduleLabels"
@@ -271,8 +272,9 @@ export default {
     apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
+    // TEMP
     async startJob() {
-      const job = await apos.http.post(`${this.moduleOptions.action}/export`, {
+      await apos.http.post(`${this.moduleOptions.action}/export`, {
         body: {
           _ids: this.checked,
           extension: 'csv',
@@ -282,8 +284,6 @@ export default {
           }
         }
       });
-
-      console.info('🍊', job);
     },
     moreMenuHandler(action) {
       if (action === 'new') {
