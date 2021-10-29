@@ -208,16 +208,18 @@ export default {
 
       this.$emit('search', value.data);
     },
-    // batchAction(action) {
-    //   this.$emit('batch', action);
-    // },
+    batchAction(action) {
+      this.$emit('batch', action);
+    },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
     },
     async operationModal ({
       modalOptions, action, operations
     }) {
-      const { title, description } = action && operations
+      const {
+        title, description, form
+      } = action && operations
         ? (operations.find((ope) => ope.action === action)).modalOptions
         : modalOptions;
 
@@ -228,33 +230,14 @@ export default {
           : this.moduleOptions.pluralLabel
       };
 
+      // TODO: request batch operation to backend
+      // eslint-disable-next-line
       const confirmed = await apos.confirm({
         heading: this.$t(title, interpolations),
         description: this.$t(description, interpolations),
         localize: false,
-        form: {
-          schema: [ {
-            type: 'radio',
-            name: 'choice',
-            required: true,
-            choices: [ {
-              // Form labels don't normally localize on the client side
-              // because schemas are almost always localized before
-              // pushing to the client side
-              label: 'apostrophe:restoreOnlyThisPage',
-              value: 'this'
-            }, {
-              label: 'apostrophe:restoreThisPageAndSubpages',
-              value: 'all'
-            } ]
-          } ],
-          value: {
-            data: {}
-          }
-        }
+        ...form && form
       });
-
-      console.log('confirmed ===> ', confirmed);
     }
   }
 };
