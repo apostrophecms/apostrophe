@@ -21,7 +21,7 @@
         type="outline"
       /> -->
       <div
-        v-for="{name, label, icon, operations} in showedOperations"
+        v-for="{name, label, icon, operations, modalOptions} in showedOperations"
         :key="name"
       >
         <AposButton
@@ -30,7 +30,7 @@
           :icon-only="true"
           :icon="icon"
           type="outline"
-          @click="() => {}"
+          @click="operationModal(modalOptions)"
         />
         <AposContextMenu
           v-else
@@ -41,7 +41,7 @@
             type: 'outline'
           }"
           :menu="operations"
-          @item-clicked="batchAction"
+          @item-clicked="operationModal(modalOptions)"
         />
       </div>
     </template>
@@ -52,8 +52,8 @@
         :total-pages="totalPages" :current-page="currentPage"
       />
       <AposFilterMenu
-        v-if="filters.length"
-        :filters="filters"
+        v-if="moduleOptions.filters.length"
+        :filters="moduleOptions.filters"
         :choices="filterChoices"
         :values="filterValues"
         @input="filter"
@@ -79,27 +79,15 @@ export default {
     },
     applyTags: {
       type: Array,
-      default () {
-        return [];
-      }
-    },
-    filters: {
-      type: Array,
-      default () {
-        return [];
-      }
+      default: () => []
     },
     filterChoices: {
       type: Object,
-      default () {
-        return {};
-      }
+      default: () => {}
     },
     filterValues: {
       type: Object,
-      default () {
-        return {};
-      }
+      default: () => {}
     },
     totalPages: {
       type: Number,
@@ -111,22 +99,22 @@ export default {
     },
     labels: {
       type: Object,
-      default () {
-        return {};
-      }
+      default: () => {}
     },
     options: {
       type: Object,
-      default () {
-        return {};
-      }
-    },
-    batchOperations: {
-      type: Array,
-      default: () => []
+      default: () => {}
     },
     displayedItems: {
       type: Number,
+      required: true
+    },
+    checkedCount: {
+      type: Number,
+      required: true
+    },
+    moduleOptions: {
+      type: Object,
       required: true
     }
   },
@@ -171,25 +159,26 @@ export default {
   },
   methods: {
     computeShowedOperations () {
-      this.showedOperations = this.batchOperations.map(({ operations, ...rest }) => {
-        if (!operations) {
+      this.showedOperations = this.moduleOptions.batchOperations
+        .map(({ operations, ...rest }) => {
+          if (!operations) {
+            return {
+              ...rest,
+              operations
+            };
+          }
+
           return {
-            ...rest,
-            operations
+            operations: operations.filter((ope) => this.showOperation(ope)),
+            ...rest
           };
-        }
+        }).filter((operation) => {
+          if (operation.operations && !operation.operations.length) {
+            return false;
+          }
 
-        return {
-          operations: operations.filter((ope) => this.showOperation(ope)),
-          ...rest
-        };
-      }).filter((operation) => {
-        if (operation.operations && !operation.operations.length) {
-          return false;
-        }
-
-        return this.showOperation(operation);
-      });
+          return this.showOperation(operation);
+        });
     },
     showOperation (operation) {
       return Object.entries(operation.if || {})
@@ -217,11 +206,25 @@ export default {
 
       this.$emit('search', value.data);
     },
-    batchAction(action) {
-      this.$emit('batch', action);
-    },
+    // batchAction(action) {
+    //   this.$emit('batch', action);
+    // },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
+    },
+    async operationModal ({ title, description }) {
+      const interpolations = {
+        count: this.checkedCount,
+        type: this.checkedCount === 1
+          ? this.moduleOptions.label
+          : this.moduleOptions.pluralLabel
+      };
+
+      await apos.confirm({
+        heading: this.$t(title, interpolations),
+        description: this.$t(description, interpolations),
+        localize: false
+      });
     }
   }
 };
