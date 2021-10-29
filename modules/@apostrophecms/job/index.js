@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { stripIndent } = require('common-tags');
 // The `@apostrophecms/job` module runs long-running jobs in response
 // to user actions. Batch operations on pieces are a good example.
 //
@@ -32,32 +33,50 @@ module.exports = {
   },
   async init(self) {
     await self.ensureCollection();
+
+    self.enableBrowserData();
   },
-  // TODO RESTify these
   apiRoutes(self) {
     return {
       post: {
         async cancel(req) {
-          const _id = self.apos.launder.id(req.body._id);
-          const count = await self.db.updateOne({ _id: _id }, { $set: { canceling: true } });
-          if (!count) {
-            throw self.apos.error('notfound');
-          }
+          self.apos.util.warnDev(stripIndent`
+            The @apostrophecms/job module's "/cancel" route is deprecated.
+          `);
+
+          return {};
         },
         async progress(req) {
-          const _id = self.apos.launder.id(req.body._id);
-          const job = await self.db.findOne({ _id: _id });
-          if (!job) {
-            throw self.apos.error('notfound');
-          }
-          // % of completion rounded off to 2 decimal places
-          if (!job.total) {
-            job.percentage = 0;
-          } else {
-            job.percentage = (job.processed / job.total * 100).toFixed(2);
-          }
-          return job;
+          self.apos.util.warnDev(stripIndent`
+            The @apostrophecms/job module's "/progress" route is deprecated.
+            Use the RESTful registered "action" route on the module instead.
+          `);
+
+          return {};
         }
+      }
+    };
+  },
+  restApiRoutes (self) {
+    return {
+      async getOne(req, _id) {
+        if (!self.apos.permission.can(req, 'view-draft')) {
+          throw self.apos.error('notfound');
+        }
+
+        _id = self.apos.launder.id(_id);
+        const job = await self.db.findOne({ _id: _id });
+
+        if (!job) {
+          throw self.apos.error('notfound');
+        }
+
+        if (!job.total) {
+          job.percentage = 0;
+        } else {
+          job.percentage = (job.processed / job.total * 100).toFixed(2);
+        }
+        return job;
       }
     };
   },
@@ -201,11 +220,21 @@ module.exports = {
         const res = req.res;
         let job;
         let notification;
+        let total;
 
         const canceling = false;
         try {
           const info = await startJob();
           run();
+
+          // Trigger the "in progress" notification.
+          notification = await self.triggerNotification(req, 'progress', {
+            // It's only relevant to pass a job ID to the notification if
+            // the notification will show progress. Without a total number we
+            // can't show progress.
+            jobId: total && info.jobId
+          });
+
           return info;
         } catch (err) {
           self.apos.util.error(err);
@@ -220,12 +249,6 @@ module.exports = {
         }
         async function startJob() {
           job = await self.start(options);
-
-          notification = await self.triggerNotification(req, 'progress', {
-            progress: {
-              current: 0
-            }
-          });
 
           return {
             jobId: job._id
@@ -245,6 +268,8 @@ module.exports = {
                 return self.bad(job, n);
               },
               setTotal: function (n) {
+                // Getting the total to immediately add to the notification.
+                total = n;
                 return self.setTotal(job, n);
               },
               setResults: function (_results) {
@@ -280,15 +305,11 @@ module.exports = {
             type: req.body.type || 'apostrophe:document'
           },
           dismiss: options.dismiss,
-          progress: options.progress,
+          jobId: options.jobId,
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true
         });
-      },
-      // TODO: Update notification progress method
-      updateNotification () {
-
       },
       // Start tracking a long-running job. Called by routes
       // that require progress display and/or the ability to take longer
@@ -505,6 +526,11 @@ module.exports = {
           };
           await self.db.updateOne({ _id: job._id }, { $set: $set });
         }
+      },
+      getBrowserData(req) {
+        return {
+          action: self.action
+        };
       }
     };
   }

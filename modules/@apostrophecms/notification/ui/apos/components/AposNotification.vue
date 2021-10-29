@@ -22,17 +22,18 @@
     </span>
     <div
       class="apos-notification__progress"
-      v-if="hasProgress"
+      v-if="job && job.total"
     >
       <div class="apos-notification__progress-bar">
         <div
           class="apos-notification__progress-now" role="progressbar"
-          :aria-valuenow="notification.progress.current" :style="`width: ${progressPercent}`"
-          aria-valuemin="0" :aria-valuemax="100"
+          :aria-valuenow="job.processed || 0"
+          :style="`width: ${job.percentage + '%'}`"
+          aria-valuemin="0" :aria-valuemax="job.total"
         />
       </div>
       <span class="apos-notification__progress-value">
-        {{ progressPercent }}
+        {{ Math.floor(job.percentage) + '%' }}
       </span>
     </div>
     <button @click="close" class="apos-notification__button">
@@ -58,18 +59,23 @@ export default {
     }
   },
   emits: [ 'close' ],
+  data () {
+    return {
+      job: this.notification.jobId ? {
+        route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.jobId}`,
+        processed: 0,
+        total: 1
+      } : null
+    };
+  },
   computed: {
-    hasProgress() {
-      return this.notification.progress &&
-        this.notification.progress.current !== undefined;
-    },
     classList() {
       const classes = [ 'apos-notification' ];
       if (this.notification.type && this.notification.type !== 'none') {
         classes.push(`apos-notification--${this.notification.type}`);
       }
 
-      if (this.hasProgress) {
+      if (this.notification.jobId) {
         classes.push('apos-notification--progress');
       }
 
@@ -90,9 +96,6 @@ export default {
       } else {
         return 'circle-icon';
       }
-    },
-    progressPercent () {
-      return `${Math.floor(this.notification.progress.current * 100)}%`;
     }
   },
   async mounted() {
@@ -106,6 +109,26 @@ export default {
         this.close();
       }
     });
+
+    if (this.job) {
+      try {
+        const {
+          total,
+          processed,
+          percentage
+        } = await apos.http.get(this.job.route, {});
+
+        this.job.total = total;
+        this.job.processed = processed || 0;
+        this.job.percentage = percentage;
+
+        await this.pollJob();
+      } catch (error) {
+        console.error('Unable to find notification job:', this.notification.jobId);
+        this.job = null;
+      }
+
+    }
   },
   methods: {
     close() {
@@ -120,6 +143,22 @@ export default {
         result = s;
       }
       return result;
+    },
+    async pollJob () {
+      if (!this.job?.total || (this.job.processed >= this.job.total)) {
+        return;
+      }
+      const job = await apos.http.get(this.job.route, {});
+      this.job.processed = job.processed;
+      this.job.percentage = job.percentage;
+
+      if (this.job.processed < this.job.total) {
+        await new Promise(resolve => {
+          setTimeout(resolve, 500);
+        });
+
+        await this.pollJob();
+      }
     }
   }
 };
@@ -232,7 +271,7 @@ export default {
     height: 100%;
     background-color: var(--a-brand-green);
     background-image: linear-gradient(46deg, var(--a-brand-gold) 0%, var(--a-brand-red) 26%, var(--a-brand-magenta) 47%, var(--a-brand-blue) 76%, var(--a-brand-green) 100%);
-    transition: width 0.2s ease-out;
+    transition: width 0.5s ease-out;
   }
 
   .apos-notification__progress-value {

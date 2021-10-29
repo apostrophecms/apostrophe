@@ -205,8 +205,6 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options = {}, interpolate = {}) {
-        console.info('🔫', message, options);
-
         const returnId = options.return;
         delete options.return;
 
@@ -231,7 +229,7 @@ module.exports = {
           // Defaults to true, otherwise launder as boolean
           localize: has(req.body, 'localize')
             ? self.apos.launder.boolean(req.body.localize) : true,
-          progress: options.progress !== undefined ? options.progress : null
+          job: options.jobId || null
         };
 
         if (options.dismiss === true) {
