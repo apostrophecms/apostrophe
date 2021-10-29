@@ -268,6 +268,11 @@ module.exports = {
         }
       },
 
+      // The dismiss method accepts the following arguments:
+      // - req: A valid req.
+      // - noteId: The _id of an active notification.
+      // - delay: An optional integer of milliseconds to pause before the
+      //   notification actually dismisses.
       async dismiss (req, noteId, delay) {
         if (!req.user) {
           throw self.apos.error('forbidden');
