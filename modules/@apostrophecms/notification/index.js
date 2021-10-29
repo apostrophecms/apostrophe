@@ -183,13 +183,22 @@ module.exports = {
       // If it is set to a number of seconds, it will dismiss after that number of seconds.
       // Otherwise it will not dismiss unless clicked.
       //
-      // `options.progress` will
-      //
       // If `options.buttons` is present, it must be an array of objects
       // with `type` and `label` properties. If `type` is `'event'` then the object must have
       // `name` and `data` properties, and when clicked the button will trigger an
       // apos bus event of the given `name` with the provided `data` object. Currently
       // `'event'` is the only supported value for `type`.
+      //
+      // `options.return` will return the notification object. This is not
+      // done otherwise to minimize risk of leaking MongoDB metadata to the
+      // browser.
+      //
+      // `options.icon`, set to an active Vue Materials Icons icon name, will
+      // set an icon on the notification.
+      //
+      // `options.jobId` can be set to the _id property of an Apostrophe Job
+      // (@apostrophecms/job module) for the notification to track the job's
+      // progress.
       //
       // Throws an error if there is no `req.user`.
       //
@@ -238,8 +247,8 @@ module.exports = {
 
         Object.assign(notification, options);
 
-        // We await here rather than returning because we
-        // expressly do not want to leak mongodb metadata to the browser
+        // We await here rather than returning because we expressly do not
+        // want to leak mongodb metadata to the browser
         await self.db.updateOne(
           notification,
           {
