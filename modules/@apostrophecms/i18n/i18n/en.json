@@ -17,6 +17,8 @@
   "archiveTypeAffirmativeLabel": "Yes, archive {{ type }}",
   "archiveTypeNote": "You are currently viewing the {{ type }} you want to archive. When it is archived you will be returned to the home page.",
   "archived": "Archived",
+  "archivingBatchConfirmation": "Are you sure you want to archive {{ count }} {{ type }}?",
+  "archivingBatchConfirmationButton": "Yes, archive content.",
   "archivingDraftChildCount": "{{ count }} of those descendants have never been published.",
   "archivingPageHasChild": "That page has one descendant.",
   "archivingPageHasChild_plural": "That page has {{ count }} descendants.",
