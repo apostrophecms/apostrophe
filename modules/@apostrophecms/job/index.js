@@ -278,7 +278,7 @@ module.exports = {
               isCanceling: function () {
                 return canceling;
               }
-            }, notification); // TODO: Use notification in doTheWork
+            });
             good = true;
           } finally {
             await self.end(job, good, results);
