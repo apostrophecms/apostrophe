@@ -28,7 +28,6 @@ const _ = require('lodash');
 module.exports = {
   options: { collectionName: 'aposJobs' },
   icons: {
-    // TODO: Figure out why the icon isn't working for notifications
     'database-export-icon': 'DatabaseExport'
   },
   async init(self) {
@@ -223,7 +222,9 @@ module.exports = {
           job = await self.start(options);
 
           notification = await self.triggerNotification(req, 'progress', {
-            progress: 0
+            progress: {
+              current: 0
+            }
           });
 
           return {
@@ -279,8 +280,9 @@ module.exports = {
             type: req.body.type || 'apostrophe:document'
           },
           dismiss: options.dismiss,
-          icon: req.body.messages.icon, // This isn't working...
-          type: 'info',
+          progress: options.progress,
+          icon: req.body.messages.icon || 'database-export-icon',
+          type: options.type || 'success',
           return: true
         });
       },

@@ -205,6 +205,8 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options = {}, interpolate = {}) {
+        console.info('🔫', message, options);
+
         const returnId = options.return;
         delete options.return;
 
@@ -224,6 +226,7 @@ module.exports = {
           createdAt: new Date(),
           userId: req.user._id,
           message,
+          icon: options.icon,
           interpolate: interpolate || options.interpolate || {},
           // Defaults to true, otherwise launder as boolean
           localize: has(req.body, 'localize')

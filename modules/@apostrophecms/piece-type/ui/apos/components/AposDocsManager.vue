@@ -76,6 +76,7 @@
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
+            @start-job="startJob"
             :options="{
               disableUnchecked: maxReached(),
               moreActions
@@ -270,6 +271,20 @@ export default {
     apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
+    async startJob() {
+      const job = await apos.http.post(`${this.moduleOptions.action}/export`, {
+        body: {
+          _ids: this.checked,
+          extension: 'csv',
+          messages: {
+            progress: 'Exporting {{ type }}...',
+            completed: 'Exported {{ count }} {{ type }}.'
+          }
+        }
+      });
+
+      console.info('🍊', job);
+    },
     moreMenuHandler(action) {
       if (action === 'new') {
         this.create();

@@ -26,6 +26,12 @@
         :menu="more.menu"
         @item-clicked="batchAction"
       />
+      <!-- TEMP -->
+      <AposButton
+        label="Start Job" @click="$emit('start-job')"
+        :icon-only="true" icon="eye-icon"
+        type="outline"
+      />
     </template>
     <template #rightControls>
       <AposPager
@@ -113,7 +119,9 @@ export default {
     'filter',
     'search',
     'page-change',
-    'batch'
+    'batch',
+    // TEMP
+    'start-job'
   ],
   data() {
     return {

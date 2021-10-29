@@ -22,7 +22,7 @@
     </span>
     <div
       class="apos-notification__progress"
-      v-if="notification.progress && notification.progress.current"
+      v-if="hasProgress"
     >
       <div class="apos-notification__progress-bar">
         <div
@@ -59,13 +59,17 @@ export default {
   },
   emits: [ 'close' ],
   computed: {
+    hasProgress() {
+      return this.notification.progress &&
+        this.notification.progress.current !== undefined;
+    },
     classList() {
       const classes = [ 'apos-notification' ];
       if (this.notification.type && this.notification.type !== 'none') {
         classes.push(`apos-notification--${this.notification.type}`);
       }
 
-      if (this.notification.progress && this.notification.progress.notification.current) {
+      if (this.hasProgress) {
         classes.push('apos-notification--progress');
       }
 
@@ -88,7 +92,7 @@ export default {
       }
     },
     progressPercent () {
-      return `${Math.floor((this.notification.progress.current / 100) * 100)}%`;
+      return `${Math.floor(this.notification.progress.current * 100)}%`;
     }
   },
   async mounted() {
