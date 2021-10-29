@@ -251,19 +251,9 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
+    this.setMoreMenu();
     await this.getPieces();
     await this.getAllPiecesTotal();
-
-    if (this.relationshipField && this.moduleOptions.canEdit) {
-      // Add computed singular label to context menu
-      this.moreMenu.menu.unshift({
-        action: 'new',
-        label: {
-          key: 'apostrophe:newDocType',
-          type: this.$t(this.moduleLabels.singular)
-        }
-      });
-    }
   },
   destroyed() {
     this.destroyShortcuts();
@@ -487,6 +477,24 @@ export default {
     },
     handleModalAction (action) {
       console.info('Execute modal action', action);
+    },
+    setMoreMenu () {
+      const { moreMenu } = this.moduleOptions;
+
+      const newPiece = {
+        action: 'new',
+        label: {
+          key: 'apostrophe:newDocType',
+          type: this.$t(this.moduleLabels.singular)
+        }
+      };
+
+      this.moreMenu.menu = [
+        ...this.relationshipField && this.moduleOptions.canEdit
+          ? [ newPiece ] : [],
+        ...this.moreMenu.menu,
+        ...Array.isArray(moreMenu) && moreMenu.length ? moreMenu : []
+      ];
     }
   }
 };
