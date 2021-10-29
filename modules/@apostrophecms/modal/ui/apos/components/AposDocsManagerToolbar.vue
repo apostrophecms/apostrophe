@@ -21,16 +21,17 @@
         type="outline"
       /> -->
       <div
-        v-for="{name, label, icon, operations, modalOptions} in showedOperations"
-        :key="name"
+        v-for="{ action, label, icon, operations, modalOptions } in showedOperations"
+        :key="action"
       >
         <AposButton
           v-if="!operations"
           label="label"
           :icon-only="true"
           :icon="icon"
+          :disabled="!checkedCount"
           type="outline"
-          @click="operationModal(modalOptions)"
+          @click="operationModal({ modalOptions })"
         />
         <AposContextMenu
           v-else
@@ -40,8 +41,9 @@
             iconOnly: true,
             type: 'outline'
           }"
+          :disabled="!checkedCount"
           :menu="operations"
-          @item-clicked="operationModal(modalOptions)"
+          @item-clicked="(action) => operationModal({ action, operations })"
         />
       </div>
     </template>
@@ -212,7 +214,13 @@ export default {
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
     },
-    async operationModal ({ title, description }) {
+    async operationModal ({
+      modalOptions, action, operations
+    }) {
+      const { title, description } = action && operations
+        ? (operations.find((ope) => ope.action === action)).modalOptions
+        : modalOptions;
+
       const interpolations = {
         count: this.checkedCount,
         type: this.checkedCount === 1
@@ -220,11 +228,33 @@ export default {
           : this.moduleOptions.pluralLabel
       };
 
-      await apos.confirm({
+      const confirmed = await apos.confirm({
         heading: this.$t(title, interpolations),
         description: this.$t(description, interpolations),
-        localize: false
+        localize: false,
+        form: {
+          schema: [ {
+            type: 'radio',
+            name: 'choice',
+            required: true,
+            choices: [ {
+              // Form labels don't normally localize on the client side
+              // because schemas are almost always localized before
+              // pushing to the client side
+              label: 'apostrophe:restoreOnlyThisPage',
+              value: 'this'
+            }, {
+              label: 'apostrophe:restoreThisPageAndSubpages',
+              value: 'all'
+            } ]
+          } ],
+          value: {
+            data: {}
+          }
+        }
       });
+
+      console.log('confirmed ===> ', confirmed);
     }
   }
 };

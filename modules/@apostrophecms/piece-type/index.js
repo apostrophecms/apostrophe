@@ -106,19 +106,18 @@ module.exports = {
         },
         modalOptions: {
           title: 'apostrophe:archiveType',
-          description: 'archiveTypeAffirmativeLabel'
-        }
-      },
-      restore: {
-        label: 'apostrophe:restore',
-        icon: 'archive-arrow-up-icon',
-        if: {
-          archived: true
-        },
-        modalOptions: {
-
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         }
       }
+      // restore: {
+      //   label: 'apostrophe:restore',
+      //   icon: 'archive-arrow-up-icon',
+      //   if: {
+      //     archived: true
+      //   },
+      //   modalOptions: {}
+      // }
     },
     group: {
       more: {
@@ -403,7 +402,7 @@ module.exports = {
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
           const groupedOperations = Object.entries(self.batchOperations)
-            .reduce((acc, [ opeName, properties ]) => {
+            .reduce((acc, [ action, properties ]) => {
               const requiredFieldNotFound = properties.requiredField && !self.schema
                 .some((field) => field.name === properties.requiredField);
 
@@ -411,9 +410,9 @@ module.exports = {
                 return acc;
               }
 
-              const associatedGroup = getAssociatedGroup(opeName);
+              const associatedGroup = getAssociatedGroup(action);
               const currentOperation = {
-                name: opeName,
+                action,
                 ...properties
               };
               const { name, ...props } = getCurrentOrGroup(
@@ -431,8 +430,8 @@ module.exports = {
             }, {});
 
           self.batchOperations = Object.entries(groupedOperations)
-            .map(([ name, properties ]) => ({
-              name,
+            .map(([ action, properties ]) => ({
+              action,
               ...properties
             }));
 
