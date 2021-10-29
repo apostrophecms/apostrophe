@@ -21,8 +21,8 @@
         type="outline"
       /> -->
       <div
-        v-for="{action, label, icon, operations} in showedOperations"
-        :key="action"
+        v-for="{name, label, icon, operations} in showedOperations"
+        :key="name"
       >
         <AposButton
           v-if="!operations"
