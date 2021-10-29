@@ -145,6 +145,7 @@
   "imageTag": "Image Tag",
   "imageTags": "Image Tags",
   "images": "Images",
+  "importPieces": "Import {{ type }}",
   "insertAndRedirect": "{{ saveLabel }} {{ typeLabel }} and be redirected to the {{ typeLabel }}.",
   "insertAndReturn": "{{ saveLabel }} and return to the {{ typeLabel }} listing.",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} and create a new one.",
