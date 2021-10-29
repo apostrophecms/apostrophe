@@ -103,6 +103,10 @@ module.exports = {
         icon: 'archive-arrow-down-icon',
         if: {
           archived: false
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'archiveTypeAffirmativeLabel'
         }
       },
       restore: {
@@ -110,6 +114,9 @@ module.exports = {
         icon: 'archive-arrow-up-icon',
         if: {
           archived: true
+        },
+        modalOptions: {
+
         }
       }
     },
