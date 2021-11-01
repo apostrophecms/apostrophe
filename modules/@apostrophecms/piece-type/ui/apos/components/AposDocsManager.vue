@@ -273,19 +273,6 @@ export default {
     apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
-    // TEMP
-    async startJob() {
-      await apos.http.post(`${this.moduleOptions.action}/export`, {
-        body: {
-          _ids: this.checked,
-          extension: 'csv',
-          messages: {
-            progress: 'Exporting {{ type }}...',
-            completed: 'Exported {{ count }} {{ type }}.'
-          }
-        }
-      });
-    },
     moreMenuHandler(action) {
       if (action === 'new') {
         this.create();
@@ -481,28 +468,43 @@ export default {
         this.setCheckedDocs(docs);
       }
     },
-    handleBatchAction(action) {
+    async handleBatchAction(action) {
       if (!action || !this.moduleOptions.batchOperations.find(op => {
         return op.action === action;
       })) {
         return;
       }
 
-      const act = this.moduleOptions.batchOperations.find(o => {
+      const operation = this.moduleOptions.batchOperations.find(o => {
         return o.action === action;
       });
 
       // Continue in another method based on what the action wants to do. In
       // any case the action method will probably make use of the checked items.
-      if (act.modal) {
-        // Use a method that opens a modal
-        this.handleModalAction(act);
-      } else if (act.route) {
-        // Use a method that hits a route.
+      if (operation.route) {
+        await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
+          body: {
+            ...operation.requestOptions,
+            _ids: this.checked,
+            messages: operation.messages,
+            type: this.checked.length === 1 ? this.moduleLabels.singluar
+              : this.moduleLabels.plural
+          }
+        });
       }
     },
-    handleModalAction (action) {
-      console.info('Execute modal action', action);
+    // TEMP
+    async startJob() {
+      await apos.http.post(`${this.moduleOptions.action}/export`, {
+        body: {
+          _ids: this.checked,
+          extension: 'csv',
+          messages: {
+            progress: 'Exporting {{ type }}...',
+            completed: 'Exported {{ count }} {{ type }}.'
+          }
+        }
+      });
     }
   }
 };

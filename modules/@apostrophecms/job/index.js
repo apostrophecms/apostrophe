@@ -123,6 +123,9 @@ module.exports = {
       async run(req, ids, change, options) {
         let job;
         let stopping = false;
+        let notification;
+        const total = ids.length;
+
         const results = {};
         const res = req.res;
         try {
@@ -130,6 +133,15 @@ module.exports = {
           const job = await startJob();
           // Runs after response is already sent
           run();
+
+          // Trigger the "in progress" notification.
+          notification = await self.triggerNotification(req, 'progress', {
+            // It's only relevant to pass a job ID to the notification if
+            // the notification will show progress. Without a total number we
+            // can't show progress.
+            jobId: total && job.jobId
+          });
+
           return job;
         } catch (err) {
           self.apos.util.error(err);
@@ -171,6 +183,15 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
+
+            // Trigger the completed notification.
+            await self.triggerNotification(req, 'completed', {
+              dismiss: true
+            });
+            // Dismiss the progress notification. It will delay 4 seconds
+            // because "completed" notification will dismiss in 5 and we want
+            // to maintain the feeling of process order for users.
+            await self.apos.notification.dismiss(req, notification.noteId, 4000);
           }
         }
       },
@@ -302,7 +323,7 @@ module.exports = {
         return self.apos.notification.trigger(req, req.body.messages[stage], {
           interpolate: {
             count: req.body._ids.length,
-            type: req.body.type || 'apostrophe:document'
+            type: req.body.type || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
           jobId: options.jobId,

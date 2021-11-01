@@ -32,6 +32,18 @@
         :icon-only="true" icon="eye-icon"
         type="outline"
       />
+      <!-- TEMP -->
+      <AposButton
+        label="Restore" @click="$emit('batch', 'restore')"
+        :icon-only="true" icon="chevron-up-icon"
+        type="outline"
+      />
+      <!-- TEMP -->
+      <AposButton
+        label="Archive" @click="$emit('batch', 'archive')"
+        :icon-only="true" icon="chevron-down-icon"
+        type="outline"
+      />
     </template>
     <template #rightControls>
       <AposPager

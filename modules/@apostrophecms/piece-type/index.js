@@ -103,12 +103,24 @@ module.exports = {
         inputType: 'radio',
         unlessFilter: {
           archived: true
+        },
+        route: '/archive',
+        // TEMP - full batch operation work is upcoming
+        messages: {
+          progress: 'Archiving {{ type }}...',
+          completed: 'Archived {{ count }} {{ type }}.'
         }
       },
       restore: {
         label: 'apostrophe:restore',
         unlessFilter: {
           archived: false
+        },
+        route: '/restore',
+        // TEMP - full batch operation work is upcoming
+        messages: {
+          progress: 'Restoring {{ type }}...',
+          completed: 'Restoring {{ count }} {{ type }}.'
         }
       },
       visibility: {
@@ -258,6 +270,47 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.publish(req, draft);
+        },
+        // TEMP - This works fine, but should be reviewed during work actually
+        // focused on batch archive/restore.
+        async archive (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              await self.apos.doc.db.updateOne({
+                _id: id
+              }, {
+                $set: {
+                  archived: true
+                }
+              });
+            }
+          );
+        },
+        // TEMP - This works fine, but should be reviewed during work actually
+        // focused on batch archive/restore.
+        async restore (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req, req.body._ids,
+            async function(req, id) {
+              await self.apos.doc.db.updateOne({
+                _id: id
+              }, {
+                $set: {
+                  archived: false
+                }
+              });
+            }
+          );
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
