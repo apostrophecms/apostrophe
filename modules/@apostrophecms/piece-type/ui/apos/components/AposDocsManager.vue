@@ -264,6 +264,7 @@ export default {
         }
       });
     }
+    apos.bus.$on('content-changed', this.getPieces);
   },
   destroyed() {
     this.destroyShortcuts();
