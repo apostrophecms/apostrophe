@@ -1972,6 +1972,7 @@ module.exports = {
             } else if (field.type === 'array') {
               if (doc[field.name]) {
                 doc[field.name].forEach(item => {
+                  item._id = item._id || self.apos.util.generateId();
                   item.metaType = 'arrayItem';
                   item.scopedArrayName = field.scopedArrayName;
                   forSchema(field.schema, item);
