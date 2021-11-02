@@ -429,9 +429,9 @@ module.exports = {
               ...properties
             }));
 
-          function getOperationOrGroup (currentOpe, [ groupName, groupProperties ], acc) {
+          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
             if (!groupName) {
-              return currentOpe;
+              return currentOp;
             }
 
             return {
@@ -439,7 +439,7 @@ module.exports = {
               ...groupProperties,
               operations: [
                 ...(acc[groupName] && acc[groupName].operations) || [],
-                currentOpe
+                currentOp
               ]
             };
           }
