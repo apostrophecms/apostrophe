@@ -87,6 +87,7 @@
             :filter-values="filterValues"
             :checked-ids="checked"
             :all-pieces-selection="allPiecesSelection"
+            :displayed-items="items.length"
             @select-all="selectAllPieces"
             @set-all-pieces-selection="setAllPiecesSelection"
           />
