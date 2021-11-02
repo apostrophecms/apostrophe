@@ -409,7 +409,7 @@ module.exports = {
                 name: opeName,
                 ...properties
               };
-              const { name, ...props } = getCurrentOrGroup(
+              const { name, ...props } = getOperationOrGroup(
                 currentOperation,
                 associatedGroup,
                 acc
@@ -424,12 +424,12 @@ module.exports = {
             }, {});
 
           self.batchOperations = Object.entries(groupedOperations)
-            .map(([ name, properties ]) => ({
-              name,
+            .map(([ action, properties ]) => ({
+              action,
               ...properties
             }));
 
-          function getCurrentOrGroup (currentOpe, [ groupName, groupProperties ], acc) {
+          function getOperationOrGroup (currentOpe, [ groupName, groupProperties ], acc) {
             if (!groupName) {
               return currentOpe;
             }
@@ -438,7 +438,7 @@ module.exports = {
               name: groupName,
               ...groupProperties,
               operations: [
-                ...acc[groupName]?.operations || [],
+                ...(acc[groupName] && acc[groupName].operations) || [],
                 currentOpe
               ]
             };
@@ -446,7 +446,7 @@ module.exports = {
 
           function getAssociatedGroup (operation) {
             return Object.entries(self.batchOperationsGroups)
-              .find(([ _, { operations } ]) => {
+              .find(([ _key, { operations } ]) => {
                 return operations.includes(operation);
               }) || [];
           }

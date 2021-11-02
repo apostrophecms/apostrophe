@@ -10,19 +10,9 @@
         :icon="checkboxIcon"
         @click="$emit('select-click')"
       />
-      <!-- TODO: Return this delete button when batch updates are added.
-        When we do that though, we should do it like we handle the other
-        batch operation events, not with extra event plumbing
-        percolating everywhere. We can still achieve a custom button
-        without that. -->
-      <!-- <AposButton
-        label="apostrophe:delete" @click="$emit('archive-click')"
-        :icon-only="true" icon="delete-icon"
-        type="outline"
-      /> -->
       <div
-        v-for="{name, label, icon, operations} in showedOperations"
-        :key="name"
+        v-for="{action, label, icon, operations} in activeOperations"
+        :key="action"
       >
         <AposButton
           v-if="!operations"
@@ -30,7 +20,7 @@
           :icon-only="true"
           :icon="icon"
           type="outline"
-          @click="() => {}"
+          @click="batchAction"
         />
         <AposContextMenu
           v-else
@@ -152,7 +142,7 @@ export default {
         status: {},
         value: { data: '' }
       },
-      showedOperations: []
+      activeOperations: []
     };
   },
   computed: {
@@ -167,11 +157,11 @@ export default {
     }
   },
   mounted () {
-    this.computeShowedOperations();
+    this.computeActiveOperations();
   },
   methods: {
-    computeShowedOperations () {
-      this.showedOperations = this.batchOperations.map(({ operations, ...rest }) => {
+    computeActiveOperations () {
+      this.activeOperations = this.batchOperations.map(({ operations, ...rest }) => {
         if (!operations) {
           return {
             ...rest,
@@ -180,7 +170,7 @@ export default {
         }
 
         return {
-          operations: operations.filter((ope) => this.showOperation(ope)),
+          operations: operations.filter((ope) => this.isOperationActive(ope)),
           ...rest
         };
       }).filter((operation) => {
@@ -188,10 +178,10 @@ export default {
           return false;
         }
 
-        return this.showOperation(operation);
+        return this.isOperationActive(operation);
       });
     },
-    showOperation (operation) {
+    isOperationActive (operation) {
       return Object.entries(operation.if || {})
         .every(([ filter, val ]) => {
           if (Array.isArray(val)) {
@@ -203,7 +193,9 @@ export default {
     },
     filter(filter, value) {
       this.$emit('filter', filter, value.data);
-      this.computeShowedOperations();
+      if (this.filterValues[filter] !== value) {
+        this.computeActiveOperations();
+      }
     },
     search(value, force) {
       if ((force && !value) || value.data === '') {
