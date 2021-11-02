@@ -11,7 +11,7 @@
         @click="$emit('select-click')"
       />
       <div
-        v-for="{ action, label, icon, operations, modalOptions } in showedOperations"
+        v-for="{ action, label, icon, operations, modalOptions } in activeOperations"
         :key="action"
       >
         <AposButton
@@ -212,7 +212,7 @@ export default {
       const {
         title, description, form
       } = action && operations
-        ? (operations.find((ope) => ope.action === action)).modalOptions
+        ? (operations.find((op) => op.action === action)).modalOptions
         : modalOptions;
 
       const interpolations = {

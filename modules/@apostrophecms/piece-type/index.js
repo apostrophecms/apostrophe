@@ -412,7 +412,7 @@ module.exports = {
 
               const associatedGroup = getAssociatedGroup(opName);
               const currentOperation = {
-                name: opName,
+                action: opName,
                 ...properties
               };
               const { name, ...props } = getOperationOrGroup(
