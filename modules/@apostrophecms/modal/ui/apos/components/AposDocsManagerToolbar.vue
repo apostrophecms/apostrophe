@@ -10,22 +10,6 @@
         :icon="checkboxIcon"
         @click="$emit('select-click')"
       />
-      <!-- TEMP -->
-      <!-- <AposButton
-        label="Start Job" @click="$emit('start-job')"
-        :icon-only="true" icon="eye-icon"
-        type="outline"
-      />
-      <AposButton
-        label="Restore" @click="$emit('batch', 'restore')"
-        :icon-only="true" icon="chevron-up-icon"
-        type="outline"
-      />
-      <AposButton
-        label="Archive" @click="$emit('batch', 'archive')"
-        :icon-only="true" icon="chevron-down-icon"
-        type="outline"
-      /> -->
       <div
         v-for="{action, label, icon, operations} in activeOperations"
         :key="action"
@@ -36,7 +20,7 @@
           :icon-only="true"
           :icon="icon"
           type="outline"
-          @click="batchAction"
+          @click="$emit('batch', action)"
         />
         <AposContextMenu
           v-else
