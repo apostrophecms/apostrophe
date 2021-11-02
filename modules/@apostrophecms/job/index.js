@@ -64,18 +64,15 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        _id = self.apos.launder.id(_id);
-        const job = await self.db.findOne({ _id: _id });
+        const jobId = self.apos.launder.id(_id);
+        const job = await self.db.findOne({ _id: jobId });
 
         if (!job) {
           throw self.apos.error('notfound');
         }
 
-        if (!job.total) {
-          job.percentage = 0;
-        } else {
-          job.percentage = (job.processed / job.total * 100).toFixed(2);
-        }
+        job.percentage = !job.total ? 0 : (job.processed / job.total * 100).toFixed(2);
+
         return job;
       }
     };

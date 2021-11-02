@@ -214,8 +214,7 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options = {}, interpolate = {}) {
-        const returnId = options.return;
-        delete options.return;
+        const { return: returnId, ...copiedOptions } = options;
 
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
@@ -241,11 +240,11 @@ module.exports = {
           job: options.jobId || null
         };
 
-        if (options.dismiss === true) {
-          options.dismiss = 5;
+        if (copiedOptions.dismiss === true) {
+          copiedOptions.dismiss = 5;
         }
 
-        Object.assign(notification, options);
+        Object.assign(notification, copiedOptions);
 
         // We await here rather than returning because we expressly do not
         // want to leak mongodb metadata to the browser
