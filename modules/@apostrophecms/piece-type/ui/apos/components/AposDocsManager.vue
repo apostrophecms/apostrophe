@@ -70,6 +70,7 @@
             :filter-choices="filterChoices"
             :filter-values="filterValues"
             :labels="moduleLabels"
+            :batch-operations="moduleOptions.batchOperations"
             :displayed-items="items.length"
             @select-click="selectAll"
             @search="search"
@@ -77,8 +78,7 @@
             @filter="filter"
             @batch="handleBatchAction"
             :options="{
-              disableUnchecked: maxReached(),
-              moreActions
+              disableUnchecked: maxReached()
             }"
           />
           <AposDocsManagerSelectBox
@@ -87,6 +87,7 @@
             :filter-values="filterValues"
             :checked-ids="checked"
             :all-pieces-selection="allPiecesSelection"
+            :displayed-items="items.length"
             @select-all="selectAllPieces"
             @set-all-pieces-selection="setAllPiecesSelection"
           />
@@ -214,27 +215,6 @@ export default {
         value: 'checked',
         indeterminate: checkCount && pageNotFullyChecked
       };
-    },
-    moreActions () {
-      const actions = [];
-
-      for (const action of this.moduleOptions.batchOperations) {
-        let disableAction = false;
-
-        if (action.unlessFilter) {
-          for (const filter in action.unlessFilter) {
-            if (action.unlessFilter[filter] === this.filterValues[filter]) {
-              disableAction = true;
-            }
-          }
-        }
-
-        if (!disableAction) {
-          actions.push(action);
-        }
-      }
-
-      return actions;
     }
   },
   created() {
