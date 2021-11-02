@@ -10,16 +10,6 @@
         :icon="checkboxIcon"
         @click="$emit('select-click')"
       />
-      <!-- TODO: Return this delete button when batch updates are added.
-        When we do that though, we should do it like we handle the other
-        batch operation events, not with extra event plumbing
-        percolating everywhere. We can still achieve a custom button
-        without that. -->
-      <!-- <AposButton
-        label="apostrophe:delete" @click="$emit('archive-click')"
-        :icon-only="true" icon="delete-icon"
-        type="outline"
-      /> -->
       <div
         v-for="{ action, label, icon, operations, modalOptions } in showedOperations"
         :key="action"
@@ -142,7 +132,7 @@ export default {
         status: {},
         value: { data: '' }
       },
-      showedOperations: []
+      activeOperations: []
     };
   },
   computed: {
@@ -157,11 +147,11 @@ export default {
     }
   },
   mounted () {
-    this.computeShowedOperations();
+    this.computeActiveOperations();
   },
   methods: {
-    computeShowedOperations () {
-      this.showedOperations = this.moduleOptions.batchOperations
+    computeActiveOperations () {
+      this.activeOperations = this.moduleOptions.batchOperations
         .map(({ operations, ...rest }) => {
           if (!operations) {
             return {
@@ -171,7 +161,7 @@ export default {
           }
 
           return {
-            operations: operations.filter((ope) => this.showOperation(ope)),
+            operations: operations.filter((op) => this.isOperationActive(op)),
             ...rest
           };
         }).filter((operation) => {
@@ -179,10 +169,10 @@ export default {
             return false;
           }
 
-          return this.showOperation(operation);
+          return this.isOperationActive(operation);
         });
     },
-    showOperation (operation) {
+    isOperationActive (operation) {
       return Object.entries(operation.if || {})
         .every(([ filter, val ]) => {
           if (Array.isArray(val)) {
@@ -194,7 +184,9 @@ export default {
     },
     filter(filter, value) {
       this.$emit('filter', filter, value.data);
-      this.computeShowedOperations();
+      if (this.filterValues[filter] !== value) {
+        this.computeActiveOperations();
+      }
     },
     search(value, force) {
       if ((force && !value) || value.data === '') {

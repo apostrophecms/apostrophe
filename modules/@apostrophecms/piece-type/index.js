@@ -402,7 +402,7 @@ module.exports = {
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
           const groupedOperations = Object.entries(self.batchOperations)
-            .reduce((acc, [ action, properties ]) => {
+            .reduce((acc, [ opName, properties ]) => {
               const requiredFieldNotFound = properties.requiredField && !self.schema
                 .some((field) => field.name === properties.requiredField);
 
@@ -410,12 +410,12 @@ module.exports = {
                 return acc;
               }
 
-              const associatedGroup = getAssociatedGroup(action);
+              const associatedGroup = getAssociatedGroup(opName);
               const currentOperation = {
-                action,
+                name: opName,
                 ...properties
               };
-              const { name, ...props } = getCurrentOrGroup(
+              const { name, ...props } = getOperationOrGroup(
                 currentOperation,
                 associatedGroup,
                 acc
@@ -435,24 +435,24 @@ module.exports = {
               ...properties
             }));
 
-          function getCurrentOrGroup (currentOpe, [ groupName, groupProperties ], acc) {
+          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
             if (!groupName) {
-              return currentOpe;
+              return currentOp;
             }
 
             return {
               name: groupName,
               ...groupProperties,
               operations: [
-                ...acc[groupName]?.operations || [],
-                currentOpe
+                ...(acc[groupName] && acc[groupName].operations) || [],
+                currentOp
               ]
             };
           }
 
           function getAssociatedGroup (operation) {
             return Object.entries(self.batchOperationsGroups)
-              .find(([ _, { operations } ]) => {
+              .find(([ _key, { operations } ]) => {
                 return operations.includes(operation);
               }) || [];
           }

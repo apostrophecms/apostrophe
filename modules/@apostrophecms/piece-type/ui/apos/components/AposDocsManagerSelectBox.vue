@@ -48,18 +48,26 @@ export default {
     allPiecesSelection: {
       type: Object,
       required: true
+    },
+    displayedItems: {
+      type: Number,
+      required: true
     }
   },
   emits: [ 'select-all', 'clear-select', 'set-all-pieces-selection' ],
   computed: {
     selectBoxMessage () {
-      const showAllWord = (this.checkedIds.length === this.allPiecesSelection.total) &&
-        this.checkedIds.length !== 1;
+      const checkedCount = this.checkedIds.length;
+      const showAllWord = (checkedCount === this.allPiecesSelection.total) &&
+        checkedCount !== 1;
+
       const translationKey = this.allPiecesSelection.isSelected
         ? showAllWord
           ? 'apostrophe:selectBoxMessageAllSelected'
           : 'apostrophe:selectBoxMessageSelected'
-        : 'apostrophe:selectBoxMessage';
+        : checkedCount > this.displayedItems
+          ? 'apostrophe:selectBoxMessage'
+          : 'apostrophe:selectBoxMessagePage';
 
       return this.$t(translationKey, {
         num: this.checkedIds.length,

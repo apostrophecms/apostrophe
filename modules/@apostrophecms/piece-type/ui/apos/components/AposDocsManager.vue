@@ -87,6 +87,7 @@
             :filter-values="filterValues"
             :checked-ids="checked"
             :all-pieces-selection="allPiecesSelection"
+            :displayed-items="items.length"
             @select-all="selectAllPieces"
             @set-all-pieces-selection="setAllPiecesSelection"
           />
@@ -243,6 +244,7 @@ export default {
         }
       });
     }
+    apos.bus.$on('content-changed', this.getPieces);
   },
   destroyed() {
     this.destroyShortcuts();
