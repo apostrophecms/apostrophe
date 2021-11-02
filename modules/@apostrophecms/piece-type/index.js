@@ -124,6 +124,29 @@ module.exports = {
           archived: true
         }
       }
+      // visibility: {
+      //   label: 'apostrophe:visibility',
+      //   requiredField: 'visibility',
+      //   fields: {
+      //     add: {
+      //       visibility: {
+      //         type: 'select',
+      //         label: 'apostrophe:visibilityLabel',
+      //         def: 'public',
+      //         choices: [
+      //           {
+      //             value: 'public',
+      //             label: 'apostrophe:public'
+      //           },
+      //           {
+      //             value: 'loginRequired',
+      //             label: 'apostrophe:loginRequired'
+      //           }
+      //         ]
+      //       }
+      //     }
+      //   }
+      // }
     },
     group: {
       more: {
