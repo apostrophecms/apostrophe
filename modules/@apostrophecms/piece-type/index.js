@@ -396,7 +396,7 @@ module.exports = {
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
           const groupedOperations = Object.entries(self.batchOperations)
-            .reduce((acc, [ opeName, properties ]) => {
+            .reduce((acc, [ opName, properties ]) => {
               const requiredFieldNotFound = properties.requiredField && !self.schema
                 .some((field) => field.name === properties.requiredField);
 
@@ -404,9 +404,9 @@ module.exports = {
                 return acc;
               }
 
-              const associatedGroup = getAssociatedGroup(opeName);
+              const associatedGroup = getAssociatedGroup(opName);
               const currentOperation = {
-                name: opeName,
+                name: opName,
                 ...properties
               };
               const { name, ...props } = getOperationOrGroup(
