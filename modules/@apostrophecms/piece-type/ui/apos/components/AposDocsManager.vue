@@ -80,9 +80,7 @@
             :options="{
               disableUnchecked: maxReached()
             }"
-            @start-job="startJob"
           />
-          <!-- TEMP @start-job -->
           <AposDocsManagerSelectBox
             :selected-state="selectAllState"
             :module-labels="moduleLabels"
@@ -162,7 +160,8 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      }
+      },
+      batchOperations: []
     };
   },
   computed: {
@@ -235,6 +234,8 @@ export default {
     this.modal.active = true;
     await this.getPieces();
     await this.getAllPiecesTotal();
+
+    this.batchOperations = this.flattenOperations();
 
     if (this.relationshipField && this.moduleOptions.canEdit) {
       // Add computed singular label to context menu
@@ -448,43 +449,53 @@ export default {
         this.setCheckedDocs(docs);
       }
     },
+    flattenOperations() {
+      function reducer (ops, entry) {
+        if (!entry.operations) {
+          ops.push(entry);
+          return ops;
+        }
+
+        return [
+          ...ops,
+          ...entry.operations
+        ];
+      }
+
+      return this.moduleOptions.batchOperations.reduce(reducer, []);
+    },
     async handleBatchAction(action) {
-      if (!action || !this.moduleOptions.batchOperations.find(op => {
+      if (!action || !this.batchOperations.find(op => {
         return op.action === action;
       })) {
         return;
       }
 
-      const operation = this.moduleOptions.batchOperations.find(o => {
+      const operation = this.batchOperations.find(o => {
         return o.action === action;
       });
 
       // Continue in another method based on what the action wants to do. In
-      // any case the action method will probably make use of the checked items.
+      // any case the action method will probably make use of the checked
+      // items.
       if (operation.route) {
-        await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
-          body: {
-            ...operation.requestOptions,
-            _ids: this.checked,
-            messages: operation.messages,
-            type: this.checked.length === 1 ? this.moduleLabels.singluar
-              : this.moduleLabels.plural
-          }
-        });
-      }
-    },
-    // TEMP
-    async startJob() {
-      await apos.http.post(`${this.moduleOptions.action}/export`, {
-        body: {
-          _ids: this.checked,
-          extension: 'csv',
-          messages: {
-            progress: 'Exporting {{ type }}...',
-            completed: 'Exported {{ count }} {{ type }}.'
-          }
+        try {
+          await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
+            body: {
+              ...operation.requestOptions,
+              _ids: this.checked,
+              messages: operation.messages,
+              type: this.checked.length === 1 ? this.moduleLabels.singluar
+                : this.moduleLabels.plural
+            }
+          });
+        } catch (error) {
+          apos.notify('Batch operation {{ operation }} failed.', {
+            interpolate: { operation: operation.label },
+            type: 'danger'
+          });
         }
-      });
+      }
     }
   }
 };
