@@ -281,6 +281,8 @@
   "relatedDocsOnly": "Related documents only",
   "relatedDocsDefinition": "Related documents are documents referenced by this document. This typically includes images, content defined by relationships, etc.",
   "restore": "Restore",
+  "restoreBatchConfirmation": "Are you sure you want to restore {{ count }} {{ type }}?",
+  "restoreBatchConfirmationButton": "Yes, restore content.",
   "resolveErrorsBeforeSaving": "Resolve errors before saving.",
   "resolveErrorsFirst": "Resolve errors first.",
   "restoreOnlyThisPage": "Restore only this page",

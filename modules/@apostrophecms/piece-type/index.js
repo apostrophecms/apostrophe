@@ -129,9 +129,9 @@ module.exports = {
           archived: true
         },
         modalOptions: {
-          title: 'apostrophe:archiveType',
-          description: 'apostrophe:archivingBatchConfirmation',
-          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
+          title: 'apostrophe:restoreType',
+          description: 'apostrophe:restoreBatchConfirmation',
+          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
       }
       // visibility: {
