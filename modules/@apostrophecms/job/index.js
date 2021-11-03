@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const { stripIndent } = require('common-tags');
 // The `@apostrophecms/job` module runs long-running jobs in response
 // to user actions. Batch operations on pieces are a good example.
