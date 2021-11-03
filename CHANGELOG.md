@@ -26,7 +26,7 @@
 * The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to [Max Mulatz](https://github.com/klappradla) for this contribution.
 * Adds deprecation notes to doc module `afterLoad` events, which are deprecated.
 * Removes unused `afterLogin` method in the login module.
-* Add width & height attribute to Image widget for better loading performance
+* Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift.
 
 ## 3.6.0 - 2021-10-13
 
