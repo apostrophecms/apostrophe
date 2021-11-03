@@ -118,7 +118,7 @@ export default {
         // the text align control will not work until the user manually
         // applies a style or refreshes the page
         const defaultStyle = this.editorOptions.styles.find(style => style.def);
-        const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : "";
+        const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
         return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
       } else {
         return content;
@@ -151,7 +151,7 @@ export default {
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
-          styles: this.editorOptions.styles,
+          styles: this.editorOptions.styles.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
     }
@@ -281,6 +281,14 @@ export default {
         }
       }
       return styles;
+    },
+    localizeStyle(style) {
+      style.label = this.$t(style.label);
+
+      return {
+        ...style,
+        label: this.$t(style.label)
+      };
     }
   }
 };

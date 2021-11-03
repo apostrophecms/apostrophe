@@ -56,25 +56,20 @@ export default {
     sort(action) {
       this.$emit('sort', action);
     },
-    selectAllValue() {
-      return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };
-    },
     selectAllChoice() {
       const checkCount = this.checked.length;
       const itemCount = (this.items && this.items.length) || 0;
 
-      return checkCount > 0 && checkCount !== itemCount ? {
+      return {
         value: 'checked',
-        indeterminate: true
-      } : {
-        value: 'checked'
+        indeterminate: checkCount > 0 && checkCount !== itemCount
       };
     },
     selectAllState() {
-      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
+      if (this.checked.length && !this.selectAllChoice.indeterminate) {
         return 'checked';
       }
-      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
+      if (this.checked.length && this.selectAllChoice.indeterminate) {
         return 'indeterminate';
       }
       return 'empty';
@@ -122,22 +117,24 @@ export default {
     selectAll() {
       if (!this.checked.length) {
         this.items.forEach((item) => {
-          const relationshipsMaxed = this.relationshipField && this.maxReached();
+          const relationshipsMaxedOrUnpublished = this.relationshipField &&
+          (this.maxReached() || !item.lastPublishedAt);
 
-          if (relationshipsMaxed || !item.lastPublishedAt) {
+          if (relationshipsMaxedOrUnpublished) {
             return;
           }
 
           this.checked.push(item._id);
         });
+
         return;
       }
 
-      if (this.checked.length <= this.items.length) {
-        this.checked.forEach((id) => {
-          this.checked = this.checked.filter(item => item !== id);
-        });
+      if (this.allPiecesSelection) {
+        this.allPiecesSelection.isSelected = false;
       }
+
+      this.checked = [];
     },
     iconSize(header) {
       if (header.icon) {

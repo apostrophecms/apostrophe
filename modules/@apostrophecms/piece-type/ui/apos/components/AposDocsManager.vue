@@ -70,16 +70,26 @@
             :filter-choices="filterChoices"
             :filter-values="filterValues"
             :labels="moduleLabels"
+            :batch-operations="moduleOptions.batchOperations"
+            :displayed-items="items.length"
             @select-click="selectAll"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
             :options="{
-              disableUnchecked: maxReached(),
-              hideSelectAll: !relationshipField,
-              moreActions
+              disableUnchecked: maxReached()
             }"
+          />
+          <AposDocsManagerSelectBox
+            :selected-state="selectAllState"
+            :module-labels="moduleLabels"
+            :filter-values="filterValues"
+            :checked-ids="checked"
+            :all-pieces-selection="allPiecesSelection"
+            :displayed-items="items.length"
+            @select-all="selectAllPieces"
+            @set-all-pieces-selection="setAllPiecesSelection"
           />
         </template>
         <template #bodyMain>
@@ -92,7 +102,6 @@
             :options="{
               ...moduleOptions,
               disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField,
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
@@ -147,7 +156,12 @@ export default {
         },
         menu: []
       },
-      filterChoices: {}
+      filterChoices: {},
+      allPiecesSelection: {
+        isSelected: false,
+        total: 0
+      },
+      batchOperations: []
     };
   },
   computed: {
@@ -193,26 +207,15 @@ export default {
     disableUnpublished() {
       return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
     },
-    moreActions () {
-      const actions = [];
+    selectAllChoice() {
+      const checkCount = this.checked.length;
+      const pageNotFullyChecked = this.items
+        .some((item) => !this.checked.includes(item._id));
 
-      for (const action of this.moduleOptions.batchOperations) {
-        let disableAction = false;
-
-        if (action.unlessFilter) {
-          for (const filter in action.unlessFilter) {
-            if (action.unlessFilter[filter] === this.filterValues[filter]) {
-              disableAction = true;
-            }
-          }
-        }
-
-        if (!disableAction) {
-          actions.push(action);
-        }
-      }
-
-      return actions;
+      return {
+        value: 'checked',
+        indeterminate: checkCount && pageNotFullyChecked
+      };
     }
   },
   created() {
@@ -229,7 +232,11 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-    this.getPieces();
+    await this.getPieces();
+    await this.getAllPiecesTotal();
+
+    this.batchOperations = this.flattenOperations();
+
     if (this.relationshipField && this.moduleOptions.canEdit) {
       // Add computed singular label to context menu
       this.moreMenu.menu.unshift({
@@ -294,6 +301,27 @@ export default {
     async finishSaved() {
       await this.getPieces();
     },
+    async request (mergeOptions) {
+      const options = {
+        ...this.filterValues,
+        ...this.queryExtras,
+        ...mergeOptions,
+        withPublished: 1
+      };
+
+      // Avoid undefined properties.
+      const qs = Object.entries(options)
+        .reduce((acc, [ key, val ]) => ({
+          ...acc,
+          ...val !== undefined && { [key]: val }
+        }), {});
+
+      return apos.http.get(this.moduleOptions.action, {
+        qs,
+        busy: true,
+        draft: true
+      });
+    },
     async getPieces () {
       if (this.holdQueries) {
         return;
@@ -301,34 +329,38 @@ export default {
 
       this.holdQueries = true;
 
-      const qs = {
-        ...this.filterValues,
-        page: this.currentPage,
-        ...this.queryExtras,
-        // Also fetch published docs as _publishedDoc subproperties
-        withPublished: 1
-      };
+      const {
+        currentPage, pages, results, choices
+      } = await this.request({
+        page: this.currentPage
+      });
 
-      // Avoid undefined properties.
-      for (const prop in qs) {
-        if (qs[prop] === undefined) {
-          delete qs[prop];
-        };
-      }
-
-      const getResponse = await apos.http.get(
-        this.moduleOptions.action, {
-          busy: true,
-          qs,
-          draft: true
-        }
-      );
-
-      this.currentPage = getResponse.currentPage;
-      this.totalPages = getResponse.pages;
-      this.items = getResponse.results;
-      this.filterChoices = getResponse.choices;
+      this.currentPage = currentPage;
+      this.totalPages = pages;
+      this.items = results;
+      this.filterChoices = choices;
       this.holdQueries = false;
+    },
+    async getAllPiecesTotal () {
+      const { count: total } = await this.request({ count: 1 });
+
+      this.setAllPiecesSelection({
+        isSelected: false,
+        total
+      });
+    },
+    async selectAllPieces () {
+      const { results: docs } = await this.request({
+        project: {
+          _id: 1
+        },
+        perPage: this.allPiecesSelection.total
+      });
+
+      this.setAllPiecesSelection({
+        isSelected: true,
+        docs
+      });
     },
     updatePage(num) {
       if (num) {
@@ -348,6 +380,7 @@ export default {
       this.currentPage = 1;
 
       await this.getPieces();
+      await this.getAllPiecesTotal();
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
@@ -357,10 +390,12 @@ export default {
       this.filterValues[filter] = value;
       this.currentPage = 1;
 
-      this.getPieces();
+      await this.getPieces();
+      await this.getAllPiecesTotal();
       this.headers = this.computeHeaders();
-    },
 
+      this.setCheckedDocs([]);
+    },
     shortcutNew(event) {
       const interesting = (event.keyCode === 78 || event.keyCode === 67); // C(reate) or N(ew)
       const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
@@ -372,7 +407,6 @@ export default {
         this.create();
       }
     },
-
     bindShortcuts() {
       window.addEventListener('keydown', this.shortcutNew);
     },
@@ -400,28 +434,68 @@ export default {
         });
       }
     },
-    handleBatchAction(action) {
-      if (!action || !this.moduleOptions.batchOperations.find(op => {
+    setAllPiecesSelection ({
+      isSelected, total, docs
+    }) {
+      if (typeof isSelected === 'boolean') {
+        this.allPiecesSelection.isSelected = isSelected;
+      }
+
+      if (typeof total === 'number') {
+        this.allPiecesSelection.total = total;
+      }
+
+      if (docs) {
+        this.setCheckedDocs(docs);
+      }
+    },
+    flattenOperations() {
+      function reducer (ops, entry) {
+        if (!entry.operations) {
+          ops.push(entry);
+          return ops;
+        }
+
+        return [
+          ...ops,
+          ...entry.operations
+        ];
+      }
+
+      return this.moduleOptions.batchOperations.reduce(reducer, []);
+    },
+    async handleBatchAction(action) {
+      if (!action || !this.batchOperations.find(op => {
         return op.action === action;
       })) {
         return;
       }
 
-      const act = this.moduleOptions.batchOperations.find(o => {
+      const operation = this.batchOperations.find(o => {
         return o.action === action;
       });
 
       // Continue in another method based on what the action wants to do. In
-      // any case the action method will probably make use of the checked items.
-      if (act.modal) {
-        // Use a method that opens a modal
-        this.handleModalAction(act);
-      } else if (act.route) {
-        // Use a method that hits a route.
+      // any case the action method will probably make use of the checked
+      // items.
+      if (operation.route) {
+        try {
+          await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
+            body: {
+              ...operation.requestOptions,
+              _ids: this.checked,
+              messages: operation.messages,
+              type: this.checked.length === 1 ? this.moduleLabels.singluar
+                : this.moduleLabels.plural
+            }
+          });
+        } catch (error) {
+          apos.notify('Batch operation {{ operation }} failed.', {
+            interpolate: { operation: operation.label },
+            type: 'danger'
+          });
+        }
       }
-    },
-    handleModalAction (action) {
-      console.info('Execute modal action', action);
     }
   }
 };

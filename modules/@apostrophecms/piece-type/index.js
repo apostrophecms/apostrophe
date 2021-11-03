@@ -74,7 +74,7 @@ module.exports = {
         ],
         // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
-        def: true
+        def: null
       },
       archived: {
         label: 'apostrophe:archive',
@@ -100,17 +100,30 @@ module.exports = {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        unlessFilter: {
-          archived: true
+        route: '/archive',
+        // TEMP - full batch operation work is upcoming
+        messages: {
+          progress: 'Archiving {{ type }}...',
+          completed: 'Archived {{ count }} {{ type }}.'
+        },
+        icon: 'archive-arrow-down-icon',
+        if: {
+          archived: false
         }
       },
       restore: {
         label: 'apostrophe:restore',
-        unlessFilter: {
-          archived: false
+        route: '/restore',
+        // TEMP - full batch operation work is upcoming
+        messages: {
+          progress: 'Restoring {{ type }}...',
+          completed: 'Restoring {{ count }} {{ type }}.'
+        },
+        icon: 'archive-arrow-up-icon',
+        if: {
+          archived: true
         }
       }
-      // TODO: Implement schema batch operations
       // visibility: {
       //   label: 'apostrophe:visibility',
       //   requiredField: 'visibility',
@@ -134,6 +147,12 @@ module.exports = {
       //     }
       //   }
       // }
+    },
+    group: {
+      more: {
+        icon: 'dots-vertical-icon',
+        operations: []
+      }
     }
   },
   init(self) {
@@ -258,6 +277,47 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.publish(req, draft);
+        },
+        // TEMP - This works fine, but should be reviewed during work actually
+        // focused on batch archive/restore.
+        async archive (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              await self.apos.doc.db.updateOne({
+                _id: id
+              }, {
+                $set: {
+                  archived: true
+                }
+              });
+            }
+          );
+        },
+        // TEMP - This works fine, but should be reviewed during work actually
+        // focused on batch archive/restore.
+        async restore (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req, req.body._ids,
+            async function(req, id) {
+              await self.apos.doc.db.updateOne({
+                _id: id
+              }, {
+                $set: {
+                  archived: false
+                }
+              });
+            }
+          );
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -388,20 +448,65 @@ module.exports = {
       },
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
-          self.batchOperations = Object.keys(self.batchOperations).map(key => ({
-            action: key,
-            ...self.batchOperations[key]
-          })).filter(batchOperation => {
-            // If a `requiredField` is registered, only include the operation
-            // if that field is present on the schema.
-            if (batchOperation.requiredField && !_.find(self.schema, {
-              name: batchOperation.requiredField
-            })) {
-              return false;
+          const groupedOperations = Object.entries(self.batchOperations)
+            .reduce((acc, [ opName, properties ]) => {
+              // Check if there is a required schema field for this batch operation.
+              const requiredFieldNotFound = properties.requiredField && !self.schema
+                .some((field) => field.name === properties.requiredField);
+
+              if (requiredFieldNotFound) {
+                return acc;
+              }
+              // Find a group for the operation, if there is one.
+              const associatedGroup = getAssociatedGroup(opName);
+              const currentOperation = {
+                action: opName,
+                ...properties
+              };
+              const { action, ...props } = getOperationOrGroup(
+                currentOperation,
+                associatedGroup,
+                acc
+              );
+
+              return {
+                ...acc,
+                [action]: {
+                  ...props
+                }
+              };
+            }, {});
+
+          self.batchOperations = Object.entries(groupedOperations)
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
+
+          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
+            if (!groupName) {
+              // Operation is not grouped. Return it as it is.
+              return currentOp;
             }
 
-            return true;
-          });
+            // Return the operation group with the new operation added.
+            return {
+              name: groupName,
+              ...groupProperties,
+              operations: [
+                ...(acc[groupName] && acc[groupName].operations) || [],
+                currentOp
+              ]
+            };
+          }
+
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties }]`
+          function getAssociatedGroup (operation) {
+            return Object.entries(self.batchOperationsGroups)
+              .find(([ _key, { operations } ]) => {
+                return operations.includes(operation);
+              }) || [];
+          }
         }
       }
     };
@@ -776,7 +881,7 @@ module.exports = {
             query.and({
               _id: null
             });
-          } else {
+          } else if (!query.state.project) {
             query.project(self.options.publicApiProjection);
           }
         }

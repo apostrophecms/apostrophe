@@ -45,10 +45,13 @@
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
-            :total-pages="totalPages" :current-page="currentPage"
-            :filters="toolbarFilters" :labels="moduleLabels"
+            :total-pages="totalPages"
+            :current-page="currentPage"
+            :filters="toolbarFilters"
+            :labels="moduleLabels"
             :disable="relationshipErrors === 'min'"
             :options="{ hideSelectAll: !relationshipField }"
+            :displayed-items="items.length"
             @page-change="updatePage"
             @select-click="selectClick"
             @search="search"

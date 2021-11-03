@@ -768,6 +768,23 @@ describe('Pieces', function() {
     relatedArticleId = response._articles[0]._id;
   });
 
+  it('can GET a single product using projections', async () => {
+    const response = await apos.http.get(`/api/v1/product/${relatedProductId}`, {
+      qs: {
+        project: {
+          _id: 1,
+          title: 1
+        }
+      }
+    });
+
+    const keys = Object.keys(response);
+
+    assert(response);
+    assert(keys.length === 2);
+    assert(keys.every((key) => [ '_id', 'title' ].includes(key)));
+  });
+
   it('can GET a single article with reverse relationships', async () => {
     const response = await apos.http.get(`/api/v1/article/${relatedArticleId}`);
     assert(response);

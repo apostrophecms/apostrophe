@@ -2,27 +2,38 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
-        v-if="!options.hideSelectAll"
-        label="apostrophe:select" :icon-only="true"
-        :icon="checkboxIcon" type="outline"
+        v-if="displayedItems"
+        label="apostrophe:select"
+        type="outline"
+        text-color="var(--a-primary)"
+        :icon-only="true"
+        :icon="checkboxIcon"
         @click="$emit('select-click')"
       />
-      <!-- TODO: Return this delete button when batch updates are added.
-        When we do that though, we should do it like we handle the other
-        batch operation events, not with extra event plumbing
-        percolating everywhere. We can still achieve a custom button
-        without that. -->
-      <!-- <AposButton
-        label="apostrophe:delete" @click="$emit('archive-click')"
-        :icon-only="true" icon="delete-icon"
-        type="outline"
-      /> -->
-      <AposContextMenu
-        v-if="more.menu.length"
-        :button="more.button"
-        :menu="more.menu"
-        @item-clicked="batchAction"
-      />
+      <div
+        v-for="{action, label, icon, operations} in activeOperations"
+        :key="action"
+      >
+        <AposButton
+          v-if="!operations"
+          label="label"
+          :icon-only="true"
+          :icon="icon"
+          type="outline"
+          @click="$emit('batch', action)"
+        />
+        <AposContextMenu
+          v-else
+          :button="{
+            label,
+            icon,
+            iconOnly: true,
+            type: 'outline'
+          }"
+          :menu="operations"
+          @item-clicked="batchAction"
+        />
+      </div>
     </template>
     <template #rightControls>
       <AposPager
@@ -31,7 +42,7 @@
         :total-pages="totalPages" :current-page="currentPage"
       />
       <AposFilterMenu
-        v-if="filters.length > 0"
+        v-if="filters.length"
         :filters="filters"
         :choices="filterChoices"
         :values="filterValues"
@@ -99,6 +110,14 @@ export default {
       default () {
         return {};
       }
+    },
+    batchOperations: {
+      type: Array,
+      default: () => []
+    },
+    displayedItems: {
+      type: Number,
+      required: true
     }
   },
   emits: [
@@ -106,7 +125,9 @@ export default {
     'filter',
     'search',
     'page-change',
-    'batch'
+    'batch',
+    // TEMP
+    'start-job'
   ],
   data() {
     return {
@@ -122,7 +143,8 @@ export default {
         },
         status: {},
         value: { data: '' }
-      }
+      },
+      activeOperations: []
     };
   },
   computed: {
@@ -134,24 +156,48 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
-    },
-    more () {
-      const config = {
-        button: {
-          label: 'apostrophe:moreOperations',
-          iconOnly: true,
-          icon: 'dots-vertical-icon',
-          type: 'outline'
-        },
-        menu: Array.isArray(this.options.moreActions) ? this.options.moreActions : []
-      };
-
-      return config;
     }
   },
+  mounted () {
+    this.computeActiveOperations();
+  },
   methods: {
+    computeActiveOperations () {
+      this.activeOperations = this.batchOperations.map(({ operations, ...rest }) => {
+        if (!operations) {
+          return {
+            ...rest,
+            operations
+          };
+        }
+
+        return {
+          operations: operations.filter((ope) => this.isOperationActive(ope)),
+          ...rest
+        };
+      }).filter((operation) => {
+        if (operation.operations && !operation.operations.length) {
+          return false;
+        }
+
+        return this.isOperationActive(operation);
+      });
+    },
+    isOperationActive (operation) {
+      return Object.entries(operation.if || {})
+        .every(([ filter, val ]) => {
+          if (Array.isArray(val)) {
+            return val.includes(this.filterValues[filter]);
+          }
+
+          return this.filterValues[filter] === val;
+        });
+    },
     filter(filter, value) {
       this.$emit('filter', filter, value.data);
+      if (this.filterValues[filter] !== value) {
+        this.computeActiveOperations();
+      }
     },
     search(value, force) {
       if ((force && !value) || value.data === '') {

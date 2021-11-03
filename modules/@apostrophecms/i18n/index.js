@@ -51,9 +51,14 @@ module.exports = {
         throw self.apos.error('invalid', `Locale prefixes must not contain more than one forward slash ("/").\nUse hyphens as separators. Check locale "${key}".`);
       }
     }
+    const fallbackLng = [ self.defaultLocale ];
+    // In case the default locale also has inadequate admin UI phrases
+    if (fallbackLng[0] !== 'en') {
+      fallbackLng.push('en');
+    }
     // Make sure we have our own instance to avoid conflicts with other apos objects
     self.i18next = i18next.createInstance({
-      fallbackLng: self.defaultLocale,
+      fallbackLng,
       // Required to prevent the debugger from complaining
       languages: Object.keys(self.locales),
       // Added later, but required here
@@ -458,6 +463,10 @@ module.exports = {
         };
         if (req.locale !== self.defaultLocale) {
           i18n[self.defaultLocale] = self.getBrowserBundles(self.defaultLocale);
+        }
+        // In case the default locale also has inadequate admin UI phrases
+        if (!i18n.en) {
+          i18n.en = self.getBrowserBundles('en');
         }
         const result = {
           i18n,
