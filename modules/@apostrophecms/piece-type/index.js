@@ -100,6 +100,12 @@ module.exports = {
     add: {
       archive: {
         label: 'apostrophe:archive',
+        route: '/archive',
+        // TEMP - full batch operation work is upcoming
+        messages: {
+          progress: 'Archiving {{ type }}...',
+          completed: 'Archived {{ count }} {{ type }}.'
+        },
         icon: 'archive-arrow-down-icon',
         if: {
           archived: false
@@ -109,14 +115,47 @@ module.exports = {
           description: 'apostrophe:archivingBatchConfirmation',
           confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         }
+      },
+      restore: {
+        label: 'apostrophe:restore',
+        route: '/restore',
+        // TEMP - full batch operation work is upcoming
+        messages: {
+          progress: 'Restoring {{ type }}...',
+          completed: 'Restoring {{ count }} {{ type }}.'
+        },
+        icon: 'archive-arrow-up-icon',
+        if: {
+          archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
+        }
       }
-      // restore: {
-      //   label: 'apostrophe:restore',
-      //   icon: 'archive-arrow-up-icon',
-      //   if: {
-      //     archived: true
-      //   },
-      //   modalOptions: {}
+      // visibility: {
+      //   label: 'apostrophe:visibility',
+      //   requiredField: 'visibility',
+      //   fields: {
+      //     add: {
+      //       visibility: {
+      //         type: 'select',
+      //         label: 'apostrophe:visibilityLabel',
+      //         def: 'public',
+      //         choices: [
+      //           {
+      //             value: 'public',
+      //             label: 'apostrophe:public'
+      //           },
+      //           {
+      //             value: 'loginRequired',
+      //             label: 'apostrophe:loginRequired'
+      //           }
+      //         ]
+      //       }
+      //     }
+      //   }
       // }
     },
     group: {
@@ -125,29 +164,6 @@ module.exports = {
         operations: []
       }
     }
-    // visibility: {
-    //   label: 'apostrophe:visibility',
-    //   requiredField: 'visibility',
-    //   fields: {
-    //     add: {
-    //       visibility: {
-    //         type: 'select',
-    //         label: 'apostrophe:visibilityLabel',
-    //         def: 'public',
-    //         choices: [
-    //           {
-    //             value: 'public',
-    //             label: 'apostrophe:public'
-    //           },
-    //           {
-    //             value: 'loginRequired',
-    //             label: 'apostrophe:loginRequired'
-    //           }
-    //         ]
-    //       }
-    //     }
-    //   }
-    // }
   },
   init(self) {
     if (!self.options.name) {
@@ -271,6 +287,47 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.publish(req, draft);
+        },
+        // TEMP - This works fine, but should be reviewed during work actually
+        // focused on batch archive/restore.
+        async archive (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              await self.apos.doc.db.updateOne({
+                _id: id
+              }, {
+                $set: {
+                  archived: true
+                }
+              });
+            }
+          );
+        },
+        // TEMP - This works fine, but should be reviewed during work actually
+        // focused on batch archive/restore.
+        async restore (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req, req.body._ids,
+            async function(req, id) {
+              await self.apos.doc.db.updateOne({
+                _id: id
+              }, {
+                $set: {
+                  archived: false
+                }
+              });
+            }
+          );
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -403,19 +460,20 @@ module.exports = {
         composeBatchOperations() {
           const groupedOperations = Object.entries(self.batchOperations)
             .reduce((acc, [ opName, properties ]) => {
+              // Check if there is a required schema field for this batch operation.
               const requiredFieldNotFound = properties.requiredField && !self.schema
                 .some((field) => field.name === properties.requiredField);
 
               if (requiredFieldNotFound) {
                 return acc;
               }
-
+              // Find a group for the operation, if there is one.
               const associatedGroup = getAssociatedGroup(opName);
               const currentOperation = {
                 action: opName,
                 ...properties
               };
-              const { name, ...props } = getOperationOrGroup(
+              const { action, ...props } = getOperationOrGroup(
                 currentOperation,
                 associatedGroup,
                 acc
@@ -423,7 +481,7 @@ module.exports = {
 
               return {
                 ...acc,
-                [name]: {
+                [action]: {
                   ...props
                 }
               };
@@ -437,9 +495,11 @@ module.exports = {
 
           function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
             if (!groupName) {
+              // Operation is not grouped. Return it as it is.
               return currentOp;
             }
 
+            // Return the operation group with the new operation added.
             return {
               name: groupName,
               ...groupProperties,
@@ -450,6 +510,7 @@ module.exports = {
             };
           }
 
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties }]`
           function getAssociatedGroup (operation) {
             return Object.entries(self.batchOperationsGroups)
               .find(([ _key, { operations } ]) => {

@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { stripIndent } = require('common-tags');
 // The `@apostrophecms/job` module runs long-running jobs in response
 // to user actions. Batch operations on pieces are a good example.
 //
@@ -27,34 +28,52 @@ const _ = require('lodash');
 
 module.exports = {
   options: { collectionName: 'aposJobs' },
+  icons: {
+    'database-export-icon': 'DatabaseExport'
+  },
   async init(self) {
     await self.ensureCollection();
+
+    self.enableBrowserData();
   },
-  // TODO RESTify these
   apiRoutes(self) {
     return {
       post: {
         async cancel(req) {
-          const _id = self.apos.launder.id(req.body._id);
-          const count = await self.db.updateOne({ _id: _id }, { $set: { canceling: true } });
-          if (!count) {
-            throw self.apos.error('notfound');
-          }
+          self.apos.util.warnDev(stripIndent`
+            The @apostrophecms/job module's "/cancel" route is deprecated.
+          `);
+
+          return {};
         },
         async progress(req) {
-          const _id = self.apos.launder.id(req.body._id);
-          const job = await self.db.findOne({ _id: _id });
-          if (!job) {
-            throw self.apos.error('notfound');
-          }
-          // % of completion rounded off to 2 decimal places
-          if (!job.total) {
-            job.percentage = 0;
-          } else {
-            job.percentage = (job.processed / job.total * 100).toFixed(2);
-          }
-          return job;
+          self.apos.util.warnDev(stripIndent`
+            The @apostrophecms/job module's "/progress" route is deprecated.
+            Use the RESTful registered "action" route on the module instead.
+          `);
+
+          return {};
         }
+      }
+    };
+  },
+  restApiRoutes (self) {
+    return {
+      async getOne(req, _id) {
+        if (!self.apos.permission.can(req, 'view-draft')) {
+          throw self.apos.error('notfound');
+        }
+
+        const jobId = self.apos.launder.id(_id);
+        const job = await self.db.findOne({ _id: jobId });
+
+        if (!job) {
+          throw self.apos.error('notfound');
+        }
+
+        job.percentage = !job.total ? 0 : (job.processed / job.total * 100).toFixed(2);
+
+        return job;
       }
     };
   },
@@ -101,14 +120,34 @@ module.exports = {
       async run(req, ids, change, options) {
         let job;
         let stopping = false;
+        let notification;
+        const total = ids.length;
+
         const results = {};
         const res = req.res;
         try {
           // sends a response with a jobId to the browser
-          const job = await startJob();
+          job = await self.start(_.assign({}, options, {
+            stop: function (job) {
+              stopping = true;
+            }
+          }));
+
+          self.setTotal(job, ids.length);
           // Runs after response is already sent
           run();
-          return job;
+
+          // Trigger the "in progress" notification.
+          notification = await self.triggerNotification(req, 'progress', {
+            // It's only relevant to pass a job ID to the notification if
+            // the notification will show progress. Without a total number we
+            // can't show progress.
+            jobId: total && job._id
+          });
+
+          return {
+            jobId: job._id
+          };
         } catch (err) {
           self.apos.util.error(err);
           if (!job) {
@@ -122,15 +161,7 @@ module.exports = {
             self.apos.util.error(err);
           }
         }
-        async function startJob() {
-          job = await self.start(_.assign({}, options, {
-            stop: function (job) {
-              stopping = true;
-            }
-          }));
-          self.setTotal(job, ids.length);
-          return { jobId: job._id };
-        }
+
         async function run() {
           let good = false;
           try {
@@ -149,6 +180,15 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
+
+            // Trigger the completed notification.
+            await self.triggerNotification(req, 'completed', {
+              dismiss: true
+            });
+            // Dismiss the progress notification. It will delay 4 seconds
+            // because "completed" notification will dismiss in 5 and we want
+            // to maintain the feeling of process order for users.
+            await self.apos.notification.dismiss(req, notification.noteId, 4000);
           }
         }
       },
@@ -197,11 +237,25 @@ module.exports = {
       async runNonBatch(req, doTheWork, options) {
         const res = req.res;
         let job;
+        let notification;
+        let total;
+
         const canceling = false;
         try {
-          const info = await startJob();
+          job = await self.start(options);
           run();
-          return info;
+
+          // Trigger the "in progress" notification.
+          notification = await self.triggerNotification(req, 'progress', {
+            // It's only relevant to pass a job ID to the notification if
+            // the notification will show progress. Without a total number we
+            // can't show progress.
+            jobId: total && job._id
+          });
+
+          return {
+            jobId: job._id
+          };
         } catch (err) {
           self.apos.util.error(err);
           if (job) {
@@ -213,10 +267,7 @@ module.exports = {
             return res.status(500).send('error');
           }
         }
-        async function startJob() {
-          job = await self.start(options);
-          return { jobId: job._id };
-        }
+
         async function run() {
           let results;
           let good = false;
@@ -231,6 +282,8 @@ module.exports = {
                 return self.bad(job, n);
               },
               setTotal: function (n) {
+                // Getting the total to immediately add to the notification.
+                total = n;
                 return self.setTotal(job, n);
               },
               setResults: function (_results) {
@@ -243,8 +296,34 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
+
+            // Trigger the completed notification.
+            await self.triggerNotification(req, 'completed', {
+              dismiss: true
+            });
+            // Dismiss the progress notification. It will delay 4 seconds
+            // because "completed" notification will dismiss in 5 and we want
+            // to maintain the feeling of process order for users.
+            await self.apos.notification.dismiss(req, notification.noteId, 4000);
           }
         }
+      },
+      async triggerNotification(req, stage, options = {}) {
+        if (!req.body || !req.body.messages || !req.body.messages[stage]) {
+          return {};
+        }
+
+        return self.apos.notification.trigger(req, req.body.messages[stage], {
+          interpolate: {
+            count: req.body._ids.length,
+            type: req.body.type || req.t('apostrophe:document')
+          },
+          dismiss: options.dismiss,
+          jobId: options.jobId,
+          icon: req.body.messages.icon || 'database-export-icon',
+          type: options.type || 'success',
+          return: true
+        });
       },
       // Start tracking a long-running job. Called by routes
       // that require progress display and/or the ability to take longer
@@ -461,6 +540,11 @@ module.exports = {
           };
           await self.db.updateOne({ _id: job._id }, { $set: $set });
         }
+      },
+      getBrowserData(req) {
+        return {
+          action: self.action
+        };
       }
     };
   }

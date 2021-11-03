@@ -115,7 +115,9 @@ export default {
     'filter',
     'search',
     'page-change',
-    'batch'
+    'batch',
+    // TEMP
+    'start-job'
   ],
   data() {
     return {
