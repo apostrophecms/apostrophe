@@ -146,10 +146,10 @@ module.exports = {
             for (const id of ids) {
               try {
                 const result = await change(req, id);
-                self.good(job);
+                self.success(job);
                 results[id] = result;
               } catch (err) {
-                self.bad(job);
+                self.failure(job);
               }
             }
             good = true;
@@ -174,7 +174,7 @@ module.exports = {
       // of that module.
       //
       // The `doTheWork` function receives `(req, reporting)` and may optionally invoke
-      // `reporting.good()` and `reporting.bad()` to update the progress and error
+      // `reporting.success()` and `reporting.failure()` to update the progress and error
       // counters, and `reporting.setTotal()` to indicate the total number of
       // counts expected so a progress meter can be rendered. This is optional
       // and an indication of progress is still displayed without it.
@@ -229,13 +229,13 @@ module.exports = {
           let good = false;
           try {
             await doTheWork(req, {
-              good (n) {
+              success (n) {
                 n = n || 1;
-                return self.good(job, n);
+                return self.success(job, n);
               },
-              bad (n) {
+              failure (n) {
                 n = n || 1;
-                return self.bad(job, n);
+                return self.failure(job, n);
               },
               setTotal (n) {
                 total = n;
@@ -323,7 +323,7 @@ module.exports = {
       //
       // No promise is returned as this method just updates
       // the job tracking information in the background.
-      good(job, n) {
+      success(job, n) {
         n = n === undefined ? 1 : n;
         self.db.updateOne({ _id: job._id }, {
           $inc: {
@@ -344,7 +344,7 @@ module.exports = {
       //
       // No promise is returned as this method just updates
       // the job tracking information in the background.
-      bad(job, n) {
+      failure(job, n) {
         n = n === undefined ? 1 : n;
         self.db.updateOne({ _id: job._id }, {
           $inc: {
