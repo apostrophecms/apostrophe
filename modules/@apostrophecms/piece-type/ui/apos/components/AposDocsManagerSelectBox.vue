@@ -48,14 +48,26 @@ export default {
     allPiecesSelection: {
       type: Object,
       required: true
+    },
+    displayedItems: {
+      type: Number,
+      required: true
     }
   },
   emits: [ 'select-all', 'clear-select', 'set-all-pieces-selection' ],
   computed: {
     selectBoxMessage () {
+      const checkedCount = this.checkedIds.length;
+      const showAllWord = (checkedCount === this.allPiecesSelection.total) &&
+        checkedCount !== 1;
+
       const translationKey = this.allPiecesSelection.isSelected
-        ? 'apostrophe:selectBoxMessageSelected'
-        : 'apostrophe:selectBoxMessage';
+        ? showAllWord
+          ? 'apostrophe:selectBoxMessageAllSelected'
+          : 'apostrophe:selectBoxMessageSelected'
+        : checkedCount > this.displayedItems
+          ? 'apostrophe:selectBoxMessage'
+          : 'apostrophe:selectBoxMessagePage';
 
       return this.$t(translationKey, {
         num: this.checkedIds.length,
@@ -63,7 +75,11 @@ export default {
       });
     },
     selectBoxMessageButton () {
-      return this.$t('apostrophe:selectBoxMessageButton', {
+      const translationKey = this.allPiecesSelection.total === 1
+        ? 'apostrophe:selectBoxMessageButton'
+        : 'apostrophe:selectBoxMessageAllButton';
+
+      return this.$t(translationKey, {
         num: this.allPiecesSelection.total,
         label: this.getLabel(this.allPiecesSelection.total)
       });
@@ -112,6 +128,7 @@ export default {
       color: var(--a-primary);
       cursor: pointer;
       margin-left: 0.4rem;
+      border: none;
 
       &:hover {
         text-decoration: underline;
