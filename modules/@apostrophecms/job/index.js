@@ -313,7 +313,7 @@ module.exports = {
         }
       },
       async triggerNotification(req, stage, options = {}) {
-        if (!req.body || !req.body.messages) {
+        if (!req.body || !req.body.messages || !req.body.messages[stage]) {
           return {};
         }
 
