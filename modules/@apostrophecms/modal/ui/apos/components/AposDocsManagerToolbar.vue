@@ -21,7 +21,7 @@
           :icon="icon"
           :disabled="!checkedCount"
           type="outline"
-          @click="operationModal({ modalOptions })"
+          @click="operationModal({ action, modalOptions })"
         />
         <AposContextMenu
           v-else
@@ -202,9 +202,6 @@ export default {
 
       this.$emit('search', value.data);
     },
-    batchAction(action) {
-      this.$emit('batch', action);
-    },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
     },
@@ -232,6 +229,10 @@ export default {
         localize: false,
         ...form && form
       });
+
+      if (confirmed) {
+        this.$emit('batch', action);
+      }
     }
   }
 };
