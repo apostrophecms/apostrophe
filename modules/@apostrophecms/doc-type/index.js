@@ -1463,6 +1463,13 @@ module.exports = {
           }
         },
 
+        noAttachments: {
+          def: false,
+          launder(b) {
+            return self.apos.launder.boolean(b);
+          }
+        },
+
         // `.autocomplete('sta')` limits results to docs which are a good match for
         // a partial string beginning with `sta`, for instance `station`. Appropriate words
         // must exist in the title or other text schema fields of
