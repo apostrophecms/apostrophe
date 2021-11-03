@@ -127,7 +127,13 @@ module.exports = {
         const res = req.res;
         try {
           // sends a response with a jobId to the browser
-          const job = await startJob();
+          job = await self.start(_.assign({}, options, {
+            stop: function (job) {
+              stopping = true;
+            }
+          }));
+
+          self.setTotal(job, ids.length);
           // Runs after response is already sent
           run();
 
@@ -136,10 +142,12 @@ module.exports = {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && job.jobId
+            jobId: total && job._id
           });
 
-          return job;
+          return {
+            jobId: job._id
+          };
         } catch (err) {
           self.apos.util.error(err);
           if (!job) {
@@ -153,15 +161,7 @@ module.exports = {
             self.apos.util.error(err);
           }
         }
-        async function startJob() {
-          job = await self.start(_.assign({}, options, {
-            stop: function (job) {
-              stopping = true;
-            }
-          }));
-          self.setTotal(job, ids.length);
-          return { jobId: job._id };
-        }
+
         async function run() {
           let good = false;
           try {
@@ -242,7 +242,7 @@ module.exports = {
 
         const canceling = false;
         try {
-          const info = await startJob();
+          job = await self.start(options);
           run();
 
           // Trigger the "in progress" notification.
@@ -250,10 +250,12 @@ module.exports = {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && info.jobId
+            jobId: total && job._id
           });
 
-          return info;
+          return {
+            jobId: job._id
+          };
         } catch (err) {
           self.apos.util.error(err);
           if (job) {
@@ -265,13 +267,7 @@ module.exports = {
             return res.status(500).send('error');
           }
         }
-        async function startJob() {
-          job = await self.start(options);
 
-          return {
-            jobId: job._id
-          };
-        }
         async function run() {
           let results;
           let good = false;
