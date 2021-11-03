@@ -11,8 +11,8 @@
     srcset="{{ apos.image.srcset(attachment) }}"
     src="{{ apos.attachment.url(attachment, { size: data.options.size or 'full' }) }}"
     alt="{{ attachment._alt or '' }}"
-    width="{{ attachment.width }}"
-    height="{{ attachment.height }}"
+    {% if attachment.width %} width="{{ attachment.width }}" {% endif %}
+    {% if attachment.height %} height="{{ attachment.height }}" {% endif %}
     {% if data.contextOptions and data.contextOptions.sizes %}
       sizes="{{ data.contextOptions.sizes }}"
     {% endif %}
