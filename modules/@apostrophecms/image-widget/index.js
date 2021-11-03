@@ -4,7 +4,7 @@ module.exports = {
     label: 'apostrophe:image',
     className: false,
     icon: 'image-icon',
-    setWidthAndHeightAttributes: false
+    dimensionAttrs: false
   },
   fields: {
     add: {
