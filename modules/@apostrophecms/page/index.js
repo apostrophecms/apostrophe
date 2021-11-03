@@ -2015,7 +2015,7 @@ database.`);
           }
         }
         async function runJob() {
-          return self.apos.modules['@apostrophecms/job'].run(req, ids, one, {
+          return self.apos.modules['@apostrophecms/job'].runBatch(req, ids, one, {
             // TODO: Update with new progress notification config
           });
         }

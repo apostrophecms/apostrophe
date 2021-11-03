@@ -74,7 +74,7 @@ module.exports = {
       // batch operation on pieces. Call it to implement an API route
       // that runs a job involving carrying out the same action
       // repetitively on many things. If your job doesn't look like
-      // that, check out `runNonBatch` instead.
+      // that, check out `run` instead.
       //
       // The `ids` to be processed should be provided via `req.body.ids`.
       //
@@ -101,7 +101,7 @@ module.exports = {
       //
       // Labeling options TBD.
       //
-      async run(req, ids, change, options) {
+      async runBatch(req, ids, change, options) {
         let job;
         let notification;
         const total = ids.length;
@@ -167,8 +167,8 @@ module.exports = {
           }
         }
       },
-      // Similar to `run`, this method Starts and supervises a long-running job,
-      // however unlike `run` the `doTheWork` function provided is invoked just
+      // Similar to `runBatch`, this method Starts and supervises a long-running job,
+      // however unlike `runBatch` the `doTheWork` function provided is invoked just
       // once, and when it completes the job is over. This is not the way to
       // implement a batch operation on pieces; see the `batchSimple` method
       // of that module.
@@ -191,7 +191,7 @@ module.exports = {
       //
       // TODO: Labeling options TBD.
       //
-      async runNonBatch(req, doTheWork, options = {}) {
+      async run(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
         let notification;
@@ -281,7 +281,7 @@ module.exports = {
       // that require progress display and/or the ability to take longer
       // than the server might permit a single HTTP request to last.
       // *You usually won't call this yourself. The easy way is usually
-      // to call the `run` or `runNonBatch` methods.*
+      // to call the `runBatch` or `run` methods.*
       //
       // On success this method returns a `job` object.
       // You can then invoke the `setTotal`, `success`, `error`,

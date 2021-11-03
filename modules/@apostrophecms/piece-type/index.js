@@ -285,7 +285,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          return self.apos.modules['@apostrophecms/job'].run(
+          return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
             req.body._ids,
             async function(req, id) {
@@ -306,7 +306,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          return self.apos.modules['@apostrophecms/job'].run(
+          return self.apos.modules['@apostrophecms/job'].runBatch(
             req, req.body._ids,
             async function(req, id) {
               await self.apos.doc.db.updateOne({
@@ -662,7 +662,7 @@ module.exports = {
         const data = self.apos.schema.newInstance(schema);
 
         await self.apos.schema.convert(req, schema, req.body, data);
-        await self.apos.modules['@apostrophecms/job'].run(req, one, {
+        await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
           // TODO: Update with new progress notification config
         });
         async function one(req, id) {
