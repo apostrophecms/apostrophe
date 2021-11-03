@@ -160,7 +160,8 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      }
+      },
+      batchOperations: []
     };
   },
   computed: {
@@ -233,6 +234,8 @@ export default {
     this.modal.active = true;
     await this.getPieces();
     await this.getAllPiecesTotal();
+
+    this.batchOperations = this.flattenOperations();
 
     if (this.relationshipField && this.moduleOptions.canEdit) {
       // Add computed singular label to context menu
@@ -446,28 +449,53 @@ export default {
         this.setCheckedDocs(docs);
       }
     },
-    handleBatchAction(action) {
-      if (!action || !this.moduleOptions.batchOperations.find(op => {
+    flattenOperations() {
+      function reducer (ops, entry) {
+        if (!entry.operations) {
+          ops.push(entry);
+          return ops;
+        }
+
+        return [
+          ...ops,
+          ...entry.operations
+        ];
+      }
+
+      return this.moduleOptions.batchOperations.reduce(reducer, []);
+    },
+    async handleBatchAction(action) {
+      if (!action || !this.batchOperations.find(op => {
         return op.action === action;
       })) {
         return;
       }
 
-      const act = this.moduleOptions.batchOperations.find(o => {
+      const operation = this.batchOperations.find(o => {
         return o.action === action;
       });
 
       // Continue in another method based on what the action wants to do. In
-      // any case the action method will probably make use of the checked items.
-      if (act.modal) {
-        // Use a method that opens a modal
-        this.handleModalAction(act);
-      } else if (act.route) {
-        // Use a method that hits a route.
+      // any case the action method will probably make use of the checked
+      // items.
+      if (operation.route) {
+        try {
+          await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
+            body: {
+              ...operation.requestOptions,
+              _ids: this.checked,
+              messages: operation.messages,
+              type: this.checked.length === 1 ? this.moduleLabels.singluar
+                : this.moduleLabels.plural
+            }
+          });
+        } catch (error) {
+          apos.notify('Batch operation {{ operation }} failed.', {
+            interpolate: { operation: operation.label },
+            type: 'danger'
+          });
+        }
       }
-    },
-    handleModalAction (action) {
-      console.info('Execute modal action', action);
     }
   }
 };
