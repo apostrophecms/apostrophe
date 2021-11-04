@@ -231,7 +231,7 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-    this.setMoreMenu();
+    this.setUtilityOperations();
     await this.getPieces();
     await this.getAllPiecesTotal();
 
@@ -460,8 +460,8 @@ export default {
     handleModalAction (action) {
       console.info('Execute modal action', action);
     },
-    setMoreMenu () {
-      const { moreMenu } = this.moduleOptions;
+    setUtilityOperations () {
+      const { utilityOperations } = this.moduleOptions;
 
       const newPiece = {
         action: 'new',
@@ -475,7 +475,7 @@ export default {
         ...this.relationshipField && this.moduleOptions.canEdit
           ? [ newPiece ] : [],
         ...this.moreMenu.menu,
-        ...Array.isArray(moreMenu) && moreMenu.length ? moreMenu : []
+        ...(Array.isArray(utilityOperations) && utilityOperations) || []
       ];
     }
   }
