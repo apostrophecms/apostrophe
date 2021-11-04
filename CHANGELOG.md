@@ -4,11 +4,11 @@
 
 ### Adds
 
-Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc. Note that `public` and `ui/public` module subdirectories have separate functions. See the documentation for more information.
+* Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc. Note that `public` and `ui/public` module subdirectories have separate functions. See the documentation for more information.
 
 ### Fixes
 
-The `apos.util.attachmentUrl` method now works correctly. To facilitate that, `apos.uploadsUrl` is now populated browser-side at all times as the frontend logic originally expected. For backwards compatibility `apos.attachment.uploadsUrl` is still populated when logged in.
+* The `apos.util.attachmentUrl` method now works correctly. To facilitate that, `apos.uploadsUrl` is now populated browser-side at all times as the frontend logic originally expected. For backwards compatibility `apos.attachment.uploadsUrl` is still populated when logged in.
 
 ## 3.7.0 - 2021-10-28
 
