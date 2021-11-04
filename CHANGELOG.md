@@ -8,6 +8,7 @@
 * Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
 * `batchOperations` can now be grouped into a single button with a menu, `unlessFilter` has been changed to `if`, and allows to pass a single value or an array of values.
 * Notifications may now include an `event` property, which the AposNotification component will emit on mount. The `event` property should be set to an object with `name` (the event name) and optionally `data` (data included with the event emission).
+* When clicking on a batch operation, it opens a confirmation modal using modal options from the batch operation, it also works for operations in grouped ones. operations name property has been renamed in action to work with AposContextMenu component.
 
 ## 3.7.0 - 2021-10-28
 

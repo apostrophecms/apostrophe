@@ -109,6 +109,11 @@ module.exports = {
         icon: 'archive-arrow-down-icon',
         if: {
           archived: false
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         }
       },
       restore: {
@@ -122,6 +127,11 @@ module.exports = {
         icon: 'archive-arrow-up-icon',
         if: {
           archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:restoreType',
+          description: 'apostrophe:restoreBatchConfirmation',
+          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
       }
       // visibility: {
