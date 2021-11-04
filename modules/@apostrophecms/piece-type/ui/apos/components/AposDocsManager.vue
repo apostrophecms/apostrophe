@@ -457,11 +457,13 @@ export default {
           ops.push(entry);
           return ops;
         }
+
         return [
           ...ops,
           ...entry.operations
         ];
       }
+
       return this.moduleOptions.batchOperations.reduce(reducer, []);
     },
     async handleBatchAction(action) {
