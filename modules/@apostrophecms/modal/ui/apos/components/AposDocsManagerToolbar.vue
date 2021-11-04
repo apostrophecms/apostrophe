@@ -27,7 +27,7 @@
           :icon="icon"
           :disabled="!checkedCount"
           type="outline"
-          @click="operationModal({ action, label, ...rest })"
+          @click="confirmOperation({ action, label, ...rest })"
         />
         <AposContextMenu
           v-else
@@ -39,7 +39,7 @@
           }"
           :disabled="!checkedCount"
           :menu="operations"
-          @item-clicked="(action) => operationModal({ action, operations, label, ...rest })"
+          @item-clicked="beginOperation"
         />
       </div>
     </template>
@@ -125,9 +125,7 @@ export default {
     'filter',
     'search',
     'page-change',
-    'batch',
-    // TEMP
-    'start-job'
+    'batch'
   ],
   data() {
     return {
@@ -215,7 +213,20 @@ export default {
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
     },
-    async operationModal ({
+    async beginOperation(action) {
+      let op = this.batchOperations.find(o => o.action === action);
+
+      if (!op) {
+        this.batchOperations.forEach(group => {
+          if (!op && group.operations) {
+            op = group.operations.find(o => o.action === action);
+          }
+        });
+      }
+
+      await this.confirmOperation(op);
+    },
+    async confirmOperation ({
       modalOptions = {}, action, operations, label, ...rest
     }) {
       const {
