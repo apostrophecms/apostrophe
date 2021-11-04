@@ -100,7 +100,8 @@ module.exports = {
     add: {
       // TEMP
       import: {
-        label: 'Import pieces'
+        route: '/import',
+        label: 'apostrophe:importPieces'
       }
     }
   },
