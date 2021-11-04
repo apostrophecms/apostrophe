@@ -1,15 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Checkboxes for pieces are back, a main checkbox allows to select all page items. When all pieces on a page are checked, a banner where the user can select all pieces appears. A launder for mongo projections has been added.
+* Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
+* `batchOperations` can now be grouped into a single button with a menu, `unlessFilter` has been changed to `if`, and allows to pass a single value or an array of values.
+* Notifications may now include an `event` property, which the AposNotification component will emit on mount. The `event` property should be set to an object with `name` (the event name) and optionally `data` (data included with the event emission).
+
 ## 3.7.0 - 2021-10-28
 
 ### Adds
 
 * Schema select field choices can now be populated by a server side function, like an API call. Set the `choices` property to a method name of the calling module. That function should take a single argument of `req`, and return an array of objects with `label` and `value` properties. The function can be async and will be awaited.
-
 * Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
-* Checkboxes for pieces are back, a main checkbox allows to select all page items. When all pieces on a page are checked, a banner where the user can select all pieces appears. A launder for mongo projections has been added.
-* Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
-* `batchOperations` can now be grouped into a single button with a menu, `unlessFilter` has been changed to `if`, and allows to pass a single value or an array of values.
 
 ### Fixes
 
