@@ -352,7 +352,7 @@ export default {
         project: {
           _id: 1
         },
-        noAttachments: true,
+        attachments: false,
         perPage: this.allPiecesSelection.total
       });
 

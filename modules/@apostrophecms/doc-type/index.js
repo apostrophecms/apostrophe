@@ -1457,14 +1457,12 @@ module.exports = {
         attachments: {
           def: false,
           after(results) {
-            for (const doc of results) {
-              self.apos.attachment.all(doc, { annotate: true });
-            }
-          }
-        },
+            const attachments = query.get('attachments');
 
-        noAttachments: {
-          def: false,
+            if (attachments) {
+              self.apos.attachment.all(results, { annotate: true });
+            }
+          },
           launder(b) {
             return self.apos.launder.boolean(b);
           }
