@@ -728,6 +728,9 @@ module.exports = {
         }
         const script = fs.readFileSync(path.join(__dirname, '/lib/refresh-on-restart.js'), 'utf8');
         return self.apos.template.safe(`<script data-apos-refresh-on-restart="${self.action}/restart-id">\n${script}</script>`);
+      },
+      url(path) {
+        return `${self.getAssetBaseUrl()}${path}`;
       }
     };
   },

@@ -6,7 +6,9 @@
 
 Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc.
 
-In addition, if you need to access such a file in frontend JavaScript, you may reliably do so by calling `apos.util.assetUrl('/modules/mymodulename/images/bg.png')`.
+Nunjucks templates can convert such paths to URLs by calling the `apos.asset.url` helper function, like this: `{{ apos.asset.url('/modules/mymodulename/images/bg.png') }}`
+
+If you need to access such a file in frontend JavaScript, you may do so by calling `apos.util.assetUrl('/modules/mymodulename/images/bg.png')`.
 
 The actual location will vary depending on development versus production, the use of S3 and/or CDNs, etc. Static assets are copied at the same time that Apostrophe's primary CSS and JS bundles are copied. If module b extends module a, the assets of both are available via `/modules/b`; if the asset filenames are the same the version provided by `b` wins.
 
