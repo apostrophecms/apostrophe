@@ -161,7 +161,8 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      }
+      },
+      batchOperations: []
     };
   },
   computed: {
@@ -234,6 +235,8 @@ export default {
     this.modal.active = true;
     await this.getPieces();
     await this.getAllPiecesTotal();
+
+    this.batchOperations = this.flattenOperations();
 
     if (this.relationshipField && this.moduleOptions.canEdit) {
       // Add computed singular label to context menu
@@ -447,6 +450,19 @@ export default {
       if (docs) {
         this.setCheckedDocs(docs);
       }
+    },
+    flattenOperations() {
+      function reducer (ops, entry) {
+        if (!entry.operations) {
+          ops.push(entry);
+          return ops;
+        }
+        return [
+          ...ops,
+          ...entry.operations
+        ];
+      }
+      return this.moduleOptions.batchOperations.reduce(reducer, []);
     },
     async handleBatchAction(action) {
       if (!action || !this.batchOperations.find(op => {
