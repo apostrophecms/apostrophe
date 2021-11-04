@@ -27,7 +27,11 @@
           <p v-if="content.description" class="apos-confirm__description">
             {{ localize(content.description) }}
           </p>
-          <Component v-if="content.body" :is="content.body.component" v-bind="content.body.props" />
+          <Component
+            v-if="content.body"
+            :is="content.body.component"
+            v-bind="content.body.props"
+          />
           <div v-if="content.form" class="apos-confirm__schema">
             <AposSchema
               v-if="formValues"
@@ -143,11 +147,9 @@ export default {
       this.$emit('modal-result', false);
     },
     localize(s) {
-      if (this.options.localize === false) {
-        return s;
-      } else {
-        return this.$t(s, this.options.interpolate || {});
-      }
+      return this.options.localize === false
+        ? s
+        : this.$t(s, this.options.interpolate || {});
     }
   }
 };
