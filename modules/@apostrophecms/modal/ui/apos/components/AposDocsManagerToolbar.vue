@@ -20,7 +20,7 @@
           :icon-only="true"
           :icon="icon"
           type="outline"
-          @click="batchAction"
+          @click="$emit('batch', action)"
         />
         <AposContextMenu
           v-else
@@ -125,7 +125,9 @@ export default {
     'filter',
     'search',
     'page-change',
-    'batch'
+    'batch',
+    // TEMP
+    'start-job'
   ],
   data() {
     return {
