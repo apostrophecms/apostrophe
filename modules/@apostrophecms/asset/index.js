@@ -133,7 +133,7 @@ module.exports = {
             deployFiles = [ ...deployFiles, ...merge(scene) ];
           }
           // enumerate public assets and include them in deployment if appropriate
-          const publicAssets = glob.sync(`modules/**/*`, {
+          const publicAssets = glob.sync('modules/**/*', {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
@@ -708,11 +708,11 @@ module.exports = {
           return 'url("' + filter(url) + '")';
         });
         css = css.replace(/url\('([^']+?)'\)/g, function(s, url) {
-          return 'url(\'' +filter(url) + '\')';
+          return 'url(\'' + filter(url) + '\')';
         });
         return css;
       }
-    }
+    };
   },
   helpers(self) {
     return {
