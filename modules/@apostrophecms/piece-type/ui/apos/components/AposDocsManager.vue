@@ -19,10 +19,10 @@
     </template>
     <template #primaryControls>
       <AposContextMenu
-        v-if="moreMenu.menu.length"
-        :button="moreMenu.button"
-        :menu="moreMenu.menu"
-        @item-clicked="moreMenuHandler"
+        v-if="utilityOperations.menu.length"
+        :button="utilityOperations.button"
+        :menu="utilityOperations.menu"
+        @item-clicked="utilityOperationsHandler"
       />
       <AposButton
         v-if="relationshipField"
@@ -148,7 +148,7 @@ export default {
       filterValues: {},
       queryExtras: {},
       holdQueries: false,
-      moreMenu: {
+      utilityOperations: {
         button: {
           label: 'apostrophe:moreOperations',
           iconOnly: true,
@@ -161,8 +161,7 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      },
-      batchOperations: []
+      }
     };
   },
   computed: {
@@ -233,19 +232,10 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
+    this.setUtilityOperations();
     await this.getPieces();
     await this.getAllPiecesTotal();
 
-    if (this.relationshipField && this.moduleOptions.canEdit) {
-      // Add computed singular label to context menu
-      this.moreMenu.menu.unshift({
-        action: 'new',
-        label: {
-          key: 'apostrophe:newDocType',
-          type: this.$t(this.moduleLabels.singular)
-        }
-      });
-    }
     apos.bus.$on('content-changed', this.getPieces);
   },
   destroyed() {
@@ -253,7 +243,7 @@ export default {
     apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
-    moreMenuHandler(action) {
+    utilityOperationsHandler(action) {
       if (action === 'new') {
         this.create();
       }
@@ -469,6 +459,27 @@ export default {
           });
         }
       }
+    },
+    handleModalAction (action) {
+      console.info('Execute modal action', action);
+    },
+    setUtilityOperations () {
+      const { utilityOperations } = this.moduleOptions;
+
+      const newPiece = {
+        action: 'new',
+        label: {
+          key: 'apostrophe:newDocType',
+          type: this.$t(this.moduleLabels.singular)
+        }
+      };
+
+      this.utilityOperations.menu = [
+        ...this.relationshipField && this.moduleOptions.canEdit
+          ? [ newPiece ] : [],
+        ...this.utilityOperations.menu,
+        ...(Array.isArray(utilityOperations) && utilityOperations) || []
+      ];
     }
   }
 };

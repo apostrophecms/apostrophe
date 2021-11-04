@@ -2,7 +2,7 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  cascades: [ 'filters', 'columns', 'batchOperations' ],
+  cascades: [ 'filters', 'columns', 'batchOperations', 'utilityOperations' ],
   options: {
     perPage: 10,
     quickCreate: true,
@@ -93,6 +93,14 @@ module.exports = {
         allowedInChooser: false,
         def: false,
         required: true
+      }
+    }
+  },
+  utilityOperations: {
+    add: {
+      // TEMP
+      import: {
+        label: 'Import pieces'
       }
     }
   },
@@ -517,6 +525,13 @@ module.exports = {
                 return operations.includes(operation);
               }) || [];
           }
+        },
+        composeUtilityOperations() {
+          self.utilityOperations = Object.entries(self.utilityOperations || {})
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
         }
       }
     };
@@ -932,6 +947,7 @@ module.exports = {
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
+        browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.singleton = self.options.singleton;
