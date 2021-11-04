@@ -11,7 +11,13 @@
         @click="$emit('select-click')"
       />
       <div
-        v-for="{ action, label, icon, operations, modalOptions } in activeOperations"
+        v-for="{
+          action,
+          label,
+          icon,
+          operations,
+          ...rest
+        } in activeOperations"
         :key="action"
       >
         <AposButton
@@ -21,7 +27,7 @@
           :icon="icon"
           :disabled="!checkedCount"
           type="outline"
-          @click="operationModal({ action, modalOptions, label })"
+          @click="operationModal({ action, label, ...rest })"
         />
         <AposContextMenu
           v-else
@@ -33,7 +39,7 @@
           }"
           :disabled="!checkedCount"
           :menu="operations"
-          @item-clicked="(action) => operationModal({ action, operations, label })"
+          @item-clicked="(action) => operationModal({ action, operations, label, ...rest })"
         />
       </div>
     </template>
@@ -210,7 +216,7 @@ export default {
       this.$emit('page-change', pageNum);
     },
     async operationModal ({
-      modalOptions = {}, action, operations, label
+      modalOptions = {}, action, operations, label, ...rest
     }) {
       const {
         title = label,
@@ -237,7 +243,10 @@ export default {
       });
 
       if (confirmed) {
-        this.$emit('batch', action);
+        this.$emit('batch', {
+          label,
+          ...rest
+        });
       }
     }
   }
