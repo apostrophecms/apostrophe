@@ -3,6 +3,7 @@
   "addItem": "Add Item",
   "addWidgetType": "Add {{ label }}",
   "admin": "Admin",
+  "affirmativeLabel": "Yes, continue.",
   "altText": "Alt Text",
   "altTextHelp": "Image description used for accessibility",
   "any": "Any",

@@ -21,7 +21,7 @@
           :icon="icon"
           :disabled="!checkedCount"
           type="outline"
-          @click="operationModal({ action, modalOptions })"
+          @click="operationModal({ action, modalOptions, label })"
         />
         <AposContextMenu
           v-else
@@ -33,7 +33,7 @@
           }"
           :disabled="!checkedCount"
           :menu="operations"
-          @item-clicked="(action) => operationModal({ action, operations })"
+          @item-clicked="(action) => operationModal({ action, operations, label })"
         />
       </div>
     </template>
@@ -44,8 +44,8 @@
         :total-pages="totalPages" :current-page="currentPage"
       />
       <AposFilterMenu
-        v-if="moduleOptions.filters.length"
-        :filters="moduleOptions.filters"
+        v-if="filters.length"
+        :filters="filters"
         :choices="filterChoices"
         :values="filterValues"
         @input="filter"
@@ -75,11 +75,15 @@ export default {
     },
     filterChoices: {
       type: Object,
-      default: () => {}
+      default: () => ({})
     },
     filterValues: {
       type: Object,
-      default: () => {}
+      default: () => ({})
+    },
+    filters: {
+      type: Array,
+      default: () => []
     },
     totalPages: {
       type: Number,
@@ -91,11 +95,15 @@ export default {
     },
     labels: {
       type: Object,
-      default: () => {}
+      default: () => ({})
     },
     options: {
       type: Object,
-      default: () => {}
+      default: () => ({})
+    },
+    batchOperations: {
+      type: Array,
+      default: () => []
     },
     displayedItems: {
       type: Number,
@@ -103,10 +111,6 @@ export default {
     },
     checkedCount: {
       type: Number,
-      required: true
-    },
-    moduleOptions: {
-      type: Object,
       required: true
     }
   },
@@ -153,7 +157,7 @@ export default {
   },
   methods: {
     computeActiveOperations () {
-      this.activeOperations = this.moduleOptions.batchOperations
+      this.activeOperations = this.batchOperations
         .map(({ operations, ...rest }) => {
           if (!operations) {
             return {
@@ -206,10 +210,13 @@ export default {
       this.$emit('page-change', pageNum);
     },
     async operationModal ({
-      modalOptions, action, operations
+      modalOptions = {}, action, operations, label
     }) {
       const {
-        title, description, form
+        title = label,
+        description = '',
+        confirmationButton = 'apostrophe:affirmativeLabel',
+        form
       } = action && operations
         ? (operations.find((op) => op.action === action)).modalOptions
         : modalOptions;
@@ -217,15 +224,14 @@ export default {
       const interpolations = {
         count: this.checkedCount,
         type: this.checkedCount === 1
-          ? this.moduleOptions.label
-          : this.moduleOptions.pluralLabel
+          ? this.$t(this.labels.singular)
+          : this.$t(this.labels.plural)
       };
 
-      // TODO: request batch operation to backend
-      // eslint-disable-next-line
       const confirmed = await apos.confirm({
         heading: this.$t(title, interpolations),
         description: this.$t(description, interpolations),
+        affirmativeLabel: confirmationButton,
         localize: false,
         ...form && form
       });
