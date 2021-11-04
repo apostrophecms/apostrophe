@@ -11,7 +11,13 @@
         @click="$emit('select-click')"
       />
       <div
-        v-for="{action, label, icon, operations} in activeOperations"
+        v-for="{
+          action,
+          label,
+          icon,
+          operations,
+          ...rest
+        } in activeOperations"
         :key="action"
       >
         <AposButton
@@ -19,8 +25,9 @@
           label="label"
           :icon-only="true"
           :icon="icon"
+          :disabled="!checkedCount"
           type="outline"
-          @click="$emit('batch', action)"
+          @click="operationModal({ action, label, ...rest })"
         />
         <AposContextMenu
           v-else
@@ -30,8 +37,9 @@
             iconOnly: true,
             type: 'outline'
           }"
+          :disabled="!checkedCount"
           :menu="operations"
-          @item-clicked="batchAction"
+          @item-clicked="(action) => operationModal({ action, operations, label, ...rest })"
         />
       </div>
     </template>
@@ -69,27 +77,19 @@ export default {
     },
     applyTags: {
       type: Array,
-      default () {
-        return [];
-      }
-    },
-    filters: {
-      type: Array,
-      default () {
-        return [];
-      }
+      default: () => []
     },
     filterChoices: {
       type: Object,
-      default () {
-        return {};
-      }
+      default: () => ({})
     },
     filterValues: {
       type: Object,
-      default () {
-        return {};
-      }
+      default: () => ({})
+    },
+    filters: {
+      type: Array,
+      default: () => []
     },
     totalPages: {
       type: Number,
@@ -101,21 +101,21 @@ export default {
     },
     labels: {
       type: Object,
-      default () {
-        return {};
-      }
+      default: () => ({})
     },
     options: {
       type: Object,
-      default () {
-        return {};
-      }
+      default: () => ({})
     },
     batchOperations: {
       type: Array,
       default: () => []
     },
     displayedItems: {
+      type: Number,
+      required: true
+    },
+    checkedCount: {
       type: Number,
       required: true
     }
@@ -163,25 +163,26 @@ export default {
   },
   methods: {
     computeActiveOperations () {
-      this.activeOperations = this.batchOperations.map(({ operations, ...rest }) => {
-        if (!operations) {
+      this.activeOperations = this.batchOperations
+        .map(({ operations, ...rest }) => {
+          if (!operations) {
+            return {
+              ...rest,
+              operations
+            };
+          }
+
           return {
-            ...rest,
-            operations
+            operations: operations.filter((op) => this.isOperationActive(op)),
+            ...rest
           };
-        }
+        }).filter((operation) => {
+          if (operation.operations && !operation.operations.length) {
+            return false;
+          }
 
-        return {
-          operations: operations.filter((ope) => this.isOperationActive(ope)),
-          ...rest
-        };
-      }).filter((operation) => {
-        if (operation.operations && !operation.operations.length) {
-          return false;
-        }
-
-        return this.isOperationActive(operation);
-      });
+          return this.isOperationActive(operation);
+        });
     },
     isOperationActive (operation) {
       return Object.entries(operation.if || {})
@@ -211,11 +212,42 @@ export default {
 
       this.$emit('search', value.data);
     },
-    batchAction(action) {
-      this.$emit('batch', action);
-    },
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
+    },
+    async operationModal ({
+      modalOptions = {}, action, operations, label, ...rest
+    }) {
+      const {
+        title = label,
+        description = '',
+        confirmationButton = 'apostrophe:affirmativeLabel',
+        form
+      } = action && operations
+        ? (operations.find((op) => op.action === action)).modalOptions
+        : modalOptions;
+
+      const interpolations = {
+        count: this.checkedCount,
+        type: this.checkedCount === 1
+          ? this.$t(this.labels.singular)
+          : this.$t(this.labels.plural)
+      };
+
+      const confirmed = await apos.confirm({
+        heading: this.$t(title, interpolations),
+        description: this.$t(description, interpolations),
+        affirmativeLabel: confirmationButton,
+        localize: false,
+        ...form && form
+      });
+
+      if (confirmed) {
+        this.$emit('batch', {
+          label,
+          ...rest
+        });
+      }
     }
   }
 };
