@@ -161,8 +161,7 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      },
-      batchOperations: []
+      }
     };
   },
   computed: {
@@ -236,8 +235,6 @@ export default {
     this.setUtilityOperations();
     await this.getPieces();
     await this.getAllPiecesTotal();
-
-    this.batchOperations = this.flattenOperations();
 
     apos.bus.$on('content-changed', this.getPieces);
   },
