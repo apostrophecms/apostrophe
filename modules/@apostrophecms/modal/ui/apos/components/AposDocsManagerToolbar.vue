@@ -39,7 +39,7 @@
           }"
           :disabled="!checkedCount"
           :menu="operations"
-          @item-clicked="beginOperation"
+          @item-clicked="(a) => beginGroupedOperation(a, operations)"
         />
       </div>
     </template>
@@ -213,18 +213,10 @@ export default {
     registerPageChange(pageNum) {
       this.$emit('page-change', pageNum);
     },
-    async beginOperation(action) {
-      let op = this.batchOperations.find(o => o.action === action);
+    async beginGroupedOperation(action, operations) {
+      const operation = operations.find(o => o.action === action);
 
-      if (!op) {
-        this.batchOperations.forEach(group => {
-          if (!op && group.operations) {
-            op = group.operations.find(o => o.action === action);
-          }
-        });
-      }
-
-      await this.confirmOperation(op);
+      await this.confirmOperation(operation);
     },
     async confirmOperation ({
       modalOptions = {}, action, operations, label, ...rest
