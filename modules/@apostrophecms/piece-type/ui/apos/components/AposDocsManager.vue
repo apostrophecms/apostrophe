@@ -246,8 +246,13 @@ export default {
   },
   methods: {
     utilityOperationsHandler(action) {
-      if (action === 'new') {
-        this.create();
+      switch (action) {
+        case 'new':
+          this.create();
+          break;
+        case 'import':
+          this.import(action);
+          break;
       }
     },
     setCheckedDocs(checked) {
@@ -258,6 +263,36 @@ export default {
     },
     async create() {
       await this.edit(null);
+    },
+    async import(action) {
+      const importOperation = this.utilityOperations.menu
+        .find((op) => op.action === action);
+
+      if (!importOperation) {
+        return;
+      }
+
+      const confirmed = await apos.confirm({
+        heading: 'Import Pieces',
+        description: 'Here you can import stuff',
+        affirmativeLabel: 'Let\'s import stuff',
+        localize: false,
+        form: {
+          schema: [ {
+            type: 'attachment',
+            name: 'importFile',
+            required: true
+          } ],
+          value: {
+            data: {}
+          }
+        }
+      });
+
+      if (confirmed) {
+        console.log('confirmed ===> ', confirmed);
+      }
+
     },
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
@@ -506,7 +541,7 @@ export default {
         ...this.relationshipField && this.moduleOptions.canEdit
           ? [ newPiece ] : [],
         ...this.utilityOperations.menu,
-        ...(Array.isArray(utilityOperations) && utilityOperations) || []
+        ...(!this.relationshipField && Array.isArray(utilityOperations) && utilityOperations) || []
       ];
     }
   }
