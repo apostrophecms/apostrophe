@@ -518,15 +518,10 @@ module.exports = {
         },
         composeUtilityOperations() {
           self.utilityOperations = Object.entries(self.utilityOperations || {})
-            .reduce((acc, [ action, properties ]) => {
-              return [
-                ...acc,
-                {
-                  action,
-                  ...properties
-                }
-              ];
-            }, []);
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
         }
       }
     };
