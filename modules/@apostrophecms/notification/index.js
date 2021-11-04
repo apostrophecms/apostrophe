@@ -237,7 +237,8 @@ module.exports = {
           // Defaults to true, otherwise launder as boolean
           localize: has(req.body, 'localize')
             ? self.apos.launder.boolean(req.body.localize) : true,
-          job: options.jobId || null
+          job: options.jobId || null,
+          event: options.event
         };
 
         if (copiedOptions.dismiss === true) {

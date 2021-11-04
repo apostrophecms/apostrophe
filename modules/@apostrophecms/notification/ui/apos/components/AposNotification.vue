@@ -15,7 +15,10 @@
       <button
         v-for="(button, i) in notification.buttons"
         :key="i"
-        :data-apos-bus-event="JSON.stringify({ name: button.name, data: button.data })"
+        :data-apos-bus-event="JSON.stringify({
+          name: button.name,
+          data: button.data
+        })"
       >
         {{ localize(button.label) }}
       </button>
@@ -36,7 +39,10 @@
         {{ Math.floor(job.percentage) + '%' }}
       </span>
     </div>
-    <button @click="close" class="apos-notification__button">
+    <button
+      v-if="!job"
+      @click="close" class="apos-notification__button"
+    >
       <Close
         class="apos-notification__close-icon"
         title="Close Notification"
@@ -75,7 +81,7 @@ export default {
         classes.push(`apos-notification--${this.notification.type}`);
       }
 
-      if (this.notification.jobId) {
+      if (this.job) {
         classes.push('apos-notification--progress');
       }
 
@@ -127,7 +133,10 @@ export default {
         console.error('Unable to find notification job:', this.notification.jobId);
         this.job = null;
       }
+    }
 
+    if (this.notification.event?.name) {
+      apos.bus.$emit(this.notification.event.name, this.notification.event.data);
     }
   },
   methods: {
