@@ -198,7 +198,7 @@ module.exports = {
       if (self.apos.launder.boolean(req.query['render-areas']) === true) {
         await self.apos.area.renderDocsAreas(req, result.results);
       }
-      // self.apos.attachment.all(result.results, { annotate: true });
+      self.apos.attachment.all(result.results, { annotate: true });
       if (query.get('choicesResults')) {
         result.choices = query.get('choicesResults');
       }
