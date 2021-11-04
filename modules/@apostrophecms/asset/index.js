@@ -73,6 +73,12 @@ module.exports = {
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
 
+          // Static asset files in `public` subdirs of each module are copied
+          // to the same relative path `/public/apos-frontend/namespace/modules/modulename`.
+          // Inherited files are also copied, with the deepest subclass overriding in the
+          // event of a conflict
+          await moduleOverrides(`${bundleDir}/modules`, 'public');
+
           for (const [ name, options ] of Object.entries(self.builds)) {
             // If the option is not present always rebuild everything
             let rebuild = argv && !argv['check-apos-build'];
@@ -122,12 +128,17 @@ module.exports = {
           // just `public` and `apos`) by examining those specified as
           // targets for the various builds
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
-          let bundles = [];
+          let deployFiles = [];
           for (const scene of scenes) {
-            bundles = [ ...bundles, ...merge(scene) ];
+            deployFiles = [ ...deployFiles, ...merge(scene) ];
           }
-
-          await deploy(bundles);
+          // enumerate public assets and include them in deployment if appropriate
+          const publicAssets = glob.sync(`modules/**/*`, {
+            cwd: bundleDir,
+            mark: true
+          }).filter(match => !match.endsWith('/'));
+          deployFiles = [ ...deployFiles, ...publicAssets ];
+          await deploy(deployFiles);
 
           if (process.env.APOS_BUNDLE_ANALYZER) {
             return new Promise((resolve, reject) => {
@@ -162,7 +173,7 @@ module.exports = {
             for (const name of names) {
               const moduleDir = `${modulesDir}/${name}`;
               for (const dir of directories[name]) {
-                const srcDir = `${dir}/ui/${source}`;
+                const srcDir = `${dir}/${source}`;
                 if (fs.existsSync(srcDir)) {
                   await fs.copy(srcDir, moduleDir);
                 }
@@ -176,7 +187,7 @@ module.exports = {
             }));
             const modulesDir = `${buildDir}/${name}/modules`;
             const source = options.source || name;
-            await moduleOverrides(modulesDir, source);
+            await moduleOverrides(modulesDir, `ui/${source}`);
 
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.apos) {
@@ -233,7 +244,8 @@ module.exports = {
               // Remove previous build artifacts, as some pipelines won't build all artifacts
               // if there is no input, and we don't want stale output in the bundle
               fs.removeSync(`${bundleDir}/${outputFilename}`);
-              fs.removeSync(`${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css'));
+              const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
+              fs.removeSync(cssPath);
               await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
                 {
                   importFile,
@@ -243,6 +255,11 @@ module.exports = {
                 },
                 self.apos
               ));
+              if (fs.existsSync(cssPath)) {
+                fs.writeFileSync(cssPath, self.filterCss(fs.readFileSync(cssPath, 'utf8'), {
+                  modulesPrefix: `${self.getAssetBaseUrl()}/modules`
+                }));
+              }
               if (options.apos) {
                 const now = Date.now().toString();
                 fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
@@ -269,7 +286,9 @@ module.exports = {
                 const publicImports = getImports(name, '*.css', { });
                 fs.writeFileSync(`${bundleDir}/${name}-build.css`,
                   publicImports.paths.map(path => {
-                    return fs.readFileSync(path, 'utf8');
+                    return self.filterCss(fs.readFileSync(path, 'utf8'), {
+                      modulesPrefix: `${self.getAssetBaseUrl()}/modules`
+                    });
                   }).join('\n')
                 );
               }
@@ -358,7 +377,19 @@ module.exports = {
             return [ jsModules, jsNoModules, css ];
           }
 
-          async function deploy(bundles) {
+          // If NODE_ENV is production, this function will copy the given
+          // array of asset files from `${bundleDir}/${file}` to
+          // the same relative location in the appropriate release subdirectory in
+          // `/public/apos-frontend/releases`, or in `/apos-frontend/releases` in
+          // uploadfs if `APOS_UPLOADFS_ASSETS` is present.
+          //
+          // If NODE_ENV is not production this function does nothing and
+          // the assets are served directly from `/public/apos-frontend/${file}`.
+          //
+          // The namespace (e.g. default) should be part of each filename given.
+          // A leading slash should NOT be passed.
+
+          async function deploy(files) {
             if (process.env.NODE_ENV !== 'production') {
               return;
             }
@@ -373,15 +404,21 @@ module.exports = {
             } else {
               // The right choice with Docker if uploadfs is just the local filesystem
               // mapped to a volume (a Docker build step can't access that)
-              copyIn = fs.copyFile;
+              copyIn = fsCopyIn;
               releaseDir = `${self.apos.rootDir}/public/apos-frontend/releases/${releaseId}/${namespace}`;
               await fs.mkdirp(releaseDir);
             }
-            for (const bundle of bundles) {
-              const src = `${bundleDir}/${bundle}`;
-              await copyIn(src, `${releaseDir}/${bundle}`);
+            for (const file of files) {
+              const src = `${bundleDir}/${file}`;
+              await copyIn(src, `${releaseDir}/${file}`);
               await fs.remove(src);
             }
+          }
+
+          async function fsCopyIn(from, to) {
+            const base = path.dirname(to);
+            await fs.mkdirp(base);
+            return fs.copyFile(from, to);
           }
 
           function getImports(folder, pattern, options) {
@@ -650,8 +687,32 @@ module.exports = {
         if (!self.options.es5) {
           delete self.builds['src-es5'];
         }
+      },
+      // Filter the given css performing any necessary transformations,
+      // such as support for the /modules path regardless of where
+      // static assets are actually deployed
+      filterCss(css, { modulesPrefix }) {
+        return self.filterCssUrls(css, url => {
+          if (url.startsWith('/modules')) {
+            return url.replace('/modules', modulesPrefix);
+          }
+          return url;
+        });
+      },
+      // Run all URLs in CSS through a filter function
+      filterCssUrls(css, filter) {
+        css = css.replace(/url\(([^'"].*?)\)/g, function(s, url) {
+          return 'url(' + filter(url) + ')';
+        });
+        css = css.replace(/url\("([^"]+?)"\)/g, function(s, url) {
+          return 'url("' + filter(url) + '")';
+        });
+        css = css.replace(/url\('([^']+?)'\)/g, function(s, url) {
+          return 'url(\'' +filter(url) + '\')';
+        });
+        return css;
       }
-    };
+    }
   },
   helpers(self) {
     return {

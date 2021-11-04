@@ -1,5 +1,23 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc.
+
+In addition, if you need to access such a file in frontend JavaScript, you may reliably do so by calling `apos.util.assetUrl('/modules/mymodulename/images/bg.png')`.
+
+The actual location will vary depending on development versus production, the use of S3 and/or CDNs, etc. Static assets are copied at the same time that Apostrophe's primary CSS and JS bundles are copied. If module b extends module a, the assets of both are available via `/modules/b`; if the asset filenames are the same the version provided by `b` wins.
+
+In production the actual URL will contain a release identifier, ensuring no stale, cached assets are served. This will be added to the URL automatically.
+
+Please note that `public` and `ui/public` module subdirectories are not the same. The former is for individual asset files of any type, while the latter is only for `.css` and `.js` files to be appended as-is to Apostrophes' primary CSS and JS bundles.
+
+### Fixes
+
+The `apos.util.attachmentUrl` method now works correctly. To facilitate that, `apos.uploadsUrl` is now populated browser-side at all times as the frontend logic originally expected. For backwards compatibility `apos.attachment.uploadsUrl` is still populated when logged in.
+
 ## 3.7.0 - 2021-10-28
 
 ### Adds
