@@ -134,9 +134,15 @@ export default {
         this.job = null;
       }
     }
-
+    // Notifications may include events to emit.
     if (this.notification.event?.name) {
-      apos.bus.$emit(this.notification.event.name, this.notification.event.data);
+      // Clear the event to make sure it's only emitted once across browsers.
+      const result = await this.clearEvent(this.notification._id);
+      // The result includes the number of documents found with the event.
+      // The notification doc will only still have the event in one instance.
+      if (result.n) {
+        apos.bus.$emit(this.notification.event.name, this.notification.event.data);
+      }
     }
   },
   methods: {
@@ -168,6 +174,11 @@ export default {
 
         await this.pollJob();
       }
+    },
+    async clearEvent(id) {
+      return await apos.http.post(`${apos.notification.action}/event-clear`, {
+        body: { id }
+      });
     }
   }
 };

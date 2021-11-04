@@ -160,6 +160,35 @@ module.exports = {
       return self.db.deleteMany({ _id });
     }
   }),
+  apiRoutes(self) {
+    return {
+      post: {
+        'event-clear': async function (req) {
+          if (!req.body.id) {
+            throw self.apos.error('invalid');
+          }
+
+          const lockId = `event-clear-${req.body.id}`;
+
+          await self.apos.lock.lock(lockId);
+          const result = await self.db.updateOne({
+            _id: req.body.id,
+            event: {
+              $ne: null
+            }
+          }, {
+            $set: {
+              event: null
+            }
+          });
+
+          await self.apos.lock.unlock(lockId);
+
+          return result.result;
+        }
+      }
+    };
+  },
   methods(self) {
     return {
       getBrowserData(req) {
