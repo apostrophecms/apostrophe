@@ -101,7 +101,7 @@ export default {
     },
     isRelationship: {
       type: Boolean,
-      default: () => false
+      default: false
     },
     labels: {
       type: Object,
