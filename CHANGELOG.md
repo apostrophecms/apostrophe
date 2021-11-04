@@ -10,7 +10,7 @@
 * Checkboxes for pieces are back, a main checkbox allows to select all page items. When all pieces on a page are checked, a banner where the user can select all pieces appears. A launder for mongo projections has been added.
 * Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
 * `batchOperations` can now be grouped into a single button with a menu, `unlessFilter` has been changed to `if`, and allows to pass a single value or an array of values.
-* Adds noAttachments query builder to get a lot of documents ids in the case of the select all pieces feature. No batch operations when on a relationShip modal.
+* Adds launder to attachments query builder, allows user to asks no attachments in REST route. No batch operations when on a relationShip modal.
 
 ### Fixes
 
