@@ -5,7 +5,6 @@
 ### Adds
 
 * Schema select field choices can now be populated by a server side function, like an API call. Set the `choices` property to a method name of the calling module. That function should take a single argument of `req`, and return an array of objects with `label` and `value` properties. The function can be async and will be awaited.
-
 * Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
 * Checkboxes for pieces are back, a main checkbox allows to select all page items. When all pieces on a page are checked, a banner where the user can select all pieces appears. A launder for mongo projections has been added.
 * Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
@@ -31,6 +30,12 @@
 * The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to [Max Mulatz](https://github.com/klappradla) for this contribution.
 * Adds deprecation notes to doc module `afterLoad` events, which are deprecated.
 * Removes unused `afterLogin` method in the login module.
+* Removes Apostrophe 2 documentation and UI configuration from the `@apostrophecms/job` module. These options were not yet in use for A3.
+* Renames methods and removes unsupported routes in the `@apostrophecms/job` module that were not yet in use. This was not done lightly, but specifically because of the minimal likelihood that they were in use in project code given the lack of UI support.
+  * The deprecated `cancel` route was removed and will likely be replaced at a later date.
+  * `run` was renamed `runBatch` as its purpose is specifically to run processes on a "batch selected" array of pieces or pages.
+  * `runNonBatch` was renamed to `run` as it is the more generic job-running method. It is likely that `runBatch` will eventually be refactored to use this method.
+  * The `good` and `bad` methods are renamed `success` and `failure`, respectively. The expected methods used in the `run` method were similarly renamed. They still increment job document properties called `good` and `bad`.
 
 ## 3.6.0 - 2021-10-13
 

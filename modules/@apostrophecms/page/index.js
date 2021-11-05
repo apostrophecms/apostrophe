@@ -2015,7 +2015,9 @@ database.`);
           }
         }
         async function runJob() {
-          return self.apos.modules['@apostrophecms/job'].run(req, ids, one, { labels: { title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label } });
+          return self.apos.modules['@apostrophecms/job'].runBatch(req, ids, one, {
+            // TODO: Update with new progress notification config
+          });
         }
         async function one(req, id) {
           const page = await self.findForBatch(req, { _id: id }).toObject();
