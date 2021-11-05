@@ -303,7 +303,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          return self.apos.modules['@apostrophecms/job'].run(
+          return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
             req.body._ids,
             async function(req, id) {
@@ -324,7 +324,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          return self.apos.modules['@apostrophecms/job'].run(
+          return self.apos.modules['@apostrophecms/job'].runBatch(
             req, req.body._ids,
             async function(req, id) {
               await self.apos.doc.db.updateOne({
@@ -674,7 +674,7 @@ module.exports = {
       // for the batch operation. If there is no schema it will be
       // an empty object.
       //
-      // Replies immediately to the request with `{ jobId: 'cxxxx' }`.
+      // Replies immediately to the request with `{ jobId: 'xxxxx' }`.
       // This can then be passed to appropriate browser-side APIs
       // to monitor progress.
       //
@@ -687,10 +687,8 @@ module.exports = {
         const data = self.apos.schema.newInstance(schema);
 
         await self.apos.schema.convert(req, schema, req.body, data);
-        await self.apos.modules['@apostrophecms/job'].run(req, one, {
-          labels: {
-            title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label
-          }
+        await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
+          // TODO: Update with new progress notification config
         });
         async function one(req, id) {
           const piece = self.findForEditing(req, { _id: id }).toObject();
