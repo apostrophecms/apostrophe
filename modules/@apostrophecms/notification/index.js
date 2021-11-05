@@ -166,19 +166,26 @@ module.exports = {
         ':_id/clear-event': async function (req) {
           const lockId = `clear-event-${req.params._id}`;
 
-          await self.apos.lock.lock(lockId);
-          const result = await self.db.updateOne({
-            _id: req.params._id,
-            event: {
-              $ne: null
-            }
-          }, {
-            $set: {
-              event: null
-            }
-          });
+          let result = { results: {} };
 
-          await self.apos.lock.unlock(lockId);
+          try {
+            await self.apos.lock.lock(lockId);
+
+            result = await self.db.updateOne({
+              _id: req.params._id,
+              event: {
+                $ne: null
+              }
+            }, {
+              $set: {
+                event: null
+              }
+            });
+          } catch (error) {
+            throw self.apos.error('notfound');
+          } finally {
+            await self.apos.lock.unlock(lockId);
+          }
 
           return result.result;
         }

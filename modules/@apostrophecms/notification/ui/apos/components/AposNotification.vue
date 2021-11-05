@@ -176,9 +176,14 @@ export default {
       }
     },
     async clearEvent(id) {
-      return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
-        body: {}
-      });
+      try {
+        return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
+          body: {}
+        });
+      } catch (error) {
+        console.error(this.$t('apostrophe:notificationClearEventError'));
+        return {};
+      }
     }
   }
 };
