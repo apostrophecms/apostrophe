@@ -176,8 +176,8 @@ export default {
       }
     },
     async clearEvent(id) {
-      return await apos.http.post(`${apos.notification.action}/event-clear`, {
-        body: { id }
+      return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
+        body: {}
       });
     }
   }

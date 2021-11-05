@@ -163,16 +163,12 @@ module.exports = {
   apiRoutes(self) {
     return {
       post: {
-        'event-clear': async function (req) {
-          if (!req.body.id) {
-            throw self.apos.error('invalid');
-          }
-
-          const lockId = `event-clear-${req.body.id}`;
+        ':_id/clear-event': async function (req) {
+          const lockId = `clear-event-${req.params._id}`;
 
           await self.apos.lock.lock(lockId);
           const result = await self.db.updateOne({
-            _id: req.body.id,
+            _id: req.params._id,
             event: {
               $ne: null
             }
