@@ -19,10 +19,10 @@
     </template>
     <template #primaryControls>
       <AposContextMenu
-        v-if="moreMenu.menu.length"
-        :button="moreMenu.button"
-        :menu="moreMenu.menu"
-        @item-clicked="moreMenuHandler"
+        v-if="utilityOperations.menu.length"
+        :button="utilityOperations.button"
+        :menu="utilityOperations.menu"
+        @item-clicked="utilityOperationsHandler"
       />
       <AposButton
         v-if="relationshipField"
@@ -66,13 +66,14 @@
             :selected-state="selectAllState"
             :total-pages="totalPages"
             :current-page="currentPage"
-            :filters="moduleOptions.filters"
             :filter-choices="filterChoices"
             :filter-values="filterValues"
+            :filters="moduleOptions.filters"
             :labels="moduleLabels"
-            :batch-operations="moduleOptions.batchOperations"
             :displayed-items="items.length"
             :is-relationship="!!relationshipField"
+            :checked-count="checked.length"
+            :batch-operations="moduleOptions.batchOperations"
             @select-click="selectAll"
             @search="search"
             @page-change="updatePage"
@@ -148,7 +149,7 @@ export default {
       filterValues: {},
       queryExtras: {},
       holdQueries: false,
-      moreMenu: {
+      utilityOperations: {
         button: {
           label: 'apostrophe:moreOperations',
           iconOnly: true,
@@ -161,8 +162,7 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      },
-      batchOperations: []
+      }
     };
   },
   computed: {
@@ -233,21 +233,10 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
+    this.setUtilityOperations();
     await this.getPieces();
     await this.getAllPiecesTotal();
 
-    this.batchOperations = this.flattenOperations();
-
-    if (this.relationshipField && this.moduleOptions.canEdit) {
-      // Add computed singular label to context menu
-      this.moreMenu.menu.unshift({
-        action: 'new',
-        label: {
-          key: 'apostrophe:newDocType',
-          type: this.$t(this.moduleLabels.singular)
-        }
-      });
-    }
     apos.bus.$on('content-changed', this.getPieces);
   },
   destroyed() {
@@ -255,7 +244,7 @@ export default {
     apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
-    moreMenuHandler(action) {
+    utilityOperationsHandler(action) {
       if (action === 'new') {
         this.create();
       }
@@ -451,53 +440,48 @@ export default {
         this.setCheckedDocs(docs);
       }
     },
-    flattenOperations() {
-      function reducer (ops, entry) {
-        if (!entry.operations) {
-          ops.push(entry);
-          return ops;
-        }
-
-        return [
-          ...ops,
-          ...entry.operations
-        ];
-      }
-
-      return this.moduleOptions.batchOperations.reduce(reducer, []);
-    },
-    async handleBatchAction(action) {
-      if (!action || !this.batchOperations.find(op => {
-        return op.action === action;
-      })) {
-        return;
-      }
-
-      const operation = this.batchOperations.find(o => {
-        return o.action === action;
-      });
-
-      // Continue in another method based on what the action wants to do. In
-      // any case the action method will probably make use of the checked
-      // items.
-      if (operation.route) {
+    async handleBatchAction({
+      label, route, requestOptions = {}, messages
+    }) {
+      if (route) {
         try {
-          await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
+          await apos.http.post(`${this.moduleOptions.action}${route}`, {
             body: {
-              ...operation.requestOptions,
+              ...requestOptions,
               _ids: this.checked,
-              messages: operation.messages,
+              messages: messages,
               type: this.checked.length === 1 ? this.moduleLabels.singluar
                 : this.moduleLabels.plural
             }
           });
         } catch (error) {
           apos.notify('Batch operation {{ operation }} failed.', {
-            interpolate: { operation: operation.label },
+            interpolate: { operation: label },
             type: 'danger'
           });
         }
       }
+    },
+    handleModalAction (action) {
+      console.info('Execute modal action', action);
+    },
+    setUtilityOperations () {
+      const { utilityOperations } = this.moduleOptions;
+
+      const newPiece = {
+        action: 'new',
+        label: {
+          key: 'apostrophe:newDocType',
+          type: this.$t(this.moduleLabels.singular)
+        }
+      };
+
+      this.utilityOperations.menu = [
+        ...this.relationshipField && this.moduleOptions.canEdit
+          ? [ newPiece ] : [],
+        ...this.utilityOperations.menu,
+        ...(Array.isArray(utilityOperations) && utilityOperations) || []
+      ];
     }
   }
 };

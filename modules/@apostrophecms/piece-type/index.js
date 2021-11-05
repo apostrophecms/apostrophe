@@ -2,7 +2,7 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  cascades: [ 'filters', 'columns', 'batchOperations' ],
+  cascades: [ 'filters', 'columns', 'batchOperations', 'utilityOperations' ],
   options: {
     perPage: 10,
     quickCreate: true,
@@ -96,6 +96,14 @@ module.exports = {
       }
     }
   },
+  utilityOperations: {
+    add: {
+      // TEMP
+      import: {
+        label: 'Import pieces'
+      }
+    }
+  },
   batchOperations: {
     add: {
       archive: {
@@ -109,6 +117,11 @@ module.exports = {
         icon: 'archive-arrow-down-icon',
         if: {
           archived: false
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         }
       },
       restore: {
@@ -122,6 +135,11 @@ module.exports = {
         icon: 'archive-arrow-up-icon',
         if: {
           archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:restoreType',
+          description: 'apostrophe:restoreBatchConfirmation',
+          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
       }
       // visibility: {
@@ -506,6 +524,13 @@ module.exports = {
                 return operations.includes(operation);
               }) || [];
           }
+        },
+        composeUtilityOperations() {
+          self.utilityOperations = Object.entries(self.utilityOperations || {})
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
         }
       }
     };
@@ -921,6 +946,7 @@ module.exports = {
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
+        browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.singleton = self.options.singleton;
