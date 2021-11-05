@@ -136,12 +136,14 @@ export default {
     }
     // Notifications may include events to emit.
     if (this.notification.event?.name) {
-      // Clear the event to make sure it's only emitted once across browsers.
-      const result = await this.clearEvent(this.notification._id);
-      // The result includes the number of documents found with the event.
-      // The notification doc will only still have the event in one instance.
-      if (result.n) {
+      try {
+        // Clear the event to make sure it's only emitted once across browsers.
+        await this.clearEvent(this.notification._id);
+        // The result includes the number of documents found with the event.
+        // The notification doc will only still have the event in one instance.
         apos.bus.$emit(this.notification.event.name, this.notification.event.data);
+      } catch (error) {
+        console.error(this.$t('apostrophe:notificationClearEventError'));
       }
     }
   },
@@ -176,14 +178,9 @@ export default {
       }
     },
     async clearEvent(id) {
-      try {
-        return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
-          body: {}
-        });
-      } catch (error) {
-        console.error(this.$t('apostrophe:notificationClearEventError'));
-        return {};
-      }
+      return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
+        body: {}
+      });
     }
   }
 };
