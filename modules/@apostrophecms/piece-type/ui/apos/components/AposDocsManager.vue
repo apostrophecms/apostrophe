@@ -161,7 +161,10 @@ export default {
         isSelected: false,
         total: 0
       },
-      batchOperations: []
+      batchOperations: [],
+      importPiecesFile: {
+        selectedFile: null
+      }
     };
   },
   computed: {
@@ -280,22 +283,14 @@ export default {
         body: {
           component: 'AposFile',
           props: {
-            allowedExtensions: [ 'csv' ]
+            ...this.importPiecesFile,
+            allowedExtensions: '.csv'
           },
           on: {
-            'upload-file': (e) => this.uploadFile(e)
+            'upload-file': this.uploadImportFile,
+            update: this.udapteImportFiles
           }
         }
-        // form: {
-        //   schema: [ {
-        //     type: 'attachment',
-        //     name: 'importFile',
-        //     required: true
-        //   } ],
-        //   value: {
-        //     data: {}
-        //   }
-        // }
       });
 
       if (confirmed) {
@@ -303,9 +298,15 @@ export default {
       }
 
     },
-    uploadFile (e) {
-      console.log('e ===> ', e);
-      console.log('=============> UPLOAD <================');
+    uploadImportFile (file) {
+      if (file) {
+        this.selectedFile = file;
+      }
+
+      console.log('this.selectedFile ===> ', this.selectedFile);
+    },
+    udapteImportFiles (items) {
+      console.log('items ===> ', items);
     },
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {

@@ -22,7 +22,7 @@
           @select="select"
           @move="move"
           @item-clicked="$emit('item-clicked', item)"
-          :key="item._id"
+          :key="item._id || item.name"
           :item="item"
           :selected="selected === item._id"
           :class="{'apos-slat-list__item--disabled' : disabled}"

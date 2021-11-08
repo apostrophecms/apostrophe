@@ -4,7 +4,7 @@
       class="apos-input-wrapper apos-file-dropzone"
       :class="{
         'apos-file-dropzone--dragover': dragging,
-        'apos-is-disabled': disabled
+        'apos-is-disabled': disabled || limitReached
       }"
       @drop.prevent="uploadFile"
       @dragover="dragHandler"
@@ -26,50 +26,73 @@
       <input
         type="file"
         class="apos-sr-only"
-        :disabled="disabled"
+        :disabled="disabled || limitReached"
         @input="uploadFile"
-        :accept="field.accept"
+        :accept="allowedExtensions"
       >
     </label>
-    <!-- <div v-if="next && next._id" class="apos-file-files">
+    <div v-if="selectedFile || attachment" class="apos-file-files">
       <AposSlatList
-        :value="next ? [ next ] : []"
-        @input="updated"
-        :disabled="field.readOnly"
+        :value="[selectedFile || attachment]"
+        @input="update"
+        :disabled="readOnly"
       />
-    </div> -->
+    </div>
   </div>
 </template>
 
 <script>
-// import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
-
 export default {
-  // components: {
-  //   AposSlatList
-  // },
   props: {
     uploading: {
       type: Boolean,
       default: false
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    },
+    limit: {
+      type: Number,
+      default: 1
+    },
+    attachment: {
+      type: Object,
+      default: null
     },
     field: {
       type: Object,
       default: () => ({})
     },
     allowedExtensions: {
-      type: Array,
-      default: () => [ '*' ]
+      type: String,
+      default: '*'
+    },
+    readOnly: {
+      type: Boolean,
+      default: false
+    },
+    def: {
+      type: String,
+      default: null
     }
   },
-  emits: [ 'upload-file' ],
-  data: () => ({
-    next: (this.value && (typeof this.value.data === 'object'))
-      ? this.value.data : (this.field.def || null),
-    disabled: false,
-    dragging: false
-  }),
+  emits: [ 'upload-file', 'update' ],
+  data () {
+    return {
+      selectedFile: null,
+      dragging: false
+    };
+  },
   computed: {
+    next () {
+      return (this.selectedFile && (typeof this.selectedFile === 'object'))
+        ? this.selectedFile
+        : (this.def || null);
+    },
+    limitReached () {
+      return this.selectedFiles > this.limit;
+    },
     messages () {
       const msgs = {
         primary: 'Drop a file here or',
@@ -85,22 +108,32 @@ export default {
       }
       return msgs;
     }
-    // limitReached () {
-    //   return !!(this.value.data && this.value.data._id);
-    // }
   },
   methods: {
-    uploadFile (e) {
+    uploadFile ({ target, dataTransfer }) {
       this.dragging = false;
-      this.disabled = true;
+      const [ file ] = target.files ? target.files : dataTransfer.files;
 
-      this.$emit('upload-file', e);
+      console.log('file.extension ===> ', file);
+
+      this.selectedFile = {
+        _id: file.name,
+        title: file.name,
+        extension: file.extension
+      };
+
+      this.$emit('upload-file', file);
     },
-    dragHandler ({ preventDefault }) {
-      preventDefault();
+    dragHandler (event) {
+      event.preventDefault();
+
       if (!this.disabled && !this.dragging) {
         this.dragging = true;
       }
+    },
+    update(items) {
+      this.selectedFile = items[0] || null;
+      this.$emit('update', items);
     }
   }
 };

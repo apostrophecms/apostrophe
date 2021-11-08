@@ -7,53 +7,15 @@
     <template #body>
       <div class="apos-attachment">
         <AposFile
-          :allowed-extensions="allowedExtensions"
+          :allowed-extensions="field.accept"
           :uploading="uploading"
-          :field="field"
-          :disabled="disabled"
+          :disabled="disabled || field.readOnly"
           :limit-reached="limitReached"
-          :selected-file="value.data"
+          :attachment="value.data"
+          :def="field.def"
           @upload-file="uploadMedia"
           @update="updated"
         />
-        <!-- <label
-          class="apos-input-wrapper apos-attachment-dropzone"
-          :class="{
-            'apos-attachment-dropzone--dragover': dragging,
-            'apos-is-disabled': disabled || limitReached
-          }"
-          @drop.prevent="uploadMedia"
-          @dragover="dragHandler"
-          @dragleave="dragging = false"
-        >
-          <p class="apos-attachment-instructions">
-            <template v-if="dragging">
-              <cloud-upload-icon :size="38" />
-            </template>
-            <AposSpinner v-else-if="uploading" />
-            <template v-else>
-              <paperclip-icon :size="14" class="apos-attachment-icon" />
-              {{ messages.primary }}&nbsp;
-              <span class="apos-attachment-highlight" v-if="messages.highlighted">
-                {{ messages.highlighted }}
-              </span>
-            </template>
-          </p>
-          <input
-            type="file"
-            class="apos-sr-only"
-            :disabled="disabled || limitReached"
-            @input="uploadMedia"
-            :accept="field.accept"
-          >
-        </label>
-        <div v-if="next && next._id" class="apos-attachment-files">
-          <AposSlatList
-            :value="next ? [ next ] : []"
-            @input="updated"
-            :disabled="field.readOnly"
-          />
-        </div> -->
       </div>
     </template>
   </AposInputWrapper>
@@ -98,6 +60,7 @@ export default {
     }
   },
   async mounted () {
+    console.log('vthis.alue.data ===> ', this.value.data);
     this.disabled = this.field.readOnly;
 
     const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
