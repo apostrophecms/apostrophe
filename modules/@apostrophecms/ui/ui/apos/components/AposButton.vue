@@ -15,6 +15,7 @@
       :type="buttonType"
       :role="role"
       :id="attrs.id ? attrs.id : id"
+      :style="{color: textColor}"
       v-bind="attrs"
     >
       <transition name="fade">
@@ -68,6 +69,10 @@ export default {
       }
     },
     color: {
+      type: String,
+      default: null
+    },
+    textColor: {
       type: String,
       default: null
     },

@@ -1217,6 +1217,21 @@ module.exports = {
         // cursors.
 
         project: {
+          launder (p) {
+            // check that project is an object
+            if (!p || typeof p !== 'object' || Array.isArray(p)) {
+              return {};
+            }
+
+            const projection = Object.entries(p).reduce((acc, [ key, val ]) => {
+              return {
+                ...acc,
+                [key]: self.apos.launder.boolean(val)
+              };
+            }, {});
+
+            return projection;
+          },
           finalize() {
             let projection = query.get('project') || {};
             // Keys beginning with `_` are computed values
@@ -1442,9 +1457,14 @@ module.exports = {
         attachments: {
           def: false,
           after(results) {
-            for (const doc of results) {
-              self.apos.attachment.all(doc, { annotate: true });
+            const attachments = query.get('attachments');
+
+            if (attachments) {
+              self.apos.attachment.all(results, { annotate: true });
             }
+          },
+          launder(b) {
+            return self.apos.launder.boolean(b);
           }
         },
 
