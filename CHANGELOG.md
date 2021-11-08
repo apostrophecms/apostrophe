@@ -5,6 +5,7 @@
 ### Adds
 
 * Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc. Note that `public` and `ui/public` module subdirectories have separate functions. See the documentation for more information.
+* Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift. Thank you to [Qiao Lin](https://github.com/qclin) for the contribution.
 
 ### Fixes
 
@@ -36,7 +37,6 @@
 * The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to [Max Mulatz](https://github.com/klappradla) for this contribution.
 * Adds deprecation notes to doc module `afterLoad` events, which are deprecated.
 * Removes unused `afterLogin` method in the login module.
-* Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift.
 
 ## 3.6.0 - 2021-10-13
 
