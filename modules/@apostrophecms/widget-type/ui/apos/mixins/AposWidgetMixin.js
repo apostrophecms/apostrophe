@@ -69,11 +69,9 @@ export default {
       }
     },
     runPlayer() {
-      console.log('SUP STU DATS');
       if (!this.playerOpts || this.playerOpts.played) {
         return;
       }
-      console.log(this.playerOpts);
       const el = this.$el.querySelector(this.playerOpts.selector);
       if (el && this.playerOpts.player) {
         this.playerOpts.player(el);
