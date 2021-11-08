@@ -15,7 +15,10 @@
       <button
         v-for="(button, i) in notification.buttons"
         :key="i"
-        :data-apos-bus-event="JSON.stringify({ name: button.name, data: button.data })"
+        :data-apos-bus-event="JSON.stringify({
+          name: button.name,
+          data: button.data
+        })"
       >
         {{ localize(button.label) }}
       </button>
@@ -36,7 +39,10 @@
         {{ Math.floor(job.percentage) + '%' }}
       </span>
     </div>
-    <button @click="close" class="apos-notification__button">
+    <button
+      v-if="!job"
+      @click="close" class="apos-notification__button"
+    >
       <Close
         class="apos-notification__close-icon"
         title="Close Notification"
@@ -75,7 +81,7 @@ export default {
         classes.push(`apos-notification--${this.notification.type}`);
       }
 
-      if (this.notification.jobId) {
+      if (this.job) {
         classes.push('apos-notification--progress');
       }
 
@@ -127,7 +133,20 @@ export default {
         console.error('Unable to find notification job:', this.notification.jobId);
         this.job = null;
       }
+    }
+    // Notifications may include events to emit.
+    if (this.notification.event?.name) {
+      try {
+        // Clear the event to make sure it's only emitted once across browsers.
+        const safe = await this.clearEvent(this.notification._id);
 
+        if (safe) {
+          // The notification doc will only still have the event in one instance.
+          apos.bus.$emit(this.notification.event.name, this.notification.event.data);
+        }
+      } catch (error) {
+        console.error(this.$t('apostrophe:notificationClearEventError'));
+      }
     }
   },
   methods: {
@@ -159,6 +178,13 @@ export default {
 
         await this.pollJob();
       }
+    },
+    // `clearEvent` returns true if the event was found and cleared. Otherwise
+    // returns `false`
+    async clearEvent(id) {
+      return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
+        body: {}
+      });
     }
   }
 };

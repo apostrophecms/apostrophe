@@ -207,6 +207,7 @@
   "notFoundPageStatusCode": "404",
   "notFoundPageTitle": "404 - Page not found",
   "notInLocale": "The current page doesn’t exist in {{ label }}. Localize the version from {{ currentLocale }}?",
+  "notificationClearEventError": "There was an error clearing a registered notification event.",
   "noTypeFound": "No {{ type }} Found",
   "parentNotLocalized": "Localize the parent page first",
   "notYetPublished": "This document hasn't been published yet.",

@@ -160,6 +160,40 @@ module.exports = {
       return self.db.deleteMany({ _id });
     }
   }),
+  apiRoutes(self) {
+    return {
+      post: {
+        // Clear a registered event on a notification to prevent it from
+        // emitting twice. Returns `true` if the event was found and cleared.
+        // Returns `false` if not found (because it was already cleared).
+        ':_id/clear-event': async function (req) {
+          const lockId = `clear-event-${req.params._id}`;
+
+          let response;
+          try {
+            await self.apos.lock.lock(lockId);
+
+            response = await self.db.updateOne({
+              _id: req.params._id,
+              event: {
+                $ne: null
+              }
+            }, {
+              $set: {
+                event: null
+              }
+            });
+          } catch (error) {
+            throw self.apos.error('notfound');
+          } finally {
+            await self.apos.lock.unlock(lockId);
+          }
+
+          return response.result.nModified > 0;
+        }
+      }
+    };
+  },
   methods(self) {
     return {
       getBrowserData(req) {
@@ -237,7 +271,8 @@ module.exports = {
           // Defaults to true, otherwise launder as boolean
           localize: has(req.body, 'localize')
             ? self.apos.launder.boolean(req.body.localize) : true,
-          job: options.jobId || null
+          job: options.jobId || null,
+          event: options.event
         };
 
         if (copiedOptions.dismiss === true) {
