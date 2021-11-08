@@ -6,7 +6,13 @@
   >
     <template #body>
       <div class="apos-attachment">
-        <label
+        <AposFile
+          :allowed-extensions="allowedExtensions"
+          :uploading="uploading"
+          :field="field"
+          @upload-file="uploadMedia"
+        />
+        <!-- <label
           class="apos-input-wrapper apos-attachment-dropzone"
           :class="{
             'apos-attachment-dropzone--dragover': dragging,
@@ -43,7 +49,7 @@
             @input="updated"
             :disabled="field.readOnly"
           />
-        </div>
+        </div> -->
       </div>
     </template>
   </AposInputWrapper>
@@ -51,13 +57,13 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
-import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
+// import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
 
 export default {
   name: 'AposInputAttachment',
-  components: {
-    AposSlatList
-  },
+  // components: {
+  //   AposSlatList
+  // },
   mixins: [ AposInputMixin ],
   emits: [ 'upload-started', 'upload-complete' ],
   data () {
@@ -69,7 +75,7 @@ export default {
       disabled: false,
       dragging: false,
       uploading: false,
-      allowedExtensions: [ '*' ]
+      allowedExtensions: []
     };
   },
   computed: {
@@ -93,6 +99,7 @@ export default {
     }
   },
   async mounted () {
+    console.log('this.value ===> ', this.value);
     this.disabled = this.field.readOnly;
 
     const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
@@ -119,7 +126,10 @@ export default {
       return false;
     },
     async uploadMedia (event) {
-      if (!this.disabled || !this.limitReached) {
+      console.log('event ===> ', event);
+
+      return;
+      if (!this.disabled || !this.limitReached)
         try {
           this.dragging = false;
           this.disabled = true;
