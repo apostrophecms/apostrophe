@@ -30,12 +30,6 @@ export default {
   mounted() {
     this.renderContent();
     this.playerOpts = apos.util.widgetPlayers[this.type] || null;
-    if (this.playerOpts) {
-      const el = this.$el.querySelector(this.playerOpts.selector);
-      if (el && this.playerOpts.player) {
-        this.playerEl = el;
-      }
-    }
   },
   updated () {
     this.runPlayer();
@@ -47,6 +41,7 @@ export default {
   },
   methods: {
     async renderContent() {
+      const self = this;
       const parameters = {
         _docId: this.docId,
         widget: this.value,
@@ -68,11 +63,20 @@ export default {
         // AposAreas manager can spot any new area divs.
         // This will also run the player
         setTimeout(function() {
+          self.setPlayerEl();
           apos.bus.$emit('widget-rendered');
         }, 0);
       } catch (e) {
         this.rendered = '<p>Unable to render this widget.</p>';
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
+      }
+    },
+    setPlayerEl() {
+      if (this.playerOpts) {
+        const el = this.$el.querySelector(this.playerOpts.selector);
+        if (el && this.playerOpts.player) {
+          this.playerEl = el;
+        }
       }
     },
     runPlayer() {
