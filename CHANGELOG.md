@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
+
+### Adds
+
+* Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc. Note that `public` and `ui/public` module subdirectories have separate functions. See the documentation for more information.
+
+### Fixes
+
+* The `apos.util.attachmentUrl` method now works correctly. To facilitate that, `apos.uploadsUrl` is now populated browser-side at all times as the frontend logic originally expected. For backwards compatibility `apos.attachment.uploadsUrl` is still populated when logged in.
+
+## 3.7.0 - 2021-10-28
 
 ### Adds
 
@@ -10,17 +20,22 @@
 
 ### Fixes
 
+* Prevents double-escaping interpolated localization strings in the UI.
 * Rich text editor style labels are now run through a localization method to get the translated strings from their l10n keys.
 * Fixes README Node version requirement (Node 12+).
 * The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
 * Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
+* Developers can now `require` their project `app.js` file in the Node.js REPL for debugging and inspection. Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
 * If a static text phrase is unavailable in both the current locale and the default locale, Apostrophe will always fall back to the `en` locale as a last resort, which ensures the admin UI works if it has not been translated.
 * Developers can now `require` their project `app.js` in the Node.js REPL for debugging and inspection
+* Ensure array field items have valid _id prop before storing. Thanks to Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
 
 ### Changes
 
 * In 3.x, `relationship` fields have an optional `builders` property, which replaces `filters` from 2.x, and within that an optional `project` property, which replaces `projection` from 2.x (to match MongoDB's `cursor.project`). Prior to this release leaving the old syntax in place could lead to severe performance problems due to a lack of projections. Starting with this release the 2.x syntax results in an error at startup to help the developer correct their code.
-* The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to Max Mulatz for this contribution.
+* The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to [Max Mulatz](https://github.com/klappradla) for this contribution.
+* Adds deprecation notes to doc module `afterLoad` events, which are deprecated.
+* Removes unused `afterLogin` method in the login module.
 
 ## 3.6.0 - 2021-10-13
 

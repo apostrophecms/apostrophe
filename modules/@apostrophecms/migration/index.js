@@ -260,7 +260,7 @@ module.exports = {
           // Intentionally emitted regardless of whether the site is new or not.
           //
           // This is the right time to park pages, for instance, because the
-          // database is guaranteed to be in a sane state, whether because the
+          // database is guaranteed to be in a stable state, whether because the
           // site is new or because migrations ran successfully.
           await self.emit('after');
         } finally {

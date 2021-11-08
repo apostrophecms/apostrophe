@@ -652,6 +652,8 @@ module.exports = {
           locale: req.locale,
           csrfCookieName: self.apos.csrfCookieName,
           tabId: self.apos.util.generateId(),
+          uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
+          assetBaseUrl: self.apos.asset.getAssetBaseUrl(),
           scene
         };
         if (req.user) {
