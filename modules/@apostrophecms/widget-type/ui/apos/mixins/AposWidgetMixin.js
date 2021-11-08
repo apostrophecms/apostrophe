@@ -69,12 +69,15 @@ export default {
       }
     },
     runPlayer() {
-      if (!this.playerOpts) {
+      console.log('SUP STU DATS');
+      if (!this.playerOpts || this.playerOpts.played) {
         return;
       }
+      console.log(this.playerOpts);
       const el = this.$el.querySelector(this.playerOpts.selector);
       if (el && this.playerOpts.player) {
         this.playerOpts.player(el);
+        this.playerOpts.played = true;
       }
     },
     clicked(e) {
