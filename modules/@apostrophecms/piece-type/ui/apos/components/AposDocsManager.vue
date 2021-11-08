@@ -19,10 +19,10 @@
     </template>
     <template #primaryControls>
       <AposContextMenu
-        v-if="moreMenu.menu.length"
-        :button="moreMenu.button"
-        :menu="moreMenu.menu"
-        @item-clicked="moreMenuHandler"
+        v-if="utilityOperations.menu.length"
+        :button="utilityOperations.button"
+        :menu="utilityOperations.menu"
+        @item-clicked="utilityOperationsHandler"
       />
       <AposButton
         v-if="relationshipField"
@@ -66,18 +66,32 @@
             :selected-state="selectAllState"
             :total-pages="totalPages"
             :current-page="currentPage"
-            :filters="moduleOptions.filters"
             :filter-choices="filterChoices"
             :filter-values="filterValues"
+            :filters="moduleOptions.filters"
             :labels="moduleLabels"
+            :displayed-items="items.length"
+            :is-relationship="!!relationshipField"
+            :checked-count="checked.length"
+            :batch-operations="moduleOptions.batchOperations"
             @select-click="selectAll"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
+            @batch="handleBatchAction"
             :options="{
-              disableUnchecked: maxReached(),
-              hideSelectAll: !relationshipField
+              disableUnchecked: maxReached()
             }"
+          />
+          <AposDocsManagerSelectBox
+            :selected-state="selectAllState"
+            :module-labels="moduleLabels"
+            :filter-values="filterValues"
+            :checked-ids="checked"
+            :all-pieces-selection="allPiecesSelection"
+            :displayed-items="items.length"
+            @select-all="selectAllPieces"
+            @set-all-pieces-selection="setAllPiecesSelection"
           />
         </template>
         <template #bodyMain>
@@ -90,7 +104,6 @@
             :options="{
               ...moduleOptions,
               disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField,
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
@@ -136,7 +149,7 @@ export default {
       filterValues: {},
       queryExtras: {},
       holdQueries: false,
-      moreMenu: {
+      utilityOperations: {
         button: {
           label: 'apostrophe:moreOperations',
           iconOnly: true,
@@ -145,7 +158,11 @@ export default {
         },
         menu: []
       },
-      filterChoices: {}
+      filterChoices: {},
+      allPiecesSelection: {
+        isSelected: false,
+        total: 0
+      }
     };
   },
   computed: {
@@ -190,6 +207,16 @@ export default {
     },
     disableUnpublished() {
       return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
+    },
+    selectAllChoice() {
+      const checkCount = this.checked.length;
+      const pageNotFullyChecked = this.items
+        .some((item) => !this.checked.includes(item._id));
+
+      return {
+        value: 'checked',
+        indeterminate: checkCount && pageNotFullyChecked
+      };
     }
   },
   created() {
@@ -206,17 +233,10 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-    this.getPieces();
-    if (this.relationshipField && this.moduleOptions.canEdit) {
-      // Add computed singular label to context menu
-      this.moreMenu.menu.unshift({
-        action: 'new',
-        label: {
-          key: 'apostrophe:newDocType',
-          type: this.$t(this.moduleLabels.singular)
-        }
-      });
-    }
+    this.setUtilityOperations();
+    await this.getPieces();
+    await this.getAllPiecesTotal();
+
     apos.bus.$on('content-changed', this.getPieces);
   },
   destroyed() {
@@ -224,7 +244,7 @@ export default {
     apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
-    moreMenuHandler(action) {
+    utilityOperationsHandler(action) {
       if (action === 'new') {
         this.create();
       }
@@ -271,6 +291,27 @@ export default {
     async finishSaved() {
       await this.getPieces();
     },
+    async request (mergeOptions) {
+      const options = {
+        ...this.filterValues,
+        ...this.queryExtras,
+        ...mergeOptions,
+        withPublished: 1
+      };
+
+      // Avoid undefined properties.
+      const qs = Object.entries(options)
+        .reduce((acc, [ key, val ]) => ({
+          ...acc,
+          ...val !== undefined && { [key]: val }
+        }), {});
+
+      return apos.http.get(this.moduleOptions.action, {
+        qs,
+        busy: true,
+        draft: true
+      });
+    },
     async getPieces () {
       if (this.holdQueries) {
         return;
@@ -278,34 +319,39 @@ export default {
 
       this.holdQueries = true;
 
-      const qs = {
-        ...this.filterValues,
-        page: this.currentPage,
-        ...this.queryExtras,
-        // Also fetch published docs as _publishedDoc subproperties
-        withPublished: 1
-      };
+      const {
+        currentPage, pages, results, choices
+      } = await this.request({
+        page: this.currentPage
+      });
 
-      // Avoid undefined properties.
-      for (const prop in qs) {
-        if (qs[prop] === undefined) {
-          delete qs[prop];
-        };
-      }
-
-      const getResponse = await apos.http.get(
-        this.moduleOptions.action, {
-          busy: true,
-          qs,
-          draft: true
-        }
-      );
-
-      this.currentPage = getResponse.currentPage;
-      this.totalPages = getResponse.pages;
-      this.items = getResponse.results;
-      this.filterChoices = getResponse.choices;
+      this.currentPage = currentPage;
+      this.totalPages = pages;
+      this.items = results;
+      this.filterChoices = choices;
       this.holdQueries = false;
+    },
+    async getAllPiecesTotal () {
+      const { count: total } = await this.request({ count: 1 });
+
+      this.setAllPiecesSelection({
+        isSelected: false,
+        total
+      });
+    },
+    async selectAllPieces () {
+      const { results: docs } = await this.request({
+        project: {
+          _id: 1
+        },
+        attachments: false,
+        perPage: this.allPiecesSelection.total
+      });
+
+      this.setAllPiecesSelection({
+        isSelected: true,
+        docs
+      });
     },
     updatePage(num) {
       if (num) {
@@ -325,6 +371,7 @@ export default {
       this.currentPage = 1;
 
       await this.getPieces();
+      await this.getAllPiecesTotal();
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
@@ -334,10 +381,12 @@ export default {
       this.filterValues[filter] = value;
       this.currentPage = 1;
 
-      this.getPieces();
+      await this.getPieces();
+      await this.getAllPiecesTotal();
       this.headers = this.computeHeaders();
-    },
 
+      this.setCheckedDocs([]);
+    },
     shortcutNew(event) {
       const interesting = (event.keyCode === 78 || event.keyCode === 67); // C(reate) or N(ew)
       const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
@@ -349,7 +398,6 @@ export default {
         this.create();
       }
     },
-
     bindShortcuts() {
       window.addEventListener('keydown', this.shortcutNew);
     },
@@ -376,6 +424,64 @@ export default {
           _fields: result
         });
       }
+    },
+    setAllPiecesSelection ({
+      isSelected, total, docs
+    }) {
+      if (typeof isSelected === 'boolean') {
+        this.allPiecesSelection.isSelected = isSelected;
+      }
+
+      if (typeof total === 'number') {
+        this.allPiecesSelection.total = total;
+      }
+
+      if (docs) {
+        this.setCheckedDocs(docs);
+      }
+    },
+    async handleBatchAction({
+      label, route, requestOptions = {}, messages
+    }) {
+      if (route) {
+        try {
+          await apos.http.post(`${this.moduleOptions.action}${route}`, {
+            body: {
+              ...requestOptions,
+              _ids: this.checked,
+              messages: messages,
+              type: this.checked.length === 1 ? this.moduleLabels.singluar
+                : this.moduleLabels.plural
+            }
+          });
+        } catch (error) {
+          apos.notify('Batch operation {{ operation }} failed.', {
+            interpolate: { operation: label },
+            type: 'danger'
+          });
+        }
+      }
+    },
+    handleModalAction (action) {
+      console.info('Execute modal action', action);
+    },
+    setUtilityOperations () {
+      const { utilityOperations } = this.moduleOptions;
+
+      const newPiece = {
+        action: 'new',
+        label: {
+          key: 'apostrophe:newDocType',
+          type: this.$t(this.moduleLabels.singular)
+        }
+      };
+
+      this.utilityOperations.menu = [
+        ...this.relationshipField && this.moduleOptions.canEdit
+          ? [ newPiece ] : [],
+        ...this.utilityOperations.menu,
+        ...(Array.isArray(utilityOperations) && utilityOperations) || []
+      ];
     }
   }
 };

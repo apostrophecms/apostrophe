@@ -25,7 +25,7 @@ export default {
     };
   },
   async mounted() {
-    apos.notify = async function(message, options) {
+    apos.notify = async function(message, options = {}) {
 
       if (options.dismiss === true) {
         options.dismiss = 5;
