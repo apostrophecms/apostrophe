@@ -4,13 +4,23 @@
   {% set className = data.manager.options.className %}
 {% endif %}
 
+{% if data.options.dimensionAttrs %}
+  {% set dimensionAttrs = data.options.dimensionAttrs %}
+{% elif data.manager.options.dimensionAttrs  %}
+  {% set dimensionAttrs = data.manager.options.dimensionAttrs  %}
+{% endif %}
+
 {% set attachment = apos.image.first(data.widget._image) %}
 
 {% if attachment %}
-  <img{% if className %} class="{{ className }}"{% endif %}
+  <img {% if className %} class="{{ className }}"{% endif %}
     srcset="{{ apos.image.srcset(attachment) }}"
     src="{{ apos.attachment.url(attachment, { size: data.options.size or 'full' }) }}"
     alt="{{ attachment._alt or '' }}"
+    {% if dimensionAttrs %}
+      {% if attachment.width %} width="{{ attachment.width }}" {% endif %}
+      {% if attachment.height %} height="{{ attachment.height }}" {% endif %}
+    {% endif %}
     {% if data.contextOptions and data.contextOptions.sizes %}
       sizes="{{ data.contextOptions.sizes }}"
     {% endif %}

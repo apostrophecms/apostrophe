@@ -1038,6 +1038,7 @@ module.exports = {
           action: self.action,
           fileGroups: self.fileGroups,
           name: self.name,
+          // for bc
           uploadsUrl: self.uploadfs.getUrl(),
           croppable: self.croppable,
           sized: self.sized
