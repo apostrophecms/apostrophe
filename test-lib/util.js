@@ -57,8 +57,40 @@ async function create(options) {
   return require('../index.js')(config);
 }
 
+// Create and admin user. By default the username and password are both 'admin'
+async function createAdmin(apos, { username, password } = {}) {
+  const user = apos.user.newInstance();
+  const name = username || 'admin';
+
+  user.title = name;
+  user.username = name;
+  user.password = password || 'admin';
+  user.email = `${name}@admin.io`;
+  user.role = 'admin';
+
+  return await apos.user.insert(apos.task.getReq(), user);
+}
+
+async function getUserJar(apos, { username, password } = {}) {
+  const jar = apos.http.jar();
+
+  // Log in
+  await apos.http.post('/api/v1/@apostrophecms/login/login', {
+    body: {
+      username: username || 'admin',
+      password: password || 'admin',
+      session: true
+    },
+    jar
+  });
+
+  return jar;
+}
+
 module.exports = {
   destroy,
   create,
+  createAdmin,
+  getUserJar,
   timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };
