@@ -23,12 +23,19 @@ export default {
   data() {
     return {
       rendered: '...',
-      playerOpts: null
+      playerOpts: null,
+      playerEl: null
     };
   },
   mounted() {
     this.renderContent();
     this.playerOpts = apos.util.widgetPlayers[this.type] || null;
+    if (this.playerOpts) {
+      const el = this.$el.querySelector(this.playerOpts.selector);
+      if (el && this.playerOpts.player) {
+        this.playerEl = el;
+      }
+    }
   },
   updated () {
     this.runPlayer();
@@ -69,13 +76,9 @@ export default {
       }
     },
     runPlayer() {
-      if (!this.playerOpts || this.playerOpts.played) {
-        return;
-      }
-      const el = this.$el.querySelector(this.playerOpts.selector);
-      if (el && this.playerOpts.player) {
-        this.playerOpts.player(el);
-        this.playerOpts.played = true;
+      if (this.playerEl && !this.playerEl.played) {
+        this.playerOpts.player(this.playerEl);
+        this.playerEl.played = true;
       }
     },
     clicked(e) {
