@@ -71,6 +71,7 @@
             :filters="moduleOptions.filters"
             :labels="moduleLabels"
             :displayed-items="items.length"
+            :is-relationship="!!relationshipField"
             :checked-count="checked.length"
             :batch-operations="moduleOptions.batchOperations"
             @select-click="selectAll"
@@ -343,6 +344,7 @@ export default {
         project: {
           _id: 1
         },
+        attachments: false,
         perPage: this.allPiecesSelection.total
       });
 

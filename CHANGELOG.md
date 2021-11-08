@@ -9,6 +9,7 @@
 * Checkboxes for pieces are back, a main checkbox allows to select all page items. When all pieces on a page are checked, a banner where the user can select all pieces appears. A launder for mongo projections has been added.
 * Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
 * `batchOperations` can now be grouped into a single button with a menu, `unlessFilter` has been changed to `if`, and allows to pass a single value or an array of values.
+* Adds support for using the attachments query builder in REST API calls via the query string.
 * Adds contextual menu for pieces, any module extending the piece-type one can add actions in this contextual menu.
 * When clicking on a batch operation, it opens a confirmation modal using modal options from the batch operation, it also works for operations in grouped ones. operations name property has been renamed in action to work with AposContextMenu component.
 
