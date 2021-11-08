@@ -141,7 +141,6 @@ export default {
         const safe = await this.clearEvent(this.notification._id);
 
         if (safe) {
-          // The result includes the number of documents found with the event.
           // The notification doc will only still have the event in one instance.
           apos.bus.$emit(this.notification.event.name, this.notification.event.data);
         }
