@@ -1457,9 +1457,14 @@ module.exports = {
         attachments: {
           def: false,
           after(results) {
-            for (const doc of results) {
-              self.apos.attachment.all(doc, { annotate: true });
+            const attachments = query.get('attachments');
+
+            if (attachments) {
+              self.apos.attachment.all(results, { annotate: true });
             }
+          },
+          launder(b) {
+            return self.apos.launder.boolean(b);
           }
         },
 

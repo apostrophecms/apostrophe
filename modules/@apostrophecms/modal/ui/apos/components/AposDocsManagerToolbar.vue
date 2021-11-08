@@ -99,6 +99,10 @@ export default {
       type: Number,
       default: 1
     },
+    isRelationship: {
+      type: Boolean,
+      default: false
+    },
     labels: {
       type: Object,
       default: () => ({})
@@ -161,6 +165,11 @@ export default {
   },
   methods: {
     computeActiveOperations () {
+      if (this.isRelationship) {
+        this.activeOperations = [];
+        return;
+      }
+
       this.activeOperations = this.batchOperations
         .map(({ operations, ...rest }) => {
           if (!operations) {

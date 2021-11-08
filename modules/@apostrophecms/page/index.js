@@ -2034,7 +2034,11 @@ database.`);
           .allowedSchema(req, page, parentPage);
       },
       getRestQuery(req) {
-        const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
+        const query = self.find(req)
+          .ancestors(true)
+          .children(true)
+          .attachments(true)
+          .applyBuildersSafely(req.query);
         // Minimum standard for a REST query without a public projection
         // is being allowed to view drafts on the site
         if (!self.apos.permission.can(req, 'view-draft')) {
