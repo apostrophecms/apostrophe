@@ -286,9 +286,14 @@ export default {
     apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
-    onContentChanged(e) {
+    async onContentChanged(e) {
       if (e.doc && (e.doc._id === this.context._id)) {
         this.context = e.doc;
+      } else if (e.docIds && e.docIds.includes(this.context._id)) {
+        this.context = await apos.http.get(`${this.moduleOptions.action}/${this.context._id}`, {
+          busy: true,
+          draft: true
+        });
       }
     },
     menuHandler(action) {

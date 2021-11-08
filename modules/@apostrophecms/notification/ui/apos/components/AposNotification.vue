@@ -127,6 +127,7 @@ export default {
         this.job.total = total;
         this.job.processed = processed || 0;
         this.job.percentage = percentage;
+        this.job.batchIds = this.notification.batchIds || [];
 
         await this.pollJob();
       } catch (error) {
@@ -164,7 +165,7 @@ export default {
       return result;
     },
     async pollJob () {
-      if (!this.job?.total || (this.job.processed >= this.job.total)) {
+      if (!this.job?.total) {
         return;
       }
       const job = await apos.http.get(this.job.route, {});
@@ -177,6 +178,16 @@ export default {
         });
 
         await this.pollJob();
+      } else {
+        console.info('🇪🇪', this.job);
+        if (this.job.batchIds) {
+          apos.bus.$emit('content-changed', {
+            docIds: this.job.batchIds,
+            // TODO This action name should be more descriptive for handlers to
+            // know what to do.
+            action: 'batch-update'
+          });
+        }
       }
     },
     // `clearEvent` returns true if the event was found and cleared. Otherwise

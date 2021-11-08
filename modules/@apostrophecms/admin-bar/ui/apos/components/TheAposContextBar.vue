@@ -463,7 +463,11 @@ export default {
       }
     },
     async onContentChanged(e) {
-      if (e.doc && (e.doc._id === this.context._id)) {
+
+      if (
+        (e.doc && (e.doc._id === this.context._id)) ||
+        (e.docIds && e.docIds.includes(this.context._id))
+      ) {
         if (e.action === 'delete') {
           if (!this.contextStack.length) {
             // With the current page gone, we need to move to safe ground

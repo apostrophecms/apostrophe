@@ -121,7 +121,8 @@ module.exports = {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && job._id
+            jobId: total && job._id,
+            ids
           });
 
           return {
@@ -272,6 +273,7 @@ module.exports = {
           },
           dismiss: options.dismiss,
           jobId: options.jobId,
+          batchIds: options.ids,
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true
