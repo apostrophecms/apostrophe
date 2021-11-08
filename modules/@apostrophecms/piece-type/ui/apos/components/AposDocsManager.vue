@@ -277,22 +277,35 @@ export default {
         description: 'Here you can import stuff',
         affirmativeLabel: 'Let\'s import stuff',
         localize: false,
-        form: {
-          schema: [ {
-            type: 'attachment',
-            name: 'importFile',
-            required: true
-          } ],
-          value: {
-            data: {}
+        body: {
+          component: 'AposFile',
+          props: {
+            allowedExtensions: [ 'csv' ]
+          },
+          on: {
+            'upload-file': (e) => this.uploadFile(e)
           }
         }
+        // form: {
+        //   schema: [ {
+        //     type: 'attachment',
+        //     name: 'importFile',
+        //     required: true
+        //   } ],
+        //   value: {
+        //     data: {}
+        //   }
+        // }
       });
 
       if (confirmed) {
         console.log('confirmed ===> ', confirmed);
       }
 
+    },
+    uploadFile (e) {
+      console.log('e ===> ', e);
+      console.log('=============> UPLOAD <================');
     },
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
