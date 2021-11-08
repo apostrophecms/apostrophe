@@ -163,13 +163,17 @@ module.exports = {
   apiRoutes(self) {
     return {
       post: {
+        // Clear a registered event on a notification to prevent it from
+        // emitting twice. Returns `true` if the event was found and cleared.
+        // Returns `false` if not found (because it was already cleared).
         ':_id/clear-event': async function (req) {
           const lockId = `clear-event-${req.params._id}`;
 
+          let response;
           try {
             await self.apos.lock.lock(lockId);
 
-            await self.db.updateOne({
+            response = await self.db.updateOne({
               _id: req.params._id,
               event: {
                 $ne: null
@@ -185,7 +189,7 @@ module.exports = {
             await self.apos.lock.unlock(lockId);
           }
 
-          return null;
+          return response.result.nModified > 0;
         }
       }
     };

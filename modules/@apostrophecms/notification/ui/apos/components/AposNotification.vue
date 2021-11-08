@@ -138,10 +138,13 @@ export default {
     if (this.notification.event?.name) {
       try {
         // Clear the event to make sure it's only emitted once across browsers.
-        await this.clearEvent(this.notification._id);
-        // The result includes the number of documents found with the event.
-        // The notification doc will only still have the event in one instance.
-        apos.bus.$emit(this.notification.event.name, this.notification.event.data);
+        const safe = await this.clearEvent(this.notification._id);
+
+        if (safe) {
+          // The result includes the number of documents found with the event.
+          // The notification doc will only still have the event in one instance.
+          apos.bus.$emit(this.notification.event.name, this.notification.event.data);
+        }
       } catch (error) {
         console.error(this.$t('apostrophe:notificationClearEventError'));
       }
@@ -177,6 +180,8 @@ export default {
         await this.pollJob();
       }
     },
+    // `clearEvent` returns true if the event was found and cleared. Otherwise
+    // returns `false`
     async clearEvent(id) {
       return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
         body: {}
