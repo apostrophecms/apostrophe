@@ -10,7 +10,11 @@
           :allowed-extensions="allowedExtensions"
           :uploading="uploading"
           :field="field"
+          :disabled="disabled"
+          :limit-reached="limitReached"
+          :selected-file="value.data"
           @upload-file="uploadMedia"
+          @update="updated"
         />
         <!-- <label
           class="apos-input-wrapper apos-attachment-dropzone"
@@ -57,13 +61,9 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
-// import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
 
 export default {
   name: 'AposInputAttachment',
-  // components: {
-  //   AposSlatList
-  // },
   mixins: [ AposInputMixin ],
   emits: [ 'upload-started', 'upload-complete' ],
   data () {
@@ -73,9 +73,8 @@ export default {
       next: (this.value && (typeof this.value.data === 'object'))
         ? this.value.data : (this.field.def || null),
       disabled: false,
-      dragging: false,
       uploading: false,
-      allowedExtensions: []
+      allowedExtensions: [ '*' ]
     };
   },
   computed: {
@@ -99,7 +98,6 @@ export default {
     }
   },
   async mounted () {
-    console.log('this.value ===> ', this.value);
     this.disabled = this.field.readOnly;
 
     const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
@@ -111,9 +109,6 @@ export default {
     }
   },
   methods: {
-    watchNext () {
-      this.validateAndEmit();
-    },
     updated (items) {
       // NOTE: This is limited to a single item.
       this.next = items.length > 0 ? items[0] : null;
@@ -126,12 +121,8 @@ export default {
       return false;
     },
     async uploadMedia (event) {
-      console.log('event ===> ', event);
-
-      return;
-      if (!this.disabled || !this.limitReached)
+      if (!this.disabled || !this.limitReached) {
         try {
-          this.dragging = false;
           this.disabled = true;
           this.uploading = true;
 
@@ -198,12 +189,6 @@ export default {
       const fileExt = filename.split('.').pop();
       return this.allowedExtensions[0] === '*' ||
         this.allowedExtensions.includes(fileExt);
-    },
-    dragHandler (event) {
-      event.preventDefault();
-      if (!this.disabled && !this.dragging) {
-        this.dragging = true;
-      }
     }
   }
 };
