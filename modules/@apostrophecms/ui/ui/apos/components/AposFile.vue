@@ -112,12 +112,13 @@ export default {
   methods: {
     uploadFile ({ target, dataTransfer }) {
       this.dragging = false;
+      const extensionRegex = /(?:\.([^.]+))?$/;
 
       const files = target.files ? target.files : (dataTransfer.files || []);
-
-      const filteredFiles = Array.from(files).filter((_, i) => i + 1 <= this.limit);
-
-      const extensionRegex = /(?:\.([^.]+))?$/;
+      const filteredFiles = Array.from(files).filter((file, i) => {
+        const [ extension ] = extensionRegex.exec(file.name);
+        return (i + 1 <= this.limit) && this.allowedExtensions.includes(extension);
+      });
 
       this.selectedFiles = filteredFiles.map((file, i) => {
         const [ _, extension ] = extensionRegex.exec((file.name));
