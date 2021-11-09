@@ -292,10 +292,23 @@ export default {
         }
       });
 
-      if (confirmed) {
-        // TODO: Launch the import of the selected CSV file
-      }
+      if (confirmed && this.selectedFile) {
+        try {
+          const formData = new FormData();
+          formData.append('file', this.selectedFile);
 
+          this.selectedFile = null;
+
+          await apos.http.post(`${this.moduleOptions.action}${importOperation.route}`, {
+            body: formData
+          });
+        } catch (error) {
+          apos.notify('Utility operation {{ operation }} failed.', {
+            interpolate: { operation: importOperation.action },
+            type: 'danger'
+          });
+        }
+      }
     },
     uploadImportFile (file) {
       if (file) {
