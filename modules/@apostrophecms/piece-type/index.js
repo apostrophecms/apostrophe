@@ -118,6 +118,11 @@ module.exports = {
         icon: 'archive-arrow-down-icon',
         if: {
           archived: false
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         }
       },
       restore: {
@@ -131,6 +136,11 @@ module.exports = {
         icon: 'archive-arrow-up-icon',
         if: {
           archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:restoreType',
+          description: 'apostrophe:restoreBatchConfirmation',
+          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
       }
       // visibility: {
@@ -207,7 +217,6 @@ module.exports = {
       if (self.apos.launder.boolean(req.query['render-areas']) === true) {
         await self.apos.area.renderDocsAreas(req, result.results);
       }
-      self.apos.attachment.all(result.results, { annotate: true });
       if (query.get('choicesResults')) {
         result.choices = query.get('choicesResults');
       }
@@ -294,7 +303,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          return self.apos.modules['@apostrophecms/job'].run(
+          return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
             req.body._ids,
             async function(req, id) {
@@ -315,7 +324,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          return self.apos.modules['@apostrophecms/job'].run(
+          return self.apos.modules['@apostrophecms/job'].runBatch(
             req, req.body._ids,
             async function(req, id) {
               await self.apos.doc.db.updateOne({
@@ -519,15 +528,10 @@ module.exports = {
         },
         composeUtilityOperations() {
           self.utilityOperations = Object.entries(self.utilityOperations || {})
-            .reduce((acc, [ action, properties ]) => {
-              return [
-                ...acc,
-                {
-                  action,
-                  ...properties
-                }
-              ];
-            }, []);
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
         }
       }
     };
@@ -670,7 +674,7 @@ module.exports = {
       // for the batch operation. If there is no schema it will be
       // an empty object.
       //
-      // Replies immediately to the request with `{ jobId: 'cxxxx' }`.
+      // Replies immediately to the request with `{ jobId: 'xxxxx' }`.
       // This can then be passed to appropriate browser-side APIs
       // to monitor progress.
       //
@@ -683,10 +687,8 @@ module.exports = {
         const data = self.apos.schema.newInstance(schema);
 
         await self.apos.schema.convert(req, schema, req.body, data);
-        await self.apos.modules['@apostrophecms/job'].run(req, one, {
-          labels: {
-            title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label
-          }
+        await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
+          // TODO: Update with new progress notification config
         });
         async function one(req, id) {
           const piece = self.findForEditing(req, { _id: id }).toObject();
@@ -896,7 +898,7 @@ module.exports = {
         return piece;
       },
       getRestQuery(req) {
-        const query = self.find(req);
+        const query = self.find(req).attachments(true);
         query.applyBuildersSafely(req.query);
         if (!self.apos.permission.can(req, 'view-draft')) {
           if (!self.options.publicApiProjection) {

@@ -148,11 +148,9 @@ export default {
       this.$emit('modal-result', false);
     },
     localize(s) {
-      if (this.options.localize === false) {
-        return s;
-      } else {
-        return this.$t(s, this.options.interpolate || {});
-      }
+      return this.options.localize === false
+        ? s
+        : this.$t(s, this.options.interpolate || {});
     }
   }
 };

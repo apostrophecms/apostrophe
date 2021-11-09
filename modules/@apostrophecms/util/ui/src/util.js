@@ -257,6 +257,21 @@ export default () => {
     return path + '.' + file.extension;
   };
 
+  // Given an asset path such as `/modules/modulename/images/file.png`, this
+  // method will return a URL for it. This is used when frontend JavaScript
+  // code needs to access static assets shipped in the `public` subdirectory of
+  // individual modules. Currently `path` must begin with `/modules/` followed
+  // by a module name; other namespaces may exist later. The remainder of the
+  // path, such as `/images/file.png` in the above example, must currespond
+  // to a file that exists in the `public` subdirectory of the named module.
+  //
+  // Asset paths of this type are also automatically supported by CSS and
+  // SCSS files in the project when using `url()`.
+
+  apos.util.assetUrl = function(path) {
+    return apos.assetBaseUrl + path;
+  };
+
   // Returns true if the uri references the same site (same host and port) as the
   // current page. Cross-browser implementation, valid at least back to IE11.
   // Regarding port numbers, this will match as long as the URIs are consistent
