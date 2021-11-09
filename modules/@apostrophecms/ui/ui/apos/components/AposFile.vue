@@ -31,9 +31,9 @@
         :accept="allowedExtensions"
       >
     </label>
-    <div v-if="selectedFile || attachment" class="apos-file-files">
+    <div v-if="filesOrAttachment.length" class="apos-file-files">
       <AposSlatList
-        :value="[selectedFile || attachment]"
+        :value="filesOrAttachment"
         @input="update"
         :disabled="readOnly"
       />
@@ -60,10 +60,6 @@ export default {
       type: Object,
       default: null
     },
-    field: {
-      type: Object,
-      default: () => ({})
-    },
     allowedExtensions: {
       type: String,
       default: '*'
@@ -80,18 +76,22 @@ export default {
   emits: [ 'upload-file', 'update' ],
   data () {
     return {
-      selectedFile: null,
+      selectedFiles: [],
       dragging: false
     };
   },
   computed: {
-    next () {
-      return (this.selectedFile && (typeof this.selectedFile === 'object'))
-        ? this.selectedFile
-        : (this.def || null);
-    },
     limitReached () {
-      return this.selectedFiles > this.limit;
+      return this.filesOrAttachment.length >= this.limit;
+    },
+    filesOrAttachment () {
+      if (!this.selectedFiles.length && !this.attachment) {
+        return [];
+      }
+
+      return this.selectedFiles.length
+        ? this.selectedFiles
+        : [ this.attachment ];
     },
     messages () {
       const msgs = {
@@ -112,17 +112,25 @@ export default {
   methods: {
     uploadFile ({ target, dataTransfer }) {
       this.dragging = false;
-      const [ file ] = target.files ? target.files : dataTransfer.files;
 
-      console.log('file.extension ===> ', file);
+      const files = target.files ? target.files : (dataTransfer.files || []);
 
-      this.selectedFile = {
-        _id: file.name,
-        title: file.name,
-        extension: file.extension
-      };
+      const filteredFiles = Array.from(files).filter((_, i) => i + 1 <= this.limit);
 
-      this.$emit('upload-file', file);
+      const extensionRegex = /(?:\.([^.]+))?$/;
+
+      this.selectedFiles = filteredFiles.map((file) => {
+        const [ _, extension ] = extensionRegex.exec((file.name));
+
+        return {
+          _id: file.name,
+          title: file.name,
+          extension,
+          _url: URL.createObjectURL(file)
+        };
+      });
+
+      this.$emit('upload-file', files);
     },
     dragHandler (event) {
       event.preventDefault();
@@ -132,7 +140,12 @@ export default {
       }
     },
     update(items) {
-      this.selectedFile = items[0] || null;
+      this.selectedFiles.forEach(({ _url }) => {
+        if (_url) {
+          URL.revokeObjectURL(_url);
+        }
+      });
+      this.selectedFiles = items || [];
       this.$emit('update', items);
     }
   }

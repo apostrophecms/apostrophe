@@ -11,7 +11,7 @@
           :uploading="uploading"
           :disabled="disabled || field.readOnly"
           :limit-reached="limitReached"
-          :attachment="value.data"
+          :attachment="next"
           :def="field.def"
           @upload-file="uploadMedia"
           @update="updated"
@@ -60,7 +60,6 @@ export default {
     }
   },
   async mounted () {
-    console.log('vthis.alue.data ===> ', this.value.data);
     this.disabled = this.field.readOnly;
 
     const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
@@ -83,13 +82,11 @@ export default {
 
       return false;
     },
-    async uploadMedia (event) {
+    async uploadMedia ([ file ]) {
       if (!this.disabled || !this.limitReached) {
         try {
           this.disabled = true;
           this.uploading = true;
-
-          const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
 
           if (!this.checkFileGroup(file.name)) {
             const joined = this.allowedExtensions.join(this.$t('apostrophe:listJoiner'));
