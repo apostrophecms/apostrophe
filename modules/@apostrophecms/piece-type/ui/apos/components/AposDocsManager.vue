@@ -291,7 +291,11 @@ export default {
 
         if (confirmed) {
           try {
-            await apos.http.post(`${this.moduleOptions.action}${operation.route}`);
+            await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
+              body: {
+                ...modalOptions.requestOptions || {}
+              }
+            });
           } catch (error) {
             apos.notify('Utility operation {{ operation }} failed.', {
               interpolate: { operation: operation.action },
