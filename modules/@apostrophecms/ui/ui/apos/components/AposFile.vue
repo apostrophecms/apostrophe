@@ -119,18 +119,19 @@ export default {
 
       const extensionRegex = /(?:\.([^.]+))?$/;
 
-      this.selectedFiles = filteredFiles.map((file) => {
+      this.selectedFiles = filteredFiles.map((file, i) => {
         const [ _, extension ] = extensionRegex.exec((file.name));
+        const fakeId = `${i + 1}-${file.name}`;
 
         return {
-          _id: file.name,
+          _id: fakeId,
           title: file.name,
           extension,
           _url: URL.createObjectURL(file)
         };
       });
 
-      this.$emit('upload-file', files);
+      this.$emit('upload-file', filteredFiles);
     },
     dragHandler (event) {
       event.preventDefault();
