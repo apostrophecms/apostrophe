@@ -84,14 +84,14 @@ describe('Job module', function() {
 
     const promises = [];
 
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 500; i++) {
       promises.push(insert(req, apos.modules.article, 'article', {}, i));
     }
 
     const inserted = await Promise.all(promises);
     articleIds = inserted.map(doc => doc._id);
 
-    assert(inserted.length === 10);
+    assert(inserted.length === 500);
     assert(!!inserted[0]._id);
   });
 
