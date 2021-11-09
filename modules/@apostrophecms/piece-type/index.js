@@ -101,14 +101,7 @@ module.exports = {
       }
     }
   },
-  utilityOperations: {
-    // add: {
-    //   // TEMP
-    //   import: {
-    //     label: 'Import pieces'
-    //   }
-    // }
-  },
+  utilityOperations: {},
   batchOperations: {
     add: {
       archive: {
