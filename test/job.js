@@ -120,8 +120,6 @@ describe('Job module', function() {
   it('can follow the second job as it works', async function () {
     const { completed } = await pollJob({
       route: `${jobModule.action}/${jobTwo.jobId}`
-      // processed: 0,
-      // total: articleIds.length
     }, {
       jar
     });
@@ -177,8 +175,6 @@ describe('Job module', function() {
       bad
     } = await pollJob({
       route
-      // processed: 0,
-      // total: articleIds.length
     }, {
       jar
     });
