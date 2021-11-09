@@ -1,5 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+const Promise = require('bluebird');
 let apos;
 
 describe('Job module', function() {
@@ -116,11 +117,11 @@ describe('Job module', function() {
     assert(!!jobTwo.jobId);
   });
 
-  it('can follow job as it works', async function () {
-    const completed = await pollJob({
-      route: `${jobModule.action}/${jobTwo.jobId}`,
-      processed: 0,
-      total: articleIds.length
+  it('can follow the second job as it works', async function () {
+    const { completed } = await pollJob({
+      route: `${jobModule.action}/${jobTwo.jobId}`
+      // processed: 0,
+      // total: articleIds.length
     }, {
       jar
     });
@@ -135,9 +136,60 @@ describe('Job module', function() {
     assert(article.checked === true);
   });
 
-  // 🚧 Test run
+  const logged = [];
+
+  let jobThree;
+
+  it('can run a generic job', async function () {
+    const req = apos.task.getReq();
+
+    jobThree = await jobModule.run(
+      req,
+      async function(req, reporters) {
+        let count = 1;
+        reporters.setTotal(articleIds.length);
+
+        for (const id of articleIds) {
+          await Promise.delay(3);
+          logged.push(id);
+          if (count % 2) {
+            reporters.success();
+          } else {
+            reporters.failure();
+          }
+          count++;
+        }
+      }
+    );
+
+    assert(!!jobThree.jobId);
+  });
+
+  it('can follow the third job as it works', async function () {
+    const route = `${jobModule.action}/${jobThree.jobId}`;
+    const { total } = await apos.http.get(route, { jar });
+    // Tests setTotal()
+    assert(total === articleIds.length);
+
+    const {
+      completed,
+      good,
+      bad
+    } = await pollJob({
+      route
+      // processed: 0,
+      // total: articleIds.length
+    }, {
+      jar
+    });
+
+    assert(completed === articleIds.length);
+    // Tests success()
+    assert(good === (articleIds.length / 2));
+    // Tests failure()
+    assert(bad === (articleIds.length / 2));
+  });
   // 🚧 Test triggerNotification
-  // 🚧 Test setTotal
 });
 
 function padInteger (i, places) {
@@ -159,17 +211,24 @@ async function insert (req, pieceModule, title, data, i) {
 };
 
 async function pollJob(job, { jar }) {
-  if (!job?.total) {
-    return;
-  }
-  const { processed } = await apos.http.get(job.route, { jar });
-  if (processed < job.total) {
+  const {
+    processed,
+    total,
+    good,
+    bad
+  } = await apos.http.get(job.route, { jar });
+
+  if (processed < total) {
     await new Promise(resolve => {
       setTimeout(resolve, 100);
     });
 
     return await pollJob(job, { jar });
   } else {
-    return processed;
+    return {
+      completed: processed,
+      good,
+      bad
+    };
   }
 }
