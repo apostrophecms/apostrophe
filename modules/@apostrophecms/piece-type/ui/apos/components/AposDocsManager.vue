@@ -310,10 +310,8 @@ export default {
         }
       }
     },
-    uploadImportFile (file) {
-      if (file) {
-        this.selectedFile = file;
-      }
+    uploadImportFile ([ file ]) {
+      this.selectedFile = file || null;
     },
     updateImportFile ([ file ]) {
       this.this.selectedFile = file || null;
