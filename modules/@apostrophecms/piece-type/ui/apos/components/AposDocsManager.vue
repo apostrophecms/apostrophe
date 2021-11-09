@@ -275,9 +275,9 @@ export default {
       }
 
       const confirmed = await apos.confirm({
-        heading: 'Import Pieces',
-        description: 'Here you can import stuff',
-        affirmativeLabel: 'Let\'s import stuff',
+        heading: this.$t('apostrophe:importPieces', { type: this.moduleLabels.singular }),
+        description: this.$t('apostrophe:importPiecesDescription'),
+        affirmativeLabel: this.$t('apostrophe:import'),
         localize: false,
         body: {
           component: 'AposFile',
@@ -499,7 +499,7 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages: messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singluar
+              type: this.checked.length === 1 ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
