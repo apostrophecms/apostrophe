@@ -219,7 +219,7 @@ module.exports = {
         };
         addCloneMethod(req);
         req.res.__ = req.__;
-        const { role, ..._properties } = options || {};
+        const { _role, ..._properties } = options || {};
         Object.assign(req, _properties);
         self.apos.i18n.setPrefixUrls(req);
         return req;
