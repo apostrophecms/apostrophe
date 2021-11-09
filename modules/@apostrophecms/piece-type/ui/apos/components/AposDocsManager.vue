@@ -162,9 +162,6 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      },
-      importPiecesFile: {
-        selectedFile: null
       }
     };
   },
@@ -248,14 +245,12 @@ export default {
   },
   methods: {
     utilityOperationsHandler(action) {
-      switch (action) {
-        case 'new':
-          this.create();
-          break;
-        case 'import':
-          this.import(action);
-          break;
+      if (action === 'new') {
+        this.create();
+        return;
       }
+
+      this.handleUtilityOperation(action);
     },
     setCheckedDocs(checked) {
       this.checkedDocs = checked;
@@ -266,56 +261,47 @@ export default {
     async create() {
       await this.edit(null);
     },
-    async import(action) {
-      const importOperation = this.utilityOperations.menu
+    async handleUtilityOperation(action) {
+      const operation = this.utilityOperations.menu
         .find((op) => op.action === action);
 
-      if (!importOperation) {
+      if (!operation) {
         return;
       }
 
-      const confirmed = await apos.confirm({
-        heading: this.$t('apostrophe:importPieces', { type: this.moduleLabels.singular }),
-        description: this.$t('apostrophe:importPiecesDescription'),
-        affirmativeLabel: this.$t('apostrophe:import'),
-        localize: false,
-        body: {
-          component: 'AposFile',
-          props: {
-            ...this.importPiecesFile,
-            allowedExtensions: '.csv'
-          },
-          on: {
-            'upload-file': this.uploadImportFile,
-            update: this.updateImportFile
+      const {
+        modal, body, ...modalOptions
+      } = operation.modalOptions || {};
+
+      if (modal) {
+        apos.modal.execute(modal, {
+          action: this.moduleOptions.action,
+          route: operation.route,
+          labels: this.moduleLabels,
+          ...modalOptions
+        });
+      } else if (body) {
+        const confirmed = await apos.confirm({
+          heading: this.$t(modalOptions.title, { type: this.moduleLabels.plural }),
+          description: this.$t(modalOptions.description),
+          affirmativeLabel: this.$t(modalOptions.confirmationButton),
+          localize: false,
+          ...body && { body }
+        });
+
+        if (confirmed) {
+          try {
+            await apos.http.post(`${this.moduleOptions.action}${operation.route}`);
+          } catch (error) {
+            apos.notify('Utility operation {{ operation }} failed.', {
+              interpolate: { operation: operation.action },
+              type: 'danger'
+            });
           }
-        }
-      });
-
-      if (confirmed && this.selectedFile) {
-        try {
-          const formData = new FormData();
-          formData.append('file', this.selectedFile);
-
-          this.selectedFile = null;
-
-          await apos.http.post(`${this.moduleOptions.action}${importOperation.route}`, {
-            body: formData
-          });
-        } catch (error) {
-          apos.notify('Utility operation {{ operation }} failed.', {
-            interpolate: { operation: importOperation.action },
-            type: 'danger'
-          });
         }
       }
     },
-    uploadImportFile ([ file ]) {
-      this.selectedFile = file || null;
-    },
-    updateImportFile ([ file ]) {
-      this.this.selectedFile = file || null;
-    },
+
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
       let piece;
