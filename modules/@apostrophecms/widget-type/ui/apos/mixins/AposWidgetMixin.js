@@ -80,9 +80,9 @@ export default {
       }
     },
     runPlayer() {
-      if (this.playerEl && !this.playerEl.played) {
+      if (this.playerEl && !this.playerEl.aposWidgetPlayed) {
         this.playerOpts.player(this.playerEl);
-        this.playerEl.played = true;
+        this.playerEl.aposWidgetPlayed = true;
       }
     },
     clicked(e) {
