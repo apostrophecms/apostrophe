@@ -31,7 +31,6 @@
             v-if="content.body"
             :is="content.body.component"
             v-bind="content.body.props"
-            v-on="content.body.on"
           />
           <div v-if="content.form" class="apos-confirm__schema">
             <AposSchema
