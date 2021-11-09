@@ -280,7 +280,7 @@ export default {
           labels: this.moduleLabels,
           ...modalOptions
         });
-      } else if (body) {
+      } else {
         const confirmed = await apos.confirm({
           heading: this.$t(modalOptions.title, { type: this.moduleLabels.plural }),
           description: this.$t(modalOptions.description),
