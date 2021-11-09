@@ -189,7 +189,6 @@ describe('Job module', function() {
     // Tests failure()
     assert(bad === (articleIds.length / 2));
   });
-  // 🚧 Test triggerNotification
 });
 
 function padInteger (i, places) {
