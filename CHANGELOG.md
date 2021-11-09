@@ -12,6 +12,7 @@
 * Adds contextual menu for pieces, any module extending the piece-type one can add actions in this contextual menu.
 * When clicking on a batch operation, it opens a confirmation modal using modal options from the batch operation, it also works for operations in grouped ones. operations name property has been renamed in action to work with AposContextMenu component.
 * Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc. Note that `public` and `ui/public` module subdirectories have separate functions. See the documentation for more information.
+* Adds AposFile.vue component to abstract file dropzone UI, uses it in AposInputAttachment, and uses it in the confirmation modal for pieces import.
 
 ### Fixes
 
