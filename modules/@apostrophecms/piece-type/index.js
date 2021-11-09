@@ -96,12 +96,18 @@ module.exports = {
       }
     }
   },
+  // TEMP in order to test
   utilityOperations: {
     add: {
-      // TEMP
       import: {
         route: '/import',
-        label: 'apostrophe:importPieces'
+        label: 'apostrophe:importPieces',
+        modalOptions: {
+          title: 'apostrophe:importPieces',
+          description: 'apostrophe:importPiecesDescription',
+          confirmationButton: 'apostrophe:import',
+          modal: 'AposImportPieces'
+        }
       }
     }
   },
