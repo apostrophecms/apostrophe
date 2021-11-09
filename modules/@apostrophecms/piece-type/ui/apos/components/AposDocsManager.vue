@@ -287,13 +287,13 @@ export default {
           },
           on: {
             'upload-file': this.uploadImportFile,
-            update: this.udapteImportFiles
+            update: this.updateImportFile
           }
         }
       });
 
       if (confirmed) {
-        console.log('confirmed ===> ', confirmed);
+        // TODO: Launch the import of the selected CSV file
       }
 
     },
@@ -301,11 +301,9 @@ export default {
       if (file) {
         this.selectedFile = file;
       }
-
-      console.log('this.selectedFile ===> ', this.selectedFile);
     },
-    udapteImportFiles (items) {
-      console.log('items ===> ', items);
+    updateImportFile ([ file ]) {
+      this.this.selectedFile = file || null;
     },
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
