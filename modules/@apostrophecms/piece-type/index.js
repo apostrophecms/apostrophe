@@ -275,6 +275,10 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
             req.body._ids,
@@ -296,6 +300,10 @@ module.exports = {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
 
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
