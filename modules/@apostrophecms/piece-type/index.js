@@ -295,8 +295,6 @@ module.exports = {
           }
           return self.publish(req, draft);
         },
-        // TEMP - This works fine, but should be reviewed during work actually
-        // focused on batch archive/restore.
         async archive (req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
@@ -313,18 +311,19 @@ module.exports = {
                   archived: true
                 }
               });
+            }, {
+              action: 'archive'
             }
           );
         },
-        // TEMP - This works fine, but should be reviewed during work actually
-        // focused on batch archive/restore.
         async restore (req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
 
           return self.apos.modules['@apostrophecms/job'].runBatch(
-            req, req.body._ids,
+            req,
+            req.body._ids,
             async function(req, id) {
               await self.apos.doc.db.updateOne({
                 _id: id
@@ -333,6 +332,8 @@ module.exports = {
                   archived: false
                 }
               });
+            }, {
+              action: 'restore'
             }
           );
         },

@@ -122,7 +122,8 @@ module.exports = {
             // the notification will show progress. Without a total number we
             // can't show progress.
             jobId: total && job._id,
-            ids
+            ids,
+            action: options.action
           });
 
           return {
@@ -156,7 +157,6 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
-
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               dismiss: true
@@ -272,8 +272,11 @@ module.exports = {
             type: req.body.type || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
-          jobId: options.jobId,
-          batchIds: options.ids,
+          job: {
+            _id: options.jobId,
+            action: options.action,
+            ids: options.ids
+          },
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true

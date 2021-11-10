@@ -67,10 +67,11 @@ export default {
   emits: [ 'close' ],
   data () {
     return {
-      job: this.notification.jobId ? {
-        route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.jobId}`,
+      job: this.notification.job && this.notification.job._id ? {
+        route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.job._id}`,
         processed: 0,
-        total: 1
+        total: 1,
+        action: this.notification.job.action
       } : null
     };
   },
@@ -127,11 +128,11 @@ export default {
         this.job.total = total;
         this.job.processed = processed || 0;
         this.job.percentage = percentage;
-        this.job.batchIds = this.notification.batchIds || [];
+        this.job.ids = this.notification.job.ids || [];
 
         await this.pollJob();
       } catch (error) {
-        console.error('Unable to find notification job:', this.notification.jobId);
+        console.error('Unable to find notification job:', this.notification.job._id);
         this.job = null;
       }
     }
@@ -179,13 +180,10 @@ export default {
 
         await this.pollJob();
       } else {
-        console.info('🇪🇪', this.job);
-        if (this.job.batchIds) {
+        if (this.job.ids) {
           apos.bus.$emit('content-changed', {
-            docIds: this.job.batchIds,
-            // TODO This action name should be more descriptive for handlers to
-            // know what to do.
-            action: 'batch-update'
+            docIds: this.job.ids,
+            action: this.job.action || 'batch-update'
           });
         }
       }

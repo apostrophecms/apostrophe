@@ -312,8 +312,8 @@ export default {
         draft: true
       });
     },
-    async getPieces () {
-      console.info('🇨🇮 getPieces');
+    async getPieces (e) {
+      console.info('🇨🇮 getPieces', e); // TEMP
       if (this.holdQueries) {
         return;
       }
