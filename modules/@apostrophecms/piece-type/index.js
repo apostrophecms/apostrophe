@@ -107,7 +107,6 @@ module.exports = {
       archive: {
         label: 'apostrophe:archive',
         route: '/archive',
-        // TEMP - full batch operation work is upcoming
         messages: {
           progress: 'Archiving {{ type }}...',
           completed: 'Archived {{ count }} {{ type }}.'
@@ -125,7 +124,6 @@ module.exports = {
       restore: {
         label: 'apostrophe:restore',
         route: '/restore',
-        // TEMP - full batch operation work is upcoming
         messages: {
           progress: 'Restoring {{ type }}...',
           completed: 'Restoring {{ count }} {{ type }}.'
@@ -666,23 +664,24 @@ module.exports = {
       // To avoid RAM issues with very large selections while ensuring
       // that all lifecycle events are fired correctly, the current
       // implementation processes the pieces in series.
-      async batchSimpleRoute(req, name, change) {
-        const batchOperation = _.find(self.batchOperations, { name: name });
-        const schema = batchOperation.schema || [];
-        const data = self.apos.schema.newInstance(schema);
+      // TODO: restore this method when fully implemented.
+      // async batchSimpleRoute(req, name, change) {
+      //   const batchOperation = _.find(self.batchOperations, { name: name });
+      //   const schema = batchOperation.schema || [];
+      //   const data = self.apos.schema.newInstance(schema);
 
-        await self.apos.schema.convert(req, schema, req.body, data);
-        await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
-          // TODO: Update with new progress notification config
-        });
-        async function one(req, id) {
-          const piece = self.findForEditing(req, { _id: id }).toObject();
-          if (!piece) {
-            throw self.apos.error('notfound');
-          }
-          await change(req, piece, data);
-        }
-      },
+      //   await self.apos.schema.convert(req, schema, req.body, data);
+      //   await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
+      //     // TODO: Update with new progress notification config
+      //   });
+      //   async function one(req, id) {
+      //     const piece = self.findForEditing(req, { _id: id }).toObject();
+      //     if (!piece) {
+      //       throw self.apos.error('notfound');
+      //     }
+      //     await change(req, piece, data);
+      //   }
+      // },
 
       // Accept a piece as untrusted input potentially
       // found in `input` (hint: you can pass `req.body`
