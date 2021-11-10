@@ -5,8 +5,9 @@
 ### Adds
 
 * Checkboxes for pieces are back, a main checkbox allows to select all page items. When all pieces on a page are checked, a banner where the user can select all pieces appears. A launder for mongo projections has been added.
-* Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label as well as either a `route`, `schema` or `modal` property to lead into action execution.
-* `batchOperations` can now be grouped into a single button with a menu, `unlessFilter` has been changed to `if`, and allows to pass a single value or an array of values.
+* Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label, `messages` object, and `modalOptions` for the confirmation modal.
+* `batchOperations` can be grouped into a single button with a menu using the `group` cascade subproperty.
+* `batchOperations` can be conditional with an `if` conditional object. This allows developers to pass a single value or an array of values.
 * Notifications may now include an `event` property, which the AposNotification component will emit on mount. The `event` property should be set to an object with `name` (the event name) and optionally `data` (data included with the event emission).
 * Adds support for using the attachments query builder in REST API calls via the query string.
 * Adds contextual menu for pieces, any module extending the piece-type one can add actions in this contextual menu.
