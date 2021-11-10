@@ -441,11 +441,11 @@ export default {
       }
     },
     async handleBatchAction({
-      label, route, requestOptions = {}, messages
+      label, action, requestOptions = {}, messages
     }) {
-      if (route) {
+      if (action) {
         try {
-          await apos.http.post(`${this.moduleOptions.action}${route}`, {
+          await apos.http.post(`${this.moduleOptions.action}/${action}`, {
             body: {
               ...requestOptions,
               _ids: this.checked,

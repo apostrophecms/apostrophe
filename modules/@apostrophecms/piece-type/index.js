@@ -106,7 +106,6 @@ module.exports = {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        route: '/archive',
         messages: {
           progress: 'Archiving {{ type }}...',
           completed: 'Archived {{ count }} {{ type }}.'
@@ -123,7 +122,6 @@ module.exports = {
       },
       restore: {
         label: 'apostrophe:restore',
-        route: '/restore',
         messages: {
           progress: 'Restoring {{ type }}...',
           completed: 'Restoring {{ count }} {{ type }}.'
