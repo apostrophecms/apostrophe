@@ -2,7 +2,12 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  cascades: [ 'filters', 'columns', 'batchOperations', 'utilityOperations' ],
+  cascades: [
+    'filters',
+    'columns',
+    'batchOperations',
+    'utilityOperations'
+  ],
   options: {
     perPage: 10,
     quickCreate: true,
@@ -96,14 +101,7 @@ module.exports = {
       }
     }
   },
-  utilityOperations: {
-    add: {
-      // TEMP
-      import: {
-        label: 'Import pieces'
-      }
-    }
-  },
+  utilityOperations: {},
   batchOperations: {
     add: {
       archive: {
@@ -142,29 +140,6 @@ module.exports = {
           confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
       }
-      // visibility: {
-      //   label: 'apostrophe:visibility',
-      //   requiredField: 'visibility',
-      //   fields: {
-      //     add: {
-      //       visibility: {
-      //         type: 'select',
-      //         label: 'apostrophe:visibilityLabel',
-      //         def: 'public',
-      //         choices: [
-      //           {
-      //             value: 'public',
-      //             label: 'apostrophe:public'
-      //           },
-      //           {
-      //             value: 'loginRequired',
-      //             label: 'apostrophe:loginRequired'
-      //           }
-      //         ]
-      //       }
-      //     }
-      //   }
-      // }
     },
     group: {
       more: {
@@ -295,8 +270,6 @@ module.exports = {
           }
           return self.publish(req, draft);
         },
-        // TEMP - This works fine, but should be reviewed during work actually
-        // focused on batch archive/restore.
         async archive (req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
@@ -306,18 +279,17 @@ module.exports = {
             req,
             req.body._ids,
             async function(req, id) {
-              await self.apos.doc.db.updateOne({
-                _id: id
-              }, {
-                $set: {
-                  archived: true
-                }
-              });
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = true;
+              await self.update(req, piece);
             }
           );
         },
-        // TEMP - This works fine, but should be reviewed during work actually
-        // focused on batch archive/restore.
         async restore (req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
@@ -326,13 +298,14 @@ module.exports = {
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req, req.body._ids,
             async function(req, id) {
-              await self.apos.doc.db.updateOne({
-                _id: id
-              }, {
-                $set: {
-                  archived: false
-                }
-              });
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = false;
+              await self.update(req, piece);
             }
           );
         },
