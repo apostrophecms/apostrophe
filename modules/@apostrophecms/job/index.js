@@ -98,7 +98,7 @@ module.exports = {
       // on a single type of piece.
       //
       // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
-      async runBatch(req, ids, change, options) {
+      async runBatch(req, ids, change, options = {}) {
         let job;
         let notification;
         const total = ids.length;
@@ -132,7 +132,7 @@ module.exports = {
             return res.status(500).send('error');
           }
           try {
-            await self.end(job, false);
+            return await self.end(job, false);
           } catch (err) {
             // Not a lot we can do about this since we already
             // stopped talking to the user
