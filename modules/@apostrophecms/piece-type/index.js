@@ -279,13 +279,14 @@ module.exports = {
             req,
             req.body._ids,
             async function(req, id) {
-              await self.apos.doc.db.updateOne({
-                _id: id
-              }, {
-                $set: {
-                  archived: true
-                }
-              });
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = true;
+              await self.update(req, piece);
             }
           );
         },
@@ -297,13 +298,14 @@ module.exports = {
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req, req.body._ids,
             async function(req, id) {
-              await self.apos.doc.db.updateOne({
-                _id: id
-              }, {
-                $set: {
-                  archived: false
-                }
-              });
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = false;
+              await self.update(req, piece);
             }
           );
         },
