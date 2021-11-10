@@ -4,7 +4,7 @@
       class="apos-input-wrapper apos-file-dropzone"
       :class="{
         'apos-file-dropzone--dragover': dragging,
-        'apos-is-disabled': disabled || limitReached
+        'apos-is-disabled': disabled || fileOrAttachment
       }"
       @drop.prevent="uploadFile"
       @dragover="dragHandler"
@@ -26,14 +26,14 @@
       <input
         type="file"
         class="apos-sr-only"
-        :disabled="disabled || limitReached"
+        :disabled="disabled || fileOrAttachment"
         @input="uploadFile"
         :accept="allowedExtensions"
       >
     </label>
-    <div v-if="filesOrAttachment.length" class="apos-file-files">
+    <div v-if="fileOrAttachment" class="apos-file-files">
       <AposSlatList
-        :value="filesOrAttachment"
+        :value="[fileOrAttachment]"
         @input="update"
         :disabled="readOnly"
       />
@@ -72,22 +72,13 @@ export default {
   emits: [ 'upload-file', 'update' ],
   data () {
     return {
-      selectedFiles: [],
+      selectedFile: null,
       dragging: false
     };
   },
   computed: {
-    limitReached () {
-      return this.filesOrAttachment.length >= 1;
-    },
-    filesOrAttachment () {
-      if (!this.selectedFiles.length && !this.attachment) {
-        return [];
-      }
-
-      return this.selectedFiles.length
-        ? this.selectedFiles
-        : [ this.attachment ];
+    fileOrAttachment () {
+      return this.selectedFile || this.attachment;
     },
     messages () {
       const msgs = {
@@ -98,7 +89,7 @@ export default {
         msgs.primary = 'Field is disabled';
         msgs.highlighted = '';
       }
-      if (this.limitReached) {
+      if (this.fileOrAttachment) {
         msgs.primary = 'Attachment limit reached';
         msgs.highlighted = '';
       }
@@ -134,12 +125,11 @@ export default {
       }
     },
     update(items) {
-      this.selectedFiles.forEach(({ _url }) => {
-        if (_url) {
-          URL.revokeObjectURL(_url);
-        }
-      });
-      this.selectedFiles = items || [];
+      if (this.selectedFile && this.selectedFile._url) {
+        URL.revokeObjectURL(this.selectedFile._url);
+      }
+
+      this.selectedFile = null;
       this.$emit('update', items);
     },
     async checkFileGroup(fileExt) {
