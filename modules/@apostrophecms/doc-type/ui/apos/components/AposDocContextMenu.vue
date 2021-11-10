@@ -290,10 +290,17 @@ export default {
       if (e.doc && (e.doc._id === this.context._id)) {
         this.context = e.doc;
       } else if (e.docIds && e.docIds.includes(this.context._id)) {
-        this.context = await apos.http.get(`${this.moduleOptions.action}/${this.context._id}`, {
-          busy: true,
-          draft: true
-        });
+        try {
+          this.context = await apos.http.get(`${this.moduleOptions.action}/${this.context._id}`, {
+            busy: true
+          });
+        } catch (error) {
+          // If not found it is likely that there was an archiving or restoring
+          // batch operation.
+          if (error.name !== 'notfound') {
+            console.error(error);
+          }
+        }
       }
     },
     menuHandler(action) {

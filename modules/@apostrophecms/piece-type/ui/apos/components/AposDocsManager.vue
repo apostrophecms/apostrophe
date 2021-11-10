@@ -313,7 +313,6 @@ export default {
       });
     },
     async getPieces (e) {
-      console.info('🇨🇮 getPieces', e); // TEMP
       if (this.holdQueries) {
         return;
       }
