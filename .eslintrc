@@ -12,7 +12,7 @@
     "multiline-ternary": "off",
     "no-unused-vars": [
       "error",
-      { "varsIgnorePattern": "^_", "args": "none" }
+      { "varsIgnorePattern": "^_.", "args": "none" }
     ],
     "vue/no-deprecated-destroyed-lifecycle": 0,
     "vue/v-on-event-hyphenation": 1,
