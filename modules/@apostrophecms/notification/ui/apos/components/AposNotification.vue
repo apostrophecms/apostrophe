@@ -67,10 +67,11 @@ export default {
   emits: [ 'close' ],
   data () {
     return {
-      job: this.notification.jobId ? {
-        route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.jobId}`,
+      job: this.notification.job && this.notification.job._id ? {
+        route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.job._id}`,
         processed: 0,
-        total: 1
+        total: 1,
+        action: this.notification.job.action
       } : null
     };
   },
@@ -127,10 +128,11 @@ export default {
         this.job.total = total;
         this.job.processed = processed || 0;
         this.job.percentage = percentage;
+        this.job.ids = this.notification.job.ids || [];
 
         await this.pollJob();
       } catch (error) {
-        console.error('Unable to find notification job:', this.notification.jobId);
+        console.error('Unable to find notification job:', this.notification.job._id);
         this.job = null;
       }
     }
@@ -164,7 +166,7 @@ export default {
       return result;
     },
     async pollJob () {
-      if (!this.job?.total || (this.job.processed >= this.job.total)) {
+      if (!this.job?.total) {
         return;
       }
       const job = await apos.http.get(this.job.route, {});
@@ -177,6 +179,13 @@ export default {
         });
 
         await this.pollJob();
+      } else {
+        if (this.job.ids) {
+          apos.bus.$emit('content-changed', {
+            docIds: this.job.ids,
+            action: this.job.action || 'batch-update'
+          });
+        }
       }
     },
     // `clearEvent` returns true if the event was found and cleared. Otherwise

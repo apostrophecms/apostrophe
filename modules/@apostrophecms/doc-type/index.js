@@ -738,7 +738,7 @@ module.exports = {
       },
       // Localize (export) the given draft to another locale, creating the document in the
       // other locale if necessary. By default, if the document already exists in the
-      // other locale, it is not ovewritten. Use the `update: true` option to change that.
+      // other locale, it is not overwritten. Use the `update: true` option to change that.
       // You can localize starting from either draft or published content. Either way what
       // gets created or updated in the other locale is a draft.
       async localize(req, draft, toLocale, options = { update: false }) {

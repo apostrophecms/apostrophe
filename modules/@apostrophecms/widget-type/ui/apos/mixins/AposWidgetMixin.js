@@ -23,7 +23,8 @@ export default {
   data() {
     return {
       rendered: '...',
-      playerOpts: null
+      playerOpts: null,
+      playerEl: null
     };
   },
   mounted() {
@@ -40,6 +41,7 @@ export default {
   },
   methods: {
     async renderContent() {
+      const self = this;
       const parameters = {
         _docId: this.docId,
         widget: this.value,
@@ -61,6 +63,7 @@ export default {
         // AposAreas manager can spot any new area divs.
         // This will also run the player
         setTimeout(function() {
+          self.setPlayerEl();
           apos.bus.$emit('widget-rendered');
         }, 0);
       } catch (e) {
@@ -68,13 +71,18 @@ export default {
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
       }
     },
-    runPlayer() {
-      if (!this.playerOpts) {
-        return;
+    setPlayerEl() {
+      if (this.playerOpts) {
+        const el = this.$el.querySelector(this.playerOpts.selector);
+        if (el && this.playerOpts.player) {
+          this.playerEl = el;
+        }
       }
-      const el = this.$el.querySelector(this.playerOpts.selector);
-      if (el && this.playerOpts.player) {
-        this.playerOpts.player(el);
+    },
+    runPlayer() {
+      if (this.playerEl && !this.playerEl.aposWidgetPlayed) {
+        this.playerOpts.player(this.playerEl);
+        this.playerEl.aposWidgetPlayed = true;
       }
     },
     clicked(e) {

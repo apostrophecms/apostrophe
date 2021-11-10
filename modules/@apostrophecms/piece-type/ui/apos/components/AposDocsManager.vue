@@ -512,9 +512,6 @@ export default {
         }
       }
     },
-    handleModalAction (action) {
-      console.info('Execute modal action', action);
-    },
     setUtilityOperations () {
       const { utilityOperations } = this.moduleOptions;
 
