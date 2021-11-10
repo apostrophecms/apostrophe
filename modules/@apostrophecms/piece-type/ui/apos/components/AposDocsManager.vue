@@ -312,7 +312,7 @@ export default {
         draft: true
       });
     },
-    async getPieces (e) {
+    async getPieces () {
       if (this.holdQueries) {
         return;
       }
