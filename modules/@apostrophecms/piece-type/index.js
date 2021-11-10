@@ -2,7 +2,12 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  cascades: [ 'filters', 'columns', 'batchOperations', 'utilityOperations' ],
+  cascades: [
+    'filters',
+    'columns',
+    'batchOperations',
+    'utilityOperations'
+  ],
   options: {
     perPage: 10,
     quickCreate: true,
@@ -96,14 +101,7 @@ module.exports = {
       }
     }
   },
-  utilityOperations: {
-    add: {
-      // TEMP
-      import: {
-        label: 'Import pieces'
-      }
-    }
-  },
+  utilityOperations: {},
   batchOperations: {
     add: {
       archive: {
@@ -142,29 +140,6 @@ module.exports = {
           confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
       }
-      // visibility: {
-      //   label: 'apostrophe:visibility',
-      //   requiredField: 'visibility',
-      //   fields: {
-      //     add: {
-      //       visibility: {
-      //         type: 'select',
-      //         label: 'apostrophe:visibilityLabel',
-      //         def: 'public',
-      //         choices: [
-      //           {
-      //             value: 'public',
-      //             label: 'apostrophe:public'
-      //           },
-      //           {
-      //             value: 'loginRequired',
-      //             label: 'apostrophe:loginRequired'
-      //           }
-      //         ]
-      //       }
-      //     }
-      //   }
-      // }
     },
     group: {
       more: {

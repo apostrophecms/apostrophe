@@ -97,10 +97,7 @@ module.exports = {
       // simpler wrapper for this method if you are implementing a batch operation
       // on a single type of piece.
       //
-      // *Options*
-      //
-      // Labeling options TBD.
-      //
+      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
       async runBatch(req, ids, change, options) {
         let job;
         let notification;
@@ -188,10 +185,7 @@ module.exports = {
       // background afterwards. You can pass `jobId` to the `progress` API route
       // of this module as `_id` on the request body to get job status info.
       //
-      // *Options*
-      //
-      // TODO: Labeling options TBD.
-      //
+      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
       async run(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
@@ -261,6 +255,17 @@ module.exports = {
           }
         }
       },
+      // Job notification messages are passed to `triggerNotifications`
+      // through `req.body.messages` via `run` and `runBatch`. The
+      // `req.body.messages` object can include `progress` and `completed`
+      // properties, which will be used for notifications when the job starts
+      // (`progress`) and ends (`completed`). Those messages can include the
+      // following interpolation keys:
+      // - {{ type }}: The doc type, as passed to the job on req.body.type
+      // - {{ count }}: The count of total document IDs in the req.body._ids
+      //   array
+      // No messages are required, but they provide helpful information to
+      // end users.
       async triggerNotification(req, stage, options = {}) {
         if (!req.body || !req.body.messages || !req.body.messages[stage]) {
           return {};
@@ -299,9 +304,6 @@ module.exports = {
       // to indicate the success or failure of one "row" or other item
       // processed, and you *may* call `setTotal(job, n)` to indicate
       // how many rows to expect for better progress display.
-      //
-      // TODO: Labeling options TBD.
-      //
       async start(options) {
         const job = {
           _id: self.apos.util.generateId(),

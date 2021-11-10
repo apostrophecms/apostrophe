@@ -22,7 +22,7 @@
       >
         <AposButton
           v-if="!operations"
-          label="label"
+          :label="label"
           :icon-only="true"
           :icon="icon"
           :disabled="!checkedCount"
