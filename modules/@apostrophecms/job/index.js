@@ -98,7 +98,7 @@ module.exports = {
       // on a single type of piece.
       //
       // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
-      async runBatch(req, ids, change, options) {
+      async runBatch(req, ids, change, options = {}) {
         let job;
         let notification;
         const total = ids.length;
@@ -118,7 +118,9 @@ module.exports = {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && job._id
+            jobId: total && job._id,
+            ids,
+            action: options.action
           });
 
           return {
@@ -130,7 +132,7 @@ module.exports = {
             return res.status(500).send('error');
           }
           try {
-            await self.end(job, false);
+            return await self.end(job, false);
           } catch (err) {
             // Not a lot we can do about this since we already
             // stopped talking to the user
@@ -152,7 +154,6 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
-
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               dismiss: true
@@ -276,7 +277,11 @@ module.exports = {
             type: req.body.type || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
-          jobId: options.jobId,
+          job: {
+            _id: options.jobId,
+            action: options.action,
+            ids: options.ids
+          },
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true

@@ -275,6 +275,10 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
             req.body._ids,
@@ -287,6 +291,8 @@ module.exports = {
 
               piece.archived = true;
               await self.update(req, piece);
+            }, {
+              action: 'archive'
             }
           );
         },
@@ -295,8 +301,13 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
           return self.apos.modules['@apostrophecms/job'].runBatch(
-            req, req.body._ids,
+            req,
+            req.body._ids,
             async function(req, id) {
               const piece = await self.findOneForEditing(req, { _id: id });
 
@@ -306,6 +317,8 @@ module.exports = {
 
               piece.archived = false;
               await self.update(req, piece);
+            }, {
+              action: 'restore'
             }
           );
         },
