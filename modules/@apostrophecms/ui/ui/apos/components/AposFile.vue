@@ -52,10 +52,6 @@ export default {
       type: Boolean,
       default: false
     },
-    limit: {
-      type: Number,
-      default: 1
-    },
     attachment: {
       type: Object,
       default: null
@@ -82,7 +78,7 @@ export default {
   },
   computed: {
     limitReached () {
-      return this.filesOrAttachment.length >= this.limit;
+      return this.filesOrAttachment.length >= 1;
     },
     filesOrAttachment () {
       if (!this.selectedFiles.length && !this.attachment) {
@@ -110,29 +106,25 @@ export default {
     }
   },
   methods: {
-    uploadFile ({ target, dataTransfer }) {
+    async uploadFile ({ target, dataTransfer }) {
       this.dragging = false;
-      const extensionRegex = /(?:\.([^.]+))?$/;
+      const [ file ] = target.files ? target.files : (dataTransfer.files || []);
 
-      const files = target.files ? target.files : (dataTransfer.files || []);
-      const filteredFiles = Array.from(files).filter((file, i) => {
-        const [ extension ] = extensionRegex.exec(file.name);
-        return (i + 1 <= this.limit) && this.allowedExtensions.includes(extension);
-      });
+      const extension = file.name.split('.').pop();
+      const allowedFile = await this.checkFileGroup(`.${extension}`);
 
-      this.selectedFiles = filteredFiles.map((file, i) => {
-        const [ _, extension ] = extensionRegex.exec((file.name));
-        const fakeId = `${i + 1}-${file.name}`;
+      if (!allowedFile) {
+        return;
+      }
 
-        return {
-          _id: fakeId,
-          title: file.name,
-          extension,
-          _url: URL.createObjectURL(file)
-        };
-      });
+      this.selectedFile = {
+        _id: file.name,
+        title: file.name,
+        extension,
+        _url: URL.createObjectURL(file)
+      };
 
-      this.$emit('upload-file', filteredFiles);
+      this.$emit('upload-file', file);
     },
     dragHandler (event) {
       event.preventDefault();
@@ -149,6 +141,22 @@ export default {
       });
       this.selectedFiles = items || [];
       this.$emit('update', items);
+    },
+    async checkFileGroup(fileExt) {
+      const allowedExt = this.allowedExtensions.split(',');
+      const allowed = allowedExt.includes(fileExt);
+
+      if (!allowed) {
+        await apos.notify('apostrophe:fileTypeNotAccepted', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          interpolate: {
+            extensions: this.allowedExtensions
+          }
+        });
+      }
+
+      return allowed;
     }
   }
 };

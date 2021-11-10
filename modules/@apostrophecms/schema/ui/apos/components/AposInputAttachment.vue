@@ -9,8 +9,7 @@
         <AposFile
           :allowed-extensions="field.accept"
           :uploading="uploading"
-          :disabled="disabled || field.readOnly"
-          :limit-reached="limitReached"
+          :disabled="disabled"
           :attachment="next"
           :def="field.def"
           @upload-file="uploadMedia"
@@ -35,40 +34,11 @@ export default {
       next: (this.value && (typeof this.value.data === 'object'))
         ? this.value.data : (this.field.def || null),
       disabled: false,
-      uploading: false,
-      allowedExtensions: [ '*' ]
+      uploading: false
     };
-  },
-  computed: {
-    messages () {
-      const msgs = {
-        primary: 'Drop a file here or',
-        highlighted: 'click to open the file explorer'
-      };
-      if (this.disabled) {
-        msgs.primary = 'Field is disabled';
-        msgs.highlighted = '';
-      }
-      if (this.limitReached) {
-        msgs.primary = 'Attachment limit reached';
-        msgs.highlighted = '';
-      }
-      return msgs;
-    },
-    limitReached () {
-      return !!(this.value.data && this.value.data._id);
-    }
   },
   async mounted () {
     this.disabled = this.field.readOnly;
-
-    const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
-    const groupInfo = groups.find(group => {
-      return group.name === this.field.fileGroup;
-    });
-    if (groupInfo && groupInfo.extensions) {
-      this.allowedExtensions = groupInfo.extensions;
-    }
   },
   methods: {
     updated (items) {
@@ -82,27 +52,11 @@ export default {
 
       return false;
     },
-    async uploadMedia ([ file ]) {
+    async uploadMedia (file) {
       if (!this.disabled || !this.limitReached) {
         try {
           this.disabled = true;
           this.uploading = true;
-
-          if (!this.checkFileGroup(file.name)) {
-            const joined = this.allowedExtensions.join(this.$t('apostrophe:listJoiner'));
-            await apos.notify('apostrophe:fileTypeNotAccepted', {
-              type: 'warning',
-              icon: 'alert-circle-icon',
-              interpolate: {
-                extensions: joined
-              }
-            });
-
-            this.disabled = false;
-            this.uploading = false;
-
-            return;
-          }
 
           await apos.notify('apostrophe:uploading', {
             dismiss: true,
@@ -144,11 +98,6 @@ export default {
           this.uploading = false;
         }
       }
-    },
-    checkFileGroup(filename) {
-      const fileExt = filename.split('.').pop();
-      return this.allowedExtensions[0] === '*' ||
-        this.allowedExtensions.includes(fileExt);
     }
   }
 };
