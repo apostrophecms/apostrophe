@@ -57,7 +57,7 @@ async function create(options) {
   return require('../index.js')(config);
 }
 
-// Create and admin user. By default the username and password are both 'admin'
+// Create an admin user. By default the username and password are both 'admin'
 async function createAdmin(apos, { username, password } = {}) {
   const user = apos.user.newInstance();
   const name = username || 'admin';

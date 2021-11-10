@@ -214,9 +214,7 @@ async function pollJob(job, { jar }) {
   } = await apos.http.get(job.route, { jar });
 
   if (processed < total) {
-    await new Promise(resolve => {
-      setTimeout(resolve, 100);
-    });
+    Promise.delay(100);
 
     return await pollJob(job, { jar });
   } else {
