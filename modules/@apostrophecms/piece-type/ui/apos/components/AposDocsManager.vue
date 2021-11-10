@@ -278,6 +278,7 @@ export default {
           action: this.moduleOptions.action,
           route: operation.route,
           labels: this.moduleLabels,
+          messages: operation.messages,
           ...modalOptions
         });
       } else {
@@ -293,6 +294,7 @@ export default {
           try {
             await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
               body: {
+                messages: operation.messages,
                 ...modalOptions.requestOptions || {}
               }
             });
