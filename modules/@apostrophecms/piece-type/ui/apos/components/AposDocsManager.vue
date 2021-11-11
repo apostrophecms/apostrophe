@@ -270,7 +270,7 @@ export default {
       }
 
       const {
-        modal, body, ...modalOptions
+        modal, ...modalOptions
       } = operation.modalOptions || {};
 
       if (modal) {
@@ -281,30 +281,6 @@ export default {
           messages: operation.messages,
           ...modalOptions
         });
-      } else {
-        const confirmed = await apos.confirm({
-          heading: this.$t(modalOptions.title, { type: this.moduleLabels.plural }),
-          description: this.$t(modalOptions.description),
-          affirmativeLabel: this.$t(modalOptions.confirmationButton),
-          localize: false,
-          ...body && { body }
-        });
-
-        if (confirmed) {
-          try {
-            await apos.http.post(`${this.moduleOptions.action}/${operation.route}`, {
-              body: {
-                messages: operation.messages,
-                ...modalOptions.requestOptions || {}
-              }
-            });
-          } catch (error) {
-            apos.notify('Utility operation {{ operation }} failed.', {
-              interpolate: { operation: operation.action },
-              type: 'danger'
-            });
-          }
-        }
       }
     },
 
