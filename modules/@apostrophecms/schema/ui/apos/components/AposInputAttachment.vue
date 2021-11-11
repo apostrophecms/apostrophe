@@ -6,44 +6,15 @@
   >
     <template #body>
       <div class="apos-attachment">
-        <label
-          class="apos-input-wrapper apos-attachment-dropzone"
-          :class="{
-            'apos-attachment-dropzone--dragover': dragging,
-            'apos-is-disabled': disabled || limitReached
-          }"
-          @drop.prevent="uploadMedia"
-          @dragover="dragHandler"
-          @dragleave="dragging = false"
-        >
-          <p class="apos-attachment-instructions">
-            <template v-if="dragging">
-              <cloud-upload-icon :size="38" />
-            </template>
-            <AposSpinner v-else-if="uploading" />
-            <template v-else>
-              <paperclip-icon :size="14" class="apos-attachment-icon" />
-              {{ messages.primary }}&nbsp;
-              <span class="apos-attachment-highlight" v-if="messages.highlighted">
-                {{ messages.highlighted }}
-              </span>
-            </template>
-          </p>
-          <input
-            type="file"
-            class="apos-sr-only"
-            :disabled="disabled || limitReached"
-            @input="uploadMedia"
-            :accept="field.accept"
-          >
-        </label>
-        <div v-if="next && next._id" class="apos-attachment-files">
-          <AposSlatList
-            :value="next ? [ next ] : []"
-            @input="updated"
-            :disabled="field.readOnly"
-          />
-        </div>
+        <AposFile
+          :allowed-extensions="field.accept"
+          :uploading="uploading"
+          :disabled="disabled"
+          :attachment="next"
+          :def="field.def"
+          @upload-file="uploadMedia"
+          @update="updated"
+        />
       </div>
     </template>
   </AposInputWrapper>
@@ -51,13 +22,9 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
-import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
 
 export default {
   name: 'AposInputAttachment',
-  components: {
-    AposSlatList
-  },
   mixins: [ AposInputMixin ],
   emits: [ 'upload-started', 'upload-complete' ],
   data () {
@@ -67,46 +34,13 @@ export default {
       next: (this.value && (typeof this.value.data === 'object'))
         ? this.value.data : (this.field.def || null),
       disabled: false,
-      dragging: false,
-      uploading: false,
-      allowedExtensions: [ '*' ]
+      uploading: false
     };
-  },
-  computed: {
-    messages () {
-      const msgs = {
-        primary: 'Drop a file here or',
-        highlighted: 'click to open the file explorer'
-      };
-      if (this.disabled) {
-        msgs.primary = 'Field is disabled';
-        msgs.highlighted = '';
-      }
-      if (this.limitReached) {
-        msgs.primary = 'Attachment limit reached';
-        msgs.highlighted = '';
-      }
-      return msgs;
-    },
-    limitReached () {
-      return !!(this.value.data && this.value.data._id);
-    }
   },
   async mounted () {
     this.disabled = this.field.readOnly;
-
-    const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
-    const groupInfo = groups.find(group => {
-      return group.name === this.field.fileGroup;
-    });
-    if (groupInfo && groupInfo.extensions) {
-      this.allowedExtensions = groupInfo.extensions;
-    }
   },
   methods: {
-    watchNext () {
-      this.validateAndEmit();
-    },
     updated (items) {
       // NOTE: This is limited to a single item.
       this.next = items.length > 0 ? items[0] : null;
@@ -118,30 +52,11 @@ export default {
 
       return false;
     },
-    async uploadMedia (event) {
+    async uploadMedia (file) {
       if (!this.disabled || !this.limitReached) {
         try {
-          this.dragging = false;
           this.disabled = true;
           this.uploading = true;
-
-          const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
-
-          if (!this.checkFileGroup(file.name)) {
-            const joined = this.allowedExtensions.join(this.$t('apostrophe:listJoiner'));
-            await apos.notify('apostrophe:fileTypeNotAccepted', {
-              type: 'warning',
-              icon: 'alert-circle-icon',
-              interpolate: {
-                extensions: joined
-              }
-            });
-
-            this.disabled = false;
-            this.uploading = false;
-
-            return;
-          }
 
           await apos.notify('apostrophe:uploading', {
             dismiss: true,
@@ -183,71 +98,7 @@ export default {
           this.uploading = false;
         }
       }
-    },
-    checkFileGroup(filename) {
-      const fileExt = filename.split('.').pop();
-      return this.allowedExtensions[0] === '*' ||
-        this.allowedExtensions.includes(fileExt);
-    },
-    dragHandler (event) {
-      event.preventDefault();
-      if (!this.disabled && !this.dragging) {
-        this.dragging = true;
-      }
     }
   }
 };
 </script>
-
-<style lang="scss" scoped>
-  .apos-attachment-dropzone {
-    @include apos-button-reset();
-    @include type-base;
-    display: block;
-    margin: 10px 0;
-    padding: 20px;
-    border: 2px dashed var(--a-base-8);
-    border-radius: var(--a-border-radius);
-    transition: all 0.2s ease;
-    &:hover {
-      border-color: var(--a-primary);
-      background-color: var(--a-base-10);
-    }
-    &:active,
-    &:focus {
-      border: 2px solid var(--a-primary);
-    }
-    &.apos-is-disabled {
-      color: var(--a-base-4);
-      background-color: var(--a-base-7);
-      border-color: var(--a-base-4);
-
-      &:hover {
-        cursor: not-allowed;
-      }
-    }
-  }
-
-  .apos-attachment-dropzone--dragover {
-    border: 2px dashed var(--a-primary);
-    background-color: var(--a-base-10);
-  }
-
-  .apos-attachment-instructions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    // v-html goofiness
-    & ::v-deep .apos-attachment-highlight {
-      color: var(--a-primary);
-      font-weight: var(--a-weight-bold);
-    }
-  }
-
-  .apos-attachment-icon {
-    transform: rotate(45deg);
-    margin-right: 5px;
-  }
-</style>

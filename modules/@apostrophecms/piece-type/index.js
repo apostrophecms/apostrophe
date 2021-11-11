@@ -96,14 +96,6 @@ module.exports = {
       }
     }
   },
-  utilityOperations: {
-    add: {
-      // TEMP
-      import: {
-        label: 'Import pieces'
-      }
-    }
-  },
   batchOperations: {
     add: {
       archive: {

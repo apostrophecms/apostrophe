@@ -247,7 +247,10 @@ export default {
     utilityOperationsHandler(action) {
       if (action === 'new') {
         this.create();
+        return;
       }
+
+      this.handleUtilityOperation(action);
     },
     setCheckedDocs(checked) {
       this.checkedDocs = checked;
@@ -258,6 +261,53 @@ export default {
     async create() {
       await this.edit(null);
     },
+    async handleUtilityOperation(action) {
+      const operation = this.utilityOperations.menu
+        .find((op) => op.action === action);
+
+      if (!operation) {
+        return;
+      }
+
+      const {
+        modal, body, ...modalOptions
+      } = operation.modalOptions || {};
+
+      if (modal) {
+        await apos.modal.execute(modal, {
+          action: this.moduleOptions.action,
+          route: operation.route,
+          labels: this.moduleLabels,
+          messages: operation.messages,
+          ...modalOptions
+        });
+      } else {
+        const confirmed = await apos.confirm({
+          heading: this.$t(modalOptions.title, { type: this.moduleLabels.plural }),
+          description: this.$t(modalOptions.description),
+          affirmativeLabel: this.$t(modalOptions.confirmationButton),
+          localize: false,
+          ...body && { body }
+        });
+
+        if (confirmed) {
+          try {
+            await apos.http.post(`${this.moduleOptions.action}/${operation.route}`, {
+              body: {
+                messages: operation.messages,
+                ...modalOptions.requestOptions || {}
+              }
+            });
+          } catch (error) {
+            apos.notify('Utility operation {{ operation }} failed.', {
+              interpolate: { operation: operation.action },
+              type: 'danger'
+            });
+          }
+        }
+      }
+    },
+
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
       let piece;
@@ -450,7 +500,7 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages: messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singluar
+              type: this.checked.length === 1 ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
@@ -480,7 +530,7 @@ export default {
         ...this.relationshipField && this.moduleOptions.canEdit
           ? [ newPiece ] : [],
         ...this.utilityOperations.menu,
-        ...(Array.isArray(utilityOperations) && utilityOperations) || []
+        ...(!this.relationshipField && Array.isArray(utilityOperations) && utilityOperations) || []
       ];
     }
   }

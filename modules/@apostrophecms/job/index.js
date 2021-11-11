@@ -206,7 +206,8 @@ module.exports = {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && job._id
+            jobId: total && job._id,
+            count: total
           });
 
           return {
@@ -251,6 +252,7 @@ module.exports = {
 
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
+              count: total,
               dismiss: true
             });
             // Dismiss the progress notification. It will delay 4 seconds
@@ -267,7 +269,7 @@ module.exports = {
 
         return self.apos.notification.trigger(req, req.body.messages[stage], {
           interpolate: {
-            count: req.body._ids.length,
+            count: options.count || (req.body._ids && req.body._ids.length),
             type: req.body.type || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
