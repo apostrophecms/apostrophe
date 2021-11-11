@@ -31,9 +31,6 @@ describe('Job module', function() {
 
   it('has a related database collection', async function () {
     assert(jobModule.db);
-    const stats = await jobModule.db.stats();
-    assert(stats);
-    assert(stats.ns.match(/aposJobs$/));
   });
 
   let jobOne;
