@@ -275,8 +275,8 @@ export default {
 
       if (modal) {
         await apos.modal.execute(modal, {
-          action: this.moduleOptions.action,
-          route: operation.route,
+          moduleAction: this.moduleOptions.action,
+          action,
           labels: this.moduleLabels,
           messages: operation.messages,
           ...modalOptions
