@@ -22,7 +22,7 @@
       >
         <AposButton
           v-if="!operations"
-          label="label"
+          :label="label"
           :icon-only="true"
           :icon="icon"
           :disabled="!checkedCount"
@@ -257,6 +257,7 @@ export default {
       if (confirmed) {
         this.$emit('batch', {
           label,
+          action,
           ...rest
         });
       }

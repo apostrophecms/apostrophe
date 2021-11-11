@@ -2,7 +2,12 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  cascades: [ 'filters', 'columns', 'batchOperations', 'utilityOperations' ],
+  cascades: [
+    'filters',
+    'columns',
+    'batchOperations',
+    'utilityOperations'
+  ],
   options: {
     perPage: 10,
     quickCreate: true,
@@ -96,12 +101,14 @@ module.exports = {
       }
     }
   },
+<<<<<<< HEAD
+=======
+  utilityOperations: {},
+>>>>>>> origin/main
   batchOperations: {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        route: '/archive',
-        // TEMP - full batch operation work is upcoming
         messages: {
           progress: 'Archiving {{ type }}...',
           completed: 'Archived {{ count }} {{ type }}.'
@@ -118,8 +125,6 @@ module.exports = {
       },
       restore: {
         label: 'apostrophe:restore',
-        route: '/restore',
-        // TEMP - full batch operation work is upcoming
         messages: {
           progress: 'Restoring {{ type }}...',
           completed: 'Restoring {{ count }} {{ type }}.'
@@ -134,29 +139,6 @@ module.exports = {
           confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
       }
-      // visibility: {
-      //   label: 'apostrophe:visibility',
-      //   requiredField: 'visibility',
-      //   fields: {
-      //     add: {
-      //       visibility: {
-      //         type: 'select',
-      //         label: 'apostrophe:visibilityLabel',
-      //         def: 'public',
-      //         choices: [
-      //           {
-      //             value: 'public',
-      //             label: 'apostrophe:public'
-      //           },
-      //           {
-      //             value: 'loginRequired',
-      //             label: 'apostrophe:loginRequired'
-      //           }
-      //         ]
-      //       }
-      //     }
-      //   }
-      // }
     },
     group: {
       more: {
@@ -287,44 +269,55 @@ module.exports = {
           }
           return self.publish(req, draft);
         },
-        // TEMP - This works fine, but should be reviewed during work actually
-        // focused on batch archive/restore.
         async archive (req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
 
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
             req.body._ids,
             async function(req, id) {
-              await self.apos.doc.db.updateOne({
-                _id: id
-              }, {
-                $set: {
-                  archived: true
-                }
-              });
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = true;
+              await self.update(req, piece);
+            }, {
+              action: 'archive'
             }
           );
         },
-        // TEMP - This works fine, but should be reviewed during work actually
-        // focused on batch archive/restore.
         async restore (req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
 
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
           return self.apos.modules['@apostrophecms/job'].runBatch(
-            req, req.body._ids,
+            req,
+            req.body._ids,
             async function(req, id) {
-              await self.apos.doc.db.updateOne({
-                _id: id
-              }, {
-                $set: {
-                  archived: false
-                }
-              });
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = false;
+              await self.update(req, piece);
+            }, {
+              action: 'restore'
             }
           );
         },
@@ -672,23 +665,24 @@ module.exports = {
       // To avoid RAM issues with very large selections while ensuring
       // that all lifecycle events are fired correctly, the current
       // implementation processes the pieces in series.
-      async batchSimpleRoute(req, name, change) {
-        const batchOperation = _.find(self.batchOperations, { name: name });
-        const schema = batchOperation.schema || [];
-        const data = self.apos.schema.newInstance(schema);
+      // TODO: restore this method when fully implemented.
+      // async batchSimpleRoute(req, name, change) {
+      //   const batchOperation = _.find(self.batchOperations, { name: name });
+      //   const schema = batchOperation.schema || [];
+      //   const data = self.apos.schema.newInstance(schema);
 
-        await self.apos.schema.convert(req, schema, req.body, data);
-        await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
-          // TODO: Update with new progress notification config
-        });
-        async function one(req, id) {
-          const piece = self.findForEditing(req, { _id: id }).toObject();
-          if (!piece) {
-            throw self.apos.error('notfound');
-          }
-          await change(req, piece, data);
-        }
-      },
+      //   await self.apos.schema.convert(req, schema, req.body, data);
+      //   await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
+      //     // TODO: Update with new progress notification config
+      //   });
+      //   async function one(req, id) {
+      //     const piece = self.findForEditing(req, { _id: id }).toObject();
+      //     if (!piece) {
+      //       throw self.apos.error('notfound');
+      //     }
+      //     await change(req, piece, data);
+      //   }
+      // },
 
       // Accept a piece as untrusted input potentially
       // found in `input` (hint: you can pass `req.body`

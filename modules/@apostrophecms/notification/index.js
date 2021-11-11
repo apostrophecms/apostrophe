@@ -230,9 +230,11 @@ module.exports = {
       // `options.icon`, set to an active Vue Materials Icons icon name, will
       // set an icon on the notification.
       //
-      // `options.jobId` can be set to the _id property of an Apostrophe Job
-      // (@apostrophecms/job module) for the notification to track the job's
-      // progress.
+      // `options.job` can be set to an object with properties related to an
+      // Apostrophe Job (from the @apostrophecms/job module) for the
+      // notification to track the job's progress. These can include the job
+      // `_id` and, for the 'completed' stage, the job `action`,
+      // e.g., 'archive'.
       //
       // Throws an error if there is no `req.user`.
       //
@@ -271,7 +273,7 @@ module.exports = {
           // Defaults to true, otherwise launder as boolean
           localize: has(req.body, 'localize')
             ? self.apos.launder.boolean(req.body.localize) : true,
-          job: options.jobId || null,
+          job: options.job || null,
           event: options.event
         };
 
