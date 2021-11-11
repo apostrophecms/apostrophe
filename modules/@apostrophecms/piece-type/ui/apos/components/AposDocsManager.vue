@@ -274,7 +274,7 @@ export default {
       } = operation.modalOptions || {};
 
       if (modal) {
-        apos.modal.execute(modal, {
+        await apos.modal.execute(modal, {
           action: this.moduleOptions.action,
           route: operation.route,
           labels: this.moduleLabels,
@@ -292,7 +292,7 @@ export default {
 
         if (confirmed) {
           try {
-            await apos.http.post(`${this.moduleOptions.action}${operation.route}`, {
+            await apos.http.post(`${this.moduleOptions.action}/${operation.route}`, {
               body: {
                 messages: operation.messages,
                 ...modalOptions.requestOptions || {}
