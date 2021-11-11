@@ -101,10 +101,7 @@ module.exports = {
       }
     }
   },
-<<<<<<< HEAD
-=======
   utilityOperations: {},
->>>>>>> origin/main
   batchOperations: {
     add: {
       archive: {
