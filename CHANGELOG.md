@@ -27,7 +27,7 @@
   * `run` was renamed `runBatch` as its purpose is specifically to run processes on a "batch selected" array of pieces or pages.
   * `runNonBatch` was renamed to `run` as it is the more generic job-running method. It is likely that `runBatch` will eventually be refactored to use this method.
   * The `good` and `bad` methods are renamed `success` and `failure`, respectively. The expected methods used in the `run` method were similarly renamed. They still increment job document properties called `good` and `bad`.
-* Comments the unused `batchSimpleRoute` methods in teh page and piece-type modules to avoid usage before they are fully implemented.
+* Comments the unused `batchSimpleRoute` methods in the page and piece-type modules to avoid usage before they are fully implemented.
 * Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift.
 
 ## 3.7.0 - 2021-10-28
