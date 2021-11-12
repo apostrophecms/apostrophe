@@ -8,11 +8,13 @@
 * Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label, `messages` object, and `modalOptions` for the confirmation modal.
 * `batchOperations` can be grouped into a single button with a menu using the `group` cascade subproperty.
 * `batchOperations` can be conditional with an `if` conditional object. This allows developers to pass a single value or an array of values.
+* Piece types can have `utilityOperations` configured as a top-level cascade property. These operations are made available in the piece manager as new buttons.
 * Notifications may now include an `event` property, which the AposNotification component will emit on mount. The `event` property should be set to an object with `name` (the event name) and optionally `data` (data included with the event emission).
 * Adds support for using the attachments query builder in REST API calls via the query string.
 * Adds contextual menu for pieces, any module extending the piece-type one can add actions in this contextual menu.
 * When clicking on a batch operation, it opens a confirmation modal using modal options from the batch operation, it also works for operations in grouped ones. operations name property has been renamed in action to work with AposContextMenu component.
 * Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc. Note that `public` and `ui/public` module subdirectories have separate functions. See the documentation for more information.
+* Adds AposFile.vue component to abstract file dropzone UI, uses it in AposInputAttachment, and uses it in the confirmation modal for pieces import.
 * Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift. Thank you to [Qiao Lin](https://github.com/qclin) for the contribution.
 
 ### Fixes
@@ -27,9 +29,9 @@
   * `run` was renamed `runBatch` as its purpose is specifically to run processes on a "batch selected" array of pieces or pages.
   * `runNonBatch` was renamed to `run` as it is the more generic job-running method. It is likely that `runBatch` will eventually be refactored to use this method.
   * The `good` and `bad` methods are renamed `success` and `failure`, respectively. The expected methods used in the `run` method were similarly renamed. They still increment job document properties called `good` and `bad`.
-* Comments the unused `batchSimpleRoute` methods in the page and piece-type modules to avoid usage before they are fully implemented.
+* Comments out the unused `batchSimpleRoute` methods in the page and piece-type modules to avoid usage before they are fully implemented.
 * Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift.
-* Temporarily removes `npm audit` from our automated tests because of a sub-dependency of uploadfs that doesn't actually cause a security vulnerability for apostrophe. 
+* Temporarily removes `npm audit` from our automated tests because of a sub-dependency of uploadfs that doesn't actually cause a security vulnerability for apostrophe.
 
 ## 3.7.0 - 2021-10-28
 
@@ -217,8 +219,7 @@ No changes. Publishing to correctly mark the latest 3.x release as "latest" in n
 can include the widget on the clipboard, a special Clipboard widget will appear in area's Add UI. This works across pages as well.
 
 ### Changes
-* Apostrophe's Global's UI (the @apostrophecms/global singleton has moved from the admin bar's content controls to
-the admin utility tray under a cog icon.
+* Apostrophe's Global's UI (the @apostrophecms/global singleton has moved from the admin bar's content controls to the admin utility tray under a cog icon.
 * The context bar's document Edit button, which was a cog icon, has been rolled into the doc's context menu.
 
 ## 3.1.3 - 2021-07-16
