@@ -1274,6 +1274,14 @@ module.exports = {
             if (query.get('search')) {
               // MongoDB mandates this if we want to sort on search result quality
               projection.textScore = { $meta: 'textScore' };
+            } else if (projection.textScore) {
+              // Gracefully elide the textScore projection when it is not useful and
+              // would cause an error anyway.
+              //
+              // This allows the reuse of the `project()` value passed to one query
+              // in a second query without worrying about whether the second query
+              // contains a search or not
+              delete projection.textScore;
             }
             query.set('project', projection);
           }
