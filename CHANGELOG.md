@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* The search field of the pieces manager modal works properly. Thanks to [Miro Yovchev](https://github.com/myovchev) for pointing out the issue and providing a solution.
+
 ## 3.8.0 - 2021-11-15
 
 ### Adds
