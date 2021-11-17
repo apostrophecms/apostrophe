@@ -4,26 +4,26 @@
     :duration="300"
   >
     <div
-      v-if="selectedState === 'checked' || allPiecesSelection.isSelected"
+      v-show="selectedState === 'checked' && allPiecesSelection.total > displayedItems"
       class="apos-select-box"
     >
       <div class="apos-select-box__content">
         <p class="apos-select-box__text">
           {{ selectBoxMessage }}
-          <button
+          <AposButton
             v-if="!allPiecesSelection.isSelected"
-            class="apos-select-box__select-all"
+            type="subtle" :modifiers="['inline', 'small', 'no-motion']"
+            :label="selectBoxMessageButton" class="apos-select-box__select-all"
             @click="$emit('select-all')"
-          >
-            {{ selectBoxMessageButton }}
-          </button>
-          <button
+            text-color="var(--a-primary)"
+          />
+          <AposButton
             v-else
-            class="apos-select-box__select-all"
+            type="subtle" :modifiers="['inline', 'small', 'no-motion']"
+            label="apostrophe:clearSelection" class="apos-select-box__select-all"
+            text-color="var(--a-primary)"
             @click="clearSelection"
-          >
-            {{ $t('apostrophe:clearSelection') }}.
-          </button>
+          />
         </p>
       </div>
     </div>
@@ -104,35 +104,29 @@ export default {
   .apos-select-box {
     box-sizing: border-box;
     overflow: hidden;
-    height: 5rem;
-    transition: all 0.3s linear;
+    max-height: 65px;
+    transition: max-height 200ms ease-in;
 
     &.collapse-enter, &.collapse-leave-to {
-      height: 0;
+      max-height: 0;
     }
 
     &__content {
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: var(--a-base-9);
+      background-color: var(--a-base-10);
       margin-top: 1rem;
       color: var(--a-text-primary);
+      border-radius: var(--a-border-radius);
     }
 
     &__text {
-      @include type-large;
+      @include type-base;
     }
 
     &__select-all {
-      color: var(--a-primary);
-      cursor: pointer;
-      margin-left: 0.4rem;
-      border: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
+      margin-left: $spacing-half;
     }
   }
 </style>

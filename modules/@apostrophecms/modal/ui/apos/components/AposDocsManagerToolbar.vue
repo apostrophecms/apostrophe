@@ -5,7 +5,7 @@
         v-if="displayedItems"
         label="apostrophe:select"
         type="outline"
-        text-color="var(--a-primary)"
+        text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
         @click="$emit('select-click')"
