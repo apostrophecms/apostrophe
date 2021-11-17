@@ -1996,37 +1996,38 @@ database.`);
       //
       // To avoid RAM issues with very large selections, the current
       // implementation processes the pages in series.
-      async batchSimpleRoute(req, name, change) {
-        const batchOperation = _.find(self.options.batchOperations, { name: name });
-        const schema = batchOperation.schema || [];
-        const data = self.apos.schema.newInstance(schema);
-        await self.apos.schema.convert(req, schema, 'form', req.body, data);
-        let ids = self.apos.launder.ids(req.body.ids);
-        if (!ids) {
-          if (req.body._id) {
-            ids = self.apos.launder.id(req.body._id);
-          }
-        }
-        if (req.body.job) {
-          return runJob();
-        } else {
-          for (const id of ids) {
-            await one(req, id);
-          }
-        }
-        async function runJob() {
-          return self.apos.modules['@apostrophecms/job'].runBatch(req, ids, one, {
-            // TODO: Update with new progress notification config
-          });
-        }
-        async function one(req, id) {
-          const page = await self.findForBatch(req, { _id: id }).toObject();
-          if (!page) {
-            throw new Error('notfound');
-          }
-          await change(req, page, data);
-        }
-      },
+      // TODO: restore this method when fully implemented.
+      // async batchSimpleRoute(req, name, change) {
+      //   const batchOperation = _.find(self.options.batchOperations, { name: name });
+      //   const schema = batchOperation.schema || [];
+      //   const data = self.apos.schema.newInstance(schema);
+      //   await self.apos.schema.convert(req, schema, 'form', req.body, data);
+      //   let ids = self.apos.launder.ids(req.body.ids);
+      //   if (!ids) {
+      //     if (req.body._id) {
+      //       ids = self.apos.launder.id(req.body._id);
+      //     }
+      //   }
+      //   if (req.body.job) {
+      //     return runJob();
+      //   } else {
+      //     for (const id of ids) {
+      //       await one(req, id);
+      //     }
+      //   }
+      //   async function runJob() {
+      //     return self.apos.modules['@apostrophecms/job'].runBatch(req, ids, one, {
+      //       // TODO: Update with new progress notification config
+      //     });
+      //   }
+      //   async function one(req, id) {
+      //     const page = await self.findForBatch(req, { _id: id }).toObject();
+      //     if (!page) {
+      //       throw new Error('notfound');
+      //     }
+      //     await change(req, page, data);
+      //   }
+      // },
       // Backward compatible method following moving this to page-type module.
       // This page module method may be deprecated in the next major version.
       allowedSchema(req, page, parentPage) {

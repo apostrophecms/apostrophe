@@ -247,7 +247,10 @@ export default {
     utilityOperationsHandler(action) {
       if (action === 'new') {
         this.create();
+        return;
       }
+
+      this.handleUtilityOperation(action);
     },
     setCheckedDocs(checked) {
       this.checkedDocs = checked;
@@ -258,6 +261,29 @@ export default {
     async create() {
       await this.edit(null);
     },
+    async handleUtilityOperation(action) {
+      const operation = this.utilityOperations.menu
+        .find((op) => op.action === action);
+
+      if (!operation) {
+        return;
+      }
+
+      const {
+        modal, ...modalOptions
+      } = operation.modalOptions || {};
+
+      if (modal) {
+        await apos.modal.execute(modal, {
+          moduleAction: this.moduleOptions.action,
+          action,
+          labels: this.moduleLabels,
+          messages: operation.messages,
+          ...modalOptions
+        });
+      }
+    },
+
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
       let piece;
@@ -441,16 +467,16 @@ export default {
       }
     },
     async handleBatchAction({
-      label, route, requestOptions = {}, messages
+      label, action, requestOptions = {}, messages
     }) {
-      if (route) {
+      if (action) {
         try {
-          await apos.http.post(`${this.moduleOptions.action}${route}`, {
+          await apos.http.post(`${this.moduleOptions.action}/${action}`, {
             body: {
               ...requestOptions,
               _ids: this.checked,
               messages: messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singluar
+              type: this.checked.length === 1 ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
@@ -461,9 +487,6 @@ export default {
           });
         }
       }
-    },
-    handleModalAction (action) {
-      console.info('Execute modal action', action);
     },
     setUtilityOperations () {
       const { utilityOperations } = this.moduleOptions;
@@ -480,7 +503,7 @@ export default {
         ...this.relationshipField && this.moduleOptions.canEdit
           ? [ newPiece ] : [],
         ...this.utilityOperations.menu,
-        ...(Array.isArray(utilityOperations) && utilityOperations) || []
+        ...(!this.relationshipField && Array.isArray(utilityOperations) && utilityOperations) || []
       ];
     }
   }

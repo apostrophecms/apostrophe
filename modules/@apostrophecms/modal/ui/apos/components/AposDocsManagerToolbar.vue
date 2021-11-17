@@ -257,6 +257,7 @@ export default {
       if (confirmed) {
         this.$emit('batch', {
           label,
+          action,
           ...rest
         });
       }

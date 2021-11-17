@@ -97,11 +97,8 @@ module.exports = {
       // simpler wrapper for this method if you are implementing a batch operation
       // on a single type of piece.
       //
-      // *Options*
-      //
-      // Labeling options TBD.
-      //
-      async runBatch(req, ids, change, options) {
+      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
+      async runBatch(req, ids, change, options = {}) {
         let job;
         let notification;
         const total = ids.length;
@@ -121,7 +118,9 @@ module.exports = {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && job._id
+            jobId: total && job._id,
+            ids,
+            action: options.action
           });
 
           return {
@@ -133,7 +132,7 @@ module.exports = {
             return res.status(500).send('error');
           }
           try {
-            await self.end(job, false);
+            return await self.end(job, false);
           } catch (err) {
             // Not a lot we can do about this since we already
             // stopped talking to the user
@@ -155,7 +154,6 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
-
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               dismiss: true
@@ -187,10 +185,7 @@ module.exports = {
       // background afterwards. You can pass `jobId` to the `progress` API route
       // of this module as `_id` on the request body to get job status info.
       //
-      // *Options*
-      //
-      // TODO: Labeling options TBD.
-      //
+      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
       async run(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
@@ -206,7 +201,8 @@ module.exports = {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && job._id
+            jobId: total && job._id,
+            count: total
           });
 
           return {
@@ -251,6 +247,7 @@ module.exports = {
 
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
+              count: total,
               dismiss: true
             });
             // Dismiss the progress notification. It will delay 4 seconds
@@ -260,6 +257,17 @@ module.exports = {
           }
         }
       },
+      // Job notification messages are passed to `triggerNotifications`
+      // through `req.body.messages` via `run` and `runBatch`. The
+      // `req.body.messages` object can include `progress` and `completed`
+      // properties, which will be used for notifications when the job starts
+      // (`progress`) and ends (`completed`). Those messages can include the
+      // following interpolation keys:
+      // - {{ type }}: The doc type, as passed to the job on req.body.type
+      // - {{ count }}: The count of total document IDs in the req.body._ids
+      //   array
+      // No messages are required, but they provide helpful information to
+      // end users.
       async triggerNotification(req, stage, options = {}) {
         if (!req.body || !req.body.messages || !req.body.messages[stage]) {
           return {};
@@ -267,11 +275,15 @@ module.exports = {
 
         return self.apos.notification.trigger(req, req.body.messages[stage], {
           interpolate: {
-            count: req.body._ids.length,
+            count: options.count || (req.body._ids && req.body._ids.length),
             type: req.body.type || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
-          jobId: options.jobId,
+          job: {
+            _id: options.jobId,
+            action: options.action,
+            ids: options.ids
+          },
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true
@@ -294,9 +306,6 @@ module.exports = {
       // to indicate the success or failure of one "row" or other item
       // processed, and you *may* call `setTotal(job, n)` to indicate
       // how many rows to expect for better progress display.
-      //
-      // TODO: Labeling options TBD.
-      //
       async start(options) {
         const job = {
           _id: self.apos.util.generateId(),
