@@ -1263,7 +1263,7 @@ describe('Pieces', function() {
     assert(fs.readFileSync(path.join(__dirname, 'public', resume.attachment._url), 'utf8') === fs.readFileSync(path.join(__dirname, '/public/static-test.txt'), 'utf8'));
   });
 
-  it('should convert piece keeping only the present fields', async () => {
+  it('should convert a piece keeping only the present fields', async () => {
     const req = apos.task.getReq();
 
     const productPiece = {
