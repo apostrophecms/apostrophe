@@ -555,7 +555,7 @@ module.exports = {
       // a separate ids property, etc.
       fieldsPresent(input) {
         return self.schema
-          .filter((field) => input[field.name])
+          .filter((field) => _.has(input, field.name))
           .map((field) => field.name);
       },
       // Returns a query that finds docs the current user can edit. Unlike
