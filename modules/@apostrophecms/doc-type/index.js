@@ -554,17 +554,9 @@ module.exports = {
       // taking into account issues like relationship fields keeping their data in
       // a separate ids property, etc.
       fieldsPresent(input) {
-        const schema = self.schema;
-        const output = [];
-        for (const field of schema) {
-          if (field.type.name.substring(0, 5) === '_relationship') {
-            if (_.has(input, field.idsStorage)) {
-              output.push(field.name);
-            }
-          } else {
-            output.push(field.name);
-          }
-        }
+        return self.schema
+          .filter((field) => input[field.name])
+          .map((field) => field.name);
       },
       // Returns a query that finds docs the current user can edit. Unlike
       // find(), this query defaults to including docs in the archive. Subclasses
