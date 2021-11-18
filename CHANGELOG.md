@@ -27,7 +27,7 @@
 
 * The `apos.util.attachmentUrl` method now works correctly. To facilitate that, `apos.uploadsUrl` is now populated browser-side at all times as the frontend logic originally expected. For backwards compatibility `apos.attachment.uploadsUrl` is still populated when logged in.
 * Widget players are now prevented from being played twice by the implementing vue component.
-* `fieldsPresent` method in doc-type was broken, looking for properties in strings and wasn't returning anything.
+* The`fieldsPresent` method that is sued with the `presentFieldsOnly` option in doc-type was broken, looking for properties in strings and wasn't returning anything.
 
 ### Changes
 * Removes Apostrophe 2 documentation and UI configuration from the `@apostrophecms/job` module. These options were not yet in use for A3.
