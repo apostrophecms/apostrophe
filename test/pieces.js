@@ -1263,4 +1263,19 @@ describe('Pieces', function() {
     assert(fs.readFileSync(path.join(__dirname, 'public', resume.attachment._url), 'utf8') === fs.readFileSync(path.join(__dirname, '/public/static-test.txt'), 'utf8'));
   });
 
+  it('should convert piece keeping only the present fields', async () => {
+    const req = apos.task.getReq();
+
+    const productPiece = {
+      title: 'produce name',
+      color: 'red'
+    };
+
+    const converted = {};
+    await apos.modules.product.convert(req, productPiece, converted, { presentFieldsOnly: true });
+
+    assert(Object.keys(converted).length === 3);
+    assert(converted.title === 'product name');
+    assert(converted.color === 'red');
+  });
 });
