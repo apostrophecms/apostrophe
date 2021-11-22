@@ -1266,16 +1266,18 @@ describe('Pieces', function() {
   it('should convert a piece keeping only the present fields', async () => {
     const req = apos.task.getReq();
 
-    const productPiece = {
-      title: 'produce name',
+    const inputPiece = {
+      title: 'new product name'
+    };
+
+    const existingPiece = {
       color: 'red'
     };
 
-    const converted = {};
-    await apos.modules.product.convert(req, productPiece, converted, { presentFieldsOnly: true });
+    await apos.modules.product.convert(req, inputPiece, existingPiece, { presentFieldsOnly: true });
 
-    assert(Object.keys(converted).length === 3);
-    assert(converted.title === 'product name');
-    assert(converted.color === 'red');
+    assert(Object.keys(existingPiece).length === 2);
+    assert(existingPiece.title === 'new product name');
+    assert(existingPiece.color === 'red');
   });
 });
