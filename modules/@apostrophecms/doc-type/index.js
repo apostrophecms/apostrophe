@@ -545,8 +545,11 @@ module.exports = {
 
         await self.apos.schema.convert(req, schema, input, doc);
 
-        doc.copyOfId = copyOf && copyOf._id;
         if (copyOf) {
+          if (copyOf._id) {
+            doc.copyOfId = copyOf._id;
+          }
+
           self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
       },
