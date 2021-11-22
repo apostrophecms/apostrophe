@@ -100,7 +100,9 @@ export default {
       activeOptions.toolbar = (activeOptions.toolbar !== undefined)
         ? activeOptions.toolbar : this.defaultOptions.toolbar;
 
-      activeOptions.styles = this.enhanceStyles(activeOptions.styles || this.defaultOptions.styles);
+      activeOptions.styles = this.enhanceStyles(
+        (activeOptions.styles.length && activeOptions.styles) ||
+        this.defaultOptions.styles);
 
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
@@ -118,6 +120,7 @@ export default {
         // the text align control will not work until the user manually
         // applies a style or refreshes the page
         const defaultStyle = this.editorOptions.styles.find(style => style.def);
+
         const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
         return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
       } else {
