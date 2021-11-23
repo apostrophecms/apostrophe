@@ -101,8 +101,10 @@ export default {
         ? activeOptions.toolbar : this.defaultOptions.toolbar;
 
       activeOptions.styles = this.enhanceStyles(
-        (activeOptions.styles.length && activeOptions.styles) ||
-        this.defaultOptions.styles);
+        activeOptions?.styles?.length ?
+        activeOptions.styles :
+        this.defaultOptions.styles
+      );
 
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
