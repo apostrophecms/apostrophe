@@ -102,8 +102,8 @@ export default {
 
       activeOptions.styles = this.enhanceStyles(
         activeOptions?.styles?.length ?
-        activeOptions.styles :
-        this.defaultOptions.styles
+          activeOptions.styles :
+          this.defaultOptions.styles
       );
 
       activeOptions.className = (activeOptions.className !== undefined)
