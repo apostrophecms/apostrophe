@@ -5,6 +5,8 @@
 ### Fixes
 
 * The search field of the pieces manager modal works properly. Thanks to [Miro Yovchev](https://github.com/myovchev) for pointing out the issue and providing a solution.
+* Fixes a bug in `AposRichTextWidgetEditor.vue` when a rich text widget was specifically configured with an empty array as the `styles` option. In that case a new empty rich text widget will initiate with an empty paragraph tag.
+* The`fieldsPresent` method that is used with the `presentFieldsOnly` option in doc-type was broken, looking for properties in strings and wasn't returning anything.
 
 ## 3.8.0 - 2021-11-15
 
