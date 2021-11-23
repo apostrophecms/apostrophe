@@ -101,7 +101,7 @@ export default {
         ? activeOptions.toolbar : this.defaultOptions.toolbar;
 
       activeOptions.styles = this.enhanceStyles(
-        activeOptions?.styles?.length ?
+        activeOptions.styles?.length ?
           activeOptions.styles :
           this.defaultOptions.styles
       );
