@@ -33,10 +33,6 @@
 <script>
 export default {
   props: {
-    currentItems: {
-      type: Array,
-      required: true
-    },
     selectedState: {
       type: String,
       required: true
@@ -60,12 +56,9 @@ export default {
   },
   emits: [ 'select-all', 'clear-select', 'set-all-pieces-selection' ],
   computed: {
-    selectionBeyondCurrentPage() {
-      return !!this.checkedIds.filter(x => !this.currentItems.map(y => y._id).includes(x)).length;
-    },
     showSelectAll() {
       if (
-        this.selectionBeyondCurrentPage ||
+        this.allPiecesSelection.isSelected ||
         (this.selectedState === 'checked' && this.allPiecesSelection.total > this.displayedItems)
       ) {
         return true;
