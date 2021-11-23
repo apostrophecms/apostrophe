@@ -88,7 +88,6 @@
             :module-labels="moduleLabels"
             :filter-values="filterValues"
             :checked-ids="checked"
-            :current-items="items"
             :all-pieces-selection="allPiecesSelection"
             :displayed-items="items.length"
             @select-all="selectAllPieces"
