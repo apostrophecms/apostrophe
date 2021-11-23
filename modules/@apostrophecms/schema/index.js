@@ -1292,24 +1292,6 @@ module.exports = {
           return field.group && field.group.name === defaultGroup.name;
         }));
 
-        _.each(schema, function (field) {
-
-          // A field can have a custom template, which can be a
-          // template name (relative to the @apostrophecms/schema module)
-          // or a function (called to render it)
-
-          if (field.template) {
-            if (typeof field.template === 'string') {
-              field.partial = self.partialer(field.template);
-              delete field.template;
-            } else {
-              field.partial = field.template;
-              delete field.template;
-            }
-          }
-
-        });
-
         // Shallowly clone the fields. This allows modules
         // like workflow to patch schema fields of various modules
         // without inadvertently impacting other apos instances
