@@ -4,7 +4,7 @@
     :duration="300"
   >
     <div
-      v-show="selectedState === 'checked' && allPiecesSelection.total > displayedItems"
+      v-show="showSelectAll"
       class="apos-select-box"
     >
       <div class="apos-select-box__content">
@@ -33,6 +33,10 @@
 <script>
 export default {
   props: {
+    currentItems: {
+      type: Array,
+      required: true
+    },
     selectedState: {
       type: String,
       required: true
@@ -56,6 +60,18 @@ export default {
   },
   emits: [ 'select-all', 'clear-select', 'set-all-pieces-selection' ],
   computed: {
+    selectionBeyondCurrentPage() {
+      return !!this.checkedIds.filter(x => !this.currentItems.map(y => y._id).includes(x)).length;
+    },
+    showSelectAll() {
+      if (
+        this.selectionBeyondCurrentPage ||
+        (this.selectedState === 'checked' && this.allPiecesSelection.total > this.displayedItems)
+      ) {
+        return true;
+      }
+      return false;
+    },
     selectBoxMessage () {
       const checkedCount = this.checkedIds.length;
       const showAllWord = (checkedCount === this.allPiecesSelection.total) &&
