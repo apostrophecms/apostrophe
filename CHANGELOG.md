@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+* Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
+
 ### Changes
 
 * Adds localization keys for the password field component's min and max error messages.

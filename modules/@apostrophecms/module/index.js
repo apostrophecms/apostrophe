@@ -292,10 +292,7 @@ module.exports = {
       // your version wins if it exists.
       //
       // You MUST pass req as the first argument. This allows
-      // internationalization/localization to work. If you
-      // are writing a Nunjucks helper function, use
-      // self.partial instead. This method is primarily used
-      // to implement routes that respond with HTML fragments.
+      // internationalization/localization to work.
       //
       // All properties of `data` appear in Nunjucks templates as
       // properties of the `data` object. Nunjucks helper functions
