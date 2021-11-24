@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+* Adds localization keys for the password field component's min and max error messages.
+
 ## 3.8.1 - 2021-11-23
 
 ### Fixes
