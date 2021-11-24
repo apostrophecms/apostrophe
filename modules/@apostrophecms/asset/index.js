@@ -192,7 +192,10 @@ module.exports = {
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.apos) {
               iconImports = getIcons();
-              componentImports = getImports(`${source}/components`, '*.vue', { registerComponents: true });
+              componentImports = getImports(`${source}/components`, '*.vue', {
+                registerComponents: true,
+                importLastVersion: true
+              });
               tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
               appImports = getImports(`${source}/apps`, '*.js', {
                 invokeApps: true,
@@ -441,6 +444,25 @@ module.exports = {
               paths: []
             };
 
+            if (options.importLastVersion) {
+              // Reverse the list so we can easily find the last configured import
+              // of a given component, allowing "improve" modules to win over
+              // the originals when shipping an override of a Vue component
+              // with the same name, and filter out earlier versions
+              components.reverse();
+              const seen = new Set();
+              components = components.filter(component => {
+                const name = getComponentName(component, options);
+                if (seen.has(name)) {
+                  return false;
+                }
+                seen.add(name);
+                return true;
+              });
+              // Put the components back in their original order
+              components.reverse();
+            }
+
             components.forEach((component, i) => {
               if (options.requireDefaultExport) {
                 if (!fs.readFileSync(component, 'utf8').match(/export[\s\n]+default/)) {
@@ -453,7 +475,7 @@ module.exports = {
                 }
               }
               const jsFilename = JSON.stringify(component);
-              const name = require('path').basename(component).replace(/\.\w+/, '') + (options.enumerateImports ? `_${i}` : '');
+              const name = getComponentName(component, options, i);
               const jsName = JSON.stringify(name);
               output.paths.push(component);
               const importCode = `
@@ -491,6 +513,10 @@ module.exports = {
             const pkgTimestamp = pkgStats && pkgStats.mtimeMs;
 
             return pkgTimestamp > parseInt(timestamp);
+          }
+
+          function getComponentName(component, options, i) {
+            return require('path').basename(component).replace(/\.\w+/, '') + (options.enumerateImports ? `_${i}` : '');
           }
         }
       }

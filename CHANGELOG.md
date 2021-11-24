@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Developers can now override any Vue component of the ApostropheCMS admin UI by providing a component of the same name in the `ui/apos/components` folder of their own module. Apostrophe will use the version provided by the last module initialized, so a module that uses `improve` will beat a base class, a project level module will beat a module that uses `improve`, and so on. Bear in mind however that there can only be one implementation of a component with a given name that is actually active in your project. If you need different behavior for different piece types, take advantage of the `components` option offered by many modules to configure a specific Vue component for a specific role, for instance: `{ browserOptions: { components: 'MyCustomEditorModal' } }`
+
 ## 3.8.1 - 2021-11-23
 
 ### Fixes
