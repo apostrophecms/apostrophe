@@ -28,7 +28,7 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin'
 export default {
   name: 'AposInputPassword',
   mixins: [ AposInputMixin ],
-  emits: ['return'],
+  emits: [ 'return' ],
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
@@ -43,12 +43,14 @@ export default {
       }
       if (this.field.min) {
         if (value.length && (value.length < this.field.min)) {
-          return { message: `Minimum of ${this.field.min} characters` };
+          // TODO: l10n
+          return { message: `Minimum of ${this.field.min} characters` };
         }
       }
       if (this.field.max) {
         if (value.length && (value.length > this.field.max)) {
-          return { message: `Maximum of ${this.field.max} characters` };
+          // TODO: l10n
+          return { message: `Maximum of ${this.field.max} characters` };
         }
       }
       return false;
@@ -56,4 +58,3 @@ export default {
   }
 };
 </script>
-

@@ -162,7 +162,6 @@ export default {
       return `${this.moduleAction}/${this.docId}`;
     },
     tooltip() {
-      // TODO I18N
       let msg;
       if (this.errorCount) {
         msg = {
