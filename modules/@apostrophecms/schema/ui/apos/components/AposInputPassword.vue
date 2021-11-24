@@ -43,14 +43,20 @@ export default {
       }
       if (this.field.min) {
         if (value.length && (value.length < this.field.min)) {
-          // TODO: l10n
-          return { message: `Minimum of ${this.field.min} characters` };
+          return {
+            message: this.$t('apostrophe:passwordErrorMin', {
+              min: this.field.min
+            })
+          };
         }
       }
       if (this.field.max) {
         if (value.length && (value.length > this.field.max)) {
-          // TODO: l10n
-          return { message: `Maximum of ${this.field.max} characters` };
+          return {
+            message: this.$t('apostrophe:passwordErrorMax', {
+              max: this.field.max
+            })
+          };
         }
       }
       return false;

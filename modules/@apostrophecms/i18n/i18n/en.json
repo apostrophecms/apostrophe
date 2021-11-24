@@ -248,6 +248,8 @@
   "richTextUndo": "Undo",
   "richTextStyleConfigWarning": "Misconfigured rich text style: label: {{ label }}, {{ tag }}",
   "password": "Password",
+  "passwordErrorMin": "Minimum of {{ min }} characters",
+  "passwordErrorMax": "Maximum of {{ max }} characters",
   "passwordResetRequest": "Your request to reset your password on {{ site }}",
   "pasteWidget": "Paste {{ widget }}",
   "pending": "Pending",
