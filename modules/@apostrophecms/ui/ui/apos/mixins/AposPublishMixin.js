@@ -49,9 +49,10 @@ export default {
         if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
           if (await apos.confirm({
             heading: 'apostrophe:unpublishedParent',
-            description: 'apostrophe:unpublishedParentDescription',
+            description: 'apostrophe:unpublishedParentDescription'
+          }, {
             interpolate: {
-              unpublishedParents: this.$t(e.body.data.unpublishedAncestors.map(page => page.title).join(this.$t('apostrophe:listJoiner')))
+              unpublishedParents: e.body.data.unpublishedAncestors.map(page => page.title).join(this.$t('apostrophe:listJoiner'))
             }
           })) {
             try {
