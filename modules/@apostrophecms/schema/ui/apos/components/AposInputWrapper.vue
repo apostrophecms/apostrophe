@@ -2,7 +2,6 @@
   <div class="apos-field__wrapper">
     <component :is="wrapEl" :class="classList">
       <div class="apos-field__info">
-        <!-- TODO i18n -->
         <component
           v-if="field.label" :class="{'apos-sr-only': field.hideLabel }"
           class="apos-field__label"
@@ -32,7 +31,6 @@
             />
           </span>
         </component>
-        <!-- TODO i18n -->
         <p
           v-if="(field.help || field.htmlHelp) && !displayOptions.helpTooltip"
           class="apos-field__help"

@@ -190,7 +190,11 @@ module.exports = {
               role: options.role
             }
           }),
-          res: {},
+          res: {
+            redirect(url) {
+              req.res.redirectedTo = url;
+            }
+          },
           t(key, options = {}) {
             return self.apos.i18n.i18next.t(key, {
               ...options,
