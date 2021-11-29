@@ -148,6 +148,5 @@ export default {
   &.apos-search__item--disabled {
     @include disabled;
   }
-
 }
 </style>
