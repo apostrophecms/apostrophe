@@ -1365,7 +1365,6 @@ database.`);
       // Route that serves pages. See afterInit in
       // index.js for the wildcard argument and the app.get call
       async serve(req, res) {
-        const superEnd = req.res.end;
         req.deferWidgetLoading = true;
         try {
           await self.serveGetPage(req);
