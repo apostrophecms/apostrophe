@@ -156,7 +156,7 @@ module.exports = {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
-        });
+        }, self);
         const forbiddenFields = [
           '_id',
           'type'

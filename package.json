@@ -1,10 +1,10 @@
 {
   "name": "apostrophe",
-  "version": "3.5.0",
+  "version": "3.8.1",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "pretest": "npm run lint && npm audit",
+    "pretest": "npm run lint",
     "test": "nyc --reporter=html mocha -t 10000",
     "lint": "eslint . && node scripts/lint-i18n"
   },

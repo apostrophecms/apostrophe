@@ -389,7 +389,7 @@ module.exports = {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
-        });
+        }, self);
         if (self.options.slugPrefix) {
           if (self.options.slugPrefix === 'deduplicate-') {
             const req = self.apos.task.getReq();
@@ -545,8 +545,11 @@ module.exports = {
 
         await self.apos.schema.convert(req, schema, input, doc);
 
-        doc.copyOfId = copyOf && copyOf._id;
         if (copyOf) {
+          if (copyOf._id) {
+            doc.copyOfId = copyOf._id;
+          }
+
           self.apos.schema.regenerateIds(req, fullSchema, doc);
         }
       },
@@ -554,17 +557,9 @@ module.exports = {
       // taking into account issues like relationship fields keeping their data in
       // a separate ids property, etc.
       fieldsPresent(input) {
-        const schema = self.schema;
-        const output = [];
-        for (const field of schema) {
-          if (field.type.name.substring(0, 5) === '_relationship') {
-            if (_.has(input, field.idsStorage)) {
-              output.push(field.name);
-            }
-          } else {
-            output.push(field.name);
-          }
-        }
+        return self.schema
+          .filter((field) => _.has(input, field.name))
+          .map((field) => field.name);
       },
       // Returns a query that finds docs the current user can edit. Unlike
       // find(), this query defaults to including docs in the archive. Subclasses
@@ -738,7 +733,7 @@ module.exports = {
       },
       // Localize (export) the given draft to another locale, creating the document in the
       // other locale if necessary. By default, if the document already exists in the
-      // other locale, it is not ovewritten. Use the `update: true` option to change that.
+      // other locale, it is not overwritten. Use the `update: true` option to change that.
       // You can localize starting from either draft or published content. Either way what
       // gets created or updated in the other locale is a draft.
       async localize(req, draft, toLocale, options = { update: false }) {
@@ -1217,6 +1212,21 @@ module.exports = {
         // cursors.
 
         project: {
+          launder (p) {
+            // check that project is an object
+            if (!p || typeof p !== 'object' || Array.isArray(p)) {
+              return {};
+            }
+
+            const projection = Object.entries(p).reduce((acc, [ key, val ]) => {
+              return {
+                ...acc,
+                [key]: self.apos.launder.boolean(val)
+              };
+            }, {});
+
+            return projection;
+          },
           finalize() {
             let projection = query.get('project') || {};
             // Keys beginning with `_` are computed values
@@ -1259,6 +1269,14 @@ module.exports = {
             if (query.get('search')) {
               // MongoDB mandates this if we want to sort on search result quality
               projection.textScore = { $meta: 'textScore' };
+            } else if (projection.textScore) {
+              // Gracefully elide the textScore projection when it is not useful and
+              // would cause an error anyway.
+              //
+              // This allows the reuse of the `project()` value passed to one query
+              // in a second query without worrying about whether the second query
+              // contains a search or not
+              delete projection.textScore;
             }
             query.set('project', projection);
           }
@@ -1442,9 +1460,14 @@ module.exports = {
         attachments: {
           def: false,
           after(results) {
-            for (const doc of results) {
-              self.apos.attachment.all(doc, { annotate: true });
+            const attachments = query.get('attachments');
+
+            if (attachments) {
+              self.apos.attachment.all(results, { annotate: true });
             }
+          },
+          launder(b) {
+            return self.apos.launder.boolean(b);
           }
         },
 

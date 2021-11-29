@@ -2,7 +2,12 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  cascades: [ 'filters', 'columns', 'batchOperations' ],
+  cascades: [
+    'filters',
+    'columns',
+    'batchOperations',
+    'utilityOperations'
+  ],
   options: {
     perPage: 10,
     quickCreate: true,
@@ -74,7 +79,7 @@ module.exports = {
         ],
         // TODO: Delete `allowedInChooser` if not used.
         allowedInChooser: false,
-        def: true
+        def: null
       },
       archived: {
         label: 'apostrophe:archive',
@@ -96,43 +101,46 @@ module.exports = {
       }
     }
   },
+  utilityOperations: {},
   batchOperations: {
     add: {
       archive: {
         label: 'apostrophe:archive',
-        inputType: 'radio',
-        unlessFilter: {
-          archived: true
+        messages: {
+          progress: 'Archiving {{ type }}...',
+          completed: 'Archived {{ count }} {{ type }}.'
+        },
+        icon: 'archive-arrow-down-icon',
+        if: {
+          archived: false
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         }
       },
       restore: {
         label: 'apostrophe:restore',
-        unlessFilter: {
-          archived: false
+        messages: {
+          progress: 'Restoring {{ type }}...',
+          completed: 'Restoring {{ count }} {{ type }}.'
+        },
+        icon: 'archive-arrow-up-icon',
+        if: {
+          archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:restoreType',
+          description: 'apostrophe:restoreBatchConfirmation',
+          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         }
-      },
-      visibility: {
-        label: 'apostrophe:visibility',
-        requiredField: 'visibility',
-        fields: {
-          add: {
-            visibility: {
-              type: 'select',
-              label: 'apostrophe:visibilityLabel',
-              def: 'public',
-              choices: [
-                {
-                  value: 'public',
-                  label: 'apostrophe:public'
-                },
-                {
-                  value: 'loginRequired',
-                  label: 'apostrophe:loginRequired'
-                }
-              ]
-            }
-          }
-        }
+      }
+    },
+    group: {
+      more: {
+        icon: 'dots-vertical-icon',
+        operations: []
       }
     }
   },
@@ -179,7 +187,6 @@ module.exports = {
       if (self.apos.launder.boolean(req.query['render-areas']) === true) {
         await self.apos.area.renderDocsAreas(req, result.results);
       }
-      self.apos.attachment.all(result.results, { annotate: true });
       if (query.get('choicesResults')) {
         result.choices = query.get('choicesResults');
       }
@@ -258,6 +265,58 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.publish(req, draft);
+        },
+        async archive (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = true;
+              await self.update(req, piece);
+            }, {
+              action: 'archive'
+            }
+          );
+        },
+        async restore (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = false;
+              await self.update(req, piece);
+            }, {
+              action: 'restore'
+            }
+          );
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -388,20 +447,72 @@ module.exports = {
       },
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
-          self.batchOperations = Object.keys(self.batchOperations).map(key => ({
-            name: key,
-            ...self.batchOperations[key]
-          })).filter(batchOperation => {
-            if (batchOperation.requiredField && !_.find(self.schema, { name: batchOperation.requiredField })) {
-              return false;
-            }
-            if (batchOperation.onlyIf) {
-              if (!batchOperation.onlyIf(self.name)) {
-                return false;
+          const groupedOperations = Object.entries(self.batchOperations)
+            .reduce((acc, [ opName, properties ]) => {
+              // Check if there is a required schema field for this batch operation.
+              const requiredFieldNotFound = properties.requiredField && !self.schema
+                .some((field) => field.name === properties.requiredField);
+
+              if (requiredFieldNotFound) {
+                return acc;
               }
+              // Find a group for the operation, if there is one.
+              const associatedGroup = getAssociatedGroup(opName);
+              const currentOperation = {
+                action: opName,
+                ...properties
+              };
+              const { action, ...props } = getOperationOrGroup(
+                currentOperation,
+                associatedGroup,
+                acc
+              );
+
+              return {
+                ...acc,
+                [action]: {
+                  ...props
+                }
+              };
+            }, {});
+
+          self.batchOperations = Object.entries(groupedOperations)
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
+
+          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
+            if (!groupName) {
+              // Operation is not grouped. Return it as it is.
+              return currentOp;
             }
-            return true;
-          });
+
+            // Return the operation group with the new operation added.
+            return {
+              name: groupName,
+              ...groupProperties,
+              operations: [
+                ...(acc[groupName] && acc[groupName].operations) || [],
+                currentOp
+              ]
+            };
+          }
+
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties }]`
+          function getAssociatedGroup (operation) {
+            return Object.entries(self.batchOperationsGroups)
+              .find(([ _key, { operations } ]) => {
+                return operations.includes(operation);
+              }) || [];
+          }
+        },
+        composeUtilityOperations() {
+          self.utilityOperations = Object.entries(self.utilityOperations || {})
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
         }
       }
     };
@@ -538,33 +649,37 @@ module.exports = {
       // Pass `req`, the `name` of a configured batch operation, and
       // and a function that accepts (req, piece, data),
       // and returns a promise to perform the modification on that
-      // one piece (including calling`update` if appropriate).
+      // one piece (including calling `update` if appropriate).
       //
       // `data` is an object containing any schema fields specified
       // for the batch operation. If there is no schema it will be
       // an empty object.
       //
-      // Replies immediately to the request with `{ jobId: 'cxxxx' }`.
+      // Replies immediately to the request with `{ jobId: 'xxxxx' }`.
       // This can then be passed to appropriate browser-side APIs
       // to monitor progress.
       //
       // To avoid RAM issues with very large selections while ensuring
       // that all lifecycle events are fired correctly, the current
       // implementation processes the pieces in series.
-      async batchSimpleRoute(req, name, change) {
-        const batchOperation = _.find(self.batchOperations, { name: name });
-        const schema = batchOperation.schema || [];
-        const data = self.apos.schema.newInstance(schema);
-        await self.apos.schema.convert(req, schema, req.body, data);
-        await self.apos.modules['@apostrophecms/job'].run(req, one, { labels: { title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label } });
-        async function one(req, id) {
-          const piece = self.findForEditing(req, { _id: id }).toObject();
-          if (!piece) {
-            throw self.apos.error('notfound');
-          }
-          await change(req, piece, data);
-        }
-      },
+      // TODO: restore this method when fully implemented.
+      // async batchSimpleRoute(req, name, change) {
+      //   const batchOperation = _.find(self.batchOperations, { name: name });
+      //   const schema = batchOperation.schema || [];
+      //   const data = self.apos.schema.newInstance(schema);
+
+      //   await self.apos.schema.convert(req, schema, req.body, data);
+      //   await self.apos.modules['@apostrophecms/job'].runBatch(req, one, {
+      //     // TODO: Update with new progress notification config
+      //   });
+      //   async function one(req, id) {
+      //     const piece = self.findForEditing(req, { _id: id }).toObject();
+      //     if (!piece) {
+      //       throw self.apos.error('notfound');
+      //     }
+      //     await change(req, piece, data);
+      //   }
+      // },
 
       // Accept a piece as untrusted input potentially
       // found in `input` (hint: you can pass `req.body`
@@ -765,7 +880,7 @@ module.exports = {
         return piece;
       },
       getRestQuery(req) {
-        const query = self.find(req);
+        const query = self.find(req).attachments(true);
         query.applyBuildersSafely(req.query);
         if (!self.apos.permission.can(req, 'view-draft')) {
           if (!self.options.publicApiProjection) {
@@ -773,7 +888,7 @@ module.exports = {
             query.and({
               _id: null
             });
-          } else {
+          } else if (!query.state.project) {
             query.project(self.options.publicApiProjection);
           }
         }
@@ -812,6 +927,7 @@ module.exports = {
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
         browserOptions.batchOperations = self.batchOperations;
+        browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.singleton = self.options.singleton;
@@ -828,6 +944,7 @@ module.exports = {
           editorModal: 'AposDocEditor',
           managerModal: 'AposDocsManager'
         });
+
         return browserOptions;
       },
       find(_super, req, criteria, projection) {

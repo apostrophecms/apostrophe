@@ -26,7 +26,7 @@
       </AposContextMenuDialog>
     </bubble-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
-      <editor-content :editor="editor" :class="moduleOptions.className" />
+      <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
     <div class="apos-rich-text-editor__editor_after" :class="editorModifiers">
       {{ $t('apostrophe:emptyRichTextWidget') }}
@@ -100,13 +100,34 @@ export default {
       activeOptions.toolbar = (activeOptions.toolbar !== undefined)
         ? activeOptions.toolbar : this.defaultOptions.toolbar;
 
-      activeOptions.styles = this.enhanceStyles(activeOptions.styles || this.defaultOptions.styles);
+      activeOptions.styles = this.enhanceStyles(
+        activeOptions.styles?.length ?
+          activeOptions.styles :
+          this.defaultOptions.styles
+      );
+
+      activeOptions.className = (activeOptions.className !== undefined)
+        ? activeOptions.className : this.moduleOptions.className;
 
       return activeOptions;
     },
-
+    autofocus() {
+      // Only true for a new rich text widget
+      return !this.stripPlaceholderBrs(this.value.content).length;
+    },
     initialContent() {
-      return this.stripPlaceholderBrs(this.value.content);
+      const content = this.stripPlaceholderBrs(this.value.content);
+      if (!content.length) {
+        // If we don't supply a valid instance of the first style, then
+        // the text align control will not work until the user manually
+        // applies a style or refreshes the page
+        const defaultStyle = this.editorOptions.styles.find(style => style.def);
+
+        const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
+        return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
+      } else {
+        return content;
+      }
     },
     toolbar() {
       return this.editorOptions.toolbar;
@@ -135,7 +156,7 @@ export default {
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
-          styles: this.editorOptions.styles,
+          styles: this.editorOptions.styles.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
     }
@@ -152,7 +173,7 @@ export default {
   mounted() {
     this.editor = new Editor({
       content: this.initialContent,
-      autofocus: !this.initialContent,
+      autofocus: this.autofocus,
       onUpdate: this.editorUpdate,
       extensions: [
         StarterKit,
@@ -265,6 +286,14 @@ export default {
         }
       }
       return styles;
+    },
+    localizeStyle(style) {
+      style.label = this.$t(style.label);
+
+      return {
+        ...style,
+        label: this.$t(style.label)
+      };
     }
   }
 };

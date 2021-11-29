@@ -19,6 +19,7 @@
               :schema="schema"
               :value="docFields"
               @input="updateDocFields"
+              @validate="triggerValidate"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields()"
               ref="schema"

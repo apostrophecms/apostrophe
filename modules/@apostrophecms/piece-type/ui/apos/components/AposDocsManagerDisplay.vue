@@ -4,7 +4,6 @@
       <tr>
         <th
           class="apos-table__header"
-          v-if="!options.hideCheckboxes"
         />
         <th
           v-for="header in headers" scope="col"
@@ -26,7 +25,7 @@
         <th class="apos-table__header" key="contextMenu">
           <component
             :is="getEl({})"
-            class="apos-table__header-label is-hidden"
+            class="apos-table__header-label apos-is-hidden"
           >
             {{ $t('apostrophe:moreOperations') }}
           </component>
@@ -41,7 +40,6 @@
       >
         <td
           class="apos-table__cell"
-          v-if="!options.hideCheckboxes"
         >
           <AposCheckbox
             v-if="item._id"

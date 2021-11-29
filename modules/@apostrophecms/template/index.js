@@ -1,5 +1,5 @@
 // Implements template rendering via Nunjucks. **You should use the
-// `self.render` and `self.partial` methods of *your own* module**,
+// `self.render` method of *your own* module**,
 // which exist courtesy of [@apostrophecms/module](../@apostrophecms/module/index.html)
 // and invoke methods of this module more conveniently for you.
 //
@@ -21,7 +21,7 @@
 // you have a custom version of Nunjucks that is compatible.
 //
 // ### `viewsFolderFallback`: specifies a folder to be checked for templates
-// if they are not found in the module that called `self.render` or `self.partial`
+// if they are not found in the module that called `self.render`
 // or those it extends. This is a handy place for project-wide macro files.
 // Often set to `__dirname + '/views'` in `app.js`.
 
@@ -203,7 +203,7 @@ module.exports = {
 
       async renderForModule(req, name, data, module) {
         if (typeof req !== 'object') {
-          throw new Error('The first argument to module.render must be req. If you are trying to implement a Nunjucks helper function, use module.partial.');
+          throw new Error('The first argument to module.render must be req.');
         }
         return self.renderBody(req, 'file', name, data, module);
       },
@@ -214,7 +214,7 @@ module.exports = {
 
       async renderStringForModule(req, s, data, module) {
         if (typeof req !== 'object') {
-          throw new Error('The first argument to module.render must be req. If you are trying to implement a Nunjucks helper function, use module.partial.');
+          throw new Error('The first argument to module.render must be req.');
         }
         return self.renderBody(req, 'string', s, data, module);
       },
@@ -289,12 +289,6 @@ module.exports = {
 
         args.data = merged;
 
-        // // Allows templates to render other templates in an independent
-        // // nunjucks environment, rather than including them
-        // args.partial = function(name, data) {
-        //   return self.partialForModule(name, data, module);
-        // };
-
         if (req.data) {
           _.defaults(merged, req.data);
         }
@@ -334,7 +328,7 @@ module.exports = {
 
       // Fetch a nunjucks environment in which `include`, `extends`, etc. search
       // the views directories of the specified module and its ancestors.
-      // Typically you will call `self.render` or `self.partial` on your module
+      // Typically you will call `self.render` on your module
       // object rather than calling this directly.
       //
       // `req` is effectively here for bc purposes only. This method
@@ -652,6 +646,8 @@ module.exports = {
           locale: req.locale,
           csrfCookieName: self.apos.csrfCookieName,
           tabId: self.apos.util.generateId(),
+          uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
+          assetBaseUrl: self.apos.asset.getAssetBaseUrl(),
           scene
         };
         if (req.user) {

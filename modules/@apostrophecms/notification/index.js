@@ -160,6 +160,40 @@ module.exports = {
       return self.db.deleteMany({ _id });
     }
   }),
+  apiRoutes(self) {
+    return {
+      post: {
+        // Clear a registered event on a notification to prevent it from
+        // emitting twice. Returns `true` if the event was found and cleared.
+        // Returns `false` if not found (because it was already cleared).
+        ':_id/clear-event': async function (req) {
+          const lockId = `clear-event-${req.params._id}`;
+
+          let response;
+          try {
+            await self.apos.lock.lock(lockId);
+
+            response = await self.db.updateOne({
+              _id: req.params._id,
+              event: {
+                $ne: null
+              }
+            }, {
+              $set: {
+                event: null
+              }
+            });
+          } catch (error) {
+            throw self.apos.error('notfound');
+          } finally {
+            await self.apos.lock.unlock(lockId);
+          }
+
+          return response.result.nModified > 0;
+        }
+      }
+    };
+  },
   methods(self) {
     return {
       getBrowserData(req) {
@@ -189,6 +223,19 @@ module.exports = {
       // apos bus event of the given `name` with the provided `data` object. Currently
       // `'event'` is the only supported value for `type`.
       //
+      // `options.return` will return the notification object. This is not
+      // done otherwise to minimize risk of leaking MongoDB metadata to the
+      // browser.
+      //
+      // `options.icon`, set to an active Vue Materials Icons icon name, will
+      // set an icon on the notification.
+      //
+      // `options.job` can be set to an object with properties related to an
+      // Apostrophe Job (from the @apostrophecms/job module) for the
+      // notification to track the job's progress. These can include the job
+      // `_id` and, for the 'completed' stage, the job `action`,
+      // e.g., 'archive'.
+      //
       // Throws an error if there is no `req.user`.
       //
       // `interpolate` may contain an object with properties to be
@@ -203,6 +250,8 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options = {}, interpolate = {}) {
+        const { return: returnId, ...copiedOptions } = options;
+
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
           req = { user: { _id: req } };
@@ -219,19 +268,23 @@ module.exports = {
           createdAt: new Date(),
           userId: req.user._id,
           message,
+          icon: options.icon,
           interpolate: interpolate || options.interpolate || {},
           // Defaults to true, otherwise launder as boolean
-          localize: has(req.body, 'localize') ? self.apos.launder.boolean(req.body.localize) : true
+          localize: has(req.body, 'localize')
+            ? self.apos.launder.boolean(req.body.localize) : true,
+          job: options.job || null,
+          event: options.event
         };
 
-        if (options.dismiss === true) {
-          options.dismiss = 5;
+        if (copiedOptions.dismiss === true) {
+          copiedOptions.dismiss = 5;
         }
 
-        Object.assign(notification, options);
+        Object.assign(notification, copiedOptions);
 
-        // We await here rather than returning because we
-        // expressly do not want to leak mongodb metadata to the browser
+        // We await here rather than returning because we expressly do not
+        // want to leak mongodb metadata to the browser
         await self.db.updateOne(
           notification,
           {
@@ -243,8 +296,55 @@ module.exports = {
             upsert: true
           }
         );
+
+        if (returnId) {
+          return {
+            noteId: notification._id
+          };
+        }
       },
 
+      // The dismiss method accepts the following arguments:
+      // - req: A valid req.
+      // - noteId: The _id of an active notification.
+      // - delay: An optional integer of milliseconds to pause before the
+      //   notification actually dismisses.
+      async dismiss (req, noteId, delay) {
+        if (!req.user) {
+          throw self.apos.error('forbidden');
+        }
+
+        await pause(delay);
+
+        try {
+          await self.db.updateOne(
+            {
+              _id: noteId
+            },
+            {
+              $set: {
+                dismissed: true
+              },
+              $currentDate: {
+                updatedAt: true
+              }
+            }, {
+              upsert: true
+            }
+          );
+        } catch (error) {
+          // Most likely the ID did not belong to an actual notification.
+          throw self.apos.error('invalid');
+        }
+
+        async function pause (delay) {
+          if (!delay) {
+            return;
+          }
+
+          return new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      },
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
@@ -256,8 +356,16 @@ module.exports = {
         try {
           const results = await self.db.find({
             userId: req.user._id,
-            ...(options.modifiedOnOrSince && { updatedAt: { $gte: new Date(options.modifiedOnOrSince) } }),
-            ...(options.seenIds && { _id: { $nin: options.seenIds } })
+            ...(options.modifiedOnOrSince && {
+              updatedAt: {
+                $gte: new Date(options.modifiedOnOrSince)
+              }
+            }),
+            ...(options.seenIds && {
+              _id: {
+                $nin: options.seenIds
+              }
+            })
           }).sort({ createdAt: 1 }).toArray();
 
           const notifications = results.filter(result => !result.dismissed);

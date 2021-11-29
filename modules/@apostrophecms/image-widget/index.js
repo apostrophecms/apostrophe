@@ -3,7 +3,8 @@ module.exports = {
   options: {
     label: 'apostrophe:image',
     className: false,
-    icon: 'image-icon'
+    icon: 'image-icon',
+    dimensionAttrs: false
   },
   fields: {
     add: {

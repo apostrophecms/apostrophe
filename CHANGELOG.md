@@ -1,6 +1,79 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
+
+### Fixes
+
+* Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
+
+## 3.8.1 - 2021-11-23
+
+### Fixes
+
+* The search field of the pieces manager modal works properly. Thanks to [Miro Yovchev](https://github.com/myovchev) for pointing out the issue and providing a solution.
+* Fixes a bug in `AposRichTextWidgetEditor.vue` when a rich text widget was specifically configured with an empty array as the `styles` option. In that case a new empty rich text widget will initiate with an empty paragraph tag.
+* The`fieldsPresent` method that is used with the `presentFieldsOnly` option in doc-type was broken, looking for properties in strings and wasn't returning anything.
+
+## 3.8.0 - 2021-11-15
+
+### Adds
+
+* Checkboxes for pieces are back, a main checkbox allows to select all page items. When all pieces on a page are checked, a banner where the user can select all pieces appears. A launder for mongo projections has been added.
+* Registered `batchOperations` on a piece-type will now become buttons in the manager batch operations "more menu" (styled as a kebab icon). Batch operations should include a label, `messages` object, and `modalOptions` for the confirmation modal.
+* `batchOperations` can be grouped into a single button with a menu using the `group` cascade subproperty.
+* `batchOperations` can be conditional with an `if` conditional object. This allows developers to pass a single value or an array of values.
+* Piece types can have `utilityOperations` configured as a top-level cascade property. These operations are made available in the piece manager as new buttons.
+* Notifications may now include an `event` property, which the AposNotification component will emit on mount. The `event` property should be set to an object with `name` (the event name) and optionally `data` (data included with the event emission).
+* Adds support for using the attachments query builder in REST API calls via the query string.
+* Adds contextual menu for pieces, any module extending the piece-type one can add actions in this contextual menu.
+* When clicking on a batch operation, it opens a confirmation modal using modal options from the batch operation, it also works for operations in grouped ones. operations name property has been renamed in action to work with AposContextMenu component.
+* Beginning with this release, a module-specific static asset in your project such as `modules/mymodulename/public/images/bg.png` can always be referenced in your `.scss` and `.css` files as `/modules/mymodulename/images/bg.png`, even if assets are actually being deployed to S3, CDNs, etc. Note that `public` and `ui/public` module subdirectories have separate functions. See the documentation for more information.
+* Adds AposFile.vue component to abstract file dropzone UI, uses it in AposInputAttachment, and uses it in the confirmation modal for pieces import.
+* Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift. Thank you to [Qiao Lin](https://github.com/qclin) for the contribution.
+
+### Fixes
+
+* The `apos.util.attachmentUrl` method now works correctly. To facilitate that, `apos.uploadsUrl` is now populated browser-side at all times as the frontend logic originally expected. For backwards compatibility `apos.attachment.uploadsUrl` is still populated when logged in.
+* Widget players are now prevented from being played twice by the implementing vue component.
+
+### Changes
+* Removes Apostrophe 2 documentation and UI configuration from the `@apostrophecms/job` module. These options were not yet in use for A3.
+* Renames methods and removes unsupported routes in the `@apostrophecms/job` module that were not yet in use. This was not done lightly, but specifically because of the minimal likelihood that they were in use in project code given the lack of UI support.
+  * The deprecated `cancel` route was removed and will likely be replaced at a later date.
+  * `run` was renamed `runBatch` as its purpose is specifically to run processes on a "batch selected" array of pieces or pages.
+  * `runNonBatch` was renamed to `run` as it is the more generic job-running method. It is likely that `runBatch` will eventually be refactored to use this method.
+  * The `good` and `bad` methods are renamed `success` and `failure`, respectively. The expected methods used in the `run` method were similarly renamed. They still increment job document properties called `good` and `bad`.
+* Comments out the unused `batchSimpleRoute` methods in the page and piece-type modules to avoid usage before they are fully implemented.
+* Optionally add `dimensionAttrs` option to image widget, which sets width & height attributes to optimize for Cumulative Layout Shift.
+* Temporarily removes `npm audit` from our automated tests because of a sub-dependency of uploadfs that doesn't actually cause a security vulnerability for apostrophe.
+
+## 3.7.0 - 2021-10-28
+
+### Adds
+
+* Schema select field choices can now be populated by a server side function, like an API call. Set the `choices` property to a method name of the calling module. That function should take a single argument of `req`, and return an array of objects with `label` and `value` properties. The function can be async and will be awaited.
+* Apostrophe now has built-in support for the Node.js cluster module. If the `APOS_CLUSTER_PROCESSES` environment variable is set to a number, that number of child processes are forked, sharing the same listening port. If the variable is set to `0`, one process is forked for each CPU core, with a minimum of `2` to provide availability during restarts. If the variable is set to a negative number, that number is added to the number of CPU cores, e.g. `-1` is a good way to reserve one core for MongoDB if it is running on the same server. This is for production use only (`NODE_ENV=production`). If a child process fails it is restarted automatically.
+
+### Fixes
+
+* Prevents double-escaping interpolated localization strings in the UI.
+* Rich text editor style labels are now run through a localization method to get the translated strings from their l10n keys.
+* Fixes README Node version requirement (Node 12+).
+* The text alignment buttons now work immediately in a new rich text widget. Previously they worked only after manually setting a style or refreshing the page. Thanks to Michelin for their support of this fix.
+* Users can now activate the built-in date and time editing popups of modern browsers when using the `date` and `time` schema field types.
+* Developers can now `require` their project `app.js` file in the Node.js REPL for debugging and inspection. Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
+* If a static text phrase is unavailable in both the current locale and the default locale, Apostrophe will always fall back to the `en` locale as a last resort, which ensures the admin UI works if it has not been translated.
+* Developers can now `require` their project `app.js` in the Node.js REPL for debugging and inspection
+* Ensure array field items have valid _id prop before storing. Thanks to Thanks to [Matthew Francis Brunetti](https://github.com/zenflow).
+
+### Changes
+
+* In 3.x, `relationship` fields have an optional `builders` property, which replaces `filters` from 2.x, and within that an optional `project` property, which replaces `projection` from 2.x (to match MongoDB's `cursor.project`). Prior to this release leaving the old syntax in place could lead to severe performance problems due to a lack of projections. Starting with this release the 2.x syntax results in an error at startup to help the developer correct their code.
+* The `className` option from the widget options in a rich text area field is now also applied to the rich text editor itself, for a consistently WYSIWYG appearance when editing and when viewing. Thanks to [Max Mulatz](https://github.com/klappradla) for this contribution.
+* Adds deprecation notes to doc module `afterLoad` events, which are deprecated.
+* Removes unused `afterLogin` method in the login module.
+
+## 3.6.0 - 2021-10-13
 
 ### Adds
 
@@ -8,6 +81,8 @@
 * Adds 'no-search' modifier to relationship fields as a UI simplification option.
 * Fields can now have their own `modifiers` array. This is combined with the schema modifiers, allowing for finer grained control of field rendering.
 * Adds a Slovak localization file. Activate the `sk` locale to use this. Many thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
+* Adds a Spanish localization file. Activate the `es` locale to use this. Many thanks to [Eugenio Gonzalez](https://github.com/egonzalezg9) for the contribution.
+* Adds a Brazilian Portuguese localization file. Activate the `pt-BR` locale to use this. Many thanks to [Pietro Rutzen](https://github.com/pietro-rutzen) for the contribution.
 
 ### Fixes
 
@@ -18,6 +93,9 @@
 * A memory leak on each request has been fixed, and performance improved, by avoiding the use of new Nunjucks environments for each request. Thanks to Miro Yovchev for pointing out the leak.
 * Fragments now have access to `__t()`, `getOptions` and other features passed to regular templates.
 * Fixes field group cascade merging, using the original group label if none is given in the new field group configuration.
+* If a field is conditional (using an `if` option), is required, but the condition has not been met, it no longer throws a validation error.
+* Passing `busy: true` to `apos.http.post` and related methods no longer produces an error if invoked when logged out, however note that there will likely never be a UI for this when logged out, so indicate busy state in your own way.
+* Bugs in document modification detection have been fixed. These bugs caused edge cases where modifications were not detected and the "Update" button did not appear, and could cause false positives as well.
 
 ### Changes
 
@@ -155,8 +233,7 @@ No changes. Publishing to correctly mark the latest 3.x release as "latest" in n
 can include the widget on the clipboard, a special Clipboard widget will appear in area's Add UI. This works across pages as well.
 
 ### Changes
-* Apostrophe's Global's UI (the @apostrophecms/global singleton has moved from the admin bar's content controls to
-the admin utility tray under a cog icon.
+* Apostrophe's Global's UI (the @apostrophecms/global singleton has moved from the admin bar's content controls to the admin utility tray under a cog icon.
 * The context bar's document Edit button, which was a cog icon, has been rolled into the doc's context menu.
 
 ## 3.1.3 - 2021-07-16

@@ -230,7 +230,6 @@ module.exports = {
       addFieldType() {
         self.apos.schema.addFieldType({
           name: self.name,
-          partial: self.fieldTypePartial,
           convert: self.convert,
           index: self.index,
           register: self.register
@@ -273,9 +272,6 @@ module.exports = {
         info.used = true;
         await self.db.replaceOne({ _id: info._id }, info);
         object[field.name] = info;
-      },
-      fieldTypePartial(data) {
-        return self.partial('attachment', data);
       },
       index(value, field, texts) {
         const silent = field.silent === undefined ? true : field.silent;
@@ -1038,6 +1034,7 @@ module.exports = {
           action: self.action,
           fileGroups: self.fileGroups,
           name: self.name,
+          // for bc
           uploadsUrl: self.uploadfs.getUrl(),
           croppable: self.croppable,
           sized: self.sized
