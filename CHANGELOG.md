@@ -6,6 +6,10 @@
 
 * Developers can now override any Vue component of the ApostropheCMS admin UI by providing a component of the same name in the `ui/apos/components` folder of their own module. This is not always the best approach, see the documentation for details.
 
+### Fixes
+
+* Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
+
 ## 3.8.1 - 2021-11-23
 
 ### Fixes
