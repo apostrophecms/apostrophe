@@ -1365,6 +1365,7 @@ database.`);
       // Route that serves pages. See afterInit in
       // index.js for the wildcard argument and the app.get call
       async serve(req, res) {
+        const superEnd = req.res.end;
         req.deferWidgetLoading = true;
         try {
           await self.serveGetPage(req);
@@ -1385,6 +1386,24 @@ database.`);
       // home page.
       async serveGetPage(req) {
         req.slug = req.params[0];
+        self.normalizeSlug(req);
+        // Had to change the URL, so redirect to it. TODO: this
+        // contains an assumption that we are mounted at /
+        if (req.slug !== req.params[0]) {
+          req.redirect = req.slug;
+        }
+        const builders = self.getServePageBuilders();
+        const query = self.find(req);
+        query.applyBuilders(builders);
+        self.matchPageAndPrefixes(query, req.slug);
+        await self.emit('serveQuery', query);
+        req.data.bestPage = await query.toObject();
+        self.evaluatePageMatch(req);
+      },
+      // Normalize req.slug to account for unneeded trailing whitespace,
+      // trailing slashes other than the root, and double slash based open
+      // redirect attempts
+      normalizeSlug(req) {
         // Fix common screwups in URLs: leading/trailing whitespace,
         // presence of trailing slashes (but always restore the
         // leading slash). Express leaves escape codes uninterpreted
@@ -1399,18 +1418,6 @@ database.`);
         if (!req.slug.length || req.slug.charAt(0) !== '/') {
           req.slug = '/' + req.slug;
         }
-        // Had to change the URL, so redirect to it. TODO: this
-        // contains an assumption that we are mounted at /
-        if (req.slug !== req.params[0]) {
-          return req.res.redirect(req.slug);
-        }
-        const builders = self.getServePageBuilders();
-        const query = self.find(req);
-        query.applyBuilders(builders);
-        self.matchPageAndPrefixes(query, req.slug);
-        await self.emit('serveQuery', query);
-        req.data.bestPage = await query.toObject();
-        self.evaluatePageMatch(req);
       },
       // Remove trailing slashes from a slug. This is factored out
       // so that it can be overridden, for instance by the
@@ -1433,25 +1440,38 @@ database.`);
         if (req.user && (req.mode === 'published')) {
           // Try again in draft mode
           try {
+            const testReq = self.apos.task.getReq({
+              user: req.user,
+              url: req.url,
+              slug: req.slug,
+              // Simulate what this looks like when the serve page route starts.
+              // This is an object, not an array
+              params: {
+                0: req.path
+              },
+              query: req.query,
+              mode: 'draft',
+              locale: req.locale
+            });
             let again;
             do {
               again = false;
-              const testReq = self.apos.task.getReq({
-                user: req.user,
-                url: req.url,
-                query: req.query,
-                mode: 'draft',
-                locale: req.locale
-              });
-              self.apos.app(testReq, testReq.res);
-              await new Promise((resolve, reject) => {
-                testReq.res.on('end', () => {
-                  resolve();
-                });
-              });
+              await self.serveGetPage(testReq);
+              await self.emit('serve', testReq);
               if (testReq.res.redirectedTo) {
-                testReq.url = testReq.res.redirectedTo;
                 again = true;
+                testReq.url = testReq.res.redirectedTo;
+                const qat = testReq.url.indexOf('?');
+                if (qat >= 0) {
+                  testReq.slug = testReq.url.substring(0, qat);
+                } else {
+                  testReq.slug = testReq.url;
+                }
+                testReq.path = testReq.slug;
+                testReq.params = {
+                  0: testReq.path
+                };
+                testReq.res.redirectedTo = null;
               }
             } while (again);
             if (self.isFound(testReq)) {
@@ -1479,14 +1499,6 @@ database.`);
       },
       async serveDeliver(req, err) {
         let providePage = true;
-        // A2 treats req as a notepad of things we'd
-        // like to happen in res; that allows various
-        // pageServe methods to override each other.
-        // Now we're finally ready to enact those
-        // things on res
-        if (req.contentType) {
-          req.res.setHeader('Content-Type', req.contentType);
-        }
         if (req.statusCode) {
           req.res.statusCode = req.statusCode;
         }
@@ -1505,6 +1517,14 @@ database.`);
             status = req.statusCode;
           }
           return req.res.redirect(status, req.redirect);
+        }
+        // Apostrophe treats req as a notepad of things we'd
+        // like to happen in res; that allows various
+        // pageServe methods to override each other.
+        // Now we're finally ready to enact those
+        // things on res
+        if (req.contentType) {
+          req.res.setHeader('Content-Type', req.contentType);
         }
         // Handle 500 errors
         if (err) {
