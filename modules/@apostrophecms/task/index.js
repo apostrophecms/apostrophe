@@ -172,6 +172,11 @@ module.exports = {
       // and unit tests. The `req` object returned is a mockup of a true Express
       // `req` object.
       //
+      // The `req.res` property is similarly a mockup of a true Express `res` object
+      // with some basic support for operations such as `res.redirect`, which results
+      // in setting the `req.res.redirectedTo` property, and reading the status code
+      // that would have been sent, which is available as `req.res.statusCode`.
+      //
       // An `options` object may be passed. If `options.role` is set,
       // it may be `anon` (no role and no req.user), `guest`, `contributor`,
       // `editor`, or `admin`. For bc reasons, it defaults to `admin`.
@@ -190,7 +195,45 @@ module.exports = {
               role: options.role
             }
           }),
-          res: {},
+          res: {
+            statusCode: 200,
+            headers: {},
+            endHandlers: [],
+            status(code) {
+              req.res.statusCode = code;
+              return req.res;
+            },
+            on(name, fn) {
+              if (name !== 'end') {
+                throw new Error(`Unsupported event name in task req: ${name}`);
+              }
+              req.res.endHandlers.push(fn);
+            },
+            end() {
+              req.res.emit('end');
+              for (const fn of req.res.endHandlers) {
+                fn();
+              }
+              req.res.endHandlers = [];
+            },
+            send(data) {
+              req.res.send();
+            },
+            redirect(url) {
+              req.res.redirectedTo = url;
+              req.res.end();
+            },
+            set(name, value) {
+              req.res.headers[name.toLowerCase()] = value;
+            },
+            // Express loves aliases
+            setHeader(name, value) {
+              req.res.set(name, value);
+            },
+            header(name, value) {
+              req.res.set(name, value);
+            },
+          },
           t(key, options = {}) {
             return self.apos.i18n.i18next.t(key, {
               ...options,

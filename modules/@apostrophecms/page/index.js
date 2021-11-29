@@ -1433,21 +1433,27 @@ database.`);
         if (req.user && (req.mode === 'published')) {
           // Try again in draft mode
           try {
-            const testReq = self.apos.task.getReq({
-              user: req.user,
-              url: req.url,
-              slug: req.slug,
-              // Simulate what this looks like when the serve page route starts.
-              // This is an object, not an array
-              params: {
-                0: req.path
-              },
-              query: req.query,
-              mode: 'draft',
-              locale: req.locale
-            });
-            await self.serveGetPage(testReq);
-            await self.emit('serve', testReq);
+            let again;
+            do {
+              again = false;
+              const testReq = self.apos.task.getReq({
+                user: req.user,
+                url: req.url,
+                query: req.query,
+                mode: 'draft',
+                locale: req.locale
+              });
+              self.apos.app(testReq, testReq.res);
+              await new Promise((resolve, reject) => {
+                testReq.res.on('end', () => {
+                  resolve();
+                });
+              });
+              if (testReq.res.redirectedTo) {
+                testReq.url = testReq.res.redirectedTo;
+                again = true;
+              }
+            } while (again);
             if (self.isFound(testReq)) {
               req.redirect = self.apos.url.build(req.url, {
                 aposMode: 'draft'
