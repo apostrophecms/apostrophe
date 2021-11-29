@@ -204,7 +204,7 @@
   "notFoundPageStatusCode": "404",
   "notFoundPageTitle": "404 - Página no encontrada",
   "notInLocale": "La página actual no existe en {{ label }}. ¿Traducir la versión desde la configuración regional {{ currentLocale }}?",
-  "noTypeFound": "Ningún {{ type }} Ecnontrado",
+  "noTypeFound": "Ningún {{ type }} Encontrado",
   "parentNotLocalized": "Primero traduzca la configuración regional de la página principal",
   "notYetPublished": "Este documento aún no ha sido publicado.",
   "nudgeDown": "Mover Hacia Arriba",
