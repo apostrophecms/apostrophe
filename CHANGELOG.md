@@ -9,6 +9,7 @@
 ### Fixes
 
 * Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
+* Fixes string interpolation for the confirmation modal when publishing a page that has an unpublished parent page.
 
 ## 3.8.1 - 2021-11-23
 
