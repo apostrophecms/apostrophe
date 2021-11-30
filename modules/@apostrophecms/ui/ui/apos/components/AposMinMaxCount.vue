@@ -61,7 +61,9 @@ export default {
       return maxError;
     },
     countLabel() {
-      return `${this.value.length} Added`;
+      return this.$t('apostrophe:numberAdded', {
+        count: this.value.length
+      });
     },
     // Here in the array editor we use effectiveMin to factor in the
     // required property because there is no other good place to do that,
@@ -69,14 +71,18 @@ export default {
     // representation of "required".
     minLabel() {
       if (this.effectiveMin) {
-        return `Min: ${this.effectiveMin}`;
+        return this.$t('apostrophe:minUi', {
+          number: this.effectiveMin
+        });
       } else {
         return false;
       }
     },
     maxLabel() {
       if ((typeof this.field.max) === 'number') {
-        return `Max: ${this.field.max}`;
+        return this.$t('apostrophe:maxUi', {
+          number: this.field.max
+        });
       } else {
         return false;
       }

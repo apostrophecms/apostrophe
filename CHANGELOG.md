@@ -5,6 +5,7 @@
 ### Adds
 
 * Developers can now override any Vue component of the ApostropheCMS admin UI by providing a component of the same name in the `ui/apos/components` folder of their own module. This is not always the best approach, see the documentation for details.
+* Adds `maxUi`, `maxLabel`, `minUi`, and `minLabel` localization strings for array input and other UI.
 
 ### Fixes
 

@@ -20,13 +20,13 @@
           <div class="apos-range__scale">
             <span>
               <span class="apos-sr-only">
-                Min:
+                {{ $t('apostrophe:minLabel') }}
               </span>
               {{ minLabel }}
             </span>
             <span>
               <span class="apos-sr-only">
-                Max:
+                {{ $t('apostrophe:maxLabel') }}
               </span>
               {{ maxLabel }}
             </span>
