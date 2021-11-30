@@ -124,6 +124,7 @@
   "errorPageMessage": "An error has occurred",
   "errorPageStatusCode": "500",
   "errorPageTitle": "An error has occurred",
+  "errorBatchOperationNoti": "Batch operation {{ operation }} failed.",
   "everythingElse": "Everything Else",
   "exit": "Exit",
   "fetchPublishedVersionFailed": "An error occurred fetching the published version of the document.",
