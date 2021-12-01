@@ -481,10 +481,11 @@ export default {
             }
           });
         } catch (error) {
-          apos.notify('Batch operation {{ operation }} failed.', {
+          apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: label },
             type: 'danger'
           });
+          console.error(error);
         }
       }
     },
