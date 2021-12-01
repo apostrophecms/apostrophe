@@ -194,16 +194,17 @@ module.exports = {
 
         try {
           job = await self.start(options);
-          run();
 
           // Trigger the "in progress" notification.
           notification = await self.triggerNotification(req, 'progress', {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
-            jobId: total && job._id,
+            jobId: job._id,
             count: total
           });
+
+          run(notification);
 
           return {
             jobId: job._id
@@ -220,7 +221,7 @@ module.exports = {
           }
         }
 
-        async function run() {
+        async function run(notif) {
           let results;
           let good = false;
           try {
@@ -240,7 +241,7 @@ module.exports = {
               setResults (_results) {
                 results = _results;
               }
-            });
+            }, notif);
             good = true;
           } finally {
             await self.end(job, good, results);
