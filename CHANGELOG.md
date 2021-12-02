@@ -12,7 +12,7 @@
 * Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
 * Fixes string interpolation for the confirmation modal when publishing a page that has an unpublished parent page.
 * No more "cannot set headers after they are sent to the client" and "req.res.redirect not defined" messages when handling URLs with extra trailing slashes.
-* Properly activates the `apostrophei18nDebugPlugin` i18next debugging plugin when using the `APOS_SHOW_I18N` environment variable. The full set of l10n emoji indicators previously available for the UI is now available for template and server-side strings.
+* Properly activates the `apostropheI18nDebugPlugin` i18next debugging plugin when using the `APOS_SHOW_I18N` environment variable. The full set of l10n emoji indicators previously available for the UI is now available for template and server-side strings.
 
 ### Changes
 

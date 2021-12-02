@@ -13,7 +13,7 @@ const ExpressSessionCookie = require('express-session/session/cookie');
 
 const apostropheI18nDebugPlugin = {
   type: 'postProcessor',
-  name: 'apostrophei18nDebugPlugin',
+  name: 'apostropheI18nDebugPlugin',
   process(value, key, options, translator) {
     // The key is passed as an array (theoretically to include multiple keys).
     // We confirm that and grab the primary one for comparison.
@@ -91,7 +91,7 @@ module.exports = {
     }
 
     const i18nextOptions = self.show ? {
-      postProcess: 'apostrophei18nDebugPlugin'
+      postProcess: 'apostropheI18nDebugPlugin'
     } : {};
 
     await self.i18next.init(i18nextOptions);
