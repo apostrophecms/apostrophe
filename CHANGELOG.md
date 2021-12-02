@@ -10,6 +10,7 @@
 
 * Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
 * No more "cannot set headers after they are sent to the client" and "req.res.redirect not defined" messages when handling URLs with extra trailing slashes.
+* The `apos.util.runPlayers` method is not called until all of the widgets in a particular tree of areas and sub-areas have been added to the DOM. This means a parent area widget player will see the expected markup for any sub-widgets when the "Edit" button is clicked.
 
 ### Changes
 

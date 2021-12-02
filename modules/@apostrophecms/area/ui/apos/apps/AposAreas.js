@@ -3,27 +3,38 @@ import { klona } from 'klona';
 
 export default function() {
 
+  let widgetsRendering = 0;
+
   createWidgetClipboardApp();
 
   prepareAreas();
 
   document.documentElement.style.setProperty('--a-widget-margin', apos.ui.widgetMargin);
 
+  apos.bus.$on('widget-rendering', function() {
+    widgetsRendering++;
+  });
+
   apos.bus.$on('widget-rendered', function() {
-    prepareAreas();
+    widgetsRendering--;
+    prepareAreasAndRunPlayersWhenDone();
   });
+
   apos.bus.$on('refreshed', function() {
-    prepareAreas();
+    prepareAreasAndRunPlayersWhenDone();
   });
+
+  function prepareAreasAndRunPlayersWhenDone() {
+    prepareAreas();
+    if (widgetsRendering === 0) {
+      apos.util.runPlayers();
+    }
+  }
 
   function prepareAreas() {
     // Doing this first allows markup to be captured for the editor
     // before players alter it
     createAreaApps();
-    // Even though we invoke the player directly from
-    // the widget mixin used for editable widgets, we still have to
-    // call runPlayers eventually to account for any foreign area widgets
-    apos.util.runPlayers();
   }
 
   function createAreaApps() {

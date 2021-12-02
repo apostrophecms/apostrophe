@@ -22,17 +22,11 @@ export default {
   },
   data() {
     return {
-      rendered: '...',
-      playerOpts: null,
-      playerEl: null
+      rendered: '...'
     };
   },
   mounted() {
     this.renderContent();
-    this.playerOpts = apos.util.widgetPlayers[this.type] || null;
-  },
-  updated () {
-    this.runPlayer();
   },
   computed: {
     moduleOptions() {
@@ -41,6 +35,7 @@ export default {
   },
   methods: {
     async renderContent() {
+      apos.bus.$emit('widget-rendering');
       const self = this;
       const parameters = {
         _docId: this.docId,
@@ -51,7 +46,6 @@ export default {
       try {
         if (this.rendering && (isEqual(this.rendering.parameters, parameters))) {
           this.rendered = this.rendering.html;
-          this.runPlayer();
         } else {
           this.rendered = '...';
           this.rendered = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=draft`, {
@@ -59,30 +53,15 @@ export default {
             body: parameters
           });
         }
-        // Wait for reactivity to populate v-html so the
-        // AposAreas manager can spot any new area divs.
-        // This will also run the player
+        // Wait for reactivity to render v-html so that markup is
+        // in the DOM before hinting that it might be time to prepare
+        // sub-area editors and run players
         setTimeout(function() {
-          self.setPlayerEl();
           apos.bus.$emit('widget-rendered');
         }, 0);
       } catch (e) {
         this.rendered = '<p>Unable to render this widget.</p>';
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
-      }
-    },
-    setPlayerEl() {
-      if (this.playerOpts) {
-        const el = this.$el.querySelector(this.playerOpts.selector);
-        if (el && this.playerOpts.player) {
-          this.playerEl = el;
-        }
-      }
-    },
-    runPlayer() {
-      if (this.playerEl && !this.playerEl.aposWidgetPlayed) {
-        this.playerOpts.player(this.playerEl);
-        this.playerEl.aposWidgetPlayed = true;
       }
     },
     clicked(e) {
