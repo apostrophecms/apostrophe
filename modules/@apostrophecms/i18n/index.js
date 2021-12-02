@@ -369,9 +369,9 @@ module.exports = {
       // These are added to the `default` namespace, unless the legacy `i18n.ns` option is set
       // for the module (not the preferred way, use namespace subdirectories in new projects).
       addDefaultResourcesForModule(module) {
-        let ns = (module.options.i18n && module.options.i18n.ns) || 'default';
+        const ns = (module.options.i18n && module.options.i18n.ns) || 'default';
         self.namespaces[ns] = self.namespaces[ns] || {};
-        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.i18n && module.options.i18n.browser;
+        self.namespaces[ns].browser = self.namespaces[ns].browser || (module.options.i18n && module.options.i18n.browser);
         for (const entry of module.__meta.chain) {
           const localizationsDir = path.join(entry.dirname, 'i18n');
           if (!self.defaultLocalizationsDirsAdded.has(localizationsDir)) {
