@@ -12,6 +12,7 @@
 * Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
 * Fixes string interpolation for the confirmation modal when publishing a page that has an unpublished parent page.
 * No more "cannot set headers after they are sent to the client" and "req.res.redirect not defined" messages when handling URLs with extra trailing slashes.
+* Actually registers piece types for site search unless the `searchable` option is `false`.
 
 ### Changes
 
