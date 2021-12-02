@@ -152,7 +152,11 @@ module.exports = {
               type: 1
             }).toArray();
             throw self.apos.error('invalid', {
-              unpublishedAncestors: draftAncestors.filter(draftAncestor => !publishedAncestors.find(publishedAncestor => draftAncestor.aposDocId === publishedAncestor.aposDocId))
+              unpublishedAncestors: draftAncestors.filter(draftAncestor => {
+                return !publishedAncestors.find(publishedAncestor => {
+                  return draftAncestor.aposDocId === publishedAncestor.aposDocId;
+                });
+              })
             });
           }
         }

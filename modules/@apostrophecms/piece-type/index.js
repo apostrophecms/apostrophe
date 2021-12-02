@@ -514,6 +514,11 @@ module.exports = {
               ...properties
             }));
         }
+      },
+      '@apostrophecms/search:determineTypes': {
+        checkSearchable(types) {
+          self.searchDetermineTypes(types);
+        }
       }
     };
   },
