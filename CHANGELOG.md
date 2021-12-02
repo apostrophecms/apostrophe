@@ -5,7 +5,7 @@
 ### Adds
 
 * Developers can now override any Vue component of the ApostropheCMS admin UI by providing a component of the same name in the `ui/apos/components` folder of their own module. This is not always the best approach, see the documentation for details.
-* When running a job, we now trigger the notification before to run the job, this way the progress notification is available from the job and can be dismissed if needed.
+* When running a job, we now trigger the notification before to run the job, this way the progress notification ID is available from the job and the notification can be dismissed if needed.
 * Adds `maxUi`, `maxLabel`, `minUi`, and `minLabel` localization strings for array input and other UI.
 
 ### Fixes
