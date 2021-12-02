@@ -10,6 +10,7 @@ const fs = require('fs');
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
 const ExpressSessionCookie = require('express-session/session/cookie');
+const path = require('path');
 
 const apostropheI18nDebugPlugin = {
   type: 'postProcessor',
@@ -359,21 +360,61 @@ module.exports = {
       // Add the i18next resources provided by the specified module,
       // merging with any existing phrases for the same locales and namespaces
       addResourcesForModule(module) {
-        if (!module.options.i18n) {
-          return;
-        }
-        const ns = module.options.i18n.ns || 'default';
+        self.addDefaultResourcesForModule(module);
+        self.addNamespacedResourcesForModule(module);
+      },
+      // Automatically adds any localizations found in .json files in the main `i18n` subdirectory
+      // of a module.
+      //
+      // These are added to the `default` namespace, unless the legacy `i18n.ns` option is set
+      // for the module (not the preferred way, use namespace subdirectories in new projects).
+      addDefaultResourcesForModule(module) {
+        let ns = (module.options.i18n && module.options.i18n.ns) || 'default';
         self.namespaces[ns] = self.namespaces[ns] || {};
-        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.i18n.browser;
+        self.namespaces[ns].browser = self.namespaces[ns].browser || !!module.options.i18n && module.options.i18n.browser;
+        for (const entry of module.__meta.chain) {
+          const localizationsDir = path.join(entry.dirname, 'i18n');
+          if (!self.defaultLocalizationsDirsAdded.has(localizationsDir)) {
+            self.defaultLocalizationsDirsAdded.add(localizationsDir);
+            if (!fs.existsSync(localizationsDir)) {
+              continue;
+            }
+            for (const localizationFile of fs.readdirSync(localizationsDir)) {
+              if (!localizationFile.endsWith('.json')) {
+                // Likely a namespace subdirectory
+                continue;
+              }
+              const data = JSON.parse(fs.readFileSync(path.join(localizationsDir, localizationFile)));
+              const locale = localizationFile.replace('.json', '');
+              self.i18next.addResourceBundle(locale, ns, data, true, true);
+            }
+          }
+        }
+      },
+      // Automatically adds any localizations found in subdirectories of the main `i18n`
+      // subdirectory of a module. The subdirectory's name is treated as an i18n namespace
+      // name.
+      addNamespacedResourcesForModule(module) {
         for (const entry of module.__meta.chain) {
           const localizationsDir = `${entry.dirname}/i18n`;
-          if (!fs.existsSync(localizationsDir)) {
-            continue;
-          }
-          for (const localizationFile of fs.readdirSync(localizationsDir)) {
-            const data = JSON.parse(fs.readFileSync(`${localizationsDir}/${localizationFile}`));
-            const locale = localizationFile.replace('.json', '');
-            self.i18next.addResourceBundle(locale, ns, data, true, true);
+          if (!self.namespacedLocalizationsDirsAdded.has(localizationsDir)) {
+            self.namespacedLocalizationsDirsAdded.add(localizationsDir);
+            if (!fs.existsSync(localizationsDir)) {
+              continue;
+            }
+            for (const namespaceName of fs.readdirSync(localizationsDir)) {
+              if (namespaceName.endsWith('.json')) {
+                // A JSON file for the default namespace, already handled
+                continue;
+              }
+              const namespaceDir = path.join(localizationsDir, namespaceName);
+              for (const localizationFile of fs.readdirSync(namespaceDir)) {
+                const fullLocalizationFile = path.join(namespaceDir, localizationFile);
+                const data = JSON.parse(fs.readFileSync(fullLocalizationFile));
+                const locale = localizationFile.replace('.json', '');
+                self.i18next.addResourceBundle(locale, namespaceName, data, true, true);
+              }
+            }
           }
         }
       },
@@ -381,6 +422,8 @@ module.exports = {
       // itself, called by init. Later modules call addResourcesForModule(self),
       // making phrases available gradually as Apostrophe starts up
       addInitialResources() {
+        self.defaultLocalizationsDirsAdded = new Set();
+        self.namespacedLocalizationsDirsAdded = new Set();
         for (const module of Object.values(self.apos.modules)) {
           self.addResourcesForModule(module);
         }
