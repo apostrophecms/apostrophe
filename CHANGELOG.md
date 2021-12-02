@@ -5,7 +5,7 @@
 ### Adds
 
 * Developers can now override any Vue component of the ApostropheCMS admin UI by providing a component of the same name in the `ui/apos/components` folder of their own module. This is not always the best approach, see the documentation for details.
-
+* Developers can place i18n `.json` files in subdirectories of the main `i18n` subdirectory of any module in order to place them in as many namespaces as desired, without the need to explicitly set the `i18n` option or its `ns` sub-option, which is now a legacy feature.
 ### Fixes
 
 * Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
