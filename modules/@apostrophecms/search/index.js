@@ -44,6 +44,7 @@
 // are edge cases not relevant enough to explicitly offer a filter for, but
 // which should nevertheless be included in results.
 
+const { stripIndent } = require('common-tags');
 const _ = require('lodash');
 
 module.exports = {
@@ -98,37 +99,7 @@ module.exports = {
       },
       '@apostrophecms/doc-type:beforeSave': {
         indexDoc(req, doc) {
-
-          const texts = self.getSearchTexts(doc);
-
-          _.each(texts, function (text) {
-            if (text.text === undefined) {
-              text.text = '';
-            }
-          });
-
-          const highTexts = _.filter(texts, function (text) {
-            return text.weight > 10;
-          });
-
-          const searchSummary = _.map(_.filter(texts, function (text) {
-            return !text.silent;
-          }), function (text) {
-            return text.text;
-          }).join(' ');
-          const highText = self.boilTexts(highTexts);
-          const lowText = self.boilTexts(texts);
-          const titleSortified = self.apos.util.sortify(doc.title);
-          const highWords = _.uniq(highText.split(/ /));
-
-          // merge our doc with its various search texts
-          _.assign(doc, {
-            titleSortified: titleSortified,
-            highSearchText: highText,
-            highSearchWords: highWords,
-            lowSearchText: lowText,
-            searchSummary: searchSummary
-          });
+          self.indexDoc(req, doc);
         }
       }
     };
@@ -261,13 +232,58 @@ module.exports = {
         self.dispatch('/', self.indexPage);
       },
 
+      indexDoc(req, doc) {
+
+        const texts = self.getSearchTexts(doc);
+
+        _.each(texts, function (text) {
+          if (text.text === undefined) {
+            text.text = '';
+          }
+        });
+
+        const highTexts = _.filter(texts, function (text) {
+          return text.weight > 10;
+        });
+
+        const searchSummary = _.map(_.filter(texts, function (text) {
+          return !text.silent;
+        }), function (text) {
+          return text.text;
+        }).join(' ');
+        const highText = self.boilTexts(highTexts);
+        const lowText = self.boilTexts(texts);
+        const titleSortified = self.apos.util.sortify(doc.title);
+        const highWords = _.uniq(highText.split(/ /));
+
+        // merge our doc with its various search texts
+        _.assign(doc, {
+          titleSortified: titleSortified,
+          highSearchText: highText,
+          highSearchWords: highWords,
+          lowSearchText: lowText,
+          searchSummary: searchSummary
+        });
+      },
+
       // Indexes just one document as part of the implementation of the
       // `@apostrophecms/search:index` task. This isn't the method you want to
       // override. See `indexDoc` and `getSearchTexts`
 
       async indexTaskOne(req, doc) {
         self.indexDoc(req, doc);
-        return self.apos.doc.db.updateOne({ _id: doc._id }, doc);
+
+        return self.apos.doc.db.updateOne({
+          _id: doc._id
+        }, {
+          $set: {
+            titleSortified: doc.titleSortified,
+            highSearchText: doc.highSearchText,
+            highSearchWords: doc.highSearchWords,
+            lowSearchText: doc.lowSearchText,
+            searchSummary: doc.searchSummary
+          }
+        });
       },
 
       // Returns texts which are a reasonable basis for
@@ -348,7 +364,11 @@ module.exports = {
   tasks(self) {
     return {
       index: {
-        usage: 'Rebuild the search index. Normally this happens automatically.\nThis should only be needed if you have changed the\n"searchable" property for various fields or types.',
+        usage: stripIndent`
+          Rebuild the search index. Normally this happens automatically.
+          This should only be needed if you have changed the"searchable" property
+          for various fields or types.
+        `,
         task(argv) {
           const req = self.apos.task.getReq();
           return self.apos.migration.eachDoc({}, _.partial(self.indexTaskOne, req));
