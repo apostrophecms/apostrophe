@@ -13,6 +13,7 @@
 * Fixes string interpolation for the confirmation modal when publishing a page that has an unpublished parent page.
 * No more "cannot set headers after they are sent to the client" and "req.res.redirect not defined" messages when handling URLs with extra trailing slashes.
 * Actually registers piece types for site search unless the `searchable` option is `false`.
+* Fixes the methods required for the search `index` task.
 
 ### Changes
 
