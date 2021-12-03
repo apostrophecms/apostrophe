@@ -36,7 +36,6 @@ export default {
   methods: {
     async renderContent() {
       apos.bus.$emit('widget-rendering');
-      const self = this;
       const parameters = {
         _docId: this.docId,
         widget: this.value,
