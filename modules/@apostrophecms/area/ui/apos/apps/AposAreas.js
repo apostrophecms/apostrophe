@@ -7,7 +7,7 @@ export default function() {
 
   createWidgetClipboardApp();
 
-  prepareAreas();
+  createAreaApps();
 
   document.documentElement.style.setProperty('--a-widget-margin', apos.ui.widgetMargin);
 
@@ -17,24 +17,18 @@ export default function() {
 
   apos.bus.$on('widget-rendered', function() {
     widgetsRendering--;
-    prepareAreasAndRunPlayersWhenDone();
+    createAreaAppsAndRunPlayersIfDone();
   });
 
   apos.bus.$on('refreshed', function() {
-    prepareAreasAndRunPlayersWhenDone();
+    createAreaAppsAndRunPlayersIfDone();
   });
 
-  function prepareAreasAndRunPlayersWhenDone() {
-    prepareAreas();
+  function createAreaAppsAndRunPlayersIfDone() {
+    createAreaApps();
     if (widgetsRendering === 0) {
       apos.util.runPlayers();
     }
-  }
-
-  function prepareAreas() {
-    // Doing this first allows markup to be captured for the editor
-    // before players alter it
-    createAreaApps();
   }
 
   function createAreaApps() {
