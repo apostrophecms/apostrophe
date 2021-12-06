@@ -189,38 +189,31 @@ module.exports = {
       async run(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
-        let notification;
         let total;
 
         try {
           job = await self.start(options);
-          run();
 
-          // Trigger the "in progress" notification.
-          notification = await self.triggerNotification(req, 'progress', {
-            // It's only relevant to pass a job ID to the notification if
-            // the notification will show progress. Without a total number we
-            // can't show progress.
-            jobId: total && job._id,
-            count: total
+          const notification = await self.triggerNotification(req, 'progress', {
+            jobId: job._id
           });
+
+          run({ notificationId: notification.noteId });
 
           return {
             jobId: job._id
           };
         } catch (err) {
           self.apos.util.error(err);
-          if (job) {
-            // Not a lot we can do about this since we already
-            // stopped talking to the user
-            self.apos.util.error(err);
-          } else {
+
+          if (!job) {
             // If we never made a job, then we never responded
+            // otherwise we already stopped talking to the user
             return res.status(500).send('error');
           }
         }
 
-        async function run() {
+        async function run(info) {
           let results;
           let good = false;
           try {
@@ -240,7 +233,7 @@ module.exports = {
               setResults (_results) {
                 results = _results;
               }
-            });
+            }, info);
             good = true;
           } finally {
             await self.end(job, good, results);
@@ -253,7 +246,7 @@ module.exports = {
             // Dismiss the progress notification. It will delay 4 seconds
             // because "completed" notification will dismiss in 5 and we want
             // to maintain the feeling of process order for users.
-            await self.apos.notification.dismiss(req, notification.noteId, 4000);
+            await self.apos.notification.dismiss(req, info.notificationId, 4000);
           }
         }
       },
