@@ -1,5 +1,3 @@
-
-[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/main.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/main)
 [![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.org)
 
 <p align="center">
