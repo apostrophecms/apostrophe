@@ -359,7 +359,12 @@ describe('Docs', function() {
 
     doc.slug = 'peter';
 
-    const updated = await apos.doc.update(req, doc);
+    try {
+      const updated = await apos.doc.update(req, doc);
+    } catch (e) {
+      console.error('****', e);
+      throw e;
+    }
     assert(updated);
     // Has the updated slug been appended?
     assert(updated.slug.match(/^peter\d+$/));
