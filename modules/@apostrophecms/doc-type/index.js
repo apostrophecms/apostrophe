@@ -1266,17 +1266,19 @@ module.exports = {
             for (const property of remove) {
               delete projection[property];
             }
-            if (query.get('search')) {
-              // MongoDB mandates this if we want to sort on search result quality
-              projection.textScore = { $meta: 'textScore' };
-            } else if (projection.textScore) {
-              // Gracefully elide the textScore projection when it is not useful and
-              // would cause an error anyway.
-              //
-              // This allows the reuse of the `project()` value passed to one query
-              // in a second query without worrying about whether the second query
-              // contains a search or not
-              delete projection.textScore;
+            if (!(query.get('regexSearch') || self.apos.doc.textIndexUnsupported)) {
+              if (query.get('search')) {
+                // MongoDB mandates this if we want to sort on search result quality
+                projection.textScore = { $meta: 'textScore' };
+              } else if (projection.textScore) {
+                // Gracefully elide the textScore projection when it is not useful and
+                // would cause an error anyway.
+                //
+                // This allows the reuse of the `project()` value passed to one query
+                // in a second query without worrying about whether the second query
+                // contains a search or not
+                delete projection.textScore;
+              }
             }
             query.set('project', projection);
           }
@@ -1494,11 +1496,10 @@ module.exports = {
             // projection and sort
             const search = query.get('search');
             if (search) {
-              if (query.get('regexSearch')) {
-                // TODO: is this necessary in MongoDB 3.4+?
-                // A query builder like the `geo` query builder of @apostrophecms/places
-                // has warned us that `$near` or another operator incompatible
-                // with `$text` is present. We must dumb down to regex search
+              if (query.get('regexSearch') || self.apos.doc.self.textIndexUnsupported) {
+                // Used when text index is unsupported (CosmosDB etc) or when
+                // A query builder has warned us that `$near` or another operator
+                // incompatible with `$text` is present. We must dumb down to regex search
                 query.and({
                   highSearchText: self.apos.util.searchify(search)
                 });
@@ -2562,7 +2563,7 @@ module.exports = {
             // specify a sort or specify "sort: 'search'",
             // sort by search result quality. Offer void if
             // we are using regex search
-            if (!query.get('regexSearch')) {
+            if (!(query.get('regexSearch') || self.apos.doc.textIndexUnsupported)) {
               if ((!sort) || (sort === 'search')) {
                 sort = { textScore: { $meta: 'textScore' } };
               }

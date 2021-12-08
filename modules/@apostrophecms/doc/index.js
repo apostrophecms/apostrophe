@@ -342,6 +342,12 @@ module.exports = {
         try {
           return await attempt();
         } catch (e) {
+          if (e.code === 115) {
+            // CosmosDB or other Mongo compatible DB with no support
+            // for text indexes, or incomplete support
+            self.textIndexUnsupported = true;
+            return;
+          }
           // We are experiencing what may be a mongodb bug in which these indexes
           // have different weights than expected and the createIndex call fails.
           // If this happens drop and recreate the text index

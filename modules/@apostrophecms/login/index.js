@@ -81,6 +81,11 @@ module.exports = {
         async checkForUser () {
           await self.checkForUserAndAlert();
         }
+      },
+      'apostrophe:destroy': {
+        clearExpireBearerTokensInterval() {
+          clearInterval(self.expireBearerTokensInterval);
+        }
       }
     };
   },
@@ -390,8 +395,21 @@ module.exports = {
 
       async enableBearerTokens() {
         self.bearerTokens = self.apos.db.collection('aposBearerTokens');
-        await self.bearerTokens.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        // Avoid "expireAfterSeconds" option as CosmosDB does not support it, we will
+        // rig our own
+        self.expireBearerTokensInterval = setInterval(self.expireBearerTokens, 60000);
+        await self.bearerTokens.createIndex({ expires: 1 });
+      },
+
+      async expireBearerTokens() {
+        const date = new Date();
+        await self.bearerTokens.remove({
+          expires: {
+            $lte: date
+          }
+        });
       }
+
     };
   },
 

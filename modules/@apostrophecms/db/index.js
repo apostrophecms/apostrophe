@@ -101,25 +101,33 @@ module.exports = {
           // Set debug level
           Logger.setLevel(process.env.APOS_MONGODB_LOG_LEVEL);
         }
-        let uri = 'mongodb://';
+        let uri = '';
         if (process.env.APOS_MONGODB_URI) {
           uri = process.env.APOS_MONGODB_URI;
         } else if (self.options.uri) {
           uri = self.options.uri;
         } else {
-          if (self.options.user) {
-            uri += self.options.user + ':' + self.options.password + '@';
+          if (process.env.APOS_MONGODB_TEST_BASE_URI) {
+            const uriObject = new URL(process.env.APOS_MONGODB_TEST_BASE_URI);
+            uriObject.pathname = `/${self.options.name || self.apos.shortName}`;
+            uri = uriObject.toString();
+            console.log(`>>> ${uri}`);
+          } else {
+            uri = 'mongodb://';
+            if (self.options.user) {
+              uri += self.options.user + ':' + self.options.password + '@';
+            }
+            if (!self.options.host) {
+              self.options.host = 'localhost';
+            }
+            if (!self.options.port) {
+              self.options.port = 27017;
+            }
+            if (!self.options.name) {
+              self.options.name = self.apos.shortName;
+            }
+            uri += self.options.host + ':' + self.options.port + '/' + self.options.name;
           }
-          if (!self.options.host) {
-            self.options.host = 'localhost';
-          }
-          if (!self.options.port) {
-            self.options.port = 27017;
-          }
-          if (!self.options.name) {
-            self.options.name = self.apos.shortName;
-          }
-          uri += self.options.host + ':' + self.options.port + '/' + self.options.name;
         }
 
         const connectOptions = {
@@ -127,6 +135,7 @@ module.exports = {
           useNewUrlParser: true,
           ...Object(self.options.connect || {})
         };
+        console.log(uri);
         self.apos.dbClient = await mongo.MongoClient.connect(uri, connectOptions);
         const parsed = new URL(uri);
         self.uri = uri;

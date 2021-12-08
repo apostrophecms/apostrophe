@@ -20,7 +20,12 @@ async function destroy(apos) {
   // when initialization failed and that's really not apostrophe's concern
   if (dbName) {
     const mongo = require('mongodb');
-    const client = await mongo.MongoClient.connect(`mongodb://localhost:27017/${dbName}`, {
+    const baseUri = process.env.APOS_MONGODB_TEST_BASE_URI || 'mongodb://localhost:27017';
+    const uriObject = new URL(baseUri);
+    uriObject.pathname = `/${dbName}`;
+    const uri = uriObject.toString();
+    console.log(`Dropping ${uri}`);
+    const client = await mongo.MongoClient.connect(uri, {
       useUnifiedTopology: true,
       useNewUrlParser: true
     });

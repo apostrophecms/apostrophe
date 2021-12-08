@@ -88,9 +88,31 @@ module.exports = {
           namespace: 1,
           key: 1
         }, { unique: true });
-        await self.cacheCollection.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        await self.cacheCollection.createIndex({ expires: 1 });
+        // Avoid "expireAfterSeconds" option as CosmosDB does not support it, we will
+        // rig our own
+        self.expireInterval = setInterval(self.expire, 60000);
+      },
+
+      async expire() {
+        const date = new Date();
+        await self.cacheCollection.remove({
+          expires: {
+            $lte: date
+          }
+        });
       }
 
+    };
+  },
+
+  handlers(self) {
+    return {
+      'apostrophe:destroy': {
+        clearExpireInterval() {
+          clearInterval(self.expireInterval);
+        }
+      }
     };
   },
 
