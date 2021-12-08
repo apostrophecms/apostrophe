@@ -734,6 +734,7 @@ module.exports = {
         if (!err) {
           return false;
         }
+        console.log(`*** ${err.code}`);
         return err.code === 13596 || err.code === 13596 || err.code === 11000 || err.code === 11001;
       },
       // Set the manager object corresponding
