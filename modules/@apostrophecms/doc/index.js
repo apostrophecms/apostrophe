@@ -734,8 +734,9 @@ module.exports = {
         if (!err) {
           return false;
         }
-        console.log(`*** ${err.code}`);
-        return err.code === 13596 || err.code === 13596 || err.code === 11000 || err.code === 11001;
+        // CosmosDB uses the wrong error code for unique index errors on update,
+        // compensate by checking the string representation
+        return err.code === 13596 || err.code === 13596 || err.code === 11000 || err.code === 11001 || err.toString().match(/Unique index constraint violation/);
       },
       // Set the manager object corresponding
       // to a given doc type. Typically `manager`
