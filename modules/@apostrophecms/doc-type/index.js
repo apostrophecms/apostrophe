@@ -1496,7 +1496,7 @@ module.exports = {
             // projection and sort
             const search = query.get('search');
             if (search) {
-              if (query.get('regexSearch') || self.apos.doc.self.textIndexUnsupported) {
+              if (query.get('regexSearch') || self.apos.doc.textIndexUnsupported) {
                 // Used when text index is unsupported (CosmosDB etc) or when
                 // A query builder has warned us that `$near` or another operator
                 // incompatible with `$text` is present. We must dumb down to regex search
