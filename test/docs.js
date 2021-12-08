@@ -65,8 +65,10 @@ describe('Docs', function() {
       assert(_.includes(actualIndexes, index));
     });
 
-    // Lastly, make sure there is a text index present
-    assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
+    if (!apos.doc.textIndexUnsupported) {
+      // Lastly, make sure there is a text index present
+      assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
+    }
   });
 
   it('should make sure there is no test data hanging around from last time', async function() {
@@ -222,6 +224,8 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to sort', async function () {
+    // CosmosDB requires an explicit index for every sort
+    await self.apos.doc.db.createIndex({ age: 1 });
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({ age: 1 });
     const docs = await cursor.toArray();
 
@@ -229,6 +233,8 @@ describe('Docs', function() {
   });
 
   it('should be able to sort by multiple keys', async function () {
+    // CosmosDB requires an explicit index for every sort
+    await self.apos.doc.db.createIndex({ firstName: 1, age: 1 });
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({
       firstName: 1,
       age: 1
@@ -601,6 +607,10 @@ describe('Docs', function() {
   });
 
   it('should be able to recover if the text index weights are mysteriously wrong at startup', async function() {
+    if (apos.doc.textIndexUnsupported) {
+      console.log('Text index not supported by current database, skipping test');
+      return;
+    }
     await apos.doc.db.dropIndex('highSearchText_text_lowSearchText_text_title_text_searchBoost_text');
     await apos.doc.db.createIndex({
       highSearchText: 'text',
