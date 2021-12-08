@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.9.0 - 2021-12-08
 
 ### Adds
 
