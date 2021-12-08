@@ -225,7 +225,7 @@ describe('Docs', function() {
 
   it('should be able to sort', async function () {
     // CosmosDB requires an explicit index for every sort
-    await self.apos.doc.db.createIndex({ age: 1 });
+    await apos.doc.db.createIndex({ age: 1 });
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({ age: 1 });
     const docs = await cursor.toArray();
 
@@ -234,7 +234,7 @@ describe('Docs', function() {
 
   it('should be able to sort by multiple keys', async function () {
     // CosmosDB requires an explicit index for every sort
-    await self.apos.doc.db.createIndex({ firstName: 1, age: 1 });
+    await apos.doc.db.createIndex({ firstName: 1, age: 1 });
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({
       firstName: 1,
       age: 1
