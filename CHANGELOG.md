@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Adds a `last` option to fields. Setting `last: true` on a field puts that field at the end of the field's group order (unless more than one field has that option active).
+
 ## 3.9.0 - 2021-12-08
 
 ### Adds

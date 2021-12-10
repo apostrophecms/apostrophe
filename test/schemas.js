@@ -257,9 +257,39 @@ describe('Schemas', function() {
     };
     const schema = apos.schema.compose(options);
     assert(schema.length === 2);
+    // console.info('0️⃣', schema);
     assert(schema[0].name === 'name');
     assert(schema[1].name === 'variety');
     assert(_.keys(schema[1].choices).length === 3);
+  });
+
+  it('should place a "last" field last', () => {
+    const options = {
+      addFields: [
+        {
+          name: 'firstField',
+          type: 'string',
+          label: 'First Field'
+        },
+        {
+          name: 'lastField',
+          type: 'string',
+          label: 'Final Field',
+          last: true
+        },
+        {
+          name: 'secondField',
+          type: 'string',
+          label: 'Second Field'
+        }
+      ]
+    };
+    const schema = apos.schema.compose(options);
+    assert(schema.length === 3);
+    // console.info('1️⃣', schema);
+    assert(schema[0].name === 'firstField');
+    assert(schema[1].name === 'secondField');
+    assert(schema[2].name === 'lastField');
   });
 
   it('should compose a schema for a complex real world case correctly', function() {
