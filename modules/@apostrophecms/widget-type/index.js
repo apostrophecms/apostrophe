@@ -310,12 +310,16 @@ module.exports = {
       },
 
       // override to add CSS classes to the outer wrapper div of the widget.
+      // TODO: Remove in the 4.x major version.
       getWidgetWrapperClasses(widget) {
+        self.apos.util.warnDev('The getWidgetWrapperClasses method is deprecated and will be removed in the next major version.');
         return [];
       },
 
       // Override to add CSS classes to the div of the widget itself.
+      // TODO: Remove in the 4.x major version.
       getWidgetClasses(widget) {
+        self.apos.util.warnDev('The getWidgetClasses method is deprecated and will be removed in the next major version.');
         return [];
       }
     };
