@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+* Adds deprecation notes to the widget class methods `getWidgetWrapperClasses` and `getWidgetClasses` from A2.
+
 ## 3.9.0 - 2021-12-08
 
 ### Adds
