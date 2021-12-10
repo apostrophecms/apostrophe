@@ -142,11 +142,14 @@ module.exports = {
       // leading slash required). Otherwise, expect a object-style slug
       // (no slashes at all)
       convert: function (req, field, data, destination) {
-        const options = {};
+        const options = {
+          def: field.def !== undefined ? field.def : undefined
+        };
         if (field.page) {
           options.allow = '/';
         }
         destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
+
         if (field.page) {
           if (!(destination[field.name].charAt(0) === '/')) {
             destination[field.name] = '/' + destination[field.name];
