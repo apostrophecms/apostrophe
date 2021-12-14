@@ -1,6 +1,10 @@
 # Changelog
 
-## Unrelease
+## Unreleased
+
+### Fixes
+
+* `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
 
 ### Changes
 
