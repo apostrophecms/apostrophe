@@ -1420,7 +1420,7 @@ module.exports = {
           }
         },
 
-        // `.permission('admin')` would limit the returned docs to those for which the
+        // `.permission('edit')` would limit the returned docs to those for which the
         // user associated with the query's `req` has the named permission.
         // By default, `view` is checked for. You might want to specify
         // `edit`.
@@ -1658,7 +1658,11 @@ module.exports = {
             const _req = query.req.clone({
               mode: 'published'
             });
-            const publishedDocs = await self.find(_req)._ids(results.map(result => result._id.replace(':draft', ':published'))).project(query.get('project')).toArray();
+            const publishedDocs = await self.find(_req)
+              ._ids(results.map(result => {
+                return result._id.replace(':draft', ':published');
+              })).project(query.get('project')).toArray();
+
             for (const doc of results) {
               const publishedDoc = publishedDocs.find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
               doc._publishedDoc = publishedDoc;

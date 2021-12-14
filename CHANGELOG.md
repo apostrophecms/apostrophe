@@ -6,6 +6,10 @@
 
 * `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
 
+### Changes
+
+* Adds a deprecation note to the `reorganize` query builder for the next major version.
+
 ## 3.9.0 - 2021-12-08
 
 ### Adds
