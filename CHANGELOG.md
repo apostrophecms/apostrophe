@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+* `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
+
 ### Adds
 
 * Adds a `last` option to fields. Setting `last: true` on a field puts that field at the end of the field's group order (unless more than one field has that option active).
