@@ -143,7 +143,7 @@ module.exports = {
       // (no slashes at all)
       convert: function (req, field, data, destination) {
         const options = {
-          def: field.def !== undefined ? field.def : undefined
+          def: field.def
         };
         if (field.page) {
           options.allow = '/';
