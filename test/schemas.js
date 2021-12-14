@@ -257,7 +257,6 @@ describe('Schemas', function() {
     };
     const schema = apos.schema.compose(options);
     assert(schema.length === 2);
-    // console.info('0️⃣', schema);
     assert(schema[0].name === 'name');
     assert(schema[1].name === 'variety');
     assert(_.keys(schema[1].choices).length === 3);
@@ -286,7 +285,6 @@ describe('Schemas', function() {
     };
     const schema = apos.schema.compose(options);
     assert(schema.length === 3);
-    // console.info('1️⃣', schema);
     assert(schema[0].name === 'firstField');
     assert(schema[1].name === 'secondField');
     assert(schema[2].name === 'lastField');
