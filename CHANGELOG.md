@@ -9,6 +9,7 @@
 ### Changes
 
 * Adds a deprecation note to the `reorganize` query builder for the next major version.
+* Adds a deprecation note to the `addLateCriteria` query builder.
 
 ## 3.9.0 - 2021-12-08
 
