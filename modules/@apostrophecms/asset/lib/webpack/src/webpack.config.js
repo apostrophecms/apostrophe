@@ -34,7 +34,7 @@ module.exports = ({
     optimization: {
       minimize: process.env.NODE_ENV === 'production'
     },
-    devtool: 'eval-source-map',
+    devtool: 'source-map',
     output: {
       path: outputPath,
       filename: outputFilename

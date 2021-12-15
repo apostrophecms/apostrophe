@@ -9,6 +9,8 @@
 ### Changes
 
 * Adds a deprecation note to the `reorganize` query builder for the next major version.
+* Uses the runtime build of Vue. This has major performance and bundle size benefits, however it does require changes to Apostrophe admin UI apps that use a `template` property (components should require no changes, just apps require an update). These apps must now use a `render` function instead. Since custom admin UI apps are not yet a documented feature we do not regard this as a bc break.
+* Compatible with the `@apostrophecms/security-headers` module, which supports a strict `Content-Security-Policy`.
 
 ## 3.9.0 - 2021-12-08
 

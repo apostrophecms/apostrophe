@@ -28,7 +28,7 @@ module.exports = ({
     optimization: {
       minimize: process.env.NODE_ENV === 'production'
     },
-    devtool: 'eval-source-map',
+    devtool: 'source-map',
     output: {
       path: outputPath,
       filename: outputFilename
@@ -42,7 +42,7 @@ module.exports = ({
     resolve: {
       extensions: [ '*', '.js', '.vue', '.json' ],
       alias: {
-        vue$: 'vue/dist/vue.esm.js',
+        vue$: 'vue/dist/vue.runtime.esm.js',
         // resolve apostrophe modules
         Modules: path.resolve(modulesDir)
       },
