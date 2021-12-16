@@ -111,7 +111,19 @@ export default function() {
             renderings
           };
         },
-        template: `<${component} :options="options" :items="items" :choices="choices" :id="$data.id" :docId="$data.docId" :fieldId="fieldId" :renderings="renderings" />`
+        render(h) {
+          return h(component, {
+            props: {
+              options: this.options,
+              items: this.items,
+              choices: this.choices,
+              id: this.id,
+              docId: this.docId,
+              fieldId: this.fieldId,
+              renderings: this.renderings
+            }
+          });
+        }
       });
     }
   }

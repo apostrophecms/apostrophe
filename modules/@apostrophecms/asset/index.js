@@ -752,8 +752,7 @@ module.exports = {
         if (!self.shouldRefreshOnRestart()) {
           return '';
         }
-        const script = fs.readFileSync(path.join(__dirname, '/lib/refresh-on-restart.js'), 'utf8');
-        return self.apos.template.safe(`<script data-apos-refresh-on-restart="${self.action}/restart-id">\n${script}</script>`);
+        return self.apos.template.safe(`<script data-apos-refresh-on-restart="${self.action}/restart-id" src="${self.action}/refresh-on-restart"></script>`);
       },
       url(path) {
         return `${self.getAssetBaseUrl()}${path}`;
@@ -765,6 +764,12 @@ module.exports = {
       return;
     }
     return {
+      get: {
+        refreshOnRestart(req) {
+          req.res.setHeader('content-type', 'text/javascript');
+          return fs.readFileSync(path.join(__dirname, '/lib/refresh-on-restart.js'), 'utf8');
+        }
+      },
       // Use a POST route so IE11 doesn't cache it
       post: {
         async restartId(req) {

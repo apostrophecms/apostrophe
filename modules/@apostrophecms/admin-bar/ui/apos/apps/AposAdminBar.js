@@ -10,7 +10,13 @@ export default function() {
           return window.apos;
         }
       },
-      template: '<component :is="`TheAposAdminBar`" :items="apos.adminBar.items" />'
+      render: function (h) {
+        return h('TheAposAdminBar', {
+          props: {
+            items: apos.adminBar.items
+          }
+        });
+      }
     });
   }
 };
