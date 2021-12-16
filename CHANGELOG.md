@@ -6,6 +6,7 @@
 
 * `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
 * The `underline` feature works properly in tiptap toolbar configuration.
+* Required checkbox fields now properly prevent editor submission when empty.
 
 ### Changes
 
