@@ -250,7 +250,8 @@ module.exports = {
           codeBlock: [
             'pre',
             'code'
-          ]
+          ],
+          underline: [ 'u' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {

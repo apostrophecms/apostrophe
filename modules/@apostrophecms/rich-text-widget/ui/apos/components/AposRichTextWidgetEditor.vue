@@ -44,6 +44,7 @@ import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import TextStyle from '@tiptap/extension-text-style';
+import Underline from '@tiptap/extension-underline';
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -181,7 +182,8 @@ export default {
           types: [ 'heading', 'paragraph' ]
         }),
         Highlight,
-        TextStyle
+        TextStyle,
+        Underline
       ].concat(this.aposTiptapExtensions)
     });
   },
