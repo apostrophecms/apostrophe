@@ -2154,10 +2154,8 @@ module.exports = {
           const count = await mongo.count();
           if (query.get('perPage')) {
             const perPage = query.get('perPage');
-            let totalPages = Math.floor(count / perPage);
-            if (count % perPage) {
-              totalPages++;
-            }
+            const totalPages = Math.ceil(count / perPage);
+
             query.set('totalPages', totalPages);
           }
           return count;
