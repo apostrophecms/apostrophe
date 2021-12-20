@@ -1152,8 +1152,10 @@ module.exports = {
 
         // `.addLateCriteria({...})` provides an object to be merged directly into the final
         // criteria object that will go to MongoDB. This is to be used only
-        // in cases where MongoDB forbids the use of an operator inside
-        // `$and`, such as the `$near` operator.
+        // in cases where MongoDB forbids the use of an operator inside `$and`.
+        //
+        // TODO: Since `$near` can now be used in `$and` operators, this query
+        // builder is deprecated and should be removed in the 4.x major version.
         addLateCriteria: {
           set(c) {
             let lateCriteria = query.get('lateCriteria');
@@ -2152,10 +2154,8 @@ module.exports = {
           const count = await mongo.count();
           if (query.get('perPage')) {
             const perPage = query.get('perPage');
-            let totalPages = Math.floor(count / perPage);
-            if (count % perPage) {
-              totalPages++;
-            }
+            const totalPages = Math.ceil(count / perPage);
+
             query.set('totalPages', totalPages);
           }
           return count;

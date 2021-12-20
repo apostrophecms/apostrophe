@@ -33,12 +33,12 @@ export default {
       return uid + value.replace(/\s/g, '');
     },
     validate(values) {
-      if (!Array.isArray(this.field.choices)) {
+      // The choices and values should always be arrays.
+      if (!Array.isArray(this.field.choices) || !Array.isArray(values)) {
         return 'malformed';
       }
 
-      if (this.field.required &&
-        !Array.isArray(values) && (!values || !values.length)) {
+      if (this.field.required && !values.length) {
         return 'required';
       }
 
