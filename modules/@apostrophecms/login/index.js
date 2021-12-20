@@ -60,6 +60,7 @@ module.exports = {
     ],
     bearerTokens: true
   },
+  cascades: [ 'requirements' ],
   async init(self) {
     self.passport = new Passport();
     self.enableSerializeUsers();
@@ -330,8 +331,14 @@ module.exports = {
       // 1000ms delay to discourage abuse. If another type of error occurs, it is thrown
       // normally.
       //
-      // If the user's login SUCCEEDS, the return value is
+      // If the user's login succeeds, the return value is
       // the `user` object.
+      //
+      // If there are additional `requirements` configured that are
+      // not for the `afterPasswordVerified` phase, their `verify` functions
+      // are also passed the request. If they throw an `invalid` error
+      // the same 1000ms delay is used along with the usual generic error
+      // message, to avoid revealing too much information.
 
       async verifyLogin(username, password) {
         const req = self.apos.task.getReq();
@@ -348,6 +355,14 @@ module.exports = {
           return false;
         }
         try {
+          const requirementsBeforePasswordVerified = self.requirements.find(requirement => requirement.phase !== 'afterPasswordVerified');
+          for (const requirement of requirementsBeforePasswordVerified) {
+            // Verify function will throw an appropriate self.apos.error if necessary
+            await requirement.verify(req, {
+              username,
+              password
+            });
+          }
           await self.apos.user.verifyPassword(user, password);
           return user;
         } catch (err) {
