@@ -1220,12 +1220,14 @@ module.exports = {
 
         // all fields in the schema will end up in this variable
         let newSchema = [];
+
         // loop over any groups and orders we want to respect
         _.each(groups, function (group) {
 
           _.each(group.fields, function (field) {
             // find the field we are ordering
             let f = _.find(schema, { name: field });
+
             if (!f) {
               // May have already been migrated due to subclasses re-grouping fields
               f = _.find(newSchema, { name: field });
@@ -1245,6 +1247,7 @@ module.exports = {
               if (fIndex !== -1) {
                 newSchema.splice(fIndex, 1);
               }
+
               newSchema.push(f);
 
               // remove the field from the old schema, if that is where we got it from

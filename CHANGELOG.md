@@ -8,6 +8,10 @@
 * The `underline` feature works properly in tiptap toolbar configuration.
 * Required checkbox fields now properly prevent editor submission when empty.
 
+### Adds
+
+* Adds a `last` option to fields. Setting `last: true` on a field puts that field at the end of the field's widget order. If more than one field has that option active the true last item will depend on general field registration order. If the field is ordered with the `fields.order` array or field group ordering, those specified orders will take precedence.
+
 ### Changes
 
 * Adds deprecation notes to the widget class methods `getWidgetWrapperClasses` and `getWidgetClasses` from A2.
