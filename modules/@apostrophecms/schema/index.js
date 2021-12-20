@@ -1224,18 +1224,6 @@ module.exports = {
         // loop over any groups and orders we want to respect
         _.each(groups, function (group) {
 
-          group.fields.sort((a, b) => {
-            const fieldA = schema.find(f => f.name === a);
-            const fieldB = schema.find(f => f.name === b);
-            if (!fieldA || !fieldB) {
-              return 0;
-            }
-
-            return fieldA.last === true && fieldB.last === true ? 0
-              : !fieldA.last && !fieldB.last ? 0
-                : fieldA.last === true ? 1 : -1;
-          });
-
           _.each(group.fields, function (field) {
             // find the field we are ordering
             let f = _.find(schema, { name: field });
