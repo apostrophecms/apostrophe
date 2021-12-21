@@ -11,7 +11,7 @@
 * `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
 * The `underline` feature works properly in tiptap toolbar configuration.
 * Required checkbox fields now properly prevent editor submission when empty.
-* Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.:w
+* Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
 
 ### Changes
 
