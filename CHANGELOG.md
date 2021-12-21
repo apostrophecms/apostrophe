@@ -7,6 +7,7 @@
 * `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
 * The `underline` feature works properly in tiptap toolbar configuration.
 * Required checkbox fields now properly prevent editor submission when empty.
+* Pins `vue-click-outside-element` to a version that does not attempt to use `eval` in its distribution build, which is incompatible with a strict Content Security Policy.
 
 ### Adds
 
