@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Apostrophe now extends `req.login` to emit an `after` event from the `@apostrophecms:login` module. `req.login` is invoked by both Apostrophe's direct login and the forthcoming `@apostrophecms/passport-bridge` module. Such a handler can add data to `req.session` etc., or reject the login by invoking `req.session.destroy()` and `delete req.user`. Note that handlers must not assume this has not already happened in another handler (check whether `req.user` still exists).
+* Apostrophe now extends Passport's `req.login` to emit an `afterSessionLogin` event from the `@apostrophecms:login` module, with `req` as an argument. Note that this does not occur at all for login API calls that return a bearer token rather than establishing an Express session.
 
 ### Fixes
 

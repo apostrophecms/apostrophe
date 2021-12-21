@@ -412,10 +412,10 @@ module.exports = {
               if (err) {
                 return callback(err);
               }
-              await self.emit('after', req);
+              await self.emit('afterSessionLogin', req);
+              // Make sure no handler removed req.user
               if (req.user) {
-                // If the login survived the gauntlet of `after` handlers,
-                // mark the login timestamp. Middleware takes care of ensuring
+                // Mark the login timestamp. Middleware takes care of ensuring
                 // that logins cannot be used to carry out actions prior
                 // to this property being added
                 req.session.loginAt = Date.now();
