@@ -408,7 +408,7 @@ module.exports = {
               options = args[0];
               callback = args[1];
             }
-            return superLogin(user, async (err) => {
+            return superLogin(user, options, async (err) => {
               if (err) {
                 return callback(err);
               }
