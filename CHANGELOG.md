@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Adds
+
+* Apostrophe now extends `req.login` to emit an `after` event from the `@apostrophecms:login` module. `req.login` is invoked by both Apostrophe's direct login and the forthcoming `@apostrophecms/passport-bridge` module. Such a handler can add data to `req.session` etc., or reject the login by invoking `req.session.destroy()` and `delete req.user`. Note that handlers must not assume this has not already happened in another handler (check whether `req.user` still exists).
+
 ### Fixes
 
 * `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.

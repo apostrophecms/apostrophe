@@ -408,11 +408,18 @@ module.exports = {
               options = args[0];
               callback = args[1];
             }
-            return superLogin(user, (err) => {
+            return superLogin(user, async (err) => {
               if (err) {
                 return callback(err);
               }
-              req.session.loginAt = Date.now();
+              await self.emit('after', req);
+              if (req.user) {
+                // If the login survived the gauntlet of `after` handlers,
+                // mark the login timestamp. Middleware takes care of ensuring
+                // that logins cannot be used to carry out actions prior
+                // to this property being added
+                req.session.loginAt = Date.now();
+              }
               return callback(null);
             });
           };
