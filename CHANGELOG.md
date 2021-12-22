@@ -1,17 +1,27 @@
 # Changelog
 
-## Unreleased
-
 ### Adds
 
 * Apostrophe now extends Passport's `req.login` to emit an `afterSessionLogin` event from the `@apostrophecms:login` module, with `req` as an argument. Note that this does not occur at all for login API calls that return a bearer token rather than establishing an Express session.
 
 ### Fixes
 
+* Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
+
+## 3.10.0 - 2021-12-22
+
+### Adds
+
+### Fixes
+
 * `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
 * The `underline` feature works properly in tiptap toolbar configuration.
 * Required checkbox fields now properly prevent editor submission when empty.
-* Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
+* Pins `vue-click-outside-element` to a version that does not attempt to use `eval` in its distribution build, which is incompatible with a strict Content Security Policy.
+
+### Adds
+
+* Adds a `last` option to fields. Setting `last: true` on a field puts that field at the end of the field's widget order. If more than one field has that option active the true last item will depend on general field registration order. If the field is ordered with the `fields.order` array or field group ordering, those specified orders will take precedence.
 
 ### Changes
 

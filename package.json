@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "3.9.0",
+  "version": "3.10.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -110,7 +110,7 @@
     "uploadfs": "^1.17.1",
     "v-tooltip": "^2.0.3",
     "vue": "^2.6.14",
-    "vue-click-outside-element": "^1.0.13",
+    "vue-click-outside-element": "1.0.13",
     "vue-loader": "^15.9.6",
     "vue-material-design-icons": "~4.12.1",
     "vue-style-loader": "^4.1.2",
