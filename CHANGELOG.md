@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.10.0 - 2021-12-22
 
 ### Fixes
 
