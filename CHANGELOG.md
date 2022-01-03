@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Unpins `vue-click-outside-element` the packaging of which has been fixed upstream.
+
 ## 3.10.0 - 2021-12-22
 
 ### Fixes
