@@ -13,6 +13,8 @@
 ### Changes
 
 * Unpins `vue-click-outside-element` the packaging of which has been fixed upstream.
+* Adds deprecation note to `__testDefaults` option. It is not in use, but removing would be a minor BC break we don't need to make.
+* Allows test modules to use a custom port as an option on the `@apostrophecms/express` module.
 * Removes the code base pull request template to instead inherit the organization-level template.
 
 ## 3.10.0 - 2021-12-22
