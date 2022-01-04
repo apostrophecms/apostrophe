@@ -37,13 +37,6 @@
 //
 // Apostrophe's instance of the [passport](https://npmjs.org/package/passport) npm module.
 // You may access this object if you need to implement additional passport "strategies."
-//
-// ## callAll method: loginAfterLogin
-//
-// The method `loginAfterLogin` is invoked on **all modules that have one**. This method
-// is a good place to set `req.redirect` to the URL of your choice. If no module sets
-// `req.redirect`, the newly logged-in user is redirected to the home page. `loginAfterLogin`
-// is invoked with `req` and may be an async function.
 
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
@@ -405,15 +398,35 @@ module.exports = {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
           const superLogin = req.login.bind(req);
-          req.login = (user, callback) => {
-            return superLogin(user, (err) => {
+          req.login = (user, ...args) => {
+            let options, callback;
+            // Support inconsistent calling conventions inside passport core
+            if (typeof args[0] === 'function') {
+              options = {};
+              callback = args[0];
+            } else {
+              options = args[0];
+              callback = args[1];
+            }
+            return superLogin(user, options, async (err) => {
               if (err) {
                 return callback(err);
               }
-              req.session.loginAt = Date.now();
+              await self.emit('afterSessionLogin', req);
+              // Make sure no handler removed req.user
+              if (req.user) {
+                // Mark the login timestamp. Middleware takes care of ensuring
+                // that logins cannot be used to carry out actions prior
+                // to this property being added
+                req.session.loginAt = Date.now();
+              }
               return callback(null);
             });
           };
+          // Passport itself maintains this bc alias, while refusing
+          // to actually decide which one is best in its own dev docs.
+          // Both have to exist to avoid bugs when passport calls itself
+          req.logIn = req.login;
           return next();
         }
       },

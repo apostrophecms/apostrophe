@@ -1,12 +1,21 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
+
+### Adds
+
+* Apostrophe now extends Passport's `req.login` to emit an `afterSessionLogin` event from the `@apostrophecms:login` module, with `req` as an argument. Note that this does not occur at all for login API calls that return a bearer token rather than establishing an Express session.
+
+### Fixes
+
+* Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
 
 ### Changes
 
 * Unpins `vue-click-outside-element` the packaging of which has been fixed upstream.
 * Adds deprecation note to `__testDefaults` option. It is not in use, but removing would be a minor BC break we don't need to make.
 * Allows test modules to use a custom port as an option on the `@apostrophecms/express` module.
+* Removes the code base pull request template to instead inherit the organization-level template.
 
 ## 3.10.0 - 2021-12-22
 
