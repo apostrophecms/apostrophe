@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
 
 ### Adds
 
@@ -13,6 +13,7 @@
 ### Changes
 
 * Unpins `vue-click-outside-element` the packaging of which has been fixed upstream.
+* Removes the code base pull request template to instead inherit the organization-level template.
 
 ## 3.10.0 - 2021-12-22
 
