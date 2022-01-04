@@ -1,5 +1,7 @@
 # Changelog
 
+## UNRELEASED
+
 ### Adds
 
 * Apostrophe now extends Passport's `req.login` to emit an `afterSessionLogin` event from the `@apostrophecms:login` module, with `req` as an argument. Note that this does not occur at all for login API calls that return a bearer token rather than establishing an Express session.
@@ -9,8 +11,6 @@
 * Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
 
 ## 3.10.0 - 2021-12-22
-
-### Adds
 
 ### Fixes
 

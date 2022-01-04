@@ -1977,9 +1977,9 @@ database.`);
         );
       },
       // Returns the effective base URL for the given request.
-      // If Apostrophe's top-level `baseUrl` option is set, or a hostname for the
-      // active locale, then that is consulted, otherwise the base URL is the
-      // empty string. This makes it easier to build absolute
+      // If Apostrophe's top-level `baseUrl` option is set, or a hostname is
+      // defined for the active locale, then that is consulted, otherwise the base URL
+      // is the empty string. This makes it easier to build absolute
       // URLs (when `baseUrl` is configured), or to harmlessly prepend
       // the empty string (when it is not configured). The
       // Apostrophe queries used to fetch Apostrophe pages
