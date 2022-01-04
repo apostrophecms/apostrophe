@@ -10,6 +10,10 @@
 
 * Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
 
+### Changes
+
+* Unpins `vue-click-outside-element` the packaging of which has been fixed upstream.
+
 ## 3.10.0 - 2021-12-22
 
 ### Fixes
