@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
 
 ### Changes
 
+* Unpins `vue-click-outside-element` the packaging of which has been fixed upstream.
 * Adds deprecation note to `__testDefaults` option. It is not in use, but removing would be a minor BC break we don't need to make.
 * Allows test modules to use a custom port as an option on the `@apostrophecms/express` module.
 
