@@ -1977,14 +1977,13 @@ database.`);
         );
       },
       // Returns the effective base URL for the given request.
-      // If Apostrophe's top-level `baseUrl` option is set, it is returned,
-      // otherwise the empty string. This makes it easier to build absolute
+      // If Apostrophe's top-level `baseUrl` option is set, or a hostname is
+      // defined for the active locale, then that is consulted, otherwise the base URL
+      // is the empty string. This makes it easier to build absolute
       // URLs (when `baseUrl` is configured), or to harmlessly prepend
       // the empty string (when it is not configured). The
       // Apostrophe queries used to fetch Apostrophe pages
-      // consult this method, and it is extended by the optional
-      // `@apostrophecms/workflow` module to create correct absolute URLs
-      // for specific locales.
+      // consult this method.
       getBaseUrl(req) {
         const hostname = self.apos.i18n.locales[req.locale].hostname;
         if (hostname) {
