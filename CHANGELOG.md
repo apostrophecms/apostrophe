@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.11.0 - 2022-01-06
 
 ### Adds
 
