@@ -23,6 +23,14 @@ export default {
       debug: i18n.debug,
       interpolation: {
         escapeValue: false
+      },
+      appendNamespaceToMissingKey: true,
+      parseMissingKeyHandler (key) {
+        if (key.startsWith(`${this.defaultNS[0]}:`)) {
+          return key.slice(this.defaultNS[0].length + 1);
+        } else {
+          return key;
+        }
       }
     });
 
