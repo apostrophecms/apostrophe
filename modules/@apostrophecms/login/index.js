@@ -107,8 +107,8 @@ module.exports = {
     return {
       post: {
         async login(req) {
-          const earlyRequirements = Object.fromEntries(Object.entries(self.requirements).filter((name, requirement) => requirement.phase !== 'afterPasswordVerified'));
-          const lateRequirements = Object.fromEntries(Object.entries(self.requirements).filter((name, requirement) => requirement.phase === 'afterPasswordVerified'));
+          const earlyRequirements = Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase !== 'afterPasswordVerified'));
+          const lateRequirements = Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'afterPasswordVerified'));
           const session = self.apos.launder.boolean(req.body.session);
           const passportLogin = (user) => {
             return require('util').promisify(function(user, callback) {
@@ -186,7 +186,7 @@ module.exports = {
               // For security reasons we may not tell the user which case applies
               throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
             }
-            if (lateRequirements.length) {
+            if (Object.keys(lateRequirements).length) {
               const token = cuid();
               await self.bearerTokens.insert({
                 _id: token,
@@ -199,24 +199,25 @@ module.exports = {
               return {
                 incompleteToken: token
               };
-            }
-            if (session) {
-              const passportLogin = (user) => {
-                return require('util').promisify(function(user, callback) {
-                  return req.login(user, callback);
-                })(user);
-              };
-              await passportLogin(user);
             } else {
-              const token = cuid();
-              await self.bearerTokens.insert({
-                _id: token,
-                userId: user._id,
-                expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
-              });
-              return {
-                token
-              };
+              if (session) {
+                const passportLogin = (user) => {
+                  return require('util').promisify(function(user, callback) {
+                    return req.login(user, callback);
+                  })(user);
+                };
+                await passportLogin(user);
+              } else {
+                const token = cuid();
+                await self.bearerTokens.insert({
+                  _id: token,
+                  userId: user._id,
+                  expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
+                });
+                return {
+                  token
+                };
+              }
             }
           }
         },
