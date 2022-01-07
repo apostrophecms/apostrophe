@@ -256,7 +256,6 @@ describe('Login', function() {
 
     assert(page.match(/logged out/));
 
-
     // Make sure it won't convert with an incorrect ExtraSecret
 
     const token = result.incompleteToken;
