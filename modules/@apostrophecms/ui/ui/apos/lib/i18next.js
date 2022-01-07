@@ -26,6 +26,15 @@ export default {
       },
       appendNamespaceToMissingKey: true,
       parseMissingKeyHandler (key) {
+        // We include namespaces with unrecognized l10n keys using
+        // `appendNamespaceToMissingKey: true`. This passes strings containing
+        // colons that were never meant to be localized through to the UI.
+        //
+        // Strings that do not include colons ("Content area") are given the
+        // default namespace by i18next ("translation," by default). Here we
+        // check if the key starts with that default namespace, meaning it
+        // belongs to no other registered namespace, then remove that default
+        // namespace before passing this through to be processed and displayed.
         if (key.startsWith(`${this.defaultNS[0]}:`)) {
           return key.slice(this.defaultNS[0].length + 1);
         } else {
