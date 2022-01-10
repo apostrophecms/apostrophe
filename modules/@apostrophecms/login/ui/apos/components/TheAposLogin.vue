@@ -24,11 +24,12 @@
             </div>
 
             <div class="apos-login__body" v-show="loaded">
-              <form @submit.prevent="submit">
+              <form v-if="phase == 'beforeSubmit'" @submit.prevent="submit">
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
                 />
+                <Component v-for="requirement in beforeSubmitRequirements" :key="requirement.name" :is="requirement.component" v-bind="requirement.props" @done="requirementDone(requirement, $event)" />
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
@@ -42,6 +43,7 @@
                   @click="submit"
                 />
               </form>
+              <Component v-if="activeRequirement" :is="activeRequirement.component" v-bind="activeRequirement.props" @done="requirementDone(requirement, $event)" />
             </div>
           </div>
         </transition>
@@ -66,6 +68,7 @@ export default {
   mixins: [ AposThemeMixin ],
   data() {
     return {
+      phase: 'beforeSubmit',
       loaded: false,
       error: '',
       busy: false,
@@ -89,12 +92,19 @@ export default {
           required: true
         }
       ],
+      requirements: getRequirements(),
       context: {}
     };
   },
   computed: {
-    disabled: function () {
-      return this.doc.hasErrors;
+    disabled () {
+      return this.doc.hasErrors || this.beforeSubmitRequirements.find(requirement => !requirement.done);
+    },
+    beforeSubmitRequirements() {
+      return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
+    },
+    activeRequirement() {
+      return (this.phase !== 'beforeSubmit') && this.requirements.find(requirement => (requirement.phase !== 'beforeSubmit') && !requirement.done);
     }
   },
   async beforeCreate () {
@@ -127,27 +137,115 @@ export default {
       }
       this.busy = true;
       this.error = '';
+      const activeRequirement = this.activeRequirement;
+      if ((this.phase === 'beforeSubmit') && this.requirements.find(requirement => requirement.phase === 'afterSubmit')) {
+        // Should be presented after the user clicks submit, but not before the
+        // actual submission to the server. So we step to the next phase and wait
+        // for the user to interact with it before POSTing
+        this.phase = 'afterSubmit';
+        return;
+      }
+      await this.invokeInitialLoginApi();
+    },
+    async invokeInitialLoginApi() {
+      try {
+        const response = await apos.http.post(`${apos.login.action}/login`, {
+          busy: true,
+          body: {
+            ...this.doc.data,
+            requirements: this.getInitialSubmitRequirementsData(),
+            session: true
+          }
+        });
+        if (response && response.incompleteToken) {
+          this.incompleteToken = response.incompleteToken;
+          this.phase = 'afterPasswordVerified';
+        } else {
+          this.redirectAfterLogin();
+        }
+      } catch (e) {
+        this.error = e.message || 'An error occurred. Please try again.';
+        this.requirements = getRequirements();
+        this.phase = 'beforeSubmit';
+      } finally {
+        this.busy = false;
+      }      
+    },
+    getInitialSubmitRequirementsData() {
+      return Object.fromEntries(this.requirements.filter(r => r.phase !== 'afterPasswordVerified').map(r => ([
+        r.name,
+        r.data
+      ])));
+    },
+    async invokeFinalLoginApi() {
       try {
         await apos.http.post(`${apos.login.action}/login`, {
           busy: true,
           body: {
             ...this.doc.data,
+            incompleteToken: this.incompleteToken,
+            requirements: this.getFinalSubmitRequirementsData(),
             session: true
           }
         });
-        window.sessionStorage.setItem('aposStateChange', Date.now());
-        window.sessionStorage.setItem('aposStateChangeSeen', '{}');
-        // TODO handle situation where user should be sent somewhere other than homepage.
-        // Redisplay homepage with editing interface
-        location.assign(`${apos.prefix}/`);
+        this.redirectAfterLogin();
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
+        this.requirements = getRequirements();
+        this.phase = 'beforeSubmit';
       } finally {
         this.busy = false;
+      }
+    },
+    getFinalSubmitRequirementsData() {
+      return Object.fromEntries(this.requirements.filter(r => r.phase === 'afterPasswordVerified').map(r => ([
+        r.name,
+        r.data
+      ])));
+    },
+    redirectAfterLogin() {
+      window.sessionStorage.setItem('aposStateChange', Date.now());
+      window.sessionStorage.setItem('aposStateChangeSeen', '{}');
+      // TODO handle situation where user should be sent somewhere other than homepage.
+      // Redisplay homepage with editing interface
+      location.assign(`${apos.prefix}/`);
+    },
+    async requirementDone(requirementDone, value) {
+      const requirement = this.requirements.find(requirement => requirement.name === requirementDone.name);
+      requirement.done = true;
+      requirement.value = value;
+      // Avoids the need for a deep watch
+      this.requirements = [ ...this.requirements ];
+      const activeRequirement = this.activeRequirement;
+      if (this.phase === 'afterSubmit') {
+        if (!(activeRequirement && activeRequirement.phase === 'afterSubmit')) {
+          await this.invokeInitialLoginApi();
+        }
+      } else {
+        if (!activeRequirement) {
+          await this.invokeFinalLoginApi();
+        }
       }
     }
   }
 };
+
+function getRequirements() {
+  const requirements = Object.entries(apos.login.requirements).map(([ name, requirement ]) => {
+    return {
+      name,
+      component: requirement.component || name,
+      ...requirement,
+      done: false,
+      value: null,
+    };
+  });
+  return [
+    ...requirements.filter(r => r.phase === 'beforeSubmit'),
+    ...requirements.filter(r => r.phase === 'afterSubmit'),
+    ...requirements.filter(r => r.phase === 'afterPasswordVerified')
+  ];
+}
 </script>
 
 <style lang="scss">

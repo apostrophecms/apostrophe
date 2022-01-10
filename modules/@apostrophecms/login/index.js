@@ -348,7 +348,16 @@ module.exports = {
               username: req.user.username,
               email: req.user.email
             }
-          } : {})
+          } : {}),
+          requirements: Object.fromEntries(
+            Object.entries(self.requirements).map(([name, requirement]) => {
+              // server-side function should not be pushed to browser
+              const {
+                verify, ...browserRequirement
+              } = requirement;
+              return [ name, browserRequirement ];
+            })
+          )
         };
       },
 
