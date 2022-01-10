@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
+
 ### Adds
 
 * Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
