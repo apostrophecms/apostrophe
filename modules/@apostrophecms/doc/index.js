@@ -675,10 +675,10 @@ module.exports = {
       },
 
       // Insert the given document. Called by `.insert()`. You will usually want to
-      // call the update method of the appropriate doc type manager instead:
+      // call the insert method of the appropriate doc type manager instead:
       //
       // ```javascript
-      // self.apos.doc.getManager(doc.type).update(...)
+      // self.apos.doc.getManager(doc.type).insert(...)
       // ```
       //
       // However you can override this method to alter the
