@@ -136,11 +136,11 @@ module.exports = {
             await destroySession();
           }
         },
-        // invokes the precheck function for the requirement specified by
+        // invokes the `props(req, user)` function for the requirement specified by
         // `body.name`. Invoked before displaying each `afterPasswordVerified`
-        // requirement. The return value of the precheck function is delivered
-        // as the API response
-        async precheck(req) {
+        // requirement. The return value of the function, which should
+        // be an object, is delivered as the API response
+        async requirementProps(req) {
           const { token, user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
 
           const name = self.apos.launder.string(req.body.name);
@@ -149,10 +149,10 @@ module.exports = {
           if (!requirement) {
             throw self.apos.error('notfound');
           }
-          if (!requirement.precheck) {
+          if (!requirement.props) {
             return {};
           }
-          return requirement.precheck(req, user);
+          return requirement.props(req, user);
         },
         async context(req) {
           return self.getContext(req);
@@ -233,7 +233,7 @@ module.exports = {
 
       // Implements the context route, which provides basic
       // information about the site being logged into and also
-      // precheck data for beforeSubmit and afterSubmit requirements
+      // props for beforeSubmit and afterSubmit requirements
       async getContext(req) {
         let aposPackage = {};
         try {
@@ -241,12 +241,12 @@ module.exports = {
         } catch (err) {
           self.apos.util.error(err);
         }
-        // For performance beforeSubmit / afterSubmit requirement prechecks all happen together here
-        const prechecks = {};
+        // For performance beforeSubmit / afterSubmit requirement props all happen together here
+        const requirementProps = {};
         for (const [ name, requirement ] of Object.entries(self.requirements)) {
-          if ((requirement.phase !== 'afterPasswordVerified') && requirement.precheck) {
+          if ((requirement.phase !== 'afterPasswordVerified') && requirement.props) {
             try {
-              prechecks[name] = await requirement.precheck(req);
+              requirementProps[name] = await requirement.props(req);
             } catch (e) {
               if (e.body && e.body.data) {
                 e.body.data.requirement = name;
@@ -259,7 +259,7 @@ module.exports = {
           env: process.env.NODE_ENV || 'development',
           name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
           version: aposPackage.version || '3',
-          prechecks
+          requirementProps
         };
       },
 

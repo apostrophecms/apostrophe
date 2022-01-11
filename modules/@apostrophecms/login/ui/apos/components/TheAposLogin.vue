@@ -29,10 +29,10 @@
                   :schema="schema"
                   v-model="doc"
                 />
-                <!-- Do not ask these components to render without their precheck data,
+                <!-- Do not ask these components to render without their props,
                   v-show is not enough -->
                 <template v-if="loaded">
-                  <Component v-for="requirement in beforeSubmitRequirements" :key="requirement.name" :is="requirement.component" :precheck="getPrecheck(requirement.name)" v-bind="requirement.props" @done="requirementDone(requirement, $event)" />
+                  <Component v-for="requirement in beforeSubmitRequirements" :key="requirement.name" :is="requirement.component" v-bind="getRequirementProps(requirement.name)" @done="requirementDone(requirement, $event)" />
                 </template>
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
@@ -47,7 +47,7 @@
                   @click="submit"
                 />
               </form>
-              <Component v-if="activeRequirement && !prechecking" :precheck="getPrecheck(activeRequirement.name)" :is="activeRequirement.component" v-bind="activeRequirement.props" @done="requirementDone(activeRequirement, $event)" />
+              <Component v-if="activeRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeRequirement.name)" :is="activeRequirement.component" @done="requirementDone(activeRequirement, $event)" />
             </div>
           </div>
         </transition>
@@ -99,8 +99,8 @@ export default {
       ],
       requirements: getRequirements(),
       context: {},
-      prechecks: {},
-      prechecking: false
+      requirementProps: {},
+      fetchingRequirementProps: false
     };
   },
   computed: {
@@ -119,31 +119,31 @@ export default {
   },
   watch: {
     async activeRequirement() {
-      if ((this.phase === 'afterPasswordVerified') && (this?.activeRequirement?.phase === 'afterPasswordVerified') && this.activeRequirement.precheckRequired) {
+      if ((this.phase === 'afterPasswordVerified') && (this?.activeRequirement?.phase === 'afterPasswordVerified') && this.activeRequirement.propsRequired) {
         try {
-          const data = await apos.http.post(`${apos.login.action}/precheck`, {
+          this.fetchingRequirementProps = true;
+          const data = await apos.http.post(`${apos.login.action}/requirement-props`, {
             busy: true,
             body: {
               name: this.activeRequirement.name,
               incompleteToken: this.incompleteToken
             }
           });
-          this.prechecking = true;
-          this.prechecks = {
-            ...this.prechecks,
+          this.requirementProps = {
+            ...this.requirementProps,
             [this.activeRequirement.name]: data
           };
         } catch (e) {
           this.error = e.message || 'An error occurred. Please try again.';
         } finally {
-          this.prechecking = false;
+          this.fetchingRequirementProps = false;
         }
       } else {
         return null;
       }
     }
   },
-  async beforeCreate () {
+  async beforeCreate() {
     const stateChange = parseInt(window.sessionStorage.getItem('aposStateChange'));
     const seen = JSON.parse(window.sessionStorage.getItem('aposStateChangeSeen') || '{}');
     if (!seen[window.location.href]) {
@@ -159,7 +159,7 @@ export default {
       this.context = await apos.http.post(`${apos.login.action}/context`, {
         busy: true
       });
-      this.prechecks = this.context.prechecks;
+      this.requirementProps = this.context.requirementProps;
     } catch (e) {
       this.error = e.message || 'An error occurred. Please try again.';
     } finally {
@@ -269,8 +269,8 @@ export default {
         }
       }
     },
-    getPrecheck(name) {
-      return this.prechecks[name] || {};
+    getRequirementProps(name) {
+      return this.requirementProps[name] || {};
     }
   }
 };
