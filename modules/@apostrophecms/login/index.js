@@ -141,7 +141,7 @@ module.exports = {
         // requirement. The return value of the function, which should
         // be an object, is delivered as the API response
         async requirementProps(req) {
-          const { token, user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+          const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
 
           const name = self.apos.launder.string(req.body.name);
 
@@ -396,14 +396,16 @@ module.exports = {
             }
           } : {}),
           requirements: Object.fromEntries(
-            Object.entries(self.requirements).map(([name, requirement]) => {
+            Object.entries(self.requirements).map(([ name, requirement ]) => {
               // server-side functions should not be pushed to browser
               const {
+                // eslint-disable-next-line no-unused-vars
                 verify,
-                precheck,
+                // eslint-disable-next-line no-unused-vars
+                props,
                 ...browserRequirement
               } = requirement;
-              browserRequirement.precheckRequired = !!requirement.precheck;
+              browserRequirement.propsRequired = !!requirement.props;
               return [ name, browserRequirement ];
             })
           )
@@ -460,7 +462,7 @@ module.exports = {
         }
       },
 
-      // Implementation detail of the login route and the precheck mechanism for
+      // Implementation detail of the login route and the requirementProps mechanism for
       // custom login requirements. Given the string `token`, returns
       // `{ token, user }`. Throws an exception if the token is not found.
       // `token` is sanitized before passing to mongodb.
@@ -483,7 +485,8 @@ module.exports = {
           throw self.apos.error('notfound');
         }
         return {
-          token, user
+          token,
+          user
         };
       },
 

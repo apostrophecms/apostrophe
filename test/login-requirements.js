@@ -23,6 +23,11 @@ describe('Login', function() {
               add: {
                 WeakCaptcha: {
                   phase: 'beforeSubmit',
+                  async props(req) {
+                    return {
+                      hint: 'xyz'
+                    };
+                  },
                   async verify(req) {
                     if (req.body.requirements.WeakCaptcha !== 'xyz') {
                       throw self.apos.error('invalid', 'captcha code incorrect');
@@ -39,6 +44,13 @@ describe('Login', function() {
                 },
                 ExtraSecret: {
                   phase: 'afterPasswordVerified',
+                  async props(req, user) {
+                    console.log('we were invoked');
+                    return {
+                      // Verify we had access to the user here
+                      hint: user.username
+                    };
+                  },
                   async verify(req, user) {
                     if (req.body.requirements.ExtraSecret !== user.extraSecret) {
                       throw self.apos.error('invalid', 'extra secret incorrect');
@@ -86,6 +98,19 @@ describe('Login', function() {
     );
 
     assert(page.match(/logged out/));
+
+    const context = await apos.http.post(
+      '/api/v1/@apostrophecms/login/context',
+      {
+        method: 'POST',
+        body: {},
+        jar
+      }
+    );
+    console.log(context);
+    assert(context.requirementProps);
+    assert(context.requirementProps.WeakCaptcha);
+    assert.strictEqual(context.requirementProps.WeakCaptcha.hint, 'xyz');
 
     try {
       await apos.http.post(
@@ -290,6 +315,21 @@ describe('Login', function() {
     );
 
     assert(page.match(/logged out/));
+
+    // Fetch props for afterPasswordVerified component
+
+    const props = await apos.http.post(
+      '/api/v1/@apostrophecms/login/requirement-props',
+      {
+        method: 'POST',
+        body: {
+          incompleteToken: token,
+          name: 'ExtraSecret'
+        },
+        jar
+      }
+    );
+    assert.strictEqual(props.hint, 'HarryPutter');
 
     // Now convert token to an actual login session
     // by providing the post-password-verification requirements,
