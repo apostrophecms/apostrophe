@@ -1114,7 +1114,7 @@ module.exports = {
               await copyOut(uploadfsPath, tempFile);
               await self.sanitizeSvg(tempFile);
               await copyIn(tempFile, uploadfsPath);
-              await self.db.update({
+              await self.db.updateOne({
                 _id: attachment._id
               }, {
                 $set: {

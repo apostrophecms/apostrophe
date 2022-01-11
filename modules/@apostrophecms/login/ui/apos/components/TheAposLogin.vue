@@ -29,7 +29,11 @@
                   :schema="schema"
                   v-model="doc"
                 />
-                <Component v-for="requirement in beforeSubmitRequirements" :key="requirement.name" :is="requirement.component" v-bind="requirement.props" @done="requirementDone(requirement, $event)" />
+                <!-- Do not ask these components to render without their precheck data,
+                  v-show is not enough -->
+                <template v-if="loaded">
+                  <Component v-for="requirement in beforeSubmitRequirements" :key="requirement.name" :is="requirement.component" :precheck="getPrecheck(requirement.name)" v-bind="requirement.props" @done="requirementDone(requirement, $event)" />
+                </template>
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
@@ -43,7 +47,7 @@
                   @click="submit"
                 />
               </form>
-              <Component v-if="activeRequirement" :is="activeRequirement.component" v-bind="activeRequirement.props" @done="requirementDone(requirement, $event)" />
+              <Component v-if="activeRequirement && !prechecking" :precheck="getPrecheck(activeRequirement.name)" :is="activeRequirement.component" v-bind="activeRequirement.props" @done="requirementDone(activeRequirement, $event)" />
             </div>
           </div>
         </transition>
@@ -69,7 +73,8 @@ export default {
   data() {
     return {
       phase: 'beforeSubmit',
-      loaded: false,
+      mounted: false,
+      beforeCreateFinished: false,
       error: '',
       busy: false,
       doc: {
@@ -93,18 +98,49 @@ export default {
         }
       ],
       requirements: getRequirements(),
-      context: {}
+      context: {},
+      prechecks: {},
+      prechecking: false
     };
   },
   computed: {
-    disabled () {
-      return this.doc.hasErrors || this.beforeSubmitRequirements.find(requirement => !requirement.done);
+    loaded() {
+      return this.mounted && this.beforeCreateFinished;
+    },
+    disabled() {
+      return this.doc.hasErrors || !!this.beforeSubmitRequirements.find(requirement => !requirement.done);
     },
     beforeSubmitRequirements() {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
     },
     activeRequirement() {
       return (this.phase !== 'beforeSubmit') && this.requirements.find(requirement => (requirement.phase !== 'beforeSubmit') && !requirement.done);
+    }
+  },
+  watch: {
+    async activeRequirement() {
+      if ((this.phase === 'afterPasswordVerified') && (this?.activeRequirement?.phase === 'afterPasswordVerified') && this.activeRequirement.precheckRequired) {
+        try {
+          const data = await apos.http.post(`${apos.login.action}/precheck`, {
+            busy: true,
+            body: {
+              name: this.activeRequirement.name,
+              incompleteToken: this.incompleteToken
+            }
+          });
+          this.prechecking = true;
+          this.prechecks = {
+            ...this.prechecks,
+            [this.activeRequirement.name]: data
+          };
+        } catch (e) {
+          this.error = e.message || 'An error occurred. Please try again.';
+        } finally {
+          this.prechecking = false;
+        }
+      } else {
+        return null;
+      }
     }
   },
   async beforeCreate () {
@@ -120,15 +156,18 @@ export default {
       }
     }
     try {
-      this.context = await apos.http.get(`${apos.login.action}/context`, {
+      this.context = await apos.http.post(`${apos.login.action}/context`, {
         busy: true
       });
+      this.prechecks = this.context.prechecks;
     } catch (e) {
-      this.error = 'An error occurred. Please try again.';
+      this.error = e.message || 'An error occurred. Please try again.';
+    } finally {
+      this.beforeCreateFinished = true;
     }
   },
   mounted() {
-    this.loaded = true;
+    this.mounted = true;
   },
   methods: {
     async submit() {
@@ -165,8 +204,8 @@ export default {
         }
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
-        this.requirements = getRequirements();
         this.phase = 'beforeSubmit';
+        this.requirements = getRequirements();
       } finally {
         this.busy = false;
       }      
@@ -174,7 +213,7 @@ export default {
     getInitialSubmitRequirementsData() {
       return Object.fromEntries(this.requirements.filter(r => r.phase !== 'afterPasswordVerified').map(r => ([
         r.name,
-        r.data
+        r.value
       ])));
     },
     async invokeFinalLoginApi() {
@@ -200,7 +239,7 @@ export default {
     getFinalSubmitRequirementsData() {
       return Object.fromEntries(this.requirements.filter(r => r.phase === 'afterPasswordVerified').map(r => ([
         r.name,
-        r.data
+        r.value
       ])));
     },
     redirectAfterLogin() {
@@ -214,6 +253,9 @@ export default {
       const requirement = this.requirements.find(requirement => requirement.name === requirementDone.name);
       requirement.done = true;
       requirement.value = value;
+      if (requirement.phase === 'beforeSubmit') {
+        return;
+      }
       // Avoids the need for a deep watch
       this.requirements = [ ...this.requirements ];
       const activeRequirement = this.activeRequirement;
@@ -226,6 +268,9 @@ export default {
           await this.invokeFinalLoginApi();
         }
       }
+    },
+    getPrecheck(name) {
+      return this.prechecks[name] || {};
     }
   }
 };

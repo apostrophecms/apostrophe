@@ -121,7 +121,7 @@ module.exports = {
             throw self.apos.error('forbidden', req.t('apostrophe:logOutNotLoggedIn'));
           }
           if (req.token) {
-            await self.bearerTokens.remove({
+            await self.bearerTokens.removeOne({
               userId: req.user._id,
               _id: req.token
             });
@@ -135,6 +135,27 @@ module.exports = {
             };
             await destroySession();
           }
+        },
+        // invokes the precheck function for the requirement specified by
+        // `body.name`. Invoked before displaying each `afterPasswordVerified`
+        // requirement. The return value of the precheck function is delivered
+        // as the API response
+        async precheck(req) {
+          const { token, user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+
+          const name = self.apos.launder.string(req.body.name);
+
+          const requirement = self.requirements[name];
+          if (!requirement) {
+            throw self.apos.error('notfound');
+          }
+          if (!requirement.precheck) {
+            return {};
+          }
+          return requirement.precheck(req, user);
+        },
+        async context(req) {
+          return self.getContext(req);
         },
         ...(self.options.passwordReset ? {
           async resetRequest(req) {
@@ -197,25 +218,50 @@ module.exports = {
         } : {})
       },
       get: {
-        context () {
-          let aposPackage = {};
-          try {
-            aposPackage = require('../../../package.json');
-          } catch (err) {
-            self.apos.util.error(err);
-          }
-
-          return {
-            env: process.env.NODE_ENV || 'development',
-            name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
-            version: aposPackage.version || '3'
-          };
+        // For bc this route is still available via GET, however
+        // it should be accessed via POST because the result
+        // may differ by individual user session and should not
+        // be cached
+        async context(req) {
+          return self.getContext(req);
         }
       }
     };
   },
   methods(self) {
     return {
+
+      // Implements the context route, which provides basic
+      // information about the site being logged into and also
+      // precheck data for beforeSubmit and afterSubmit requirements
+      async getContext(req) {
+        let aposPackage = {};
+        try {
+          aposPackage = require('../../../package.json');
+        } catch (err) {
+          self.apos.util.error(err);
+        }
+        // For performance beforeSubmit / afterSubmit requirement prechecks all happen together here
+        const prechecks = {};
+        for (const [ name, requirement ] of Object.entries(self.requirements)) {
+          if ((requirement.phase !== 'afterPasswordVerified') && requirement.precheck) {
+            try {
+              prechecks[name] = await requirement.precheck(req);
+            } catch (e) {
+              if (e.body && e.body.data) {
+                e.body.data.requirement = name;
+              }
+              throw e;
+            }
+          }
+        }
+        return {
+          env: process.env.NODE_ENV || 'development',
+          name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
+          version: aposPackage.version || '3',
+          prechecks
+        };
+      },
 
       // return the loginUrl option
       login(url) {
@@ -351,10 +397,13 @@ module.exports = {
           } : {}),
           requirements: Object.fromEntries(
             Object.entries(self.requirements).map(([name, requirement]) => {
-              // server-side function should not be pushed to browser
+              // server-side functions should not be pushed to browser
               const {
-                verify, ...browserRequirement
+                verify,
+                precheck,
+                ...browserRequirement
               } = requirement;
+              browserRequirement.precheckRequired = !!requirement.precheck;
               return [ name, browserRequirement ];
             })
           )
@@ -383,23 +432,7 @@ module.exports = {
         // Completing a previous incomplete login
         // (password was verified but post-password-verification
         // requirements were not supplied)
-        const token = await self.bearerTokens.findOne({
-          _id: self.apos.launder.string(req.body.incompleteToken),
-          incomplete: true,
-          expires: {
-            $gte: new Date()
-          }
-        });
-        if (!token) {
-          throw self.apos.error('notfound');
-        }
-        const user = await self.deserializeUser(token.userId);
-        if (!user) {
-          await self.bearerTokens.removeOne({
-            _id: token.userId
-          });
-          throw self.apos.error('notfound');
-        }
+        const { token, user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
         for (const [ name, requirement ] of Object.entries(lateRequirements)) {
           try {
             await requirement.verify(req, user);
@@ -411,7 +444,7 @@ module.exports = {
         }
         if (session) {
           await self.bearerTokens.removeOne({
-            _id: token.userId
+            _id: token._id
           });
           await self.passportLogin(req, user);
         } else {
@@ -425,6 +458,33 @@ module.exports = {
             token
           };
         }
+      },
+
+      // Implementation detail of the login route and the precheck mechanism for
+      // custom login requirements. Given the string `token`, returns
+      // `{ token, user }`. Throws an exception if the token is not found.
+      // `token` is sanitized before passing to mongodb.
+      async findIncompleteTokenAndUser(req, token) {
+        token = await self.bearerTokens.findOne({
+          _id: self.apos.launder.string(token),
+          incomplete: true,
+          expires: {
+            $gte: new Date()
+          }
+        });
+        if (!token) {
+          throw self.apos.error('notfound');
+        }
+        const user = await self.deserializeUser(token.userId);
+        if (!user) {
+          await self.bearerTokens.removeOne({
+            _id: token._id
+          });
+          throw self.apos.error('notfound');
+        }
+        return {
+          token, user
+        };
       },
 
       // Implementation detail of the login route. Log in the user, or if there are
@@ -453,7 +513,7 @@ module.exports = {
         }
         if (Object.keys(lateRequirements).length) {
           const token = cuid();
-          await self.bearerTokens.insert({
+          await self.bearerTokens.insertOne({
             _id: token,
             userId: user._id,
             incomplete: true,
@@ -470,7 +530,7 @@ module.exports = {
             await self.passportLogin(req, user);
           } else {
             const token = cuid();
-            await self.bearerTokens.insert({
+            await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
               expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
