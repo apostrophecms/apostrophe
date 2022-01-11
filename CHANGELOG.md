@@ -4,6 +4,7 @@
 
 ### Fixes
 
+* Fixes minor inline documentation comments.
 * UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
 
 ### Adds
