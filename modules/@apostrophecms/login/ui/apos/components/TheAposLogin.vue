@@ -19,7 +19,7 @@
                 {{ context.name }}
               </label>
               <label class="apos-login--error">
-                {{ error }}
+                {{ $t(error) }}
               </label>
             </div>
 
@@ -47,7 +47,7 @@
                   @click="submit"
                 />
               </form>
-              <Component v-if="activeRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeRequirement.name)" :is="activeRequirement.component" @done="requirementDone(activeRequirement, $event)" />
+              <Component v-if="activeSoloRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeSoloRequirement.name)" :is="activeSoloRequirement.component" @done="requirementDone(activeSoloRequirement, $event)" />
             </div>
           </div>
         </transition>
@@ -113,28 +113,34 @@ export default {
     beforeSubmitRequirements() {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
     },
-    activeRequirement() {
-      return (this.phase !== 'beforeSubmit') && this.requirements.find(requirement => (requirement.phase !== 'beforeSubmit') && !requirement.done);
+    // The currently active requirement expecting a solo presentation.
+    // That could be an afterSubmit or afterPasswordVerified requirement.
+    // beforeSubmit requirements are not presented solo.
+    activeSoloRequirement() {
+      return (this.phase !== 'beforeSubmit') &&
+        this.requirements.find(requirement =>
+          (requirement.phase !== 'beforeSubmit') && !requirement.done
+        );
     }
   },
   watch: {
-    async activeRequirement() {
-      if ((this.phase === 'afterPasswordVerified') && (this?.activeRequirement?.phase === 'afterPasswordVerified') && this.activeRequirement.propsRequired) {
+    async activeSoloRequirement(newVal) {
+      if ((this.phase === 'afterPasswordVerified') && (newVal?.phase === 'afterPasswordVerified') && newVal.propsRequired) {
         try {
           this.fetchingRequirementProps = true;
           const data = await apos.http.post(`${apos.login.action}/requirement-props`, {
             busy: true,
             body: {
-              name: this.activeRequirement.name,
+              name: newVal.name,
               incompleteToken: this.incompleteToken
             }
           });
           this.requirementProps = {
             ...this.requirementProps,
-            [this.activeRequirement.name]: data
+            [newVal.name]: data
           };
         } catch (e) {
-          this.error = e.message || 'An error occurred. Please try again.';
+          this.error = e.message || 'apostrophe:loginErrorGeneric';
         } finally {
           this.fetchingRequirementProps = false;
         }
@@ -161,7 +167,7 @@ export default {
       });
       this.requirementProps = this.context.requirementProps;
     } catch (e) {
-      this.error = e.message || 'An error occurred. Please try again.';
+      this.error = e.message || 'apostrophe:loginErrorGeneric';
     } finally {
       this.beforeCreateFinished = true;
     }
@@ -176,7 +182,6 @@ export default {
       }
       this.busy = true;
       this.error = '';
-      const activeRequirement = this.activeRequirement;
       if ((this.phase === 'beforeSubmit') && this.requirements.find(requirement => requirement.phase === 'afterSubmit')) {
         // Should be presented after the user clicks submit, but not before the
         // actual submission to the server. So we step to the next phase and wait
@@ -258,13 +263,13 @@ export default {
       }
       // Avoids the need for a deep watch
       this.requirements = [ ...this.requirements ];
-      const activeRequirement = this.activeRequirement;
+      const activeSoloRequirement = this.activeSoloRequirement;
       if (this.phase === 'afterSubmit') {
-        if (!(activeRequirement && activeRequirement.phase === 'afterSubmit')) {
+        if (!(activeSoloRequirement && activeSoloRequirement.phase === 'afterSubmit')) {
           await this.invokeInitialLoginApi();
         }
       } else {
-        if (!activeRequirement) {
+        if (!activeSoloRequirement) {
           await this.invokeFinalLoginApi();
         }
       }

@@ -235,12 +235,7 @@ module.exports = {
       // information about the site being logged into and also
       // props for beforeSubmit and afterSubmit requirements
       async getContext(req) {
-        let aposPackage = {};
-        try {
-          aposPackage = require('../../../package.json');
-        } catch (err) {
-          self.apos.util.error(err);
-        }
+        const aposPackage = require('../../../package.json');
         // For performance beforeSubmit / afterSubmit requirement props all happen together here
         const requirementProps = {};
         for (const [ name, requirement ] of Object.entries(self.requirements)) {
@@ -397,15 +392,10 @@ module.exports = {
           } : {}),
           requirements: Object.fromEntries(
             Object.entries(self.requirements).map(([ name, requirement ]) => {
-              // server-side functions should not be pushed to browser
-              const {
-                // eslint-disable-next-line no-unused-vars
-                verify,
-                // eslint-disable-next-line no-unused-vars
-                props,
-                ...browserRequirement
-              } = requirement;
-              browserRequirement.propsRequired = !!requirement.props;
+              const browserRequirement = {
+                phase: requirement.phase,
+                propsRequired: !!requirement.props
+              };
               return [ name, browserRequirement ];
             })
           )

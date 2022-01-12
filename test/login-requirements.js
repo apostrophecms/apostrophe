@@ -45,7 +45,6 @@ describe('Login', function() {
                 ExtraSecret: {
                   phase: 'afterPasswordVerified',
                   async props(req, user) {
-                    console.log('we were invoked');
                     return {
                       // Verify we had access to the user here
                       hint: user.username
@@ -107,7 +106,6 @@ describe('Login', function() {
         jar
       }
     );
-    console.log(context);
     assert(context.requirementProps);
     assert(context.requirementProps.WeakCaptcha);
     assert.strictEqual(context.requirementProps.WeakCaptcha.hint, 'xyz');
