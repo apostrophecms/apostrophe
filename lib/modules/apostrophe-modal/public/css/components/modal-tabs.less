@@ -47,8 +47,14 @@
     width: 75%;
     @media @apos-breakpoint-desktop-xl { width: 75%; }
     height: 100%;
-    overflow: auto;
     .apos-scrollbar;
+
+    &:after { 
+      content: '';
+      position: absolute;
+      height: 20px;
+      bottom: 0;
+    }
   }
 
   .apos-schema-group.apos-active
