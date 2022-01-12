@@ -8,6 +8,11 @@
 * UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
 * Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` component.
 
+### Changes
+
+* Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
+
+
 ## 3.11.0 - 2022-01-06
 
 ### Adds
