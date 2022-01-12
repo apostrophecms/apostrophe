@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` component.
+
 ## 3.11.0 - 2022-01-06
 
 ### Adds
