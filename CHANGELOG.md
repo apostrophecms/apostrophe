@@ -11,6 +11,7 @@
 ### Changes
 
 * Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
+* Removes the `@apostrophecms/util` module template helper `indexBy`, which was using a lodash method not included in lodash v4.
 
 
 ## 3.11.0 - 2022-01-06
