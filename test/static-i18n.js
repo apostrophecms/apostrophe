@@ -83,4 +83,9 @@ describe('static i18n', function() {
     assert.strictEqual(apos.task.getReq().t('custom:customTestOne'), 'Custom Test One From Subtype');
   });
 
+  it('should honor the browser: true flag in the i18n section of an index.js file', function() {
+    const browserData = apos.i18n.getBrowserData(apos.task.getReq());
+    assert.strictEqual(browserData.i18n.en.custom.customTestOne, 'Custom Test One From Subtype');
+  });
+
 });

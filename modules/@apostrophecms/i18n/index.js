@@ -373,6 +373,7 @@ module.exports = {
         self.namespaces[ns] = self.namespaces[ns] || {};
         self.namespaces[ns].browser = self.namespaces[ns].browser || (module.options.i18n && module.options.i18n.browser);
         for (const entry of module.__meta.chain) {
+          const metadata = module.__meta.i18n[entry.name] || {};
           const localizationsDir = path.join(entry.dirname, 'i18n');
           if (!self.defaultLocalizationsDirsAdded.has(localizationsDir)) {
             self.defaultLocalizationsDirsAdded.add(localizationsDir);
@@ -396,23 +397,27 @@ module.exports = {
       // name.
       addNamespacedResourcesForModule(module) {
         for (const entry of module.__meta.chain) {
+          const metadata = module.__meta.i18n[entry.name] || {};
           const localizationsDir = `${entry.dirname}/i18n`;
           if (!self.namespacedLocalizationsDirsAdded.has(localizationsDir)) {
             self.namespacedLocalizationsDirsAdded.add(localizationsDir);
             if (!fs.existsSync(localizationsDir)) {
               continue;
             }
-            for (const namespaceName of fs.readdirSync(localizationsDir)) {
-              if (namespaceName.endsWith('.json')) {
+            for (const ns of fs.readdirSync(localizationsDir)) {
+              if (ns.endsWith('.json')) {
                 // A JSON file for the default namespace, already handled
                 continue;
               }
-              const namespaceDir = path.join(localizationsDir, namespaceName);
+              self.namespaces[ns] = self.namespaces[ns] || {};
+              self.namespaces[ns].browser = self.namespaces[ns].browser
+                || (metadata[ns] && metadata[ns].browser);
+              const namespaceDir = path.join(localizationsDir, ns);
               for (const localizationFile of fs.readdirSync(namespaceDir)) {
                 const fullLocalizationFile = path.join(namespaceDir, localizationFile);
                 const data = JSON.parse(fs.readFileSync(fullLocalizationFile));
                 const locale = localizationFile.replace('.json', '');
-                self.i18next.addResourceBundle(locale, namespaceName, data, true, true);
+                self.i18next.addResourceBundle(locale, ns, data, true, true);
               }
             }
           }
