@@ -287,6 +287,8 @@ module.exports = {
         // are suitable for display in the reorganize view.
         // The only pages excluded are those with a `reorganize`
         // property explicitly set to `false`.
+        // NOTE: This query builder is deprecated and will be removed in the
+        // next major version.
         reorganize: {
           def: null,
           finalize() {

@@ -27,11 +27,14 @@ export default function() {
         return this.$refs.modals.execute(componentName, props);
       }
     },
-    template: `<component
-      ref="modals"
-      :is="apos.modal.components.the"
-      :modals="apos.modal.modals"
-    />`
+    render(h) {
+      return h(apos.modal.components.the, {
+        ref: 'modals',
+        props: {
+          modals: apos.modal.modals
+        }
+      });
+    }
   });
   apos.modal.execute = theAposModals.execute;
   apos.confirm = theAposModals.confirm;

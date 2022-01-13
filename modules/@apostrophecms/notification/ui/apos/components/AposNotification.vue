@@ -173,7 +173,7 @@ export default {
       this.job.processed = job.processed;
       this.job.percentage = job.percentage;
 
-      if (this.job.processed < this.job.total) {
+      if (this.job.processed < this.job.total && !job.ended) {
         await new Promise(resolve => {
           setTimeout(resolve, 500);
         });

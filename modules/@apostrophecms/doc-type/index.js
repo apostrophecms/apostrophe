@@ -1152,8 +1152,10 @@ module.exports = {
 
         // `.addLateCriteria({...})` provides an object to be merged directly into the final
         // criteria object that will go to MongoDB. This is to be used only
-        // in cases where MongoDB forbids the use of an operator inside
-        // `$and`, such as the `$near` operator.
+        // in cases where MongoDB forbids the use of an operator inside `$and`.
+        //
+        // TODO: Since `$near` can now be used in `$and` operators, this query
+        // builder is deprecated and should be removed in the 4.x major version.
         addLateCriteria: {
           set(c) {
             let lateCriteria = query.get('lateCriteria');
@@ -1420,7 +1422,7 @@ module.exports = {
           }
         },
 
-        // `.permission('admin')` would limit the returned docs to those for which the
+        // `.permission('edit')` would limit the returned docs to those for which the
         // user associated with the query's `req` has the named permission.
         // By default, `view` is checked for. You might want to specify
         // `edit`.
@@ -1658,7 +1660,11 @@ module.exports = {
             const _req = query.req.clone({
               mode: 'published'
             });
-            const publishedDocs = await self.find(_req)._ids(results.map(result => result._id.replace(':draft', ':published'))).project(query.get('project')).toArray();
+            const publishedDocs = await self.find(_req)
+              ._ids(results.map(result => {
+                return result._id.replace(':draft', ':published');
+              })).project(query.get('project')).toArray();
+
             for (const doc of results) {
               const publishedDoc = publishedDocs.find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
               doc._publishedDoc = publishedDoc;
@@ -2148,10 +2154,8 @@ module.exports = {
           const count = await mongo.count();
           if (query.get('perPage')) {
             const perPage = query.get('perPage');
-            let totalPages = Math.floor(count / perPage);
-            if (count % perPage) {
-              totalPages++;
-            }
+            const totalPages = Math.ceil(count / perPage);
+
             query.set('totalPages', totalPages);
           }
           return count;

@@ -14,11 +14,27 @@ const path = require('path');
 
 const apostropheI18nDebugPlugin = {
   type: 'postProcessor',
-  name: 'apostrophei18nDebugPlugin',
+  name: 'apostropheI18nDebugPlugin',
   process(value, key, options, translator) {
-    // For ease of tracking down which phrases were
-    // actually passed through i18next
-    return `🌍 ${value}`;
+    // The key is passed as an array (theoretically to include multiple keys).
+    // We confirm that and grab the primary one for comparison.
+    const l10nKey = Array.isArray(key) ? key[0] : key;
+
+    if (value === l10nKey) {
+      if (l10nKey.match(/^\S+:/)) {
+        // The l10n key does not have a value assigned (or the key is
+        // actually the same as the phrase). The key seems to have a
+        // namespace, so might be from the Apostrophe UI.
+        return `❌ ${value}`;
+      } else {
+        // The l10n key does not have a value assigned (or the key is
+        // actually the same as the phrase). It is in the default namespace.
+        return `🕳 ${value}`;
+      }
+    } else {
+      // The phrase is fully localized.
+      return `🌍 ${value}`;
+    }
   }
 };
 
@@ -74,7 +90,12 @@ module.exports = {
     if (self.show) {
       self.i18next.use(apostropheI18nDebugPlugin);
     }
-    await self.i18next.init();
+
+    const i18nextOptions = self.show ? {
+      postProcess: 'apostropheI18nDebugPlugin'
+    } : {};
+
+    await self.i18next.init(i18nextOptions);
     self.addInitialResources();
     self.enableBrowserData();
   },

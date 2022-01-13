@@ -5,8 +5,9 @@ export default function() {
   if (el) {
     return new Vue({
       el,
-      // TODO check apos.login.browser.components.theAposLogin for alternate name
-      template: '<component :is="`TheAposLogin`" />'
+      render: function (h) {
+        return h('TheAposLogin');
+      }
     });
   }
   apos.bus.$on('admin-menu-click', async (item) => {

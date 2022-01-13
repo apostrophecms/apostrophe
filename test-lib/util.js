@@ -43,12 +43,14 @@ async function create(options) {
   };
   // Automatically configure Express, but not if we're in a special
   // environment where the default apostrophe modules don't initialize
+  // TODO: Remove __testDefaults references in 4.x major version or formalize
+  // intended usage with documentation.
   if (!config.__testDefaults) {
     config.modules = config.modules || {};
     const express = config.modules['@apostrophecms/express'] || {};
     express.options = express.options || {};
-    // Allow OS to choose open port
-    express.options.port = null;
+    // Allow OS to choose open port if not explicitly set.
+    express.options.port = express.options.port || null;
     express.options.address = express.options.address || 'localhost';
     express.options.session = express.options.session || {};
     express.options.session.secret = express.options.session.secret || 'test';

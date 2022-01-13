@@ -284,6 +284,54 @@ describe('moog', function() {
       assert(myObject.fieldsGroups.basics.fields.includes('five'));
     });
 
+    it('should order fields with the last option unless the order array overrides', async function() {
+      const moog = require('../lib/moog.js')({});
+
+      moog.define('unorderedObject', {
+        cascades: [ 'fields' ],
+        fields: {
+          add: {
+            first: { type: 'string' },
+            last: {
+              type: 'string',
+              last: true
+            },
+            second: { type: 'string' },
+            third: { type: 'string' }
+          }
+        }
+      });
+
+      moog.define('orderedObject', {
+        cascades: [ 'fields' ],
+        fields: {
+          add: {
+            first: { type: 'string' },
+            last: {
+              type: 'string',
+              last: true
+            },
+            second: { type: 'string' },
+            third: { type: 'string' }
+          },
+          order: [ 'last', 'third', 'second', 'first' ]
+        }
+      });
+      const unordered = await moog.create('unorderedObject', {});
+      assert(unordered);
+      assert(Object.keys(unordered.fields)[0] === 'first');
+      assert(Object.keys(unordered.fields)[1] === 'second');
+      assert(Object.keys(unordered.fields)[2] === 'third');
+      assert(Object.keys(unordered.fields)[3] === 'last');
+
+      const ordered = await moog.create('orderedObject', {});
+      assert(ordered);
+      assert(Object.keys(ordered.fields)[0] === 'last');
+      assert(Object.keys(ordered.fields)[1] === 'third');
+      assert(Object.keys(ordered.fields)[2] === 'second');
+      assert(Object.keys(ordered.fields)[3] === 'first');
+    });
+
     // ==================================================
     // `redefine` AND `isDefined`
     // ==================================================

@@ -2,14 +2,74 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Fixes minor inline documentation comments.
+* UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
+
+### Adds
+
+* Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
+* Developers can place i18n `.json` files in suitably nmed subdirectories of the main `i18n` subdirectory of any module in order to place them in as many namespaces as desired, without the need to explicitly set the `i18n` option or its `ns` sub-option, which is now a legacy feature.
+
+## 3.11.0 - 2022-01-06
+
+### Adds
+
+* Apostrophe now extends Passport's `req.login` to emit an `afterSessionLogin` event from the `@apostrophecms:login` module, with `req` as an argument. Note that this does not occur at all for login API calls that return a bearer token rather than establishing an Express session.
+
+### Fixes
+
+* Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
+* Apostrophe now warns if a nonexistent widget type is configured for an area field, with special attention to when `-widget` has been erroneously included in the name. For backwards compatibility this is a startup warning rather than a fatal error, as sites generally did operate successfully otherwise with this type of bug present.
+
+### Changes
+
+* Unpins `vue-click-outside-element` the packaging of which has been fixed upstream.
+* Adds deprecation note to `__testDefaults` option. It is not in use, but removing would be a minor BC break we don't need to make.
+* Allows test modules to use a custom port as an option on the `@apostrophecms/express` module.
+* Removes the code base pull request template to instead inherit the organization-level template.
+* Adds `npm audit` back to the test scripts.
+
+## 3.10.0 - 2021-12-22
+
+### Fixes
+
+* `slug` type fields can now have an empty string or `null` as their `def` value without the string `'none'` populating automatically.
+* The `underline` feature works properly in tiptap toolbar configuration.
+* Required checkbox fields now properly prevent editor submission when empty.
+* Pins `vue-click-outside-element` to a version that does not attempt to use `eval` in its distribution build, which is incompatible with a strict Content Security Policy.
+
+### Adds
+
+* Adds a `last` option to fields. Setting `last: true` on a field puts that field at the end of the field's widget order. If more than one field has that option active the true last item will depend on general field registration order. If the field is ordered with the `fields.order` array or field group ordering, those specified orders will take precedence.
+
+### Changes
+
+* Adds deprecation notes to the widget class methods `getWidgetWrapperClasses` and `getWidgetClasses` from A2.
+* Adds a deprecation note to the `reorganize` query builder for the next major version.
+* Uses the runtime build of Vue. This has major performance and bundle size benefits, however it does require changes to Apostrophe admin UI apps that use a `template` property (components should require no changes, just apps require an update). These apps must now use a `render` function instead. Since custom admin UI apps are not yet a documented feature we do not regard this as a bc break.
+* Compatible with the `@apostrophecms/security-headers` module, which supports a strict `Content-Security-Policy`.
+* Adds a deprecation note to the `addLateCriteria` query builder.
+* Updates the `toCount` doc type query method to use Math.ceil rather than Math.floor plus an additional step.
+
+## 3.9.0 - 2021-12-08
+
 ### Adds
 
 * Developers can now override any Vue component of the ApostropheCMS admin UI by providing a component of the same name in the `ui/apos/components` folder of their own module. This is not always the best approach, see the documentation for details.
-* Developers can place i18n `.json` files in subdirectories of the main `i18n` subdirectory of any module in order to place them in as many namespaces as desired, without the need to explicitly set the `i18n` option or its `ns` sub-option, which is now a legacy feature.
+* When running a job, we now trigger the notification before to run the job, this way the progress notification ID is available from the job and the notification can be dismissed if needed.
+* Adds `maxUi`, `maxLabel`, `minUi`, and `minLabel` localization strings for array input and other UI.
+
 ### Fixes
 
 * Fully removes references to the A2 `self.partial` module method. It appeared only once outside of comments, but was not actually used by the UI. The `self.render` method should be used for simple template rendering.
+* Fixes string interpolation for the confirmation modal when publishing a page that has an unpublished parent page.
 * No more "cannot set headers after they are sent to the client" and "req.res.redirect not defined" messages when handling URLs with extra trailing slashes.
+* The `apos.util.runPlayers` method is not called until all of the widgets in a particular tree of areas and sub-areas have been added to the DOM. This means a parent area widget player will see the expected markup for any sub-widgets when the "Edit" button is clicked.
+* Properly activates the `apostropheI18nDebugPlugin` i18next debugging plugin when using the `APOS_SHOW_I18N` environment variable. The full set of l10n emoji indicators previously available for the UI is now available for template and server-side strings.
+* Actually registers piece types for site search unless the `searchable` option is `false`.
+* Fixes the methods required for the search `index` task.
 
 ### Changes
 

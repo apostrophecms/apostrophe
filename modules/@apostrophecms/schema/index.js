@@ -18,7 +18,7 @@ const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
 const { klona } = require('klona');
-const { stripIndent } = require('common-tags');
+const { stripIndents } = require('common-tags');
 
 module.exports = {
   options: {
@@ -74,6 +74,22 @@ module.exports = {
           return true;
         }
         return _.isEqual(one[field.name], two[field.name]);
+      },
+      validate: function (field, options, warn, fail) {
+        if (field.options && field.options.widgets) {
+          for (const name of Object.keys(field.options.widgets)) {
+            if (!self.apos.modules[`${name}-widget`]) {
+              if (name.match(/-widget$/)) {
+                warn(stripIndents`
+                  Do not include "-widget" in the name when configuring a widget in an area field.
+                  Apostrophe will automatically add "-widget" when looking for the right module.
+                `);
+              } else {
+                warn(`Nonexistent widget type name ${name} in area field.`);
+              }
+            }
+          }
+        }
       }
     });
 
@@ -142,11 +158,14 @@ module.exports = {
       // leading slash required). Otherwise, expect a object-style slug
       // (no slashes at all)
       convert: function (req, field, data, destination) {
-        const options = {};
+        const options = {
+          def: field.def
+        };
         if (field.page) {
           options.allow = '/';
         }
         destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
+
         if (field.page) {
           if (!(destination[field.name].charAt(0) === '/')) {
             destination[field.name] = '/' + destination[field.name];
@@ -1217,12 +1236,14 @@ module.exports = {
 
         // all fields in the schema will end up in this variable
         let newSchema = [];
+
         // loop over any groups and orders we want to respect
         _.each(groups, function (group) {
 
           _.each(group.fields, function (field) {
             // find the field we are ordering
             let f = _.find(schema, { name: field });
+
             if (!f) {
               // May have already been migrated due to subclasses re-grouping fields
               f = _.find(newSchema, { name: field });
@@ -1242,6 +1263,7 @@ module.exports = {
               if (fIndex !== -1) {
                 newSchema.splice(fIndex, 1);
               }
+
               newSchema.push(f);
 
               // remove the field from the old schema, if that is where we got it from
@@ -2241,7 +2263,7 @@ module.exports = {
           self.apos.util.error(format(s));
         }
         function format(s) {
-          return stripIndent`
+          return stripIndents`
             ${options.type} ${options.subtype}, ${field.type} field "${field.name}":
 
             ${s}

@@ -9,6 +9,8 @@ export default function() {
 
   return new Vue({
     el: '#apos-notification',
-    template: '<TheAposNotifications />'
+    render: function (h) {
+      return h('TheAposNotifications');
+    }
   });
 };

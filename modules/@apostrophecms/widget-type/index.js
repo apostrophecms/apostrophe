@@ -112,6 +112,7 @@
 // you are debugging a change and need to test all of the different ways a widget has
 // been used, or are wondering if you can safely remove one.
 
+const { stripIndent } = require('common-tags');
 const _ = require('lodash');
 
 module.exports = {
@@ -310,12 +311,20 @@ module.exports = {
       },
 
       // override to add CSS classes to the outer wrapper div of the widget.
+      // TODO: Remove in the 4.x major version.
       getWidgetWrapperClasses(widget) {
+        self.apos.util.warnDev(stripIndent`
+          The getWidgetWrapperClasses method is deprecated and will be removed in the next
+          major version. The method in 3.x simply returns an empty array.`);
         return [];
       },
 
       // Override to add CSS classes to the div of the widget itself.
+      // TODO: Remove in the 4.x major version.
       getWidgetClasses(widget) {
+        self.apos.util.warnDev(stripIndent`
+          The getWidgetClasses method is deprecated and will be removed in the next major
+          version. The method in 3.x simply returns an empty array.`);
         return [];
       }
     };
