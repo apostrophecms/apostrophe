@@ -141,7 +141,7 @@ module.exports = {
             throw self.apos.error('forbidden', req.t('apostrophe:logOutNotLoggedIn'));
           }
           if (req.token) {
-            await self.bearerTokens.remove({
+            await self.bearerTokens.removeOne({
               userId: req.user._id,
               _id: req.token
             });
@@ -155,6 +155,27 @@ module.exports = {
             };
             await destroySession();
           }
+        },
+        // invokes the `props(req, user)` function for the requirement specified by
+        // `body.name`. Invoked before displaying each `afterPasswordVerified`
+        // requirement. The return value of the function, which should
+        // be an object, is delivered as the API response
+        async requirementProps(req) {
+          const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+
+          const name = self.apos.launder.string(req.body.name);
+
+          const requirement = self.requirements[name];
+          if (!requirement) {
+            throw self.apos.error('notfound');
+          }
+          if (!requirement.props) {
+            return {};
+          }
+          return requirement.props(req, user);
+        },
+        async context(req) {
+          return self.getContext(req);
         },
         ...(self.options.passwordReset ? {
           async resetRequest(req) {
@@ -217,25 +238,45 @@ module.exports = {
         } : {})
       },
       get: {
-        context () {
-          let aposPackage = {};
-          try {
-            aposPackage = require('../../../package.json');
-          } catch (err) {
-            self.apos.util.error(err);
-          }
-
-          return {
-            env: process.env.NODE_ENV || 'development',
-            name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
-            version: aposPackage.version || '3'
-          };
+        // For bc this route is still available via GET, however
+        // it should be accessed via POST because the result
+        // may differ by individual user session and should not
+        // be cached
+        async context(req) {
+          return self.getContext(req);
         }
       }
     };
   },
   methods(self) {
     return {
+
+      // Implements the context route, which provides basic
+      // information about the site being logged into and also
+      // props for beforeSubmit and afterSubmit requirements
+      async getContext(req) {
+        const aposPackage = require('../../../package.json');
+        // For performance beforeSubmit / afterSubmit requirement props all happen together here
+        const requirementProps = {};
+        for (const [ name, requirement ] of Object.entries(self.requirements)) {
+          if ((requirement.phase !== 'afterPasswordVerified') && requirement.props) {
+            try {
+              requirementProps[name] = await requirement.props(req);
+            } catch (e) {
+              if (e.body && e.body.data) {
+                e.body.data.requirement = name;
+              }
+              throw e;
+            }
+          }
+        }
+        return {
+          env: process.env.NODE_ENV || 'development',
+          name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
+          version: aposPackage.version || '3',
+          requirementProps
+        };
+      },
 
       // return the loginUrl option
       login(url) {
@@ -368,7 +409,16 @@ module.exports = {
               username: req.user.username,
               email: req.user.email
             }
-          } : {})
+          } : {}),
+          requirements: Object.fromEntries(
+            Object.entries(self.requirements).map(([ name, requirement ]) => {
+              const browserRequirement = {
+                phase: requirement.phase,
+                propsRequired: !!requirement.props
+              };
+              return [ name, browserRequirement ];
+            })
+          )
         };
       },
 

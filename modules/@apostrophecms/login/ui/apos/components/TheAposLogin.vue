@@ -19,16 +19,21 @@
                 {{ context.name }}
               </label>
               <label class="apos-login--error">
-                {{ error }}
+                {{ $t(error) }}
               </label>
             </div>
 
             <div class="apos-login__body" v-show="loaded">
-              <form @submit.prevent="submit">
+              <form v-if="phase == 'beforeSubmit'" @submit.prevent="submit">
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
                 />
+                <!-- Do not ask these components to render without their props,
+                  v-show is not enough -->
+                <template v-if="loaded">
+                  <Component v-for="requirement in beforeSubmitRequirements" :key="requirement.name" :is="requirement.component" v-bind="getRequirementProps(requirement.name)" @done="requirementDone(requirement, $event)" />
+                </template>
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
@@ -42,6 +47,7 @@
                   @click="submit"
                 />
               </form>
+              <Component v-if="activeSoloRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeSoloRequirement.name)" :is="activeSoloRequirement.component" @done="requirementDone(activeSoloRequirement, $event)" />
             </div>
           </div>
         </transition>
@@ -66,7 +72,9 @@ export default {
   mixins: [ AposThemeMixin ],
   data() {
     return {
-      loaded: false,
+      phase: 'beforeSubmit',
+      mounted: false,
+      beforeCreateFinished: false,
       error: '',
       busy: false,
       doc: {
@@ -89,15 +97,59 @@ export default {
           required: true
         }
       ],
-      context: {}
+      requirements: getRequirements(),
+      context: {},
+      requirementProps: {},
+      fetchingRequirementProps: false
     };
   },
   computed: {
-    disabled: function () {
-      return this.doc.hasErrors;
+    loaded() {
+      return this.mounted && this.beforeCreateFinished;
+    },
+    disabled() {
+      return this.doc.hasErrors || !!this.beforeSubmitRequirements.find(requirement => !requirement.done);
+    },
+    beforeSubmitRequirements() {
+      return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
+    },
+    // The currently active requirement expecting a solo presentation.
+    // That could be an afterSubmit or afterPasswordVerified requirement.
+    // beforeSubmit requirements are not presented solo.
+    activeSoloRequirement() {
+      return (this.phase !== 'beforeSubmit') &&
+        this.requirements.find(requirement =>
+          (requirement.phase !== 'beforeSubmit') && !requirement.done
+        );
     }
   },
-  async beforeCreate () {
+  watch: {
+    async activeSoloRequirement(newVal) {
+      if ((this.phase === 'afterPasswordVerified') && (newVal?.phase === 'afterPasswordVerified') && newVal.propsRequired) {
+        try {
+          this.fetchingRequirementProps = true;
+          const data = await apos.http.post(`${apos.login.action}/requirement-props`, {
+            busy: true,
+            body: {
+              name: newVal.name,
+              incompleteToken: this.incompleteToken
+            }
+          });
+          this.requirementProps = {
+            ...this.requirementProps,
+            [newVal.name]: data
+          };
+        } catch (e) {
+          this.error = e.message || 'apostrophe:loginErrorGeneric';
+        } finally {
+          this.fetchingRequirementProps = false;
+        }
+      } else {
+        return null;
+      }
+    }
+  },
+  async beforeCreate() {
     const stateChange = parseInt(window.sessionStorage.getItem('aposStateChange'));
     const seen = JSON.parse(window.sessionStorage.getItem('aposStateChangeSeen') || '{}');
     if (!seen[window.location.href]) {
@@ -110,15 +162,18 @@ export default {
       }
     }
     try {
-      this.context = await apos.http.get(`${apos.login.action}/context`, {
+      this.context = await apos.http.post(`${apos.login.action}/context`, {
         busy: true
       });
+      this.requirementProps = this.context.requirementProps;
     } catch (e) {
-      this.error = 'An error occurred. Please try again.';
+      this.error = e.message || 'apostrophe:loginErrorGeneric';
+    } finally {
+      this.beforeCreateFinished = true;
     }
   },
   mounted() {
-    this.loaded = true;
+    this.mounted = true;
   },
   methods: {
     async submit() {
@@ -127,27 +182,120 @@ export default {
       }
       this.busy = true;
       this.error = '';
+      if ((this.phase === 'beforeSubmit') && this.requirements.find(requirement => requirement.phase === 'afterSubmit')) {
+        // Should be presented after the user clicks submit, but not before the
+        // actual submission to the server. So we step to the next phase and wait
+        // for the user to interact with it before POSTing
+        this.phase = 'afterSubmit';
+        return;
+      }
+      await this.invokeInitialLoginApi();
+    },
+    async invokeInitialLoginApi() {
+      try {
+        const response = await apos.http.post(`${apos.login.action}/login`, {
+          busy: true,
+          body: {
+            ...this.doc.data,
+            requirements: this.getInitialSubmitRequirementsData(),
+            session: true
+          }
+        });
+        if (response && response.incompleteToken) {
+          this.incompleteToken = response.incompleteToken;
+          this.phase = 'afterPasswordVerified';
+        } else {
+          this.redirectAfterLogin();
+        }
+      } catch (e) {
+        this.error = e.message || 'An error occurred. Please try again.';
+        this.phase = 'beforeSubmit';
+        this.requirements = getRequirements();
+      } finally {
+        this.busy = false;
+      }      
+    },
+    getInitialSubmitRequirementsData() {
+      return Object.fromEntries(this.requirements.filter(r => r.phase !== 'afterPasswordVerified').map(r => ([
+        r.name,
+        r.value
+      ])));
+    },
+    async invokeFinalLoginApi() {
       try {
         await apos.http.post(`${apos.login.action}/login`, {
           busy: true,
           body: {
             ...this.doc.data,
+            incompleteToken: this.incompleteToken,
+            requirements: this.getFinalSubmitRequirementsData(),
             session: true
           }
         });
-        window.sessionStorage.setItem('aposStateChange', Date.now());
-        window.sessionStorage.setItem('aposStateChangeSeen', '{}');
-        // TODO handle situation where user should be sent somewhere other than homepage.
-        // Redisplay homepage with editing interface
-        location.assign(`${apos.prefix}/`);
+        this.redirectAfterLogin();
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
+        this.requirements = getRequirements();
+        this.phase = 'beforeSubmit';
       } finally {
         this.busy = false;
       }
+    },
+    getFinalSubmitRequirementsData() {
+      return Object.fromEntries(this.requirements.filter(r => r.phase === 'afterPasswordVerified').map(r => ([
+        r.name,
+        r.value
+      ])));
+    },
+    redirectAfterLogin() {
+      window.sessionStorage.setItem('aposStateChange', Date.now());
+      window.sessionStorage.setItem('aposStateChangeSeen', '{}');
+      // TODO handle situation where user should be sent somewhere other than homepage.
+      // Redisplay homepage with editing interface
+      location.assign(`${apos.prefix}/`);
+    },
+    async requirementDone(requirementDone, value) {
+      const requirement = this.requirements.find(requirement => requirement.name === requirementDone.name);
+      requirement.done = true;
+      requirement.value = value;
+      if (requirement.phase === 'beforeSubmit') {
+        return;
+      }
+      // Avoids the need for a deep watch
+      this.requirements = [ ...this.requirements ];
+      const activeSoloRequirement = this.activeSoloRequirement;
+      if (this.phase === 'afterSubmit') {
+        if (!(activeSoloRequirement && activeSoloRequirement.phase === 'afterSubmit')) {
+          await this.invokeInitialLoginApi();
+        }
+      } else {
+        if (!activeSoloRequirement) {
+          await this.invokeFinalLoginApi();
+        }
+      }
+    },
+    getRequirementProps(name) {
+      return this.requirementProps[name] || {};
     }
   }
 };
+
+function getRequirements() {
+  const requirements = Object.entries(apos.login.requirements).map(([ name, requirement ]) => {
+    return {
+      name,
+      component: requirement.component || name,
+      ...requirement,
+      done: false,
+      value: null,
+    };
+  });
+  return [
+    ...requirements.filter(r => r.phase === 'beforeSubmit'),
+    ...requirements.filter(r => r.phase === 'afterSubmit'),
+    ...requirements.filter(r => r.phase === 'afterPasswordVerified')
+  ];
+}
 </script>
 
 <style lang="scss">
