@@ -307,7 +307,13 @@ module.exports = {
           // "expires" ourselves too
           const bearer = await self.apos.login.bearerTokens.findOne({
             _id: req.token,
-            expires: { $gte: new Date() }
+            expires: { $gte: new Date() },
+            incomplete: {
+              // Incomplete tokens are for situations where a password
+              // should be verified before other requirements can be considered,
+              // the user is not considered logged in
+              $ne: true
+            }
           });
           return bearer && bearer.userId;
         }
