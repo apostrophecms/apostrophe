@@ -566,7 +566,7 @@ module.exports = {
       },
       //
       // Update a piece. Convenience wrapper for `apos.doc.insert`.
-      // Returns the piece. `beforeInsert`, `beforeSave`, `afterInsert`
+      // Returns the piece. `beforeUpdate`, `beforeSave`, `afterUpdate`
       // and `afterSave` async events are emitted by this module.
       async update(req, piece, options) {
         return self.apos.doc.update(req, piece, options);

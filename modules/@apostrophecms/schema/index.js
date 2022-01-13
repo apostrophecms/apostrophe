@@ -18,7 +18,7 @@ const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
 const { klona } = require('klona');
-const { stripIndent } = require('common-tags');
+const { stripIndents } = require('common-tags');
 
 module.exports = {
   options: {
@@ -74,6 +74,22 @@ module.exports = {
           return true;
         }
         return _.isEqual(one[field.name], two[field.name]);
+      },
+      validate: function (field, options, warn, fail) {
+        if (field.options && field.options.widgets) {
+          for (const name of Object.keys(field.options.widgets)) {
+            if (!self.apos.modules[`${name}-widget`]) {
+              if (name.match(/-widget$/)) {
+                warn(stripIndents`
+                  Do not include "-widget" in the name when configuring a widget in an area field.
+                  Apostrophe will automatically add "-widget" when looking for the right module.
+                `);
+              } else {
+                warn(`Nonexistent widget type name ${name} in area field.`);
+              }
+            }
+          }
+        }
       }
     });
 
@@ -2247,7 +2263,7 @@ module.exports = {
           self.apos.util.error(format(s));
         }
         function format(s) {
-          return stripIndent`
+          return stripIndents`
             ${options.type} ${options.subtype}, ${field.type} field "${field.name}":
 
             ${s}

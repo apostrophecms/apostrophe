@@ -4,11 +4,14 @@
 
 ### Fixes
 
+* Fixes minor inline documentation comments.
 * UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
+* Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` component.
 
-### Adds
+### Changes
 
-* Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
+* Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
+
 
 ## 3.11.0 - 2022-01-06
 
@@ -19,6 +22,7 @@
 ### Fixes
 
 * Apostrophe's extension of `req.login` now accounts for the `req.logIn` alias and the skippable `options` parameter, which is relied upon in some `passport` strategies.
+* Apostrophe now warns if a nonexistent widget type is configured for an area field, with special attention to when `-widget` has been erroneously included in the name. For backwards compatibility this is a startup warning rather than a fatal error, as sites generally did operate successfully otherwise with this type of bug present.
 
 ### Changes
 

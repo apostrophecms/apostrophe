@@ -44,7 +44,6 @@ const Promise = require('bluebird');
 const cuid = require('cuid');
 
 module.exports = {
-  cascades: [ 'requirements' ],
   options: {
     alias: 'login',
     localLogin: true,
@@ -107,13 +106,34 @@ module.exports = {
     return {
       post: {
         async login(req) {
-          // Don't make verify functions worry about whether this object
-          // is present, just the value of their own sub-property
-          req.body.requirements = req.body.requirements || {};
-          if (req.body.incompleteToken) {
-            return self.finalizeIncompleteLogin(req);
+          const username = self.apos.launder.string(req.body.username);
+          const password = self.apos.launder.string(req.body.password);
+          const session = self.apos.launder.boolean(req.body.session);
+          if (!(username && password)) {
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
+          }
+          const user = await self.apos.login.verifyLogin(username, password);
+          if (!user) {
+            // For security reasons we may not tell the user which case applies
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
+          }
+          if (session) {
+            const passportLogin = (user) => {
+              return require('util').promisify(function(user, callback) {
+                return req.login(user, callback);
+              })(user);
+            };
+            await passportLogin(user);
           } else {
-            return self.initialLogin(req);
+            const token = cuid();
+            await self.bearerTokens.insert({
+              _id: token,
+              userId: user._id,
+              expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
+            });
+            return {
+              token
+            };
           }
         },
         async logout(req) {
@@ -414,142 +434,6 @@ module.exports = {
       async enableBearerTokens() {
         self.bearerTokens = self.apos.db.collection('aposBearerTokens');
         await self.bearerTokens.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
-      },
-
-      // Finalize an incomplete login based on the provided incompleteToken
-      // and various `requirements` subproperties. Implementation detail of the login route
-      async finalizeIncompleteLogin(req) {
-        const { lateRequirements } = self.filterRequirements();
-        const session = self.apos.launder.boolean(req.body.session);
-        // Completing a previous incomplete login
-        // (password was verified but post-password-verification
-        // requirements were not supplied)
-        const { token, user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
-        for (const [ name, requirement ] of Object.entries(lateRequirements)) {
-          try {
-            await requirement.verify(req, user);
-          } catch (e) {
-            e.data = e.data || {};
-            e.data.requirement = name;
-            throw e;
-          }
-        }
-        if (session) {
-          await self.bearerTokens.removeOne({
-            _id: token._id
-          });
-          await self.passportLogin(req, user);
-        } else {
-          delete token.incomplete;
-          self.bearerTokens.updateOne(token, {
-            $unset: {
-              incomplete: 1
-            }
-          });
-          return {
-            token
-          };
-        }
-      },
-
-      // Implementation detail of the login route and the requirementProps mechanism for
-      // custom login requirements. Given the string `token`, returns
-      // `{ token, user }`. Throws an exception if the token is not found.
-      // `token` is sanitized before passing to mongodb.
-      async findIncompleteTokenAndUser(req, token) {
-        token = await self.bearerTokens.findOne({
-          _id: self.apos.launder.string(token),
-          incomplete: true,
-          expires: {
-            $gte: new Date()
-          }
-        });
-        if (!token) {
-          throw self.apos.error('notfound');
-        }
-        const user = await self.deserializeUser(token.userId);
-        if (!user) {
-          await self.bearerTokens.removeOne({
-            _id: token._id
-          });
-          throw self.apos.error('notfound');
-        }
-        return {
-          token,
-          user
-        };
-      },
-
-      // Implementation detail of the login route. Log in the user, or if there are
-      // `requirements` that require password verification occur first, return an incomplete token.
-      async initialLogin(req) {
-        // Initial login step
-        const username = self.apos.launder.string(req.body.username);
-        const password = self.apos.launder.string(req.body.password);
-        if (!(username && password)) {
-          throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
-        }
-        const { earlyRequirements, lateRequirements } = self.filterRequirements();
-        for (const [ name, requirement ] of Object.entries(earlyRequirements)) {
-          try {
-            await requirement.verify(req);
-          } catch (e) {
-            e.data = e.data || {};
-            e.data.requirement = name;
-            throw e;
-          }
-        }
-        const user = await self.apos.login.verifyLogin(username, password);
-        if (!user) {
-          // For security reasons we may not tell the user which case applies
-          throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
-        }
-        if (Object.keys(lateRequirements).length) {
-          const token = cuid();
-          await self.bearerTokens.insertOne({
-            _id: token,
-            userId: user._id,
-            incomplete: true,
-            // Default lifetime of 1 hour is generous to permit situations like
-            // installing a TOTP app for the first time
-            expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
-          });
-          return {
-            incompleteToken: token
-          };
-        } else {
-          const session = self.apos.launder.boolean(req.body.session);
-          if (session) {
-            await self.passportLogin(req, user);
-          } else {
-            const token = cuid();
-            await self.bearerTokens.insertOne({
-              _id: token,
-              userId: user._id,
-              expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
-            });
-            return {
-              token
-            };
-          }
-        }
-      },
-
-      filterRequirements() {
-        return {
-          earlyRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase !== 'afterPasswordVerified')),
-          lateRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'afterPasswordVerified'))
-        };
-      },
-
-      // Awaitable wrapper for req.login. An implementation detail of the login route
-      async passportLogin(req, user) {
-        const passportLogin = (user) => {
-          return require('util').promisify(function(user, callback) {
-            return req.login(user, callback);
-          })(user);
-        };
-        await passportLogin(user);
       }
     };
   },
