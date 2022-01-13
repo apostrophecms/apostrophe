@@ -6,11 +6,12 @@
 
 * Fixes minor inline documentation comments.
 * UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
+* Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` component.
+* It is now best practice to deliver namespaced i18n strings as JSON files in module-level subdirectories of `i18n/` named to match the namespace, e.g. `i18n/ourTeam` if the namespace is `ourTeam`. This allows base class modules to deliver phrases to any namespace without conflicting with those introduced at project level. The `i18n` option is now deprecated in favor of the new `i18n` module format section, which is only needed if `browser: true` must be specified for a namespace.
 
-### Adds
+### Changes
 
-* Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
-* Developers can place i18n `.json` files in suitably nmed subdirectories of the main `i18n` subdirectory of any module in order to place them in as many namespaces as desired, without the need to explicitly set the `i18n` option or its `ns` sub-option, which is now a legacy feature.
+* Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
 
 ## 3.11.0 - 2022-01-06
 

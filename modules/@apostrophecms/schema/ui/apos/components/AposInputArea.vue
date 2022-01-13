@@ -39,11 +39,7 @@ export default {
   mixins: [ AposInputMixin ],
   data () {
     return {
-      next: this.value.data || {
-        metaType: 'area',
-        _id: cuid(),
-        items: []
-      },
+      next: this.value.data || this.getEmptyValue(),
       error: false,
       // This is just meant to be sufficient to prevent unintended collisions
       // in the UI between id attributes
@@ -66,6 +62,17 @@ export default {
     }
   },
   methods: {
+    getEmptyValue() {
+      return {
+        metaType: 'area',
+        _id: cuid(),
+        items: []
+      };
+    },
+    watchValue () {
+      this.error = this.value.error;
+      this.next = this.value.data || this.getEmptyValue();
+    },
     validate(value) {
       if (this.field.required) {
         if (!value.items.length) {
