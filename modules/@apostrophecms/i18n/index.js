@@ -394,7 +394,6 @@ module.exports = {
         self.namespaces[ns] = self.namespaces[ns] || {};
         self.namespaces[ns].browser = self.namespaces[ns].browser || (module.options.i18n && module.options.i18n.browser);
         for (const entry of module.__meta.chain) {
-          const metadata = module.__meta.i18n[entry.name] || {};
           const localizationsDir = path.join(entry.dirname, 'i18n');
           if (!self.defaultLocalizationsDirsAdded.has(localizationsDir)) {
             self.defaultLocalizationsDirsAdded.add(localizationsDir);
@@ -431,8 +430,8 @@ module.exports = {
                 continue;
               }
               self.namespaces[ns] = self.namespaces[ns] || {};
-              self.namespaces[ns].browser = self.namespaces[ns].browser
-                || (metadata[ns] && metadata[ns].browser);
+              self.namespaces[ns].browser = self.namespaces[ns].browser ||
+                (metadata[ns] && metadata[ns].browser);
               const namespaceDir = path.join(localizationsDir, ns);
               for (const localizationFile of fs.readdirSync(namespaceDir)) {
                 const fullLocalizationFile = path.join(namespaceDir, localizationFile);
