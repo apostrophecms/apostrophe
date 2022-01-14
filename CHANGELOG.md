@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* It is now best practice to deliver namespaced i18n strings as JSON files in module-level subdirectories of `i18n/` named to match the namespace, e.g. `i18n/ourTeam` if the namespace is `ourTeam`. This allows base class modules to deliver phrases to any namespace without conflicting with those introduced at project level. The `i18n` option is now deprecated in favor of the new `i18n` module format section, which is only needed if `browser: true` must be specified for a namespace.
+
 ### Fixes
 
 * Fixes minor inline documentation comments.
@@ -12,7 +16,7 @@
 ### Changes
 
 * Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
-
+* Removes the `@apostrophecms/util` module template helper `indexBy`, which was using a lodash method not included in lodash v4.
 
 ## 3.11.0 - 2022-01-06
 

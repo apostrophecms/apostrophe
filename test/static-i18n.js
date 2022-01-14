@@ -33,9 +33,19 @@ describe('static i18n', function() {
         'apos-fr': {
           options: {
             i18n: {
+              // Legacy technique must work
               ns: 'apostrophe'
             }
           }
+        },
+        // A base class that contributes some namespaced phrases in the new style way (subdirs)
+        'base-type': {
+          instantiate: false
+        },
+        // Also contributes namespaced phrases in the new style way (subdirs)
+        // plus default locale phrases in the root i18n folder
+        subtype: {
+          extend: 'base-type'
         }
       }
     });
@@ -58,6 +68,24 @@ describe('static i18n', function() {
   it('should merge translations in different languages of the same phrases from @apostrophecms/i18n and a different module', function() {
     // je suis désolé re: Google Translate-powered French test, feel free to PR better example
     assert.strictEqual(apos.task.getReq({ locale: 'fr' }).t('apostrophe:richTextAlignCenter'), 'Aligner Le Centre');
+  });
+
+  it('should fetch default locale phrases from main i18n dir with no i18n option necessary', function() {
+    assert.strictEqual(apos.task.getReq().t('defaultTestOne'), 'Default Test One');
+  });
+
+  it('should fetch custom locale phrases from corresponding subdir', function() {
+    assert.strictEqual(apos.task.getReq().t('custom:customTestTwo'), 'Custom Test Two From Base Type');
+    assert.strictEqual(apos.task.getReq().t('custom:customTestThree'), 'Custom Test Three From Subtype');
+  });
+
+  it('last appearance in inheritance + configuration order wins', function() {
+    assert.strictEqual(apos.task.getReq().t('custom:customTestOne'), 'Custom Test One From Subtype');
+  });
+
+  it('should honor the browser: true flag in the i18n section of an index.js file', function() {
+    const browserData = apos.i18n.getBrowserData(apos.task.getReq());
+    assert.strictEqual(browserData.i18n.en.custom.customTestOne, 'Custom Test One From Subtype');
   });
 
 });
