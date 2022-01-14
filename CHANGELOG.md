@@ -7,6 +7,7 @@
 * Fixes minor inline documentation comments.
 * UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
 * Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` component.
+* Removes an unimplemented `csrfExceptions` module section cascade. Use the `csrfExceptions` *option* of any module to set an array of URLs excluded from CSRF protection. More information is forthcoming in the documentation.
 
 ### Changes
 
