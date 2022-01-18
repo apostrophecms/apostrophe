@@ -422,8 +422,13 @@ module.exports = async function(options) {
       localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
       sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'middleware', 'customTags', 'components', 'tasks' ],
-      unparsedSections: [ 'queries', 'extendQueries', 'icons' ],
-      nestedModuleSubdirs: self.options.nestedModuleSubdirs
+      nestedModuleSubdirs: self.options.nestedModuleSubdirs,
+      unparsedSections: [
+        'queries',
+        'extendQueries',
+        'icons',
+        'i18n'
+      ]
     });
 
     self.synth = synth;
