@@ -12,6 +12,9 @@
 
 * Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
 
+### Adds
+
+* Brought back the `nestedModuleSubdirs` feature from A2, which allows modules to be nested in subdirectories if `nestedModuleSubdirs: true` is set in `app.js`. As in A2, module configuration (including activation) can also be grouped in a `modules.js` file in such subdirectories.
 
 ## 3.11.0 - 2022-01-06
 
