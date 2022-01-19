@@ -29,8 +29,6 @@ const _ = require('lodash');
 
 module.exports = {
 
-  cascades: [ 'csrfExceptions' ],
-
   init(self) {
     self.apos = self.options.apos;
     const capturedSections = [
