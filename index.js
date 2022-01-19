@@ -7,6 +7,7 @@ const cluster = require('cluster');
 const { cpus } = require('os');
 const process = require('process');
 const npmResolve = require('resolve');
+const glob = require('glob');
 
 let defaults = require('./defaults.js');
 
@@ -273,6 +274,33 @@ module.exports = async function(options) {
     return _module;
   }
 
+  function nestedModuleSubdirs() {
+    if (!options.nestedModuleSubdirs) {
+      return;
+    }
+    const configs = glob.sync(self.localModules + '/**/modules.js');
+    _.each(configs, function(config) {
+      try {
+        _.merge(self.options.modules, require(config));
+      } catch (e) {
+        console.error(stripIndent`
+          When nestedModuleSubdirs is active, any modules.js file beneath:
+
+          ${self.localModules}
+
+          must export an object containing configuration for Apostrophe modules.
+          
+          The file:
+          
+          ${config}
+          
+          did not parse.
+        `);
+        throw e;
+      }
+    });
+  }
+
   function autodetectBundles() {
     const modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
@@ -406,7 +434,13 @@ module.exports = async function(options) {
       localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
       sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'middleware', 'customTags', 'components', 'tasks' ],
-      unparsedSections: [ 'queries', 'extendQueries', 'icons' ]
+      nestedModuleSubdirs: self.options.nestedModuleSubdirs,
+      unparsedSections: [
+        'queries',
+        'extendQueries',
+        'icons',
+        'i18n'
+      ]
     });
 
     self.synth = synth;
@@ -416,6 +450,8 @@ module.exports = async function(options) {
     self.define = self.synth.define;
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
+
+    nestedModuleSubdirs();
 
     _.each(self.options.modules, function(options, name) {
       synth.define(name, options);

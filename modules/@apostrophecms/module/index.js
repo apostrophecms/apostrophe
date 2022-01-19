@@ -29,10 +29,20 @@ const _ = require('lodash');
 
 module.exports = {
 
-  cascades: [ 'csrfExceptions' ],
-
   init(self) {
     self.apos = self.options.apos;
+    const capturedSections = [
+      'queries',
+      'extendQueries',
+      'icons'
+    ];
+    for (const section of capturedSections) {
+      // Unparsed sections are now captured in __meta, promote
+      // these to the top level to maintain bc. For new unparsed
+      // sections we'll leave them in `__meta` to avoid bc breaks
+      // with project-level properties of the module
+      self[section] = self.__meta[section];
+    }
     // all apostrophe modules are properties of self.apos.modules.
     // Those with an alias are also properties of self.apos
     self.apos.modules[self.__meta.name] = self;

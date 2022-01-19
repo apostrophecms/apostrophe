@@ -63,7 +63,7 @@ module.exports = {
         const doc = (docOrType && docOrType._id) ? docOrType : null;
         const manager = type && self.apos.doc.getManager(type);
         if (type && !manager) {
-          self.apos.util.warn(`A permission.can() call was made with a type that has no manager: ${type}`);
+          self.apos.util.warn('A permission.can() call was made with a type that has no manager:', type);
           return false;
         }
         if (action === 'view') {

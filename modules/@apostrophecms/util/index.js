@@ -936,15 +936,6 @@ module.exports = {
         });
       },
 
-      // If propertyName is _id, then the keys in the returned
-      // object will be the ids of each object in arr,
-      // and the values will be the corresponding objects.
-      // You may index by any property name.
-
-      indexBy: function(arr, propertyName) {
-        return _.indexBy(arr, propertyName);
-      },
-
       // Find all the array elements, if any, that have the specified value for
       // the specified property.
 
@@ -1061,11 +1052,14 @@ module.exports = {
 
         function groupByArray(items, arrayName) {
           const results = {};
+          // looping over each item in the original array
           _.each(items, function(item) {
+            // looping over each item in the array within the top level item
             _.each(item[arrayName] || [], function(inner) {
               if (!results[inner]) {
                 results[inner] = [];
               }
+              // grouping top level items on the sub properties
               results[inner].push(item);
             });
           });
