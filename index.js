@@ -283,7 +283,19 @@ module.exports = async function(options) {
       try {
         _.merge(self.options.modules, require(config));
       } catch (e) {
-        console.error('When nestedModuleSubdirs is active, any modules.js file beneath ' + self.moogOptions.localModules + '\nmust export an object containing configuration for Apostrophe modules.\nThe file ' + config + ' did not parse.');
+        console.error(stripIndent`
+          When nestedModuleSubdirs is active, any modules.js file beneath:
+
+          ${self.localModules}
+
+          must export an object containing configuration for Apostrophe modules.
+          
+          The file:
+          
+          ${config}
+          
+          did not parse.
+        `);
         throw e;
       }
     });
