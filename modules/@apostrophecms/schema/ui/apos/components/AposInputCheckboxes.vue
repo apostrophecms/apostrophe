@@ -32,6 +32,10 @@ export default {
     getChoiceId(uid, value) {
       return uid + value.replace(/\s/g, '');
     },
+    watchValue () {
+      this.error = this.value.error;
+      this.next = this.value.data || [];
+    },
     validate(values) {
       // The choices and values should always be arrays.
       if (!Array.isArray(this.field.choices) || !Array.isArray(values)) {
