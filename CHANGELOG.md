@@ -1,10 +1,11 @@
 # Changelog
 
-## UNRELEASED
+## 3.12.0 - 2022-01-20
 
 ### Adds
 
 * It is now best practice to deliver namespaced i18n strings as JSON files in module-level subdirectories of `i18n/` named to match the namespace, e.g. `i18n/ourTeam` if the namespace is `ourTeam`. This allows base class modules to deliver phrases to any namespace without conflicting with those introduced at project level. The `i18n` option is now deprecated in favor of the new `i18n` module format section, which is only needed if `browser: true` must be specified for a namespace.
+* Brought back the `nestedModuleSubdirs` feature from A2, which allows modules to be nested in subdirectories if `nestedModuleSubdirs: true` is set in `app.js`. As in A2, module configuration (including activation) can also be grouped in a `modules.js` file in such subdirectories.
 
 ### Fixes
 
@@ -19,10 +20,6 @@
 ### Changes
 
 * Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
-
-### Adds
-
-* Brought back the `nestedModuleSubdirs` feature from A2, which allows modules to be nested in subdirectories if `nestedModuleSubdirs: true` is set in `app.js`. As in A2, module configuration (including activation) can also be grouped in a `modules.js` file in such subdirectories.
 
 ## 3.11.0 - 2022-01-06
 
