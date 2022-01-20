@@ -32,7 +32,11 @@
                 <!-- Do not ask these components to render without their props,
                   v-show is not enough -->
                 <template v-if="loaded">
-                  <Component v-for="requirement in beforeSubmitRequirements" :key="requirement.name" :is="requirement.component" v-bind="getRequirementProps(requirement.name)" @done="requirementDone(requirement, $event)" />
+                  <Component
+                    v-for="requirement in beforeSubmitRequirements" :key="requirement.name"
+                    :is="requirement.component" v-bind="getRequirementProps(requirement.name)"
+                    @done="requirementDone(requirement, $event)"
+                  />
                 </template>
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
@@ -47,7 +51,10 @@
                   @click="submit"
                 />
               </form>
-              <Component v-if="activeSoloRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeSoloRequirement.name)" :is="activeSoloRequirement.component" @done="requirementDone(activeSoloRequirement, $event)" />
+              <Component
+                v-if="activeSoloRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeSoloRequirement.name)"
+                :is="activeSoloRequirement.component" @done="requirementDone(activeSoloRequirement, $event)"
+              />
             </div>
           </div>
         </transition>
@@ -213,7 +220,7 @@ export default {
         this.requirements = getRequirements();
       } finally {
         this.busy = false;
-      }      
+      }
     },
     getInitialSubmitRequirementsData() {
       return Object.fromEntries(this.requirements.filter(r => r.phase !== 'afterPasswordVerified').map(r => ([
@@ -287,7 +294,7 @@ function getRequirements() {
       component: requirement.component || name,
       ...requirement,
       done: false,
-      value: null,
+      value: null
     };
   });
   return [

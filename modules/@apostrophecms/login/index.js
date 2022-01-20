@@ -141,7 +141,6 @@ module.exports = {
         // requirement. The return value of the function, which should
         // be an object, is delivered as the API response
         async requirementProps(req) {
-          console.info('🇨🇰 REQUIREMENT PROPS');
           const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
 
           const name = self.apos.launder.string(req.body.name);
