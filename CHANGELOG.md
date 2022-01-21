@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Decodes the testReq `param` property in `serveNotFound`. This fixes a problem where page titles using diacritics triggered false 404 errors.
+
 ## 3.12.0 - 2022-01-21
 
 ### Adds

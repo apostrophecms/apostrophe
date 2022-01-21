@@ -1430,8 +1430,8 @@ database.`);
       },
       // If the page will 404 according to the `isFound` method, this
       // method will emit a `notFound` event giving all modules a chance
-      // to intercept the request. If none intercept it, the standard 404 behavior
-      // is set up.
+      // to intercept the request. If none intercept it, the standard 404
+      // behavior is set up.
       async serveNotFound(req) {
         if (self.isFound(req)) {
           return;
