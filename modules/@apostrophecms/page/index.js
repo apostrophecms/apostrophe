@@ -1446,7 +1446,7 @@ database.`);
               // Simulate what this looks like when the serve page route starts.
               // This is an object, not an array
               params: {
-                0: req.path
+                0: decodeURIComponent(req.path)
               },
               query: req.query,
               mode: 'draft',
