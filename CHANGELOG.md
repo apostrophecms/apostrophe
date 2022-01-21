@@ -1,16 +1,23 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
+
+### Adds
+
+* Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
+
+## 3.12.0 - 2022-01-21
 
 ### Adds
 
 * It is now best practice to deliver namespaced i18n strings as JSON files in module-level subdirectories of `i18n/` named to match the namespace, e.g. `i18n/ourTeam` if the namespace is `ourTeam`. This allows base class modules to deliver phrases to any namespace without conflicting with those introduced at project level. The `i18n` option is now deprecated in favor of the new `i18n` module format section, which is only needed if `browser: true` must be specified for a namespace.
+* Brought back the `nestedModuleSubdirs` feature from A2, which allows modules to be nested in subdirectories if `nestedModuleSubdirs: true` is set in `app.js`. As in A2, module configuration (including activation) can also be grouped in a `modules.js` file in such subdirectories.
 
 ### Fixes
 
 * Fixes minor inline documentation comments.
 * UI strings that are not registered localization keys will now display properly when they contain a colon (`:`). These were previously interpreted as i18next namespace/key pairs and the "namespace" portion was left out.
-* Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` component.
+* Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas and checkboxes now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` or `AposInputCheckboxes` component.
 * It is now best practice to deliver namespaced i18n strings as JSON files in module-level subdirectories of `i18n/` named to match the namespace, e.g. `i18n/ourTeam` if the namespace is `ourTeam`. This allows base class modules to deliver phrases to any namespace without conflicting with those introduced at project level. The `i18n` option is now deprecated in favor of the new `i18n` module format section, which is only needed if `browser: true` must be specified for a namespace.
 * Removes the `@apostrophecms/util` module template helper `indexBy`, which was using a lodash method not included in lodash v4.
 * Removes an unimplemented `csrfExceptions` module section cascade. Use the `csrfExceptions` *option* of any module to set an array of URLs excluded from CSRF protection. More information is forthcoming in the documentation.
@@ -19,14 +26,6 @@
 ### Changes
 
 * Temporarily removes `npm audit` from our automated tests because of a sub-dependency of vue-loader that doesn't actually cause a security vulnerability for apostrophe.
-
-### Adds
-
-* Brought back the `nestedModuleSubdirs` feature from A2, which allows modules to be nested in subdirectories if `nestedModuleSubdirs: true` is set in `app.js`. As in A2, module configuration (including activation) can also be grouped in a `modules.js` file in such subdirectories.
-
-### Adds
-
-* Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
 
 ## 3.11.0 - 2022-01-06
 
