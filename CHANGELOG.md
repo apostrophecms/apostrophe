@@ -1,11 +1,12 @@
 # Changelog
 
-## 2.220.8 (2022-01-20)
+## Unreleased
 
 ## Fixes
 
 * Fixes overflowing issue in the editor modals when adding multiple options to an area. This used to cause a scroll to appear and the user had to scroll to see all the options.
 * In the editor modal if there was an area with multiple items added (enough to make the page scrollable) when the user wanted to add another item another scroll bar would appear besides the already existing one and the user had to scroll to see all the options.
+* Fixes i18n processing of a login throttling error message.
 
 ## 2.220.7 (2021-10-13)
 
