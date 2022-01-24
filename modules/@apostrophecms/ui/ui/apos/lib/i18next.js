@@ -25,13 +25,14 @@ export default {
         escapeValue: false
       },
       appendNamespaceToMissingKey: true,
+      defaultNS: [ apos.i18n.defaultNamespace ],
       parseMissingKeyHandler (key) {
         // We include namespaces with unrecognized l10n keys using
         // `appendNamespaceToMissingKey: true`. This passes strings containing
         // colons that were never meant to be localized through to the UI.
         //
         // Strings that do not include colons ("Content area") are given the
-        // default namespace by i18next ("translation," by default). Here we
+        // default namespace by i18next ("default," in Apostrophe). Here we
         // check if the key starts with that default namespace, meaning it
         // belongs to no other registered namespace, then remove that default
         // namespace before passing this through to be processed and displayed.
