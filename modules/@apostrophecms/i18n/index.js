@@ -47,6 +47,7 @@ module.exports = {
     }
   },
   async init(self) {
+    self.defaultNamespace = 'default';
     self.namespaces = {};
     self.debug = process.env.APOS_DEBUG_I18N ? true : self.options.debug;
     self.show = process.env.APOS_SHOW_I18N ? true : self.options.show;
@@ -84,7 +85,7 @@ module.exports = {
         // Nunjucks and Vue will already do this
         escapeValue: false
       },
-      defaultNS: 'default',
+      defaultNS: self.defaultNamespace,
       debug: self.debug
     });
     if (self.show) {
@@ -540,6 +541,7 @@ module.exports = {
           i18n,
           locale: req.locale,
           defaultLocale: self.defaultLocale,
+          defaultNamespace: self.defaultNamespace,
           locales: self.locales,
           debug: self.debug,
           show: self.show,

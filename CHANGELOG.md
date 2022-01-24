@@ -6,6 +6,10 @@
 
 * Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
 
+### Fixes
+
+* Registers the default namespace in the Vue instance of i18n, fixing a lack of support for un-namespaced l10n keys in the UI.
+
 ## 3.12.0 - 2022-01-21
 
 ### Adds
