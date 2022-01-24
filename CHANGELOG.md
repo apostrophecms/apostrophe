@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+## Fixes
+
+* Worked around bug preventing proper translation of the "Selected" message in certain modal operations. Thanks to [stepanjakl](https://github.com/stepanjakl).
+
 ## 2.220.8 (2022-01-20)
 
 ## Fixes
