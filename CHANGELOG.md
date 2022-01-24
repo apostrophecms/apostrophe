@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Registers the default namespace in the Vue instance of i18n, fixing a lack of support for un-namespaced l10n keys in the UI.
+
 ## 3.12.0 - 2022-01-21
 
 ### Adds
