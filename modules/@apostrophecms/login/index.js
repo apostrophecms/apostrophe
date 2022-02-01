@@ -154,6 +154,47 @@ module.exports = {
           }
           return requirement.props(req, user);
         },
+        async requirementVerify(req) {
+          const name = self.apos.launder.string(req.body.name);
+
+          const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+
+          const requirement = self.requirements[name];
+
+          if (!requirement) {
+            throw self.apos.error('notfound');
+          }
+
+          if (!requirement.verify) {
+            return {};
+          }
+
+          try {
+            await requirement.verify(req, user, req.body.requirementValue);
+
+            const token = await self.bearerTokens.findOne({
+              _id: self.apos.launder.string(req.body.incompleteToken),
+              requirementsToVerify: { $exists: true },
+              expires: {
+                $gte: new Date()
+              }
+            });
+
+            if (!token) {
+              throw self.apos.error('notfound');
+            }
+
+            await self.bearerTokens.updateOne(token, {
+              $pull: { requirementsToVerify: name }
+            });
+
+            return true;
+          } catch (err) {
+            err.data = err.data || {};
+            err.data.requirement = name;
+            throw err;
+          }
+        },
         async context(req) {
           return self.getContext(req);
         },
@@ -394,7 +435,8 @@ module.exports = {
             Object.entries(self.requirements).map(([ name, requirement ]) => {
               const browserRequirement = {
                 phase: requirement.phase,
-                propsRequired: !!requirement.props
+                propsRequired: !!requirement.props,
+                askForConfirmation: requirement.askForConfirmation || false
               };
               return [ name, browserRequirement ];
             })
@@ -419,21 +461,28 @@ module.exports = {
       // Finalize an incomplete login based on the provided incompleteToken
       // and various `requirements` subproperties. Implementation detail of the login route
       async finalizeIncompleteLogin(req) {
-        const { lateRequirements } = self.filterRequirements();
         const session = self.apos.launder.boolean(req.body.session);
         // Completing a previous incomplete login
         // (password was verified but post-password-verification
         // requirements were not supplied)
         const token = await self.bearerTokens.findOne({
           _id: self.apos.launder.string(req.body.incompleteToken),
-          incomplete: true,
+          requirementsToVerify: {
+            $exists: true
+          },
           expires: {
             $gte: new Date()
           }
         });
+
         if (!token) {
           throw self.apos.error('notfound');
         }
+
+        if (token.requirementsToVerify.length) {
+          throw self.apos.error('forbidden');
+        }
+
         const user = await self.deserializeUser(token.userId);
         if (!user) {
           await self.bearerTokens.removeOne({
@@ -441,25 +490,17 @@ module.exports = {
           });
           throw self.apos.error('notfound');
         }
-        for (const [ name, requirement ] of Object.entries(lateRequirements)) {
-          try {
-            await requirement.verify(req, user);
-          } catch (e) {
-            e.data = e.data || {};
-            e.data.requirement = name;
-            throw e;
-          }
-        }
+
         if (session) {
           await self.bearerTokens.removeOne({
             _id: token.userId
           });
           await self.passportLogin(req, user);
         } else {
-          delete token.incomplete;
+          delete token.requirementsToVerify;
           self.bearerTokens.updateOne(token, {
             $unset: {
-              incomplete: 1
+              requirementsToVerify: 1
             }
           });
           return {
@@ -475,7 +516,10 @@ module.exports = {
       async findIncompleteTokenAndUser(req, token) {
         token = await self.bearerTokens.findOne({
           _id: self.apos.launder.string(token),
-          incomplete: true,
+          requirementsToVerify: {
+            $exists: true,
+            $ne: []
+          },
           expires: {
             $gte: new Date()
           }
@@ -520,12 +564,16 @@ module.exports = {
           // For security reasons we may not tell the user which case applies
           throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
         }
-        if (Object.keys(lateRequirements).length) {
+
+        const requirementsToVerify = Object.keys(lateRequirements);
+
+        if (requirementsToVerify.length) {
           const token = cuid();
+
           await self.bearerTokens.insert({
             _id: token,
             userId: user._id,
-            incomplete: true,
+            requirementsToVerify,
             // Default lifetime of 1 hour is generous to permit situations like
             // installing a TOTP app for the first time
             expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
@@ -553,7 +601,7 @@ module.exports = {
 
       filterRequirements() {
         return {
-          earlyRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase !== 'afterPasswordVerified')),
+          earlyRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'beforeSubmit')),
           lateRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'afterPasswordVerified'))
         };
       },
