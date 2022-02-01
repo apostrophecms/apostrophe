@@ -58,6 +58,10 @@ module.exports = {
   async init(self) {
     await self.connectToMongo();
     await self.versionCheck();
+    if (process.env.APOS_TRACE_DB) {
+      console.log('fire it up');
+      self.trace();
+    }
   },
   handlers(self) {
     return {
@@ -154,6 +158,43 @@ This database contains an Apostrophe 2.x website. Exiting to avoid content loss.
             await collection.drop();
           }
         }
+      },
+      trace() {
+        const superCollection = self.apos.db.collection;
+        self.apos.db.collection = (name, options, callback) => {
+          if (callback) {
+            return superCollection.call(self.apos.db, name, options, function(err, collection) {
+              if (err) {
+                return callback(err);
+              }
+              decorate(collection);
+              return callback(null, collection);
+            });
+          } else {
+            const collection = superCollection.apply(self.apos.db, arguments);
+            decorate(collection);
+            return collection;
+          }
+          function decorate(collection) {
+            wrap('insert');
+            wrap('update');
+            wrap('remove');
+            wrap('aggregate');
+            wrap('count');
+            wrap('find');
+            wrap('ensureIndex');
+            wrap('createIndex');
+            wrap('distinct');
+            function wrap(method) {
+              const superMethod = collection[method];
+              collection[method] = function() {
+                /* eslint-disable-next-line no-console */
+                console.trace(method);
+                return superMethod.apply(collection, arguments);
+              };
+            }
+          }
+        };
       }
     };
   },
