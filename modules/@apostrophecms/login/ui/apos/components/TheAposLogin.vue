@@ -24,7 +24,10 @@
             </div>
 
             <div class="apos-login__body" v-show="loaded">
-              <form v-if="phase == 'beforeSubmit'" @submit.prevent="submit">
+              <form
+                v-if="phase == 'beforeSubmit'"
+                @submit.prevent="submit"
+              >
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
@@ -33,8 +36,10 @@
                   v-show is not enough -->
                 <template v-if="loaded">
                   <Component
-                    v-for="requirement in beforeSubmitRequirements" :key="requirement.name"
-                    :is="requirement.component" v-bind="getRequirementProps(requirement.name)"
+                    v-for="requirement in beforeSubmitRequirements"
+                    :key="requirement.name"
+                    :is="requirement.component"
+                    v-bind="getRequirementProps(requirement.name)"
                     @done="requirementDone(requirement, $event)"
                   />
                 </template>
@@ -52,8 +57,13 @@
                 />
               </form>
               <Component
-                v-if="activeSoloRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeSoloRequirement.name)"
-                :is="activeSoloRequirement.component" @done="requirementDone(activeSoloRequirement, $event)"
+                v-if="activeSoloRequirement && !fetchingRequirementProps"
+                v-bind="getRequirementProps(activeSoloRequirement.name)"
+                :is="activeSoloRequirement.component"
+                :success="activeSoloRequirement.success"
+                :error="activeSoloRequirement.error"
+                @done="requirementDone(activeSoloRequirement, $event)"
+                @confirm="requirementConfirmed(activeSoloRequirement)"
               />
             </div>
           </div>
@@ -124,15 +134,20 @@ export default {
     // That could be an afterSubmit or afterPasswordVerified requirement.
     // beforeSubmit requirements are not presented solo.
     activeSoloRequirement() {
-      return (this.phase !== 'beforeSubmit') &&
+      return (this.phase === 'afterPasswordVerified') &&
         this.requirements.find(requirement =>
-          (requirement.phase !== 'beforeSubmit') && !requirement.done
+          (requirement.phase === 'afterPasswordVerified') && !requirement.done
         );
     }
   },
   watch: {
     async activeSoloRequirement(newVal) {
-      if ((this.phase === 'afterPasswordVerified') && (newVal?.phase === 'afterPasswordVerified') && newVal.propsRequired) {
+      if (
+        (this.phase === 'afterPasswordVerified') &&
+        (newVal?.phase === 'afterPasswordVerified') &&
+        newVal.propsRequired &&
+        !(newVal.success || newVal.error)
+      ) {
         try {
           this.fetchingRequirementProps = true;
           const data = await apos.http.post(`${apos.login.action}/requirement-props`, {
@@ -189,13 +204,7 @@ export default {
       }
       this.busy = true;
       this.error = '';
-      if ((this.phase === 'beforeSubmit') && this.requirements.find(requirement => requirement.phase === 'afterSubmit')) {
-        // Should be presented after the user clicks submit, but not before the
-        // actual submission to the server. So we step to the next phase and wait
-        // for the user to interact with it before POSTing
-        this.phase = 'afterSubmit';
-        return;
-      }
+
       await this.invokeInitialLoginApi();
     },
     async invokeInitialLoginApi() {
@@ -263,22 +272,50 @@ export default {
     },
     async requirementDone(requirementDone, value) {
       const requirement = this.requirements.find(requirement => requirement.name === requirementDone.name);
-      requirement.done = true;
-      requirement.value = value;
+
       if (requirement.phase === 'beforeSubmit') {
+        requirement.done = true;
+        requirement.value = value;
         return;
       }
+
+      requirement.error = null;
+
+      try {
+        await apos.http.post(`${apos.login.action}/requirement-verify`, {
+          busy: true,
+          body: {
+            name: requirement.name,
+            requirementValue: value,
+            incompleteToken: this.incompleteToken
+          }
+        });
+
+        requirement.success = true;
+      } catch (err) {
+        requirement.error = err;
+      }
+
       // Avoids the need for a deep watch
       this.requirements = [ ...this.requirements ];
-      const activeSoloRequirement = this.activeSoloRequirement;
-      if (this.phase === 'afterSubmit') {
-        if (!(activeSoloRequirement && activeSoloRequirement.phase === 'afterSubmit')) {
-          await this.invokeInitialLoginApi();
-        }
-      } else {
-        if (!activeSoloRequirement) {
+
+      if (requirement.success && !requirement.askForConfirmation) {
+        requirement.done = true;
+
+        if (!this.activeSoloRequirement) {
           await this.invokeFinalLoginApi();
         }
+      }
+    },
+
+    async requirementConfirmed (requirementConfirmed) {
+      const requirement = this.requirements
+        .find(requirement => requirement.name === requirementConfirmed.name);
+
+      requirement.done = true;
+
+      if (!this.activeSoloRequirement) {
+        await this.invokeFinalLoginApi();
       }
     },
     getRequirementProps(name) {
@@ -294,12 +331,13 @@ function getRequirements() {
       component: requirement.component || name,
       ...requirement,
       done: false,
-      value: null
+      value: null,
+      success: null,
+      error: null
     };
   });
   return [
     ...requirements.filter(r => r.phase === 'beforeSubmit'),
-    ...requirements.filter(r => r.phase === 'afterSubmit'),
     ...requirements.filter(r => r.phase === 'afterPasswordVerified')
   ];
 }
