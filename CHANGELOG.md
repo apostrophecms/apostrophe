@@ -5,7 +5,7 @@
 ### Adds
 
 * Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
-* Verifies `afterPasswordVerified` requirements one by one when emitting done event, allows to manage errors ans success before goind to the next requirement. Checks the new `askForConfirmation` requirement option to go to the next step when emitting done event or waiting for the confirm event (in order to manage success messages). Removes support for `afterSubmit` for now.
+* Verifies `afterPasswordVerified` requirements one by one when emitting done event, allows to manage errors ans success before to go to the next requirement. Stores and validate each requirement in the token. Checks the new `askForConfirmation` requirement option to go to the next step when emitting done event or waiting for the confirm event (in order to manage success messages). Removes support for `afterSubmit` for now.
 
 ### Fixes
 
