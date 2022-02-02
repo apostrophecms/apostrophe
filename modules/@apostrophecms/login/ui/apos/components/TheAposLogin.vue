@@ -41,6 +41,7 @@
                     :is="requirement.component"
                     v-bind="getRequirementProps(requirement.name)"
                     @done="requirementDone(requirement, $event)"
+                    @block="requirementBlock(requirement)"
                   />
                 </template>
                 <!-- TODO -->
@@ -269,6 +270,11 @@ export default {
       // TODO handle situation where user should be sent somewhere other than homepage.
       // Redisplay homepage with editing interface
       location.assign(`${apos.prefix}/`);
+    },
+    async requirementBlock(requirementBlock) {
+      const requirement = this.requirements.find(requirement => requirement.name === requirementBlock.name);
+      requirement.done = false;
+      requirement.value = undefined;
     },
     async requirementDone(requirementDone, value) {
       const requirement = this.requirements.find(requirement => requirement.name === requirementDone.name);
