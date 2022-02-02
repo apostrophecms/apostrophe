@@ -308,12 +308,12 @@ module.exports = {
           const bearer = await self.apos.login.bearerTokens.findOne({
             _id: req.token,
             expires: { $gte: new Date() },
-            incomplete: {
-              // Incomplete tokens are for situations where a password
-              // should be verified before other requirements can be considered,
-              // the user is not considered logged in
-              $ne: true
-            }
+            // requirementsToVerify array should be empty or inexistant
+            // for the token to be usable to log in.
+            $or: [
+              { requirementsToVerify: { $exists: false } },
+              { requirementsToVerify: { $ne: [] } }
+            ]
           });
           return bearer && bearer.userId;
         }
