@@ -131,7 +131,7 @@ export default {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
     },
     // The currently active requirement expecting a solo presentation.
-    // That could be an afterSubmit or afterPasswordVerified requirement.
+    // Currently it only concerns `afterPasswordVerified` requirements.
     // beforeSubmit requirements are not presented solo.
     activeSoloRequirement() {
       return (this.phase === 'afterPasswordVerified') &&

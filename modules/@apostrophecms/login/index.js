@@ -166,7 +166,7 @@ module.exports = {
           }
 
           if (!requirement.verify) {
-            return {};
+            throw self.apos.error('invalid', 'You must provide a verify method in your requirement');
           }
 
           try {
@@ -188,7 +188,7 @@ module.exports = {
               $pull: { requirementsToVerify: name }
             });
 
-            return true;
+            return {};
           } catch (err) {
             err.data = err.data || {};
             err.data.requirement = name;
@@ -274,10 +274,10 @@ module.exports = {
 
       // Implements the context route, which provides basic
       // information about the site being logged into and also
-      // props for beforeSubmit and afterSubmit requirements
+      // props for beforeSubmit requirements
       async getContext(req) {
         const aposPackage = require('../../../package.json');
-        // For performance beforeSubmit / afterSubmit requirement props all happen together here
+        // For performance beforeSubmit requirement props all happen together here
         const requirementProps = {};
         for (const [ name, requirement ] of Object.entries(self.requirements)) {
           if ((requirement.phase !== 'afterPasswordVerified') && requirement.props) {
@@ -480,7 +480,7 @@ module.exports = {
         }
 
         if (token.requirementsToVerify.length) {
-          throw self.apos.error('forbidden');
+          throw self.apos.error('forbidden', 'All requirements must be verified');
         }
 
         const user = await self.deserializeUser(token.userId);
