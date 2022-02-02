@@ -5,9 +5,11 @@
 ### Adds
 
 * Additional requirements and related UI may be imposed on native ApostropheCMS logins using the new `requirements` feature, which can be extended in modules that `improve` the `@apostrophecms/login` module. These requirements are not imposed for single sign-on logins via `@apostrophecms/passport-bridge`. See the documentation for more information.
+* Adds latest Slovak translation strings to SK.json in `i18n/` folder. Thanks to [Michael Huna](https://github.com/Miselrkba) for the contribution.
 
 ### Fixes
 
+* Decodes the testReq `param` property in `serveNotFound`. This fixes a problem where page titles using diacritics triggered false 404 errors.
 * Registers the default namespace in the Vue instance of i18n, fixing a lack of support for un-namespaced l10n keys in the UI.
 
 ## 3.12.0 - 2022-01-21

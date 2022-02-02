@@ -1486,6 +1486,45 @@ describe('Pages REST', function() {
     assert(doc.title === 'Advisory Test Patched Again');
   });
 
+  let diacriticsId;
+  it('is able to make a page including diacritics', async function() {
+    const body = {
+      slug: '/ḑiaçritiçs-čharaćters',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'Ḑiaçritiçs Čharaćters',
+      _targetId: '_home',
+      _position: '1'
+    };
+
+    const page = await apos.http.post('/api/v1/@apostrophecms/page', {
+      body,
+      jar
+    });
+
+    assert(page);
+    assert(page.title === 'Ḑiaçritiçs Čharaćters');
+    diacriticsId = page._id;
+    // Accesses the published page.
+    const published = await apos.http.get('/ḑiaçritiçs-čharaćters');
+    assert(published);
+  });
+
+  it('can archive the diacritics page then access the draft preview', async function () {
+    // Now only a draft preview will be available.
+    await apos.page.archive(apos.task.getReq(), diacriticsId);
+
+    try {
+      const rendered = await apos.http.get('/ḑiaçritiçs-čharaćters', {
+        jar
+      });
+      assert(rendered.match(/Sing to me, Oh Muse\./));
+    } catch (error) {
+      console.error(error);
+      assert(false);
+    }
+  });
+
   let jar2;
 
   it('should be able to log in as second user', async () => {
