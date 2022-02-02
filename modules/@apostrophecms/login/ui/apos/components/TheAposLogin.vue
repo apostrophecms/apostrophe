@@ -286,7 +286,7 @@ export default {
           busy: true,
           body: {
             name: requirement.name,
-            requirementValue: value,
+            value,
             incompleteToken: this.incompleteToken
           }
         });

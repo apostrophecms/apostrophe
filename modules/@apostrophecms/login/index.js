@@ -170,7 +170,7 @@ module.exports = {
           }
 
           try {
-            await requirement.verify(req, user, req.body.requirementValue);
+            await requirement.verify(req, user, req.body.value);
 
             const token = await self.bearerTokens.findOne({
               _id: self.apos.launder.string(req.body.incompleteToken),

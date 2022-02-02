@@ -241,7 +241,7 @@ describe('Login', function() {
           incompleteToken: token,
           session: true,
           name: 'ExtraSecret',
-          requirementValue: 'roll-off'
+          value: 'roll-off'
         },
         jar
       });
@@ -305,7 +305,7 @@ describe('Login', function() {
         incompleteToken: token,
         session: true,
         name: 'ExtraSecret',
-        requirementValue: 'roll-on'
+        value: 'roll-on'
       },
       jar
     });
