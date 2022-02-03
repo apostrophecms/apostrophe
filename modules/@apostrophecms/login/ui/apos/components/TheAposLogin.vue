@@ -7,24 +7,20 @@
     >
       <div class="apos-login__wrapper">
         <transition name="fade-body">
-          <div class="apos-login__upper" v-show="loaded">
-            <div class="apos-login__header">
-              <label
-                class="apos-login__project apos-login__project-env"
-                :class="[`apos-login__project-env--${context.env}`]"
-              >
-                {{ context.env }}
-              </label>
-              <label class="apos-login__project apos-login__project-name">
-                {{ context.name }}
-              </label>
-              <label class="apos-login--error">
-                {{ $t(error) }}
-              </label>
-            </div>
+          <div
+            class="apos-login__upper"
+            v-if="loaded && phase === 'beforeSubmit'"
+          >
+            <TheAposLoginHeader
+              :env="context.env"
+              :name="context.name"
+              :error="$t(error)"
+            />
 
-            <div class="apos-login__body" v-show="loaded">
-              <form v-if="phase == 'beforeSubmit'" @submit.prevent="submit">
+            <div class="apos-login__body">
+              <form
+                @submit.prevent="submit"
+              >
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
@@ -33,9 +29,12 @@
                   v-show is not enough -->
                 <template v-if="loaded">
                   <Component
-                    v-for="requirement in beforeSubmitRequirements" :key="requirement.name"
-                    :is="requirement.component" v-bind="getRequirementProps(requirement.name)"
+                    v-for="requirement in beforeSubmitRequirements"
+                    :key="requirement.name"
+                    :is="requirement.component"
+                    v-bind="getRequirementProps(requirement.name)"
                     @done="requirementDone(requirement, $event)"
+                    @block="requirementBlock(requirement)"
                   />
                 </template>
                 <!-- TODO -->
@@ -51,9 +50,26 @@
                   @click="submit"
                 />
               </form>
+            </div>
+          </div>
+          <div
+            class="apos-login__upper"
+            v-else-if="activeSoloRequirement && !fetchingRequirementProps"
+          >
+            <TheAposLoginHeader
+              :env="context.env"
+              :name="context.name"
+              :error="$t(error)"
+              :tiny="true"
+            />
+            <div class="apos-login__body">
               <Component
-                v-if="activeSoloRequirement && !fetchingRequirementProps" v-bind="getRequirementProps(activeSoloRequirement.name)"
-                :is="activeSoloRequirement.component" @done="requirementDone(activeSoloRequirement, $event)"
+                v-bind="getRequirementProps(activeSoloRequirement.name)"
+                :is="activeSoloRequirement.component"
+                :success="activeSoloRequirement.success"
+                :error="activeSoloRequirement.error"
+                @done="requirementDone(activeSoloRequirement, $event)"
+                @confirm="requirementConfirmed(activeSoloRequirement)"
               />
             </div>
           </div>
@@ -121,18 +137,23 @@ export default {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
     },
     // The currently active requirement expecting a solo presentation.
-    // That could be an afterSubmit or afterPasswordVerified requirement.
+    // Currently it only concerns `afterPasswordVerified` requirements.
     // beforeSubmit requirements are not presented solo.
     activeSoloRequirement() {
-      return (this.phase !== 'beforeSubmit') &&
+      return (this.phase === 'afterPasswordVerified') &&
         this.requirements.find(requirement =>
-          (requirement.phase !== 'beforeSubmit') && !requirement.done
+          (requirement.phase === 'afterPasswordVerified') && !requirement.done
         );
     }
   },
   watch: {
     async activeSoloRequirement(newVal) {
-      if ((this.phase === 'afterPasswordVerified') && (newVal?.phase === 'afterPasswordVerified') && newVal.propsRequired) {
+      if (
+        (this.phase === 'afterPasswordVerified') &&
+        (newVal?.phase === 'afterPasswordVerified') &&
+        newVal.propsRequired &&
+        !(newVal.success || newVal.error)
+      ) {
         try {
           this.fetchingRequirementProps = true;
           const data = await apos.http.post(`${apos.login.action}/requirement-props`, {
@@ -189,13 +210,7 @@ export default {
       }
       this.busy = true;
       this.error = '';
-      if ((this.phase === 'beforeSubmit') && this.requirements.find(requirement => requirement.phase === 'afterSubmit')) {
-        // Should be presented after the user clicks submit, but not before the
-        // actual submission to the server. So we step to the next phase and wait
-        // for the user to interact with it before POSTing
-        this.phase = 'afterSubmit';
-        return;
-      }
+
       await this.invokeInitialLoginApi();
     },
     async invokeInitialLoginApi() {
@@ -261,24 +276,57 @@ export default {
       // Redisplay homepage with editing interface
       location.assign(`${apos.prefix}/`);
     },
+    async requirementBlock(requirementBlock) {
+      const requirement = this.requirements.find(requirement => requirement.name === requirementBlock.name);
+      requirement.done = false;
+      requirement.value = undefined;
+    },
     async requirementDone(requirementDone, value) {
       const requirement = this.requirements.find(requirement => requirement.name === requirementDone.name);
-      requirement.done = true;
-      requirement.value = value;
+
       if (requirement.phase === 'beforeSubmit') {
+        requirement.done = true;
+        requirement.value = value;
         return;
       }
+
+      requirement.error = null;
+
+      try {
+        await apos.http.post(`${apos.login.action}/requirement-verify`, {
+          busy: true,
+          body: {
+            name: requirement.name,
+            value,
+            incompleteToken: this.incompleteToken
+          }
+        });
+
+        requirement.success = true;
+      } catch (err) {
+        requirement.error = err;
+      }
+
       // Avoids the need for a deep watch
       this.requirements = [ ...this.requirements ];
-      const activeSoloRequirement = this.activeSoloRequirement;
-      if (this.phase === 'afterSubmit') {
-        if (!(activeSoloRequirement && activeSoloRequirement.phase === 'afterSubmit')) {
-          await this.invokeInitialLoginApi();
-        }
-      } else {
-        if (!activeSoloRequirement) {
+
+      if (requirement.success && !requirement.askForConfirmation) {
+        requirement.done = true;
+
+        if (!this.activeSoloRequirement) {
           await this.invokeFinalLoginApi();
         }
+      }
+    },
+
+    async requirementConfirmed (requirementConfirmed) {
+      const requirement = this.requirements
+        .find(requirement => requirement.name === requirementConfirmed.name);
+
+      requirement.done = true;
+
+      if (!this.activeSoloRequirement) {
+        await this.invokeFinalLoginApi();
       }
     },
     getRequirementProps(name) {
@@ -294,12 +342,13 @@ function getRequirements() {
       component: requirement.component || name,
       ...requirement,
       done: false,
-      value: null
+      value: null,
+      success: null,
+      error: null
     };
   });
   return [
     ...requirements.filter(r => r.phase === 'beforeSubmit'),
-    ...requirements.filter(r => r.phase === 'afterSubmit'),
     ...requirements.filter(r => r.phase === 'afterPasswordVerified')
   ];
 }
@@ -326,13 +375,15 @@ function getRequirements() {
 
   .fade-stage-enter-to,
   .fade-body-enter-to,
-  .fade-footer-enter-to {
+  .fade-footer-enter-to,
+  .fade-body-leave {
     opacity: 1;
   }
 
   .fade-stage-enter,
   .fade-body-enter,
-  .fade-footer-enter {
+  .fade-footer-enter,
+  .fade-body-leave-to {
     opacity: 0;
   }
 
@@ -341,11 +392,16 @@ function getRequirements() {
     transition-delay: 0.6s;
   }
 
-  .fade-body-enter-to {
+  .fade-leave-active {
+    transition: all 0.25s linear;
+    transition-delay: 0;
+  }
+
+  .fade-body-enter-to,.fade-body-leave {
     transform: translateY(0);
   }
 
-  .fade-body-enter {
+  .fade-body-enter, .fade-body-leave-to {
     transform: translateY(4px);
   }
 
@@ -365,48 +421,6 @@ function getRequirements() {
       width: 100%;
       max-width: $login-container;
       margin: 0 auto;
-    }
-
-    &__header {
-      z-index: $z-index-manager-display;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: start;
-      width: max-content;
-    }
-
-    &__project-name {
-      @include type-display;
-      margin: 0;
-      color: var(--a-text-primary);
-      text-transform: capitalize;
-    }
-
-    &__project-env {
-      @include type-base;
-      text-transform: capitalize;
-      padding: 6px 12px;
-      color: var(--a-white);
-      background: var(--a-success);
-      border-radius: 5px;
-      margin-bottom: 15px;
-
-      &--development {
-        background: var(--a-danger);
-      }
-
-      &--success {
-        background: var(--a-warning);
-      }
-    }
-
-    &--error {
-      @include type-help;
-      color: var(--a-danger);
-      min-height: 13px;
-      margin-top: 20px;
-      margin-bottom: 15px;
     }
 
     form {

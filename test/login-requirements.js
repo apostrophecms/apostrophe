@@ -28,20 +28,13 @@ describe('Login', function() {
                       hint: 'xyz'
                     };
                   },
-                  async verify(req) {
-                    if (req.body.requirements.WeakCaptcha !== 'xyz') {
+                  async verify(req, data) {
+                    if (data !== 'xyz') {
                       throw self.apos.error('invalid', 'captcha code incorrect');
                     }
                   }
                 },
-                MathProblem: {
-                  phase: 'afterSubmit',
-                  async verify(req) {
-                    if (req.body.requirements.MathProblem !== 10) {
-                      throw self.apos.error('invalid', 'math problem incorrect');
-                    }
-                  }
-                },
+
                 ExtraSecret: {
                   phase: 'afterPasswordVerified',
                   async props(req, user) {
@@ -50,8 +43,8 @@ describe('Login', function() {
                       hint: user.username
                     };
                   },
-                  async verify(req, user) {
-                    if (req.body.requirements.ExtraSecret !== user.extraSecret) {
+                  async verify(req, data, user) {
+                    if (data !== user.extraSecret) {
                       throw self.apos.error('invalid', 'extra secret incorrect');
                     }
                   }
@@ -189,53 +182,6 @@ describe('Login', function() {
     assert(page.match(/logged out/));
   });
 
-  it('should graduate to the afterSubmit requirement when meeting the beforeSubmit requirement', async function() {
-
-    const jar = apos.http.jar();
-
-    // establish session
-    let page = await apos.http.get(
-      '/',
-      {
-        jar
-      }
-    );
-
-    assert(page.match(/logged out/));
-
-    try {
-      await apos.http.post(
-        '/api/v1/@apostrophecms/login/login',
-        {
-          method: 'POST',
-          body: {
-            username: 'HarryPutter',
-            password: 'crookshanks',
-            session: true,
-            requirements: {
-              WeakCaptcha: 'xyz'
-            }
-          },
-          jar
-        }
-      );
-    } catch (e) {
-      assert(e.status === 400);
-      assert.strictEqual(e.body.message, 'math problem incorrect');
-      assert.strictEqual(e.body.data.requirement, 'MathProblem');
-    }
-
-    // Make sure it really didn't work
-    page = await apos.http.get(
-      '/',
-      {
-        jar
-      }
-    );
-
-    assert(page.match(/logged out/));
-  });
-
   it('initial login should produce an incompleteToken, convertible with the afterPasswordVerified requirements', async function() {
 
     const jar = apos.http.jar();
@@ -259,8 +205,7 @@ describe('Login', function() {
           password: 'crookshanks',
           session: true,
           requirements: {
-            WeakCaptcha: 'xyz',
-            MathProblem: 10
+            WeakCaptcha: 'xyz'
           }
         },
         jar
@@ -284,24 +229,38 @@ describe('Login', function() {
     const token = result.incompleteToken;
 
     try {
+      await apos.http.post('/api/v1/@apostrophecms/login/requirement-verify', {
+        body: {
+          incompleteToken: token,
+          session: true,
+          name: 'ExtraSecret',
+          value: 'roll-off'
+        },
+        jar
+      });
+    } catch ({ status, body }) {
+      assert(status === 400);
+      assert.strictEqual(body.message, 'extra secret incorrect');
+      assert.strictEqual(body.data.requirement, 'ExtraSecret');
+    }
+
+    // If we try the final login without
+    // having successfully verified all requirements we get an error
+    try {
       await apos.http.post(
         '/api/v1/@apostrophecms/login/login',
         {
           method: 'POST',
           body: {
             incompleteToken: token,
-            session: true,
-            requirements: {
-              ExtraSecret: 'roll-off'
-            }
+            session: true
           },
           jar
         }
       );
-    } catch (e) {
-      assert(e.status === 400);
-      assert.strictEqual(e.body.message, 'extra secret incorrect');
-      assert.strictEqual(e.body.data.requirement, 'ExtraSecret');
+    } catch ({ status, body }) {
+      assert(status === 403);
+      assert.strictEqual(body.message, 'All requirements must be verified');
     }
 
     // Make sure it did not create a login session prematurely
@@ -327,11 +286,22 @@ describe('Login', function() {
         jar
       }
     );
+
     assert.strictEqual(props.hint, 'HarryPutter');
 
     // Now convert token to an actual login session
     // by providing the post-password-verification requirements,
     // correctly
+
+    await apos.http.post('/api/v1/@apostrophecms/login/requirement-verify', {
+      body: {
+        incompleteToken: token,
+        session: true,
+        name: 'ExtraSecret',
+        value: 'roll-on'
+      },
+      jar
+    });
 
     await apos.http.post(
       '/api/v1/@apostrophecms/login/login',
@@ -339,10 +309,7 @@ describe('Login', function() {
         method: 'POST',
         body: {
           incompleteToken: token,
-          session: true,
-          requirements: {
-            ExtraSecret: 'roll-on'
-          }
+          session: true
         },
         jar
       }

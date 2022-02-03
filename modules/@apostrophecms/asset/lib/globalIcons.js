@@ -12,6 +12,8 @@ module.exports = {
   'checkbox-blank-icon': 'CheckboxBlankOutline',
   'check-all-icon': 'CheckAll',
   'check-bold-icon': 'CheckBold',
+  'check-circle-icon': 'CheckCircle',
+  'check-decagram-icon': 'CheckDecagram',
   'checkbox-marked-icon': 'CheckboxMarked',
   'chevron-down-icon': 'ChevronDown',
   'chevron-left-icon': 'ChevronLeft',
