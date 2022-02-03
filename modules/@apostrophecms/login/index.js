@@ -170,7 +170,7 @@ module.exports = {
           }
 
           try {
-            await requirement.verify(req, user, req.body.value);
+            await requirement.verify(req, req.body.value, user);
 
             const token = await self.bearerTokens.findOne({
               _id: self.apos.launder.string(req.body.incompleteToken),
@@ -552,7 +552,7 @@ module.exports = {
         const { earlyRequirements, lateRequirements } = self.filterRequirements();
         for (const [ name, requirement ] of Object.entries(earlyRequirements)) {
           try {
-            await requirement.verify(req);
+            await requirement.verify(req, req.body.requirements[name]);
           } catch (e) {
             e.data = e.data || {};
             e.data.requirement = name;

@@ -28,20 +28,13 @@ describe('Login', function() {
                       hint: 'xyz'
                     };
                   },
-                  async verify(req) {
-                    if (req.body.requirements.WeakCaptcha !== 'xyz') {
+                  async verify(req, data) {
+                    if (data !== 'xyz') {
                       throw self.apos.error('invalid', 'captcha code incorrect');
                     }
                   }
                 },
-                MathProblem: {
-                  phase: 'afterSubmit',
-                  async verify(req) {
-                    if (req.body.requirements.MathProblem !== 10) {
-                      throw self.apos.error('invalid', 'math problem incorrect');
-                    }
-                  }
-                },
+
                 ExtraSecret: {
                   phase: 'afterPasswordVerified',
                   async props(req, user) {
@@ -50,8 +43,8 @@ describe('Login', function() {
                       hint: user.username
                     };
                   },
-                  async verify(req, user, value) {
-                    if (value !== user.extraSecret) {
+                  async verify(req, data, user) {
+                    if (data !== user.extraSecret) {
                       throw self.apos.error('invalid', 'extra secret incorrect');
                     }
                   }
