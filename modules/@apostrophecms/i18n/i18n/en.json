@@ -167,6 +167,7 @@
   "localizeNewRelated": "Localize new related documents",
   "localizingBusy": "Localizing Content",
   "login": "Login",
+  "loginErrorGeneric": "An error occurred. Please try again.",
   "loginDisabled": "Login Disabled",
   "loginPageBothRequired": "Both the username and the password are required.",
   "loginPageBadCredentials": "Your credentials are incorrect, or there is no such user",
