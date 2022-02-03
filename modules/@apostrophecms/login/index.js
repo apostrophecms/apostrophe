@@ -552,7 +552,7 @@ module.exports = {
         const { earlyRequirements, lateRequirements } = self.filterRequirements();
         for (const [ name, requirement ] of Object.entries(earlyRequirements)) {
           try {
-            await requirement.verify(req, req.body.requirements[name]);
+            await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
           } catch (e) {
             e.data = e.data || {};
             e.data.requirement = name;
