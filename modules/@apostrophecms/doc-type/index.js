@@ -8,7 +8,6 @@ module.exports = {
     editRole: 'contributor',
     publishRole: 'editor',
     viewRole: false,
-    previewDraft: true,
     relatedDocType: null
   },
   cascades: [ 'fields' ],
@@ -351,6 +350,7 @@ module.exports = {
       // Used by `@apostrophecms/version` to label changes that
       // are made to relationships by ID. Set `change.text` to the
       // desired text.
+      // TODO: Deprecate in next major version if unused.
       decorateChange(doc, change) {
         change.text = doc.title;
       },
@@ -1124,7 +1124,6 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
-        browserOptions.previewDraft = self.isLocalized() && !browserOptions.autopublish && self.options.previewDraft;
 
         return browserOptions;
       }

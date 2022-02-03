@@ -11,7 +11,6 @@ module.exports = {
   options: {
     perPage: 10,
     quickCreate: true,
-    previewDraft: true,
     showCreate: true,
     // By default a piece type may be optionally
     // optionally selected by the user as a related document
