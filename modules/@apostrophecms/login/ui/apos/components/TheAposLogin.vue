@@ -7,25 +7,18 @@
     >
       <div class="apos-login__wrapper">
         <transition name="fade-body">
-          <div class="apos-login__upper" v-show="loaded">
-            <div class="apos-login__header">
-              <label
-                class="apos-login__project apos-login__project-env"
-                :class="[`apos-login__project-env--${context.env}`]"
-              >
-                {{ context.env }}
-              </label>
-              <label class="apos-login__project apos-login__project-name">
-                {{ context.name }}
-              </label>
-              <label class="apos-login--error">
-                {{ $t(error) }}
-              </label>
-            </div>
+          <div
+            class="apos-login__upper"
+            v-if="loaded && phase === 'beforeSubmit'"
+          >
+            <TheAposLoginHeader
+              :env="context.env"
+              :name="context.name"
+              :error="$t(error)"
+            />
 
-            <div class="apos-login__body" v-show="loaded">
+            <div class="apos-login__body">
               <form
-                v-if="phase == 'beforeSubmit'"
                 @submit.prevent="submit"
               >
                 <AposSchema
@@ -56,8 +49,20 @@
                   @click="submit"
                 />
               </form>
+            </div>
+          </div>
+          <div
+            class="apos-login__upper"
+            v-else-if="activeSoloRequirement && !fetchingRequirementProps"
+          >
+            <TheAposLoginHeader
+              :env="context.env"
+              :name="context.name"
+              :error="$t(error)"
+              :tiny="true"
+            />
+            <div class="apos-login__body">
               <Component
-                v-if="activeSoloRequirement && !fetchingRequirementProps"
                 v-bind="getRequirementProps(activeSoloRequirement.name)"
                 :is="activeSoloRequirement.component"
                 :success="activeSoloRequirement.success"
@@ -364,13 +369,15 @@ function getRequirements() {
 
   .fade-stage-enter-to,
   .fade-body-enter-to,
-  .fade-footer-enter-to {
+  .fade-footer-enter-to,
+  .fade-body-leave {
     opacity: 1;
   }
 
   .fade-stage-enter,
   .fade-body-enter,
-  .fade-footer-enter {
+  .fade-footer-enter,
+  .fade-body-leave-to {
     opacity: 0;
   }
 
@@ -379,11 +386,16 @@ function getRequirements() {
     transition-delay: 0.6s;
   }
 
-  .fade-body-enter-to {
+  .fade-leave-active {
+    transition: all 0.25s linear;
+    transition-delay: 0;
+  }
+
+  .fade-body-enter-to,.fade-body-leave {
     transform: translateY(0);
   }
 
-  .fade-body-enter {
+  .fade-body-enter, .fade-body-leave-to {
     transform: translateY(4px);
   }
 
@@ -403,48 +415,6 @@ function getRequirements() {
       width: 100%;
       max-width: $login-container;
       margin: 0 auto;
-    }
-
-    &__header {
-      z-index: $z-index-manager-display;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: start;
-      width: max-content;
-    }
-
-    &__project-name {
-      @include type-display;
-      margin: 0;
-      color: var(--a-text-primary);
-      text-transform: capitalize;
-    }
-
-    &__project-env {
-      @include type-base;
-      text-transform: capitalize;
-      padding: 6px 12px;
-      color: var(--a-white);
-      background: var(--a-success);
-      border-radius: 5px;
-      margin-bottom: 15px;
-
-      &--development {
-        background: var(--a-danger);
-      }
-
-      &--success {
-        background: var(--a-warning);
-      }
-    }
-
-    &--error {
-      @include type-help;
-      color: var(--a-danger);
-      min-height: 13px;
-      margin-top: 20px;
-      margin-bottom: 15px;
     }
 
     form {
