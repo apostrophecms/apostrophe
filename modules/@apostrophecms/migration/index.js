@@ -129,7 +129,7 @@ module.exports = {
       // `(doc, area, dotPath)`. `criteria` may be used to limit
       // the docs for which this is done.
       //
-      // If only three arguments are given, `limit` is assumed to be 1 (only one
+      // If only two arguments are given, `limit` is assumed to be 1 (only one
       // doc may be processed at a time).
       //
       // This method will never visit the same doc twice in a single call, even if
