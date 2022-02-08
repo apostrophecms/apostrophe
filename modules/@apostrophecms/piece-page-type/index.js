@@ -220,7 +220,7 @@ module.exports = {
         if (!page) {
           return false;
         }
-        return page._url + '/' + piece.slug;
+        return self.apos.util.addSlashIfNeeded(page._url) + piece.slug;
       },
 
       // Adds the `._url` property to all of the provided pieces,

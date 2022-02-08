@@ -34,6 +34,24 @@ describe('Pieces Pages', function() {
             perPage: 10
           }
         },
+        root: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            name: 'root',
+            label: 'Root',
+            alias: 'root',
+            sort: { title: 1 }
+          }
+        },
+        'root-piece-pages': {
+          extend: '@apostrophecms/piece-page-type',
+          options: {
+            name: 'rootPiecePage',
+            label: 'Root Piece Page',
+            alias: 'rootPiecePage',
+            perPage: 10
+          }
+        },
         '@apostrophecms/page': {
           options: {
             park: [
@@ -42,6 +60,12 @@ describe('Pieces Pages', function() {
                 type: 'eventPage',
                 slug: '/events',
                 parkedId: 'events'
+              },
+              {
+                title: 'Root piece page',
+                type: 'rootPiecePage',
+                slug: '/',
+                parkedId: 'root'
               }
             ]
           }
@@ -102,6 +126,19 @@ describe('Pieces Pages', function() {
     }).toObject();
     assert(piece);
     assert((!piece._url) || (piece._url.match(/undefined/)));
+  });
+  
+  it('should not create a double-slashed _url on a piece-page-type set as the homepage', async function() {
+    const piece = await apos.doc.find(apos.task.getAnonReq(), {
+      type: 'root',
+      title: 'Root 001'
+    }, {
+      project: {
+        type: 1
+      }
+    }).toObject();
+    assert(piece);
+    assert(piece._url === '/root-001');
   });
 
   it('should correctly populate the ._url property of pieces in a docs query if _url itself is "projected"', async function() {
