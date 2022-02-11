@@ -249,7 +249,7 @@ module.exports = {
               fs.removeSync(`${bundleDir}/${outputFilename}`);
               const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
               fs.removeSync(cssPath);
-              await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
+              const result = await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
                 {
                   importFile,
                   modulesDir,
@@ -258,6 +258,15 @@ module.exports = {
                 },
                 self.apos
               ));
+              if (result.compilation.warnings.length) {
+                self.apos.util.warn(`Compilation warnings for the ${name} build:`);
+                self.apos.util.warn(result.compilation.warnings.join('\n'));
+              }
+              if (result.compilation.errors.length) {
+                self.apos.util.error(`Compilation errors for the ${name} build:`);
+                self.apos.util.error(result.compilation.errors.join('\n'));
+                throw result.errors;
+              }
               if (fs.existsSync(cssPath)) {
                 fs.writeFileSync(cssPath, self.filterCss(fs.readFileSync(cssPath, 'utf8'), {
                   modulesPrefix: `${self.getAssetBaseUrl()}/modules`
