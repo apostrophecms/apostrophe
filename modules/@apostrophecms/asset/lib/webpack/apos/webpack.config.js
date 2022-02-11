@@ -26,7 +26,7 @@ module.exports = ({
     entry: importFile,
     mode: process.env.NODE_ENV || 'development',
     optimization: {
-      minimize: process.env.NODE_ENV === 'production'
+      minimize: (process.env.APOS_MINIMIZE !== '0') && (process.env.NODE_ENV === 'production')
     },
     devtool: 'source-map',
     output: {
