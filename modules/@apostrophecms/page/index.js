@@ -1299,8 +1299,6 @@ database.`);
           options = {};
         }
         const manager = self.apos.doc.getManager(page.type);
-        await manager.emit('beforeUpdate', req, page, options);
-        await manager.emit('beforeSave', req, page, options);
         await self.apos.doc.update(req, page, options);
         return page;
       },

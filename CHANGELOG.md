@@ -4,7 +4,8 @@
 
 ### Fixes
 
-When the home page extends `@apostrophecms/piece-page-type`, the "show page" URLs for individual pieces should not contain two slashes before the piece slug. Thanks to [Martí Bravo](https://github.com/martibravo) for the fix.
+* Fixed a bug when editing a page more than once if the page has a relationship to itself, whether directly or indirectly. Widget ids were unnecessarily regenerated in this situation, causing in-context edits after the first to fail to save.
+* When the home page extends `@apostrophecms/piece-page-type`, the "show page" URLs for individual pieces should not contain two slashes before the piece slug. Thanks to [Martí Bravo](https://github.com/martibravo) for the fix.
 
 ## 3.13.0 - 2022-02-04
 
