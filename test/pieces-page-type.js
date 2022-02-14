@@ -34,21 +34,21 @@ describe('Pieces Pages', function() {
             perPage: 10
           }
         },
-        root: {
+        home: {
           extend: '@apostrophecms/piece-type',
           options: {
-            name: 'root',
-            label: 'Root',
-            alias: 'root',
+            name: 'home',
+            label: 'Home',
+            alias: 'home',
             sort: { title: 1 }
           }
         },
-        'root-piece-pages': {
+        'home-page': {
           extend: '@apostrophecms/piece-page-type',
           options: {
-            name: 'rootPiecePage',
-            label: 'Root Piece Page',
-            alias: 'rootPiecePage',
+            name: 'homePiecePage',
+            label: 'Home Piece Page',
+            alias: 'homePiecePage',
             perPage: 10
           }
         },
@@ -62,10 +62,10 @@ describe('Pieces Pages', function() {
                 parkedId: 'events'
               },
               {
-                title: 'Root piece page',
-                type: 'rootPiecePage',
+                title: 'Home piece page',
+                type: 'homePiecePage',
                 slug: '/',
-                parkedId: 'root'
+                parkedId: 'home'
               }
             ]
           }
@@ -105,6 +105,36 @@ describe('Pieces Pages', function() {
     return apos.doc.db.insertMany(testItems);
   });
 
+  it('should be able to use db to insert test "home" pieces', async function() {
+    assert(apos.modules.home);
+    const testItems = [];
+    const total = 100;
+    for (let i = 1; (i <= total); i++) {
+      const paddedInt = apos.launder.padInteger(i, 3);
+
+      testItems.push({
+        _id: 'home' + paddedInt,
+        slug: 'home-' + paddedInt,
+        visibility: 'public',
+        type: 'home',
+        title: 'Home ' + paddedInt,
+        titleSortified: 'home ' + paddedInt,
+        body: {
+          metaType: 'area',
+          _id: apos.util.generateId(),
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              content: '<p>This is some content.</p>'
+            }
+          ]
+        }
+      });
+    }
+
+    return apos.doc.db.insertMany(testItems);
+  });
   it('should populate the ._url property of pieces in any docs query', async function() {
     const piece = await apos.doc.find(apos.task.getAnonReq(), {
       type: 'event',
@@ -130,15 +160,11 @@ describe('Pieces Pages', function() {
 
   it('should not create a double-slashed _url on a piece-page-type set as the homepage', async function() {
     const piece = await apos.doc.find(apos.task.getAnonReq(), {
-      type: 'root',
-      title: 'Root 001'
-    }, {
-      project: {
-        type: 1
-      }
+      type: 'home',
+      title: 'Home 001'
     }).toObject();
     assert(piece);
-    assert(piece._url === '/root-001');
+    assert(piece._url === '/home-001');
   });
 
   it('should correctly populate the ._url property of pieces in a docs query if _url itself is "projected"', async function() {
