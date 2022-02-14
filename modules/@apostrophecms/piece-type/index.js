@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const cacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -164,79 +165,91 @@ module.exports = {
     self.addManagerModal();
     self.addEditorModal();
   },
-  restApiRoutes: (self) => ({
-    async getAll(req) {
-      self.publicApiCheck(req);
-      const query = self.getRestQuery(req);
-      if (!query.get('perPage')) {
-        query.perPage(
-          self.options.perPage
-        );
+  restApiRoutes(self) {
+    const { enableCacheOnDemand = true } = self.apos
+      .modules['@apostrophecms/express'].options;
+
+    return {
+      getAll: [
+        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        async (req) => {
+          self.publicApiCheck(req);
+          const query = self.getRestQuery(req);
+          if (!query.get('perPage')) {
+            query.perPage(
+              self.options.perPage
+            );
+          }
+          const result = {};
+          // Also populates totalPages when perPage is present
+          const count = await query.toCount();
+          if (self.apos.launder.boolean(req.query.count)) {
+            return {
+              count
+            };
+          }
+          result.pages = query.get('totalPages');
+          result.currentPage = query.get('page') || 1;
+          result.results = await query.toArray();
+          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
+            await self.apos.area.renderDocsAreas(req, result.results);
+          }
+          if (query.get('choicesResults')) {
+            result.choices = query.get('choicesResults');
+          }
+          if (query.get('countsResults')) {
+            result.counts = query.get('countsResults');
+          }
+          return result;
+        }
+      ],
+      getOne: [
+        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        async (req, _id) => {
+          _id = self.inferIdLocaleAndMode(req, _id);
+          self.publicApiCheck(req);
+          const doc = await self.getRestQuery(req).and({ _id }).toObject();
+          if (!doc) {
+            throw self.apos.error('notfound');
+          }
+          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
+            await self.apos.area.renderDocsAreas(req, [ doc ]);
+          }
+          self.apos.attachment.all(doc, { annotate: true });
+          return doc;
+        }
+      ],
+      async post(req) {
+        self.publicApiCheck(req);
+        if (req.body._newInstance) {
+          const newInstance = self.newInstance();
+          newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
+          delete newInstance._url;
+          return newInstance;
+        }
+        return await self.convertInsertAndRefresh(req, req.body);
+      },
+      async put(req, _id) {
+        _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
+        return self.convertUpdateAndRefresh(req, req.body, _id);
+      },
+      async delete(req, _id) {
+        _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
+        const piece = await self.findOneForEditing(req, {
+          _id
+        });
+        return self.delete(req, piece);
+      },
+      async patch(req, _id) {
+        _id = self.inferIdLocaleAndMode(req, _id);
+        self.publicApiCheck(req);
+        return self.convertPatchAndRefresh(req, req.body, _id);
       }
-      const result = {};
-      // Also populates totalPages when perPage is present
-      const count = await query.toCount();
-      if (self.apos.launder.boolean(req.query.count)) {
-        return {
-          count
-        };
-      }
-      result.pages = query.get('totalPages');
-      result.currentPage = query.get('page') || 1;
-      result.results = await query.toArray();
-      if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-        await self.apos.area.renderDocsAreas(req, result.results);
-      }
-      if (query.get('choicesResults')) {
-        result.choices = query.get('choicesResults');
-      }
-      if (query.get('countsResults')) {
-        result.counts = query.get('countsResults');
-      }
-      return result;
-    },
-    async getOne(req, _id) {
-      _id = self.inferIdLocaleAndMode(req, _id);
-      self.publicApiCheck(req);
-      const doc = await self.getRestQuery(req).and({ _id }).toObject();
-      if (!doc) {
-        throw self.apos.error('notfound');
-      }
-      if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-        await self.apos.area.renderDocsAreas(req, [ doc ]);
-      }
-      self.apos.attachment.all(doc, { annotate: true });
-      return doc;
-    },
-    async post(req) {
-      self.publicApiCheck(req);
-      if (req.body._newInstance) {
-        const newInstance = self.newInstance();
-        newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
-        delete newInstance._url;
-        return newInstance;
-      }
-      return await self.convertInsertAndRefresh(req, req.body);
-    },
-    async put(req, _id) {
-      _id = self.inferIdLocaleAndMode(req, _id);
-      self.publicApiCheck(req);
-      return self.convertUpdateAndRefresh(req, req.body, _id);
-    },
-    async delete(req, _id) {
-      _id = self.inferIdLocaleAndMode(req, _id);
-      self.publicApiCheck(req);
-      const piece = await self.findOneForEditing(req, {
-        _id
-      });
-      return self.delete(req, piece);
-    },
-    async patch(req, _id) {
-      _id = self.inferIdLocaleAndMode(req, _id);
-      self.publicApiCheck(req);
-      return self.convertPatchAndRefresh(req, req.body, _id);
-    }
-  }),
+    };
+
+  },
   apiRoutes(self) {
     return {
       get: {

@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 const { klona } = require('klona');
+const cacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
   cascades: [ 'batchOperations' ],
@@ -58,6 +59,9 @@ module.exports = {
     await self.createIndexes();
   },
   restApiRoutes(self) {
+    const { enableCacheOnDemand = true } = self.apos
+      .modules['@apostrophecms/express'].options;
+
     return {
       // Trees are arranged in a tree, not a list. So this API returns the home page,
       // with _children populated if ?_children=1 is in the query string. An editor can
@@ -77,95 +81,102 @@ module.exports = {
       // If querying for draft pages, you may add ?published=1 to attach a
       // `_publishedDoc` property to each draft that also exists in a published form.
 
-      async getAll(req) {
-        self.publicApiCheck(req);
-        const all = self.apos.launder.boolean(req.query.all);
-        const archived = self.apos.launder.booleanOrNull(req.query.archived);
-        const flat = self.apos.launder.boolean(req.query.flat);
-        const autocomplete = self.apos.launder.string(req.query.autocomplete);
+      getAll: [
+        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        async (req) => {
+          self.publicApiCheck(req);
+          const all = self.apos.launder.boolean(req.query.all);
+          const archived = self.apos.launder.booleanOrNull(req.query.archived);
+          const flat = self.apos.launder.boolean(req.query.flat);
+          const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
-        if (autocomplete.length) {
-          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
-            throw self.apos.error('forbidden');
-          }
-          return {
-            // For consistency with the pieces REST API we
-            // use a results property when returning a flat list
-            results: await self.getRestQuery(req).limit(10).relationships(false)
-              .areas(false).toArray()
-          };
-        }
-
-        if (all) {
-          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
-            throw self.apos.error('forbidden');
-          }
-          const page = await self.getRestQuery(req).and({ level: 0 }).children({
-            depth: 1000,
-            archived,
-            orphan: null,
-            relationships: false,
-            areas: false,
-            permission: false,
-            withPublished: self.apos.launder.boolean(req.query.withPublished),
-            project: self.getAllProjection()
-          }).toObject();
-
-          if (!page) {
-            throw self.apos.error('notfound');
-          }
-
-          if (flat) {
-            const result = [];
-            flatten(result, page);
-
+          if (autocomplete.length) {
+            if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
+              throw self.apos.error('forbidden');
+            }
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
-              results: result
+              results: await self.getRestQuery(req).limit(10).relationships(false)
+                .areas(false).toArray()
             };
-          } else {
-            return page;
           }
-        } else {
-          const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
+
+          if (all) {
+            if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
+              throw self.apos.error('forbidden');
+            }
+            const page = await self.getRestQuery(req).and({ level: 0 }).children({
+              depth: 1000,
+              archived,
+              orphan: null,
+              relationships: false,
+              areas: false,
+              permission: false,
+              withPublished: self.apos.launder.boolean(req.query.withPublished),
+              project: self.getAllProjection()
+            }).toObject();
+
+            if (!page) {
+              throw self.apos.error('notfound');
+            }
+
+            if (flat) {
+              const result = [];
+              flatten(result, page);
+
+              return {
+                // For consistency with the pieces REST API we
+                // use a results property when returning a flat list
+                results: result
+              };
+            } else {
+              return page;
+            }
+          } else {
+            const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
+            if (!result) {
+              throw self.apos.error('notfound');
+            }
+
+            // Attach `_url` and `_urls` properties to the home page
+            self.apos.attachment.all(result, { annotate: true });
+            return result;
+          }
+
+          function flatten(result, node) {
+            const children = node._children;
+            node._children = _.map(node._children, '_id');
+            result.push(node);
+            _.each(children || [], function(child) {
+              flatten(result, child);
+            });
+
+          }
+        }
+      ],
+      // _id may be a page _id, or the convenient shorthands
+      // `_home` or `_archive`
+
+      getOne: [
+        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        async (req, _id) => {
+          _id = self.inferIdLocaleAndMode(req, _id);
+          // Edit access to draft is sufficient to fetch either
+          self.publicApiCheck(req);
+          const criteria = self.getIdCriteria(_id);
+          const result = await self.getRestQuery(req).and(criteria).toObject();
           if (!result) {
             throw self.apos.error('notfound');
           }
-
-          // Attach `_url` and `_urls` properties to the home page
+          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
+            await self.apos.area.renderDocsAreas(req, [ result ]);
+          }
+          // Attach `_url` and `_urls` properties
           self.apos.attachment.all(result, { annotate: true });
           return result;
         }
-
-        function flatten(result, node) {
-          const children = node._children;
-          node._children = _.map(node._children, '_id');
-          result.push(node);
-          _.each(children || [], function(child) {
-            flatten(result, child);
-          });
-
-        }
-      },
-      // _id may be a page _id, or the convenient shorthands
-      // `_home` or `_archive`
-      async getOne(req, _id) {
-        _id = self.inferIdLocaleAndMode(req, _id);
-        // Edit access to draft is sufficient to fetch either
-        self.publicApiCheck(req);
-        const criteria = self.getIdCriteria(_id);
-        const result = await self.getRestQuery(req).and(criteria).toObject();
-        if (!result) {
-          throw self.apos.error('notfound');
-        }
-        if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-          await self.apos.area.renderDocsAreas(req, [ result ]);
-        }
-        // Attach `_url` and `_urls` properties
-        self.apos.attachment.all(result, { annotate: true });
-        return result;
-      },
+      ],
       // POST a new page to the site. The schema fields should be part of the JSON request body.
       //
       // You may pass `_targetId` and `_position` to specify the location in the page tree.
