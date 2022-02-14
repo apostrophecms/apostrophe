@@ -127,7 +127,7 @@ describe('Pieces Pages', function() {
     assert(piece);
     assert((!piece._url) || (piece._url.match(/undefined/)));
   });
-  
+
   it('should not create a double-slashed _url on a piece-page-type set as the homepage', async function() {
     const piece = await apos.doc.find(apos.task.getAnonReq(), {
       type: 'root',
