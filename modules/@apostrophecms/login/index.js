@@ -42,6 +42,7 @@ const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
 const Promise = require('bluebird');
 const cuid = require('cuid');
+const expressSession = require('express-session');
 
 module.exports = {
   cascades: [ 'requirements' ],
@@ -133,7 +134,16 @@ module.exports = {
                 return req.session.destroy(callback);
               })();
             };
+            const cookie = req.session.cookie;
             await destroySession();
+            // Session cookie expiration isn't automatic with `req.session.destroy`.
+            // Fix that to reduce challenges for those attempting to implement custom
+            // caching strategies at the edge
+            // https://github.com/expressjs/session/issues/241
+            const expireCookie = new expressSession.Cookie(cookie);
+            expireCookie.expires = new Date(0);
+            const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
+            req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
           }
         },
         // invokes the `props(req, user)` function for the requirement specified by

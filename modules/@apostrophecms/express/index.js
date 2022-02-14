@@ -512,22 +512,17 @@ module.exports = {
         if (req.method === 'OPTIONS') {
           return next();
         }
-        // Safe request establishes XSRF-TOKEN in session if not set already
+        // Safe request establishes CSRF cookie, whose purpose is only to check
+        // that the same-origin policy is followed, not to be unique and secure
+        // in itself
         if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'TRACE') {
-          token = req.session && req.session['XSRF-TOKEN'];
-          if (!token) {
-            token = self.apos.util.generateId();
-            req.session['XSRF-TOKEN'] = token;
-          }
-          // Reset the cookie so that if its lifetime somehow detaches from
-          // that of the session cookie we're still OK
-          res.cookie(self.apos.csrfCookieName, token);
+          res.cookie(self.apos.csrfCookieName, 'csrf');
         } else {
-          // All non-safe requests must be preceded by a safe request that establishes
-          // the CSRF token, both as a cookie and in the session. Otherwise a user who is logged
-          // in but doesn't currently have a CSRF token is still vulnerable.
-          // See options.csrfExceptions
-          if (!req.cookies[self.apos.csrfCookieName] || req.get('X-XSRF-TOKEN') !== req.cookies[self.apos.csrfCookieName] || req.session['XSRF-TOKEN'] !== req.cookies[self.apos.csrfCookieName]) {
+          // Check that the request arrived with the CSRF cookie.
+          // This isn't meant to be a unique code that no one could guess,
+          // but rather a check that the request from the same origin,
+          // as cross-origin requests cannot set cookies on our origin at all.
+          if ((req.cookies[self.apos.csrfCookieName] !== 'csrf') || req.get('X-XSRF-TOKEN') !== 'csrf') {
             res.statusCode = 403;
             return res.send({
               name: 'forbidden',
