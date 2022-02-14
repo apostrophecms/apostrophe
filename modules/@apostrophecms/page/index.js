@@ -1298,7 +1298,6 @@ database.`);
         if (!options) {
           options = {};
         }
-        const manager = self.apos.doc.getManager(page.type);
         await self.apos.doc.update(req, page, options);
         return page;
       },
