@@ -77,7 +77,15 @@
 //   rolling: true,
 //   secret: 'you should have a secret',
 //   name: self.apos.shortName + '.sid',
-//   cookie: {}
+//   cookie: {
+//     path: '/',
+//     httpOnly: true,
+//     secure: false,
+//     // using 'strict' will confuse users if you link to your site
+//     // with the expectation that the user is still logged in on arrival.
+//     // 'lax' still protects against CSRF attacks
+//     sameSite: 'lax'
+//   }
 // }
 // ```
 //
@@ -418,7 +426,11 @@ module.exports = {
         _.defaults(sessionOptions.cookie, {
           path: '/',
           httpOnly: true,
-          secure: false
+          secure: false,
+          // Ensure that Safari follows the same policy as other modern browsers
+          // to prevent CSRF attacks. "lax" just means that navigation links
+          // leading to the site will receive the cookie, it is not insecure
+          sameSite: 'lax'
           // maxAge is set for us by connect-mongo,
           // and defaults to 2 weeks
         });
@@ -508,7 +520,15 @@ module.exports = {
         // that the same-origin policy is followed, not to be unique and secure
         // in itself
         if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'TRACE') {
-          res.cookie(self.apos.csrfCookieName, 'csrf');
+          // Use the same standard for the session and CSRF cookies
+          res.cookie(self.apos.csrfCookieName, 'csrf', {
+            // Will inherit sameSite: 'lax', which is important for
+            // CSRF protection in Safari
+            ...self.sessionOptions.cookie,
+            // 1 year (the limit). The value is known, we are relying
+            // on SameSite (modern browsers)
+            maxAge: 31536000
+          });
         } else {
           // Check that the request arrived with the CSRF cookie.
           // This isn't meant to be a unique code that no one could guess,
