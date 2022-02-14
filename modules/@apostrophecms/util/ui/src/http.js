@@ -65,7 +65,6 @@ export default () => {
   // parsed as JSON only if the content-type is application/json)
   // `headers` (an object containing header names and values)
   // `draft` (if true, always add aposMode=draft to the query string, creating one if needed)
-  // `csrf` (unless explicitly set to `false`, send the X-XSRF-TOKEN header when talking to the same site)
   // `fullResponse` (if true, return an object with `status`, `headers` and `body`
   // properties, rather than returning the body directly; the individual `headers` are canonicalized
   // to lowercase names. If there are duplicate headers after canonicalization only the
@@ -165,11 +164,6 @@ export default () => {
     const sendJson = (options.send === 'json') || (options.body && ((typeof options.body) === 'object') && !formData);
     if (sendJson) {
       xmlhttp.setRequestHeader('Content-Type', 'application/json');
-    }
-    if (csrfToken && (options.csrf !== false)) {
-      if (apos.util.sameSite(url)) {
-        xmlhttp.setRequestHeader('X-XSRF-TOKEN', csrfToken);
-      }
     }
     if (options.headers) {
       keys = Object.keys(options.headers);

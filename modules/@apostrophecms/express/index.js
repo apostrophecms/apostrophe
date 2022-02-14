@@ -98,17 +98,16 @@
 //
 // ### `csrf`
 //
-// By default, Apostrophe implements Angular-compatible [CSRF protection](https://en.wikipedia.org/wiki/Cross-site_request_forgery)
-// via an `XSRF-TOKEN` cookie. The `@apostrophecms/asset` module pushes
-// a call to the browser to set a jQuery `ajaxPrefilter` which
-// adds an `X-XSRF-TOKEN` header to all requests, which must
-// match the cookie. This is effective because code running from
-// other sites or iframes will not be able to read the cookie and
-// send the header.
+// By default, Apostrophe implements [CSRF protection](https://en.wikipedia.org/wiki/Cross-site_request_forgery)
+// by setting a cookie with the value `csrf`, which all legitimate requests originating fromt he page will send
+// back (see the [same-origin policy](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy)).
+// All modern browsers will refuse to allow a CSRF attacker, such as a malicious `POST`-method `form` tag on a third
+// party site pointing to an Apostrophe site, to send cookies to the Apostrophe site.
 //
 // All non-safe HTTP requests (not `GET`, `HEAD`, `OPTIONS` or `TRACE`)
-// automatically receive this proection via the csrf middleware, which
-// rejects requests in which the CSRF token does not match the header.
+// automatically receive this protection via the csrf middleware, which
+// rejects requests in which the cookie is not present.
+//
 // If the request was made with a valid api key or bearer token it
 // bypasses this check.
 //
@@ -123,12 +122,6 @@
 //
 // You may need to use this feature when implementing POST form
 // submissions that do not use AJAX and thus don't send the header.
-//
-// There is also a `minimumExceptions` option, which defaults
-// to `[ /login ]`. The login form is the only non-AJAX form
-// that ships with Apostrophe. XSRF protection for login forms
-// is unnecessary because the password itself is unknown to the
-// third party site; it effectively serves as an XSRF token.
 //
 // ### Adding your own middleware
 //
@@ -323,12 +316,11 @@ module.exports = {
       },
       ...((self.options.csrf === false) ? {} : {
         // Angular-compatible CSRF protection middleware. On safe requests (GET, HEAD, OPTIONS, TRACE),
-        // set the XSRF-TOKEN cookie if missing. On unsafe requests (everything else),
-        // make sure our jQuery `ajaxPrefilter` set the X-XSRF-TOKEN header to match the
-        // cookie.
+        // set the csrf cookie if missing.
         //
-        // This works because if we're running via a script tag or iframe, we won't
-        // be able to read the cookie.
+        // This works because requests not meeting the expectations of the same-origin policy
+        // won't be able to send cookies to the origin at all, even though the value is
+        // well-known.
         csrf(req, res, next) {
           if (req.csrfExempt) {
             return next();
@@ -522,7 +514,7 @@ module.exports = {
           // This isn't meant to be a unique code that no one could guess,
           // but rather a check that the request from the same origin,
           // as cross-origin requests cannot set cookies on our origin at all.
-          if ((req.cookies[self.apos.csrfCookieName] !== 'csrf') || req.get('X-XSRF-TOKEN') !== 'csrf') {
+          if (req.cookies[self.apos.csrfCookieName] !== 'csrf') {
             res.statusCode = 403;
             return res.send({
               name: 'forbidden',
