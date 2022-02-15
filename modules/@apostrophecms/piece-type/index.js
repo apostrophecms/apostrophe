@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const expressCacheOnDemand = require('express-cache-on-demand')(); C;
+const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
