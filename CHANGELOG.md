@@ -10,6 +10,7 @@
 ### Fixes
 
 * Fixed a bug when editing a page more than once if the page has a relationship to itself, whether directly or indirectly. Widget ids were unnecessarily regenerated in this situation, causing in-context edits after the first to fail to save.
+* Pages no longer emit double `beforeUpdate` and `beforeSave` events.
 * When the home page extends `@apostrophecms/piece-page-type`, the "show page" URLs for individual pieces should not contain two slashes before the piece slug. Thanks to [Martí Bravo](https://github.com/martibravo) for the fix.
 * Fixes transitions between login page and `afterPasswordVerified` login steps.
 
