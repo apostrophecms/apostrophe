@@ -86,9 +86,6 @@ module.exports = {
       // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
       // parsed as JSON only if the content-type is application/json)
       // `headers` (an object containing header names and values)
-      // `csrf` (if true, which is the default, and the `jar` contains the CSRF cookie for this Apostrophe site
-      // due to a previous GET request, send it as the X-XSRF-TOKEN header; if a string, send the current value of the cookie of that name
-      // in the `jar` as the X-XSRF-TOKEN header; if false, disable this feature)
       // `fullResponse` (if true, return an object with `status`, `headers` and `body`
       // properties, rather than returning the body directly; the individual `headers` are canonicalized
       // to lowercase names. If a header appears multiple times an array is returned for it)
@@ -113,9 +110,6 @@ module.exports = {
       // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
       // parsed as JSON only if the content-type is application/json)
       // `headers` (an object containing header names and values)
-      // `csrf` (if true, which is the default, and the `jar` contains the CSRF cookie for this Apostrophe site
-      // due to a previous GET request, send it as the X-XSRF-TOKEN header; if a string, send the current value of the cookie of that name
-      // in the `jar` as the X-XSRF-TOKEN header; if false, disable this feature)
       // `fullResponse` (if true, return an object with `status`, `headers` and `body`
       // properties, rather than returning the body directly; the individual `headers` are canonicalized
       // to lowercase names. If a header appears multiple times an array is returned for it)
@@ -140,9 +134,6 @@ module.exports = {
       // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
       // parsed as JSON only if the content-type is application/json)
       // `headers` (an object containing header names and values)
-      // `csrf` (if true, which is the default, and the `jar` contains the CSRF cookie for this Apostrophe site
-      // due to a previous GET request, send it as the X-XSRF-TOKEN header; if a string, send the current value of the cookie of that name
-      // in the `jar` as the X-XSRF-TOKEN header; if false, disable this feature)
       // `fullResponse` (if true, return an object with `status`, `headers` and `body`
       // properties, rather than returning the body directly; the individual `headers` are canonicalized
       // to lowercase names. If a header appears multiple times an array is returned for it)
@@ -167,9 +158,6 @@ module.exports = {
       // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
       // parsed as JSON only if the content-type is application/json)
       // `headers` (an object containing header names and values)
-      // `csrf` (if true, which is the default, and the `jar` contains the CSRF cookie for this Apostrophe site
-      // due to a previous GET request, send it as the X-XSRF-TOKEN header; if a string, send the current value of the cookie of that name
-      // in the `jar` as the X-XSRF-TOKEN header; if false, disable this feature)
       // `fullResponse` (if true, return an object with `status`, `headers` and `body`
       // properties, rather than returning the body directly; the individual `headers` are canonicalized
       // to lowercase names. If a header appears multiple times an array is returned for it)
@@ -227,14 +215,6 @@ module.exports = {
           options.body = qs.stringify(options.body);
           options.headers = options.headers || {};
           options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        }
-        if ((options.csrf !== false) && options.jar) {
-          options.headers = options.headers || {};
-          const cookieName = ((typeof options.csrf) === 'string') ? options.csrf : self.apos.csrfCookieName;
-          const cookieValue = self.getCookie(options.jar, url, cookieName);
-          if (cookieValue != null) {
-            options.headers['x-xsrf-token'] = cookieValue;
-          }
         }
         const res = await fetch(url, options);
         let body;
