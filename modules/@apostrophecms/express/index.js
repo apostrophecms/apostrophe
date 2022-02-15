@@ -510,7 +510,6 @@ module.exports = {
       // that this URL should be subject to CSRF.
 
       csrfWithoutExceptions(req, res, next) {
-        let token;
         // OPTIONS request cannot set a cookie, so manipulating the session here
         // is not helpful. Do not attempt to set XSRF-TOKEN for OPTIONS
         if (req.method === 'OPTIONS') {

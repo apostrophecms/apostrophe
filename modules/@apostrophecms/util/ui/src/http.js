@@ -139,10 +139,10 @@ export default () => {
 
     const busyName = options.busy === true ? 'busy' : options.busy;
     const xmlhttp = new XMLHttpRequest();
-    const csrfToken = apos.csrfCookieName ? apos.util.getCookie(apos.csrfCookieName) : 'csrf-fallback';
     let data = options.body;
     let keys;
     let i;
+
     if (options.qs) {
       url = apos.http.addQueryToUrl(url, options.qs);
     }
