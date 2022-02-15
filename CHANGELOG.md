@@ -6,6 +6,7 @@
 * To reduce complications for those implementing caching strategies, the CSRF protection cookie now contains a simple constant string, and is not recorded in `req.session`. This is acceptable because the real purpose of the CSRF check is simply to verify that the browser has sent the cookie at all, which it will not allow a cross-origin script to do.
 * As a result of the above, a session cookie is not generated and sent at all unless `req.session` is actually used or a user logs in. Again, this reduces complications for those implementing caching strategies.
 * When logging out, the session cookie is now cleared in the browser. Formerly the session was destroyed on the server side only, which was sufficient for security purposes but could create caching issues.
+* Uses `express-cache-on-demand` lib to make similar and concurrent requests on pieces and pages faster.
 
 ### Fixes
 
