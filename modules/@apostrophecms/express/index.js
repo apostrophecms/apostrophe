@@ -77,7 +77,15 @@
 //   rolling: true,
 //   secret: 'you should have a secret',
 //   name: self.apos.shortName + '.sid',
-//   cookie: {}
+//   cookie: {
+//     path: '/',
+//     httpOnly: true,
+//     secure: false,
+//     // using 'strict' will confuse users if you link to your site
+//     // with the expectation that the user is still logged in on arrival.
+//     // 'lax' still protects against CSRF attacks
+//     sameSite: 'lax'
+//   }
 // }
 // ```
 //
@@ -98,17 +106,16 @@
 //
 // ### `csrf`
 //
-// By default, Apostrophe implements Angular-compatible [CSRF protection](https://en.wikipedia.org/wiki/Cross-site_request_forgery)
-// via an `XSRF-TOKEN` cookie. The `@apostrophecms/asset` module pushes
-// a call to the browser to set a jQuery `ajaxPrefilter` which
-// adds an `X-XSRF-TOKEN` header to all requests, which must
-// match the cookie. This is effective because code running from
-// other sites or iframes will not be able to read the cookie and
-// send the header.
+// By default, Apostrophe implements [CSRF protection](https://en.wikipedia.org/wiki/Cross-site_request_forgery)
+// by setting a cookie with the value `csrf`, which all legitimate requests originating fromt he page will send
+// back (see the [same-origin policy](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy)).
+// All modern browsers will refuse to allow a CSRF attacker, such as a malicious `POST`-method `form` tag on a third
+// party site pointing to an Apostrophe site, to send cookies to the Apostrophe site.
 //
 // All non-safe HTTP requests (not `GET`, `HEAD`, `OPTIONS` or `TRACE`)
-// automatically receive this proection via the csrf middleware, which
-// rejects requests in which the CSRF token does not match the header.
+// automatically receive this protection via the csrf middleware, which
+// rejects requests in which the cookie is not present.
+//
 // If the request was made with a valid api key or bearer token it
 // bypasses this check.
 //
@@ -123,12 +130,6 @@
 //
 // You may need to use this feature when implementing POST form
 // submissions that do not use AJAX and thus don't send the header.
-//
-// There is also a `minimumExceptions` option, which defaults
-// to `[ /login ]`. The login form is the only non-AJAX form
-// that ships with Apostrophe. XSRF protection for login forms
-// is unnecessary because the password itself is unknown to the
-// third party site; it effectively serves as an XSRF token.
 //
 // ### Adding your own middleware
 //
@@ -323,12 +324,11 @@ module.exports = {
       },
       ...((self.options.csrf === false) ? {} : {
         // Angular-compatible CSRF protection middleware. On safe requests (GET, HEAD, OPTIONS, TRACE),
-        // set the XSRF-TOKEN cookie if missing. On unsafe requests (everything else),
-        // make sure our jQuery `ajaxPrefilter` set the X-XSRF-TOKEN header to match the
-        // cookie.
+        // set the csrf cookie if missing.
         //
-        // This works because if we're running via a script tag or iframe, we won't
-        // be able to read the cookie.
+        // This works because requests not meeting the expectations of the same-origin policy
+        // won't be able to send cookies to the origin at all, even though the value is
+        // well-known.
         csrf(req, res, next) {
           if (req.csrfExempt) {
             return next();
@@ -426,7 +426,11 @@ module.exports = {
         _.defaults(sessionOptions.cookie, {
           path: '/',
           httpOnly: true,
-          secure: false
+          secure: false,
+          // Ensure that Safari follows the same policy as other modern browsers
+          // to prevent CSRF attacks. "lax" just means that navigation links
+          // leading to the site will receive the cookie, it is not insecure
+          sameSite: 'lax'
           // maxAge is set for us by connect-mongo,
           // and defaults to 2 weeks
         });
@@ -506,28 +510,30 @@ module.exports = {
       // that this URL should be subject to CSRF.
 
       csrfWithoutExceptions(req, res, next) {
-        let token;
         // OPTIONS request cannot set a cookie, so manipulating the session here
         // is not helpful. Do not attempt to set XSRF-TOKEN for OPTIONS
         if (req.method === 'OPTIONS') {
           return next();
         }
-        // Safe request establishes XSRF-TOKEN in session if not set already
+        // Safe request establishes CSRF cookie, whose purpose is only to check
+        // that the same-origin policy is followed, not to be unique and secure
+        // in itself
         if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'TRACE') {
-          token = req.session && req.session['XSRF-TOKEN'];
-          if (!token) {
-            token = self.apos.util.generateId();
-            req.session['XSRF-TOKEN'] = token;
-          }
-          // Reset the cookie so that if its lifetime somehow detaches from
-          // that of the session cookie we're still OK
-          res.cookie(self.apos.csrfCookieName, token);
+          // Use the same standard for the session and CSRF cookies
+          res.cookie(self.apos.csrfCookieName, 'csrf', {
+            // Will inherit sameSite: 'lax', which is important for
+            // CSRF protection in Safari
+            ...self.sessionOptions.cookie,
+            // 1 year (the limit). The value is known, we are relying
+            // on SameSite (modern browsers)
+            maxAge: 31536000
+          });
         } else {
-          // All non-safe requests must be preceded by a safe request that establishes
-          // the CSRF token, both as a cookie and in the session. Otherwise a user who is logged
-          // in but doesn't currently have a CSRF token is still vulnerable.
-          // See options.csrfExceptions
-          if (!req.cookies[self.apos.csrfCookieName] || req.get('X-XSRF-TOKEN') !== req.cookies[self.apos.csrfCookieName] || req.session['XSRF-TOKEN'] !== req.cookies[self.apos.csrfCookieName]) {
+          // Check that the request arrived with the CSRF cookie.
+          // This isn't meant to be a unique code that no one could guess,
+          // but rather a check that the request from the same origin,
+          // as cross-origin requests cannot set cookies on our origin at all.
+          if (req.cookies[self.apos.csrfCookieName] !== 'csrf') {
             res.statusCode = 403;
             return res.send({
               name: 'forbidden',

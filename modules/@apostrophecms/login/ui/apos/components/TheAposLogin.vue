@@ -6,8 +6,9 @@
       :class="themeClass"
     >
       <div class="apos-login__wrapper">
-        <transition name="fade-body">
+        <transition name="fade-body" mode="out-in">
           <div
+            key="1"
             class="apos-login__upper"
             v-if="loaded && phase === 'beforeSubmit'"
           >
@@ -18,25 +19,19 @@
             />
 
             <div class="apos-login__body">
-              <form
-                @submit.prevent="submit"
-              >
+              <form @submit.prevent="submit">
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
                 />
-                <!-- Do not ask these components to render without their props,
-                  v-show is not enough -->
-                <template v-if="loaded">
-                  <Component
-                    v-for="requirement in beforeSubmitRequirements"
-                    :key="requirement.name"
-                    :is="requirement.component"
-                    v-bind="getRequirementProps(requirement.name)"
-                    @done="requirementDone(requirement, $event)"
-                    @block="requirementBlock(requirement)"
-                  />
-                </template>
+                <Component
+                  v-for="requirement in beforeSubmitRequirements"
+                  :key="requirement.name"
+                  :is="requirement.component"
+                  v-bind="getRequirementProps(requirement.name)"
+                  @done="requirementDone(requirement, $event)"
+                  @block="requirementBlock(requirement)"
+                />
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
@@ -53,8 +48,9 @@
             </div>
           </div>
           <div
+            key="2"
             class="apos-login__upper"
-            v-else-if="activeSoloRequirement && !fetchingRequirementProps"
+            v-else-if="activeSoloRequirement"
           >
             <TheAposLoginHeader
               :env="context.env"
@@ -64,6 +60,7 @@
             />
             <div class="apos-login__body">
               <Component
+                v-if="!fetchingRequirementProps"
                 v-bind="getRequirementProps(activeSoloRequirement.name)"
                 :is="activeSoloRequirement.component"
                 :success="activeSoloRequirement.success"
@@ -392,12 +389,11 @@ function getRequirements() {
     transition-delay: 0.6s;
   }
 
-  .fade-leave-active {
+  .fade-body-leave-active {
     transition: all 0.25s linear;
-    transition-delay: 0;
   }
 
-  .fade-body-enter-to,.fade-body-leave {
+  .fade-body-enter-to, .fade-body-leave {
     transform: translateY(0);
   }
 

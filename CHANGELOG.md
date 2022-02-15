@@ -2,10 +2,16 @@
 
 ## UNRELEASED
 
+### Adds
+* To reduce complications for those implementing caching strategies, the CSRF protection cookie now contains a simple constant string, and is not recorded in `req.session`. This is acceptable because the real purpose of the CSRF check is simply to verify that the browser has sent the cookie at all, which it will not allow a cross-origin script to do.
+* As a result of the above, a session cookie is not generated and sent at all unless `req.session` is actually used or a user logs in. Again, this reduces complications for those implementing caching strategies.
+* When logging out, the session cookie is now cleared in the browser. Formerly the session was destroyed on the server side only, which was sufficient for security purposes but could create caching issues.
+
 ### Fixes
 
 * Fixed a bug when editing a page more than once if the page has a relationship to itself, whether directly or indirectly. Widget ids were unnecessarily regenerated in this situation, causing in-context edits after the first to fail to save.
 * When the home page extends `@apostrophecms/piece-page-type`, the "show page" URLs for individual pieces should not contain two slashes before the piece slug. Thanks to [Martí Bravo](https://github.com/martibravo) for the fix.
+* Fixes transitions between login page and `afterPasswordVerified` login steps.
 
 ## 3.13.0 - 2022-02-04
 

@@ -39,37 +39,13 @@ describe('Express', function() {
     assert(body.toString() === 'ok');
   });
 
-  it('should flunk a POST request with no X-XSRF-TOKEN header', async function() {
+  it('should flunk a POST request without the CSRF cookie', async function() {
     try {
       await apos.http.post('/tests/body', {
         body: {
           person: {
             age: '30'
           }
-        },
-        jar,
-        csrf: false
-      });
-      assert(false);
-    } catch (e) {
-      assert(e);
-    }
-  });
-
-  it('should flunk a POST request with the wrong CSRF token', async function() {
-    const csrfToken = 'BOGOSITY';
-
-    try {
-      await apos.http.post('/tests/body', {
-        body: {
-          person: {
-            age: '30'
-          }
-        },
-        jar,
-        csrf: false,
-        headers: {
-          'X-XSRF-TOKEN': csrfToken
         }
       });
       assert(false);
@@ -78,7 +54,7 @@ describe('Express', function() {
     }
   });
 
-  it('should use the extended bodyParser for submitted forms', async function() {
+  it('should use the extended bodyParser for submitted forms, and pass CSRF with the cookie', async function() {
 
     const response = await apos.http.post('/tests/body', {
       send: 'form',
