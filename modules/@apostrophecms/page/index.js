@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 const { klona } = require('klona');
-const cacheOnDemand = require('express-cache-on-demand')();
+const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
   cascades: [ 'batchOperations' ],
@@ -48,6 +48,9 @@ module.exports = {
     }
   },
   async init(self) {
+    const { enableCacheOnDemand = true } = self.apos
+      .modules['@apostrophecms/express'].options;
+    self.enableCacheOnDemand = enableCacheOnDemand;
     self.typeChoices = self.options.types || [];
     // If "park" redeclares something with a parkedId present in "minimumPark",
     // the later one should win
@@ -59,8 +62,6 @@ module.exports = {
     await self.createIndexes();
   },
   restApiRoutes(self) {
-    const { enableCacheOnDemand = true } = self.apos
-      .modules['@apostrophecms/express'].options;
 
     return {
       // Trees are arranged in a tree, not a list. So this API returns the home page,
@@ -82,7 +83,7 @@ module.exports = {
       // `_publishedDoc` property to each draft that also exists in a published form.
 
       getAll: [
-        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        ...self.enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req) => {
           self.publicApiCheck(req);
           const all = self.apos.launder.boolean(req.query.all);
@@ -159,7 +160,7 @@ module.exports = {
       // `_home` or `_archive`
 
       getOne: [
-        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        ...self.enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           // Edit access to draft is sufficient to fetch either
@@ -587,7 +588,14 @@ database.`);
       },
       'apostrophe:ready': {
         addServeRoute() {
-          self.apos.app.get('*', self.serve);
+          self.apos.app.get('*',
+            (req, res, next) => {
+              return self.enableCacheOnDemand
+                ? expressCacheOnDemand(req, res, next)
+                : next();
+            },
+            self.serve
+          );
         }
       }
     };
