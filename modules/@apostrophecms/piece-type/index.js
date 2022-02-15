@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const cacheOnDemand = require('express-cache-on-demand')();
+const expressCacheOnDemand = require('express-cache-on-demand')(); C;
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -171,7 +171,7 @@ module.exports = {
 
     return {
       getAll: [
-        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req) => {
           self.publicApiCheck(req);
           const query = self.getRestQuery(req);
@@ -204,7 +204,7 @@ module.exports = {
         }
       ],
       getOne: [
-        ...enableCacheOnDemand ? [ cacheOnDemand ] : [],
+        ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           self.publicApiCheck(req);
