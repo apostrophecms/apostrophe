@@ -455,7 +455,7 @@ function getRequirements() {
       max-width: $login-container;
       margin: auto;
       align-items: center;
-      justify-content: start;
+      justify-content: flex-start;
     }
 
     &__project-version {

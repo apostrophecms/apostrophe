@@ -23,7 +23,6 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
-import klona from 'klona';
 
 export default {
   name: 'AposDocContextMenu',
@@ -263,12 +262,6 @@ export default {
       // moduleOptions gives us the action, etc. but here we need the schema
       // which is always type specific, even for pages so get it ourselves
       let schema = (apos.modules[this.context.type].schema || []).filter(field => apos.schema.components.fields[field.type]);
-      if (this.restoreOnly) {
-        schema = klona(schema);
-        for (const field of schema) {
-          field.readOnly = true;
-        }
-      }
       // Archive UI is handled via action buttons
       schema = schema.filter(field => field.name !== 'archived');
       return schema;
