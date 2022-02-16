@@ -17,7 +17,7 @@
 * Fixes transitions between login page and `afterPasswordVerified` login steps.
 * Frontend build errors now stop the `@apostrophecms/asset:build` task properly in production.
 * `start` replaced with `flex-start` to address SCSS warnings.
-* Dead code removal in as a result of following up on JS/Vue build warnings.
+* Dead code removal, as a result of following up on JS/Vue build warnings.
 
 ## 3.13.0 - 2022-02-04
 
