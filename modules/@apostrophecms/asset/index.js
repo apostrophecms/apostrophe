@@ -249,15 +249,15 @@ module.exports = {
               fs.removeSync(`${bundleDir}/${outputFilename}`);
               const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
               fs.removeSync(cssPath);
-              const result = await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
-                {
-                  importFile,
-                  modulesDir,
-                  outputPath: bundleDir,
-                  outputFilename
-                },
-                self.apos
-              ));
+              const webpack = Promise.promisify(webpackModule);
+              const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
+              const webpackInstanceConfig = webpackBaseConfig({
+                importFile,
+                modulesDir,
+                outputPath: bundleDir,
+                outputFilename
+              }, self.apos);
+              const result = await webpack(webpackInstanceConfig);
               if (result.compilation.errors.length) {
                 // Throwing a string is appropriate in a command line task
                 throw cleanErrors(result.toString('errors'));
