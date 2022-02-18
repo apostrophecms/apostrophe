@@ -249,15 +249,23 @@ module.exports = {
               fs.removeSync(`${bundleDir}/${outputFilename}`);
               const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
               fs.removeSync(cssPath);
-              await Promise.promisify(webpackModule)(require(`./lib/webpack/${name}/webpack.config`)(
-                {
-                  importFile,
-                  modulesDir,
-                  outputPath: bundleDir,
-                  outputFilename
-                },
-                self.apos
-              ));
+              const webpack = Promise.promisify(webpackModule);
+              const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
+              const webpackInstanceConfig = webpackBaseConfig({
+                importFile,
+                modulesDir,
+                outputPath: bundleDir,
+                outputFilename
+              }, self.apos);
+              const result = await webpack(webpackInstanceConfig);
+              if (result.compilation.errors.length) {
+                // Throwing a string is appropriate in a command line task
+                throw cleanErrors(result.toString('errors'));
+              } else if (result.compilation.warnings.length) {
+                self.apos.util.warn(result.toString('errors-warnings'));
+              } else if (process.env.APOS_WEBPACK_VERBOSE) {
+                self.apos.util.info(result.toString('verbose'));
+              }
               if (fs.existsSync(cssPath)) {
                 fs.writeFileSync(cssPath, self.filterCss(fs.readFileSync(cssPath, 'utf8'), {
                   modulesPrefix: `${self.getAssetBaseUrl()}/modules`
@@ -517,6 +525,13 @@ module.exports = {
 
           function getComponentName(component, options, i) {
             return require('path').basename(component).replace(/\.\w+/, '') + (options.enumerateImports ? `_${i}` : '');
+          }
+
+          function cleanErrors(errors) {
+            // Dev experience: remove confusing and inaccurate webpack warning about module loaders
+            // when straightforward JS parse errors occur, stackoverflow is full of people
+            // confused by this
+            return errors.replace(/(ERROR in[\s\S]*?Module parse failed[\s\S]*)You may need an appropriate loader.*/, '$1');
           }
         }
       }

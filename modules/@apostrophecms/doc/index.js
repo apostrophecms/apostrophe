@@ -1075,7 +1075,13 @@ module.exports = {
       },
       deduplicateWidgetIds(doc) {
         const seen = new Set();
-        self.apos.area.walk(doc, area => {
+        self.apos.area.walk(doc, (area, dotPath) => {
+          if (dotPath.includes('_')) {
+            // Ignore relationships so recursive references from a
+            // doc to itself can't result in random regeneration of
+            // widget ids in the doc proper
+            return;
+          }
           for (const widget of area.items || []) {
             if ((!widget._id) || seen.has(widget._id)) {
               widget._id = cuid();
