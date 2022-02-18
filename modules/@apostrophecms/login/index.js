@@ -173,6 +173,7 @@ module.exports = {
         },
         async requirementVerify(req) {
           const name = self.apos.launder.string(req.body.name);
+          const username = self.apos.launder.string(req.body.username);
 
           const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
 
@@ -186,7 +187,15 @@ module.exports = {
             throw self.apos.error('invalid', 'You must provide a verify method in your requirement');
           }
 
+          const { cachedAttempts, reached } = username ? await self
+            .checkLoginAttemps(user.username) : {};
+
+          if (reached) {
+            throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
+          }
+
           try {
+
             await requirement.verify(req, req.body.value, user);
 
             const token = await self.bearerTokens.findOne({
@@ -205,8 +214,14 @@ module.exports = {
               $pull: { requirementsToVerify: name }
             });
 
+            await self.clearLoginAttempts(username);
+
             return {};
           } catch (err) {
+            if (username) {
+              await self.addLoginAttempt(username, cachedAttempts);
+            }
+
             err.data = err.data || {};
             err.data.requirement = name;
             throw err;
@@ -567,11 +582,10 @@ module.exports = {
           throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
         }
 
-        const { cachedAttempts, error } = await self.checkLoginAttemps(username, req.t);
+        const { cachedAttempts, reached } = await self.checkLoginAttemps(username, req.t);
 
-        if (error) {
-          await self.addLoginAttempt(username, cachedAttempts);
-          throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
+        if (reached) {
+          throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
         }
 
         try {
@@ -605,6 +619,9 @@ module.exports = {
               // installing a TOTP app for the first time
               expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
             });
+
+            await self.clearLoginAttempts(user.username);
+
             return {
               incompleteToken: token
             };
@@ -613,6 +630,7 @@ module.exports = {
           const session = self.apos.launder.boolean(req.body.session);
           if (session) {
             await self.passportLogin(req, user);
+            await self.clearLoginAttempts(user.username);
           } else {
             const token = cuid();
             await self.bearerTokens.insert({
@@ -620,6 +638,9 @@ module.exports = {
               userId: user._id,
               expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
             });
+
+            await self.clearLoginAttempts(user.username);
+
             return {
               token
             };
@@ -651,10 +672,9 @@ module.exports = {
       async addLoginAttempt (username, attempts) {
         await self.apos.cache.set(loginAttempsNamespace,
           username,
-          attempts + 1, // Here we want to add an attempt, not just setting this one..
+          (attempts || 0) + 1, // Here we want to add an attempt, not just setting this one..
           self.options.throttle.perMinutes * 60
         );
-
       },
 
       async checkLoginAttemps (username) {
@@ -664,12 +684,16 @@ module.exports = {
           return { cachedAttempts };
         }
 
-        return { error: true };
+        return {
+          cachedAttempts,
+          reached: true
+        };
       },
 
       async clearLoginAttempts (username) {
-        await self.cacheCollection.delete({
-          namespace: loginAttempsNamespace
+        await self.apos.cache.cacheCollection.deleteOne({
+          namespace: loginAttempsNamespace,
+          key: username
         });
       }
     };
