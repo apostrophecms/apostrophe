@@ -41,6 +41,48 @@ describe('Login', function() {
     assert(doc._id);
   });
 
+  it('should throttle login attemps and show a proper error when the limit is reached', async function () {
+    const loginModule = apos.modules['@apostrophecms/login'];
+    const { allowedAttempts } = loginModule.options.throttle;
+    const jar = apos.http.jar();
+    const username = 'HarryPutter';
+    // establish session
+    const page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+
+    for (let i = 0; i <= loginModule.options.throttle.allowedAttempts; i++) {
+      try {
+        await apos.http.post(
+          '/api/v1/@apostrophecms/login/login',
+          {
+            method: 'POST',
+            body: {
+              username,
+              password: 'badpassword',
+              session: true
+            },
+            jar
+          }
+        );
+
+      } catch (err) {
+        if (i < allowedAttempts) {
+          assert(err.body.message === 'Your credentials are incorrect, or there is no such user');
+        } else {
+          assert(err.body.message === 'Too many login attempts. You may try again in a minute.');
+        }
+      }
+
+      await loginModule.clearLoginAttempts(username);
+    }
+  });
+
   it('should be able to login a user with their username', async function() {
 
     const jar = apos.http.jar();
