@@ -174,6 +174,7 @@ module.exports = {
         async requirementVerify(req) {
           const name = self.apos.launder.string(req.body.name);
           const username = self.apos.launder.string(req.body.username);
+          const loginNamespace = `${loginAttempsNamespace}/${name}`;
 
           const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
 
@@ -187,8 +188,10 @@ module.exports = {
             throw self.apos.error('invalid', 'You must provide a verify method in your requirement');
           }
 
-          const { cachedAttempts, reached } = username ? await self
-            .checkLoginAttemps(user.username) : {};
+          // We get username only for late requirements
+          const { cachedAttempts, reached } = username
+            ? await self.checkLoginAttemps(user.username, loginNamespace)
+            : {};
 
           if (reached) {
             throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
@@ -214,12 +217,16 @@ module.exports = {
               $pull: { requirementsToVerify: name }
             });
 
-            await self.clearLoginAttempts(username);
+            await self.clearLoginAttempts(username, loginNamespace);
 
             return {};
           } catch (err) {
             if (username) {
-              await self.addLoginAttempt(username, cachedAttempts);
+              await self.addLoginAttempt(
+                username,
+                cachedAttempts,
+                loginNamespace
+              );
             }
 
             err.data = err.data || {};
@@ -654,8 +661,14 @@ module.exports = {
 
       filterRequirements() {
         return {
-          earlyRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'beforeSubmit')),
-          lateRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'afterPasswordVerified'))
+          earlyRequirements: Object.fromEntries(
+            Object.entries(self.requirements)
+              .filter(([ _, requirement ]) => requirement.phase === 'beforeSubmit')
+          ),
+          lateRequirements: Object.fromEntries(
+            Object.entries(self.requirements)
+              .filter(([ _, requirement ]) => requirement.phase === 'afterPasswordVerified')
+          )
         };
       },
 
@@ -669,16 +682,20 @@ module.exports = {
         await passportLogin(user);
       },
 
-      async addLoginAttempt (username, attempts) {
-        await self.apos.cache.set(loginAttempsNamespace,
+      async addLoginAttempt (
+        username,
+        attempts,
+        namespace = loginAttempsNamespace
+      ) {
+        await self.apos.cache.set(namespace,
           username,
           (attempts || 0) + 1, // Here we want to add an attempt, not just setting this one..
           self.options.throttle.perMinutes * 60
         );
       },
 
-      async checkLoginAttemps (username) {
-        const cachedAttempts = await self.apos.cache.get(loginAttempsNamespace, username);
+      async checkLoginAttemps (username, namespace = loginAttempsNamespace) {
+        const cachedAttempts = await self.apos.cache.get(namespace, username);
 
         if (!cachedAttempts || cachedAttempts < self.options.throttle.allowedAttempts) {
           return { cachedAttempts };
@@ -690,9 +707,9 @@ module.exports = {
         };
       },
 
-      async clearLoginAttempts (username) {
+      async clearLoginAttempts (username, namespace = loginAttempsNamespace) {
         await self.apos.cache.cacheCollection.deleteOne({
-          namespace: loginAttempsNamespace,
+          namespace,
           key: username
         });
       }
