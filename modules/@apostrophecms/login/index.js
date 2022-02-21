@@ -698,16 +698,21 @@ module.exports = {
 
       async checkLoginAttemps (username, namespace = loginAttempsNamespace) {
         const cachedAttempts = await self.apos.cache.get(namespace, username);
+        const { allowedAttempts } = self.options.throttle;
 
-        if (!cachedAttempts || cachedAttempts < self.options.throttle.allowedAttempts) {
+        if (!cachedAttempts || cachedAttempts < allowedAttempts) {
           return { cachedAttempts };
         }
 
-        await self.apos.cache.set(namespace,
-          username,
-          cachedAttempts,
-          self.options.throttle.lockoutMinutes * 60
-        );
+        // In this case this is the first time we reach the limit
+        // so we set the lifetime only once with lockoutMinutes
+        if (cachedAttempts === allowedAttempts) {
+          await self.apos.cache.set(namespace,
+            username,
+            cachedAttempts + 1,
+            self.options.throttle.lockoutMinutes * 60
+          );
+        }
 
         return {
           cachedAttempts,
