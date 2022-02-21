@@ -589,7 +589,7 @@ module.exports = {
           throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
         }
 
-        const { cachedAttempts, reached } = await self.checkLoginAttemps(username, req.t);
+        const { cachedAttempts, reached } = await self.checkLoginAttemps(username);
 
         if (reached) {
           throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached', {
@@ -689,11 +689,25 @@ module.exports = {
         attempts,
         namespace = loginAttempsNamespace
       ) {
-        await self.apos.cache.set(namespace,
-          username,
-          (attempts || 0) + 1, // Here we want to add an attempt, not just setting this one..
-          self.options.throttle.perMinutes * 60
-        );
+        if (typeof attempts !== 'number') {
+          await self.apos.cache.set(namespace,
+            username,
+            1,
+            self.options.throttle.perMinutes * 60
+          );
+        } else {
+          await self.apos.cache.cacheCollection.updateOne(
+            {
+              namespace,
+              key: username
+            },
+            {
+              $inc: {
+                value: 1
+              }
+            }
+          );
+        }
       },
 
       async checkLoginAttemps (username, namespace = loginAttempsNamespace) {
@@ -704,8 +718,8 @@ module.exports = {
           return { cachedAttempts };
         }
 
-        // In this case this is the first time we reach the limit
-        // so we set the lifetime only once with lockoutMinutes
+        // When this is the first time we reach the limit
+        // we set the lifetime only once with lockoutMinutes
         if (cachedAttempts === allowedAttempts) {
           await self.apos.cache.set(namespace,
             username,
