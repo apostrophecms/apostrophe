@@ -59,7 +59,7 @@ module.exports = {
     throttle: {
       allowedAttempts: 3,
       perMinutes: 1,
-      lockoutMinutes: 10
+      lockoutMinutes: 1
     }
   },
   async init(self) {
@@ -592,7 +592,9 @@ module.exports = {
         const { cachedAttempts, reached } = await self.checkLoginAttemps(username, req.t);
 
         if (reached) {
-          throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
+          throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached', {
+            count: self.options.throttle.lockoutMinutes
+          }));
         }
 
         try {
@@ -700,6 +702,12 @@ module.exports = {
         if (!cachedAttempts || cachedAttempts < self.options.throttle.allowedAttempts) {
           return { cachedAttempts };
         }
+
+        await self.apos.cache.set(namespace,
+          username,
+          cachedAttempts,
+          self.options.throttle.lockoutMinutes * 60
+        );
 
         return {
           cachedAttempts,
