@@ -44,7 +44,7 @@ const Promise = require('bluebird');
 const cuid = require('cuid');
 const expressSession = require('express-session');
 
-const loginAttempsNamespace = '@apostrophecms/loginAttempt';
+const loginAttemptsNamespace = '@apostrophecms/loginAttempt';
 
 module.exports = {
   cascades: [ 'requirements' ],
@@ -173,7 +173,7 @@ module.exports = {
         },
         async requirementVerify(req) {
           const name = self.apos.launder.string(req.body.name);
-          const loginNamespace = `${loginAttempsNamespace}/${name}`;
+          const loginNamespace = `${loginAttemptsNamespace}/${name}`;
 
           const { user } = await self.findIncompleteTokenAndUser(
             req,
@@ -195,10 +195,10 @@ module.exports = {
           }
 
           const { cachedAttempts, reached } = await self
-            .checkLoginAttemps(user.username, loginNamespace);
+            .checkLoginAttempts(user.username, loginNamespace);
 
           if (reached) {
-            throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
+            throw self.apos.error('invalid', req.t('apostrophe:maxAttemptsReached'));
           }
 
           try {
@@ -591,10 +591,10 @@ module.exports = {
           throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
         }
 
-        const { cachedAttempts, reached } = await self.checkLoginAttemps(username);
+        const { cachedAttempts, reached } = await self.checkLoginAttempts(username);
 
         if (reached) {
-          throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached', {
+          throw self.apos.error('invalid', req.t('apostrophe:maxAttemptsReached', {
             count: self.options.throttle.lockoutMinutes
           }));
         }
@@ -689,7 +689,7 @@ module.exports = {
       async addLoginAttempt (
         username,
         attempts,
-        namespace = loginAttempsNamespace
+        namespace = loginAttemptsNamespace
       ) {
         if (typeof attempts !== 'number') {
           await self.apos.cache.set(namespace,
@@ -712,7 +712,7 @@ module.exports = {
         }
       },
 
-      async checkLoginAttemps (username, namespace = loginAttempsNamespace) {
+      async checkLoginAttempts (username, namespace = loginAttemptsNamespace) {
         const cachedAttempts = await self.apos.cache.get(namespace, username);
         const { allowedAttempts } = self.options.throttle;
 
@@ -736,7 +736,7 @@ module.exports = {
         };
       },
 
-      async clearLoginAttempts (username, namespace = loginAttempsNamespace) {
+      async clearLoginAttempts (username, namespace = loginAttemptsNamespace) {
         await self.apos.cache.cacheCollection.deleteOne({
           namespace,
           key: username
