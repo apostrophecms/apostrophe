@@ -298,10 +298,7 @@ export default {
           body: {
             name: requirement.name,
             value,
-            incompleteToken: this.incompleteToken,
-            ...requirement.phase !== 'beforeSubmit' && {
-              username: this.doc.data.username
-            }
+            incompleteToken: this.incompleteToken
           }
         });
 

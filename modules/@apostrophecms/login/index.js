@@ -173,10 +173,16 @@ module.exports = {
         },
         async requirementVerify(req) {
           const name = self.apos.launder.string(req.body.name);
-          const username = self.apos.launder.string(req.body.username);
           const loginNamespace = `${loginAttempsNamespace}/${name}`;
 
-          const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+          const { user } = await self.findIncompleteTokenAndUser(
+            req,
+            req.body.incompleteToken
+          );
+
+          if (!user) {
+            throw self.apos.error('invalid');
+          }
 
           const requirement = self.requirements[name];
 
@@ -188,10 +194,8 @@ module.exports = {
             throw self.apos.error('invalid', 'You must provide a verify method in your requirement');
           }
 
-          // We get username only for late requirements
-          const { cachedAttempts, reached } = username
-            ? await self.checkLoginAttemps(user.username, loginNamespace)
-            : {};
+          const { cachedAttempts, reached } = await self
+            .checkLoginAttemps(user.username, loginNamespace);
 
           if (reached) {
             throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
@@ -217,17 +221,15 @@ module.exports = {
               $pull: { requirementsToVerify: name }
             });
 
-            await self.clearLoginAttempts(username, loginNamespace);
+            await self.clearLoginAttempts(user.username, loginNamespace);
 
             return {};
           } catch (err) {
-            if (username) {
-              await self.addLoginAttempt(
-                username,
-                cachedAttempts,
-                loginNamespace
-              );
-            }
+            await self.addLoginAttempt(
+              user.username,
+              cachedAttempts,
+              loginNamespace
+            );
 
             err.data = err.data || {};
             err.data.requirement = name;
