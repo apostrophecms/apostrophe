@@ -61,6 +61,7 @@
     "eslint-plugin-promise": "^5.1.0",
     "express": "^4.16.4",
     "express-bearer-token": "^2.4.0",
+    "express-cache-on-demand": "^1.0.3",
     "express-session": "^1.17.1",
     "form-data": "^4.0.0",
     "fs-extra": "^7.0.1",

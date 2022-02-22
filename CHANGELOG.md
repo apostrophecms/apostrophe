@@ -3,9 +3,12 @@
 ## UNRELEASED
 
 ### Adds
+
 * To reduce complications for those implementing caching strategies, the CSRF protection cookie now contains a simple constant string, and is not recorded in `req.session`. This is acceptable because the real purpose of the CSRF check is simply to verify that the browser has sent the cookie at all, which it will not allow a cross-origin script to do.
 * As a result of the above, a session cookie is not generated and sent at all unless `req.session` is actually used or a user logs in. Again, this reduces complications for those implementing caching strategies.
 * When logging out, the session cookie is now cleared in the browser. Formerly the session was destroyed on the server side only, which was sufficient for security purposes but could create caching issues.
+* Uses `express-cache-on-demand` lib to make similar and concurrent requests on pieces and pages faster.
+* Frontend build errors now stop app startup in development, and SCSS and JS/Vue build warnings are visible on the terminal console for the first time.
 * Adds throttle system based on username (even when not existing), on initial login route. Also added for each late requirement.
 
 ### Fixes
@@ -14,6 +17,9 @@
 * Pages no longer emit double `beforeUpdate` and `beforeSave` events.
 * When the home page extends `@apostrophecms/piece-page-type`, the "show page" URLs for individual pieces should not contain two slashes before the piece slug. Thanks to [Martí Bravo](https://github.com/martibravo) for the fix.
 * Fixes transitions between login page and `afterPasswordVerified` login steps.
+* Frontend build errors now stop the `@apostrophecms/asset:build` task properly in production.
+* `start` replaced with `flex-start` to address SCSS warnings.
+* Dead code removal, as a result of following up on JS/Vue build warnings.
 
 ## 3.13.0 - 2022-02-04
 
