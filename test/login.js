@@ -56,7 +56,7 @@ describe('Login', function() {
 
     assert(page.match(/logged out/));
 
-    for (const [ index ] of Array(allowedAttempts + 1).entries()) {
+    for (let index = 0; index <= allowedAttempts; index++) {
       try {
         await apos.http.post(
           '/api/v1/@apostrophecms/login/login',
@@ -71,11 +71,11 @@ describe('Login', function() {
           }
         );
 
-      } catch (err) {
+      } catch ({ body }) {
         if (index < allowedAttempts) {
-          assert(err.body.message === 'Your credentials are incorrect, or there is no such user');
+          assert(body.message === 'Your credentials are incorrect, or there is no such user');
         } else {
-          assert(err.body.message === 'Too many login attempts. You may try again in a minute.');
+          assert(body.message === 'Too many login attempts. You may try again in a minute.');
         }
       }
     }
