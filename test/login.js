@@ -41,7 +41,7 @@ describe('Login', function() {
     assert(doc._id);
   });
 
-  it('should throttle login attemps and show a proper error when the limit is reached', async function () {
+  it('should throttle login attempts and show a proper error when the limit is reached', async function () {
     const loginModule = apos.modules['@apostrophecms/login'];
     const { allowedAttempts } = loginModule.options.throttle;
     const jar = apos.http.jar();
