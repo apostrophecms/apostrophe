@@ -75,7 +75,7 @@ describe('Login', function() {
         if (index < allowedAttempts) {
           assert(body.message === 'Your credentials are incorrect, or there is no such user');
         } else {
-          assert(body.message === 'Too many login attempts. You may try again in a minute.');
+          assert(body.message === 'Too many attempts. You may try again in a minute.');
         }
       }
     }
