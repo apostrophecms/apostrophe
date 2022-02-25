@@ -231,41 +231,36 @@ module.exports = {
       // Perform the actual migrations. Implementation of
       // the @apostrophecms/migration:migrate task
       async migrate(options) {
-        await self.apos.lock.lock(self.__meta.name);
         await self.emit('before');
-        try {
-          if (self.apos.isNew) {
-            // Since the site is brand new (zero documents), we may assume
-            // it requires no migrations. Mark them all as "done" but note
-            // that they were skipped, just in case we decide that's an issue later
-            const at = new Date();
-            // Just in case the db has no documents but did
-            // start to run migrations on a previous attempt,
-            // which causes an occasional unique key error if not
-            // corrected for here
-            await self.db.removeMany({});
-            await self.db.insertMany(self.migrations.map(migration => ({
-              _id: migration.name,
-              at,
-              skipped: true
-            })));
-          } else {
-            for (const migration of self.migrations) {
-              await self.runOne(migration);
-            }
+        if (self.apos.isNew) {
+          // Since the site is brand new (zero documents), we may assume
+          // it requires no migrations. Mark them all as "done" but note
+          // that they were skipped, just in case we decide that's an issue later
+          const at = new Date();
+          // Just in case the db has no documents but did
+          // start to run migrations on a previous attempt,
+          // which causes an occasional unique key error if not
+          // corrected for here
+          await self.db.removeMany({});
+          await self.db.insertMany(self.migrations.map(migration => ({
+            _id: migration.name,
+            at,
+            skipped: true
+          })));
+        } else {
+          for (const migration of self.migrations) {
+            await self.runOne(migration);
           }
-          // In production, this event is emitted only at the end of the migrate command line task.
-          // In dev it is emitted at every startup after the automatic migration.
-          //
-          // Intentionally emitted regardless of whether the site is new or not.
-          //
-          // This is the right time to park pages, for instance, because the
-          // database is guaranteed to be in a stable state, whether because the
-          // site is new or because migrations ran successfully.
-          await self.emit('after');
-        } finally {
-          await self.apos.lock.unlock(self.__meta.name);
         }
+        // In production, this event is emitted only at the end of the migrate command line task.
+        // In dev it is emitted at every startup after the automatic migration.
+        //
+        // Intentionally emitted regardless of whether the site is new or not.
+        //
+        // This is the right time to park pages, for instance, because the
+        // database is guaranteed to be in a stable state, whether because the
+        // site is new or because migrations ran successfully.
+        await self.emit('after');
       },
       async runOne(migration) {
         const info = await self.db.findOne({ _id: migration.name });

@@ -1005,10 +1005,12 @@ module.exports = {
       async replicate() {
         const localeNames = Object.keys(self.apos.i18n.locales);
         const criteria = [];
-        for (const parked of self.apos.page.parked) {
+        self.apos.page.parked.forEach(pushParkedPageAndParkedChildren);
+        function pushParkedPageAndParkedChildren(page) {
           criteria.push({
-            parkedId: parked.parkedId
+            parkedId: page.parkedId
           });
+          (page._children || []).forEach(pushParkedPageAndParkedChildren);
         }
         const pieceModules = Object.values(self.apos.modules).filter(module => self.apos.instanceOf(module, '@apostrophecms/piece-type') && module.options.replicate);
         for (const module of pieceModules) {
