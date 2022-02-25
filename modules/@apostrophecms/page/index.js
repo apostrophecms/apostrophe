@@ -2201,10 +2201,8 @@ database.`);
             locales = [ self.apos.i18n.defaultLocale, ...locales.filter(locale => locale !== self.apos.i18n.defaultLocale) ];
           }
           const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
-          console.log('>>', locales);
           for (const parkedId of parkedIds) {
             let aposDocId;
-            console.log(parkedId);
             for (const locale of locales) {
               for (const mode of [ 'draft', 'published' ]) {
                 const page = parkedPages.find(page => (page.parkedId === parkedId) && (page.aposLocale === `${locale}:${mode}`));
@@ -2218,7 +2216,6 @@ database.`);
                     await self.apos.doc.db.removeOne({
                       _id: page._id
                     });
-                    console.log(`${page.slug} ${page._id} ${aposDocId}:${locale}:${mode}`);
                     await self.apos.doc.db.insertOne({
                       ...page,
                       _id: `${aposDocId}:${locale}:${mode}`,
