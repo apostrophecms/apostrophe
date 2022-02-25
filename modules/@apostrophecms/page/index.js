@@ -2196,7 +2196,7 @@ database.`);
               $exists: 1
             }
           }).toArray();
-          let locales = [ self.apos.i18n.defaultLocale, ... Object.keys(self.apos.i18n.locales) ];
+          const locales = [ self.apos.i18n.defaultLocale, ...Object.keys(self.apos.i18n.locales) ];
           const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
           for (const parkedId of parkedIds) {
             let aposDocId;
