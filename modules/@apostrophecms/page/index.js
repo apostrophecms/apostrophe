@@ -59,6 +59,7 @@ module.exports = {
     self.addEditorModal();
     self.enableBrowserData();
     self.addLegacyMigrations();
+    self.addMisreplicatedParkedPagesMigration();
     await self.createIndexes();
   },
   restApiRoutes(self) {
@@ -2187,7 +2188,50 @@ database.`);
           }
         }
       },
-      ...require('./lib/legacy-migrations')(self)
+      ...require('./lib/legacy-migrations')(self),
+      addMisreplicatedParkedPagesMigration() {
+        self.apos.migration.add('misreplicated-parked-pages', async () => {
+          const parkedPages = await self.apos.doc.db.find({
+            parkedId: {
+              $exists: 1
+            }
+          }).toArray();
+          let locales = Object.keys(self.apos.i18n.locales);
+          if (locales[0] !== self.apos.i18n.defaultLocale) {
+            locales = [ self.apos.i18n.defaultLocale, ...locales.filter(locale => locale !== self.apos.i18n.defaultLocale) ];
+          }
+          const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
+          console.log('>>', locales);
+          for (const parkedId of parkedIds) {
+            let aposDocId;
+            console.log(parkedId);
+            for (const locale of locales) {
+              for (const mode of [ 'draft', 'published' ]) {
+                const page = parkedPages.find(page => (page.parkedId === parkedId) && (page.aposLocale === `${locale}:${mode}`));
+                if (!page) {
+                  continue;
+                }
+                if (!aposDocId) {
+                  aposDocId = page.aposDocId;
+                } else {
+                  if (page.aposDocId !== aposDocId) {
+                    await self.apos.doc.db.removeOne({
+                      _id: page._id
+                    });
+                    console.log(`${page.slug} ${page._id} ${aposDocId}:${locale}:${mode}`);
+                    await self.apos.doc.db.insertOne({
+                      ...page,
+                      _id: `${aposDocId}:${locale}:${mode}`,
+                      aposDocId,
+                      path: page.path.replace(page.aposDocId, aposDocId)
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
     };
   },
   helpers(self) {

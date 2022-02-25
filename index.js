@@ -202,13 +202,15 @@ module.exports = async function(options) {
     await self.emit('modulesRegistered'); // formerly modulesReady
     self.apos.schema.validateAllSchemas();
     self.apos.schema.registerAllSchemas();
-    await self.apos.migration.migrate(); // emits before and after events, inside the lock
-    await self.apos.global.insertIfMissing();
-    await self.apos.page.implementParkAllInDefaultLocale();
-    await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
-    // Replicate will have created the parked pages across locales if needed, but we may
-    // still need to reset parked properties
-    await self.apos.page.implementParkAllInOtherLocales();
+    await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
+      await self.apos.migration.migrate(); // emits before and after events, inside the lock
+      await self.apos.global.insertIfMissing();
+      await self.apos.page.implementParkAllInDefaultLocale();
+      await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
+      // Replicate will have created the parked pages across locales if needed, but we may
+      // still need to reset parked properties
+      await self.apos.page.implementParkAllInOtherLocales();
+    });
     await self.emit('ready'); // formerly afterInit
     if (self.taskRan) {
       process.exit(0);
