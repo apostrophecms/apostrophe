@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.14.2 (2022-02-27)
+
+* Hotfix: fixed a bug introduced by 3.14.1 in which non-parked pages could throw an error during the migration to fix replication issues.
+
 ## 3.14.1 (2022-02-25)
 
 * Hotfix: fixed a bug in which replication across locales did not work properly for parked pages configured via the `_children` feature. A one-time migration is included to reconnect improperly replicated versions of the same parked pages. This runs automatically, no manual action is required. Thanks to [justyna1](https://github.com/justyna13) for identifying the issue.

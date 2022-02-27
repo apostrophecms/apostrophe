@@ -2193,7 +2193,7 @@ database.`);
         self.apos.migration.add('misreplicated-parked-pages', async () => {
           const parkedPages = await self.apos.doc.db.find({
             parkedId: {
-              $exists: 1
+              $ne: null
             }
           }).toArray();
           const locales = [ self.apos.i18n.defaultLocale, ...Object.keys(self.apos.i18n.locales) ];
