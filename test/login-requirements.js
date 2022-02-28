@@ -4,6 +4,8 @@ const assert = require('assert');
 let apos;
 
 describe('Login', function() {
+  const extraSecretErr = 'extra secret incorrect';
+  const captchaErr = 'captcha code incorrect';
 
   this.timeout(20000);
 
@@ -30,7 +32,7 @@ describe('Login', function() {
                   },
                   async verify(req, data) {
                     if (data !== 'xyz') {
-                      throw self.apos.error('invalid', 'captcha code incorrect');
+                      throw self.apos.error('invalid', captchaErr);
                     }
                   }
                 },
@@ -45,7 +47,7 @@ describe('Login', function() {
                   },
                   async verify(req, data, user) {
                     if (data !== user.extraSecret) {
-                      throw self.apos.error('invalid', 'extra secret incorrect');
+                      throw self.apos.error('invalid', extraSecretErr);
                     }
                   }
                 }
@@ -119,7 +121,7 @@ describe('Login', function() {
       assert(false);
     } catch (e) {
       assert(e.status === 400);
-      assert.strictEqual(e.body.message, 'captcha code incorrect');
+      assert.strictEqual(e.body.message, captchaErr);
       assert.strictEqual(e.body.data.requirement, 'WeakCaptcha');
     }
 
@@ -167,7 +169,7 @@ describe('Login', function() {
       assert(false);
     } catch (e) {
       assert(e.status === 400);
-      assert.strictEqual(e.body.message, 'captcha code incorrect');
+      assert.strictEqual(e.body.message, captchaErr);
       assert.strictEqual(e.body.data.requirement, 'WeakCaptcha');
     }
 
@@ -182,7 +184,10 @@ describe('Login', function() {
     assert(page.match(/logged out/));
   });
 
-  it('initial login should produce an incompleteToken, convertible with the afterPasswordVerified requirements', async function() {
+  it('should throttle requirements verify attemps and show a proper error when the limit is reached', async function () {
+    const loginModule = apos.modules['@apostrophecms/login'];
+    const { allowedAttempts } = loginModule.options.throttle;
+    const namespace = '@apostrophecms/loginAttempt/ExtraSecret';
 
     const jar = apos.http.jar();
 
@@ -195,6 +200,71 @@ describe('Login', function() {
     );
 
     assert(page.match(/logged out/));
+
+    const result = await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'crookshanks',
+          session: true,
+          requirements: {
+            WeakCaptcha: 'xyz'
+          }
+        },
+        jar
+      }
+    );
+
+    assert(result.incompleteToken);
+
+    // Make sure it did not create a login session prematurely
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+
+    const token = result.incompleteToken;
+
+    for (let index = 0; index <= allowedAttempts; index++) {
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/login/requirement-verify', {
+          body: {
+            incompleteToken: token,
+            session: true,
+            name: 'ExtraSecret',
+            value: 'roll-off'
+          },
+          jar
+        });
+      } catch ({ status, body }) {
+        if (index < allowedAttempts) {
+          assert(body.message === extraSecretErr);
+        } else {
+          assert(body.message === 'Too many attempts. You may try again in a minute.');
+        }
+      }
+    }
+
+    await loginModule.clearLoginAttempts('HarryPutter', namespace);
+  });
+
+  it('initial login should produce an incompleteToken, convertible with the afterPasswordVerified requirements', async function() {
+
+    const jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
 
     const result = await apos.http.post(
       '/api/v1/@apostrophecms/login/login',
@@ -240,7 +310,7 @@ describe('Login', function() {
       });
     } catch ({ status, body }) {
       assert(status === 400);
-      assert.strictEqual(body.message, 'extra secret incorrect');
+      assert.strictEqual(body.message, extraSecretErr);
       assert.strictEqual(body.data.requirement, 'ExtraSecret');
     }
 

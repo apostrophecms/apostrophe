@@ -128,7 +128,8 @@ export default {
       return this.mounted && this.beforeCreateFinished;
     },
     disabled() {
-      return this.doc.hasErrors || !!this.beforeSubmitRequirements.find(requirement => !requirement.done);
+      return this.doc.hasErrors ||
+        !!this.beforeSubmitRequirements.find(requirement => !requirement.done);
     },
     beforeSubmitRequirements() {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
@@ -274,12 +275,14 @@ export default {
       location.assign(`${apos.prefix}/`);
     },
     async requirementBlock(requirementBlock) {
-      const requirement = this.requirements.find(requirement => requirement.name === requirementBlock.name);
+      const requirement = this.requirements
+        .find(requirement => requirement.name === requirementBlock.name);
       requirement.done = false;
       requirement.value = undefined;
     },
     async requirementDone(requirementDone, value) {
-      const requirement = this.requirements.find(requirement => requirement.name === requirementDone.name);
+      const requirement = this.requirements
+        .find(requirement => requirement.name === requirementDone.name);
 
       if (requirement.phase === 'beforeSubmit') {
         requirement.done = true;

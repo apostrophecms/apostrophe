@@ -178,6 +178,8 @@
   "manageDocType": "Manage {{ type }}",
   "manageDraftSubmissions": "Manage Draft Submissions",
   "managePages": "Manage Pages",
+  "loginMaxAttemptsReached": "Too many attempts. You may try again in a minute.",
+  "loginMaxAttemptsReached_plural": "Too many attempts. You may try again in {{ count }} minutes.",
   "maxLabel": "Max:",
   "maxUi": "Max: {{ number }}",
   "mediaCreatedDate": "Uploaded: {{ createdDate }}",

@@ -44,6 +44,8 @@ const Promise = require('bluebird');
 const cuid = require('cuid');
 const expressSession = require('express-session');
 
+const loginAttemptsNamespace = '@apostrophecms/loginAttempt';
+
 module.exports = {
   cascades: [ 'requirements' ],
   options: {
@@ -53,7 +55,12 @@ module.exports = {
     csrfExceptions: [
       'login'
     ],
-    bearerTokens: true
+    bearerTokens: true,
+    throttle: {
+      allowedAttempts: 3,
+      perMinutes: 1,
+      lockoutMinutes: 1
+    }
   },
   async init(self) {
     self.passport = new Passport();
@@ -166,8 +173,16 @@ module.exports = {
         },
         async requirementVerify(req) {
           const name = self.apos.launder.string(req.body.name);
+          const loginNamespace = `${loginAttemptsNamespace}/${name}`;
 
-          const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+          const { user } = await self.findIncompleteTokenAndUser(
+            req,
+            req.body.incompleteToken
+          );
+
+          if (!user) {
+            throw self.apos.error('invalid');
+          }
 
           const requirement = self.requirements[name];
 
@@ -179,7 +194,15 @@ module.exports = {
             throw self.apos.error('invalid', 'You must provide a verify method in your requirement');
           }
 
+          const { cachedAttempts, reached } = await self
+            .checkLoginAttempts(user.username, loginNamespace);
+
+          if (reached) {
+            throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
+          }
+
           try {
+
             await requirement.verify(req, req.body.value, user);
 
             const token = await self.bearerTokens.findOne({
@@ -198,8 +221,16 @@ module.exports = {
               $pull: { requirementsToVerify: name }
             });
 
+            await self.clearLoginAttempts(user.username, loginNamespace);
+
             return {};
           } catch (err) {
+            await self.addLoginAttempt(
+              user.username,
+              cachedAttempts,
+              loginNamespace
+            );
+
             err.data = err.data || {};
             err.data.requirement = name;
             throw err;
@@ -553,48 +584,64 @@ module.exports = {
       // Implementation detail of the login route. Log in the user, or if there are
       // `requirements` that require password verification occur first, return an incomplete token.
       async initialLogin(req) {
-        // Initial login step
         const username = self.apos.launder.string(req.body.username);
         const password = self.apos.launder.string(req.body.password);
+
         if (!(username && password)) {
           throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
         }
-        const { earlyRequirements, lateRequirements } = self.filterRequirements();
-        for (const [ name, requirement ] of Object.entries(earlyRequirements)) {
-          try {
-            await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
-          } catch (e) {
-            e.data = e.data || {};
-            e.data.requirement = name;
-            throw e;
+
+        const { cachedAttempts, reached } = await self.checkLoginAttempts(username);
+
+        if (reached) {
+          throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached', {
+            count: self.options.throttle.lockoutMinutes
+          }));
+        }
+
+        try {
+          // Initial login step
+          const { earlyRequirements, lateRequirements } = self.filterRequirements();
+          for (const [ name, requirement ] of Object.entries(earlyRequirements)) {
+            try {
+              await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
+            } catch (e) {
+              e.data = e.data || {};
+              e.data.requirement = name;
+              throw e;
+            }
           }
-        }
-        const user = await self.apos.login.verifyLogin(username, password);
-        if (!user) {
+          const user = await self.apos.login.verifyLogin(username, password);
+          if (!user) {
           // For security reasons we may not tell the user which case applies
-          throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
-        }
+            throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
+          }
 
-        const requirementsToVerify = Object.keys(lateRequirements);
+          const requirementsToVerify = Object.keys(lateRequirements);
 
-        if (requirementsToVerify.length) {
-          const token = cuid();
+          if (requirementsToVerify.length) {
+            const token = cuid();
 
-          await self.bearerTokens.insert({
-            _id: token,
-            userId: user._id,
-            requirementsToVerify,
-            // Default lifetime of 1 hour is generous to permit situations like
-            // installing a TOTP app for the first time
-            expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
-          });
-          return {
-            incompleteToken: token
-          };
-        } else {
+            await self.bearerTokens.insert({
+              _id: token,
+              userId: user._id,
+              requirementsToVerify,
+              // Default lifetime of 1 hour is generous to permit situations like
+              // installing a TOTP app for the first time
+              expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
+            });
+
+            await self.clearLoginAttempts(user.username);
+
+            return {
+              incompleteToken: token
+            };
+          }
+
           const session = self.apos.launder.boolean(req.body.session);
           if (session) {
             await self.passportLogin(req, user);
+            await self.clearLoginAttempts(user.username);
           } else {
             const token = cuid();
             await self.bearerTokens.insert({
@@ -602,17 +649,30 @@ module.exports = {
               userId: user._id,
               expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
             });
+
+            await self.clearLoginAttempts(user.username);
+
             return {
               token
             };
           }
+        } catch (err) {
+          await self.addLoginAttempt(username, cachedAttempts);
+
+          throw err;
         }
       },
 
       filterRequirements() {
         return {
-          earlyRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'beforeSubmit')),
-          lateRequirements: Object.fromEntries(Object.entries(self.requirements).filter(([ name, requirement ]) => requirement.phase === 'afterPasswordVerified'))
+          earlyRequirements: Object.fromEntries(
+            Object.entries(self.requirements)
+              .filter(([ _, requirement ]) => requirement.phase === 'beforeSubmit')
+          ),
+          lateRequirements: Object.fromEntries(
+            Object.entries(self.requirements)
+              .filter(([ _, requirement ]) => requirement.phase === 'afterPasswordVerified')
+          )
         };
       },
 
@@ -624,6 +684,63 @@ module.exports = {
           })(user);
         };
         await passportLogin(user);
+      },
+
+      async addLoginAttempt (
+        username,
+        attempts,
+        namespace = loginAttemptsNamespace
+      ) {
+        if (typeof attempts !== 'number') {
+          await self.apos.cache.set(namespace,
+            username,
+            1,
+            self.options.throttle.perMinutes * 60
+          );
+        } else {
+          await self.apos.cache.cacheCollection.updateOne(
+            {
+              namespace,
+              key: username
+            },
+            {
+              $inc: {
+                value: 1
+              }
+            }
+          );
+        }
+      },
+
+      async checkLoginAttempts (username, namespace = loginAttemptsNamespace) {
+        const cachedAttempts = await self.apos.cache.get(namespace, username);
+        const { allowedAttempts } = self.options.throttle;
+
+        if (!cachedAttempts || cachedAttempts < allowedAttempts) {
+          return { cachedAttempts };
+        }
+
+        // When this is the first time we reach the limit
+        // we set the lifetime only once with lockoutMinutes
+        if (cachedAttempts === allowedAttempts) {
+          await self.apos.cache.set(namespace,
+            username,
+            cachedAttempts + 1,
+            self.options.throttle.lockoutMinutes * 60
+          );
+        }
+
+        return {
+          cachedAttempts,
+          reached: true
+        };
+      },
+
+      async clearLoginAttempts (username, namespace = loginAttemptsNamespace) {
+        await self.apos.cache.cacheCollection.deleteOne({
+          namespace,
+          key: username
+        });
       }
     };
   },
