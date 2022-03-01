@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adds throttle system based on username (even when not existing), on initial login route. Also added for each late login requirement, e.g. for 2FA attempts.
+
 ## 3.14.2 (2022-02-27)
 
 * Hotfix: fixed a bug introduced by 3.14.1 in which non-parked pages could throw an error during the migration to fix replication issues.
@@ -17,7 +23,6 @@
 * When logging out, the session cookie is now cleared in the browser. Formerly the session was destroyed on the server side only, which was sufficient for security purposes but could create caching issues.
 * Uses `express-cache-on-demand` lib to make similar and concurrent requests on pieces and pages faster.
 * Frontend build errors now stop app startup in development, and SCSS and JS/Vue build warnings are visible on the terminal console for the first time.
-* Adds throttle system based on username (even when not existing), on initial login route. Also added for each late requirement.
 
 ### Fixes
 
