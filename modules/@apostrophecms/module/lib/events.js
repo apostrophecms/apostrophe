@@ -1,4 +1,6 @@
 const _ = require('lodash');
+const { trace } = require('@opentelemetry/api');
+const tracer = trace.getTracer('apostrophe', require('../../../../package.json').version);
 
 module.exports = function(self) {
 
@@ -38,6 +40,8 @@ module.exports = function(self) {
         }
       ];
 
+      const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
+      const span = tracer.startSpan(`${moduleName}.event.${name}`);
       for (const entry of chain) {
         const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
         if (handlers) {
@@ -50,6 +54,7 @@ module.exports = function(self) {
           }
         }
       }
+      span.end();
     },
 
     // You don't need to call this. It is called for you

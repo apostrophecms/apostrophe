@@ -11,6 +11,22 @@ const glob = require('glob');
 
 let defaults = require('./defaults.js');
 
+if (process.env.APOS_OPENTELEMETRY) {
+  const opentelemetry = require("@opentelemetry/sdk-node");
+  const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
+  const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
+  const options = {
+    tags: [],
+    endpoint: 'http://localhost:14268/api/traces'
+  };
+  const exporter = new JaegerExporter(options);
+  const sdk = new opentelemetry.NodeSDK({
+    traceExporter: exporter,
+    instrumentations: [getNodeAutoInstrumentations()]
+  });
+  sdk.start();
+}
+
 // ## Top-level options
 //
 // `cluster`
