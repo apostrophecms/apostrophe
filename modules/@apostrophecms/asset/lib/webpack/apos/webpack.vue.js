@@ -1,4 +1,4 @@
-const VueLoaderPlugin = require('vue-loader/lib/plugin');
+const path = require('path');
 
 module.exports = (options, apos) => {
   return {
@@ -6,16 +6,12 @@ module.exports = (options, apos) => {
       rules: [
         {
           test: /\.vue$/,
-          loader: 'vue-loader',
+          loader: `${__dirname}/vue-2-loader.js`,
           options: {
             sourceMap: true
           }
         }
       ]
-    },
-    plugins: [
-      // make sure to include the plugin for the magic
-      new VueLoaderPlugin()
-    ]
+    }
   };
 };
