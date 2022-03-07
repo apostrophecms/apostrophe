@@ -1415,6 +1415,10 @@ database.`);
         await self.emit('serveQuery', query);
         req.data.bestPage = await query.toObject();
         self.evaluatePageMatch(req);
+
+        if (self.options.cache && self.options.cache.page) {
+          self.setMaxAge(req, self.options.cache.page.maxAge);
+        }
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
       // trailing slashes other than the root, and double slash based open
@@ -2093,6 +2097,11 @@ database.`);
             query.project(self.options.publicApiProjection);
           }
         }
+
+        if (self.options.cache && self.options.cache.api) {
+          self.setMaxAge(req, self.options.cache.api.maxAge);
+        }
+
         return query;
       },
       // Returns a query that finds pages the current user can edit. Unlike

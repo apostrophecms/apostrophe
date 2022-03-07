@@ -446,6 +446,24 @@ module.exports = {
         );
       },
 
+      setMaxAge(req, maxAge, exceptions = []) {
+        if (typeof maxAge !== 'number') {
+          self.apos.util.warnDev('"maxAge" property must be defined as a number in the module cache option');
+          return;
+        }
+
+        // TODO: handle exceptions here?
+        // or directly in the piece-type module (calling this "parent" setMaxAge)
+
+        // TODO: handle user and session
+
+        console.log(req.user);
+        console.log(req.session);
+        console.log('maxAge', maxAge);
+
+        req.res.header('Cache-Control', `max-age=${maxAge}`);
+      },
+
       // Call from init once if this module implements the `getBrowserData` method.
       // The data returned by `getBrowserData(req)` will then be available on
       // `apos.modules['your-module-name']` in the browser.

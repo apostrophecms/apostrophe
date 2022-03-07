@@ -910,6 +910,11 @@ module.exports = {
             query.project(self.options.publicApiProjection);
           }
         }
+
+        if (self.options.cache && self.options.cache.api) {
+          self.setMaxAge(req, self.options.cache.api.maxAge);
+        }
+
         return query;
       },
       // Throws a `notfound` exception if a public API projection is
