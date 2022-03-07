@@ -19,6 +19,7 @@
           <AposContextMenuItem
             v-for="item in menu"
             :key="item.action"
+            :data-apos-test="item.action"
             :menu-item="item"
             @clicked="menuItemClicked"
             :open="isOpen"

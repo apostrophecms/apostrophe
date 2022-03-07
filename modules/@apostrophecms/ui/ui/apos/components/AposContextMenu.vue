@@ -16,6 +16,7 @@
       <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
         class="apos-context-menu__btn"
+        data-apos-test="contextMenuTrigger"
         @click.stop="buttonClicked($event)"
         v-bind="button"
         :state="buttonState"
