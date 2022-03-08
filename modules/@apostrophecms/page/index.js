@@ -491,11 +491,11 @@ module.exports = {
   handlers(self) {
     return {
       beforeSend: {
-        async handlerName(req) {
-          console.log('beforeSend - before', req.res.getHeader('Cache-Control'));
-          req.res.header('Cache-Control', 1234);
-          console.log('beforeSend - after', req.res.getHeader('Cache-Control'));
-        },
+        // async handlerName(req) {
+        //   console.log('beforeSend - before', req.res.getHeader('Cache-Control'));
+        //   req.res.header('Cache-Control', 1234);
+        //   console.log('beforeSend - after', req.res.getHeader('Cache-Control'));
+        // },
         async addLevelAttributeToBody(req) {
           // Add level as a data attribute on the body tag
           // The admin bar uses this to stay open if configured by the user

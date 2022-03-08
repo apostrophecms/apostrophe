@@ -26,6 +26,7 @@
 // logged in.
 
 const _ = require('lodash');
+const minimatch = require('minimatch');
 
 module.exports = {
 
@@ -178,12 +179,30 @@ module.exports = {
             try {
               const result = await fn(req);
 
-              if (self.options.cache && self.options.cache.api) {
+              const setCacheControl = () => {
+                if (self.options.cache && self.options.cache.api && self.cacheApiRoutesExceptions) {
+                  console.log('self.cacheApiRoutesExceptions', self.cacheApiRoutesExceptions, self.cacheApiRoutesExceptions.some(routePattern => req.url.match(routePattern)));
+                }
+
+                const shouldNotCacheThisRoute =
+                  self.cacheApiRoutesExceptions &&
+                  self.cacheApiRoutesExceptions.some(routePattern => req.url.match(routePattern));
+
+                console.log('shouldNotCacheThisRoute', shouldNotCacheThisRoute);
+
+                if (
+                  !self.options.cache ||
+                  !self.options.cache.api ||
+                  shouldNotCacheThisRoute
+                ) {
+                  return;
+                }
                 console.log('routeWrappers -> apiRoutes', name);
 
-                // TODO: handle exceptions here
                 self.setCacheControl(req, self.options.cache.api.maxAge);
-              }
+              };
+
+              setCacheControl();
 
               res.status(200);
               res.send(result);
@@ -447,9 +466,9 @@ module.exports = {
       // that point.
 
       async sendPage(req, template, data) {
-        console.log('sendPage - before', req.res.getHeader('Cache-Control'));
+        // console.log('sendPage - before', req.res.getHeader('Cache-Control'));
         await self.apos.page.emit('beforeSend', req);
-        console.log('sendPage - after', req.res.getHeader('Cache-Control'));
+        // console.log('sendPage - after', req.res.getHeader('Cache-Control'));
         await self.apos.area.loadDeferredWidgets(req);
         req.res.send(
           await self.apos.template.renderPageForModule(req, template, data, self)
@@ -458,7 +477,7 @@ module.exports = {
 
       setCacheControl(req, maxAge) {
         if (typeof maxAge !== 'number') {
-          self.apos.util.warnDev('"maxAge" property must be defined as a number in the module cache option');
+          self.apos.util.warnDev(`"maxAge" property must be defined as a number in the "${self.__meta.name}" module's cache options"`);
           return;
         }
 
@@ -691,6 +710,37 @@ module.exports = {
           if (self.apos.template) {
             self.apos.template.addHelpersForModule(self, self.__helpers);
           }
+        },
+        compileCacheApiRoutesExceptions() {
+          if (
+            !self.options.cache ||
+            !self.options.cache.api ||
+            !self.options.cache.api.exceptions
+          ) {
+            return;
+          }
+
+          // console.log(self.__meta.name, 'exceptions', self.options.cache.api.exceptions);
+
+          self.cacheApiRoutesExceptions = [];
+
+          console.log(self.options.cache.api.exceptions);
+
+          if (!_.isArray(self.options.cache.api.exceptions)) {
+            self.apos.util.warnDev(`"exceptions" property must be defined as an array in the "${self.__meta.name}" module's cache options"`);
+            return;
+          }
+
+          // TODO: factorize with csrfExceptions logic?
+          // TODO: handle module alias in getRouteUrl?
+          //   In order to have: [ /^(?:\/api\/v1\/page\/custom-route)$/ ]
+          //   rather than:      [ /^(?:\/api\/v1\/@apostrophecms\/page\/custom-route)$/ ]
+          self.cacheApiRoutesExceptions = self.options.cache.api.exceptions
+            .map(exception => self.getRouteUrl(exception))
+            .map(url => minimatch.makeRe(url));
+
+          console.log('self.cacheApiRoutesExceptions', self.cacheApiRoutesExceptions);
+          console.log('---');
         }
       },
       '@apostrophecms/express:compileRoutes': {
