@@ -455,13 +455,18 @@ module.exports = {
         // TODO: handle exceptions here?
         // or directly in the piece-type module (calling this "parent" setMaxAge)
 
-        // TODO: handle user and session
+        // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
+        // Other session properties must be assumed to be specific to the user, with a possible
+        // impact on the response, and thus mean this request must not be cached
+        const isSessionClearForCaching = Object.entries(req.session).every(([ key, val ]) =>
+          key === 'cookie' || (
+            (key === 'flash' || key === 'passport') && _.isEmpty(val)
+          )
+        );
+        const isSafeToCache = !req.user && isSessionClearForCaching;
+        const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
 
-        console.log(req.user);
-        console.log(req.session);
-        console.log('maxAge', maxAge);
-
-        req.res.header('Cache-Control', `max-age=${maxAge}`);
+        req.res.header('Cache-Control', cacheControlValue);
       },
 
       // Call from init once if this module implements the `getBrowserData` method.
