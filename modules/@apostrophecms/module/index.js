@@ -177,6 +177,14 @@ module.exports = {
           return async function(req, res) {
             try {
               const result = await fn(req);
+
+              if (self.options.cache && self.options.cache.api) {
+                console.log('routeWrappers -> apiRoutes', name);
+
+                // TODO: handle exceptions here
+                self.setCacheControl(req, self.options.cache.api.maxAge);
+              }
+
               res.status(200);
               res.send(result);
             } catch (err) {
@@ -439,25 +447,25 @@ module.exports = {
       // that point.
 
       async sendPage(req, template, data) {
+        console.log('sendPage - before', req.res.getHeader('Cache-Control'));
         await self.apos.page.emit('beforeSend', req);
+        console.log('sendPage - after', req.res.getHeader('Cache-Control'));
         await self.apos.area.loadDeferredWidgets(req);
         req.res.send(
           await self.apos.template.renderPageForModule(req, template, data, self)
         );
       },
 
-      setMaxAge(req, maxAge, exceptions = []) {
+      setCacheControl(req, maxAge) {
         if (typeof maxAge !== 'number') {
           self.apos.util.warnDev('"maxAge" property must be defined as a number in the module cache option');
           return;
         }
 
-        // TODO: handle exceptions here?
-        // or directly in the piece-type module (calling this "parent" setMaxAge)
-
         // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
         // Other session properties must be assumed to be specific to the user, with a possible
-        // impact on the response, and thus mean this request must not be cached
+        // impact on the response, and thus mean this request must not be cached.
+        // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
         const isSessionClearForCaching = Object.entries(req.session).every(([ key, val ]) =>
           key === 'cookie' || (
             (key === 'flash' || key === 'passport') && _.isEmpty(val)
@@ -465,6 +473,13 @@ module.exports = {
         );
         const isSafeToCache = !req.user && isSessionClearForCaching;
         const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
+
+        console.log('-----------------');
+        console.log('req.user', Boolean(req.user));
+        console.log('isSessionClearForCaching', isSessionClearForCaching);
+        console.log('isSafeToCache', isSafeToCache);
+        console.log('cacheControlValue', cacheControlValue);
+        console.log('-----------------');
 
         req.res.header('Cache-Control', cacheControlValue);
       },
