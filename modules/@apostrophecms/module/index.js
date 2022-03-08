@@ -180,15 +180,11 @@ module.exports = {
               const result = await fn(req);
 
               const setCacheControl = () => {
-                if (self.options.cache && self.options.cache.api && self.cacheApiRoutesExceptions) {
-                  console.log('self.cacheApiRoutesExceptions', self.cacheApiRoutesExceptions, self.cacheApiRoutesExceptions.some(routePattern => req.url.match(routePattern)));
-                }
-
                 const shouldNotCacheThisRoute =
                   self.cacheApiRoutesExceptions &&
                   self.cacheApiRoutesExceptions.some(routePattern => req.url.match(routePattern));
 
-                console.log('shouldNotCacheThisRoute', shouldNotCacheThisRoute);
+                console.log('apiRoutes - shouldNotCacheThisRoute', shouldNotCacheThisRoute);
 
                 if (
                   !self.options.cache ||
@@ -197,7 +193,13 @@ module.exports = {
                 ) {
                   return;
                 }
-                console.log('routeWrappers -> apiRoutes', name);
+
+                console.log(
+                  'apiRoutes - self.cacheApiRoutesExceptions',
+                  self.cacheApiRoutesExceptions,
+                  self.cacheApiRoutesExceptions.some(routePattern => req.url.match(routePattern))
+                );
+                console.log('---');
 
                 self.setCacheControl(req, self.options.cache.api.maxAge);
               };
@@ -466,9 +468,7 @@ module.exports = {
       // that point.
 
       async sendPage(req, template, data) {
-        // console.log('sendPage - before', req.res.getHeader('Cache-Control'));
         await self.apos.page.emit('beforeSend', req);
-        // console.log('sendPage - after', req.res.getHeader('Cache-Control'));
         await self.apos.area.loadDeferredWidgets(req);
         req.res.send(
           await self.apos.template.renderPageForModule(req, template, data, self)
@@ -720,11 +720,7 @@ module.exports = {
             return;
           }
 
-          // console.log(self.__meta.name, 'exceptions', self.options.cache.api.exceptions);
-
           self.cacheApiRoutesExceptions = [];
-
-          console.log(self.options.cache.api.exceptions);
 
           if (!_.isArray(self.options.cache.api.exceptions)) {
             self.apos.util.warnDev(`"exceptions" property must be defined as an array in the "${self.__meta.name}" module's cache options"`);
@@ -739,7 +735,7 @@ module.exports = {
             .map(exception => self.getRouteUrl(exception))
             .map(url => minimatch.makeRe(url));
 
-          console.log('self.cacheApiRoutesExceptions', self.cacheApiRoutesExceptions);
+          console.log('compileCacheApiRoutesExceptions - self.cacheApiRoutesExceptions', self.cacheApiRoutesExceptions);
           console.log('---');
         }
       },

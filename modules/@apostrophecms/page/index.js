@@ -491,11 +491,6 @@ module.exports = {
   handlers(self) {
     return {
       beforeSend: {
-        // async handlerName(req) {
-        //   console.log('beforeSend - before', req.res.getHeader('Cache-Control'));
-        //   req.res.header('Cache-Control', 1234);
-        //   console.log('beforeSend - after', req.res.getHeader('Cache-Control'));
-        // },
         async addLevelAttributeToBody(req) {
           // Add level as a data attribute on the body tag
           // The admin bar uses this to stay open if configured by the user
@@ -1420,10 +1415,6 @@ database.`);
         await self.emit('serveQuery', query);
         req.data.bestPage = await query.toObject();
         self.evaluatePageMatch(req);
-
-        // if (self.options.cache && self.options.cache.page) {
-        //   self.setCacheControl(req, self.options.cache.page.maxAge);
-        // }
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
       // trailing slashes other than the root, and double slash based open
@@ -2109,11 +2100,6 @@ database.`);
             query.project(self.options.publicApiProjection);
           }
         }
-
-        // if (self.options.cache && self.options.cache.api) {
-        //   self.setCacheControl(req, self.options.cache.api.maxAge);
-        // }
-
         return query;
       },
       // Returns a query that finds pages the current user can edit. Unlike
@@ -2249,25 +2235,6 @@ database.`);
       }
     };
   },
-  // extendMethods(self) {
-  //   return {
-  //     routeWrappers: {
-  //       apiRoutes(_super, name, fn) {
-  //         return async function(req, res) {
-  //           if (!self.options.cache || !self.options.cache.api) {
-  //             return _super(name, fn)(req, res);
-  //           }
-
-  //           console.log('PAGE: child routeWrappers -> apiRoutes', name);
-
-  //           self.setCacheControl(req, self.options.cache.api.maxAge);
-
-  //           return _super(name, fn)(req, res);
-  //         };
-  //       }
-  //     }
-  //   };
-  // },
   helpers(self) {
     return {
       isAncestorOf: function (possibleAncestorPage, ofPage) {

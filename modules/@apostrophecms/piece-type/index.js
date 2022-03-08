@@ -910,7 +910,6 @@ module.exports = {
             query.project(self.options.publicApiProjection);
           }
         }
-
         return query;
       },
       // Throws a `notfound` exception if a public API projection is
@@ -969,23 +968,6 @@ module.exports = {
       find(_super, req, criteria, projection) {
         return _super(req, criteria, projection).defaultSort(self.options.sort || { updatedAt: -1 });
       }
-      // routeWrappers: {
-      //   apiRoutes(_super, name, fn) {
-      //     return async function(req, res) {
-      //       if (!self.options.cache || !self.options.cache.api) {
-      //         return _super(name, fn)(req, res);
-      //       }
-
-      //       // TODO: handle exceptions here
-
-      //       console.log('PIECE TYPE: child routeWrappers -> apiRoutes', name);
-
-      //       self.setCacheControl(req, self.options.cache.api.maxAge);
-
-      //       return _super(name, fn)(req, res);
-      //     };
-      //   }
-      // }
     };
   },
   tasks(self) {
