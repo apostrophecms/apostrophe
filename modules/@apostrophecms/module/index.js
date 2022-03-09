@@ -26,7 +26,6 @@
 // logged in.
 
 const _ = require('lodash');
-const minimatch = require('minimatch');
 
 module.exports = {
 
@@ -178,34 +177,6 @@ module.exports = {
           return async function(req, res) {
             try {
               const result = await fn(req);
-
-              const setCacheControl = () => {
-                const shouldNotCacheThisRoute =
-                  self.cacheApiRoutesExceptions &&
-                  self.cacheApiRoutesExceptions.some(routePattern => req.url.match(routePattern));
-
-                console.log('apiRoutes - shouldNotCacheThisRoute', shouldNotCacheThisRoute);
-
-                if (
-                  !self.options.cache ||
-                  !self.options.cache.api ||
-                  shouldNotCacheThisRoute
-                ) {
-                  return;
-                }
-
-                console.log(
-                  'apiRoutes - self.cacheApiRoutesExceptions',
-                  self.cacheApiRoutesExceptions,
-                  self.cacheApiRoutesExceptions.some(routePattern => req.url.match(routePattern))
-                );
-                console.log('---');
-
-                self.setCacheControl(req, self.options.cache.api.maxAge);
-              };
-
-              setCacheControl();
-
               res.status(200);
               res.send(result);
             } catch (err) {
@@ -710,33 +681,6 @@ module.exports = {
           if (self.apos.template) {
             self.apos.template.addHelpersForModule(self, self.__helpers);
           }
-        },
-        compileCacheApiRoutesExceptions() {
-          if (
-            !self.options.cache ||
-            !self.options.cache.api ||
-            !self.options.cache.api.exceptions
-          ) {
-            return;
-          }
-
-          self.cacheApiRoutesExceptions = [];
-
-          if (!_.isArray(self.options.cache.api.exceptions)) {
-            self.apos.util.warnDev(`"exceptions" property must be defined as an array in the "${self.__meta.name}" module's cache options"`);
-            return;
-          }
-
-          // TODO: factorize with csrfExceptions logic?
-          // TODO: handle module alias in getRouteUrl?
-          //   In order to have: [ /^(?:\/api\/v1\/page\/custom-route)$/ ]
-          //   rather than:      [ /^(?:\/api\/v1\/@apostrophecms\/page\/custom-route)$/ ]
-          self.cacheApiRoutesExceptions = self.options.cache.api.exceptions
-            .map(exception => self.getRouteUrl(exception))
-            .map(url => minimatch.makeRe(url));
-
-          console.log('compileCacheApiRoutesExceptions - self.cacheApiRoutesExceptions', self.cacheApiRoutesExceptions);
-          console.log('---');
         }
       },
       '@apostrophecms/express:compileRoutes': {
