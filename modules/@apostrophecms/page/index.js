@@ -1415,6 +1415,10 @@ database.`);
         await self.emit('serveQuery', query);
         req.data.bestPage = await query.toObject();
         self.evaluatePageMatch(req);
+
+        if (self.options.cache && self.options.cache.page) {
+          self.setCacheControl(req, self.options.cache.page.maxAge);
+        }
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
       // trailing slashes other than the root, and double slash based open
@@ -1584,12 +1588,6 @@ database.`);
         // have editing privileges on the page
         if (req.query.pageInformation === 'json' && args.page && args.page._edit) {
           return req.res.send(args.page);
-        }
-
-        // Set cache-control here in order to give the chance to override it
-        // in `sendPage` or in a "beforeSend" event handler.
-        if (providePage && self.options.cache && self.options.cache.page) {
-          self.setCacheControl(req, self.options.cache.page.maxAge);
         }
 
         return self.sendPage(req, req.template, args);
