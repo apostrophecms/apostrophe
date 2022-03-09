@@ -1,5 +1,11 @@
 # Changelog
 
+## unreleased
+
+## Fixes
+
+* When moving a page, makes it trashed if its parent is trashed too.
+
 ## 2.220.9 (2022-02-04)
 
 ## Fixes
