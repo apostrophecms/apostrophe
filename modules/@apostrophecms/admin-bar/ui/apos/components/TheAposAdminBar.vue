@@ -1,12 +1,12 @@
 <template>
-  <div class="apos-admin-bar-wrapper" :class="themeClass">
+  <div data-apos-test="adminBar" class="apos-admin-bar-wrapper" :class="themeClass">
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <TheAposAdminBarMenu :items="items" />
         <TheAposAdminBarLocale v-if="hasLocales()" />
-        <TheAposAdminBarUser class="apos-admin-bar__user" />
+        <TheAposAdminBarUser data-apos-test="authenticatedUserMenuTrigger" class="apos-admin-bar__user" />
       </div>
       <TheAposContextBar @mounted="setSpacer" />
     </nav>
