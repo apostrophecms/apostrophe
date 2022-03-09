@@ -446,7 +446,13 @@ module.exports = {
         );
       },
 
-      setCacheControl(req, maxAge) {
+      setCacheControl(req) {
+        if (!self.options.cache || !(self.options.cache.api || self.options.cache.page)) {
+          return;
+        }
+
+        const { maxAge } = self.options.cache[self.__meta.name === 'page' ? 'page' : 'api'];
+
         if (typeof maxAge !== 'number') {
           self.apos.util.warnDev(`"maxAge" property must be defined as a number in the "${self.__meta.name}" module's cache options"`);
           return;
@@ -463,13 +469,6 @@ module.exports = {
         );
         const isSafeToCache = !req.user && isSessionClearForCaching;
         const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
-
-        console.log('-----------------');
-        console.log('req.user', Boolean(req.user));
-        console.log('isSessionClearForCaching', isSessionClearForCaching);
-        console.log('isSafeToCache', isSafeToCache);
-        console.log('cacheControlValue', cacheControlValue);
-        console.log('-----------------');
 
         req.res.header('Cache-Control', cacheControlValue);
       },
