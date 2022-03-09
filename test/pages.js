@@ -4,6 +4,7 @@ const _ = require('lodash');
 
 let apos;
 let homeId;
+const apiKey = 'this is a test api key';
 
 describe('Pages', function() {
 
@@ -19,6 +20,15 @@ describe('Pages', function() {
     apos = await t.create({
       root: module,
       modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              [apiKey]: {
+                role: 'admin'
+              }
+            }
+          }
+        },
         '@apostrophecms/page': {
           options: {
             park: [],
@@ -31,7 +41,11 @@ describe('Pages', function() {
                 name: 'test-page',
                 label: 'Test Page'
               }
-            ]
+            ],
+            publicApiProjection: {
+              title: 1,
+              _url: 1
+            }
           }
         },
         'test-page': {
@@ -479,6 +493,124 @@ describe('Pages', function() {
         ranks.push(pages[j].rank);
       }
     }
+  });
+
+  it('should not set a cache-control value when retrieving pages, when cache option is not set', async () => {
+    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === undefined);
+    assert(response2.headers['cache-control'] === undefined);
+  });
+
+  it('should not set a cache-control value when retrieving pages, when "api" cache option is not set', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 5555
+      }
+    };
+
+    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === undefined);
+    assert(response2.headers['cache-control'] === undefined);
+  });
+
+  it('should set a "max-age" cache-control value when retrieving pieces, when "api" cache option is set', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 4444
+      }
+    };
+
+    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === 'max-age=4444');
+    assert(response2.headers['cache-control'] === 'max-age=4444');
+  });
+
+  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 4444
+      }
+    };
+
+    // TODO: Move this user logic outside this test if another one should need it
+    const jar = apos.http.jar();
+    const user = apos.user.newInstance();
+
+    user.title = 'admin';
+    user.username = 'admin';
+    user.password = 'admin';
+    user.email = 'ad@min.com';
+    user.role = 'admin';
+
+    await apos.user.insert(apos.task.getReq(), user);
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin',
+        session: true
+      },
+      jar
+    });
+
+    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', {
+      fullResponse: true,
+      jar
+    });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, {
+      fullResponse: true,
+      jar
+    });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
+  });
+
+  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected using an api key', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 4444
+      }
+    };
+
+    const response1 = await apos.http.get(`/api/v1/@apostrophecms/page?apiKey=${apiKey}`, { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}?apiKey=${apiKey}`, { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
+  });
+
+  it('should not set a cache-control value when serving a page, when cache option is not set', async () => {
+    const response = await apos.http.get('/', { fullResponse: true });
+
+    assert(response.headers['cache-control'] === undefined);
+  });
+
+  it('should not set a cache-control value when serving a page, when "page" cache option is not set', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 4444
+      }
+    };
+    const response = await apos.http.get('/', { fullResponse: true });
+
+    assert(response.headers['cache-control'] === undefined);
+  });
+
+  it('should set a cache-control value when serving a page, when "page" cache option is set', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 5555
+      }
+    };
+    const response = await apos.http.get('/', { fullResponse: true });
+
+    assert(response.headers['cache-control'] === 'max-age=5555');
   });
 
 });

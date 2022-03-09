@@ -1280,4 +1280,83 @@ describe('Pieces', function() {
     assert(existingPiece.title === 'new product name');
     assert(existingPiece.color === 'red');
   });
+
+  it('should not set a cache-control value when retrieving pieces, when cache option is not set', async () => {
+    const response1 = await apos.http.get('/api/v1/thing', { fullResponse: true });
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === undefined);
+    assert(response2.headers['cache-control'] === undefined);
+  });
+
+  it('should not set a cache-control value when retrieving pieces, when "api" cache option is not set', async () => {
+    apos.thing.options.cache = {
+      page: {
+        maxAge: 5555
+      }
+    };
+
+    const response1 = await apos.http.get('/api/v1/thing', { fullResponse: true });
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === undefined);
+    assert(response2.headers['cache-control'] === undefined);
+  });
+
+  it('should set a "max-age" cache-control value when retrieving pieces, when "api" cache option is set', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 3333
+      }
+    };
+
+    const response1 = await apos.http.get('/api/v1/thing', { fullResponse: true });
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === 'max-age=3333');
+    assert(response2.headers['cache-control'] === 'max-age=3333');
+  });
+
+  it('should set a "no-store" cache-control value when retrieving pieces, when "api" cache option is set, when user is connected', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 3333
+      }
+    };
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin',
+        session: true
+      },
+      jar
+    });
+
+    const response1 = await apos.http.get('/api/v1/thing', {
+      fullResponse: true,
+      jar
+    });
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
+      fullResponse: true,
+      jar
+    });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
+  });
+
+  it('should set a "no-store" cache-control value when retrieving pieces, when "api" cache option is set, when user is connected using an api key', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 3333
+      }
+    };
+
+    const response1 = await apos.http.get(`/api/v1/thing?apiKey=${apiKey}`, { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/thing/testThing:en:published?apiKey=${apiKey}`, { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
+  });
 });

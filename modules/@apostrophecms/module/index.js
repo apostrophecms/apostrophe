@@ -446,13 +446,7 @@ module.exports = {
         );
       },
 
-      setCacheControl(req) {
-        if (!self.options.cache || !(self.options.cache.api || self.options.cache.page)) {
-          return;
-        }
-
-        const { maxAge } = self.options.cache[self.__meta.name === 'page' ? 'page' : 'api'];
-
+      setCacheControl(req, maxAge) {
         if (typeof maxAge !== 'number') {
           self.apos.util.warnDev(`"maxAge" property must be defined as a number in the "${self.__meta.name}" module's cache options"`);
           return;
