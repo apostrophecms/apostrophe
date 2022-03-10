@@ -1603,7 +1603,6 @@ database.`);
         if (req.query.pageInformation === 'json' && args.page && args.page._edit) {
           return req.res.send(args.page);
         }
-
         return self.sendPage(req, req.template, args);
       },
       // In the event of an error during the beforeSend event or the
