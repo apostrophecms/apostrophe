@@ -107,6 +107,8 @@ describe('Pieces Public API', function() {
 
     assert(response1.headers['cache-control'] === 'max-age=2222');
     assert(response2.headers['cache-control'] === 'max-age=2222');
+
+    delete apos.thing.options.cache;
   });
 
 });

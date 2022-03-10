@@ -515,6 +515,8 @@ describe('Pages', function() {
 
     assert(response1.headers['cache-control'] === undefined);
     assert(response2.headers['cache-control'] === undefined);
+
+    delete apos.page.options.cache;
   });
 
   it('should set a "max-age" cache-control value when retrieving pieces, when "api" cache option is set', async () => {
@@ -529,6 +531,8 @@ describe('Pages', function() {
 
     assert(response1.headers['cache-control'] === 'max-age=4444');
     assert(response2.headers['cache-control'] === 'max-age=4444');
+
+    delete apos.page.options.cache;
   });
 
   it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected', async () => {
@@ -569,6 +573,8 @@ describe('Pages', function() {
 
     assert(response1.headers['cache-control'] === 'no-store');
     assert(response2.headers['cache-control'] === 'no-store');
+
+    delete apos.page.options.cache;
   });
 
   it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected using an api key', async () => {
@@ -583,6 +589,8 @@ describe('Pages', function() {
 
     assert(response1.headers['cache-control'] === 'no-store');
     assert(response2.headers['cache-control'] === 'no-store');
+
+    delete apos.page.options.cache;
   });
 
   it('should not set a cache-control value when serving a page, when cache option is not set', async () => {
@@ -600,6 +608,8 @@ describe('Pages', function() {
     const response = await apos.http.get('/', { fullResponse: true });
 
     assert(response.headers['cache-control'] === undefined);
+
+    delete apos.page.options.cache;
   });
 
   it('should set a cache-control value when serving a page, when "page" cache option is set', async () => {
@@ -611,6 +621,8 @@ describe('Pages', function() {
     const response = await apos.http.get('/', { fullResponse: true });
 
     assert(response.headers['cache-control'] === 'max-age=5555');
+
+    delete apos.page.options.cache;
   });
 
 });

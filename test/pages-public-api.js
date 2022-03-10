@@ -98,5 +98,7 @@ describe('Pages Public API', function() {
 
     assert(response1.headers['cache-control'] === 'max-age=1111');
     assert(response2.headers['cache-control'] === 'max-age=1111');
+
+    delete apos.page.options.cache;
   });
 });

@@ -1301,6 +1301,8 @@ describe('Pieces', function() {
 
     assert(response1.headers['cache-control'] === undefined);
     assert(response2.headers['cache-control'] === undefined);
+
+    delete apos.thing.options.cache;
   });
 
   it('should set a "max-age" cache-control value when retrieving pieces, when "api" cache option is set', async () => {
@@ -1315,6 +1317,8 @@ describe('Pieces', function() {
 
     assert(response1.headers['cache-control'] === 'max-age=3333');
     assert(response2.headers['cache-control'] === 'max-age=3333');
+
+    delete apos.thing.options.cache;
   });
 
   it('should set a "no-store" cache-control value when retrieving pieces, when "api" cache option is set, when user is connected', async () => {
@@ -1344,6 +1348,8 @@ describe('Pieces', function() {
 
     assert(response1.headers['cache-control'] === 'no-store');
     assert(response2.headers['cache-control'] === 'no-store');
+
+    delete apos.thing.options.cache;
   });
 
   it('should set a "no-store" cache-control value when retrieving pieces, when "api" cache option is set, when user is connected using an api key', async () => {
@@ -1358,5 +1364,7 @@ describe('Pieces', function() {
 
     assert(response1.headers['cache-control'] === 'no-store');
     assert(response2.headers['cache-control'] === 'no-store');
+
+    delete apos.thing.options.cache;
   });
 });
