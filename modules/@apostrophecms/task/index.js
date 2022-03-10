@@ -193,6 +193,12 @@ module.exports = {
           res: {
             redirect(url) {
               req.res.redirectedTo = url;
+            },
+            header(key, value) {
+              req.res.headers = {
+                ...(req.res.headers || {}),
+                [key]: value
+              };
             }
           },
           t(key, options = {}) {
