@@ -464,7 +464,12 @@ module.exports = {
         const isSafeToCache = !req.user && isSessionClearForCaching;
         const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
 
-        req.res.header('Cache-Control', cacheControlValue);
+        // When serving a page for a connected user, `req.res.header` gets undefined sometimes, somehow.
+        // The Cache-Control value will still be set to "no-cache" (equivalent to "no-store")
+        // by the admin-bar module, so the result will be the same.
+        if (req.res.header) {
+          req.res.header('Cache-Control', cacheControlValue);
+        }
       },
 
       // Call from init once if this module implements the `getBrowserData` method.
