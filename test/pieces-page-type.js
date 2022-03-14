@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 let apos;
+const migrations = [];
 
 describe('Pieces Pages', function() {
 
@@ -69,9 +70,23 @@ describe('Pieces Pages', function() {
               }
             ]
           }
+        },
+        '@apostrophecms/migration': {
+          extendMethods(self) {
+            return {
+              add(_super, name, migrationFn, options) {
+                migrations.push(name);
+                return _super(name, migrationFn, options);
+              }
+            };
+          }
         }
       }
     });
+  });
+
+  it('should add the migration that sets the cache field', () => {
+    assert(migrations.includes('add-cache-invalidated-at-field-for-event-page'));
   });
 
   it('should be able to use db to insert test pieces', async function() {

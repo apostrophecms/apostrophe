@@ -55,6 +55,7 @@ module.exports = {
     ]);
     self.rules = {};
     self.dispatchAll();
+    self.addPageCacheFieldMigration();
   },
   handlers(self) {
     return {
@@ -371,6 +372,9 @@ module.exports = {
             throw self.apos.error('invalid', 'Page has neither a slug beginning with / or a title, giving up');
           }
         }
+      },
+      addPageCacheFieldMigration() {
+        self.apos.migration.add(`add-cache-invalidated-at-field-for-${self.__meta.name}`, self.addCacheMigration);
       }
     };
   },

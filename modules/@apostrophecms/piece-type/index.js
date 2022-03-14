@@ -164,6 +164,7 @@ module.exports = {
     self.addToAdminBar();
     self.addManagerModal();
     self.addEditorModal();
+    self.addPieceCacheFieldMigration();
   },
   restApiRoutes(self) {
     const { enableCacheOnDemand = true } = self.apos
@@ -660,6 +661,9 @@ module.exports = {
           self.getComponentName('editorModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
+      },
+      addPieceCacheFieldMigration() {
+        self.apos.migration.add(`add-cache-invalidated-at-field-for-${self.__meta.name}`, self.addCacheMigration);
       },
       // Add `._url` properties to the given pieces, if possible.
       async addUrls(req, pieces) {

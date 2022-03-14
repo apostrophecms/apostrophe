@@ -502,6 +502,23 @@ module.exports = {
         }
         return self.apos.migration.addSortify(self.__meta.name, { type: self.name }, field);
       },
+      // Add the "cacheInvalidatedAt" field to the documents that do not have it yet,
+      // and set it to equal doc.updatedAt.
+      // The migration will apply only for the documents of the same type as
+      // the modules' that use this method, via `self.apos.migration.add`.
+      addCacheMigration() {
+        self.apos.migration.eachDoc({ type: self.__meta.name }, 5, async doc => {
+          await self.apos.doc.db.updateOne(
+            {
+              _id: doc._id,
+              cacheInvalidatedAt: { $exists: 0 }
+            },
+            {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            }
+          );
+        });
+      },
       // Convert the untrusted data supplied in `input` via the schema and
       // update the doc object accordingly.
       //
