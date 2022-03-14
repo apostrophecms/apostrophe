@@ -900,6 +900,7 @@ module.exports = {
         // Setting it this way rather than setting it to published.updatedAt
         // guarantees no small discrepancy breaking equality comparisons
         draft.updatedAt = draft.lastPublishedAt;
+        draft.cacheInvalidatedAt = draft.lastPublishedAt;
         draft.updatedBy = published.updatedBy;
         draft = await self.update(req.clone({
           mode: 'draft'

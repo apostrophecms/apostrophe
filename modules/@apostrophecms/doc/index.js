@@ -198,7 +198,9 @@ module.exports = {
             }
           });
           if (options.setUpdatedAtAndBy !== false) {
-            doc.updatedAt = new Date();
+            const date = new Date();
+            doc.updatedAt = date;
+            doc.cacheInvalidatedAt = date;
             doc.updatedBy = req.user ? {
               _id: req.user._id,
               title: req.user.title || null,
