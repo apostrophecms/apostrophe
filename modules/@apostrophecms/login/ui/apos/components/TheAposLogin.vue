@@ -2,6 +2,7 @@
   <transition name="fade-stage">
     <div
       class="apos-login apos-theme-dark"
+      data-apos-test="loginForm"
       v-show="loaded"
       :class="themeClass"
     >
@@ -35,6 +36,7 @@
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
+                  data-apos-test="loginSubmit"
                   :busy="busy"
                   :disabled="disabled"
                   type="primary"
