@@ -119,6 +119,10 @@ module.exports = {
               project: self.getAllProjection()
             }).toObject();
 
+            if (self.options.cache && self.options.cache.api) {
+              self.setCacheControl(req, self.options.cache.api.maxAge);
+            }
+
             if (!page) {
               throw self.apos.error('notfound');
             }
@@ -137,6 +141,11 @@ module.exports = {
             }
           } else {
             const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
+
+            if (self.options.cache && self.options.cache.api) {
+              self.setCacheControl(req, self.options.cache.api.maxAge);
+            }
+
             if (!result) {
               throw self.apos.error('notfound');
             }
@@ -168,6 +177,11 @@ module.exports = {
           self.publicApiCheck(req);
           const criteria = self.getIdCriteria(_id);
           const result = await self.getRestQuery(req).and(criteria).toObject();
+
+          if (self.options.cache && self.options.cache.api) {
+            self.setCacheControl(req, self.options.cache.api.maxAge);
+          }
+
           if (!result) {
             throw self.apos.error('notfound');
           }
@@ -1415,6 +1429,10 @@ database.`);
         await self.emit('serveQuery', query);
         req.data.bestPage = await query.toObject();
         self.evaluatePageMatch(req);
+
+        if (self.options.cache && self.options.cache.page) {
+          self.setCacheControl(req, self.options.cache.page.maxAge);
+        }
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
       // trailing slashes other than the root, and double slash based open
