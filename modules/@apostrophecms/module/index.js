@@ -446,6 +446,27 @@ module.exports = {
         );
       },
 
+      setCacheControl(req, maxAge) {
+        if (typeof maxAge !== 'number') {
+          self.apos.util.warnDev(`"maxAge" property must be defined as a number in the "${self.__meta.name}" module's cache options"`);
+          return;
+        }
+
+        // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
+        // Other session properties must be assumed to be specific to the user, with a possible
+        // impact on the response, and thus mean this request must not be cached.
+        // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
+        const isSessionClearForCaching = Object.entries(req.session).every(([ key, val ]) =>
+          key === 'cookie' || (
+            (key === 'flash' || key === 'passport') && _.isEmpty(val)
+          )
+        );
+        const isSafeToCache = !req.user && isSessionClearForCaching;
+        const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
+
+        req.res.header('Cache-Control', cacheControlValue);
+      },
+
       // Call from init once if this module implements the `getBrowserData` method.
       // The data returned by `getBrowserData(req)` will then be available on
       // `apos.modules['your-module-name']` in the browser.

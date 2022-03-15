@@ -8,6 +8,7 @@
 * `data-apos-test=""` selectors for certain elements frequently selected in QA tests, such as `data-apos-test="adminBar"`.
 * `POST`ing a new child page with `_targetId: '_home'` now works properly in combination with `_position: 'lastChild'`.
 * To speed up functional tests, an `insecurePasswords` option has been added to the login module. This option is deliberately named to discourage use for any purpose other than functional tests in which repeated password hashing would unduly limit performance. Normally password hashing is intentionally difficult to slow down brute force attacks, especially if a database is compromised.
+* Offer a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages.
 
 ## 3.15.0 (2022-03-02)
 
