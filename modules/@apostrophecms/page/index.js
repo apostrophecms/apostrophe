@@ -220,7 +220,7 @@ module.exports = {
         }
 
         return self.withLock(req, async () => {
-          const targetPage = await self.findForEditing(req, targetId ? { _id: targetId } : { level: 0 }).ancestors(true).permission('edit').toObject();
+          const targetPage = await self.findForEditing(req, targetId ? self.getIdCriteria(targetId) : { level: 0 }).ancestors(true).permission('edit').toObject();
           if (!targetPage) {
             throw self.apos.error('notfound');
           }

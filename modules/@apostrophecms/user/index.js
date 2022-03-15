@@ -432,7 +432,12 @@ module.exports = {
 
       // Initialize the [credential](https://npmjs.org/package/credential) module.
       initializeCredential() {
-        self.pw = credential();
+        self.pw = credential({
+          // For efficient unit tests only. Reducing the work factor
+          // for actual credentials increases the speed of brute force attacks
+          // if the database is ever compromised
+          work: self.options.insecurePasswords ? 0.01 : 1
+        });
       },
 
       // Implement the `@apostrophecms/user:add` command line task.
