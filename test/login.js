@@ -15,7 +15,18 @@ describe('Login', function() {
 
   it('should initialize', async function() {
     apos = await t.create({
-      root: module
+      root: module,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              adminApiKey: {
+                role: 'admin'
+              }
+            }
+          }
+        }
+      }
     });
 
     assert(apos.modules['@apostrophecms/login']);
@@ -39,6 +50,14 @@ describe('Login', function() {
     assert(apos.user.insert);
     const doc = await apos.user.insert(apos.task.getReq(), user);
     assert(doc._id);
+
+    const user2 = apos.user.newInstance();
+    user2.title = 'Bob Smith';
+    user2.username = 'BobSmith';
+    user2.password = 'bobsmith';
+    user2.email = 'bobsmith@aol.com';
+    user2.role = 'guest';
+    await apos.user.insert(apos.task.getReq(), user2);
   });
 
   it('should throttle login attempts and show a proper error when the limit is reached', async function () {
@@ -118,6 +137,7 @@ describe('Login', function() {
     );
 
     assert(page.match(/logged in/));
+    assert(page.match(/Harry Putter/));
 
     // otherwise logins are not remembered in a session
     await apos.http.post(
@@ -386,4 +406,41 @@ describe('Login', function() {
 
   });
 
+  it('api key should beat session when both are present', async function() {
+    const jar = apos.http.jar();
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'BobSmith',
+          password: 'bobsmith',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+    assert(page.match(/logged in/));
+    assert(page.match(/Bob Smith/));
+
+    const page2 = await apos.http.get(
+      '/',
+      {
+        jar,
+        headers: {
+          Authorization: 'ApiKey adminApiKey'
+        }
+      }
+    );
+    assert(page2.match(/logged in/));
+    assert(!page2.match(/Bob Smith/));
+    assert(page2.match(/System Task/));
+  });
 });
