@@ -6,7 +6,7 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
-// const { merge } = require('webpack-merge');
+const { checkModulesWebpackConfig, mergeWebpackConfigs } = require('./lib/webpack/utils');
 
 module.exports = {
 
@@ -44,7 +44,7 @@ module.exports = {
             self.apos.options.autoBuild !== false
           ) {
 
-            self.checkModulesWebpackConfig();
+            checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
             // If starting up normally, run the build task, checking if we
             // really need to update the apos build
             await self.apos.task.invoke('@apostrophecms/asset:build', {
@@ -262,9 +262,11 @@ module.exports = {
                 outputFilename
               }, self.apos);
 
-              // const webpackInstanceConfigMerged = mergeWebpackConfigs(webpackInstanceConfig);
+              const webpackInstanceConfigMerged = name === 'src'
+                ? mergeWebpackConfigs(self.apos.modules, webpackInstanceConfig)
+                : webpackInstanceConfig;
 
-              const result = await webpack(webpackInstanceConfig);
+              const result = await webpack(webpackInstanceConfigMerged);
               if (result.compilation.errors.length) {
                 // Throwing a string is appropriate in a command line task
                 throw cleanErrors(result.toString('errors'));
@@ -315,21 +317,6 @@ module.exports = {
               label: req.t(options.label)
             }));
           }
-
-          // function mergeWebpackConfigs (config) {
-
-          //   const mods = Object.values(self.apos.modules);
-
-          //   const newConfig = Object.values(self.apos.modules).reduce((acc, mod) => {
-          //     if (mod.__meta.webpack && mod.__meta.webpack.extensions) {
-
-          //     }
-
-          //     return acc;
-          //   }, config);
-
-          //   return newConfig;
-          // }
 
           function getIcons() {
 
@@ -774,29 +761,6 @@ module.exports = {
           return 'url(\'' + filter(url) + '\')';
         });
         return css;
-      },
-
-      checkModulesWebpackConfig() {
-        const allowedProperties = [ 'extensions', 'bundles' ];
-
-        for (const mod of Object.values(self.apos.modules)) {
-          const webpackConfig = mod.__meta.webpack[mod.__meta.name];
-
-          if (!webpackConfig) {
-            continue;
-          }
-
-          if (
-            typeof webpackConfig !== 'object' ||
-            webpackConfig === null ||
-            Array.isArray(webpackConfig) ||
-            Object.keys(webpackConfig).some((prop) => !allowedProperties.includes(prop))
-          ) {
-            self.apos.util.warn(self.apos.i18n.i18next.t('apostrophe:assetWebpackConfigWarning', {
-              module: mod.__meta.name
-            }));
-          }
-        }
       }
     };
   },
