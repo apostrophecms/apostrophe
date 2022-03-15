@@ -200,11 +200,6 @@ module.exports = {
           if (query.get('countsResults')) {
             result.counts = query.get('countsResults');
           }
-
-          if (self.options.cache && self.options.cache.api) {
-            self.setCacheControl(req, self.options.cache.api.maxAge);
-          }
-
           return result;
         }
       ],
@@ -214,11 +209,6 @@ module.exports = {
           _id = self.inferIdLocaleAndMode(req, _id);
           self.publicApiCheck(req);
           const doc = await self.getRestQuery(req).and({ _id }).toObject();
-
-          if (self.options.cache && self.options.cache.api) {
-            self.setCacheControl(req, self.options.cache.api.maxAge);
-          }
-
           if (!doc) {
             throw self.apos.error('notfound');
           }

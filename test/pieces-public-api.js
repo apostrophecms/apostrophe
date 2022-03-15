@@ -78,37 +78,4 @@ describe('Pieces Public API', function() {
     assert(!response.results[0].foo);
   });
 
-  it('should not set a "max-age" cache-control value when retrieving pieces, when cache option is not set, with a public API projection', async () => {
-    apos.thing.options.publicApiProjection = {
-      title: 1,
-      _url: 1
-    };
-
-    const response1 = await apos.http.get('/api/v1/thing', { fullResponse: true });
-    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
-
-    assert(response1.headers['cache-control'] === undefined);
-    assert(response2.headers['cache-control'] === undefined);
-  });
-
-  it('should set a "max-age" cache-control value when retrieving pieces, with a public API projection', async () => {
-    apos.thing.options.publicApiProjection = {
-      title: 1,
-      _url: 1
-    };
-    apos.thing.options.cache = {
-      api: {
-        maxAge: 2222
-      }
-    };
-
-    const response1 = await apos.http.get('/api/v1/thing', { fullResponse: true });
-    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
-
-    assert(response1.headers['cache-control'] === 'max-age=2222');
-    assert(response2.headers['cache-control'] === 'max-age=2222');
-
-    delete apos.thing.options.cache;
-  });
-
 });

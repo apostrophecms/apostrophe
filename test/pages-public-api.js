@@ -68,37 +68,4 @@ describe('Pages Public API', function() {
     // But projection did apply
     assert(!home.searchSummary);
   });
-
-  it('should not set a "max-age" cache-control value when retrieving pages, when cache option is not set, with a public API projection', async () => {
-    apos.page.options.publicApiProjection = {
-      title: 1,
-      _url: 1
-    };
-
-    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
-    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${response1.body._id}`, { fullResponse: true });
-
-    assert(response1.headers['cache-control'] === undefined);
-    assert(response2.headers['cache-control'] === undefined);
-  });
-
-  it('should set a "max-age" cache-control value when retrieving pages, with a public API projection', async () => {
-    apos.page.options.publicApiProjection = {
-      title: 1,
-      _url: 1
-    };
-    apos.page.options.cache = {
-      api: {
-        maxAge: 1111
-      }
-    };
-
-    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
-    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${response1.body._id}`, { fullResponse: true });
-
-    assert(response1.headers['cache-control'] === 'max-age=1111');
-    assert(response2.headers['cache-control'] === 'max-age=1111');
-
-    delete apos.page.options.cache;
-  });
 });

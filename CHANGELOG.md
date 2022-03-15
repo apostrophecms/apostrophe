@@ -5,7 +5,6 @@
 ### Adds
 
 * `data-apos-test=""` selectors for certain elements frequently selected in QA tests, such as `data-apos-test="adminBar"`.
-* Offer a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages.
 
 ## 3.15.0 (2022-03-02)
 
