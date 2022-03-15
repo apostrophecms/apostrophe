@@ -4,6 +4,7 @@
 
 ### Adds
 
+* API keys and bearer tokens "win" over session cookies when both are present. Since API keys and bearer tokens are explicitly added to the request at hand, it never makes sense to ignore them in favor of a cookie, which is implicit. This also simplifies automated testing with Cypress.
 * `data-apos-test=""` selectors for certain elements frequently selected in QA tests, such as `data-apos-test="adminBar"`.
 * `POST`ing a new child page with `_targetId: '_home'` now works properly in combination with `_position: 'lastChild'`.
 * To speed up functional tests, an `insecurePasswords` option has been added to the login module. This option is deliberately named to discourage use for any purpose other than functional tests in which repeated password hashing would unduly limit performance. Normally password hashing is intentionally difficult to slow down brute force attacks, especially if a database is compromised.

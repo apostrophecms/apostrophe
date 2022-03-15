@@ -789,7 +789,12 @@ module.exports = {
       },
       passportSession: {
         before: '@apostrophecms/i18n',
-        middleware: self.passport.session()
+        middleware: (() => {
+          // Wrap the passport middleware so that if the apikey or bearer token
+          // middleware already supplied req.user, that wins (explicit wins over implicit)
+          const passportSession = self.passport.session();
+          return (req, res, next) => req.user ? next() : passportSession(req, res, next);
+        })()
       },
       honorLoginInvalidBefore: {
         before: '@apostrophecms/i18n',
