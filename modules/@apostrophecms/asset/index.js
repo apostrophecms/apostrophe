@@ -6,7 +6,12 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
-const { checkModulesWebpackConfig, mergeWebpackConfigs } = require('./lib/webpack/utils');
+const {
+  checkModulesWebpackConfig,
+  getModulesWebpackConfigs,
+  verifyBundlesEntryPoints,
+  mergeWebpackConfigs
+} = require('./lib/webpack/utils');
 
 module.exports = {
 
@@ -254,6 +259,10 @@ module.exports = {
               fs.removeSync(cssPath);
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
+
+              const { extensions, bundles } = getModulesWebpackConfigs(self.apos.modules);
+
+              const verifiedBundles = verifyBundlesEntryPoints(bundles);
 
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
