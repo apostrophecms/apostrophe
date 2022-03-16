@@ -22,7 +22,7 @@ export default function() {
     refreshedPages[location.pathname] = true;
     sessionStorage.setItem('aposRefreshedPages', JSON.stringify(refreshedPages));
 
-    console.log('Logged-out content from cache received, refreshing the page');
+    console.info('Received logged-out content from cache while logged-in, refreshing the page');
 
     location.reload();
   }
