@@ -27,18 +27,22 @@ module.exports = {
   },
   mergeWebpackConfigs (modules, config) {
     const extensions = Object.values(modules).reduce((acc, mod) => {
-      const { name, webpack } = mod.__meta;
+      const { webpack } = mod.__meta;
 
-      if (
-        !webpack[name] ||
-        !webpack[name].extensions
-      ) {
+      const inheritedExtensions = Object.values(webpack)
+        .filter((config) => config && config.extensions)
+        .map((config) => config.extensions);
+
+      if (!inheritedExtensions.length) {
         return acc;
       }
 
       return {
         ...acc,
-        ...webpack[name].extensions
+        ...inheritedExtensions.reduce((acc, ext) => ({
+          ...acc,
+          ...ext
+        }), {})
       };
     }, {});
 
