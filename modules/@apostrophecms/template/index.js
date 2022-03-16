@@ -639,8 +639,6 @@ module.exports = {
           req.scene = scene;
         }
 
-        console.log(self.apos.login);
-
         const aposBodyData = {
           modules: {},
           prefix: req.prefix,

@@ -825,8 +825,8 @@ module.exports = {
       addLoggedInCookie: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
           // TODO: get cookie name from config
+          const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
           if (req.user && req.cookies[cookieName] !== 'true') {
             res.cookie(cookieName, 'true');
           }
