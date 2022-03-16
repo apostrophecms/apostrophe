@@ -27,7 +27,7 @@ module.exports = ({
     )
   );
 
-  let config = {
+  const config = {
     entry: importFile,
     target: es5 ? 'es5' : 'web',
     mode: process.env.NODE_ENV || 'development',
@@ -60,6 +60,5 @@ module.exports = ({
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
   };
 
-  config = merge(config, ...tasks);
-  return config;
+  return merge(config, ...tasks);
 };
