@@ -120,7 +120,7 @@ module.exports = {
             }).toObject();
 
             if (self.options.cache && self.options.cache.api) {
-              self.setCacheControl(req, self.options.cache.api.maxAge);
+              self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
             if (!page) {
@@ -143,7 +143,7 @@ module.exports = {
             const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
 
             if (self.options.cache && self.options.cache.api) {
-              self.setCacheControl(req, self.options.cache.api.maxAge);
+              self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
             if (!result) {
@@ -179,7 +179,7 @@ module.exports = {
           const result = await self.getRestQuery(req).and(criteria).toObject();
 
           if (self.options.cache && self.options.cache.api) {
-            self.setCacheControl(req, self.options.cache.api.maxAge);
+            self.setMaxAge(req, self.options.cache.api.maxAge);
           }
 
           if (!result) {
@@ -1436,7 +1436,7 @@ database.`);
         self.evaluatePageMatch(req);
 
         if (self.options.cache && self.options.cache.page) {
-          self.setCacheControl(req, self.options.cache.page.maxAge);
+          self.setMaxAge(req, self.options.cache.page.maxAge);
         }
       },
       // Normalize req.slug to account for unneeded trailing whitespace,

@@ -12,7 +12,7 @@ export default function() {
     return;
   }
 
-  const refreshedPages = sessionStorage.aposRefreshedPages ? JSON.parse(sessionStorage.aposRefreshedPages) : {};
+  const refreshedPages = JSON.parse(sessionStorage.aposRefreshedPages || '{}');
 
   // Avoid potential refresh loops
   if (!refreshedPages[location.pathname]) {
