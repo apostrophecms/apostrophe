@@ -44,6 +44,11 @@ export default () => {
     return match && match[2];
   };
 
+  // Remove the cookie by the given name
+  apos.util.deleteCookie = function(name) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+  };
+
   // Remove a CSS class, if present.
   // http://youmightnotneedjquery.com/
 

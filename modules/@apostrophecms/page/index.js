@@ -512,6 +512,11 @@ module.exports = {
             self.apos.template.addBodyDataAttribute(req, { 'apos-level': req.data.page.level });
           }
         },
+        async addIsUserLoggedInAttributeToBody(req) {
+          if (req.user) {
+            self.apos.template.addBodyDataAttribute(req, 'apos-user-logged-in', true);
+          }
+        },
         async attachHomeBeforeSend(req) {
 
           // Did something else already set it?
