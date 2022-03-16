@@ -270,6 +270,8 @@ export default {
       ])));
     },
     redirectAfterLogin() {
+      window.sessionStorage.setItem('aposUserLoggedIn', 'true');
+      window.sessionStorage.setItem('aposRefreshedPages', '{}');
       window.sessionStorage.setItem('aposStateChange', Date.now());
       window.sessionStorage.setItem('aposStateChangeSeen', '{}');
       // TODO handle situation where user should be sent somewhere other than homepage.
