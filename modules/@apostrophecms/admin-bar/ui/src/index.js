@@ -15,8 +15,8 @@ export default function() {
   const refreshedPages = JSON.parse(sessionStorage.aposRefreshedPages || '{}');
 
   // Avoid potential refresh loops
-  if (!refreshedPages[location.pathname]) {
-    refreshedPages[location.pathname] = true;
+  if (!refreshedPages[location.href]) {
+    refreshedPages[location.href] = true;
     sessionStorage.setItem('aposRefreshedPages', JSON.stringify(refreshedPages));
 
     console.info('Received logged-out content from cache while logged-in, refreshing the page');
