@@ -10,22 +10,22 @@ export default function() {
   console.log('isLoggedInCookie', isLoggedInCookie);
 
   if (!isLoggedOutPageContent || !isLoggedInCookie) {
-    sessionStorage.setItem('aposStopRefresh', 'false');
+    sessionStorage.setItem('aposRefreshedPages', '{}');
 
     return;
   }
 
-  console.log('sessionStorage.aposStopRefresh', sessionStorage.aposStopRefresh);
+  const refreshedPages = sessionStorage.aposRefreshedPages ? JSON.parse(sessionStorage.aposRefreshedPages) : {};
+  console.log('refreshedPages', refreshedPages);
 
   // Avoid potential refresh loops
-  if (sessionStorage.aposStopRefresh === 'true') {
-    return;
+  if (!refreshedPages[location.pathname]) {
+    refreshedPages[location.pathname] = true;
+    sessionStorage.setItem('aposRefreshedPages', JSON.stringify(refreshedPages));
+
+    console.info('Received logged-out content from cache while logged-in, refreshing the page');
+
+    alert('reloading...');
+    location.reload();
   }
-
-  sessionStorage.setItem('aposStopRefresh', 'true');
-
-  console.info('Received logged-out content from cache while logged-in, refreshing the page');
-
-  alert('reloading...');
-  location.reload();
 };
