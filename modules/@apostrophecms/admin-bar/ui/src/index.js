@@ -6,9 +6,6 @@ export default function() {
   const isLoggedOutPageContent = document.body.getAttribute('data-apos-user-logged-in') !== 'true';
   const isLoggedInCookie = apos.util.getCookie(`${self.apos.shortName}.loggedIn`) === 'true';
 
-  console.log('isLoggedOutPageContent', isLoggedOutPageContent);
-  console.log('isLoggedInCookie', isLoggedInCookie);
-
   if (!isLoggedOutPageContent || !isLoggedInCookie) {
     sessionStorage.setItem('aposRefreshedPages', '{}');
 
@@ -16,7 +13,6 @@ export default function() {
   }
 
   const refreshedPages = sessionStorage.aposRefreshedPages ? JSON.parse(sessionStorage.aposRefreshedPages) : {};
-  console.log('refreshedPages', refreshedPages);
 
   // Avoid potential refresh loops
   if (!refreshedPages[location.pathname]) {
@@ -25,7 +21,6 @@ export default function() {
 
     console.info('Received logged-out content from cache while logged-in, refreshing the page');
 
-    alert('reloading...');
     location.reload();
   }
 };
