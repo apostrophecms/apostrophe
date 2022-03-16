@@ -6,11 +6,11 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
+const { merge: webpackMerge } = require('webpack-merge');
 const {
   checkModulesWebpackConfig,
   getModulesWebpackConfigs,
-  verifyBundlesEntryPoints,
-  mergeWebpackConfigs
+  verifyBundlesEntryPoints
 } = require('./lib/webpack/utils');
 
 module.exports = {
@@ -77,6 +77,8 @@ module.exports = {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
+          const instantiatedModules = self.apos.modulesToBeInstantiated();
+
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
@@ -162,7 +164,7 @@ module.exports = {
             const directories = {};
             // Most other modules are not actually instantiated yet, but
             // we can access their metadata, which is sufficient
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of instantiatedModules) {
               const ancestorDirectories = [];
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
@@ -260,19 +262,23 @@ module.exports = {
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
-              const { extensions, bundles } = getModulesWebpackConfigs(self.apos.modules);
+              const { extensions, bundles } = getModulesWebpackConfigs(
+                self.apos.modules,
+                instantiatedModules
+              );
 
-              const verifiedBundles = verifyBundlesEntryPoints(bundles);
+              const verifiedBundles = await verifyBundlesEntryPoints(bundles);
 
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
-                outputFilename
+                outputFilename,
+                bundles: verifiedBundles
               }, self.apos);
 
               const webpackInstanceConfigMerged = name === 'src'
-                ? mergeWebpackConfigs(self.apos.modules, webpackInstanceConfig)
+                ? webpackMerge(webpackInstanceConfig, ...Object.values(extensions))
                 : webpackInstanceConfig;
 
               const result = await webpack(webpackInstanceConfigMerged);
@@ -329,7 +335,7 @@ module.exports = {
 
           function getIcons() {
 
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of instantiatedModules) {
               const metadata = self.apos.synth.getMetadata(name);
               // icons is an unparsed section, so getMetadata gives it back
               // to us as an object with a property for each class in the
@@ -453,7 +459,7 @@ module.exports = {
           function getImports(folder, pattern, options) {
             let components = [];
             const seen = {};
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of instantiatedModules) {
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
                 if (seen[entry.dirname]) {
