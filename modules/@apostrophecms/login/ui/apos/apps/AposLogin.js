@@ -15,8 +15,6 @@ export default function() {
       return;
     }
     await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/logout`, {});
-    window.sessionStorage.setItem('aposUserLoggedIn', 'false');
-    window.sessionStorage.setItem('aposRefreshedPages', '{}');
     window.sessionStorage.setItem('aposStateChange', Date.now());
     window.sessionStorage.setItem('aposStateChangeSeen', '{}');
     try {

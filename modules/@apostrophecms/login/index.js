@@ -151,6 +151,7 @@ module.exports = {
             expireCookie.expires = new Date(0);
             const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
             req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
+            req.res.cookie(`${self.apos.shortName}.loggedIn`, 'false');
           }
         },
         // invokes the `props(req, user)` function for the requirement specified by
@@ -678,6 +679,7 @@ module.exports = {
 
       // Awaitable wrapper for req.login. An implementation detail of the login route
       async passportLogin(req, user) {
+        req.res.cookie(`${self.apos.shortName}.loggedIn`, 'true');
         const passportLogin = (user) => {
           return require('util').promisify(function(user, callback) {
             return req.login(user, callback);
