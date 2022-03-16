@@ -27,84 +27,70 @@ module.exports = {
     }
   },
 
-  getModulesWebpackConfigs (modules) {
-    const { extensions, bundles } = Object.values(modules).reduce((acc, mod) => {
-      const { name, webpack } = mod.__meta;
+  getModulesWebpackConfigs (modules, instantiatedModules) {
+    const { extensions, bundles } = instantiatedModules.reduce((acc, moduleName) => {
+      const {
+        webpack, chain
+      } = modules[moduleName].__meta;
 
-      if (
-        !webpack[name] ||
-        (!webpack[name].extensions && !webpack[name].bundles)
-      ) {
+      const configs = getConfigInChain(chain, webpack);
+
+      if (!configs.length) {
         return acc;
       }
 
-      const bundlesNames = Object.keys(webpack[name].bundles) || []
+      const moduleBundles = configs.reduce((acc, conf) => {
+        return {
+          ...acc,
+          ...conf.bundles
+        };
+      }, {});
 
       return {
         extensions: {
           ...acc.extensions,
-          ...webpack[name].extensions || {}
+          ...configs.reduce((acc, config) => ({
+            ...acc,
+            ...config.extensions
+          }), {})
         },
-        bundles: [
+        bundles: {
           ...acc.bundles,
-          ...webpack[name].bundles ? [{
-            [mod.__meta.name]: {
-              bundleNames: Object.keys(webpack[name].bundles),
-              modulePath: mod.__meta.chain[mod.__meta.chain.length - 1].dirname
-            }
-            }] : []
-        ]
+          ...moduleBundles
+        }
       };
     }, {
       extensions: {},
-      bundles: []
+      bundles: {}
     });
 
     return {
       extensions,
-      bundles
+      bundles: flattenBundles(bundles)
     };
   },
 
   async verifyBundlesEntryPoints (bundles) {
-    const promises = Object.entries(bundles)
-      .map(async ([ moduleName, { bundleNames, modulePath } ]) => {
-        // for (const name of bundleNames) {
-        //   const entryPointExist = await fs.pathExists(`${modulePath}/ui/src/${name}.js`);
+    const checkPathsPromises = bundles.map(async ({ bundleName, modulePath }) => {
+      const jsPath = `${modulePath}/ui/src/${bundleName}.js`;
+      const scssPath = `${modulePath}/ui/src/${bundleName}.scss`;
 
-        //   console.log('entryPointExist ===> ', entryPointExist);
-        // }
+      const jsFileExists = await fs.pathExists(jsPath);
+      const scssFileExists = await fs.pathExists(scssPath);
 
-        await Promise.all(bundleNames.map((n) => {
-          const entryPointExist = await fs.pathExists(`${modulePath}/ui/src/${name}.js`);
-        }))
-      });
+      return {
+        bundleName,
+        paths: [
+          ...jsFileExists ? [ jsPath ] : [],
+          ...scssFileExists ? [ scssPath ] : []
+        ]
+      };
+    });
 
-    async function checkEachBundleName (bundles, moduleName) {
-      const promises = bundleNames.map((n) => {
-        const jsPath = `${modulePath}/ui/src/${n}.js`
-        const scssPath = `${modulePath}/ui/src/${n}.scss`
+    const bundlesPaths = (await Promise.all(checkPathsPromises))
+      .filter((bundle) => bundle.paths.length);
 
-        const jsEntryPointExists = await fs.pathExists(jsPath);
-        const scssEntryPointExists = await fs.pathExists(scssPath);
-
-      })
-
-
-      await Promise.all()
-    }
-
-    const res = Promise.all(promises);
-
-    // for (const [ moduleName, { bundleNames, modulePath } ] of Object.entries(bundles)) {
-    //   console.log('modulePath ===> ', modulePath);
-
-    //   for (const name of bundleNames) {
-    //     const entryPointExist = await fs.pathExists(`${modulePath}/ui/src/${name}.js`);
-
-    //     console.log('entryPointExist ===> ', entryPointExist);
-    //   }
-    // }
+    return bundlesPaths;
   },
 
   mergeWebpackConfigs (modules, config) {
@@ -131,3 +117,37 @@ module.exports = {
     return webpackMerge(config, ...Object.values(extensions));
   }
 };
+
+function getConfigInChain (chain, webpackConfigs) {
+  return Object.entries(webpackConfigs)
+    .map(([ name, conf ], i) => {
+      if (!conf) {
+        return conf;
+      }
+
+      const { bundles, extensions } = conf;
+
+      return {
+        extensions,
+        bundles: {
+          [name]: {
+            bundleNames: Object.keys(bundles),
+            modulePath: chain[i].dirname
+          }
+        }
+      };
+    }).filter((conf) => conf);
+}
+
+function flattenBundles (bundles) {
+  return Object.values(bundles)
+    .reduce((acc, { bundleNames, modulePath }) => {
+      return [
+        ...acc,
+        ...bundleNames.map((bundleName) => ({
+          bundleName,
+          modulePath
+        }))
+      ];
+    }, []);
+}
