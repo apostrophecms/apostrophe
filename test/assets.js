@@ -25,8 +25,7 @@ const modules = {
           rules: [
             {
               test: /\.ext1$/,
-              loader: 'ext1-loader',
-              options: { sourceMap: true }
+              loader: 'ext1-loader'
             }
           ]
         },
@@ -34,8 +33,7 @@ const modules = {
           rules: [
             {
               test: /\.ext2$/,
-              loader: 'ext2-loader',
-              options: { sourceMap: true }
+              loader: 'ext2-loader'
             }
           ]
         }
@@ -51,7 +49,54 @@ const modules = {
             {
               test: /\.ext1$/,
               loader: 'ext1-loader',
-              options: { sourceMap: false }
+              overriden: true
+            }
+          ]
+        }
+      }
+    }
+  },
+  baseModule: {
+    instantiate: false,
+    webpack: {
+      extensions: {
+        base: {
+          rules: [
+            {
+              test: /\.base$/,
+              loader: 'base-loader'
+            }
+          ]
+        },
+        base2: {
+          rules: [
+            {
+              test: /\.base2$/,
+              loader: 'base2-loader'
+            }
+          ]
+        }
+      }
+    }
+  },
+  subclassModule: {
+    extend: 'baseModule',
+    webpack: {
+      extensions: {
+        base2: {
+          rules: [
+            {
+              test: /\.base2$/,
+              loader: 'base2-loader',
+              overriden: true
+            }
+          ]
+        },
+        subclass: {
+          rules: [
+            {
+              test: /\.subclass$/,
+              loader: 'subclass-loader'
             }
           ]
         }
@@ -141,8 +186,22 @@ describe('Assets', function() {
     const mergedConfig = mergeWebpackConfigs(apos.modules, webpackInstanceConfig);
 
     const ext1Loaders = mergedConfig.rules.filter((rule) => rule.loader === 'ext1-loader');
+
     assert(ext1Loaders.length === 1);
-    assert(ext1Loaders[0].options.sourceMap === false);
+    assert(ext1Loaders[0].overriden);
     assert(mergedConfig.rules);
+
+    const baseLoader = mergedConfig.rules.find((rule) => rule.loader === 'base-loader');
+
+    assert(baseLoader);
+
+    const base2Loaders = mergedConfig.rules.filter((rule) => rule.loader === 'base2-loader');
+
+    assert(base2Loaders.length === 1);
+    assert(base2Loaders[0].overriden);
+
+    const subclassLoader = mergedConfig.rules.find((rule) => rule.loader === 'subclass-loader');
+
+    assert(subclassLoader);
   });
 });
