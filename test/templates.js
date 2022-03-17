@@ -115,6 +115,7 @@ describe('Templates', function() {
     assert($body.length);
     const aposData = JSON.parse($body.attr('data-apos'));
     assert(aposData);
+    assert(aposData.shortName);
     assert(aposData.csrfCookieName);
     assert(!aposData.modules['@apostrophecms/admin-bar']);
     assert(result.indexOf('<title>I am the title</title>') !== -1);
@@ -129,6 +130,7 @@ describe('Templates', function() {
     assert($body.length);
     const aposData = JSON.parse($body.attr('data-apos'));
     assert(aposData);
+    assert(aposData.shortName);
     assert(aposData.modules['@apostrophecms/admin-bar'].items.length);
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h2>I am the main content</h2>') !== -1);

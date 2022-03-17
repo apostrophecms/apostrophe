@@ -103,6 +103,8 @@ describe('Login', function() {
   });
 
   it('should be able to login a user with their username', async function() {
+    const getLoggedInCookieValue =
+      jar => jar.toJSON().cookies.find(cookie => cookie.key === `${apos.options.shortName}.loggedIn`).value;
 
     const jar = apos.http.jar();
 
@@ -138,6 +140,7 @@ describe('Login', function() {
 
     assert(page.match(/logged in/));
     assert(page.match(/Harry Putter/));
+    assert(getLoggedInCookieValue(jar) === 'true');
 
     // otherwise logins are not remembered in a session
     await apos.http.post(
@@ -161,6 +164,7 @@ describe('Login', function() {
 
     // are we back to being able to log in?
     assert(page.match(/logged out/));
+    assert(getLoggedInCookieValue(jar) === 'false');
   });
 
   it('should be able to login a user with their email', async function() {
