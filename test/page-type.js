@@ -1,7 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 let apos;
-const migrations = [];
 
 describe('page-type', function() {
 
@@ -21,25 +20,11 @@ describe('page-type', function() {
       modules: {
         'nifty-page': {
           extend: '@apostrophecms/page-type'
-        },
-        '@apostrophecms/migration': {
-          extendMethods(self) {
-            return {
-              add(_super, name, migrationFn, options) {
-                migrations.push(name);
-                return _super(name, migrationFn, options);
-              }
-            };
-          }
         }
       }
     });
 
     assert(apos && apos.__meta.name === 'apostrophe');
-  });
-
-  it('should add the migration that sets the cache field', () => {
-    assert(migrations.includes('add-cache-invalidated-at-field-for-nifty-page'));
   });
 
   it('should fire a dispatch route for its homepage', async function() {

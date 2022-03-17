@@ -9,7 +9,6 @@ const FormData = require('form-data');
 let apos;
 let jar;
 const apiKey = 'this is a test api key';
-const migrations = [];
 
 describe('Pieces', function() {
 
@@ -35,16 +34,6 @@ describe('Pieces', function() {
                 role: 'admin'
               }
             }
-          }
-        },
-        '@apostrophecms/migration': {
-          extendMethods(self) {
-            return {
-              add(_super, name, migrationFn, options) {
-                migrations.push(name);
-                return _super(name, migrationFn, options);
-              }
-            };
           }
         },
         thing: {
@@ -266,14 +255,6 @@ describe('Pieces', function() {
       thingsIds: [ 'thing2', 'thing3' ]
     }
   ];
-
-  it('should add the migration that sets the cache field', () => {
-    const testPiecesName = [ 'thing', 'person', 'product', 'article', 'constrained', 'resume' ];
-    const result = testPiecesName.every(
-      testPieceName => migrations.includes(`add-cache-invalidated-at-field-for-${testPieceName}`)
-    );
-    assert(result);
-  });
 
   // Test pieces.newInstance()
   it('should be able to create a new piece', function() {
