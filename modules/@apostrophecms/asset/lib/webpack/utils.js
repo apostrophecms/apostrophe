@@ -1,5 +1,4 @@
 const fs = require('fs-extra');
-const { merge: webpackMerge } = require('webpack-merge');
 
 module.exports = {
   checkModulesWebpackConfig(modules, t) {
@@ -27,95 +26,104 @@ module.exports = {
     }
   },
 
-  getModulesWebpackConfigs (modules, instantiatedModules) {
-    const { extensions, bundles } = instantiatedModules.reduce((acc, moduleName) => {
-      const {
-        webpack, chain
-      } = modules[moduleName].__meta;
+  async getWebpackExtensions ({
+    name, getMetadata, modulesToInstantiate
+  }) {
+    if (name !== 'src') {
+      return {};
+    }
 
-      const configs = getConfigInChain(chain, webpack);
+    const modulesMeta = modulesToInstantiate
+      .map((name) => getMetadata(name));
 
-      if (!configs.length) {
-        return acc;
-      }
+    const { extensions, foundBundles } = getModulesWebpackConfigs(
+      modulesMeta
+    );
 
-      const moduleBundles = configs.reduce((acc, conf) => {
-        return {
-          ...acc,
-          ...conf.bundles
-        };
-      }, {});
-
-      return {
-        extensions: {
-          ...acc.extensions,
-          ...configs.reduce((acc, config) => ({
-            ...acc,
-            ...config.extensions
-          }), {})
-        },
-        bundles: {
-          ...acc.bundles,
-          ...moduleBundles
-        }
-      };
-    }, {
-      extensions: {},
-      bundles: {}
-    });
+    const verifiedBundles = await verifyBundlesEntryPoints(foundBundles);
 
     return {
       extensions,
-      bundles: flattenBundles(bundles)
+      verifiedBundles
     };
   },
 
-  async verifyBundlesEntryPoints (bundles) {
-    const checkPathsPromises = bundles.map(async ({ bundleName, modulePath }) => {
-      const jsPath = `${modulePath}/ui/src/${bundleName}.js`;
-      const scssPath = `${modulePath}/ui/src/${bundleName}.scss`;
+  fillExtraBundles (verifiedBundles, bundles) {
+    const bundlesPaths = verifiedBundles
+      .reduce((acc, { paths }) => ([
+        ...acc,
+        ...paths.map((p) => p.substr(p.lastIndexOf('/') + 1)
+          .replace(/\.scss$/, '.css'))
+      ]), []);
 
-      const jsFileExists = await fs.pathExists(jsPath);
-      const scssFileExists = await fs.pathExists(scssPath);
-
-      return {
-        bundleName,
-        paths: [
-          ...jsFileExists ? [ jsPath ] : [],
-          ...scssFileExists ? [ scssPath ] : []
-        ]
-      };
+    bundlesPaths.forEach(bundle => {
+      bundles.push(bundle);
     });
+  }
+};
 
-    const bundlesPaths = (await Promise.all(checkPathsPromises))
-      .filter((bundle) => bundle.paths.length);
+function getModulesWebpackConfigs (modulesMeta) {
+  const { extensions, bundles } = modulesMeta.reduce((acc, meta) => {
+    const { webpack, __meta } = meta;
 
-    return bundlesPaths;
-  },
+    const configs = getConfigInChain(__meta.chain, webpack);
 
-  mergeWebpackConfigs (modules, config) {
-    const extensions = Object.values(modules).reduce((acc, mod) => {
-      const { webpack } = mod.__meta;
+    if (!configs.length) {
+      return acc;
+    }
 
-      const inheritedExtensions = Object.values(webpack)
-        .filter((config) => config && config.extensions)
-        .map((config) => config.extensions);
-
-      if (!inheritedExtensions.length) {
-        return acc;
-      }
-
+    const moduleBundles = configs.reduce((acc, conf) => {
       return {
         ...acc,
-        ...inheritedExtensions.reduce((acc, ext) => ({
-          ...acc,
-          ...ext
-        }), {})
+        ...conf.bundles
       };
     }, {});
 
-    return webpackMerge(config, ...Object.values(extensions));
-  }
+    return {
+      extensions: {
+        ...acc.extensions,
+        ...configs.reduce((acc, config) => ({
+          ...acc,
+          ...config.extensions
+        }), {})
+      },
+      bundles: {
+        ...acc.bundles,
+        ...moduleBundles
+      }
+    };
+  }, {
+    extensions: {},
+    bundles: {}
+  });
+
+  return {
+    extensions,
+    foundBundles: flattenBundles(bundles)
+  };
+};
+
+async function verifyBundlesEntryPoints (bundles) {
+  const checkPathsPromises = bundles.map(async ({ bundleName, modulePath }) => {
+    const jsPath = `${modulePath}/ui/src/${bundleName}.js`;
+    const scssPath = `${modulePath}/ui/src/${bundleName}.scss`;
+
+    const jsFileExists = await fs.pathExists(jsPath);
+    const scssFileExists = await fs.pathExists(scssPath);
+
+    return {
+      bundleName,
+      paths: [
+        ...jsFileExists ? [ jsPath ] : [],
+        ...scssFileExists ? [ scssPath ] : []
+      ]
+    };
+  });
+
+  const bundlesPaths = (await Promise.all(checkPathsPromises))
+    .filter((bundle) => bundle.paths.length);
+
+  return bundlesPaths;
 };
 
 function getConfigInChain (chain, webpackConfigs) {
