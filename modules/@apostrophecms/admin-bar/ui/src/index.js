@@ -3,7 +3,7 @@
  * we force-refresh the page to bypass the cache, in order to get the logged-in content (with admin UI).
  */
 export default function() {
-  const isLoggedOutPageContent = document.body.getAttribute('data-apos-user-logged-in') !== 'true';
+  const isLoggedOutPageContent = !(apos.login && apos.login.user);
   const isLoggedInCookie = apos.util.getCookie(`${self.apos.shortName}.loggedIn`) === 'true';
 
   if (!isLoggedOutPageContent || !isLoggedInCookie) {

@@ -657,7 +657,6 @@ module.exports = {
             _id: req.user._id,
             username: req.user.username
           };
-          self.addBodyDataAttribute(req, 'apos-user-logged-in', true);
         }
         await self.emit('addBodyData', req, aposBodyData);
         self.addBodyDataAttribute(req, { apos: JSON.stringify(aposBodyData) });

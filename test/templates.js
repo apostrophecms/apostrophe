@@ -136,23 +136,6 @@ describe('Templates', function() {
     assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
   });
 
-  it('should render pages successfully with outerLayout, without data-apos-user-logged-in attribute', async function() {
-    const req = apos.task.getAnonReq();
-    const result = await apos.modules['template-test'].renderPage(req, 'page');
-    const $ = cheerio.load(result);
-    const $body = $('body');
-    assert($body.attr('data-apos-user-logged-in') === undefined);
-  });
-
-  it('should render pages successfully with outerLayout for admin user, with data-apos-user-logged-in attribute', async function() {
-    const req = apos.task.getReq();
-    const result = await apos.modules['template-test'].renderPage(req, 'page');
-    const $ = cheerio.load(result);
-    const $body = $('body');
-    const aposUserLoggedIn = JSON.parse($body.attr('data-apos-user-logged-in'));
-    assert(aposUserLoggedIn === true);
-  });
-
   it('cross-module-included files should be able to include/extend other files relative to their own module', async function() {
     const req = apos.task.getAnonReq();
     const result = await apos.modules['template-test'].renderPage(req, 'pageWithLayout');
