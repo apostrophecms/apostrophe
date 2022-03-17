@@ -6,6 +6,7 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
+const { checkModulesWebpackConfig, mergeWebpackConfigs } = require('./lib/webpack/utils');
 
 module.exports = {
 
@@ -42,6 +43,8 @@ module.exports = {
             // Or if we've set an app option to skip the auto build
             self.apos.options.autoBuild !== false
           ) {
+
+            checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
             // If starting up normally, run the build task, checking if we
             // really need to update the apos build
             await self.apos.task.invoke('@apostrophecms/asset:build', {
@@ -251,13 +254,19 @@ module.exports = {
               fs.removeSync(cssPath);
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
+
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
                 outputFilename
               }, self.apos);
-              const result = await webpack(webpackInstanceConfig);
+
+              const webpackInstanceConfigMerged = name === 'src'
+                ? mergeWebpackConfigs(self.apos.modules, webpackInstanceConfig)
+                : webpackInstanceConfig;
+
+              const result = await webpack(webpackInstanceConfigMerged);
               if (result.compilation.errors.length) {
                 // Throwing a string is appropriate in a command line task
                 throw cleanErrors(result.toString('errors'));
