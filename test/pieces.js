@@ -1321,6 +1321,29 @@ describe('Pieces', function() {
     delete apos.thing.options.cache;
   });
 
+  it('should set a "no-store" cache-control value when retrieving pieces, when user is connected', async () => {
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin',
+        session: true
+      },
+      jar
+    });
+
+    const response1 = await apos.http.get('/api/v1/thing', {
+      fullResponse: true,
+      jar
+    });
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
+      fullResponse: true,
+      jar
+    });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
+  });
+
   it('should set a "no-store" cache-control value when retrieving pieces, when "api" cache option is set, when user is connected', async () => {
     apos.thing.options.cache = {
       api: {
@@ -1350,6 +1373,14 @@ describe('Pieces', function() {
     assert(response2.headers['cache-control'] === 'no-store');
 
     delete apos.thing.options.cache;
+  });
+
+  it('should set a "no-store" cache-control value when retrieving pieces, when user is connected using an api key', async () => {
+    const response1 = await apos.http.get(`/api/v1/thing?apiKey=${apiKey}`, { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/thing/testThing:en:published?apiKey=${apiKey}`, { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
   });
 
   it('should set a "no-store" cache-control value when retrieving pieces, when "api" cache option is set, when user is connected using an api key', async () => {
