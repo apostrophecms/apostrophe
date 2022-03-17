@@ -1,7 +1,11 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 let apos;
-const migrations = [];
+const migrations = {
+  add: [],
+  eachDoc: [],
+  updateOne: []
+};
 
 describe('Pieces Pages', function() {
 
@@ -75,8 +79,27 @@ describe('Pieces Pages', function() {
           extendMethods(self) {
             return {
               add(_super, name, migrationFn, options) {
-                migrations.push(name);
+                migrations.add.push(name);
+                migrationFn();
                 return _super(name, migrationFn, options);
+              },
+              eachDoc(_super, criteria, limit, iterator) {
+                if (criteria.type) {
+                  self.apos.doc.db.updateOne = (filter, update, options) => {
+                    migrations.updateOne.push({
+                      filter,
+                      update
+                    });
+                  };
+                  migrations.eachDoc.push(criteria.type);
+                  const doc = {
+                    _id: criteria.type,
+                    updatedAt: '1234'
+                  };
+                  iterator(doc);
+                }
+
+                return _super(criteria, limit, iterator);
               }
             };
           }
@@ -85,8 +108,23 @@ describe('Pieces Pages', function() {
     });
   });
 
-  it('should add the migration that sets the cache field', () => {
-    assert(migrations.includes('add-cache-invalidated-at-field-for-event-page'));
+  it('should add via a migration the `cacheInvalidatedAt` field to any doc and set it to equal the doc\'s `updatedAt` field', () => {
+    const modulesToTest = [
+      '@apostrophecms/any-doc-type',
+      'event-page', // piece-page type
+      'event' // piece type
+    ];
+
+    modulesToTest.forEach(moduleName => {
+      assert(migrations.add.includes(`add-cache-invalidated-at-field-for-${moduleName}`));
+      assert(migrations.eachDoc.includes(moduleName));
+
+      const updateOneMigration = migrations.updateOne.find(({ filter }) => filter._id === moduleName);
+
+      // `cacheInvalidatedAt` field is added only if not already set in the doc
+      assert(updateOneMigration.filter.cacheInvalidatedAt.$exists === 0);
+      assert(updateOneMigration.update.$set.cacheInvalidatedAt === '1234');
+    });
   });
 
   it('should be able to use db to insert test pieces', async function() {
