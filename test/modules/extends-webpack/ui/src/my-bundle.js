@@ -1,3 +1,1 @@
-export default () => {
-  console.log('=============> MY BUNDLE <================');
-};
+export default () => {};
