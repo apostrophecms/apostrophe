@@ -66,7 +66,7 @@ function getModulesWebpackConfigs (modulesMeta) {
   const { extensions, bundles } = modulesMeta.reduce((acc, meta) => {
     const { webpack, __meta } = meta;
 
-    const configs = getConfigInChain(__meta.chain, webpack);
+    const configs = formatConfigs(__meta.chain, webpack);
 
     if (!configs.length) {
       return acc;
@@ -126,14 +126,15 @@ async function verifyBundlesEntryPoints (bundles) {
   return bundlesPaths;
 };
 
-function getConfigInChain (chain, webpackConfigs) {
+function formatConfigs (chain, webpackConfigs) {
   return Object.entries(webpackConfigs)
-    .map(([ name, conf ], i) => {
-      if (!conf) {
-        return conf;
+    .map(([ name, config ], i) => {
+
+      if (!config) {
+        return null;
       }
 
-      const { bundles, extensions } = conf;
+      const { bundles = {}, extensions = {} } = config;
 
       return {
         extensions,
@@ -144,7 +145,7 @@ function getConfigInChain (chain, webpackConfigs) {
           }
         }
       };
-    }).filter((conf) => conf);
+    }).filter((config) => config);
 }
 
 function flattenBundles (bundles) {
