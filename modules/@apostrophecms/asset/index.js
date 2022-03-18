@@ -7,6 +7,7 @@ const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
 const { merge: webpackMerge } = require('webpack-merge');
+const cuid = require('cuid');
 const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
@@ -56,6 +57,10 @@ module.exports = {
               'check-apos-build': true
             });
           }
+        },
+        injectAssetsPlaceholders() {
+          self.apos.template.prepend('head', '@apostrophecms/asset:stylesheets');
+          self.apos.template.append('body', '@apostrophecms/asset:scripts');
         }
       },
       'apostrophe:destroy': {
@@ -64,6 +69,37 @@ module.exports = {
             await Promise.promisify(self.uploadfs.destroy)();
           }
         }
+      }
+    };
+  },
+  components(self) {
+    return {
+      scripts(req, data) {
+        const placeholder = `[scripts-placeholder:${cuid()}]`;
+
+        console.log('req.placeholder ===> ', require('util').inspect(req.placeholder, {
+          colors: true,
+          depth: 2
+        }));
+
+        console.log('req.toto ===> ', require('util').inspect(req.toto, {
+          colors: true,
+          depth: 2
+        }));
+        req.scriptsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
+      },
+      stylesheets(req, data) {
+        const placeholder = `[stylesheets-placeholder:${cuid()}]`;
+
+        req.stylesheetsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
       }
     };
   },
