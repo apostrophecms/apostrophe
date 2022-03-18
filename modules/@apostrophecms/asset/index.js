@@ -6,7 +6,12 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
-const { checkModulesWebpackConfig, mergeWebpackConfigs } = require('./lib/webpack/utils');
+const { merge: webpackMerge } = require('webpack-merge');
+const {
+  checkModulesWebpackConfig,
+  getWebpackExtensions,
+  fillExtraBundles
+} = require('./lib/webpack/utils');
 
 module.exports = {
 
@@ -72,6 +77,9 @@ module.exports = {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
+          const modulesToInstantiate = self.apos.modulesToBeInstantiated();
+          const extraBundles = [];
+
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
@@ -123,7 +131,11 @@ module.exports = {
 
             if (rebuild) {
               await fs.mkdirp(bundleDir);
-              await build(name, options);
+              await build({
+                name,
+                options,
+                bundles: extraBundles
+              });
             }
           }
 
@@ -131,6 +143,7 @@ module.exports = {
           // just `public` and `apos`) by examining those specified as
           // targets for the various builds
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
+
           let deployFiles = [];
           for (const scene of scenes) {
             deployFiles = [ ...deployFiles, ...merge(scene) ];
@@ -140,7 +153,7 @@ module.exports = {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
-          deployFiles = [ ...deployFiles, ...publicAssets ];
+          deployFiles = [ ...deployFiles, ...publicAssets, ...extraBundles ];
           await deploy(deployFiles);
 
           if (process.env.APOS_BUNDLE_ANALYZER) {
@@ -157,7 +170,7 @@ module.exports = {
             const directories = {};
             // Most other modules are not actually instantiated yet, but
             // we can access their metadata, which is sufficient
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const ancestorDirectories = [];
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
@@ -184,7 +197,9 @@ module.exports = {
             }
           }
 
-          async function build(name, options) {
+          async function build({
+            name, bundles, options
+          }) {
             self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
               label: req.t(options.label)
             }));
@@ -255,15 +270,24 @@ module.exports = {
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
+              const { extensions, verifiedBundles } = await getWebpackExtensions({
+                name,
+                getMetadata: self.apos.synth.getMetadata,
+                modulesToInstantiate
+              });
+
+              verifiedBundles && fillExtraBundles(verifiedBundles, bundles);
+
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
-                outputFilename
+                outputFilename,
+                bundles: verifiedBundles
               }, self.apos);
 
-              const webpackInstanceConfigMerged = name === 'src'
-                ? mergeWebpackConfigs(self.apos.modules, webpackInstanceConfig)
+              const webpackInstanceConfigMerged = extensions
+                ? webpackMerge(webpackInstanceConfig, ...Object.values(extensions))
                 : webpackInstanceConfig;
 
               const result = await webpack(webpackInstanceConfigMerged);
@@ -320,7 +344,7 @@ module.exports = {
 
           function getIcons() {
 
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               // icons is an unparsed section, so getMetadata gives it back
               // to us as an object with a property for each class in the
@@ -360,41 +384,47 @@ module.exports = {
             const jsModules = `${scene}-module-bundle.js`;
             const jsNoModules = `${scene}-nomodule-bundle.js`;
             const css = `${scene}-bundle.css`;
-            fs.writeFileSync(
-              `${bundleDir}/${jsModules}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'module')
-              ).map(([ name, options ]) => {
-                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
-              }).join('\n')
-            );
-            fs.writeFileSync(
-              `${bundleDir}/${jsNoModules}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'nomodule')
-              ).map(([ name, options ]) => {
-                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
-              }).join('\n')
-            );
-            fs.writeFileSync(
-              `${bundleDir}/${css}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('css')
-              ).map(([ name, options ]) => {
-                const file = `${bundleDir}/${name}-build.css`;
-                if (fs.existsSync(file)) {
-                  return `/* BUILD: ${name} */\n` + fs.readFileSync(file, 'utf8');
-                } else {
-                  return '';
-                }
-              }).join('\n')
-            );
+            writeAssetFile({
+              filePath: jsModules
+            });
+            writeAssetFile({
+              filePath: jsNoModules
+            });
+            writeAssetFile({
+              filePath: css,
+              checkForFile: true
+            });
+
             return [ jsModules, jsNoModules, css ];
+          }
+
+          function writeAssetFile ({
+            filePath, checkForFile = false
+          }) {
+            const [ _ext, fileExt ] = filePath.match(/\.(\w+)$/);
+            const filterBuilds = ({
+              outputs, condition
+            }) => {
+              return outputs.includes(fileExt) &&
+                (!condition || condition === 'module');
+            };
+
+            const filesContent = Object.entries(self.builds)
+              .filter(([ _, options ]) => filterBuilds(options)
+              ).map(([ name ]) => {
+                const file = `${bundleDir}/${name}-build.${fileExt}`;
+                const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
+
+                if (checkForFile) {
+                  return fs.existsSync(file)
+                    ? readFile(name, file)
+                    : '';
+                }
+
+                return readFile(name, file);
+              }).join('\n');
+
+            fs.writeFileSync(`${bundleDir}/${filePath}`, filesContent);
           }
 
           // If NODE_ENV is production, this function will copy the given
@@ -444,7 +474,7 @@ module.exports = {
           function getImports(folder, pattern, options) {
             let components = [];
             const seen = {};
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
                 if (seen[entry.dirname]) {
