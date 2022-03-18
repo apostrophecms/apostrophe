@@ -1,116 +1,21 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const path = require('path');
 const {
   checkModulesWebpackConfig,
-  mergeWebpackConfigs
+  getWebpackExtensions,
+  fillExtraBundles
 } = require('../modules/@apostrophecms/asset/lib/webpack/utils');
-const webpackBaseConfig = require('../modules/@apostrophecms/asset/lib/webpack/src/webpack.config');
 
 let apos;
 
-const modules = {
-  '@apostrophecms/i18n': {
-    options: {
-      locales: {
-        en: {}
-      }
-    }
-  },
-  mod1: {
-    extend: '@apostrophecms/module',
-    webpack: {
-      extensions: {
-        ext1: {
-          rules: [
-            {
-              test: /\.ext1$/,
-              loader: 'ext1-loader'
-            }
-          ]
-        },
-        ext2: {
-          rules: [
-            {
-              test: /\.ext2$/,
-              loader: 'ext2-loader'
-            }
-          ]
-        }
-      }
-    }
-  },
-  mod2: {
-    extend: '@apostrophecms/module',
-    webpack: {
-      extensions: {
-        ext1: {
-          rules: [
-            {
-              test: /\.ext1$/,
-              loader: 'ext1-loader',
-              overriden: true
-            }
-          ]
-        }
-      }
-    }
-  },
-  baseModule: {
-    instantiate: false,
-    webpack: {
-      extensions: {
-        base: {
-          rules: [
-            {
-              test: /\.base$/,
-              loader: 'base-loader'
-            }
-          ]
-        },
-        base2: {
-          rules: [
-            {
-              test: /\.base2$/,
-              loader: 'base2-loader'
-            }
-          ]
-        }
-      }
-    }
-  },
-  subclassModule: {
-    extend: 'baseModule',
-    webpack: {
-      extensions: {
-        base2: {
-          rules: [
-            {
-              test: /\.base2$/,
-              loader: 'base2-loader',
-              overriden: true
-            }
-          ]
-        },
-        subclass: {
-          rules: [
-            {
-              test: /\.subclass$/,
-              loader: 'subclass-loader'
-            }
-          ]
-        }
-      }
-    }
-  }
-};
-
 const badModules = {
-  ...modules,
-  badModules: {
+  badModuleConfig: {
     webpack: {
       badprop: {}
     }
+  },
+  badModuleConfig2: {
+    webpack: []
   }
 };
 
@@ -122,10 +27,13 @@ describe('Assets', function() {
 
   this.timeout(t.timeout);
 
-  it('should should exist on the apos object', async function() {
+  it('should exist on the apos object', async function() {
     apos = await t.create({
       root: module,
-      modules
+      modules: {
+        'extends-webpack': {},
+        'extends-webpack-sub': {}
+      }
     });
     assert(apos.asset);
   });
@@ -136,10 +44,9 @@ describe('Assets', function() {
   });
 
   it('should check that webpack configs in modules are well formatted', async function () {
-    const [ valid, err ] = check(apos.modules, apos.task.getReq().t);
+    const translate = apos.task.getReq().t;
 
-    assert(valid);
-    assert(!err);
+    assert.doesNotThrow(() => checkModulesWebpackConfig(apos.modules, translate));
 
     await t.destroy(apos);
 
@@ -148,60 +55,49 @@ describe('Assets', function() {
       modules: badModules
     });
 
-    const [ valid2, err2 ] = check(apos.modules, apos.task.getReq().t);
-
-    assert(!valid2);
-    assert(err2);
+    assert.throws(() => checkModulesWebpackConfig(apos.modules, translate));
 
     await t.destroy(apos);
 
     apos = await t.create({
       root: module,
-      modules
-    });
-
-    function check (modules, t) {
-      try {
-        checkModulesWebpackConfig(modules, t);
-
-        return [ true, false ];
-      } catch (err) {
-        return [ false, err ];
+      modules: {
+        'extends-webpack': {},
+        'extends-webpack-sub': {}
       }
-    }
+    });
   });
 
-  it('shoud merge webpack configs from modules with the Apostrophe one', async function () {
-    const buildPath = (p) => {
-      return path.join(process.cwd(), p);
-    };
+  it('should get webpack extensions from modules and fill extra bundles', async function () {
+    const extraBundles = [];
+    const expectedBundlesNames = [ 'my-bundle.js', 'my-sub-bundle.js', 'my-sub-bundle.css' ];
 
-    const webpackInstanceConfig = webpackBaseConfig({
-      importFile: buildPath('apos-build/default/src-import.js'),
-      modulesDir: buildPath('apos-build/default/src/modules'),
-      outputPath: buildPath('public/apos-frontend/default'),
-      outputFilename: 'src-build.js'
-    }, apos);
+    const { extensions, verifiedBundles } = await getWebpackExtensions({
+      name: 'src',
+      getMetadata: apos.synth.getMetadata,
+      modulesToInstantiate: apos.modulesToBeInstantiated()
+    });
 
-    const mergedConfig = mergeWebpackConfigs(apos.modules, webpackInstanceConfig);
+    assert(Object.keys(extensions).length === 3);
+    assert(extensions.ext2.rules[0].overriden);
+    assert(extensions.ext3);
 
-    const ext1Loaders = mergedConfig.rules.filter((rule) => rule.loader === 'ext1-loader');
+    assert(verifiedBundles.length === 2);
 
-    assert(ext1Loaders.length === 1);
-    assert(ext1Loaders[0].overriden);
-    assert(mergedConfig.rules);
+    const [ verified1, verified2 ] = verifiedBundles;
 
-    const baseLoader = mergedConfig.rules.find((rule) => rule.loader === 'base-loader');
+    assert(verified1.bundleName === 'my-bundle');
+    assert(verified1.paths.length === 1);
 
-    assert(baseLoader);
+    assert(verified2.bundleName === 'my-sub-bundle');
+    assert(verified2.paths.length === 2);
+    assert(verified2.paths[0].endsWith('.js'));
+    assert(verified2.paths[1].endsWith('.scss'));
 
-    const base2Loaders = mergedConfig.rules.filter((rule) => rule.loader === 'base2-loader');
+    fillExtraBundles(verifiedBundles, extraBundles);
 
-    assert(base2Loaders.length === 1);
-    assert(base2Loaders[0].overriden);
-
-    const subclassLoader = mergedConfig.rules.find((rule) => rule.loader === 'subclass-loader');
-
-    assert(subclassLoader);
+    extraBundles.forEach((name) => {
+      assert(expectedBundlesNames.includes(name));
+    });
   });
 });
