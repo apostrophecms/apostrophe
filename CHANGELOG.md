@@ -1,5 +1,11 @@
 # Changelog
 
+# UNRELEASED
+
+### Fixes
+
+* Fixes a bug introduced by 3.16.0 in which we get the logged-out homepage right after logging in.
+
 ## 3.16.0 (2022-03-18)
 
 ### Adds
