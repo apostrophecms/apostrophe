@@ -1,10 +1,10 @@
 # Changelog
 
-# UNRELEASED
+# 3.16.1 (2022-03-21)
 
 ### Fixes
 
-* Fixes a bug introduced by 3.16.0 in which we get the logged-out homepage right after logging in.
+* Fixes a bug in the new `Cache-Control` support introduced by 3.16.0 in which we get the logged-out homepage right after logging in. This issue only came into play if the new caching options were enabled.
 
 ## 3.16.0 (2022-03-18)
 
