@@ -622,4 +622,28 @@ describe('Docs', function() {
     await apos.doc.createTextIndex();
   });
 
+  /// ///
+  // CACHING
+  /// ///
+
+  it('should add a `cacheInvalidatedAt` field and set it to equal `updatedAt` field', async function() {
+    const object = {
+      slug: 'test-for-cacheInvalidatedAt-field',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Michael',
+      lastName: 'Jackson',
+      age: 64,
+      alive: true
+    };
+
+    const response = await apos.doc.insert(apos.task.getReq(), object);
+    const draft = await apos.doc.db.findOne({
+      _id: `${response.aposDocId}:en:draft`
+    });
+
+    assert(response.cacheInvalidatedAt.toString() === response.updatedAt.toString());
+    assert(draft.cacheInvalidatedAt.toString() === draft.updatedAt.toString());
+  });
+
 });
