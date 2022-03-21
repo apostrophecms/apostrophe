@@ -10,7 +10,7 @@
 
 ### Adds
 
-* Offers a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages.
+* Offers a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages. [See the documentation for more information](https://v3.docs.apostrophecms.org/guide/caching.html).
 * API keys and bearer tokens "win" over session cookies when both are present. Since API keys and bearer tokens are explicitly added to the request at hand, it never makes sense to ignore them in favor of a cookie, which is implicit. This also simplifies automated testing.
 * `data-apos-test=""` selectors for certain elements frequently selected in QA tests, such as `data-apos-test="adminBar"`.
 * To speed up functional tests, an `insecurePasswords` option has been added to the login module. This option is deliberately named to discourage use for any purpose other than functional tests in which repeated password hashing would unduly limit performance. Normally password hashing is intentionally difficult to slow down brute force attacks, especially if a database is compromised.
