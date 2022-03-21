@@ -682,6 +682,10 @@ module.exports = {
 
       // Awaitable wrapper for req.login. An implementation detail of the login route
       async passportLogin(req, user) {
+        const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
+        if (req.cookies[cookieName] !== 'true') {
+          req.res.cookie(cookieName, 'true');
+        }
         const passportLogin = (user) => {
           return require('util').promisify(function(user, callback) {
             return req.login(user, callback);
