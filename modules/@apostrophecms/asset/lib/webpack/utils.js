@@ -3,7 +3,6 @@ const fs = require('fs-extra');
 module.exports = {
   checkModulesWebpackConfig(modules, t) {
     const allowedProperties = [ 'extensions', 'bundles' ];
-
     for (const mod of Object.values(modules)) {
       const webpackConfig = mod.__meta.webpack[mod.__meta.name];
 
@@ -22,6 +21,25 @@ module.exports = {
         });
 
         throw new Error(error);
+      }
+
+      if (webpackConfig && webpackConfig.bundles) {
+        const bundles = Object.values(webpackConfig.bundles);
+
+        bundles.forEach(bundle => {
+          const bundleProps = Object.keys(bundle);
+          if (
+            bundleProps.length > 1 ||
+            (bundleProps.length === 1 && !bundle.templates) ||
+            (bundle.templates && !Array.isArray(bundle.templates))
+          ) {
+            const error = t('apostrophe:assetWebpackBundlesWarning', {
+              module: mod.__meta.name
+            });
+
+            throw new Error(error);
+          }
+        });
       }
     }
   },
@@ -48,16 +66,24 @@ module.exports = {
     };
   },
 
-  fillExtraBundles (verifiedBundles, bundles) {
-    const bundlesPaths = verifiedBundles
-      .reduce((acc, { paths }) => ([
-        ...acc,
-        ...paths.map((p) => p.substr(p.lastIndexOf('/') + 1)
-          .replace(/\.scss$/, '.css'))
-      ]), []);
+  fillExtraBundles (verifiedBundles = []) {
+    const getFileName = (p) => p.substr(p.lastIndexOf('/') + 1);
 
-    bundlesPaths.forEach(bundle => {
-      bundles.push(bundle);
+    return verifiedBundles.reduce((acc, { paths }) => {
+      return {
+        js: [
+          ...acc.js,
+          ...paths.filter((p) => p.endsWith('.js')).map((p) => getFileName(p))
+        ],
+        css: [
+          ...acc.css,
+          ...paths.filter((p) => p.endsWith('.scss'))
+            .map((p) => getFileName(p).replace(/\.scss$/, '.css'))
+        ]
+      };
+    }, {
+      js: [],
+      css: []
     });
   }
 };
