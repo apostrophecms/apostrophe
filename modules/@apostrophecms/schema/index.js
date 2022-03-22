@@ -1947,81 +1947,8 @@ module.exports = {
         }
       },
 
-      // In the given document or widget, update any underlying
-      // storage needs required for relationships, arrays, etc.,
-      // such as populating the idsStorage and fieldsStorage
-      // properties of relationship fields, or setting the
-      // arrayName property of array items. This method is
-      // always invoked for you by @apostrophecms/doc-type in a
-      // beforeSave handler. This method also recursively invokes
-      // itself as needed for relationships nested in widgets,
-      // array fields and object fields.
-      //
-      // If a relationship field is present by name (such as `_products`)
-      // in the document, that is taken as authoritative, and any
-      // existing values in the `idsStorage` and `fieldsStorage`
-      // are overwritten. If the relationship field is not present, the
-      // existing values are left alone. This allows the developer
-      // to safely update a document that was fetched with
-      // `.relationships(false)`, provided the projection included
-      // the ids.
-      //
-      // Currently `req` does not impact this, but that may change.
-
       prepareForStorage(req, doc) {
-        if (doc.metaType === 'doc') {
-          const manager = self.apos.doc.getManager(doc.type);
-          if (!manager) {
-            return;
-          }
-          forSchema(manager.schema, doc);
-        } else if (doc.metaType === 'widget') {
-          const manager = self.apos.area.getWidgetManager(doc.type);
-          if (!manager) {
-            return;
-          }
-          forSchema(manager.schema, doc);
-        }
-        function forSchema(schema, doc) {
-          for (const field of schema) {
-            if (field.type === 'area') {
-              if (doc[field.name] && doc[field.name].items) {
-                for (const widget of doc[field.name].items) {
-                  self.prepareForStorage(req, widget);
-                }
-              }
-            } else if (field.type === 'array') {
-              if (doc[field.name]) {
-                doc[field.name].forEach(item => {
-                  item._id = item._id || self.apos.util.generateId();
-                  item.metaType = 'arrayItem';
-                  item.scopedArrayName = field.scopedArrayName;
-                  forSchema(field.schema, item);
-                });
-              }
-            } else if (field.type === 'object') {
-              const value = doc[field.name];
-              if (value) {
-                value.metaType = 'object';
-                value.scopedObjectName = field.scopedObjectName;
-                forSchema(field.schema, value);
-              }
-            } else if (field.type === 'relationship') {
-              if (Array.isArray(doc[field.name])) {
-                doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
-                if (field.fieldsStorage) {
-                  const fieldsById = doc[field.fieldsStorage] || {};
-                  for (const relatedDoc of doc[field.name]) {
-                    if (relatedDoc._fields) {
-                      fieldsById[self.apos.doc.toAposDocId(relatedDoc)] = relatedDoc._fields;
-                    }
-                  }
-                  doc[field.fieldsStorage] = fieldsById;
-                }
-              }
-            }
-          }
-        }
+        self.apos.doc.walkThrough(req, doc);
       },
 
       // Add a new field type. The `type` object may contain the following properties:

@@ -97,6 +97,34 @@ module.exports = {
         prepareForStorage(req, doc) {
           self.apos.schema.prepareForStorage(req, doc);
         },
+        async updateBacklinks(req, doc) {
+          const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+
+          // TODO: don't forget to remove these logs:
+          console.log('---');
+          console.log('doc._id', doc._id);
+          console.log('doc.aposDocId', doc.aposDocId);
+          console.log('relatedDocsIds', relatedDocsIds);
+          console.log('---');
+
+          // Remove all references to the doc
+          await self.apos.doc.db.updateMany({
+            relatedReverseIds: { $in: [ doc.aposDocId ] }
+          }, {
+            $pull: { relatedReverseIds: doc.aposDocId }
+          });
+
+          if (!relatedDocsIds.length) {
+            return;
+          }
+
+          // Add doc reference to all related docs
+          await self.apos.doc.db.updateMany({
+            aposDocId: { $in: relatedDocsIds }
+          }, {
+            $push: { relatedReverseIds: doc.aposDocId }
+          });
+        },
         slugPrefix(req, doc) {
           const prefix = self.options.slugPrefix;
           if (prefix) {
@@ -253,6 +281,12 @@ module.exports = {
 
   methods(self) {
     return {
+      getRelatedDocsIds(req, doc) {
+        const relatedDocsIds = [];
+        self.apos.doc.walkThrough(req, doc, relatedDocsIds);
+
+        return relatedDocsIds;
+      },
       sanitizeFieldList(choices) {
         if ((typeof choices) === 'string') {
           return choices.split(/\s*,\s*/);
