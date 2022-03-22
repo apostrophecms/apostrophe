@@ -36,6 +36,10 @@ module.exports = {
     };
     self.configureBuilds();
     self.initUploadfs();
+    self.extraBundles = {
+      js: [],
+      css: []
+    };
   },
   handlers (self) {
     return {
@@ -77,15 +81,6 @@ module.exports = {
       scripts(req, data) {
         const placeholder = `[scripts-placeholder:${cuid()}]`;
 
-        console.log('req.placeholder ===> ', require('util').inspect(req.placeholder, {
-          colors: true,
-          depth: 2
-        }));
-
-        console.log('req.toto ===> ', require('util').inspect(req.toto, {
-          colors: true,
-          depth: 2
-        }));
         req.scriptsPlaceholder = placeholder;
 
         return {
@@ -114,7 +109,6 @@ module.exports = {
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           const modulesToInstantiate = self.apos.modulesToBeInstantiated();
-          const extraBundles = [];
 
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
@@ -169,8 +163,7 @@ module.exports = {
               await fs.mkdirp(bundleDir);
               await build({
                 name,
-                options,
-                bundles: extraBundles
+                options
               });
             }
           }
@@ -189,7 +182,13 @@ module.exports = {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
-          deployFiles = [ ...deployFiles, ...publicAssets, ...extraBundles ];
+          deployFiles = [
+            ...deployFiles,
+            ...publicAssets,
+            ...self.extraBundles.js,
+            ...self.extraBundles.css
+          ];
+
           await deploy(deployFiles);
 
           if (process.env.APOS_BUNDLE_ANALYZER) {
@@ -234,7 +233,7 @@ module.exports = {
           }
 
           async function build({
-            name, bundles, options
+            name, options
           }) {
             self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
               label: req.t(options.label)
@@ -312,7 +311,9 @@ module.exports = {
                 modulesToInstantiate
               });
 
-              verifiedBundles && fillExtraBundles(verifiedBundles, bundles);
+              if (name === 'src') {
+                self.extraBundles = fillExtraBundles(verifiedBundles);
+              }
 
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
