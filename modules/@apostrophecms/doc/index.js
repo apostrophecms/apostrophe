@@ -329,10 +329,10 @@ module.exports = {
           updatedAt: -1,
           aposLocale: 1
         }, {});
-        // await self.db.createIndex({
-        //   relatedReverseIds: -1,
-        //   aposLocale: 1
-        // }, {});
+        await self.db.createIndex({
+          relatedReverseIds: 1,
+          aposLocale: 1
+        }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
         await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});
