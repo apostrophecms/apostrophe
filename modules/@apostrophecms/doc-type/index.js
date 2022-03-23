@@ -100,13 +100,6 @@ module.exports = {
         async updateBacklinks(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
 
-          // TODO: don't forget to remove these logs:
-          console.log('---');
-          console.log('doc._id', doc._id);
-          console.log('doc.aposDocId', doc.aposDocId);
-          console.log('relatedDocsIds', relatedDocsIds);
-          console.log('---');
-
           // Remove all references to the doc
           await self.apos.doc.db.updateMany({
             relatedReverseIds: { $in: [ doc.aposDocId ] },
