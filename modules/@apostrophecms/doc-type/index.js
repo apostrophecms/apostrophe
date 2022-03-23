@@ -109,7 +109,8 @@ module.exports = {
 
           // Remove all references to the doc
           await self.apos.doc.db.updateMany({
-            relatedReverseIds: { $in: [ doc.aposDocId ] }
+            relatedReverseIds: { $in: [ doc.aposDocId ] },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
           }, {
             $pull: { relatedReverseIds: doc.aposDocId }
           });
@@ -120,7 +121,8 @@ module.exports = {
 
           // Add doc reference to all related docs
           await self.apos.doc.db.updateMany({
-            aposDocId: { $in: relatedDocsIds }
+            aposDocId: { $in: relatedDocsIds },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
           }, {
             $push: { relatedReverseIds: doc.aposDocId }
           });
