@@ -1969,8 +1969,8 @@ module.exports = {
       // Currently `req` does not impact this, but that may change.
 
       prepareForStorage(req, doc) {
-        const callbacks = {
-          arrayCb: (doc, field, recursiveFunc) => {
+        const handlers = {
+          arrayHandler: (doc, field, recursiveFunc) => {
             if (doc[field.name]) {
               doc[field.name].forEach(item => {
                 item._id = item._id || self.apos.util.generateId();
@@ -1980,7 +1980,7 @@ module.exports = {
               });
             }
           },
-          objectCb: (doc, field, recursiveFunc) => {
+          objectHandler: (doc, field, recursiveFunc) => {
             const value = doc[field.name];
             if (value) {
               value.metaType = 'object';
@@ -1988,7 +1988,7 @@ module.exports = {
               recursiveFunc(field.schema, value);
             }
           },
-          relationshipCb: (doc, field) => {
+          relationshipHandler: (doc, field) => {
             if (Array.isArray(doc[field.name])) {
               doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
               if (field.fieldsStorage) {
@@ -2004,7 +2004,7 @@ module.exports = {
           }
         };
 
-        self.apos.doc.walkThrough(doc, callbacks);
+        self.apos.doc.walkThrough(doc, handlers);
       },
 
       // Add a new field type. The `type` object may contain the following properties:

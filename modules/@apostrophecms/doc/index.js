@@ -1098,31 +1098,31 @@ module.exports = {
         });
       },
 
-      // Iterate through the document's field, and execute the provided callbacks
+      // Iterate through the document's field, and execute the provided handlers
       // for each array, object and relationship field type.
-      // The callbacks take the `doc` and the current `field` values as arguments,
+      // The handlers take the `doc` and the current `field` values as arguments,
       // letting you edit them if needed.
       //
-      // Note that the provided array and object callbacks must call the `recursiveFunc`
+      // Note that the provided array and object handlers must call the `recursiveFunc`
       // so that every nested fields are walked through.
-      // This this done by default, when array or object callback are not provided.
+      // This this done by default, when array or object handlers are not provided.
 
       walkThrough(
         doc,
         {
-          arrayCb = (doc, field, recursiveFunc) => {
+          arrayHandler = (doc, field, recursiveFunc) => {
             if (doc[field.name]) {
               doc[field.name].forEach(item => {
                 recursiveFunc(field.schema, item);
               });
             }
           },
-          objectCb = (doc, field, recursiveFunc) => {
+          objectHandler = (doc, field, recursiveFunc) => {
             if (doc[field.name]) {
               recursiveFunc(field.schema, doc[field.name]);
             }
           },
-          relationshipCb = () => {}
+          relationshipHandler = () => {}
         }
       ) {
         if (doc.metaType === 'doc') {
@@ -1143,17 +1143,17 @@ module.exports = {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
                 self.walkThrough(widget, {
-                  arrayCb,
-                  objectCb,
-                  relationshipCb
+                  arrayHandler,
+                  objectHandler,
+                  relationshipHandler
                 });
               }
             } else if (field.type === 'array') {
-              arrayCb(doc, field, forSchema);
+              arrayHandler(doc, field, forSchema);
             } else if (field.type === 'object') {
-              objectCb(doc, field, forSchema);
+              objectHandler(doc, field, forSchema);
             } else if (field.type === 'relationship') {
-              relationshipCb(doc, field);
+              relationshipHandler(doc, field);
             }
           }
         }

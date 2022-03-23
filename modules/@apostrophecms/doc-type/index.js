@@ -285,13 +285,13 @@ module.exports = {
     return {
       getRelatedDocsIds(req, doc) {
         const relatedDocsIds = [];
-        const callbacks = {
-          relationshipCb: (doc, field) => {
+        const handlers = {
+          relationshipHandler: (doc, field) => {
             relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
           }
         };
 
-        self.apos.doc.walkThrough(doc, callbacks);
+        self.apos.doc.walkThrough(doc, handlers);
 
         return relatedDocsIds;
       },
