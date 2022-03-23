@@ -283,7 +283,13 @@ module.exports = {
     return {
       getRelatedDocsIds(req, doc) {
         const relatedDocsIds = [];
-        self.apos.doc.walkThrough(req, doc, relatedDocsIds);
+        const callbacks = {
+          relationshipCb: (doc, field) => {
+            relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
+          }
+        };
+
+        self.apos.doc.walkThrough(req, doc, callbacks);
 
         return relatedDocsIds;
       },

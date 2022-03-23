@@ -329,6 +329,10 @@ module.exports = {
           updatedAt: -1,
           aposLocale: 1
         }, {});
+        // await self.db.createIndex({
+        //   relatedReverseIds: -1,
+        //   aposLocale: 1
+        // }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
         await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});
@@ -1094,32 +1098,34 @@ module.exports = {
         });
       },
 
-      // In the given document or widget, update any underlying
-      // storage needs required for relationships, arrays, etc.,
-      // such as populating the idsStorage and fieldsStorage
-      // properties of relationship fields, or setting the
-      // arrayName property of array items. This method is
-      // always invoked for you by @apostrophecms/doc-type in a
-      // beforeSave handler, via `self.apos.schema.prepareForStorage`.
-      // This method also recursively invokes
-      // itself as needed for relationships nested in widgets,
-      // array fields and object fields.
+      // Iterate through the document's field, and execute the provided callbacks
+      // for each array, object and relationship field type.
+      // The callbacks take the `doc` and the current `field` values as arguments,
+      // letting you edit them if needed.
       //
-      // If a relationship field is present by name (such as `_products`)
-      // in the document, that is taken as authoritative, and any
-      // existing values in the `idsStorage` and `fieldsStorage`
-      // are overwritten. If the relationship field is not present, the
-      // existing values are left alone. This allows the developer
-      // to safely update a document that was fetched with
-      // `.relationships(false)`, provided the projection included
-      // the ids.
-      //
-      // If the `allRelatedDocsIds` argument is given, this function
-      // will only fill it with all the related docs ids, recursively.
-      //
-      // Currently `req` does not impact this, but that may change.
+      // Note that the provided array and object callbacks must call the `recursiveFunc`
+      // so that every nested fields are walked through.
+      // This this done by default, when array or object callback are not provided.
 
-      walkThrough(req, doc, allRelatedDocsIds) {
+      walkThrough(
+        req,
+        doc,
+        {
+          arrayCb = (doc, field, recursiveFunc) => {
+            if (doc[field.name]) {
+              doc[field.name].forEach(item => {
+                recursiveFunc(field.schema, item);
+              });
+            }
+          },
+          objectCb = (doc, field, recursiveFunc) => {
+            if (doc[field.name]) {
+              recursiveFunc(field.schema, doc[field.name]);
+            }
+          },
+          relationshipCb = () => {}
+        }
+      ) {
         if (doc.metaType === 'doc') {
           const manager = self.getManager(doc.type);
           if (!manager) {
@@ -1135,51 +1141,20 @@ module.exports = {
         }
         function forSchema(schema, doc) {
           for (const field of schema) {
-            if (field.type === 'area') {
-              if (doc[field.name] && doc[field.name].items) {
-                for (const widget of doc[field.name].items) {
-                  self.walkThrough(req, widget, allRelatedDocsIds);
-                }
-              }
-            } else if (field.type === 'array') {
-              if (doc[field.name]) {
-                doc[field.name].forEach(item => {
-                  item._id = item._id || self.apos.util.generateId();
-                  item.metaType = 'arrayItem';
-                  item.scopedArrayName = field.scopedArrayName;
-                  forSchema(field.schema, item);
+            if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
+              for (const widget of doc[field.name].items) {
+                self.walkThrough(req, widget, {
+                  arrayCb,
+                  objectCb,
+                  relationshipCb
                 });
               }
+            } else if (field.type === 'array') {
+              arrayCb(doc, field, forSchema);
             } else if (field.type === 'object') {
-              const value = doc[field.name];
-              if (value) {
-                value.metaType = 'object';
-                value.scopedObjectName = field.scopedObjectName;
-                forSchema(field.schema, value);
-              }
+              objectCb(doc, field, forSchema);
             } else if (field.type === 'relationship') {
-              if (Array.isArray(doc[field.name])) {
-                const relatedDocsIds = doc[field.name].map(relatedDoc => self.toAposDocId(relatedDoc));
-
-                if (Array.isArray(allRelatedDocsIds)) {
-                  allRelatedDocsIds.push(...relatedDocsIds);
-
-                  // Stop there, we only want to add the related IDs
-                  // to `allRelatedDocsIds` array reference, if provided, nothing more.
-                  return;
-                }
-
-                doc[field.idsStorage] = relatedDocsIds;
-                if (field.fieldsStorage) {
-                  const fieldsById = doc[field.fieldsStorage] || {};
-                  for (const relatedDoc of doc[field.name]) {
-                    if (relatedDoc._fields) {
-                      fieldsById[self.toAposDocId(relatedDoc)] = relatedDoc._fields;
-                    }
-                  }
-                  doc[field.fieldsStorage] = fieldsById;
-                }
-              }
+              relationshipCb(doc, field);
             }
           }
         }
