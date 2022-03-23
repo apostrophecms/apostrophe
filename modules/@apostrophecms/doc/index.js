@@ -1108,7 +1108,6 @@ module.exports = {
       // This this done by default, when array or object callback are not provided.
 
       walkThrough(
-        req,
         doc,
         {
           arrayCb = (doc, field, recursiveFunc) => {
@@ -1143,7 +1142,7 @@ module.exports = {
           for (const field of schema) {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
-                self.walkThrough(req, widget, {
+                self.walkThrough(widget, {
                   arrayCb,
                   objectCb,
                   relationshipCb

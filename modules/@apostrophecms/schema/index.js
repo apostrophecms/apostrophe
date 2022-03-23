@@ -2004,7 +2004,7 @@ module.exports = {
           }
         };
 
-        self.apos.doc.walkThrough(req, doc, callbacks);
+        self.apos.doc.walkThrough(doc, callbacks);
       },
 
       // Add a new field type. The `type` object may contain the following properties:

@@ -289,7 +289,7 @@ module.exports = {
           }
         };
 
-        self.apos.doc.walkThrough(req, doc, callbacks);
+        self.apos.doc.walkThrough(doc, callbacks);
 
         return relatedDocsIds;
       },
