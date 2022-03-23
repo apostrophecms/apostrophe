@@ -447,8 +447,9 @@ module.exports = {
             };
 
             const filesContent = Object.entries(self.builds)
-              .filter(([ _, options ]) => filterBuilds(options)
-              ).map(([ name ]) => {
+              .filter(([ _, options ]) => filterBuilds(options))
+              .map(([ name ]) => {
+
                 const file = `${bundleDir}/${name}-build.${fileExt}`;
                 const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
 
@@ -631,22 +632,10 @@ module.exports = {
         }
       },
       stylesheetsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        const bundle = `<link href="${base}/${when}-bundle.css" rel="stylesheet" />`;
-        return self.apos.template.safe(bundle);
+        return '';
       },
       scriptsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        if (self.options.es5) {
-          return self.apos.template.safe(stripIndent`
-            <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
-            <script type="module" src="${base}/${when}-module-bundle.js"></script>
-          `);
-        } else {
-          return self.apos.template.safe(stripIndent`
-            <script src="${base}/${when}-module-bundle.js"></script>
-          `);
-        }
+        return '';
       },
       shouldRefreshOnRestart() {
         return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
