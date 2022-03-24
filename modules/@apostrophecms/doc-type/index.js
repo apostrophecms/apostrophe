@@ -90,7 +90,6 @@ module.exports = {
     self.composeSchema();
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
-    self.addCacheFieldMigration();
   },
   handlers(self) {
     return {
@@ -502,23 +501,6 @@ module.exports = {
           return;
         }
         return self.apos.migration.addSortify(self.__meta.name, { type: self.name }, field);
-      },
-      // Add the "cacheInvalidatedAt" field to the documents that do not have it yet,
-      // and set it to equal doc.updatedAt.
-      addCacheFieldMigration() {
-        self.apos.migration.add(`add-cache-invalidated-at-field-for-${self.__meta.name}`, () => {
-          self.apos.migration.eachDoc({ type: self.__meta.name }, 5, async doc => {
-            await self.apos.doc.db.updateOne(
-              {
-                _id: doc._id,
-                cacheInvalidatedAt: { $exists: 0 }
-              },
-              {
-                $set: { cacheInvalidatedAt: doc.updatedAt }
-              }
-            );
-          });
-        });
       },
       // Convert the untrusted data supplied in `input` via the schema and
       // update the doc object accordingly.

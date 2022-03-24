@@ -1,7 +1,12 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
+
 let apos;
+const migrations = {
+  addList: [],
+  updateList: []
+};
 
 describe('Docs', function() {
 
@@ -30,6 +35,37 @@ describe('Docs', function() {
               }
             }
           }
+        },
+        '@apostrophecms/migration': {
+          extendMethods(self) {
+            return {
+              add(_super, name, migrationFn, options) {
+                migrations.addList.push(name);
+                migrationFn();
+                return _super(name, migrationFn, options);
+              },
+              eachDoc(_super, criteria, limit, iterator) {
+                if (criteria.cacheInvalidatedAt) {
+                  const _updateOne = self.apos.doc.db.updateOne.bind(self.apos.doc.db);
+                  self.apos.doc.db.updateOne = (filter, update, options) => {
+                    migrations.updateList.push({
+                      filter,
+                      update
+                    });
+                    return _updateOne(filter, update, options);
+                  };
+                  const doc = {
+                    _id: 'some-id',
+                    updatedAt: '1234'
+                  };
+                  iterator(doc);
+                  self.apos.doc.db.updateOne = _updateOne;
+                }
+
+                return _super(criteria, limit, iterator);
+              }
+            };
+          }
         }
       }
     });
@@ -40,6 +76,17 @@ describe('Docs', function() {
 
   it('should have a db property', function() {
     assert(apos.doc.db);
+  });
+
+  /// ///
+  // MIGRATIONS
+  /// ///
+
+  it('should add via a migration the `cacheInvalidatedAt` field to any doc and set it to equal the doc\'s `updatedAt` field', () => {
+    assert(migrations.addList.includes('add-cache-invalidated-at-field'));
+    assert(migrations.updateList.length === 1);
+    assert(migrations.updateList[0].filter._id === 'some-id');
+    assert(migrations.updateList[0].update.$set.cacheInvalidatedAt === '1234');
   });
 
   /// ///

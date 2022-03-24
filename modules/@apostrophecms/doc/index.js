@@ -34,6 +34,7 @@ module.exports = {
     self.apos.isNew = await self.detectNew();
     await self.createIndexes();
     self.addLegacyMigrations();
+    self.addCacheFieldMigration();
   },
   restApiRoutes(self) {
     return {
@@ -1093,6 +1094,17 @@ module.exports = {
               seen.add(widget._id);
             }
           }
+        });
+      },
+      // Add the "cacheInvalidatedAt" field to the documents that do not have it yet,
+      // and set it to equal doc.updatedAt.
+      addCacheFieldMigration() {
+        self.apos.migration.add('add-cache-invalidated-at-field', () => {
+          self.apos.migration.eachDoc({ cacheInvalidatedAt: { $exists: 0 } }, 5, async doc => {
+            await self.apos.doc.db.updateOne({ _id: doc._id }, {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
+          });
         });
       },
       ...require('./lib/legacy-migrations')(self)
