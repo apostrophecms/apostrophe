@@ -51,7 +51,8 @@ describe('Assets', function() {
     getScriptMarkup,
     getStylesheetMarkup,
     expectedBundlesNames,
-    deleteBuiltFolders
+    deleteBuiltFolders,
+    allBundlesAreIncluded
   } = loadUtils();
 
   after(async function() {
@@ -177,7 +178,7 @@ describe('Assets', function() {
         type: 'bundle-page',
         slug: '/bundle',
         visibility: 'public',
-        path: `${homeId.replace(':en:published', '')}/parent`,
+        path: `${homeId.replace(':en:published', '')}/bundle`,
         level: 1,
         rank: 0,
         main: {
@@ -195,11 +196,12 @@ describe('Assets', function() {
       {
         _id: 'child:en:published',
         aposLocale: 'en:published',
+        metaType: 'doc',
         aposDocId: 'child',
         type: 'bundle-page',
         slug: '/bundle/child',
         visibility: 'public',
-        path: `${homeId.replace(':en:published', '')}/parent/child`,
+        path: `${homeId.replace(':en:published', '')}/bundle/child`,
         level: 2,
         rank: 0
       }
@@ -207,19 +209,22 @@ describe('Assets', function() {
 
     await apos.doc.db.insertMany(pagesToInsert);
 
-    const page = await apos.http.get(
-      '/bundle',
-      {
-        jar
-      }
-    );
+    const bundlePage = await apos.http.get('/bundle', { jar });
 
-    assert(page.includes(getStylesheetMarkup('public-bundle')));
-    assert(!page.includes(getStylesheetMarkup('extra-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('public-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('extra-bundle')));
 
-    assert(page.includes(getScriptMarkup('public-module-bundle')));
-    assert(!page.includes(getScriptMarkup('extra-bundle')));
-    assert(page.includes(getScriptMarkup('extra-bundle2')));
+    assert(bundlePage.includes(getScriptMarkup('public-module-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('extra-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('extra-bundle2')));
+
+    console.log('=============> REQUESTING CHILD PAGE <================');
+    const childPage = await apos.http.get('/bundle/child', { jar });
+
+    console.log('childPage ===> ', require('util').inspect(childPage, {
+      colors: true,
+      depth: 2
+    }));
 
     await deleteBuiltFolders(publicFolderPath);
   });
@@ -254,20 +259,9 @@ describe('Assets', function() {
     const homePage = await apos.http.get('/', { jar });
     assert(homePage.match(/logged in/));
 
-    allBundlesAreIncluded(homePage);
-
     const bundlePage = await apos.http.get('/bundle', { jar });
 
     allBundlesAreIncluded(bundlePage);
-
-    function allBundlesAreIncluded (page) {
-      assert(page.includes(getStylesheetMarkup('apos-bundle')));
-      assert(page.includes(getStylesheetMarkup('extra-bundle')));
-
-      assert(page.includes(getScriptMarkup('apos-module-bundle')));
-      assert(page.includes(getScriptMarkup('extra-bundle')));
-      assert(page.includes(getScriptMarkup('extra-bundle2')));
-    }
   });
 });
 
@@ -282,20 +276,30 @@ function loadUtils () {
 
   const expectedBundlesNames = [ 'extra-bundle.js', 'extra-bundle2.js', 'extra-bundle.css' ];
 
-  async function deleteBuiltFolders (publicPath, deleteAposBuild = false) {
+  const deleteBuiltFolders = async (publicPath, deleteAposBuild = false) => {
     await fs.remove(publicPath + '/apos-frontend');
     await fs.remove(publicPath + '/uploads');
 
     if (deleteAposBuild) {
       await fs.remove(path.join(process.cwd(), 'test/apos-build'));
     }
-  }
+  };
+
+  const allBundlesAreIncluded = (page) => {
+    assert(page.includes(getStylesheetMarkup('apos-bundle')));
+    assert(page.includes(getStylesheetMarkup('extra-bundle')));
+
+    assert(page.includes(getScriptMarkup('apos-module-bundle')));
+    assert(page.includes(getScriptMarkup('extra-bundle')));
+    assert(page.includes(getScriptMarkup('extra-bundle2')));
+  };
 
   return {
     publicFolderPath,
     getScriptMarkup,
     getStylesheetMarkup,
     expectedBundlesNames,
-    deleteBuiltFolders
+    deleteBuiltFolders,
+    allBundlesAreIncluded
   };
 }

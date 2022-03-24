@@ -46,7 +46,8 @@ module.exports = (self) => {
     }
 
     const templateType = template.substring(template.lastIndexOf(':') + 1);
-    const { webpack } = page.type ? self.apos.modules[page.type].__meta : {};
+    const pageModule = page.type && self.apos.modules[page.type];
+    const { webpack = {} } = pageModule ? pageModule.__meta : {};
 
     const configs = Object.values(webpack || {}).reduce((acc, config) => ({
       ...acc,
@@ -55,6 +56,14 @@ module.exports = (self) => {
 
     const { jsBundles, cssBundles } = Object.entries(configs)
       .reduce((acc, [ name, { templates } ]) => {
+        console.log('templateType ===> ', require('util').inspect(templateType, {
+          colors: true,
+          depth: 2
+        }));
+        console.log('templates ===> ', require('util').inspect(templates, {
+          colors: true,
+          depth: 2
+        }));
         if (templates && !templates.includes(templateType)) {
           return acc;
         }

@@ -699,6 +699,11 @@ module.exports = {
         try {
           const content = await module.render(req, template, args);
 
+          console.log('req.data.bestPage ===> ', require('util').inspect(req.data.bestPage, {
+            colors: true,
+            depth: 0
+          }));
+
           const filledContent = self.insertBundlesMarkup({
             page: req.data.bestPage,
             scene,

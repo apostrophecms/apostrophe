@@ -110,6 +110,7 @@ describe('Templates', function() {
   it('should render pages successfully with outerLayout, with core data-apos attribute', async function() {
     const req = apos.task.getAnonReq();
     const result = await apos.modules['template-test'].renderPage(req, 'page');
+
     const $ = cheerio.load(result);
     const $body = $('body');
     assert($body.length);
