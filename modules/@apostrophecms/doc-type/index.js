@@ -94,9 +94,6 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        prepareForStorage(req, doc) {
-          self.apos.schema.prepareForStorage(req, doc);
-        },
         async updateBacklinks(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
 
@@ -119,6 +116,9 @@ module.exports = {
           }, {
             $push: { relatedReverseIds: doc.aposDocId }
           });
+        },
+        prepareForStorage(req, doc) {
+          self.apos.schema.prepareForStorage(req, doc);
         },
         slugPrefix(req, doc) {
           const prefix = self.options.slugPrefix;
@@ -280,7 +280,9 @@ module.exports = {
         const relatedDocsIds = [];
         const handlers = {
           relationshipHandler: (doc, field) => {
-            relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
+            if (Array.isArray(doc[field.name])) {
+              relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
+            }
           }
         };
 
