@@ -195,15 +195,13 @@ describe('Assets', function() {
       },
       {
         _id: 'child:en:published',
+        title: 'Bundle',
         aposLocale: 'en:published',
         metaType: 'doc',
         aposDocId: 'child',
-        type: 'bundle-page',
-        slug: '/bundle/child',
-        visibility: 'public',
-        path: `${homeId.replace(':en:published', '')}/bundle/child`,
-        level: 2,
-        rank: 0
+        type: 'bundle',
+        slug: 'child',
+        visibility: 'public'
       }
     ];
 
@@ -218,15 +216,14 @@ describe('Assets', function() {
     assert(!bundlePage.includes(getScriptMarkup('extra-bundle')));
     assert(bundlePage.includes(getScriptMarkup('extra-bundle2')));
 
-    console.log('=============> REQUESTING CHILD PAGE <================');
     const childPage = await apos.http.get('/bundle/child', { jar });
 
-    console.log('childPage ===> ', require('util').inspect(childPage, {
-      colors: true,
-      depth: 2
-    }));
+    assert(childPage.includes(getStylesheetMarkup('public-bundle')));
+    assert(childPage.includes(getStylesheetMarkup('extra-bundle')));
 
-    await deleteBuiltFolders(publicFolderPath);
+    assert(childPage.includes(getScriptMarkup('public-module-bundle')));
+    assert(childPage.includes(getScriptMarkup('extra-bundle')));
+    assert(!childPage.includes(getScriptMarkup('extra-bundle2')));
   });
 
   it('should load all the bundles on all pages when the user is logged in', async function () {
