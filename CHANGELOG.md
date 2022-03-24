@@ -5,6 +5,7 @@
 ### Adds
 
 * Full support for the `object` field type, which works much like `array` but stores just one sub-object as a property, rather than an array of objects.
+* To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date.
 
 # 3.16.1 (2022-03-21)
 
