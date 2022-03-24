@@ -472,6 +472,21 @@ module.exports = {
         req.res.header('Cache-Control', cacheControlValue);
       },
 
+      emitETag(req, doc) {
+        const context = doc || req.data.piece || req.data.page;
+        if (!context) {
+          return;
+        }
+
+        const releaseId = self.apos.asset.getReleaseId();
+        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime();
+        const eTagValue = `"${releaseId}:${cacheInvalidatedAtTimestamp}"`;
+
+        console.log('ETag', eTagValue);
+
+        req.res.header('ETag', eTagValue);
+      },
+
       // Call from init once if this module implements the `getBrowserData` method.
       // The data returned by `getBrowserData(req)` will then be available on
       // `apos.modules['your-module-name']` in the browser.
