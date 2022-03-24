@@ -60,7 +60,7 @@ describe('Assets', function() {
     return t.destroy(apos);
   });
 
-  this.timeout(30000);
+  this.timeout(40000);
 
   it('should exist on the apos object', async function() {
     apos = await t.create({
