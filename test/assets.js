@@ -46,17 +46,20 @@ const allModules = {
 };
 
 describe('Assets', function() {
-  const publicFolderPath = path.join(process.cwd(), 'test/public');
+  const {
+    publicFolderPath,
+    getScriptMarkup,
+    getStylesheetMarkup,
+    expectedBundlesNames,
+    deleteBuiltFolders
+  } = loadUtils();
 
-  async function deleteBuiltFolders (publicPath) {
-    await fs.remove(publicPath + '/apos-frontend');
-    await fs.remove(publicPath + '/uploads');
-  }
   after(async function() {
+    await deleteBuiltFolders(publicFolderPath, true);
     return t.destroy(apos);
   });
 
-  this.timeout(t.timeout);
+  this.timeout(30000);
 
   it('should exist on the apos object', async function() {
     apos = await t.create({
@@ -93,8 +96,6 @@ describe('Assets', function() {
       root: module,
       modules: allModules
     });
-
-    const expectedBundlesNames = [ 'extra-bundle.js', 'extra-bundle2.js', 'extra-bundle.css' ];
 
     const { extensions, verifiedBundles } = await getWebpackExtensions({
       name: 'src',
@@ -142,21 +143,18 @@ describe('Assets', function() {
     await apos.asset.tasks.build.task();
 
     const getPath = (p) => `${publicFolderPath}/apos-frontend/` + p;
-    const [ releaseId ] = await fs.readdir(
-      getPath('releases')
-    );
+    const [ releaseId ] = await fs.readdir(getPath('releases'));
 
     const checkFileExists = async (p) => fs.pathExists(getPath(p));
     const releasePath = `releases/${releaseId}/default/`;
-    const bundlesNames = [ 'extra-bundle.js', 'extra-bundle.css', 'extra-bundle2.js' ];
 
-    await checkBundlesExists(releasePath, bundlesNames);
+    await checkBundlesExists(releasePath, expectedBundlesNames);
     await deleteBuiltFolders(publicFolderPath);
 
     process.env.NODE_ENV = 'development';
 
     await apos.asset.tasks.build.task();
-    await checkBundlesExists('default/', bundlesNames);
+    await checkBundlesExists('default/', expectedBundlesNames);
 
     async function checkBundlesExists (folderPath, fileNames) {
       for (const fileName of fileNames) {
@@ -216,15 +214,8 @@ describe('Assets', function() {
       }
     );
 
-    const getScriptMarkup = (file) =>
-      `<script src="/apos-frontend/default/${file}.js"></script>`;
-
-    const getStylesheetMarkup = (file) =>
-      `<link href="/apos-frontend/default/${file}.css" rel="stylesheet" />`;
-
     assert(page.includes(getStylesheetMarkup('public-bundle')));
     assert(!page.includes(getStylesheetMarkup('extra-bundle')));
-    assert(!page.includes(getStylesheetMarkup('extra-bundle2')));
 
     assert(page.includes(getScriptMarkup('public-module-bundle')));
     assert(!page.includes(getScriptMarkup('extra-bundle')));
@@ -232,4 +223,79 @@ describe('Assets', function() {
 
     await deleteBuiltFolders(publicFolderPath);
   });
+
+  it('should load all the bundles on all pages when the user is logged in', async function () {
+    const user = {
+      ...apos.user.newInstance(),
+      title: 'toto',
+      username: 'toto',
+      password: 'tata',
+      email: 'toto@mail.com',
+      role: 'admin'
+    };
+
+    const jar = apos.http.jar();
+
+    await apos.user.insert(apos.task.getReq(), user);
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'toto',
+          password: 'tata',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const homePage = await apos.http.get('/', { jar });
+    assert(homePage.match(/logged in/));
+
+    allBundlesAreIncluded(homePage);
+
+    const bundlePage = await apos.http.get('/bundle', { jar });
+
+    allBundlesAreIncluded(bundlePage);
+
+    function allBundlesAreIncluded (page) {
+      assert(page.includes(getStylesheetMarkup('apos-bundle')));
+      assert(page.includes(getStylesheetMarkup('extra-bundle')));
+
+      assert(page.includes(getScriptMarkup('apos-module-bundle')));
+      assert(page.includes(getScriptMarkup('extra-bundle')));
+      assert(page.includes(getScriptMarkup('extra-bundle2')));
+    }
+  });
 });
+
+function loadUtils () {
+  const publicFolderPath = path.join(process.cwd(), 'test/public');
+
+  const getScriptMarkup = (file) =>
+    `<script src="/apos-frontend/default/${file}.js"></script>`;
+
+  const getStylesheetMarkup = (file) =>
+    `<link href="/apos-frontend/default/${file}.css" rel="stylesheet" />`;
+
+  const expectedBundlesNames = [ 'extra-bundle.js', 'extra-bundle2.js', 'extra-bundle.css' ];
+
+  async function deleteBuiltFolders (publicPath, deleteAposBuild = false) {
+    await fs.remove(publicPath + '/apos-frontend');
+    await fs.remove(publicPath + '/uploads');
+
+    if (deleteAposBuild) {
+      await fs.remove(path.join(process.cwd(), 'test/apos-build'));
+    }
+  }
+
+  return {
+    publicFolderPath,
+    getScriptMarkup,
+    getStylesheetMarkup,
+    expectedBundlesNames,
+    deleteBuiltFolders
+  };
+}
