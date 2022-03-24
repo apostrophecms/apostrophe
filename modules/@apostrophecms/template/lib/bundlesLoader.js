@@ -56,14 +56,6 @@ module.exports = (self) => {
 
     const { jsBundles, cssBundles } = Object.entries(configs)
       .reduce((acc, [ name, { templates } ]) => {
-        console.log('templateType ===> ', require('util').inspect(templateType, {
-          colors: true,
-          depth: 2
-        }));
-        console.log('templates ===> ', require('util').inspect(templates, {
-          colors: true,
-          depth: 2
-        }));
         if (templates && !templates.includes(templateType)) {
           return acc;
         }
