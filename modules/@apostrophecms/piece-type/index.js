@@ -201,7 +201,7 @@ module.exports = {
             result.counts = query.get('countsResults');
           }
 
-          if (self.options.cache && self.options.cache.api) {
+          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             self.setMaxAge(req, self.options.cache.api.maxAge);
           }
 
@@ -215,8 +215,9 @@ module.exports = {
           self.publicApiCheck(req);
           const doc = await self.getRestQuery(req).and({ _id }).toObject();
 
-          if (self.options.cache && self.options.cache.api) {
+          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             self.setMaxAge(req, self.options.cache.api.maxAge);
+            self.emitETag(req, doc);
           }
 
           if (!doc) {

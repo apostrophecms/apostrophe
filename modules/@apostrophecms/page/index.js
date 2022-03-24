@@ -119,7 +119,7 @@ module.exports = {
               project: self.getAllProjection()
             }).toObject();
 
-            if (self.options.cache && self.options.cache.api) {
+            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -142,7 +142,7 @@ module.exports = {
           } else {
             const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
 
-            if (self.options.cache && self.options.cache.api) {
+            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -178,8 +178,9 @@ module.exports = {
           const criteria = self.getIdCriteria(_id);
           const result = await self.getRestQuery(req).and(criteria).toObject();
 
-          if (self.options.cache && self.options.cache.api) {
+          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             self.setMaxAge(req, self.options.cache.api.maxAge);
+            self.emitETag(req, result);
           }
 
           if (!result) {
@@ -1393,10 +1394,29 @@ database.`);
         const pages = Array.isArray(pageOrPages) ? pageOrPages : [ pageOrPages ];
         self.parked = self.parked.concat(pages);
       },
+
+      shouldSendUnmodifiedResponse(req) {
+        if (!self.options.cache || !self.options.cache.page || !self.options.cache.page.maxAge || !req.headers || !req.headers['if-none-match']) {
+          return false;
+        }
+
+        const releaseId = self.apos.asset.getReleaseId();
+        const cacheInvalidatedAtTimestamp = (new Date(req.data.page.cacheInvalidatedAt)).getTime();
+
+        const expectedETag = `"${releaseId}:${cacheInvalidatedAtTimestamp}"`;
+
+        console.log('req.headers[if-none-match]', req.headers['if-none-match']);
+        console.log('expectedETag', expectedETag);
+        console.log('req.headers[\'if-none-match\'].split(\',\').includes(expectedETag)', req.headers['if-none-match'].split(',').includes(expectedETag));
+
+        return req.headers['if-none-match'].split(',').includes(expectedETag);
+      },
+
       // Route that serves pages. See afterInit in
       // index.js for the wildcard argument and the app.get call
       async serve(req, res) {
         req.deferWidgetLoading = true;
+
         try {
           await self.serveGetPage(req);
           await self.emit('serve', req);
@@ -1404,6 +1424,13 @@ database.`);
         } catch (err) {
           return await self.serve500Error(req, err);
         }
+
+        // TODO: stop render at the right place
+        if (self.shouldSendUnmodifiedResponse(req)) {
+          console.log('304');
+          req.res.statusCode = 304;
+        }
+
         try {
           await self.serveDeliver(req, null);
         } catch (err) {
@@ -1430,8 +1457,9 @@ database.`);
         req.data.bestPage = await query.toObject();
         self.evaluatePageMatch(req);
 
-        if (self.options.cache && self.options.cache.page) {
+        if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
           self.setMaxAge(req, self.options.cache.page.maxAge);
+          self.emitETag(req);
         }
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
