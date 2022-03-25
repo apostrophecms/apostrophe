@@ -189,7 +189,9 @@ module.exports = {
           self.walk(doc, async function (area, dotPath) {
             // If this area is the child of another area, then we only want
             // to render the parent area.
+            console.log(`--> ${dotPath}`);
             if (rendered.findIndex(path => dotPath.startsWith(`${path}.`)) > -1) {
+              console.log(`SKIPPING: ${dotPath}`);
               return;
             }
             // We're only rendering areas on the document, not ancestor or
@@ -202,6 +204,7 @@ module.exports = {
             const parent = findParent(doc, dotPath);
             // Only render areas whose parent has a metaType, which is required
             // to find the area options.
+            console.log('parent is:', parent);
             if (parent && parent.metaType) {
               rendered.push(dotPath);
               areasToRender[dotPath] = area;
@@ -223,6 +226,7 @@ module.exports = {
 
           const areaRendered = await self.apos.area.renderArea(req, preppedArea, context);
 
+          console.log(`calling deep with: ${path}._rendered ${areaRendered}`);
           deep(context, `${path}._rendered`, areaRendered);
           deep(context, `${path}._fieldId`, undefined);
           deep(context, `${path}.items`, undefined);
