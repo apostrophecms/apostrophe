@@ -717,6 +717,13 @@ export default {
                 ...getRelatedBySchema(value, field.schema)
               ];
             }
+          } else if (field.type === 'object') {
+            if (object[field.name]) {
+              related = [
+                ...related,
+                ...getRelatedBySchema(object[field.name], field.schema)
+              ];
+            }
           } else if (field.type === 'area') {
             for (const widget of (object[field.name]?.items || [])) {
               related = [
