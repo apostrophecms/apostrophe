@@ -1993,7 +1993,7 @@ module.exports = {
           }
         };
 
-        self.apos.doc.walkThrough(doc, handlers);
+        self.apos.doc.walkByMetaType(doc, handlers);
       },
 
       // Add a new field type. The `type` object may contain the following properties:

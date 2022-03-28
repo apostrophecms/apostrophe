@@ -284,7 +284,7 @@ module.exports = {
           }
         };
 
-        self.apos.doc.walkThrough(doc, handlers);
+        self.apos.doc.walkByMetaType(doc, handlers);
 
         return relatedDocsIds;
       },

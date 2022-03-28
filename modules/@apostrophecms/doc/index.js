@@ -1100,7 +1100,7 @@ module.exports = {
 
       // Iterate through the document fields and call the provided handlers
       // for each item of an array, object and relationship field type.
-      walkThrough(doc, handlers) {
+      walkByMetaType(doc, handlers) {
         const defaultHandlers = {
           arrayItem: () => {},
           object: () => {},
@@ -1130,7 +1130,7 @@ module.exports = {
           for (const field of schema) {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
-                self.walkThrough(widget, {
+                self.walkByMetaType(widget, {
                   arrayItem: handlers.arrayItem,
                   object: handlers.object,
                   relationship: handlers.relationship
