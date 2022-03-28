@@ -92,7 +92,9 @@ describe('Pieces', function() {
             publicApiProjection: {
               title: 1,
               _url: 1,
-              _articles: 1
+              _articles: 1,
+              relationshipsInArray: 1,
+              relationshipsInObject: 1
             }
           },
           fields: {
@@ -123,16 +125,6 @@ describe('Pieces', function() {
                 type: 'attachment',
                 group: 'images'
               },
-              addresses: {
-                type: 'array',
-                fields: {
-                  add: {
-                    street: {
-                      type: 'string'
-                    }
-                  }
-                }
-              },
               _articles: {
                 type: 'relationship',
                 withType: 'article',
@@ -148,6 +140,28 @@ describe('Pieces', function() {
                       // Explains the relevance of the article to the
                       // product in 1 sentence
                       type: 'string'
+                    }
+                  }
+                }
+              },
+              relationshipsInArray: {
+                type: 'array',
+                fields: {
+                  add: {
+                    _articles: {
+                      type: 'relationship',
+                      withType: 'article'
+                    }
+                  }
+                }
+              },
+              relationshipsInObject: {
+                type: 'object',
+                fields: {
+                  add: {
+                    _articles: {
+                      type: 'relationship',
+                      withType: 'article'
                     }
                   }
                 }
@@ -737,13 +751,23 @@ describe('Pieces', function() {
             }
           ]
         },
-        _articles: [ article ]
+        _articles: [ article ],
+        relationshipsInArray: [
+          {
+            _articles: [ article ]
+          }
+        ],
+        relationshipsInObject: {
+          _articles: [ article ]
+        }
       },
       jar
     });
     assert(response._id);
     assert(response.articlesIds[0] === article.aposDocId);
     assert(response.articlesFields[article.aposDocId].relevance === 'The very first article that was ever published about this product');
+    assert(response.relationshipsInArray[0].articlesIds[0] === article.aposDocId);
+    assert(response.relationshipsInObject.articlesIds[0] === article.aposDocId);
     relatedProductId = response._id;
   });
 
@@ -756,6 +780,8 @@ describe('Pieces', function() {
     assert(product._articles.length === 1);
     assert(product._articles[0]._fields);
     assert.strictEqual(product._articles[0]._fields.relevance, 'The very first article that was ever published about this product');
+    assert(product.relationshipsInArray[0]._articles[0].title === 'First Article');
+    assert(product.relationshipsInObject._articles[0].title === 'First Article');
   });
 
   let relatedArticleId;

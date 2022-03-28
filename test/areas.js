@@ -232,7 +232,8 @@ describe('Areas', function() {
       assert(doc.main._rendered);
       assert(!doc.main.items);
 
-      // TEMP Commenting out until we add the array item metatype.
+      // TODO the approach in this test can't cover array or object area rendering
+      // properly without a further overhaul (not a new problem).
       // if (doc.moreAreas) {
       //   doc.moreAreas.forEach(area => {
       //     assert(area.someWidgets._rendered);

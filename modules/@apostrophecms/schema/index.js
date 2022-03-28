@@ -790,6 +790,7 @@ module.exports = {
     self.addFieldType({
       name: 'object',
       async convert(req, field, data, destination) {
+        data = data[field.name];
         const schema = field.schema;
         const errors = [];
         const result = {
@@ -808,6 +809,8 @@ module.exports = {
             });
           }
         }
+        result.metaType = 'objectItem';
+        result.scopedObjectName = field.scopedObjectName;
         destination[field.name] = result;
         if (errors.length) {
           throw errors;
@@ -821,6 +824,11 @@ module.exports = {
         };
         self.register(metaType, type, field.schema);
       },
+      validate: function (field, options, warn, fail) {
+        for (const subField of field.schema || field.fields.add) {
+          self.validateField(subField, options);
+        }
+      },
       isEqual(req, field, one, two) {
         if (one && (!two)) {
           return false;
@@ -829,6 +837,15 @@ module.exports = {
           return false;
         }
         if (!(one || two)) {
+          return true;
+        }
+        if (one[field.name] && (!two[field.name])) {
+          return false;
+        }
+        if (two[field.name] && (!one[field.name])) {
+          return false;
+        }
+        if (!(one[field.name] || two[field.name])) {
           return true;
         }
         return self.isEqual(req, field.schema, one[field.name], two[field.name]);
@@ -2540,6 +2557,8 @@ module.exports = {
               item._id = self.apos.util.generateId();
               self.regenerateIds(req, field.schema, item);
             }
+          } else if (field.type === 'object') {
+            this.regenerateIds(req, field.schema, doc[field.name] || {});
           } else if (field.type === 'area') {
             if (doc[field.name]) {
               doc[field.name]._id = self.apos.util.generateId();

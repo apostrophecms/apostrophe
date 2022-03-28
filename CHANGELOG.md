@@ -1,5 +1,11 @@
 # Changelog
 
+# UNRELEASED
+
+### Adds
+
+* Full support for the `object` field type, which works much like `array` but stores just one sub-object as a property, rather than an array of objects.
+
 # 3.16.1 (2022-03-21)
 
 ### Fixes

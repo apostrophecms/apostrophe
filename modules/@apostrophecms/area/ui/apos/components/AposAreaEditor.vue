@@ -363,7 +363,7 @@ export default {
         index
       });
     },
-    // Regenerate all array item, area and widget ids so they are considered
+    // Regenerate all array item, area, object and widget ids so they are considered
     // new. Useful when copying a widget with nested content.
     regenerateIds(schema, object) {
       object._id = cuid();
@@ -372,6 +372,8 @@ export default {
           for (const item of (object[field.name] || [])) {
             this.regenerateIds(field.schema, item);
           }
+        } else if (field.type === 'object') {
+          this.regenerateIds(field.schema, object[field.name] || {});
         } else if (field.type === 'area') {
           if (object[field.name]) {
             object[field.name]._id = cuid();
