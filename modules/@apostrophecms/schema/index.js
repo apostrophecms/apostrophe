@@ -1970,36 +1970,25 @@ module.exports = {
 
       prepareForStorage(req, doc) {
         const handlers = {
-          array: (doc, field, recursiveFunc) => {
-            if (doc[field.name]) {
-              doc[field.name].forEach(item => {
-                item._id = item._id || self.apos.util.generateId();
-                item.metaType = 'arrayItem';
-                item.scopedArrayName = field.scopedArrayName;
-                recursiveFunc(field.schema, item);
-              });
-            }
+          arrayItem: (field, object) => {
+            object._id = object._id || self.apos.util.generateId();
+            object.metaType = 'arrayItem';
+            object.scopedArrayName = field.scopedArrayName;
           },
-          object: (doc, field, recursiveFunc) => {
-            const value = doc[field.name];
-            if (value) {
-              value.metaType = 'object';
-              value.scopedObjectName = field.scopedObjectName;
-              recursiveFunc(field.schema, value);
-            }
+          object: (field, object) => {
+            object.metaType = 'object';
+            object.scopedObjectName = field.scopedObjectName;
           },
-          relationship: (doc, field) => {
-            if (Array.isArray(doc[field.name])) {
-              doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
-              if (field.fieldsStorage) {
-                const fieldsById = doc[field.fieldsStorage] || {};
-                for (const relatedDoc of doc[field.name]) {
-                  if (relatedDoc._fields) {
-                    fieldsById[self.apos.doc.toAposDocId(relatedDoc)] = relatedDoc._fields;
-                  }
+          relationship: (field, doc) => {
+            doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
+            if (field.fieldsStorage) {
+              const fieldsById = doc[field.fieldsStorage] || {};
+              for (const relatedDoc of doc[field.name]) {
+                if (relatedDoc._fields) {
+                  fieldsById[self.apos.doc.toAposDocId(relatedDoc)] = relatedDoc._fields;
                 }
-                doc[field.fieldsStorage] = fieldsById;
               }
+              doc[field.fieldsStorage] = fieldsById;
             }
           }
         };

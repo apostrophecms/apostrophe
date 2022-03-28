@@ -1098,33 +1098,16 @@ module.exports = {
         });
       },
 
-      // Iterate through the document's field, and execute the provided handlers
-      // for each array, object and relationship field type.
-      // The handlers take the `doc` and the current `field` values as arguments,
-      // letting you edit them if needed.
-      //
-      // Note that the provided array and object handlers must call `recursiveFunc`
-      // so that every nested field is walked through.
-      // This this done by default... when array or object handlers are not provided.
-
+      // Iterate through the document fields and call the provided handlers
+      // for each item of an array, object and relationship field type.
       walkThrough(doc, handlers) {
         const defaultHandlers = {
-          array: (doc, field, recursiveFunc) => {
-            if (doc[field.name]) {
-              doc[field.name].forEach(item => {
-                recursiveFunc(field.schema, item);
-              });
-            }
-          },
-          object: (doc, field, recursiveFunc) => {
-            if (doc[field.name]) {
-              recursiveFunc(field.schema, doc[field.name]);
-            }
-          },
+          arrayItem: () => {},
+          object: () => {},
           relationship: () => {}
         };
 
-        const mergedHandlers = {
+        handlers = {
           ...defaultHandlers,
           ...handlers
         };
@@ -1148,17 +1131,28 @@ module.exports = {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
                 self.walkThrough(widget, {
-                  array: mergedHandlers.array,
-                  object: mergedHandlers.object,
-                  relationship: mergedHandlers.relationship
+                  arrayItem: handlers.arrayItem,
+                  object: handlers.object,
+                  relationship: handlers.relationship
                 });
               }
             } else if (field.type === 'array') {
-              mergedHandlers.array(doc, field, forSchema);
+              if (doc[field.name]) {
+                doc[field.name].forEach(item => {
+                  handlers.arrayItem(field, item);
+                  forSchema(field.schema, item);
+                });
+              }
             } else if (field.type === 'object') {
-              mergedHandlers.object(doc, field, forSchema);
+              const value = doc[field.name];
+              if (value) {
+                handlers.object(field, value);
+                forSchema(field.schema, value);
+              }
             } else if (field.type === 'relationship') {
-              mergedHandlers.relationship(doc, field);
+              if (Array.isArray(doc[field.name])) {
+                handlers.relationship(field, doc);
+              }
             }
           }
         }

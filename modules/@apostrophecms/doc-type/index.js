@@ -279,10 +279,8 @@ module.exports = {
       getRelatedDocsIds(req, doc) {
         const relatedDocsIds = [];
         const handlers = {
-          relationship: (doc, field) => {
-            if (Array.isArray(doc[field.name])) {
-              relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
-            }
+          relationship: (field, doc) => {
+            relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
           }
         };
 
