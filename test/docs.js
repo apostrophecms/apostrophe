@@ -301,9 +301,9 @@ describe('Docs', function() {
 
   it('should add the aposDocId to the related documents\' relatedReverseIds field', async () => {
     const object = {
-      aposDocId: 'david',
+      aposDocId: 'paul',
       aposLocale: 'en:published',
-      slug: 'david',
+      slug: 'paul',
       visibility: 'public',
       type: 'test-people',
       firstName: 'Paul',
@@ -327,10 +327,10 @@ describe('Docs', function() {
     });
 
     assert(carlDoc.relatedReverseIds.length === 1);
-    assert(carlDoc.relatedReverseIds[0] === 'david');
+    assert(carlDoc.relatedReverseIds[0] === 'paul');
 
     assert(larryDoc.relatedReverseIds.length === 1);
-    assert(larryDoc.relatedReverseIds[0] === 'david');
+    assert(larryDoc.relatedReverseIds[0] === 'paul');
   });
 
   it('should not allow you to call the insert method if you are not an admin', async function() {
@@ -420,14 +420,14 @@ describe('Docs', function() {
   });
 
   it('should remove the aposDocId from the related documents\' relatedReverseIds field', async () => {
-    const davidDoc = await apos.doc.db.findOne({
-      slug: 'david',
+    const paulDoc = await apos.doc.db.findOne({
+      slug: 'paul',
       aposLocale: 'en:published'
     });
 
-    // carl removed from david's related friends, only larry remains
+    // carl removed from paul's related friends, only larry remains
     const object = {
-      ...davidDoc,
+      ...paulDoc,
       friendsIds: [ 'larry' ],
       _friends: [ { _id: 'larry:en:published' } ]
     };
@@ -447,7 +447,7 @@ describe('Docs', function() {
     assert(carlDoc.relatedReverseIds.length === 0);
 
     assert(larryDoc.relatedReverseIds.length === 1);
-    assert(larryDoc.relatedReverseIds[0] === 'david');
+    assert(larryDoc.relatedReverseIds[0] === 'paul');
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {
