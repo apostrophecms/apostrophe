@@ -694,9 +694,9 @@ describe('Docs', function() {
   // CACHING
   /// ///
 
-  it('should add a `cacheInvalidatedAt` field and set it to equal `updatedAt` field', async function() {
+  it('should add a `cacheInvalidatedAt` field and set it to equal `updatedAt` field when saving a doc', async function() {
     const object = {
-      slug: 'test-for-cacheInvalidatedAt-field-',
+      slug: 'test-for-cacheInvalidatedAt-field',
       visibility: 'public',
       type: 'test-people',
       firstName: 'Michael',
