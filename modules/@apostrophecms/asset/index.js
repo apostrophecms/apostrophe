@@ -30,17 +30,22 @@ module.exports = {
     refreshOnRestart: false
   },
 
-  init(self) {
+  async init(self) {
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
     };
     self.configureBuilds();
     self.initUploadfs();
-    self.extraBundles = {
-      js: [],
-      css: []
-    };
+
+    const { extensions, verifiedBundles } = await getWebpackExtensions({
+      getMetadata: self.apos.synth.getMetadata,
+      modulesToInstantiate: self.apos.modulesToBeInstantiated()
+    });
+
+    self.extraBundles = fillExtraBundles(verifiedBundles);
+    self.webpackExtensions = extensions;
+    self.verifiedBundles = verifiedBundles;
   },
   handlers (self) {
     return {
@@ -305,26 +310,16 @@ module.exports = {
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
-              const { extensions, verifiedBundles } = await getWebpackExtensions({
-                name,
-                getMetadata: self.apos.synth.getMetadata,
-                modulesToInstantiate
-              });
-
-              if (name.includes('src')) {
-                self.extraBundles = fillExtraBundles(verifiedBundles);
-              }
-
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
                 outputFilename,
-                bundles: verifiedBundles
+                bundles: self.verifiedBundles
               }, self.apos);
 
-              const webpackInstanceConfigMerged = extensions
-                ? webpackMerge(webpackInstanceConfig, ...Object.values(extensions))
+              const webpackInstanceConfigMerged = self.webpackExtensions
+                ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
                 : webpackInstanceConfig;
 
               const result = await webpack(webpackInstanceConfigMerged);

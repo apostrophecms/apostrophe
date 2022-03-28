@@ -45,12 +45,8 @@ module.exports = {
   },
 
   async getWebpackExtensions ({
-    name, getMetadata, modulesToInstantiate
+    getMetadata, modulesToInstantiate
   }) {
-    if (!name.includes('src')) {
-      return {};
-    }
-
     const modulesMeta = modulesToInstantiate
       .map((name) => getMetadata(name));
 
@@ -88,7 +84,7 @@ module.exports = {
   },
 
   getBundlesNames (bundles, es5 = false) {
-    const names = Object.entries(bundles).reduce((acc, [ ext, bundlesNames ]) => {
+    return Object.entries(bundles).reduce((acc, [ ext, bundlesNames ]) => {
       const nameExtension = ext === 'css'
         ? '-bundle'
         : '-module-bundle';
@@ -103,13 +99,6 @@ module.exports = {
         ...es5Bundles
       ];
     }, []);
-
-    console.log('names ===> ', require('util').inspect(names, {
-      colors: true,
-      depth: 2
-    }));
-
-    return names;
   }
 };
 
