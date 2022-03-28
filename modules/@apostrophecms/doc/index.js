@@ -1103,9 +1103,9 @@ module.exports = {
       // The handlers take the `doc` and the current `field` values as arguments,
       // letting you edit them if needed.
       //
-      // Note that the provided array and object handlers must call the `recursiveFunc`
-      // so that every nested fields are walked through.
-      // This this done by default, when array or object handlers are not provided.
+      // Note that the provided array and object handlers must call `recursiveFunc`
+      // so that every nested field is walked through.
+      // This this done by default... when array or object handlers are not provided.
 
       walkThrough(
         doc,
