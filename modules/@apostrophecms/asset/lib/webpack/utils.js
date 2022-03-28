@@ -47,7 +47,7 @@ module.exports = {
   async getWebpackExtensions ({
     name, getMetadata, modulesToInstantiate
   }) {
-    if (name !== 'src') {
+    if (!name.includes('src')) {
       return {};
     }
 
@@ -67,7 +67,8 @@ module.exports = {
   },
 
   fillExtraBundles (verifiedBundles = []) {
-    const getFileName = (p) => p.substr(p.lastIndexOf('/') + 1);
+    const getFileName = (p) => p.substr(p.lastIndexOf('/') + 1)
+      .replace(/\.(js|scss)$/, '');
 
     return verifiedBundles.reduce((acc, { paths }) => {
       return {
@@ -77,14 +78,38 @@ module.exports = {
         ],
         css: [
           ...acc.css,
-          ...paths.filter((p) => p.endsWith('.scss'))
-            .map((p) => getFileName(p).replace(/\.scss$/, '.css'))
+          ...paths.filter((p) => p.endsWith('.scss')).map((p) => getFileName(p))
         ]
       };
     }, {
       js: [],
       css: []
     });
+  },
+
+  getBundlesNames (bundles, es5 = false) {
+    const names = Object.entries(bundles).reduce((acc, [ ext, bundlesNames ]) => {
+      const nameExtension = ext === 'css'
+        ? '-bundle'
+        : '-module-bundle';
+
+      const es5Bundles = es5 && ext === 'js'
+        ? bundlesNames.map((name) => `${name}-nomodule-bundle.${ext}`)
+        : [];
+
+      return [
+        ...acc,
+        ...bundlesNames.map((name) => `${name}${nameExtension}.${ext}`),
+        ...es5Bundles
+      ];
+    }, []);
+
+    console.log('names ===> ', require('util').inspect(names, {
+      colors: true,
+      depth: 2
+    }));
+
+    return names;
   }
 };
 

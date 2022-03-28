@@ -11,7 +11,8 @@ const cuid = require('cuid');
 const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
-  fillExtraBundles
+  fillExtraBundles,
+  getBundlesNames
 } = require('./lib/webpack/utils');
 
 module.exports = {
@@ -185,8 +186,7 @@ module.exports = {
           deployFiles = [
             ...deployFiles,
             ...publicAssets,
-            ...self.extraBundles.js,
-            ...self.extraBundles.css
+            ...getBundlesNames(self.extraBundles, self.options.es5)
           ];
 
           await deploy(deployFiles);
@@ -311,7 +311,7 @@ module.exports = {
                 modulesToInstantiate
               });
 
-              if (name === 'src') {
+              if (name.includes('src')) {
                 self.extraBundles = fillExtraBundles(verifiedBundles);
               }
 

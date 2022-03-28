@@ -22,13 +22,12 @@ module.exports = (self) => {
     const { es5 } = self.apos.asset.options;
     const { extraBundles } = self.apos.asset;
     const jsMainBundle = renderMarkup({
-      fileName: `${scene}-module-bundle`,
-      fileNameNoMod: `${scene}-nomodule-bundle`,
+      fileName: scene,
       ext: 'js',
       es5
     });
     const cssMainBundle = renderMarkup({
-      fileName: `${scene}-bundle`,
+      fileName: scene,
       ext: 'css'
     });
 
@@ -61,14 +60,14 @@ module.exports = (self) => {
         }
 
         const jsMarkup = scriptsPlaceholder &&
-        extraBundles.js.includes(`${name}.js`) &&
+        extraBundles.js.includes(name) &&
           renderMarkup({
             fileName: name,
             ext: 'js'
           });
 
         const cssMarkup = stylesheetsPlaceholder &&
-          extraBundles.css.includes(`${name}.css`) &&
+          extraBundles.css.includes(name) &&
           renderMarkup({
             fileName: name,
             ext: 'css'
@@ -99,23 +98,23 @@ module.exports = (self) => {
 
 function renderBundleMarkup (safe, base) {
   return ({
-    fileName, fileNameNoMod, ext = 'js', es5 = false
+    fileName, ext = 'js', es5 = false
   }) => {
     if (ext === 'css') {
       return safe(stripIndent`
-        <link href="${base}/${fileName}.css" rel="stylesheet" />
+        <link href="${base}/${fileName}-bundle.css" rel="stylesheet" />
       `);
     }
 
     if (es5) {
       return safe(stripIndent`
-        <script nomodule src="${base}/${fileNameNoMod}.${ext}"></script>
-        <script type="module" src="${base}/${fileName}.${ext}"></script>
+        <script nomodule src="${base}/${fileName}-nomodule-bundle.${ext}"></script>
+        <script type="module" src="${base}/${fileName}-module-bundle.${ext}"></script>
       `);
     }
 
     return safe(stripIndent`
-      <script src="${base}/${fileName}.${ext}"></script>
+      <script src="${base}/${fileName}-module-bundle.${ext}"></script>
     `);
   };
 }
