@@ -1970,7 +1970,7 @@ module.exports = {
 
       prepareForStorage(req, doc) {
         const handlers = {
-          arrayHandler: (doc, field, recursiveFunc) => {
+          array: (doc, field, recursiveFunc) => {
             if (doc[field.name]) {
               doc[field.name].forEach(item => {
                 item._id = item._id || self.apos.util.generateId();
@@ -1980,7 +1980,7 @@ module.exports = {
               });
             }
           },
-          objectHandler: (doc, field, recursiveFunc) => {
+          object: (doc, field, recursiveFunc) => {
             const value = doc[field.name];
             if (value) {
               value.metaType = 'object';
@@ -1988,7 +1988,7 @@ module.exports = {
               recursiveFunc(field.schema, value);
             }
           },
-          relationshipHandler: (doc, field) => {
+          relationship: (doc, field) => {
             if (Array.isArray(doc[field.name])) {
               doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
               if (field.fieldsStorage) {

@@ -1107,24 +1107,28 @@ module.exports = {
       // so that every nested field is walked through.
       // This this done by default... when array or object handlers are not provided.
 
-      walkThrough(
-        doc,
-        {
-          arrayHandler = (doc, field, recursiveFunc) => {
+      walkThrough(doc, handlers) {
+        const defaultHandlers = {
+          array: (doc, field, recursiveFunc) => {
             if (doc[field.name]) {
               doc[field.name].forEach(item => {
                 recursiveFunc(field.schema, item);
               });
             }
           },
-          objectHandler = (doc, field, recursiveFunc) => {
+          object: (doc, field, recursiveFunc) => {
             if (doc[field.name]) {
               recursiveFunc(field.schema, doc[field.name]);
             }
           },
-          relationshipHandler = () => {}
-        }
-      ) {
+          relationship: () => {}
+        };
+
+        const mergedHandlers = {
+          ...defaultHandlers,
+          ...handlers
+        };
+
         if (doc.metaType === 'doc') {
           const manager = self.getManager(doc.type);
           if (!manager) {
@@ -1138,22 +1142,23 @@ module.exports = {
           }
           forSchema(manager.schema, doc);
         }
+
         function forSchema(schema, doc) {
           for (const field of schema) {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
                 self.walkThrough(widget, {
-                  arrayHandler,
-                  objectHandler,
-                  relationshipHandler
+                  array: mergedHandlers.array,
+                  object: mergedHandlers.object,
+                  relationship: mergedHandlers.relationship
                 });
               }
             } else if (field.type === 'array') {
-              arrayHandler(doc, field, forSchema);
+              mergedHandlers.array(doc, field, forSchema);
             } else if (field.type === 'object') {
-              objectHandler(doc, field, forSchema);
+              mergedHandlers.object(doc, field, forSchema);
             } else if (field.type === 'relationship') {
-              relationshipHandler(doc, field);
+              mergedHandlers.relationship(doc, field);
             }
           }
         }
