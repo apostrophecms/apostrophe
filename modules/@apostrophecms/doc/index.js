@@ -1098,14 +1098,15 @@ module.exports = {
       },
       // Add the "cacheInvalidatedAt" field to the documents that do not have it yet,
       // and set it to equal doc.updatedAt.
-      addCacheFieldMigration() {
-        self.apos.migration.add('add-cache-invalidated-at-field', () => {
-          self.apos.migration.eachDoc({ cacheInvalidatedAt: { $exists: 0 } }, 5, async doc => {
-            await self.apos.doc.db.updateOne({ _id: doc._id }, {
-              $set: { cacheInvalidatedAt: doc.updatedAt }
-            });
+      setCacheField() {
+        return self.apos.migration.eachDoc({ cacheInvalidatedAt: { $exists: 0 } }, 5, async doc => {
+          await self.apos.doc.db.updateOne({ _id: doc._id }, {
+            $set: { cacheInvalidatedAt: doc.updatedAt }
           });
         });
+      },
+      addCacheFieldMigration() {
+        self.apos.migration.add('add-cache-invalidated-at-field', self.setCacheField);
       },
       ...require('./lib/legacy-migrations')(self)
     };
