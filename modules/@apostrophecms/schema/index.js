@@ -1969,59 +1969,31 @@ module.exports = {
       // Currently `req` does not impact this, but that may change.
 
       prepareForStorage(req, doc) {
-        if (doc.metaType === 'doc') {
-          const manager = self.apos.doc.getManager(doc.type);
-          if (!manager) {
-            return;
-          }
-          forSchema(manager.schema, doc);
-        } else if (doc.metaType === 'widget') {
-          const manager = self.apos.area.getWidgetManager(doc.type);
-          if (!manager) {
-            return;
-          }
-          forSchema(manager.schema, doc);
-        }
-        function forSchema(schema, doc) {
-          for (const field of schema) {
-            if (field.type === 'area') {
-              if (doc[field.name] && doc[field.name].items) {
-                for (const widget of doc[field.name].items) {
-                  self.prepareForStorage(req, widget);
+        const handlers = {
+          arrayItem: (field, object) => {
+            object._id = object._id || self.apos.util.generateId();
+            object.metaType = 'arrayItem';
+            object.scopedArrayName = field.scopedArrayName;
+          },
+          object: (field, object) => {
+            object.metaType = 'object';
+            object.scopedObjectName = field.scopedObjectName;
+          },
+          relationship: (field, doc) => {
+            doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
+            if (field.fieldsStorage) {
+              const fieldsById = doc[field.fieldsStorage] || {};
+              for (const relatedDoc of doc[field.name]) {
+                if (relatedDoc._fields) {
+                  fieldsById[self.apos.doc.toAposDocId(relatedDoc)] = relatedDoc._fields;
                 }
               }
-            } else if (field.type === 'array') {
-              if (doc[field.name]) {
-                doc[field.name].forEach(item => {
-                  item._id = item._id || self.apos.util.generateId();
-                  item.metaType = 'arrayItem';
-                  item.scopedArrayName = field.scopedArrayName;
-                  forSchema(field.schema, item);
-                });
-              }
-            } else if (field.type === 'object') {
-              const value = doc[field.name];
-              if (value) {
-                value.metaType = 'object';
-                value.scopedObjectName = field.scopedObjectName;
-                forSchema(field.schema, value);
-              }
-            } else if (field.type === 'relationship') {
-              if (Array.isArray(doc[field.name])) {
-                doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
-                if (field.fieldsStorage) {
-                  const fieldsById = doc[field.fieldsStorage] || {};
-                  for (const relatedDoc of doc[field.name]) {
-                    if (relatedDoc._fields) {
-                      fieldsById[self.apos.doc.toAposDocId(relatedDoc)] = relatedDoc._fields;
-                    }
-                  }
-                  doc[field.fieldsStorage] = fieldsById;
-                }
-              }
+              doc[field.fieldsStorage] = fieldsById;
             }
           }
-        }
+        };
+
+        self.apos.doc.walkByMetaType(doc, handlers);
       },
 
       // Add a new field type. The `type` object may contain the following properties:
