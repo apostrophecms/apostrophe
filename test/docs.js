@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
+
 let apos;
 
 describe('Docs', function() {
@@ -685,6 +686,97 @@ describe('Docs', function() {
       }
     });
     await apos.doc.createTextIndex();
+  });
+
+  /// ///
+  // MIGRATIONS
+  /// ///
+
+  it('should add via a migration the `cacheInvalidatedAt` field to any doc and set it to equal the doc\'s `updatedAt` field', async () => {
+    const objects = [
+      {
+        slug: 'test-for-cacheInvalidatedAt-field-migration1',
+        visibility: 'public',
+        type: 'test-people',
+        firstName: 'Kurt',
+        lastName: 'Cobain',
+        age: 27,
+        alive: false,
+        updatedAt: '2022-03-28T12:57:03.685Z'
+      },
+      {
+        slug: 'test-for-cacheInvalidatedAt-field-migration2',
+        visibility: 'public',
+        type: 'test-people',
+        firstName: 'Jim',
+        lastName: 'Morrison',
+        age: 27,
+        alive: false,
+        updatedAt: '2020-08-29T12:57:03.685Z'
+      }
+    ];
+
+    await apos.doc.db.insertMany(objects);
+    await apos.doc.setCacheField();
+
+    const docs = await apos.doc.db.find({ slug: /test-for-cacheInvalidatedAt-field-migration/ }).toArray();
+    docs.forEach((doc, index) => {
+      const timestamps = {
+        doc: new Date(doc.cacheInvalidatedAt).toString(),
+        expected: new Date(objects[index].updatedAt).toString()
+
+      };
+      assert(timestamps.doc === timestamps.expected);
+    });
+  });
+
+  it('should not add via a migration the `cacheInvalidatedAt` field to docs that already have it', async () => {
+    const object = {
+      slug: 'test-for-cacheInvalidatedAt-field-migration3',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Janis',
+      lastName: 'Joplin',
+      age: 27,
+      alive: false,
+      updatedAt: '2018-08-29T12:57:03.685Z',
+      cacheInvalidatedAt: '2019-08-29T12:57:03.685Z'
+    };
+
+    await apos.doc.db.insert(object);
+    await apos.doc.setCacheField();
+
+    const doc = await apos.doc.db.findOne({ slug: 'test-for-cacheInvalidatedAt-field-migration3' });
+    const timestamps = {
+      doc: new Date(doc.cacheInvalidatedAt).toString(),
+      expected: new Date(object.cacheInvalidatedAt).toString()
+    };
+
+    assert(timestamps.doc === timestamps.expected);
+  });
+
+  /// ///
+  // CACHING
+  /// ///
+
+  it('should add a `cacheInvalidatedAt` field and set it to equal `updatedAt` field when saving a doc', async function() {
+    const object = {
+      slug: 'test-for-cacheInvalidatedAt-field',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Michael',
+      lastName: 'Jackson',
+      age: 64,
+      alive: true
+    };
+
+    const response = await apos.doc.insert(apos.task.getReq(), object);
+    const draft = await apos.doc.db.findOne({
+      _id: `${response.aposDocId}:en:draft`
+    });
+
+    assert(response.cacheInvalidatedAt.toString() === response.updatedAt.toString());
+    assert(draft.cacheInvalidatedAt.toString() === draft.updatedAt.toString());
   });
 
 });
