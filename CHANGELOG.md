@@ -6,7 +6,8 @@
 
 * `data-apos-test=""` selectors for certain elements frequently selected in QA tests, such as `data-apos-test="adminBar"`.
 * Offer a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages.
-
+* Adds possibility for modules to extend the webpack config as well as to add extra bundles for scss and js.
+* Loads the right bundles on the right pages depending on their config and the loaded widgets. Logged-in users have all the bundles on every page.
 ## 3.15.0 (2022-03-02)
 
 ### Adds

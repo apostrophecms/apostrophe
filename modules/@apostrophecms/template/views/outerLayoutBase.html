@@ -5,7 +5,10 @@
     {% endblock %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'prepend' } %}
     <title>{% block title %}{{ data.piece.title or data.page.title }}{% endblock %}</title>
+
+    {# This call is still here for backwards compatibility, but does nothing #}
     {{ apos.asset.stylesheets(data.scene) }}
+
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% endblock %}
@@ -40,7 +43,10 @@
       <div id="apos-modals"></div>
     {% endif %}
     {# Scripts must load after apos-modal in the DOM #}
+
+    {# This call is still here for backwards compatibility, but does nothing #}
     {{ apos.asset.scripts(data.scene) }}
+
     {# For project-level webpack injection in dev environments #}
     {% block afterAposScripts %}{% endblock %}
     {# Automatically does nothing in production #}

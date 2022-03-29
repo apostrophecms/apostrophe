@@ -68,11 +68,24 @@ module.exports = ({
 };
 
 function formatBundles (bundles, mainBundleName) {
-  return bundles.reduce((acc, { bundleName, paths }) => ({
-    ...acc,
-    [bundleName]: {
-      import: paths,
-      dependOn: mainBundleName
-    }
-  }), {});
+  return bundles.reduce((acc, { bundleName, paths }) => {
+    const jsPaths = paths.filter((p) => p.endsWith('.js'));
+    const scssPaths = paths.filter((p) => p.endsWith('.scss'));
+
+    return {
+      ...acc,
+      ...jsPaths.length && {
+        [`${bundleName}-module-bundle`]: {
+          import: jsPaths,
+          dependOn: mainBundleName
+        }
+      },
+      ...scssPaths.length && {
+        [`${bundleName}-bundle`]: {
+          import: scssPaths,
+          dependOn: mainBundleName
+        }
+      }
+    };
+  }, {});
 }

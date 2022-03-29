@@ -1,9 +1,6 @@
 module.exports = {
   instantiate: false,
   webpack: {
-    bundles: {
-      'my-bundle': {}
-    },
     extensions: {
       ext1: {
         rules: [

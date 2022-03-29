@@ -7,10 +7,12 @@ const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
 const { merge: webpackMerge } = require('webpack-merge');
+const cuid = require('cuid');
 const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
-  fillExtraBundles
+  fillExtraBundles,
+  getBundlesNames
 } = require('./lib/webpack/utils');
 
 module.exports = {
@@ -28,13 +30,22 @@ module.exports = {
     refreshOnRestart: false
   },
 
-  init(self) {
+  async init(self) {
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
     };
     self.configureBuilds();
     self.initUploadfs();
+
+    const { extensions, verifiedBundles } = await getWebpackExtensions({
+      getMetadata: self.apos.synth.getMetadata,
+      modulesToInstantiate: self.apos.modulesToBeInstantiated()
+    });
+
+    self.extraBundles = fillExtraBundles(verifiedBundles);
+    self.webpackExtensions = extensions;
+    self.verifiedBundles = verifiedBundles;
   },
   handlers (self) {
     return {
@@ -56,6 +67,10 @@ module.exports = {
               'check-apos-build': true
             });
           }
+        },
+        injectAssetsPlaceholders() {
+          self.apos.template.prepend('head', '@apostrophecms/asset:stylesheets');
+          self.apos.template.append('body', '@apostrophecms/asset:scripts');
         }
       },
       'apostrophe:destroy': {
@@ -64,6 +79,28 @@ module.exports = {
             await Promise.promisify(self.uploadfs.destroy)();
           }
         }
+      }
+    };
+  },
+  components(self) {
+    return {
+      scripts(req, data) {
+        const placeholder = `[scripts-placeholder:${cuid()}]`;
+
+        req.scriptsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
+      },
+      stylesheets(req, data) {
+        const placeholder = `[stylesheets-placeholder:${cuid()}]`;
+
+        req.stylesheetsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
       }
     };
   },
@@ -78,7 +115,6 @@ module.exports = {
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           const modulesToInstantiate = self.apos.modulesToBeInstantiated();
-          const extraBundles = [];
 
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
@@ -133,8 +169,7 @@ module.exports = {
               await fs.mkdirp(bundleDir);
               await build({
                 name,
-                options,
-                bundles: extraBundles
+                options
               });
             }
           }
@@ -153,7 +188,12 @@ module.exports = {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
-          deployFiles = [ ...deployFiles, ...publicAssets, ...extraBundles ];
+          deployFiles = [
+            ...deployFiles,
+            ...publicAssets,
+            ...getBundlesNames(self.extraBundles, self.options.es5)
+          ];
+
           await deploy(deployFiles);
 
           if (process.env.APOS_BUNDLE_ANALYZER) {
@@ -198,7 +238,7 @@ module.exports = {
           }
 
           async function build({
-            name, bundles, options
+            name, options
           }) {
             self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
               label: req.t(options.label)
@@ -270,24 +310,16 @@ module.exports = {
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
-              const { extensions, verifiedBundles } = await getWebpackExtensions({
-                name,
-                getMetadata: self.apos.synth.getMetadata,
-                modulesToInstantiate
-              });
-
-              verifiedBundles && fillExtraBundles(verifiedBundles, bundles);
-
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
                 outputFilename,
-                bundles: verifiedBundles
+                bundles: self.verifiedBundles
               }, self.apos);
 
-              const webpackInstanceConfigMerged = extensions
-                ? webpackMerge(webpackInstanceConfig, ...Object.values(extensions))
+              const webpackInstanceConfigMerged = self.webpackExtensions
+                ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
                 : webpackInstanceConfig;
 
               const result = await webpack(webpackInstanceConfigMerged);
@@ -410,8 +442,9 @@ module.exports = {
             };
 
             const filesContent = Object.entries(self.builds)
-              .filter(([ _, options ]) => filterBuilds(options)
-              ).map(([ name ]) => {
+              .filter(([ _, options ]) => filterBuilds(options))
+              .map(([ name ]) => {
+
                 const file = `${bundleDir}/${name}-build.${fileExt}`;
                 const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
 
@@ -594,22 +627,10 @@ module.exports = {
         }
       },
       stylesheetsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        const bundle = `<link href="${base}/${when}-bundle.css" rel="stylesheet" />`;
-        return self.apos.template.safe(bundle);
+        return '';
       },
       scriptsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        if (self.options.es5) {
-          return self.apos.template.safe(stripIndent`
-            <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
-            <script type="module" src="${base}/${when}-module-bundle.js"></script>
-          `);
-        } else {
-          return self.apos.template.safe(stripIndent`
-            <script src="${base}/${when}-module-bundle.js"></script>
-          `);
-        }
+        return '';
       },
       shouldRefreshOnRestart() {
         return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');

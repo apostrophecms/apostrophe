@@ -3,7 +3,6 @@ const fs = require('fs-extra');
 module.exports = {
   checkModulesWebpackConfig(modules, t) {
     const allowedProperties = [ 'extensions', 'bundles' ];
-
     for (const mod of Object.values(modules)) {
       const webpackConfig = mod.__meta.webpack[mod.__meta.name];
 
@@ -23,16 +22,31 @@ module.exports = {
 
         throw new Error(error);
       }
+
+      if (webpackConfig && webpackConfig.bundles) {
+        const bundles = Object.values(webpackConfig.bundles);
+
+        bundles.forEach(bundle => {
+          const bundleProps = Object.keys(bundle);
+          if (
+            bundleProps.length > 1 ||
+            (bundleProps.length === 1 && !bundle.templates) ||
+            (bundle.templates && !Array.isArray(bundle.templates))
+          ) {
+            const error = t('apostrophe:assetWebpackBundlesWarning', {
+              module: mod.__meta.name
+            });
+
+            throw new Error(error);
+          }
+        });
+      }
     }
   },
 
   async getWebpackExtensions ({
-    name, getMetadata, modulesToInstantiate
+    getMetadata, modulesToInstantiate
   }) {
-    if (name !== 'src') {
-      return {};
-    }
-
     const modulesMeta = modulesToInstantiate
       .map((name) => getMetadata(name));
 
@@ -48,17 +62,43 @@ module.exports = {
     };
   },
 
-  fillExtraBundles (verifiedBundles, bundles) {
-    const bundlesPaths = verifiedBundles
-      .reduce((acc, { paths }) => ([
-        ...acc,
-        ...paths.map((p) => p.substr(p.lastIndexOf('/') + 1)
-          .replace(/\.scss$/, '.css'))
-      ]), []);
+  fillExtraBundles (verifiedBundles = []) {
+    const getFileName = (p) => p.substr(p.lastIndexOf('/') + 1)
+      .replace(/\.(js|scss)$/, '');
 
-    bundlesPaths.forEach(bundle => {
-      bundles.push(bundle);
+    return verifiedBundles.reduce((acc, { paths }) => {
+      return {
+        js: [
+          ...acc.js,
+          ...paths.filter((p) => p.endsWith('.js')).map((p) => getFileName(p))
+        ],
+        css: [
+          ...acc.css,
+          ...paths.filter((p) => p.endsWith('.scss')).map((p) => getFileName(p))
+        ]
+      };
+    }, {
+      js: [],
+      css: []
     });
+  },
+
+  getBundlesNames (bundles, es5 = false) {
+    return Object.entries(bundles).reduce((acc, [ ext, bundlesNames ]) => {
+      const nameExtension = ext === 'css'
+        ? '-bundle'
+        : '-module-bundle';
+
+      const es5Bundles = es5 && ext === 'js'
+        ? bundlesNames.map((name) => `${name}-nomodule-bundle.${ext}`)
+        : [];
+
+      return [
+        ...acc,
+        ...bundlesNames.map((name) => `${name}${nameExtension}.${ext}`),
+        ...es5Bundles
+      ];
+    }, []);
   }
 };
 

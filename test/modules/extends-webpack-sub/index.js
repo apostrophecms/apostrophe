@@ -1,9 +1,6 @@
 module.exports = {
   extend: 'extends-webpack',
   webpack: {
-    bundles: {
-      'my-sub-bundle': {}
-    },
     extensions: {
       ext2: {
         rules: [

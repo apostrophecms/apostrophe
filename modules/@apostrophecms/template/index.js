@@ -119,6 +119,7 @@ module.exports = {
   },
   methods(self) {
     return {
+      ...require('./lib/bundlesLoader')(self),
 
       // Add helpers in the namespace for a particular module.
       // They will be visible in nunjucks at
@@ -630,8 +631,6 @@ module.exports = {
       // async function.
 
       async renderPageForModule(req, template, data, module) {
-
-        let content;
         let scene = req.user ? 'apos' : 'public';
         if (req.scene) {
           scene = req.scene;
@@ -698,14 +697,24 @@ module.exports = {
         }
 
         try {
-          content = await module.render(req, template, args);
+          const content = await module.render(req, template, args);
+
+          const filledContent = self.insertBundlesMarkup({
+            page: req.data.bestPage,
+            scene,
+            template,
+            content,
+            scriptsPlaceholder: req.scriptsPlaceholder,
+            stylesheetsPlaceholder: req.stylesheetsPlaceholder,
+            widgetsBundles: req.widgetsBundles
+          });
+
+          return filledContent;
         } catch (e) {
           // The page template threw an exception. Log where it
           // occurred for easier debugging
           return error(e);
         }
-
-        return content;
 
         function error(e) {
           self.logError(req, e);
