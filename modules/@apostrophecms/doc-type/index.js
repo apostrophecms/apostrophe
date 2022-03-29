@@ -94,7 +94,7 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        async updateBacklinks(req, doc) {
+        async updateCacheFields(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
 
           // Remove all references to the doc
@@ -102,7 +102,8 @@ module.exports = {
             relatedReverseIds: { $in: [ doc.aposDocId ] },
             aposLocale: { $in: [ doc.aposLocale, null ] }
           }, {
-            $pull: { relatedReverseIds: doc.aposDocId }
+            $pull: { relatedReverseIds: doc.aposDocId },
+            $set: { cacheInvalidatedAt: doc.updatedAt }
           });
 
           if (!relatedDocsIds.length) {
@@ -114,7 +115,8 @@ module.exports = {
             aposDocId: { $in: relatedDocsIds },
             aposLocale: { $in: [ doc.aposLocale, null ] }
           }, {
-            $push: { relatedReverseIds: doc.aposDocId }
+            $push: { relatedReverseIds: doc.aposDocId },
+            $set: { cacheInvalidatedAt: doc.updatedAt }
           });
         },
         prepareForStorage(req, doc) {
