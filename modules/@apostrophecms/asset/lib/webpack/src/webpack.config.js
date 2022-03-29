@@ -41,7 +41,9 @@ module.exports = ({
     },
     resolveLoader: {
       extensions: [ '*', '.js' ],
-      modules: [ 'node_modules' ]
+      // Make sure css-loader and postcss-loader can always be found, even
+      // if npm didn't hoist them
+      modules: [ 'node_modules', 'node_modules/apostrophe/node_modules' ]
     },
     resolve: {
       extensions: [ '*', '.js' ],
@@ -50,11 +52,13 @@ module.exports = ({
         Modules: path.resolve(modulesDir)
       },
       modules: [
+        'node_modules',
         `${apos.npmRootDir}/node_modules`,
         // Make sure core-js and regenerator-runtime can always be found, even
         // if npm didn't hoist them
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`
-      ]
+      ],
+      symlinks: false
     },
     stats: 'verbose',
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
