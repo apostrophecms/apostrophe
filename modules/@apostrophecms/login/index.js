@@ -45,6 +45,7 @@ const cuid = require('cuid');
 const expressSession = require('express-session');
 
 const loginAttemptsNamespace = '@apostrophecms/loginAttempt';
+const loggedInCookieName = 'loggedIn';
 
 module.exports = {
   cascades: [ 'requirements' ],
@@ -151,6 +152,9 @@ module.exports = {
             expireCookie.expires = new Date(0);
             const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
             req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
+
+            // TODO: get cookie name from config
+            req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
           }
         },
         // invokes the `props(req, user)` function for the requirement specified by
@@ -678,6 +682,10 @@ module.exports = {
 
       // Awaitable wrapper for req.login. An implementation detail of the login route
       async passportLogin(req, user) {
+        const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
+        if (req.cookies[cookieName] !== 'true') {
+          req.res.cookie(cookieName, 'true');
+        }
         const passportLogin = (user) => {
           return require('util').promisify(function(user, callback) {
             return req.login(user, callback);
@@ -789,7 +797,12 @@ module.exports = {
       },
       passportSession: {
         before: '@apostrophecms/i18n',
-        middleware: self.passport.session()
+        middleware: (() => {
+          // Wrap the passport middleware so that if the apikey or bearer token
+          // middleware already supplied req.user, that wins (explicit wins over implicit)
+          const passportSession = self.passport.session();
+          return (req, res, next) => req.user ? next() : passportSession(req, res, next);
+        })()
       },
       honorLoginInvalidBefore: {
         before: '@apostrophecms/i18n',
@@ -811,6 +824,17 @@ module.exports = {
           } else {
             return next();
           }
+        }
+      },
+      addLoggedInCookie: {
+        before: '@apostrophecms/i18n',
+        middleware(req, res, next) {
+          // TODO: get cookie name from config
+          const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
+          if (req.user && req.cookies[cookieName] !== 'true') {
+            res.cookie(cookieName, 'true');
+          }
+          return next();
         }
       }
     };

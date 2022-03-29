@@ -2,7 +2,7 @@
 <h4>Home Page Template</h4>
 {# This is necessary to the login.js tests. -Tom #}
 {% if data.user %}
-  logged in
+  logged in as {{ data.user.title }}
 {% else %}
   logged out
 {% endif %}

@@ -282,6 +282,15 @@ describe('Pages REST', function() {
     assert(draftItems.result.ok === 1);
     assert(draftItems.insertedCount === 7);
 
+    // Change the rank of the archive pages to preserve the constraint that it comes last
+    await apos.doc.db.updateMany({
+      type: '@apostrophecms/archive-page'
+    }, {
+      $set: {
+        rank: 3
+      }
+    });
+
     const items = await apos.doc.db.insertMany(testItems);
 
     assert(items.result.ok === 1);
@@ -430,7 +439,7 @@ describe('Pages REST', function() {
     // Is the rank correct?
     const home = await apos.http.get('/api/v1/@apostrophecms/page', {});
     assert(home._children);
-    assert(home._children[3]._id === 'cousin:en:published');
+    assert(home._children[1]._id === 'cousin:en:published');
   });
 
   it('is able to move root/cousin before root/parent/child', async function() {
@@ -585,6 +594,33 @@ describe('Pages REST', function() {
 
     // Is the grandchild's path correct?
     assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/another-parent/parent/sibling`);
+  });
+
+  it('is able to make a subpage of the homepage at the last index with _position: lastChild', async function() {
+    const body = {
+      slug: '/third-new',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'Third New',
+      _targetId: '_home',
+      _position: 'lastChild'
+    };
+
+    const page = await apos.http.post('/api/v1/@apostrophecms/page', {
+      body,
+      jar
+    });
+
+    assert(page);
+    assert(page.title === 'Third New');
+    // Is the path generally correct?
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${page._id.replace(':en:published', '')}`);
+    const home = await apos.http.get('/api/v1/@apostrophecms/page?children=1', {
+      jar
+    });
+    assert(home);
+    assert(home._children);
+    assert(home._children[3]._id === page._id);
   });
 
   it('can use PUT to modify a page', async function() {

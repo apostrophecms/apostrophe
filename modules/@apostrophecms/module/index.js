@@ -177,6 +177,11 @@ module.exports = {
           return async function(req, res) {
             try {
               const result = await fn(req);
+
+              if (req.method === 'GET' && req.user) {
+                res.header('Cache-Control', 'no-store');
+              }
+
               res.status(200);
               res.send(result);
             } catch (err) {
@@ -446,7 +451,7 @@ module.exports = {
         );
       },
 
-      setCacheControl(req, maxAge) {
+      setMaxAge(req, maxAge) {
         if (typeof maxAge !== 'number') {
           self.apos.util.warnDev(`"maxAge" property must be defined as a number in the "${self.__meta.name}" module's cache options"`);
           return;

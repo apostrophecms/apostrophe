@@ -535,14 +535,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected', async () => {
-    apos.page.options.cache = {
-      api: {
-        maxAge: 4444
-      }
-    };
-
-    // TODO: Move this user logic outside this test if another one should need it
+  it('should set a "no-store" cache-control value when retrieving pages, when user is connected', async () => {
     const jar = apos.http.jar();
     const user = apos.user.newInstance();
 
@@ -573,8 +566,47 @@ describe('Pages', function() {
 
     assert(response1.headers['cache-control'] === 'no-store');
     assert(response2.headers['cache-control'] === 'no-store');
+  });
+
+  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 4444
+      }
+    };
+
+    const jar = apos.http.jar();
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin',
+        session: true
+      },
+      jar
+    });
+
+    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', {
+      fullResponse: true,
+      jar
+    });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, {
+      fullResponse: true,
+      jar
+    });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
 
     delete apos.page.options.cache;
+  });
+
+  it('should set a "no-store" cache-control value when retrieving pages, when user is connected using an api key', async () => {
+    const response1 = await apos.http.get(`/api/v1/@apostrophecms/page?apiKey=${apiKey}`, { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}?apiKey=${apiKey}`, { fullResponse: true });
+
+    assert(response1.headers['cache-control'] === 'no-store');
+    assert(response2.headers['cache-control'] === 'no-store');
   });
 
   it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected using an api key', async () => {

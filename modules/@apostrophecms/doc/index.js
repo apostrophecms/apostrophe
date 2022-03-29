@@ -329,6 +329,10 @@ module.exports = {
           updatedAt: -1,
           aposLocale: 1
         }, {});
+        await self.db.createIndex({
+          relatedReverseIds: 1,
+          aposLocale: 1
+        }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
         await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});
@@ -1092,6 +1096,66 @@ module.exports = {
             }
           }
         });
+      },
+
+      // Iterate through the document fields and call the provided handlers
+      // for each item of an array, object and relationship field type.
+      walkByMetaType(doc, handlers) {
+        const defaultHandlers = {
+          arrayItem: () => {},
+          object: () => {},
+          relationship: () => {}
+        };
+
+        handlers = {
+          ...defaultHandlers,
+          ...handlers
+        };
+
+        if (doc.metaType === 'doc') {
+          const manager = self.getManager(doc.type);
+          if (!manager) {
+            return;
+          }
+          forSchema(manager.schema, doc);
+        } else if (doc.metaType === 'widget') {
+          const manager = self.apos.area.getWidgetManager(doc.type);
+          if (!manager) {
+            return;
+          }
+          forSchema(manager.schema, doc);
+        }
+
+        function forSchema(schema, doc) {
+          for (const field of schema) {
+            if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
+              for (const widget of doc[field.name].items) {
+                self.walkByMetaType(widget, {
+                  arrayItem: handlers.arrayItem,
+                  object: handlers.object,
+                  relationship: handlers.relationship
+                });
+              }
+            } else if (field.type === 'array') {
+              if (doc[field.name]) {
+                doc[field.name].forEach(item => {
+                  handlers.arrayItem(field, item);
+                  forSchema(field.schema, item);
+                });
+              }
+            } else if (field.type === 'object') {
+              const value = doc[field.name];
+              if (value) {
+                handlers.object(field, value);
+                forSchema(field.schema, value);
+              }
+            } else if (field.type === 'relationship') {
+              if (Array.isArray(doc[field.name])) {
+                handlers.relationship(field, doc);
+              }
+            }
+          }
+        }
       },
       ...require('./lib/legacy-migrations')(self)
     };

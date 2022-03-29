@@ -299,6 +299,40 @@ describe('Docs', function() {
     assert(doc.slug.match(/^one\d+$/));
   });
 
+  it('should add the aposDocId to the related documents\' relatedReverseIds field', async () => {
+    const object = {
+      aposDocId: 'paul',
+      aposLocale: 'en:published',
+      slug: 'paul',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Paul',
+      lastName: 'McCartney',
+      age: 24,
+      alive: false,
+      friendsIds: [ 'carl', 'larry' ],
+      _friends: [ { _id: 'carl:en:published' }, { _id: 'larry:en:published' } ]
+    };
+
+    await apos.doc.insert(apos.task.getReq(), object);
+
+    const carlDoc = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    const larryDoc = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+
+    assert(carlDoc.relatedReverseIds.length === 1);
+    assert(carlDoc.relatedReverseIds[0] === 'paul');
+
+    assert(larryDoc.relatedReverseIds.length === 1);
+    assert(larryDoc.relatedReverseIds[0] === 'paul');
+  });
+
   it('should not allow you to call the insert method if you are not an admin', async function() {
     const object = {
       slug: 'not-for-you',
@@ -364,7 +398,7 @@ describe('Docs', function() {
     }).toDistinct('firstName');
 
     assert(Array.isArray(firstNames));
-    assert(firstNames.length === 4);
+    assert(firstNames.length === 5);
     assert(_.includes(firstNames, 'Larry'));
   });
 
@@ -376,13 +410,44 @@ describe('Docs', function() {
     const firstNames = await cursor.toDistinct('firstName');
 
     assert(Array.isArray(firstNames));
-    assert(firstNames.length === 4);
+    assert(firstNames.length === 5);
     assert(_.includes(firstNames, 'Larry'));
 
     const counts = await cursor.get('distinctCounts');
 
     assert(counts.Larry === 1);
     assert(counts.Lori === 2);
+  });
+
+  it('should remove the aposDocId from the related documents\' relatedReverseIds field', async () => {
+    const paulDoc = await apos.doc.db.findOne({
+      slug: 'paul',
+      aposLocale: 'en:published'
+    });
+
+    // carl removed from paul's related friends, only larry remains
+    const object = {
+      ...paulDoc,
+      friendsIds: [ 'larry' ],
+      _friends: [ { _id: 'larry:en:published' } ]
+    };
+
+    await apos.doc.update(apos.task.getReq(), object);
+
+    const carlDoc = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    const larryDoc = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+
+    assert(carlDoc.relatedReverseIds.length === 0);
+
+    assert(larryDoc.relatedReverseIds.length === 1);
+    assert(larryDoc.relatedReverseIds[0] === 'paul');
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {

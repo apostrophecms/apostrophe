@@ -642,6 +642,7 @@ module.exports = {
           modules: {},
           prefix: req.prefix,
           sitePrefix: self.apos.prefix,
+          shortName: self.apos.shortName,
           locale: req.locale,
           csrfCookieName: self.apos.csrfCookieName,
           tabId: self.apos.util.generateId(),

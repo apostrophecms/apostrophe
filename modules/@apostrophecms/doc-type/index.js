@@ -94,6 +94,29 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
+        async updateBacklinks(req, doc) {
+          const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+
+          // Remove all references to the doc
+          await self.apos.doc.db.updateMany({
+            relatedReverseIds: { $in: [ doc.aposDocId ] },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $pull: { relatedReverseIds: doc.aposDocId }
+          });
+
+          if (!relatedDocsIds.length) {
+            return;
+          }
+
+          // Add doc reference to all related docs
+          await self.apos.doc.db.updateMany({
+            aposDocId: { $in: relatedDocsIds },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $push: { relatedReverseIds: doc.aposDocId }
+          });
+        },
         prepareForStorage(req, doc) {
           self.apos.schema.prepareForStorage(req, doc);
         },
@@ -253,6 +276,18 @@ module.exports = {
 
   methods(self) {
     return {
+      getRelatedDocsIds(req, doc) {
+        const relatedDocsIds = [];
+        const handlers = {
+          relationship: (field, doc) => {
+            relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
+          }
+        };
+
+        self.apos.doc.walkByMetaType(doc, handlers);
+
+        return relatedDocsIds;
+      },
       sanitizeFieldList(choices) {
         if ((typeof choices) === 'string') {
           return choices.split(/\s*,\s*/);
