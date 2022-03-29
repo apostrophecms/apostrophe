@@ -96,8 +96,10 @@ module.exports = {
       beforeSave: {
         async updateCacheFields(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+          console.log('relatedDocsIds', relatedDocsIds);
 
-          // Remove all references to the doc
+          // - Remove current doc reference from docs that include it
+          // - Update these docs' cache field
           await self.apos.doc.db.updateMany({
             relatedReverseIds: { $in: [ doc.aposDocId ] },
             aposLocale: { $in: [ doc.aposLocale, null ] }
@@ -110,12 +112,26 @@ module.exports = {
             return;
           }
 
-          // Add doc reference to all related docs
+          // - Add current doc reference to related docs
+          // - Update related docs' cache field
           await self.apos.doc.db.updateMany({
             aposDocId: { $in: relatedDocsIds },
             aposLocale: { $in: [ doc.aposLocale, null ] }
           }, {
             $push: { relatedReverseIds: doc.aposDocId },
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+
+          console.log('doc.relatedReverseIds', doc.relatedReverseIds);
+          if (!doc.relatedReverseIds || !doc.relatedReverseIds.length) {
+            return;
+          }
+
+          // - Update related reverse docs' cache field
+          await self.apos.doc.db.updateMany({
+            aposDocId: { $in: doc.relatedReverseIds },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
             $set: { cacheInvalidatedAt: doc.updatedAt }
           });
         },
