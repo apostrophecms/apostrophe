@@ -918,7 +918,10 @@ module.exports = {
               _id: null
             });
           } else if (!query.state.project) {
-            query.project(self.options.publicApiProjection);
+            query.project({
+              ...self.options.publicApiProjection,
+              cacheInvalidatedAt: 1
+            });
           }
         }
         return query;

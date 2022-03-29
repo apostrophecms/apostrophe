@@ -2136,7 +2136,10 @@ database.`);
               _id: null
             });
           } else {
-            query.project(self.options.publicApiProjection);
+            query.project({
+              ...self.options.publicApiProjection,
+              cacheInvalidatedAt: 1
+            });
           }
         }
         return query;
