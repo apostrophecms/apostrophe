@@ -1396,7 +1396,14 @@ database.`);
       },
 
       shouldSendUnmodifiedResponse(req) {
-        if (!self.options.cache || !self.options.cache.page || !self.options.cache.page.maxAge || !req.headers || !req.headers['if-none-match']) {
+        if (
+          !self.options.cache ||
+          !self.options.cache.page ||
+          !self.options.cache.page.maxAge ||
+          !req.data.page ||
+          !req.data.page.cacheInvalidatedAt ||
+          !req.headers ||
+          !req.headers['if-none-match']) {
           return false;
         }
 
@@ -1405,9 +1412,11 @@ database.`);
 
         const expectedETag = `"${releaseId}:${cacheInvalidatedAtTimestamp}"`;
 
+        console.log(' --- shouldSendUnmodifiedResponse');
         console.log('req.headers[if-none-match]', req.headers['if-none-match']);
         console.log('expectedETag', expectedETag);
         console.log('req.headers[\'if-none-match\'].split(\',\').includes(expectedETag)', req.headers['if-none-match'].split(',').includes(expectedETag));
+        console.log('');
 
         return req.headers['if-none-match'].split(',').includes(expectedETag);
       },
@@ -1428,7 +1437,8 @@ database.`);
         // TODO: stop render at the right place
         if (self.shouldSendUnmodifiedResponse(req)) {
           console.log('304');
-          req.res.statusCode = 304;
+          // Express automatically sets 304
+          // req.res.statusCode = 304;
         }
 
         try {

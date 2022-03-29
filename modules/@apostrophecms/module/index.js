@@ -473,8 +473,13 @@ module.exports = {
       },
 
       emitETag(req, doc) {
+        console.log(' --- emitETag');
+        // TODO: fix undefined req.data.piece
+        // console.log('req.data.piece', req.data.piece);
+
         const context = doc || req.data.piece || req.data.page;
-        if (!context) {
+        // console.log('context', context);
+        if (!context || !context.cacheInvalidatedAt) {
           return;
         }
 
@@ -482,7 +487,9 @@ module.exports = {
         const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime();
         const eTagValue = `"${releaseId}:${cacheInvalidatedAtTimestamp}"`;
 
+        console.log('context.cacheInvalidatedAt', context.cacheInvalidatedAt);
         console.log('ETag', eTagValue);
+        console.log('');
 
         req.res.header('ETag', eTagValue);
       },
