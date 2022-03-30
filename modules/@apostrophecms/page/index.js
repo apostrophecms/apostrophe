@@ -1394,38 +1394,10 @@ database.`);
         const pages = Array.isArray(pageOrPages) ? pageOrPages : [ pageOrPages ];
         self.parked = self.parked.concat(pages);
       },
-
-      shouldSendUnmodifiedResponse(req) {
-        if (
-          !self.options.cache ||
-          !self.options.cache.page ||
-          !self.options.cache.page.maxAge ||
-          !req.data.page ||
-          !req.data.page.cacheInvalidatedAt ||
-          !req.headers ||
-          !req.headers['if-none-match']) {
-          return false;
-        }
-
-        const releaseId = self.apos.asset.getReleaseId();
-        const cacheInvalidatedAtTimestamp = (new Date(req.data.page.cacheInvalidatedAt)).getTime();
-
-        const expectedETag = `"${releaseId}:${cacheInvalidatedAtTimestamp}"`;
-
-        console.log(' --- shouldSendUnmodifiedResponse');
-        console.log('req.headers[if-none-match]', req.headers['if-none-match']);
-        console.log('expectedETag', expectedETag);
-        console.log('req.headers[\'if-none-match\'].split(\',\').includes(expectedETag)', req.headers['if-none-match'].split(',').includes(expectedETag));
-        console.log('');
-
-        return req.headers['if-none-match'].split(',').includes(expectedETag);
-      },
-
       // Route that serves pages. See afterInit in
       // index.js for the wildcard argument and the app.get call
       async serve(req, res) {
         req.deferWidgetLoading = true;
-
         try {
           await self.serveGetPage(req);
           await self.emit('serve', req);
