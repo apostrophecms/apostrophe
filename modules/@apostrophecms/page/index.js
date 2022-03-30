@@ -1418,8 +1418,8 @@ database.`);
           self.sendETag(req);
 
           if (self.doesETagMatch(req)) {
-            console.log('304');
-            return req.res.sendStatus(304);
+            // Stop there and send a 304 status code; the cached response will be used
+            return res.sendStatus(304);
           }
         }
 
