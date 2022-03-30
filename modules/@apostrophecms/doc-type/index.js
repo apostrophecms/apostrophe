@@ -95,12 +95,7 @@ module.exports = {
     return {
       beforeSave: {
         async updateCacheField(req, doc) {
-          console.log(' --- updateCacheField');
-
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
-
-          console.log('relatedDocsIds', relatedDocsIds);
-          console.log('doc.relatedReverseIds', doc.relatedReverseIds);
 
           // - Remove current doc reference from docs that include it
           // - Update these docs' cache field

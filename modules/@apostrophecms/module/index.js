@@ -473,8 +473,6 @@ module.exports = {
       },
 
       emitETag(req, doc) {
-        console.log(' --- emitETag');
-
         const context = doc || req.data.piece || req.data.page;
         if (!context || !context.cacheInvalidatedAt) {
           return;
@@ -483,10 +481,6 @@ module.exports = {
         const releaseId = self.apos.asset.getReleaseId();
         const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime();
         const eTagValue = `"${releaseId}:${cacheInvalidatedAtTimestamp}"`;
-
-        console.log('context.cacheInvalidatedAt', context.cacheInvalidatedAt);
-        console.log('ETag', eTagValue);
-        console.log('');
 
         req.res.header('ETag', eTagValue);
       },
