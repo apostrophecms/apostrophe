@@ -7,6 +7,10 @@
 * Full support for the `object` field type, which works much like `array` but stores just one sub-object as a property, rather than an array of objects.
 * To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date.
 
+### Fixes
+
+* Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
+
 # 3.16.1 (2022-03-21)
 
 ### Fixes
