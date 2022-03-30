@@ -217,7 +217,12 @@ module.exports = {
 
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             self.setMaxAge(req, self.options.cache.api.maxAge);
-            self.emitETag(req, doc);
+            self.sendETag(req, doc);
+
+            if (self.doesETagMatch(req, doc)) {
+              console.log('304');
+              return {};
+            }
           }
 
           if (!doc) {
