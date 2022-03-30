@@ -180,7 +180,12 @@ module.exports = {
 
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             self.setMaxAge(req, self.options.cache.api.maxAge);
-            self.emitETag(req, result);
+            self.sendETag(req, result);
+
+            if (self.doesETagMatch(req, result)) {
+              console.log('304');
+              return {};
+            }
           }
 
           if (!result) {
@@ -1408,7 +1413,12 @@ database.`);
 
         if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
           self.setMaxAge(req, self.options.cache.page.maxAge);
-          self.emitETag(req);
+          self.sendETag(req);
+
+          if (self.doesETagMatch(req)) {
+            console.log('304');
+            return req.res.sendStatus(304);
+          }
         }
 
         try {
