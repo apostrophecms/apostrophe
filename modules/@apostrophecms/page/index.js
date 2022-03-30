@@ -1434,11 +1434,9 @@ database.`);
           return await self.serve500Error(req, err);
         }
 
-        // TODO: stop render at the right place
-        if (self.shouldSendUnmodifiedResponse(req)) {
-          console.log('304');
-          // Express automatically sets 304
-          // req.res.statusCode = 304;
+        if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
+          self.setMaxAge(req, self.options.cache.page.maxAge);
+          self.emitETag(req);
         }
 
         try {
@@ -1466,11 +1464,6 @@ database.`);
         await self.emit('serveQuery', query);
         req.data.bestPage = await query.toObject();
         self.evaluatePageMatch(req);
-
-        if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
-          self.setMaxAge(req, self.options.cache.page.maxAge);
-          self.emitETag(req);
-        }
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
       // trailing slashes other than the root, and double slash based open

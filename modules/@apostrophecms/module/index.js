@@ -474,11 +474,8 @@ module.exports = {
 
       emitETag(req, doc) {
         console.log(' --- emitETag');
-        // TODO: fix undefined req.data.piece
-        // console.log('req.data.piece', req.data.piece);
 
         const context = doc || req.data.piece || req.data.page;
-        // console.log('context', context);
         if (!context || !context.cacheInvalidatedAt) {
           return;
         }
