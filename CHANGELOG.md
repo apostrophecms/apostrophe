@@ -22,6 +22,7 @@
 * Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
 * Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
 * Fixes deprecation warnings displayed after running `npm install`, for dependencies that are directly included by this package.
+* Implement custom ETags emission allowing caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) documents updates, thanks to backlinks mentioned above.
 
 ### Fixes
 
