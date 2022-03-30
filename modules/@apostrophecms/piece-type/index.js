@@ -220,7 +220,9 @@ module.exports = {
             self.sendETag(req, doc);
 
             if (self.doesETagMatch(req, doc)) {
-              console.log('304');
+              req.res.status(304);
+
+              // Stop and send an empty body since the cached response will be used
               return {};
             }
           }

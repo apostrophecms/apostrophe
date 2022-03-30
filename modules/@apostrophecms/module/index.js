@@ -185,7 +185,10 @@ module.exports = {
                 res.header('Cache-Control', 'no-store');
               }
 
-              res.status(200);
+              // Keep "304 Not Modified" status if previously set
+              const statusCode = res.statusCode === 304 ? 304 : 200;
+
+              res.status(statusCode);
               console.log('res.statusCode', res.statusCode);
               res.send(result);
             } catch (err) {
