@@ -261,6 +261,7 @@ module.exports = {
                 importSuffix: 'App'
               });
             }
+
             if (options.index) {
               indexJsImports = getImports(source, 'index.js', {
                 invokeApps: true,
@@ -277,29 +278,16 @@ module.exports = {
             if (options.webpack) {
               const importFile = `${buildDir}/${name}-import.js`;
 
-              fs.writeFileSync(importFile, (options.prologue || '') + stripIndent`
-                ${(iconImports && iconImports.importCode) || ''}
-                ${(iconImports && iconImports.registerCode) || ''}
-                ${(componentImports && componentImports.importCode) || ''}
-                ${(tiptapExtensionImports && tiptapExtensionImports.importCode) || ''}
-                ${(appImports && appImports.importCode) || ''}
-                ${(indexJsImports && indexJsImports.importCode) || ''}
-                ${(indexSassImports && indexSassImports.importCode) || ''}
-                ${(iconImports && iconImports.registerCode) || ''}
-                ${(componentImports && componentImports.registerCode) || ''}
-                ${(tiptapExtensionImports && tiptapExtensionImports.registerCode) || ''}
-              ` +
-                (appImports ? stripIndent`
-                  setTimeout(() => {
-                    ${appImports.invokeCode}
-                  }, 0);
-                ` : '') +
-                // No delay on these, they expect to run early like ui/public code
-                // and the first ones invoked set up expected stuff like apos.http
-                (indexJsImports ? stripIndent`
-                  ${indexJsImports.invokeCode}
-                ` : '')
-              );
+              writeImportFile({
+                importFile,
+                prologue: options.prologue,
+                icon: iconImports,
+                components: componentImports,
+                tiptap: tiptapExtensionImports,
+                app: appImports,
+                indexJs: indexJsImports,
+                indexSass: indexSassImports
+              });
 
               const outputFilename = `${name}-build.js`;
               // Remove previous build artifacts, as some pipelines won't build all artifacts
@@ -310,12 +298,41 @@ module.exports = {
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
+              const bundlesOutputs = Object.entries(self.verifiedBundles)
+                .map(([ bundleName, paths ]) => {
+                  return {
+                    bundleName,
+                    importFile: `${buildDir}/${bundleName}-import.js`,
+                    js: getFrontendOutput(paths.js, {
+                      invokeApps: true,
+                      enumerateImports: true,
+                      importSuffix: 'App',
+                      requireDefaultExport: true
+                    }),
+                    scss: getFrontendOutput(paths.scss, {
+                      enumerateImports: true,
+                      importSuffix: 'Stylesheet'
+                    })
+                  };
+                });
+
+              for (const output of bundlesOutputs) {
+                writeImportFile({
+                  importFile: output.importFile,
+                  indexJs: output.js,
+                  indexSass: output.scss
+                });
+              }
+
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
                 outputFilename,
-                bundles: self.verifiedBundles
+                bundles: bundlesOutputs.map(({ bundleName, importFile }) => ({
+                  import: importFile
+                  // dependOn: mainBundleName
+                }))
               }, self.apos);
 
               const webpackInstanceConfigMerged = self.webpackExtensions
@@ -350,7 +367,7 @@ module.exports = {
                 //
                 // Of course, developers can push an "public" asset that is
                 // the output of an ES6 pipeline.
-                const publicImports = getImports(name, '*.js', { });
+                const publicImports = getImports(name, '*.js');
                 fs.writeFileSync(`${bundleDir}/${name}-build.js`,
                   (((options.prologue || '') + '\n') || '') +
                   publicImports.paths.map(path => {
@@ -359,7 +376,7 @@ module.exports = {
                 );
               }
               if (options.outputs.includes('css')) {
-                const publicImports = getImports(name, '*.css', { });
+                const publicImports = getImports(name, '*.css');
                 fs.writeFileSync(`${bundleDir}/${name}-build.css`,
                   publicImports.paths.map(path => {
                     return self.filterCss(fs.readFileSync(path, 'utf8'), {
@@ -372,6 +389,41 @@ module.exports = {
             self.apos.util.log(req.t('apostrophe:assetTypeBuildComplete', {
               label: req.t(options.label)
             }));
+          }
+
+          function writeImportFile ({
+            importFile,
+            prologue,
+            icon,
+            components,
+            tiptap,
+            app,
+            indexJs,
+            indexSass
+          }) {
+            fs.writeFileSync(importFile, (prologue || '') + stripIndent`
+            ${(icon && icon.importCode) || ''}
+            ${(icon && icon.registerCode) || ''}
+            ${(components && components.importCode) || ''}
+            ${(tiptap && tiptap.importCode) || ''}
+            ${(app && app.importCode) || ''}
+            ${(indexJs && indexJs.importCode) || ''}
+            ${(indexSass && indexSass.importCode) || ''}
+            ${(icon && icon.registerCode) || ''}
+            ${(components && components.registerCode) || ''}
+            ${(tiptap && tiptap.registerCode) || ''}
+          ` +
+            (app ? stripIndent`
+              setTimeout(() => {
+                ${app.invokeCode}
+              }, 0);
+            ` : '') +
+            // No delay on these, they expect to run early like ui/public code
+            // and the first ones invoked set up expected stuff like apos.http
+            (indexJs ? stripIndent`
+              ${indexJs.invokeCode}
+            ` : '')
+            );
           }
 
           function getIcons() {
@@ -508,7 +560,7 @@ module.exports = {
             return fs.copyFile(from, to);
           }
 
-          function getImports(folder, pattern, options) {
+          function getImports(folder, pattern, options = {}) {
             let components = [];
             const seen = {};
             for (const name of modulesToInstantiate) {
@@ -521,12 +573,6 @@ module.exports = {
                 seen[entry.dirname] = true;
               }
             }
-            const output = {
-              importCode: '',
-              registerCode: '',
-              invokeCode: '',
-              paths: []
-            };
 
             if (options.importLastVersion) {
               // Reverse the list so we can easily find the last configured import
@@ -546,6 +592,17 @@ module.exports = {
               // Put the components back in their original order
               components.reverse();
             }
+
+            return getFrontendOutput(components, options);
+          }
+
+          function getFrontendOutput (components, options = {}) {
+            const output = {
+              importCode: '',
+              registerCode: '',
+              invokeCode: '',
+              paths: []
+            };
 
             components.forEach((component, i) => {
               if (options.requireDefaultExport) {
@@ -581,6 +638,7 @@ module.exports = {
                 output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
               }
             });
+
             return output;
           }
 
