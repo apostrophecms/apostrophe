@@ -180,19 +180,29 @@ module.exports = {
         //
         // The `crop` object is appended to the `crops` array property
         // of the file object.
+        // HEREE
         crop: [
+          () => {
+            console.log('=============> CROP SHIT <================');
+          },
           self.canUpload,
           async function (req) {
+            console.log('=============> CROP ROUTE <================');
             const _id = self.apos.launder.id(req.body._id);
-            let crop = req.body.crop;
-            if (typeof crop !== 'object') {
+            const { crop } = req.body;
+
+            if (!crop || typeof crop !== 'object' || !Array.isArray(crop)) {
               throw self.apos.error('invalid');
             }
-            crop = self.sanitizeCrop(crop);
-            if (!crop) {
+
+            const sanitizedCrop = self.sanitizeCrop(crop);
+
+            if (!sanitizedCrop) {
               throw self.apos.error('invalid');
             }
-            await self.crop(req, _id, crop);
+
+            await self.crop(req, _id, sanitizedCrop);
+
             return true;
           }
         ]
@@ -454,11 +464,14 @@ module.exports = {
           }
         });
       },
+      // HEREE
       async crop(req, _id, crop) {
-        const info = await self.db.findOne({ _id: _id });
+        const info = await self.db.findOne({ _id });
+
         if (!info) {
           throw self.apos.error('notfound');
         }
+
         if (!self.croppable[info.extension]) {
           throw new Error(info.extension + ' files cannot be cropped, do not present cropping UI for this type');
         }
@@ -470,14 +483,16 @@ module.exports = {
         }
         // Pull the original out of cloud storage to a temporary folder where
         // it can be cropped and popped back into uploadfs
-        const originalFile = '/attachments/' + info._id + '-' + info.name + '.' + info.extension;
-        const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + info.extension;
-        const croppedFile = '/attachments/' + info._id + '-' + info.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + info.extension;
+        const originalFile = `/attachments/${info._id}-${info.name}.${info.extension}`;
+        const tempFile = `${self.uploadfs.getTempPath()}/${self.apos.util.generateId()}.${info.extension}`;
+        const croppedFile = `/attachments/${info._id}-${info.name}.${crop.left}.${crop.top}.${crop.width}.${crop.height}.${info.extension}`;
+
         await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
         await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
           crop: crop,
           sizes: self.imageSizes
         });
+
         crops.push(crop);
         await self.db.updateOne({
           _id: info._id
@@ -489,15 +504,19 @@ module.exports = {
         await Promise.promisify(fs.unlink)(tempFile);
       },
       sanitizeCrop(crop) {
-        crop = _.pick(crop, 'top', 'left', 'width', 'height');
-        crop.top = self.apos.launder.integer(crop.top, 0, 0, 10000);
-        crop.left = self.apos.launder.integer(crop.left, 0, 0, 10000);
-        crop.width = self.apos.launder.integer(crop.width, 1, 1, 10000);
-        crop.height = self.apos.launder.integer(crop.height, 1, 1, 10000);
-        if (_.keys(crop).length < 4) {
-          return undefined;
+        const neededProps = [ 'top', 'left', 'width', 'height' ];
+        const { integer: sanitizeInteger } = self.apos.launder;
+
+        if (neededProps.some((prop) => !Object.keys(crop).includes(prop))) {
+          return null;
         }
-        return crop;
+
+        return {
+          top: sanitizeInteger(crop.top, 0, 0, 10000),
+          left: sanitizeInteger(crop.left, 0, 0, 10000),
+          width: sanitizeInteger(crop.width, 0, 0, 10000),
+          height: sanitizeInteger(crop.height, 0, 0, 10000)
+        };
       },
       // This method return a default icon url if an attachment is missing
       // to avoid template errors
@@ -1042,6 +1061,7 @@ module.exports = {
       },
       // Middleware method used when only those with attachment privileges should be allowed to do something
       canUpload(req, res, next) {
+        console.log('=============> IN CAN UPLOAD <================');
         if (!self.apos.permission.can(req, 'upload-attachment')) {
           res.statusCode = 403;
           return res.send({
