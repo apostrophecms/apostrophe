@@ -94,9 +94,13 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        async updateCacheFields(req, doc) {
+        async updateCacheField(req, doc) {
+          console.log(' --- updateCacheField');
+
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+
           console.log('relatedDocsIds', relatedDocsIds);
+          console.log('doc.relatedReverseIds', doc.relatedReverseIds);
 
           // - Remove current doc reference from docs that include it
           // - Update these docs' cache field
@@ -108,32 +112,27 @@ module.exports = {
             $set: { cacheInvalidatedAt: doc.updatedAt }
           });
 
-          if (!relatedDocsIds.length) {
-            return;
+          if (relatedDocsIds.length) {
+            // - Add current doc reference to related docs
+            // - Update related docs' cache field
+            await self.apos.doc.db.updateMany({
+              aposDocId: { $in: relatedDocsIds },
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $push: { relatedReverseIds: doc.aposDocId },
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
           }
 
-          // - Add current doc reference to related docs
-          // - Update related docs' cache field
-          await self.apos.doc.db.updateMany({
-            aposDocId: { $in: relatedDocsIds },
-            aposLocale: { $in: [ doc.aposLocale, null ] }
-          }, {
-            $push: { relatedReverseIds: doc.aposDocId },
-            $set: { cacheInvalidatedAt: doc.updatedAt }
-          });
-
-          console.log('doc.relatedReverseIds', doc.relatedReverseIds);
-          if (!doc.relatedReverseIds || !doc.relatedReverseIds.length) {
-            return;
+          if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
+            // - Update related reverse docs' cache field
+            await self.apos.doc.db.updateMany({
+              aposDocId: { $in: doc.relatedReverseIds },
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
           }
-
-          // - Update related reverse docs' cache field
-          await self.apos.doc.db.updateMany({
-            aposDocId: { $in: doc.relatedReverseIds },
-            aposLocale: { $in: [ doc.aposLocale, null ] }
-          }, {
-            $set: { cacheInvalidatedAt: doc.updatedAt }
-          });
         },
         prepareForStorage(req, doc) {
           self.apos.schema.prepareForStorage(req, doc);
