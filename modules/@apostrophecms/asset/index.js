@@ -417,12 +417,15 @@ module.exports = {
             const jsNoModules = `${scene}-nomodule-bundle.js`;
             const css = `${scene}-bundle.css`;
             writeAssetFile({
+              scene,
               filePath: jsModules
             });
             writeAssetFile({
+              scene,
               filePath: jsNoModules
             });
             writeAssetFile({
+              scene,
               filePath: css,
               checkForFile: true
             });
@@ -431,14 +434,15 @@ module.exports = {
           }
 
           function writeAssetFile ({
-            filePath, checkForFile = false
+            scene, filePath, checkForFile = false
           }) {
             const [ _ext, fileExt ] = filePath.match(/\.(\w+)$/);
             const filterBuilds = ({
-              outputs, condition
+              scenes, outputs, condition
             }) => {
               return outputs.includes(fileExt) &&
-                (!condition || condition === 'module');
+                (!condition || condition === 'module') &&
+                scenes.includes(scene);
             };
 
             const filesContent = Object.entries(self.builds)
