@@ -120,9 +120,19 @@ module.exports = {
           }
 
           if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
-            // - Update related reverse docs' cache field
+            // Update related reverse docs' cache field
             await self.apos.doc.db.updateMany({
               aposDocId: { $in: doc.relatedReverseIds },
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
+          }
+
+          if (doc._parentUrl) {
+            // Update piece index page's cache field
+            await self.apos.doc.db.updateOne({
+              slug: doc._parentUrl,
               aposLocale: { $in: [ doc.aposLocale, null ] }
             }, {
               $set: { cacheInvalidatedAt: doc.updatedAt }
