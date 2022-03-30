@@ -175,11 +175,8 @@ module.exports = {
       routeWrappers: {
         apiRoutes(name, fn) {
           return async function(req, res) {
-            console.log('--- apiRoutes');
             try {
               const result = await fn(req);
-              console.log('result', result);
-              console.log('res.statusCode', res.statusCode);
 
               if (req.method === 'GET' && req.user) {
                 res.header('Cache-Control', 'no-store');
@@ -189,7 +186,6 @@ module.exports = {
               const statusCode = res.statusCode === 304 ? 304 : 200;
 
               res.status(statusCode);
-              console.log('res.statusCode', res.statusCode);
               res.send(result);
             } catch (err) {
               return self.routeSendError(req, err);
@@ -480,15 +476,11 @@ module.exports = {
       },
 
       constructETag(req, doc) {
-        console.log(' --- constructETag');
-
         const context = doc || req.data.piece || req.data.page;
 
         if (!context || !context.cacheInvalidatedAt) {
           return null;
         }
-
-        console.log('context.cacheInvalidatedAt', context.cacheInvalidatedAt);
 
         const releaseId = self.apos.asset.getReleaseId();
         const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime();
@@ -497,29 +489,19 @@ module.exports = {
       },
 
       sendETag(req, doc) {
-        console.log(' --- sendETag');
-
         const eTagValue = self.constructETag(req, doc);
 
         if (eTagValue) {
-          console.log('ETag', eTagValue);
-          console.log('');
           req.res.header('ETag', eTagValue);
         }
       },
 
       doesETagMatch(req, doc) {
-        console.log(' --- doesETagMatch');
-
         if (!req.headers || !req.headers['if-none-match']) {
           return false;
         }
 
         const eTagValue = self.constructETag(req, doc);
-
-        console.log('req.headers[if-none-match]', req.headers['if-none-match']);
-        console.log('req.headers[\'if-none-match\'].split(\',\').includes(eTagValue)', req.headers['if-none-match'].split(',').includes(eTagValue));
-        console.log('');
 
         return eTagValue && req.headers['if-none-match'].split(',').includes(eTagValue);
       },
