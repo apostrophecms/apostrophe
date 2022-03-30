@@ -10,9 +10,11 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename, es5
+  importFile, modulesDir, outputPath, outputFilename, bundles = [], es5
 }, apos) => {
+  const mainBundleName = outputFilename.replace('.js', '');
   const taskFns = [ scssTask ];
+
   if (es5) {
     taskFns.push(es5Task);
   }
@@ -20,15 +22,17 @@ module.exports = ({
     task(
       {
         importFile,
-        modulesDir,
-        outputFilename
+        modulesDir
       },
       apos
     )
   );
 
-  let config = {
-    entry: importFile,
+  const config = {
+    entry: {
+      [mainBundleName]: importFile,
+      ...formatBundles(bundles, mainBundleName)
+    },
     target: es5 ? 'es5' : 'web',
     mode: process.env.NODE_ENV || 'development',
     optimization: {
@@ -37,7 +41,7 @@ module.exports = ({
     devtool: 'source-map',
     output: {
       path: outputPath,
-      filename: outputFilename
+      filename: '[name].js'
     },
     resolveLoader: {
       extensions: [ '*', '.js' ],
@@ -64,6 +68,28 @@ module.exports = ({
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
   };
 
-  config = merge(config, ...tasks);
-  return config;
+  return merge(config, ...tasks);
 };
+
+function formatBundles (bundles, mainBundleName) {
+  return bundles.reduce((acc, { bundleName, paths }) => {
+    const jsPaths = paths.filter((p) => p.endsWith('.js'));
+    const scssPaths = paths.filter((p) => p.endsWith('.scss'));
+
+    return {
+      ...acc,
+      ...jsPaths.length && {
+        [`${bundleName}-module-bundle`]: {
+          import: jsPaths,
+          dependOn: mainBundleName
+        }
+      },
+      ...scssPaths.length && {
+        [`${bundleName}-bundle`]: {
+          import: scssPaths,
+          dependOn: mainBundleName
+        }
+      }
+    };
+  }, {});
+}

@@ -6,6 +6,14 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
+const { merge: webpackMerge } = require('webpack-merge');
+const cuid = require('cuid');
+const {
+  checkModulesWebpackConfig,
+  getWebpackExtensions,
+  fillExtraBundles,
+  getBundlesNames
+} = require('./lib/webpack/utils');
 
 module.exports = {
 
@@ -22,13 +30,22 @@ module.exports = {
     refreshOnRestart: false
   },
 
-  init(self) {
+  async init(self) {
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
     };
     self.configureBuilds();
     self.initUploadfs();
+
+    const { extensions, verifiedBundles } = await getWebpackExtensions({
+      getMetadata: self.apos.synth.getMetadata,
+      modulesToInstantiate: self.apos.modulesToBeInstantiated()
+    });
+
+    self.extraBundles = fillExtraBundles(verifiedBundles);
+    self.webpackExtensions = extensions;
+    self.verifiedBundles = verifiedBundles;
   },
   handlers (self) {
     return {
@@ -42,12 +59,18 @@ module.exports = {
             // Or if we've set an app option to skip the auto build
             self.apos.options.autoBuild !== false
           ) {
+
+            checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
             // If starting up normally, run the build task, checking if we
             // really need to update the apos build
             await self.apos.task.invoke('@apostrophecms/asset:build', {
               'check-apos-build': true
             });
           }
+        },
+        injectAssetsPlaceholders() {
+          self.apos.template.prepend('head', '@apostrophecms/asset:stylesheets');
+          self.apos.template.append('body', '@apostrophecms/asset:scripts');
         }
       },
       'apostrophe:destroy': {
@@ -56,6 +79,28 @@ module.exports = {
             await Promise.promisify(self.uploadfs.destroy)();
           }
         }
+      }
+    };
+  },
+  components(self) {
+    return {
+      scripts(req, data) {
+        const placeholder = `[scripts-placeholder:${cuid()}]`;
+
+        req.scriptsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
+      },
+      stylesheets(req, data) {
+        const placeholder = `[stylesheets-placeholder:${cuid()}]`;
+
+        req.stylesheetsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
       }
     };
   },
@@ -69,6 +114,8 @@ module.exports = {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
+          const modulesToInstantiate = self.apos.modulesToBeInstantiated();
+
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
@@ -120,7 +167,10 @@ module.exports = {
 
             if (rebuild) {
               await fs.mkdirp(bundleDir);
-              await build(name, options);
+              await build({
+                name,
+                options
+              });
             }
           }
 
@@ -128,6 +178,7 @@ module.exports = {
           // just `public` and `apos`) by examining those specified as
           // targets for the various builds
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
+
           let deployFiles = [];
           for (const scene of scenes) {
             deployFiles = [ ...deployFiles, ...merge(scene) ];
@@ -137,7 +188,12 @@ module.exports = {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
-          deployFiles = [ ...deployFiles, ...publicAssets ];
+          deployFiles = [
+            ...deployFiles,
+            ...publicAssets,
+            ...getBundlesNames(self.extraBundles, self.options.es5)
+          ];
+
           await deploy(deployFiles);
 
           if (process.env.APOS_BUNDLE_ANALYZER) {
@@ -154,7 +210,7 @@ module.exports = {
             const directories = {};
             // Most other modules are not actually instantiated yet, but
             // we can access their metadata, which is sufficient
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const ancestorDirectories = [];
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
@@ -181,7 +237,9 @@ module.exports = {
             }
           }
 
-          async function build(name, options) {
+          async function build({
+            name, options
+          }) {
             self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
               label: req.t(options.label)
             }));
@@ -251,13 +309,20 @@ module.exports = {
               fs.removeSync(cssPath);
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
+
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
-                outputFilename
+                outputFilename,
+                bundles: self.verifiedBundles
               }, self.apos);
-              const result = await webpack(webpackInstanceConfig);
+
+              const webpackInstanceConfigMerged = self.webpackExtensions
+                ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
+                : webpackInstanceConfig;
+
+              const result = await webpack(webpackInstanceConfigMerged);
               if (result.compilation.errors.length) {
                 // Throwing a string is appropriate in a command line task
                 throw cleanErrors(result.toString('errors'));
@@ -311,7 +376,7 @@ module.exports = {
 
           function getIcons() {
 
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               // icons is an unparsed section, so getMetadata gives it back
               // to us as an object with a property for each class in the
@@ -351,41 +416,52 @@ module.exports = {
             const jsModules = `${scene}-module-bundle.js`;
             const jsNoModules = `${scene}-nomodule-bundle.js`;
             const css = `${scene}-bundle.css`;
-            fs.writeFileSync(
-              `${bundleDir}/${jsModules}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'module')
-              ).map(([ name, options ]) => {
-                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
-              }).join('\n')
-            );
-            fs.writeFileSync(
-              `${bundleDir}/${jsNoModules}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'nomodule')
-              ).map(([ name, options ]) => {
-                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
-              }).join('\n')
-            );
-            fs.writeFileSync(
-              `${bundleDir}/${css}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('css')
-              ).map(([ name, options ]) => {
-                const file = `${bundleDir}/${name}-build.css`;
-                if (fs.existsSync(file)) {
-                  return `/* BUILD: ${name} */\n` + fs.readFileSync(file, 'utf8');
-                } else {
-                  return '';
-                }
-              }).join('\n')
-            );
+            writeAssetFile({
+              scene,
+              filePath: jsModules
+            });
+            writeAssetFile({
+              scene,
+              filePath: jsNoModules
+            });
+            writeAssetFile({
+              scene,
+              filePath: css,
+              checkForFile: true
+            });
+
             return [ jsModules, jsNoModules, css ];
+          }
+
+          function writeAssetFile ({
+            scene, filePath, checkForFile = false
+          }) {
+            const [ _ext, fileExt ] = filePath.match(/\.(\w+)$/);
+            const filterBuilds = ({
+              scenes, outputs, condition
+            }) => {
+              return outputs.includes(fileExt) &&
+                (!condition || condition === 'module') &&
+                scenes.includes(scene);
+            };
+
+            const filesContent = Object.entries(self.builds)
+              .filter(([ _, options ]) => filterBuilds(options))
+              .map(([ name ]) => {
+
+                const file = `${bundleDir}/${name}-build.${fileExt}`;
+                const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
+
+                if (checkForFile) {
+                  return fs.existsSync(file)
+                    ? readFile(name, file)
+                    : '';
+                }
+
+                return readFile(name, file);
+              }).join('\n');
+
+            fs.writeFileSync(`${bundleDir}/${filePath}`, filesContent);
           }
 
           // If NODE_ENV is production, this function will copy the given
@@ -435,7 +511,7 @@ module.exports = {
           function getImports(folder, pattern, options) {
             let components = [];
             const seen = {};
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
                 if (seen[entry.dirname]) {
@@ -555,22 +631,10 @@ module.exports = {
         }
       },
       stylesheetsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        const bundle = `<link href="${base}/${when}-bundle.css" rel="stylesheet" />`;
-        return self.apos.template.safe(bundle);
+        return '';
       },
       scriptsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        if (self.options.es5) {
-          return self.apos.template.safe(stripIndent`
-            <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
-            <script type="module" src="${base}/${when}-module-bundle.js"></script>
-          `);
-        } else {
-          return self.apos.template.safe(stripIndent`
-            <script src="${base}/${when}-module-bundle.js"></script>
-          `);
-        }
+        return '';
       },
       shouldRefreshOnRestart() {
         return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
