@@ -39,12 +39,6 @@ const modules = {
   'bundle-widget': {}
 };
 
-const allModules = {
-  ...modules,
-  'extends-webpack': {},
-  'extends-webpack-sub': {}
-};
-
 describe('Assets', function() {
   const {
     publicFolderPath,
@@ -93,9 +87,14 @@ describe('Assets', function() {
   });
 
   it('should get webpack extensions from modules and fill extra bundles', async function () {
+    const expectedEntryPointsNames = {
+      js: [ 'extra', 'extra2' ],
+      css: [ 'extra' ]
+    };
+
     apos = await t.create({
       root: module,
-      modules: allModules
+      modules
     });
 
     const { extensions, verifiedBundles } = await getWebpackExtensions({
@@ -104,42 +103,38 @@ describe('Assets', function() {
       modulesToInstantiate: apos.modulesToBeInstantiated()
     });
 
-    assert(Object.keys(extensions).length === 3);
-    assert(extensions.ext2.rules[0].overriden);
-    assert(extensions.ext3);
+    assert(Object.keys(extensions).length === 2);
+    assert(!extensions.ext1.resolve.alias.ext1);
+    assert(extensions.ext1.resolve.alias.ext1Overriden);
+    assert(extensions.ext2.resolve.alias.ext2);
 
     assert(verifiedBundles.length === 2);
 
     const [ verified1, verified2 ] = verifiedBundles;
 
-    assert(verified1.bundleName === 'extra-bundle');
+    assert(verified1.bundleName === 'extra');
     assert(verified1.paths.length === 2);
     assert(verified1.paths[0].endsWith('.js'));
     assert(verified1.paths[1].endsWith('.scss'));
 
-    assert(verified2.bundleName === 'extra-bundle2');
+    assert(verified2.bundleName === 'extra2');
     assert(verified2.paths.length === 1);
 
     const filled = fillExtraBundles(verifiedBundles);
 
     filled.js.forEach((name) => {
-      assert(expectedBundlesNames.includes(name));
+      assert(expectedEntryPointsNames.js.includes(name));
     });
 
     filled.css.forEach((name) => {
-      assert(expectedBundlesNames.includes(name));
+      assert(expectedEntryPointsNames.css.includes(name));
     });
 
-    await t.destroy(apos);
+    // await t.destroy(apos);
   });
 
   it('should build the right bundles in dev and prod modes', async function () {
     process.env.NODE_ENV = 'production';
-
-    apos = await t.create({
-      root: module,
-      modules
-    });
 
     await apos.asset.tasks.build.task();
 
@@ -213,8 +208,8 @@ describe('Assets', function() {
     assert(!bundlePage.includes(getStylesheetMarkup('extra-bundle')));
 
     assert(bundlePage.includes(getScriptMarkup('public-module-bundle')));
-    assert(!bundlePage.includes(getScriptMarkup('extra-bundle')));
-    assert(bundlePage.includes(getScriptMarkup('extra-bundle2')));
+    assert(!bundlePage.includes(getScriptMarkup('extra-module-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('extra2-module-bundle')));
 
     const childPage = await apos.http.get('/bundle/child', { jar });
 
@@ -222,8 +217,8 @@ describe('Assets', function() {
     assert(childPage.includes(getStylesheetMarkup('extra-bundle')));
 
     assert(childPage.includes(getScriptMarkup('public-module-bundle')));
-    assert(childPage.includes(getScriptMarkup('extra-bundle')));
-    assert(!childPage.includes(getScriptMarkup('extra-bundle2')));
+    assert(childPage.includes(getScriptMarkup('extra-module-bundle')));
+    assert(!childPage.includes(getScriptMarkup('extra2-module-bundle')));
   });
 
   it('should load all the bundles on all pages when the user is logged in', async function () {
@@ -271,7 +266,7 @@ function loadUtils () {
   const getStylesheetMarkup = (file) =>
     `<link href="/apos-frontend/default/${file}.css" rel="stylesheet" />`;
 
-  const expectedBundlesNames = [ 'extra-bundle.js', 'extra-bundle2.js', 'extra-bundle.css' ];
+  const expectedBundlesNames = [ 'extra-module-bundle.js', 'extra2-module-bundle.js', 'extra-bundle.css' ];
 
   const deleteBuiltFolders = async (publicPath, deleteAposBuild = false) => {
     await fs.remove(publicPath + '/apos-frontend');
@@ -287,8 +282,8 @@ function loadUtils () {
     assert(page.includes(getStylesheetMarkup('extra-bundle')));
 
     assert(page.includes(getScriptMarkup('apos-module-bundle')));
-    assert(page.includes(getScriptMarkup('extra-bundle')));
-    assert(page.includes(getScriptMarkup('extra-bundle2')));
+    assert(page.includes(getScriptMarkup('extra-module-bundle')));
+    assert(page.includes(getScriptMarkup('extra2-module-bundle')));
   };
 
   return {

@@ -5,7 +5,23 @@ module.exports = {
   },
   webpack: {
     bundles: {
-      'extra-bundle2': {}
+      extra2: {}
+    },
+    extensions: {
+      ext1: {
+        resolve: {
+          alias: {
+            ext1Overriden: 'bar-path'
+          }
+        }
+      },
+      ext2: {
+        resolve: {
+          alias: {
+            ext2: 'ext2-path'
+          }
+        }
+      }
     }
   }
 };
