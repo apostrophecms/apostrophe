@@ -487,16 +487,16 @@ module.exports = {
             const filesContent = Object.entries(self.builds)
               .filter(([ _, options ]) => filterBuilds(options))
               .map(([ name ]) => {
-                const builtFile = `${bundleDir}/${name}-build.${fileExt}`;
+                const file = `${bundleDir}/${name}-build.${fileExt}`;
                 const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
 
                 if (checkForFile) {
-                  return fs.existsSync(builtFile)
-                    ? readFile(name, builtFile)
+                  return fs.existsSync(file)
+                    ? readFile(name, file)
                     : '';
                 }
 
-                return readFile(name, builtFile);
+                return readFile(name, file);
               }).join('\n');
 
             fs.writeFileSync(`${bundleDir}/${filePath}`, filesContent);
