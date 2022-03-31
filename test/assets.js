@@ -22,6 +22,42 @@ const badModules = {
   }
 };
 
+const pagesToInsert = (homeId) => ([
+  {
+    _id: 'parent:en:published',
+    aposLocale: 'en:published',
+    metaType: 'doc',
+    aposDocId: 'parent',
+    type: 'bundle-page',
+    slug: '/bundle',
+    visibility: 'public',
+    path: `${homeId.replace(':en:published', '')}/bundle`,
+    level: 1,
+    rank: 0,
+    main: {
+      _id: 'areaId',
+      metaType: 'area',
+      items: [
+        {
+          _id: 'widgetId',
+          metaType: 'widget',
+          type: 'bundle'
+        }
+      ]
+    }
+  },
+  {
+    _id: 'child:en:published',
+    title: 'Bundle',
+    aposLocale: 'en:published',
+    metaType: 'doc',
+    aposDocId: 'child',
+    type: 'bundle',
+    slug: 'child',
+    visibility: 'public'
+  }
+]);
+
 const modules = {
   '@apostrophecms/page': {
     options: {
@@ -54,7 +90,7 @@ describe('Assets', function() {
     return t.destroy(apos);
   });
 
-  this.timeout(60000);
+  this.timeout(90000);
 
   it('should exist on the apos object', async function() {
     apos = await t.create({
@@ -158,43 +194,7 @@ describe('Assets', function() {
     const { _id: homeId } = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
     const jar = apos.http.jar();
 
-    const pagesToInsert = [
-      {
-        _id: 'parent:en:published',
-        aposLocale: 'en:published',
-        metaType: 'doc',
-        aposDocId: 'parent',
-        type: 'bundle-page',
-        slug: '/bundle',
-        visibility: 'public',
-        path: `${homeId.replace(':en:published', '')}/bundle`,
-        level: 1,
-        rank: 0,
-        main: {
-          _id: 'areaId',
-          metaType: 'area',
-          items: [
-            {
-              _id: 'widgetId',
-              metaType: 'widget',
-              type: 'bundle'
-            }
-          ]
-        }
-      },
-      {
-        _id: 'child:en:published',
-        title: 'Bundle',
-        aposLocale: 'en:published',
-        metaType: 'doc',
-        aposDocId: 'child',
-        type: 'bundle',
-        slug: 'child',
-        visibility: 'public'
-      }
-    ];
-
-    await apos.doc.db.insertMany(pagesToInsert);
+    await apos.doc.db.insertMany(pagesToInsert(homeId));
 
     const bundlePage = await apos.http.get('/bundle', { jar });
 
@@ -248,14 +248,51 @@ describe('Assets', function() {
     const bundlePage = await apos.http.get('/bundle', { jar });
 
     allBundlesAreIncluded(bundlePage);
+
+    await t.destroy(apos);
+  });
+
+  it('should inject modules and nomodules scripts for extra bundles when es5 enabled', async function () {
+    const jar = apos.http.jar();
+
+    const es5Modules = {
+      ...modules,
+      '@apostrophecms/asset': {
+        options: {
+          es5: true
+        }
+      }
+    };
+
+    apos = await t.create({
+      root: module,
+      modules: es5Modules
+    });
+
+    const { _id: homeId } = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
+
+    await apos.doc.db.insertMany(pagesToInsert(homeId));
+
+    await apos.asset.tasks.build.task();
+
+    const bundlePage = await apos.http.get('/bundle', { jar });
+
+    assert(bundlePage.includes(getScriptMarkup('public-module-bundle', 'module')));
+    assert(bundlePage.includes(getScriptMarkup('public-nomodule-bundle', 'nomodule')));
+
+    assert(bundlePage.includes(getScriptMarkup('extra2-module-bundle', 'module')));
+    assert(bundlePage.includes(getScriptMarkup('extra2-nomodule-bundle', 'nomodule')));
   });
 });
 
 function loadUtils () {
   const publicFolderPath = path.join(process.cwd(), 'test/public');
 
-  const getScriptMarkup = (file) =>
-    `<script src="/apos-frontend/default/${file}.js"></script>`;
+  const getScriptMarkup = (file, mod) => {
+    const moduleStr = mod === 'module' ? ' type="module"' : ' nomodule';
+
+    return `<script${mod ? moduleStr : ''} src="/apos-frontend/default/${file}.js"></script>`;
+  };
 
   const getStylesheetMarkup = (file) =>
     `<link href="/apos-frontend/default/${file}.css" rel="stylesheet" />`;
