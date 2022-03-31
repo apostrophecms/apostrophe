@@ -74,5 +74,9 @@ module.exports = ({
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
   };
 
+  if (es5) {
+    config.output.chunkFormat = 'array-push';
+  }
+
   return merge(config, ...tasks);
 };
