@@ -127,7 +127,6 @@
     "@babel/eslint-parser": "^7.17.0",
     "eslint": "^7.25.0",
     "eslint-config-apostrophe": "^3.4.0",
-    "eslint-loader": "^4.0.2",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-vue": "^7.9.0",
     "mocha": "^9.1.2",
