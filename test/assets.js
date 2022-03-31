@@ -108,17 +108,13 @@ describe('Assets', function() {
     assert(extensions.ext1.resolve.alias.ext1Overriden);
     assert(extensions.ext2.resolve.alias.ext2);
 
-    assert(verifiedBundles.length === 2);
+    assert(Object.keys(verifiedBundles).length === 2);
 
-    const [ verified1, verified2 ] = verifiedBundles;
+    assert(verifiedBundles.extra.js.length === 1);
+    assert(verifiedBundles.extra.scss.length === 1);
 
-    assert(verified1.bundleName === 'extra');
-    assert(verified1.paths.length === 2);
-    assert(verified1.paths[0].endsWith('.js'));
-    assert(verified1.paths[1].endsWith('.scss'));
-
-    assert(verified2.bundleName === 'extra2');
-    assert(verified2.paths.length === 1);
+    assert(verifiedBundles.extra2.js.length === 1);
+    assert(verifiedBundles.extra2.scss.length === 0);
 
     const filled = fillExtraBundles(verifiedBundles);
 
@@ -129,8 +125,6 @@ describe('Assets', function() {
     filled.css.forEach((name) => {
       assert(expectedEntryPointsNames.css.includes(name));
     });
-
-    // await t.destroy(apos);
   });
 
   it('should build the right bundles in dev and prod modes', async function () {
