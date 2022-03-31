@@ -124,7 +124,7 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
-    "babel-eslint": "^10.1.0",
+    "@babel/eslint-parser": "^7.17.0",
     "eslint": "^7.25.0",
     "eslint-config-apostrophe": "^3.4.0",
     "eslint-loader": "^4.0.2",
