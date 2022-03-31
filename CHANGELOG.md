@@ -6,8 +6,9 @@
 
 * Full support for the `object` field type, which works much like `array` but stores just one sub-object as a property, rather than an array of objects.
 * To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date.
-* Adds the ability for modules to extend the webpack config as well as to add extra bundles for scss and js.
-* Loads the right bundles on the right pages depending on their config and the loaded widgets. Logged-in users have all the bundles on every page.
+* Adds possibility for modules to extend the webpack configuration.
+* Adds possibility for modules to add extra frontend bundles for scss and js. This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
+* Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
 
 ### Fixes
 
