@@ -380,27 +380,27 @@ module.exports = {
             indexSass
           }) {
             fs.writeFileSync(importFile, (prologue || '') + stripIndent`
-            ${(icon && icon.importCode) || ''}
-            ${(icon && icon.registerCode) || ''}
-            ${(components && components.importCode) || ''}
-            ${(tiptap && tiptap.importCode) || ''}
-            ${(app && app.importCode) || ''}
-            ${(indexJs && indexJs.importCode) || ''}
-            ${(indexSass && indexSass.importCode) || ''}
-            ${(icon && icon.registerCode) || ''}
-            ${(components && components.registerCode) || ''}
-            ${(tiptap && tiptap.registerCode) || ''}
-          ` +
-            (app ? stripIndent`
-              setTimeout(() => {
-                ${app.invokeCode}
-              }, 0);
-            ` : '') +
-            // No delay on these, they expect to run early like ui/public code
-            // and the first ones invoked set up expected stuff like apos.http
-            (indexJs ? stripIndent`
-              ${indexJs.invokeCode}
-            ` : '')
+              ${(icon && icon.importCode) || ''}
+              ${(icon && icon.registerCode) || ''}
+              ${(components && components.importCode) || ''}
+              ${(tiptap && tiptap.importCode) || ''}
+              ${(app && app.importCode) || ''}
+              ${(indexJs && indexJs.importCode) || ''}
+              ${(indexSass && indexSass.importCode) || ''}
+              ${(icon && icon.registerCode) || ''}
+              ${(components && components.registerCode) || ''}
+              ${(tiptap && tiptap.registerCode) || ''}
+              ` +
+              (app ? stripIndent`
+                setTimeout(() => {
+                  ${app.invokeCode}
+                }, 0);
+              ` : '') +
+              // No delay on these, they expect to run early like ui/public code
+              // and the first ones invoked set up expected stuff like apos.http
+              (indexJs ? stripIndent`
+                ${indexJs.invokeCode}
+              ` : '')
             );
           }
 
