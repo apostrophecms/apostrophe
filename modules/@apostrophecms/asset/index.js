@@ -602,7 +602,6 @@ module.exports = {
               const jsFilename = JSON.stringify(component);
               const name = getComponentName(component, options, i);
               const jsName = JSON.stringify(name);
-
               const importCode = `
               import ${name}${options.importSuffix || ''} from ${jsFilename};
               `;
