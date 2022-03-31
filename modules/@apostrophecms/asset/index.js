@@ -647,7 +647,7 @@ module.exports = {
           function getComponentName(component, { enumerateImports } = {}, i) {
             return path
               .basename(component)
-              .replace('-', '_')
+              .replace(/-/g, '_')
               .replace(/\.\w+/, '') + (enumerateImports ? `_${i}` : '');
           }
 
