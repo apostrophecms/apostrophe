@@ -47,9 +47,11 @@ module.exports = ({
         Modules: path.resolve(modulesDir)
       },
       modules: [
+        'node_modules',
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`,
         `${apos.npmRootDir}/node_modules`
-      ]
+      ],
+      symlinks: false
     },
     stats: 'verbose',
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
