@@ -1,13 +1,13 @@
 # Changelog
 
-# UNRELEASED
+# 3.17.0 (2022-03-31)
 
 ### Adds
 
-* Full support for the `object` field type, which works much like `array` but stores just one sub-object as a property, rather than an array of objects.
-* To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date.
-* Adds possibility for modules to extend the webpack configuration.
-* Adds possibility for modules to add extra frontend bundles for scss and js. This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
+* Full support for the [`object` field type](https://v3.docs.apostrophecms.org/reference/field-types/object.html), which works just like `array` but stores just one sub-object as a property, rather than an array of objects.
+* To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date. There is no UI based on this feature yet but it will permit various useful features in the near future.
+* Adds possibility for modules to [extend the webpack configuration](https://v3.docs.apostrophecms.org/guide/webpack.html).
+* Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
 * Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
 
 ### Fixes
