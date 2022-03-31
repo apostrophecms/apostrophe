@@ -40,7 +40,11 @@ module.exports = (options, apos) => {
     plugins: [
       new MiniCssExtractPlugin({
         // Should be automatic but we wind up with main.css if we try to go with that
-        filename: '[name].css'
+        filename: ({ chunk }) => {
+          return chunk.id === 'src-build'
+            ? '[name].css'
+            : '[name]-bundle.css';
+        }
       })
     ]
   };

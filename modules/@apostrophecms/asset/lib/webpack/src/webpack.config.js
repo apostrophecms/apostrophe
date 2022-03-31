@@ -10,7 +10,7 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename, bundles = [], es5
+  importFile, modulesDir, outputPath, outputFilename, bundles = {}, es5
 }, apos) => {
   const mainBundleName = outputFilename.replace('.js', '');
   const taskFns = [ scssTask ];
@@ -31,7 +31,7 @@ module.exports = ({
   const config = {
     entry: {
       [mainBundleName]: importFile,
-      ...formatBundles(bundles, mainBundleName)
+      ...bundles
     },
     target: es5 ? 'es5' : 'web',
     mode: process.env.NODE_ENV || 'development',
@@ -41,7 +41,11 @@ module.exports = ({
     devtool: 'source-map',
     output: {
       path: outputPath,
-      filename: '[name].js'
+      filename: ({ chunk }) => {
+        return chunk.id === 'src-build'
+          ? '[name].js'
+          : '[name]-module-bundle.js';
+      }
     },
     resolveLoader: {
       extensions: [ '*', '.js' ],
@@ -70,26 +74,3 @@ module.exports = ({
 
   return merge(config, ...tasks);
 };
-
-function formatBundles (bundles, mainBundleName) {
-  return bundles.reduce((acc, { bundleName, paths }) => {
-    const jsPaths = paths.filter((p) => p.endsWith('.js'));
-    const scssPaths = paths.filter((p) => p.endsWith('.scss'));
-
-    return {
-      ...acc,
-      ...jsPaths.length && {
-        [`${bundleName}-module-bundle`]: {
-          import: jsPaths,
-          dependOn: mainBundleName
-        }
-      },
-      ...scssPaths.length && {
-        [`${bundleName}-bundle`]: {
-          import: scssPaths,
-          dependOn: mainBundleName
-        }
-      }
-    };
-  }, {});
-}
