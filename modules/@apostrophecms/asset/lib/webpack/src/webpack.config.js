@@ -2,6 +2,7 @@ const path = require('path');
 const merge = require('webpack-merge').merge;
 const scssTask = require('./webpack.scss');
 const es5Task = require('./webpack.es5');
+const srcBuildNames = [ 'src-build', 'src-es5-build' ];
 
 let BundleAnalyzerPlugin;
 
@@ -24,7 +25,8 @@ module.exports = ({
         importFile,
         modulesDir
       },
-      apos
+      apos,
+      srcBuildNames
     )
   );
 
@@ -42,7 +44,7 @@ module.exports = ({
     output: {
       path: outputPath,
       filename: ({ chunk }) => {
-        return chunk.name === 'src-build'
+        return srcBuildNames.includes(chunk.name)
           ? '[name].js'
           : '[name]-module-bundle.js';
       }
