@@ -449,11 +449,13 @@ module.exports = {
 
               writeSceneBundle({
                 scene,
-                filePath: jsModules
+                filePath: jsModules,
+                jsCondition: 'module'
               });
               writeSceneBundle({
                 scene,
-                filePath: jsNoModules
+                filePath: jsNoModules,
+                jsCondition: 'nomodule'
               });
               writeSceneBundle({
                 scene,
@@ -471,14 +473,14 @@ module.exports = {
           }
 
           function writeSceneBundle ({
-            scene, filePath, checkForFile = false
+            scene, filePath, jsCondition, checkForFile = false
           }) {
             const [ _ext, fileExt ] = filePath.match(/\.(\w+)$/);
             const filterBuilds = ({
               scenes, outputs, condition
             }) => {
               return outputs.includes(fileExt) &&
-                (!condition || condition === 'module') &&
+                ((!condition || !jsCondition) || condition === jsCondition) &&
                 scenes.includes(scene);
             };
 
