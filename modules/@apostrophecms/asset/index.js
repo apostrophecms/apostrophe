@@ -24,7 +24,7 @@ module.exports = {
     // builds of the ui/src browser code in each module, and serve them
     // to the appropriate browsers without overhead for modern browsers.
     // This does not attempt to compile the admin UI (ui/apos) for ES5.
-    es5: true,
+    es5: false,
     // If this option is true and process.env.NODE_ENV is not `production`,
     // the browser will refresh when the Apostrophe application
     // restarts. A useful companion to `nodemon`.
