@@ -36,7 +36,7 @@ module.exports = ({
       [mainBundleName]: importFile,
       ...bundles
     },
-    target: es5 ? 'es5' : 'web',
+    target: es5 ? [ 'web', 'es5' ] : 'web',
     mode: process.env.NODE_ENV || 'development',
     optimization: {
       minimize: process.env.NODE_ENV === 'production'
