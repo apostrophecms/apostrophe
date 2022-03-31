@@ -42,7 +42,7 @@ module.exports = ({
     output: {
       path: outputPath,
       filename: ({ chunk }) => {
-        return chunk.id === 'src-build'
+        return chunk.name === 'src-build'
           ? '[name].js'
           : '[name]-module-bundle.js';
       }
