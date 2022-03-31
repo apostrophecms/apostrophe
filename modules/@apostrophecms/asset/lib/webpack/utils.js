@@ -96,6 +96,54 @@ module.exports = {
         ...es5Bundles
       ];
     }, []);
+  },
+
+  writeBundlesImportFiles ({
+    name,
+    buildDir,
+    mainBundleName,
+    verifiedBundles,
+    getImportFileOutput,
+    writeImportFile
+  }) {
+    if (!name.includes('src')) {
+      return [];
+    }
+
+    const bundlesOutputs = Object.entries(verifiedBundles)
+      .map(([ bundleName, paths ]) => {
+        return {
+          bundleName,
+          importFile: `${buildDir}/${bundleName}-import.js`,
+          js: getImportFileOutput(paths.js, {
+            invokeApps: true,
+            enumerateImports: true,
+            requireDefaultExport: true
+          }),
+          scss: getImportFileOutput(paths.scss, {
+            enumerateImports: true,
+            importSuffix: 'Stylesheet'
+          })
+        };
+      });
+
+    for (const output of bundlesOutputs) {
+      writeImportFile({
+        importFile: output.importFile,
+        indexJs: output.js,
+        indexSass: output.scss
+      });
+    }
+
+    return bundlesOutputs.reduce((acc, { bundleName, importFile }) => {
+      return {
+        ...acc,
+        [bundleName]: {
+          import: importFile,
+          dependOn: mainBundleName
+        }
+      };
+    }, {});
   }
 };
 
