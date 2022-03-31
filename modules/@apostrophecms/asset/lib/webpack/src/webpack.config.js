@@ -30,6 +30,7 @@ module.exports = ({
     )
   );
 
+  const moduleName = es5 ? 'nomodule' : 'module';
   const config = {
     entry: {
       [mainBundleName]: importFile,
@@ -46,7 +47,7 @@ module.exports = ({
       filename: ({ chunk }) => {
         return srcBuildNames.includes(chunk.name)
           ? '[name].js'
-          : '[name]-module-bundle.js';
+          : `[name]-${moduleName}-bundle.js`;
       }
     },
     resolveLoader: {
