@@ -12,7 +12,8 @@ const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
   fillExtraBundles,
-  getBundlesNames
+  getBundlesNames,
+  writeBundlesImportFiles
 } = require('./lib/webpack/utils');
 
 module.exports = {
@@ -179,18 +180,15 @@ module.exports = {
           // targets for the various builds
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
 
-          let deployFiles = [];
-          for (const scene of scenes) {
-            deployFiles = [ ...deployFiles, ...merge(scene) ];
-          }
           // enumerate public assets and include them in deployment if appropriate
           const publicAssets = glob.sync('modules/**/*', {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
-          deployFiles = [
-            ...deployFiles,
+
+          const deployFiles = [
             ...publicAssets,
+            ...merge(scenes),
             ...getBundlesNames(self.extraBundles, self.options.es5)
           ];
 
@@ -298,41 +296,21 @@ module.exports = {
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
-              const bundlesOutputs = Object.entries(self.verifiedBundles)
-                .map(([ bundleName, paths ]) => {
-                  return {
-                    bundleName,
-                    importFile: `${buildDir}/${bundleName}-import.js`,
-                    js: getFrontendOutput(paths.js, {
-                      invokeApps: true,
-                      enumerateImports: true,
-                      importSuffix: 'App',
-                      requireDefaultExport: true
-                    }),
-                    scss: getFrontendOutput(paths.scss, {
-                      enumerateImports: true,
-                      importSuffix: 'Stylesheet'
-                    })
-                  };
-                });
-
-              for (const output of bundlesOutputs) {
-                writeImportFile({
-                  importFile: output.importFile,
-                  indexJs: output.js,
-                  indexSass: output.scss
-                });
-              }
+              const webpackExtraBundles = writeBundlesImportFiles({
+                name,
+                buildDir,
+                mainBundleName: outputFilename.replace('.js', ''),
+                verifiedBundles: self.verifiedBundles,
+                getImportFileOutput,
+                writeImportFile
+              });
 
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
                 outputFilename,
-                bundles: bundlesOutputs.map(({ bundleName, importFile }) => ({
-                  import: importFile
-                  // dependOn: mainBundleName
-                }))
+                bundles: webpackExtraBundles
               }, self.apos);
 
               const webpackInstanceConfigMerged = self.webpackExtensions
@@ -427,7 +405,6 @@ module.exports = {
           }
 
           function getIcons() {
-
             for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               // icons is an unparsed section, so getMetadata gives it back
@@ -464,28 +441,36 @@ module.exports = {
             return output;
           }
 
-          function merge(scene) {
-            const jsModules = `${scene}-module-bundle.js`;
-            const jsNoModules = `${scene}-nomodule-bundle.js`;
-            const css = `${scene}-bundle.css`;
-            writeAssetFile({
-              scene,
-              filePath: jsModules
-            });
-            writeAssetFile({
-              scene,
-              filePath: jsNoModules
-            });
-            writeAssetFile({
-              scene,
-              filePath: css,
-              checkForFile: true
-            });
+          function merge(scenes) {
+            return scenes.reduce((acc, scene) => {
+              const jsModules = `${scene}-module-bundle.js`;
+              const jsNoModules = `${scene}-nomodule-bundle.js`;
+              const css = `${scene}-bundle.css`;
 
-            return [ jsModules, jsNoModules, css ];
+              writeSceneBundle({
+                scene,
+                filePath: jsModules
+              });
+              writeSceneBundle({
+                scene,
+                filePath: jsNoModules
+              });
+              writeSceneBundle({
+                scene,
+                filePath: css,
+                checkForFile: true
+              });
+
+              return [
+                ...acc,
+                jsModules,
+                jsNoModules,
+                css
+              ];
+            }, []);
           }
 
-          function writeAssetFile ({
+          function writeSceneBundle ({
             scene, filePath, checkForFile = false
           }) {
             const [ _ext, fileExt ] = filePath.match(/\.(\w+)$/);
@@ -500,17 +485,16 @@ module.exports = {
             const filesContent = Object.entries(self.builds)
               .filter(([ _, options ]) => filterBuilds(options))
               .map(([ name ]) => {
-
-                const file = `${bundleDir}/${name}-build.${fileExt}`;
+                const builtFile = `${bundleDir}/${name}-build.${fileExt}`;
                 const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
 
                 if (checkForFile) {
-                  return fs.existsSync(file)
-                    ? readFile(name, file)
+                  return fs.existsSync(builtFile)
+                    ? readFile(name, builtFile)
                     : '';
                 }
 
-                return readFile(name, file);
+                return readFile(name, builtFile);
               }).join('\n');
 
             fs.writeFileSync(`${bundleDir}/${filePath}`, filesContent);
@@ -593,10 +577,10 @@ module.exports = {
               components.reverse();
             }
 
-            return getFrontendOutput(components, options);
+            return getImportFileOutput(components, options);
           }
 
-          function getFrontendOutput (components, options = {}) {
+          function getImportFileOutput (components, options = {}) {
             const output = {
               importCode: '',
               registerCode: '',
@@ -618,10 +602,12 @@ module.exports = {
               const jsFilename = JSON.stringify(component);
               const name = getComponentName(component, options, i);
               const jsName = JSON.stringify(name);
-              output.paths.push(component);
+
               const importCode = `
               import ${name}${options.importSuffix || ''} from ${jsFilename};
               `;
+
+              output.paths.push(component);
               output.importCode += `${importCode}\n`;
 
               if (options.registerComponents) {
@@ -657,8 +643,11 @@ module.exports = {
             return pkgTimestamp > parseInt(timestamp);
           }
 
-          function getComponentName(component, options, i) {
-            return require('path').basename(component).replace(/\.\w+/, '') + (options.enumerateImports ? `_${i}` : '');
+          function getComponentName(component, { enumerateImports } = {}, i) {
+            return path
+              .basename(component)
+              .replace('-', '_')
+              .replace(/\.\w+/, '') + (enumerateImports ? `_${i}` : '');
           }
 
           function cleanErrors(errors) {
