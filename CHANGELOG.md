@@ -13,6 +13,7 @@
 ### Fixes
 
 * Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
+* The `es5: true` option to `@apostrophecms/asset` works again.
 
 # 3.16.1 (2022-03-21)
 

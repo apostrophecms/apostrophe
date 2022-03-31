@@ -2,6 +2,7 @@ const path = require('path');
 const merge = require('webpack-merge').merge;
 const scssTask = require('./webpack.scss');
 const es5Task = require('./webpack.es5');
+const srcBuildNames = [ 'src-build', 'src-es5-build' ];
 
 let BundleAnalyzerPlugin;
 
@@ -10,7 +11,7 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename, bundles = [], es5
+  importFile, modulesDir, outputPath, outputFilename, bundles = {}, es5
 }, apos) => {
   const mainBundleName = outputFilename.replace('.js', '');
   const taskFns = [ scssTask ];
@@ -24,16 +25,18 @@ module.exports = ({
         importFile,
         modulesDir
       },
-      apos
+      apos,
+      srcBuildNames
     )
   );
 
+  const moduleName = es5 ? 'nomodule' : 'module';
   const config = {
     entry: {
       [mainBundleName]: importFile,
-      ...formatBundles(bundles, mainBundleName)
+      ...bundles
     },
-    target: es5 ? 'es5' : 'web',
+    target: es5 ? [ 'web', 'es5' ] : 'web',
     mode: process.env.NODE_ENV || 'development',
     optimization: {
       minimize: process.env.NODE_ENV === 'production'
@@ -41,7 +44,11 @@ module.exports = ({
     devtool: 'source-map',
     output: {
       path: outputPath,
-      filename: '[name].js'
+      filename: ({ chunk }) => {
+        return srcBuildNames.includes(chunk.name)
+          ? '[name].js'
+          : `[name]-${moduleName}-bundle.js`;
+      }
     },
     resolveLoader: {
       extensions: [ '*', '.js' ],
@@ -68,28 +75,9 @@ module.exports = ({
     plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
   };
 
+  if (es5) {
+    config.output.chunkFormat = 'array-push';
+  }
+
   return merge(config, ...tasks);
 };
-
-function formatBundles (bundles, mainBundleName) {
-  return bundles.reduce((acc, { bundleName, paths }) => {
-    const jsPaths = paths.filter((p) => p.endsWith('.js'));
-    const scssPaths = paths.filter((p) => p.endsWith('.scss'));
-
-    return {
-      ...acc,
-      ...jsPaths.length && {
-        [`${bundleName}-module-bundle`]: {
-          import: jsPaths,
-          dependOn: mainBundleName
-        }
-      },
-      ...scssPaths.length && {
-        [`${bundleName}-bundle`]: {
-          import: scssPaths,
-          dependOn: mainBundleName
-        }
-      }
-    };
-  }, {});
-}

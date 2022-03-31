@@ -1,6 +1,6 @@
 module.exports = (options, apos) => {
   return {
-    target: 'es5',
+    target: [ 'web', 'es5' ],
     module: {
       rules: [
         {

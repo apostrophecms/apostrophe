@@ -12,7 +12,8 @@ const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
   fillExtraBundles,
-  getBundlesNames
+  getBundlesNames,
+  writeBundlesImportFiles
 } = require('./lib/webpack/utils');
 
 module.exports = {
@@ -179,18 +180,15 @@ module.exports = {
           // targets for the various builds
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
 
-          let deployFiles = [];
-          for (const scene of scenes) {
-            deployFiles = [ ...deployFiles, ...merge(scene) ];
-          }
           // enumerate public assets and include them in deployment if appropriate
           const publicAssets = glob.sync('modules/**/*', {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
-          deployFiles = [
-            ...deployFiles,
+
+          const deployFiles = [
             ...publicAssets,
+            ...merge(scenes),
             ...getBundlesNames(self.extraBundles, self.options.es5)
           ];
 
@@ -261,6 +259,7 @@ module.exports = {
                 importSuffix: 'App'
               });
             }
+
             if (options.index) {
               indexJsImports = getImports(source, 'index.js', {
                 invokeApps: true,
@@ -277,29 +276,16 @@ module.exports = {
             if (options.webpack) {
               const importFile = `${buildDir}/${name}-import.js`;
 
-              fs.writeFileSync(importFile, (options.prologue || '') + stripIndent`
-                ${(iconImports && iconImports.importCode) || ''}
-                ${(iconImports && iconImports.registerCode) || ''}
-                ${(componentImports && componentImports.importCode) || ''}
-                ${(tiptapExtensionImports && tiptapExtensionImports.importCode) || ''}
-                ${(appImports && appImports.importCode) || ''}
-                ${(indexJsImports && indexJsImports.importCode) || ''}
-                ${(indexSassImports && indexSassImports.importCode) || ''}
-                ${(iconImports && iconImports.registerCode) || ''}
-                ${(componentImports && componentImports.registerCode) || ''}
-                ${(tiptapExtensionImports && tiptapExtensionImports.registerCode) || ''}
-              ` +
-                (appImports ? stripIndent`
-                  setTimeout(() => {
-                    ${appImports.invokeCode}
-                  }, 0);
-                ` : '') +
-                // No delay on these, they expect to run early like ui/public code
-                // and the first ones invoked set up expected stuff like apos.http
-                (indexJsImports ? stripIndent`
-                  ${indexJsImports.invokeCode}
-                ` : '')
-              );
+              writeImportFile({
+                importFile,
+                prologue: options.prologue,
+                icon: iconImports,
+                components: componentImports,
+                tiptap: tiptapExtensionImports,
+                app: appImports,
+                indexJs: indexJsImports,
+                indexSass: indexSassImports
+              });
 
               const outputFilename = `${name}-build.js`;
               // Remove previous build artifacts, as some pipelines won't build all artifacts
@@ -310,12 +296,21 @@ module.exports = {
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
+              const webpackExtraBundles = writeBundlesImportFiles({
+                name,
+                buildDir,
+                mainBundleName: outputFilename.replace('.js', ''),
+                verifiedBundles: self.verifiedBundles,
+                getImportFileOutput,
+                writeImportFile
+              });
+
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
                 outputFilename,
-                bundles: self.verifiedBundles
+                bundles: webpackExtraBundles
               }, self.apos);
 
               const webpackInstanceConfigMerged = self.webpackExtensions
@@ -350,7 +345,7 @@ module.exports = {
                 //
                 // Of course, developers can push an "public" asset that is
                 // the output of an ES6 pipeline.
-                const publicImports = getImports(name, '*.js', { });
+                const publicImports = getImports(name, '*.js');
                 fs.writeFileSync(`${bundleDir}/${name}-build.js`,
                   (((options.prologue || '') + '\n') || '') +
                   publicImports.paths.map(path => {
@@ -359,7 +354,7 @@ module.exports = {
                 );
               }
               if (options.outputs.includes('css')) {
-                const publicImports = getImports(name, '*.css', { });
+                const publicImports = getImports(name, '*.css');
                 fs.writeFileSync(`${bundleDir}/${name}-build.css`,
                   publicImports.paths.map(path => {
                     return self.filterCss(fs.readFileSync(path, 'utf8'), {
@@ -374,8 +369,42 @@ module.exports = {
             }));
           }
 
-          function getIcons() {
+          function writeImportFile ({
+            importFile,
+            prologue,
+            icon,
+            components,
+            tiptap,
+            app,
+            indexJs,
+            indexSass
+          }) {
+            fs.writeFileSync(importFile, (prologue || '') + stripIndent`
+              ${(icon && icon.importCode) || ''}
+              ${(icon && icon.registerCode) || ''}
+              ${(components && components.importCode) || ''}
+              ${(tiptap && tiptap.importCode) || ''}
+              ${(app && app.importCode) || ''}
+              ${(indexJs && indexJs.importCode) || ''}
+              ${(indexSass && indexSass.importCode) || ''}
+              ${(icon && icon.registerCode) || ''}
+              ${(components && components.registerCode) || ''}
+              ${(tiptap && tiptap.registerCode) || ''}
+              ` +
+              (app ? stripIndent`
+                setTimeout(() => {
+                  ${app.invokeCode}
+                }, 0);
+              ` : '') +
+              // No delay on these, they expect to run early like ui/public code
+              // and the first ones invoked set up expected stuff like apos.http
+              (indexJs ? stripIndent`
+                ${indexJs.invokeCode}
+              ` : '')
+            );
+          }
 
+          function getIcons() {
             for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               // icons is an unparsed section, so getMetadata gives it back
@@ -412,43 +441,52 @@ module.exports = {
             return output;
           }
 
-          function merge(scene) {
-            const jsModules = `${scene}-module-bundle.js`;
-            const jsNoModules = `${scene}-nomodule-bundle.js`;
-            const css = `${scene}-bundle.css`;
-            writeAssetFile({
-              scene,
-              filePath: jsModules
-            });
-            writeAssetFile({
-              scene,
-              filePath: jsNoModules
-            });
-            writeAssetFile({
-              scene,
-              filePath: css,
-              checkForFile: true
-            });
+          function merge(scenes) {
+            return scenes.reduce((acc, scene) => {
+              const jsModules = `${scene}-module-bundle.js`;
+              const jsNoModules = `${scene}-nomodule-bundle.js`;
+              const css = `${scene}-bundle.css`;
 
-            return [ jsModules, jsNoModules, css ];
+              writeSceneBundle({
+                scene,
+                filePath: jsModules,
+                jsCondition: 'module'
+              });
+              writeSceneBundle({
+                scene,
+                filePath: jsNoModules,
+                jsCondition: 'nomodule'
+              });
+              writeSceneBundle({
+                scene,
+                filePath: css,
+                checkForFile: true
+              });
+
+              return [
+                ...acc,
+                jsModules,
+                jsNoModules,
+                css
+              ];
+            }, []);
           }
 
-          function writeAssetFile ({
-            scene, filePath, checkForFile = false
+          function writeSceneBundle ({
+            scene, filePath, jsCondition, checkForFile = false
           }) {
             const [ _ext, fileExt ] = filePath.match(/\.(\w+)$/);
             const filterBuilds = ({
               scenes, outputs, condition
             }) => {
               return outputs.includes(fileExt) &&
-                (!condition || condition === 'module') &&
+                ((!condition || !jsCondition) || condition === jsCondition) &&
                 scenes.includes(scene);
             };
 
             const filesContent = Object.entries(self.builds)
               .filter(([ _, options ]) => filterBuilds(options))
               .map(([ name ]) => {
-
                 const file = `${bundleDir}/${name}-build.${fileExt}`;
                 const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
 
@@ -508,7 +546,7 @@ module.exports = {
             return fs.copyFile(from, to);
           }
 
-          function getImports(folder, pattern, options) {
+          function getImports(folder, pattern, options = {}) {
             let components = [];
             const seen = {};
             for (const name of modulesToInstantiate) {
@@ -521,12 +559,6 @@ module.exports = {
                 seen[entry.dirname] = true;
               }
             }
-            const output = {
-              importCode: '',
-              registerCode: '',
-              invokeCode: '',
-              paths: []
-            };
 
             if (options.importLastVersion) {
               // Reverse the list so we can easily find the last configured import
@@ -547,6 +579,17 @@ module.exports = {
               components.reverse();
             }
 
+            return getImportFileOutput(components, options);
+          }
+
+          function getImportFileOutput (components, options = {}) {
+            const output = {
+              importCode: '',
+              registerCode: '',
+              invokeCode: '',
+              paths: []
+            };
+
             components.forEach((component, i) => {
               if (options.requireDefaultExport) {
                 if (!fs.readFileSync(component, 'utf8').match(/export[\s\n]+default/)) {
@@ -561,10 +604,11 @@ module.exports = {
               const jsFilename = JSON.stringify(component);
               const name = getComponentName(component, options, i);
               const jsName = JSON.stringify(name);
-              output.paths.push(component);
               const importCode = `
               import ${name}${options.importSuffix || ''} from ${jsFilename};
               `;
+
+              output.paths.push(component);
               output.importCode += `${importCode}\n`;
 
               if (options.registerComponents) {
@@ -581,6 +625,7 @@ module.exports = {
                 output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
               }
             });
+
             return output;
           }
 
@@ -599,8 +644,11 @@ module.exports = {
             return pkgTimestamp > parseInt(timestamp);
           }
 
-          function getComponentName(component, options, i) {
-            return require('path').basename(component).replace(/\.\w+/, '') + (options.enumerateImports ? `_${i}` : '');
+          function getComponentName(component, { enumerateImports } = {}, i) {
+            return path
+              .basename(component)
+              .replace(/-/g, '_')
+              .replace(/\.\w+/, '') + (enumerateImports ? `_${i}` : '');
           }
 
           function cleanErrors(errors) {

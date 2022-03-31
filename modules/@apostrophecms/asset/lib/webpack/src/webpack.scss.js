@@ -1,6 +1,6 @@
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-module.exports = (options, apos) => {
+module.exports = (options, apos, srcBuildNames) => {
   return {
     module: {
       rules: [
@@ -40,7 +40,11 @@ module.exports = (options, apos) => {
     plugins: [
       new MiniCssExtractPlugin({
         // Should be automatic but we wind up with main.css if we try to go with that
-        filename: '[name].css'
+        filename: ({ chunk }) => {
+          return srcBuildNames.includes(chunk.name)
+            ? '[name].css'
+            : '[name]-bundle.css';
+        }
       })
     ]
   };

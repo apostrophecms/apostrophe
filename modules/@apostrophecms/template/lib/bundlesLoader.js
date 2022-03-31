@@ -21,6 +21,7 @@ module.exports = (self) => {
 
     const { es5 } = self.apos.asset.options;
     const { extraBundles } = self.apos.asset;
+
     const jsMainBundle = renderMarkup({
       fileName: scene,
       ext: 'js',
@@ -63,7 +64,8 @@ module.exports = (self) => {
         extraBundles.js.includes(name) &&
           renderMarkup({
             fileName: name,
-            ext: 'js'
+            ext: 'js',
+            es5
           });
 
         const cssMarkup = stylesheetsPlaceholder &&
@@ -126,12 +128,14 @@ function loadAllBundles({
   stylesheetsPlaceholder,
   jsMainBundle,
   cssMainBundle,
-  renderMarkup
+  renderMarkup,
+  es5
 }) {
   const reduceToMarkup = (acc, bundle, ext) => {
     const bundleMarkup = renderMarkup({
       fileName: bundle.replace(`.${ext}`, ''),
-      ext
+      ext,
+      es5
     });
 
     return stripIndent`
