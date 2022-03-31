@@ -6,10 +6,13 @@
 
 * Full support for the `object` field type, which works much like `array` but stores just one sub-object as a property, rather than an array of objects.
 * To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date.
+* Adds the ability for modules to extend the webpack config as well as to add extra bundles for scss and js.
+* Loads the right bundles on the right pages depending on their config and the loaded widgets. Logged-in users have all the bundles on every page.
 
 ### Fixes
 
 * Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
+* The `es5: true` option to `@apostrophecms/asset` works again.
 
 # 3.16.1 (2022-03-21)
 
@@ -26,8 +29,6 @@
 * `data-apos-test=""` selectors for certain elements frequently selected in QA tests, such as `data-apos-test="adminBar"`.
 * Offer a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages.
 * To speed up functional tests, an `insecurePasswords` option has been added to the login module. This option is deliberately named to discourage use for any purpose other than functional tests in which repeated password hashing would unduly limit performance. Normally password hashing is intentionally difficult to slow down brute force attacks, especially if a database is compromised.
-* Adds possibility for modules to extend the webpack config as well as to add extra bundles for scss and js.
-* Loads the right bundles on the right pages depending on their config and the loaded widgets. Logged-in users have all the bundles on every page.
 
 ### Fixes
 
