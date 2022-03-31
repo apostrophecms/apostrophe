@@ -203,7 +203,7 @@ async function verifyBundlesEntryPoints (bundles) {
     };
   });
 
-  const bundlesPaths = (await Promise.all(checkPathsPromises));
+  const bundlesPaths = await Promise.all(checkPathsPromises);
 
   const packedFilesByBundle = bundlesPaths.reduce((acc, {
     bundleName, jsPath, scssPath
