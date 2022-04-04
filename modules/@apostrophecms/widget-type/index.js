@@ -97,7 +97,6 @@ const _ = require('lodash');
 module.exports = {
   cascades: [ 'fields' ],
   options: {
-    playerData: false,
     neverLoadSelf: true
   },
   init(self) {
