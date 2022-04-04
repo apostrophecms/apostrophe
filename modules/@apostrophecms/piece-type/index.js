@@ -216,12 +216,11 @@ module.exports = {
           const doc = await self.getRestQuery(req).and({ _id }).toObject();
 
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
-            self.setMaxAge(req, self.options.cache.api.maxAge);
-            self.sendETag(req, doc);
+            const { maxAge } = self.options.cache.api;
 
-            if (self.doesETagMatch(req, doc)) {
-              req.res.status(304);
-
+            if (!self.options.cache.etags) {
+              self.setMaxAge(req, maxAge);
+            } else if (self.checkETag(req, doc, maxAge)) {
               // Stop and send an empty body since the cached response will be used
               return {};
             }

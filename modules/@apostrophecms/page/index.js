@@ -179,12 +179,11 @@ module.exports = {
           const result = await self.getRestQuery(req).and(criteria).toObject();
 
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
-            self.setMaxAge(req, self.options.cache.api.maxAge);
-            self.sendETag(req, result);
+            const { maxAge } = self.options.cache.api;
 
-            if (self.doesETagMatch(req, result)) {
-              req.res.status(304);
-
+            if (!self.options.cache.etags) {
+              self.setMaxAge(req, maxAge);
+            } else if (self.checkETag(req, result, maxAge)) {
               // Stop and send an empty body since the cached response will be used
               return {};
             }
@@ -1414,10 +1413,11 @@ database.`);
         }
 
         if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
-          self.setMaxAge(req, self.options.cache.page.maxAge);
-          self.sendETag(req);
+          const { maxAge } = self.options.cache.page;
 
-          if (self.doesETagMatch(req)) {
+          if (!self.options.cache.etags) {
+            self.setMaxAge(req, maxAge);
+          } else if (self.checkETag(req, undefined, maxAge)) {
             // Stop there and send a 304 status code; the cached response will be used
             return res.sendStatus(304);
           }

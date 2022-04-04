@@ -182,10 +182,7 @@ module.exports = {
                 res.header('Cache-Control', 'no-store');
               }
 
-              // Keep "304 Not Modified" status if previously set
-              const statusCode = res.statusCode === 304 ? 304 : 200;
-
-              res.status(statusCode);
+              res.status(200);
               res.send(result);
             } catch (err) {
               return self.routeSendError(req, err);
@@ -454,28 +451,34 @@ module.exports = {
         );
       },
 
+      // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
+      // Other session properties must be assumed to be specific to the user, with a possible
+      // impact on the response, and thus mean this request must not be cached.
+      // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
+      isSafeToCache(req) {
+        if (req.user) {
+          return false;
+        }
+
+        return Object.entries(req.session).every(([ key, val ]) =>
+          key === 'cookie' || (
+            (key === 'flash' || key === 'passport') && _.isEmpty(val)
+          )
+        );
+      },
+
       setMaxAge(req, maxAge) {
         if (typeof maxAge !== 'number') {
           self.apos.util.warnDev(`"maxAge" property must be defined as a number in the "${self.__meta.name}" module's cache options"`);
           return;
         }
 
-        // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
-        // Other session properties must be assumed to be specific to the user, with a possible
-        // impact on the response, and thus mean this request must not be cached.
-        // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
-        const isSessionClearForCaching = Object.entries(req.session).every(([ key, val ]) =>
-          key === 'cookie' || (
-            (key === 'flash' || key === 'passport') && _.isEmpty(val)
-          )
-        );
-        const isSafeToCache = !req.user && isSessionClearForCaching;
-        const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
+        const cacheControlValue = self.isSafeToCache(req) ? `max-age=${maxAge}` : 'no-store';
 
         req.res.header('Cache-Control', cacheControlValue);
       },
 
-      constructETag(req, doc) {
+      generateETagParts(req, doc) {
         const context = doc || req.data.piece || req.data.page;
 
         if (!context || !context.cacheInvalidatedAt) {
@@ -483,27 +486,43 @@ module.exports = {
         }
 
         const releaseId = self.apos.asset.getReleaseId();
-        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime();
+        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime().toString();
 
-        return `"${releaseId}:${cacheInvalidatedAtTimestamp}"`;
+        return [ releaseId, cacheInvalidatedAtTimestamp ];
       },
 
-      sendETag(req, doc) {
-        const eTagValue = self.constructETag(req, doc);
+      setETag(req, eTagParts) {
+        console.log('sendETag', eTagParts.join(':'));
+        console.log('=======>');
 
-        if (eTagValue) {
-          req.res.header('ETag', eTagValue);
-        }
+        req.res.header('ETag', eTagParts.join(':'));
       },
 
-      doesETagMatch(req, doc) {
-        if (!req.headers || !req.headers['if-none-match']) {
+      checkETag(req, doc, maxAge) {
+        const eTagParts = self.generateETagParts(req, doc);
+        console.log('eTagParts', eTagParts);
+
+        if (!eTagParts || !self.isSafeToCache(req)) {
           return false;
         }
 
-        const eTagValue = self.constructETag(req, doc);
+        console.log('req.headers[\'if-none-match\']', req.headers['if-none-match']);
+        const clientETagParts = req.headers['if-none-match'] ? req.headers['if-none-match'].split(':') : [];
+        const doesETagMatch = clientETagParts[0] === eTagParts[0] && clientETagParts[1] === eTagParts[1];
 
-        return eTagValue && req.headers['if-none-match'].split(',').includes(eTagValue);
+        const now = Date.now();
+        const clientETagAge = (now - clientETagParts[2]) / 1000;
+
+        console.log('clientETagAge', clientETagAge);
+        console.log('maxAge', maxAge);
+
+        if (!doesETagMatch || clientETagAge > maxAge) {
+          self.setETag(req, [ ...eTagParts, now ]);
+          return false;
+        }
+
+        self.setETag(req, clientETagParts);
+        return true;
       },
 
       // Call from init once if this module implements the `getBrowserData` method.
