@@ -72,8 +72,8 @@ export default {
       original: this.value,
       docFields: {
         data: {
-          ...((this.value != null) ? this.value :
-            Object.fromEntries(
+          ...((this.value != null) ? this.value
+            : Object.fromEntries(
               this.schema.map(field =>
                 [ field.name, (field.def !== undefined) ? klona(field.def) : null ]
               )
