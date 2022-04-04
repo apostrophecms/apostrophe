@@ -291,11 +291,11 @@ module.exports = async function(options) {
           ${self.localModules}
 
           must export an object containing configuration for Apostrophe modules.
-          
+
           The file:
-          
+
           ${config}
-          
+
           did not parse.
         `);
         throw e;
@@ -441,7 +441,8 @@ module.exports = async function(options) {
         'queries',
         'extendQueries',
         'icons',
-        'i18n'
+        'i18n',
+        'webpack'
       ]
     });
 

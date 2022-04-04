@@ -178,12 +178,33 @@ module.exports = {
       // async, as are all functions that invoke a nunjucks render in
       // Apostrophe 3.x.
       async output(req, widget, options, _with) {
+        req.widgetsBundles = {
+          ...req.widgetsBundles || {},
+          ...self.getWidgetsBundles(`${widget.type}-widget`)
+        };
+
         return self.render(req, self.template, {
           widget: widget,
           options: options,
           manager: self,
           contextOptions: _with
         });
+      },
+
+      getWidgetsBundles (widgetType) {
+        const widget = self.apos.modules[widgetType];
+
+        if (!widget) {
+          return {};
+        }
+
+        return Object.values(widget.__meta.webpack || {})
+          .reduce((acc, config) => {
+            return {
+              ...acc,
+              ...config && config.bundles
+            };
+          }, {});
       },
 
       // Load relationships and carry out any other necessary async

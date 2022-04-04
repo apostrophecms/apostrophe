@@ -1,11 +1,19 @@
 # Changelog
 
-# UNRELEASED
+# 3.17.0 (2022-03-31)
 
 ### Adds
 
-* Full support for the `object` field type, which works much like `array` but stores just one sub-object as a property, rather than an array of objects.
-* To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date.
+* Full support for the [`object` field type](https://v3.docs.apostrophecms.org/reference/field-types/object.html), which works just like `array` but stores just one sub-object as a property, rather than an array of objects.
+* To help find documents that reference related ones via `relationship` fields, implement backlinks of related documents by adding a `relatedReverseIds` field to them and keeping it up to date. There is no UI based on this feature yet but it will permit various useful features in the near future.
+* Adds possibility for modules to [extend the webpack configuration](https://v3.docs.apostrophecms.org/guide/webpack.html).
+* Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
+* Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
+
+### Fixes
+
+* Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
+* The `es5: true` option to `@apostrophecms/asset` works again.
 
 # 3.16.1 (2022-03-21)
 
@@ -20,6 +28,7 @@
 * Offers a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages. [See the documentation for more information](https://v3.docs.apostrophecms.org/guide/caching.html).
 * API keys and bearer tokens "win" over session cookies when both are present. Since API keys and bearer tokens are explicitly added to the request at hand, it never makes sense to ignore them in favor of a cookie, which is implicit. This also simplifies automated testing.
 * `data-apos-test=""` selectors for certain elements frequently selected in QA tests, such as `data-apos-test="adminBar"`.
+* Offer a simple way to set a Cache-Control max-age for Apostrophe page and GET REST API responses for pieces and pages.
 * To speed up functional tests, an `insecurePasswords` option has been added to the login module. This option is deliberately named to discourage use for any purpose other than functional tests in which repeated password hashing would unduly limit performance. Normally password hashing is intentionally difficult to slow down brute force attacks, especially if a database is compromised.
 
 ### Fixes

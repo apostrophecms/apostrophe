@@ -6,6 +6,15 @@ const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const express = require('express');
 const { stripIndent } = require('common-tags');
+const { merge: webpackMerge } = require('webpack-merge');
+const cuid = require('cuid');
+const {
+  checkModulesWebpackConfig,
+  getWebpackExtensions,
+  fillExtraBundles,
+  getBundlesNames,
+  writeBundlesImportFiles
+} = require('./lib/webpack/utils');
 
 module.exports = {
 
@@ -22,13 +31,22 @@ module.exports = {
     refreshOnRestart: false
   },
 
-  init(self) {
+  async init(self) {
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
     };
     self.configureBuilds();
     self.initUploadfs();
+
+    const { extensions, verifiedBundles } = await getWebpackExtensions({
+      getMetadata: self.apos.synth.getMetadata,
+      modulesToInstantiate: self.apos.modulesToBeInstantiated()
+    });
+
+    self.extraBundles = fillExtraBundles(verifiedBundles);
+    self.webpackExtensions = extensions;
+    self.verifiedBundles = verifiedBundles;
   },
   handlers (self) {
     return {
@@ -42,12 +60,18 @@ module.exports = {
             // Or if we've set an app option to skip the auto build
             self.apos.options.autoBuild !== false
           ) {
+
+            checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
             // If starting up normally, run the build task, checking if we
             // really need to update the apos build
             await self.apos.task.invoke('@apostrophecms/asset:build', {
               'check-apos-build': true
             });
           }
+        },
+        injectAssetsPlaceholders() {
+          self.apos.template.prepend('head', '@apostrophecms/asset:stylesheets');
+          self.apos.template.append('body', '@apostrophecms/asset:scripts');
         }
       },
       'apostrophe:destroy': {
@@ -56,6 +80,28 @@ module.exports = {
             await Promise.promisify(self.uploadfs.destroy)();
           }
         }
+      }
+    };
+  },
+  components(self) {
+    return {
+      scripts(req, data) {
+        const placeholder = `[scripts-placeholder:${cuid()}]`;
+
+        req.scriptsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
+      },
+      stylesheets(req, data) {
+        const placeholder = `[stylesheets-placeholder:${cuid()}]`;
+
+        req.stylesheetsPlaceholder = placeholder;
+
+        return {
+          placeholder
+        };
       }
     };
   },
@@ -69,6 +115,8 @@ module.exports = {
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
+          const modulesToInstantiate = self.apos.modulesToBeInstantiated();
+
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
           await fs.mkdirp(buildDir);
@@ -120,7 +168,10 @@ module.exports = {
 
             if (rebuild) {
               await fs.mkdirp(bundleDir);
-              await build(name, options);
+              await build({
+                name,
+                options
+              });
             }
           }
 
@@ -128,16 +179,19 @@ module.exports = {
           // just `public` and `apos`) by examining those specified as
           // targets for the various builds
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
-          let deployFiles = [];
-          for (const scene of scenes) {
-            deployFiles = [ ...deployFiles, ...merge(scene) ];
-          }
+
           // enumerate public assets and include them in deployment if appropriate
           const publicAssets = glob.sync('modules/**/*', {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
-          deployFiles = [ ...deployFiles, ...publicAssets ];
+
+          const deployFiles = [
+            ...publicAssets,
+            ...merge(scenes),
+            ...getBundlesNames(self.extraBundles, self.options.es5)
+          ];
+
           await deploy(deployFiles);
 
           if (process.env.APOS_BUNDLE_ANALYZER) {
@@ -154,7 +208,7 @@ module.exports = {
             const directories = {};
             // Most other modules are not actually instantiated yet, but
             // we can access their metadata, which is sufficient
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const ancestorDirectories = [];
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
@@ -181,7 +235,9 @@ module.exports = {
             }
           }
 
-          async function build(name, options) {
+          async function build({
+            name, options
+          }) {
             self.apos.util.log(req.t('apostrophe:assetTypeBuilding', {
               label: req.t(options.label)
             }));
@@ -203,6 +259,7 @@ module.exports = {
                 importSuffix: 'App'
               });
             }
+
             if (options.index) {
               indexJsImports = getImports(source, 'index.js', {
                 invokeApps: true,
@@ -219,29 +276,16 @@ module.exports = {
             if (options.webpack) {
               const importFile = `${buildDir}/${name}-import.js`;
 
-              fs.writeFileSync(importFile, (options.prologue || '') + stripIndent`
-                ${(iconImports && iconImports.importCode) || ''}
-                ${(iconImports && iconImports.registerCode) || ''}
-                ${(componentImports && componentImports.importCode) || ''}
-                ${(tiptapExtensionImports && tiptapExtensionImports.importCode) || ''}
-                ${(appImports && appImports.importCode) || ''}
-                ${(indexJsImports && indexJsImports.importCode) || ''}
-                ${(indexSassImports && indexSassImports.importCode) || ''}
-                ${(iconImports && iconImports.registerCode) || ''}
-                ${(componentImports && componentImports.registerCode) || ''}
-                ${(tiptapExtensionImports && tiptapExtensionImports.registerCode) || ''}
-              ` +
-                (appImports ? stripIndent`
-                  setTimeout(() => {
-                    ${appImports.invokeCode}
-                  }, 0);
-                ` : '') +
-                // No delay on these, they expect to run early like ui/public code
-                // and the first ones invoked set up expected stuff like apos.http
-                (indexJsImports ? stripIndent`
-                  ${indexJsImports.invokeCode}
-                ` : '')
-              );
+              writeImportFile({
+                importFile,
+                prologue: options.prologue,
+                icon: iconImports,
+                components: componentImports,
+                tiptap: tiptapExtensionImports,
+                app: appImports,
+                indexJs: indexJsImports,
+                indexSass: indexSassImports
+              });
 
               const outputFilename = `${name}-build.js`;
               // Remove previous build artifacts, as some pipelines won't build all artifacts
@@ -251,13 +295,29 @@ module.exports = {
               fs.removeSync(cssPath);
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
+
+              const webpackExtraBundles = writeBundlesImportFiles({
+                name,
+                buildDir,
+                mainBundleName: outputFilename.replace('.js', ''),
+                verifiedBundles: self.verifiedBundles,
+                getImportFileOutput,
+                writeImportFile
+              });
+
               const webpackInstanceConfig = webpackBaseConfig({
                 importFile,
                 modulesDir,
                 outputPath: bundleDir,
-                outputFilename
+                outputFilename,
+                bundles: webpackExtraBundles
               }, self.apos);
-              const result = await webpack(webpackInstanceConfig);
+
+              const webpackInstanceConfigMerged = self.webpackExtensions
+                ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
+                : webpackInstanceConfig;
+
+              const result = await webpack(webpackInstanceConfigMerged);
               if (result.compilation.errors.length) {
                 // Throwing a string is appropriate in a command line task
                 throw cleanErrors(result.toString('errors'));
@@ -285,7 +345,7 @@ module.exports = {
                 //
                 // Of course, developers can push an "public" asset that is
                 // the output of an ES6 pipeline.
-                const publicImports = getImports(name, '*.js', { });
+                const publicImports = getImports(name, '*.js');
                 fs.writeFileSync(`${bundleDir}/${name}-build.js`,
                   (((options.prologue || '') + '\n') || '') +
                   publicImports.paths.map(path => {
@@ -294,7 +354,7 @@ module.exports = {
                 );
               }
               if (options.outputs.includes('css')) {
-                const publicImports = getImports(name, '*.css', { });
+                const publicImports = getImports(name, '*.css');
                 fs.writeFileSync(`${bundleDir}/${name}-build.css`,
                   publicImports.paths.map(path => {
                     return self.filterCss(fs.readFileSync(path, 'utf8'), {
@@ -309,9 +369,43 @@ module.exports = {
             }));
           }
 
-          function getIcons() {
+          function writeImportFile ({
+            importFile,
+            prologue,
+            icon,
+            components,
+            tiptap,
+            app,
+            indexJs,
+            indexSass
+          }) {
+            fs.writeFileSync(importFile, (prologue || '') + stripIndent`
+              ${(icon && icon.importCode) || ''}
+              ${(icon && icon.registerCode) || ''}
+              ${(components && components.importCode) || ''}
+              ${(tiptap && tiptap.importCode) || ''}
+              ${(app && app.importCode) || ''}
+              ${(indexJs && indexJs.importCode) || ''}
+              ${(indexSass && indexSass.importCode) || ''}
+              ${(icon && icon.registerCode) || ''}
+              ${(components && components.registerCode) || ''}
+              ${(tiptap && tiptap.registerCode) || ''}
+              ` +
+              (app ? stripIndent`
+                setTimeout(() => {
+                  ${app.invokeCode}
+                }, 0);
+              ` : '') +
+              // No delay on these, they expect to run early like ui/public code
+              // and the first ones invoked set up expected stuff like apos.http
+              (indexJs ? stripIndent`
+                ${indexJs.invokeCode}
+              ` : '')
+            );
+          }
 
-            for (const name of self.apos.modulesToBeInstantiated()) {
+          function getIcons() {
+            for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               // icons is an unparsed section, so getMetadata gives it back
               // to us as an object with a property for each class in the
@@ -347,45 +441,65 @@ module.exports = {
             return output;
           }
 
-          function merge(scene) {
-            const jsModules = `${scene}-module-bundle.js`;
-            const jsNoModules = `${scene}-nomodule-bundle.js`;
-            const css = `${scene}-bundle.css`;
-            fs.writeFileSync(
-              `${bundleDir}/${jsModules}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'module')
-              ).map(([ name, options ]) => {
-                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
-              }).join('\n')
-            );
-            fs.writeFileSync(
-              `${bundleDir}/${jsNoModules}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('js') &&
-                (!options.condition || options.condition === 'nomodule')
-              ).map(([ name, options ]) => {
-                return `// BUILD: ${name}\n` + fs.readFileSync(`${bundleDir}/${name}-build.js`, 'utf8');
-              }).join('\n')
-            );
-            fs.writeFileSync(
-              `${bundleDir}/${css}`,
-              Object.entries(self.builds).filter(
-                ([ name, options ]) => options.scenes.includes(scene) &&
-                options.outputs.includes('css')
-              ).map(([ name, options ]) => {
-                const file = `${bundleDir}/${name}-build.css`;
-                if (fs.existsSync(file)) {
-                  return `/* BUILD: ${name} */\n` + fs.readFileSync(file, 'utf8');
-                } else {
-                  return '';
+          function merge(scenes) {
+            return scenes.reduce((acc, scene) => {
+              const jsModules = `${scene}-module-bundle.js`;
+              const jsNoModules = `${scene}-nomodule-bundle.js`;
+              const css = `${scene}-bundle.css`;
+
+              writeSceneBundle({
+                scene,
+                filePath: jsModules,
+                jsCondition: 'module'
+              });
+              writeSceneBundle({
+                scene,
+                filePath: jsNoModules,
+                jsCondition: 'nomodule'
+              });
+              writeSceneBundle({
+                scene,
+                filePath: css,
+                checkForFile: true
+              });
+
+              return [
+                ...acc,
+                jsModules,
+                jsNoModules,
+                css
+              ];
+            }, []);
+          }
+
+          function writeSceneBundle ({
+            scene, filePath, jsCondition, checkForFile = false
+          }) {
+            const [ _ext, fileExt ] = filePath.match(/\.(\w+)$/);
+            const filterBuilds = ({
+              scenes, outputs, condition
+            }) => {
+              return outputs.includes(fileExt) &&
+                ((!condition || !jsCondition) || condition === jsCondition) &&
+                scenes.includes(scene);
+            };
+
+            const filesContent = Object.entries(self.builds)
+              .filter(([ _, options ]) => filterBuilds(options))
+              .map(([ name ]) => {
+                const file = `${bundleDir}/${name}-build.${fileExt}`;
+                const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
+
+                if (checkForFile) {
+                  return fs.existsSync(file)
+                    ? readFile(name, file)
+                    : '';
                 }
-              }).join('\n')
-            );
-            return [ jsModules, jsNoModules, css ];
+
+                return readFile(name, file);
+              }).join('\n');
+
+            fs.writeFileSync(`${bundleDir}/${filePath}`, filesContent);
           }
 
           // If NODE_ENV is production, this function will copy the given
@@ -432,10 +546,10 @@ module.exports = {
             return fs.copyFile(from, to);
           }
 
-          function getImports(folder, pattern, options) {
+          function getImports(folder, pattern, options = {}) {
             let components = [];
             const seen = {};
-            for (const name of self.apos.modulesToBeInstantiated()) {
+            for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
                 if (seen[entry.dirname]) {
@@ -445,12 +559,6 @@ module.exports = {
                 seen[entry.dirname] = true;
               }
             }
-            const output = {
-              importCode: '',
-              registerCode: '',
-              invokeCode: '',
-              paths: []
-            };
 
             if (options.importLastVersion) {
               // Reverse the list so we can easily find the last configured import
@@ -471,6 +579,17 @@ module.exports = {
               components.reverse();
             }
 
+            return getImportFileOutput(components, options);
+          }
+
+          function getImportFileOutput (components, options = {}) {
+            const output = {
+              importCode: '',
+              registerCode: '',
+              invokeCode: '',
+              paths: []
+            };
+
             components.forEach((component, i) => {
               if (options.requireDefaultExport) {
                 if (!fs.readFileSync(component, 'utf8').match(/export[\s\n]+default/)) {
@@ -485,10 +604,11 @@ module.exports = {
               const jsFilename = JSON.stringify(component);
               const name = getComponentName(component, options, i);
               const jsName = JSON.stringify(name);
-              output.paths.push(component);
               const importCode = `
               import ${name}${options.importSuffix || ''} from ${jsFilename};
               `;
+
+              output.paths.push(component);
               output.importCode += `${importCode}\n`;
 
               if (options.registerComponents) {
@@ -505,6 +625,7 @@ module.exports = {
                 output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
               }
             });
+
             return output;
           }
 
@@ -523,8 +644,11 @@ module.exports = {
             return pkgTimestamp > parseInt(timestamp);
           }
 
-          function getComponentName(component, options, i) {
-            return require('path').basename(component).replace(/\.\w+/, '') + (options.enumerateImports ? `_${i}` : '');
+          function getComponentName(component, { enumerateImports } = {}, i) {
+            return path
+              .basename(component)
+              .replace(/-/g, '_')
+              .replace(/\.\w+/, '') + (enumerateImports ? `_${i}` : '');
           }
 
           function cleanErrors(errors) {
@@ -555,22 +679,10 @@ module.exports = {
         }
       },
       stylesheetsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        const bundle = `<link href="${base}/${when}-bundle.css" rel="stylesheet" />`;
-        return self.apos.template.safe(bundle);
+        return '';
       },
       scriptsHelper(when) {
-        const base = self.getAssetBaseUrl();
-        if (self.options.es5) {
-          return self.apos.template.safe(stripIndent`
-            <script nomodule src="${base}/${when}-nomodule-bundle.js"></script>
-            <script type="module" src="${base}/${when}-module-bundle.js"></script>
-          `);
-        } else {
-          return self.apos.template.safe(stripIndent`
-            <script src="${base}/${when}-module-bundle.js"></script>
-          `);
-        }
+        return '';
       },
       shouldRefreshOnRestart() {
         return self.options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
