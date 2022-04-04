@@ -1,6 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
 let apos;
@@ -8,6 +8,8 @@ let apos;
 describe('Attachment', function() {
 
   after(async function() {
+    await wipeIt();
+
     return t.destroy(apos);
   });
 
@@ -18,23 +20,7 @@ describe('Attachment', function() {
   const collectionName = 'aposAttachments';
 
   async function wipeIt() {
-    deleteFolderRecursive(path.join(__dirname, '/public/uploads'));
-
-    function deleteFolderRecursive (path) {
-      let files = [];
-      if (fs.existsSync(path)) {
-        files = fs.readdirSync(path);
-        files.forEach(function(file, index) {
-          const curPath = path + '/' + file;
-          if (fs.lstatSync(curPath).isDirectory()) { // recurse
-            deleteFolderRecursive(curPath);
-          } else { // delete file
-            fs.unlinkSync(curPath);
-          }
-        });
-        fs.rmdirSync(path);
-      }
-    }
+    await fs.remove(path.join(__dirname, '/public/uploads'));
 
     return apos.db.collection(collectionName).removeMany({});
   }
@@ -49,11 +35,6 @@ describe('Attachment', function() {
     assert(apos.attachment);
   });
 
-  describe('wipe', function() {
-    it('should clear previous material if any', async function() {
-      return wipeIt();
-    });
-  });
   let imageOne;
 
   describe('insert', async function() {
@@ -64,8 +45,9 @@ describe('Attachment', function() {
         path: uploadSource + filename
       });
       const t = uploadTarget + info._id + '-' + info.name + '.' + info.extension;
+
       // file should be uploaded
-      assert(fs.existsSync(t));
+      assert(await fs.pathExists(t));
 
       // make sure it exists in mongo
       const result = await apos.db.collection(collectionName).findOne({
@@ -280,5 +262,4 @@ describe('Attachment', function() {
       assert(imageOne._urls);
     });
   });
-
 });
