@@ -1,6 +1,17 @@
 # Changelog
 
-# 3.17.0 (2022-03-31)
+## UNRELEASED
+
+### Adds
+
+* The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
+* In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
+
+### Fixes
+
+* Documentation of obsolete options has been removed.
+
+## 3.17.0 (2022-03-31)
 
 ### Adds
 
@@ -15,7 +26,7 @@
 * Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
 * The `es5: true` option to `@apostrophecms/asset` works again.
 
-# 3.16.1 (2022-03-21)
+## 3.16.1 (2022-03-21)
 
 ### Fixes
 

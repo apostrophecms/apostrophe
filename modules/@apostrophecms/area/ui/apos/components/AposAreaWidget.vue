@@ -94,7 +94,7 @@
       />
       <!-- Still used for contextual editing components -->
       <component
-        v-if="isContextual && !foreign && (focused || losingFocus)"
+        v-if="isContextual && !foreign"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
         @update="$emit('update', $event)"
@@ -240,8 +240,7 @@ export default {
       breadcrumbs: {
         $lastEl: null,
         list: []
-      },
-      losingFocus: false
+      }
     };
   },
   computed: {
@@ -304,19 +303,13 @@ export default {
     }
   },
   watch: {
-    widgetFocused (newVal, oldVal) {
+    widgetFocused (newVal) {
       if (newVal === this.widget._id) {
         this.focus();
       } else {
         // reset everything
         this.resetState();
-        if (oldVal === this.widget._id) {
-          this.losingFocus = true;
-        }
         this.focused = false;
-        this.$nextTick(() => {
-          this.losingFocus = false;
-        });
       }
       const $parent = this.getParent();
       if (
