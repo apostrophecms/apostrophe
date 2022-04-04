@@ -1,6 +1,6 @@
 <template>
   <!-- eslint-disable-next-line vue/no-v-html -->
-  <div @click="clicked" v-html="rendered" />
+  <div v-html="rendered" />
 </template>
 
 <script>
