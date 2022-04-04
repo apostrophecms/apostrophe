@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 
 module.exports = function(self) {
 
@@ -38,18 +39,56 @@ module.exports = function(self) {
         }
       ];
 
+      const telemetry = self.apos.telemetry;
+
+      // Create the "outer" span
+      const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
+      const spanEmit = telemetry.aposStartSpan(`event:${moduleName}:${name}`);
+      spanEmit.setAttribute(SemanticAttributes.CODE_FUNCTION, 'emit');
+      spanEmit.setAttribute(SemanticAttributes.CODE_NAMESPACE, moduleName);
+
       for (const entry of chain) {
         const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
         if (handlers) {
           for (const handler of handlers) {
-            const module = self.apos.modules[handler.moduleName];
-            const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
-            // Although we have `self` it can't hurt to
-            // supply the correct `this`
-            await fn.apply(module, args);
+
+            // const spanHandler = telemetry.aposStartSpan(
+            //   `event:${moduleName}:${name}:${handler.moduleName}:${handler.handlerName}`,
+            //   spanEmit
+            // );
+
+            // Create an active "inner" span for each handler using the parent as a context
+            const spanName = `event:${moduleName}:${name}:${handler.moduleName}:${handler.handlerName}`;
+
+            await telemetry.aposStartActiveSpan(spanName, async (spanHandler) => {
+              spanHandler.setAttribute(SemanticAttributes.CODE_FUNCTION, handler.handlerName);
+              spanHandler.setAttribute(SemanticAttributes.CODE_NAMESPACE, handler.moduleName);
+
+              const module = self.apos.modules[handler.moduleName];
+              const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
+
+              try {
+              // Although we have `self` it can't hurt to
+              // supply the correct `this`
+                await fn.apply(module, args);
+
+                spanHandler.setStatus({ code: telemetry.SpanStatusCode.OK });
+              } catch (err) {
+                spanHandler.recordException(err);
+                spanHandler.setStatus({
+                  code: telemetry.SpanStatusCode.ERROR,
+                  message: err.message
+                });
+                throw err;
+              } finally {
+                spanHandler.end();
+              }
+
+            }, spanEmit);
           }
         }
       }
+      spanEmit.end();
     },
 
     // You don't need to call this. It is called for you
@@ -95,7 +134,7 @@ module.exports = function(self) {
       self.apos.eventHandlers[moduleName] = self.apos.eventHandlers[moduleName] || {};
       const eh = self.apos.eventHandlers[moduleName];
       eh[eventName] = eh[eventName] || [];
-      if (_.find(eh[eventName], function(item) {
+      if (_.find(eh[eventName], function (item) {
         return (item.moduleName === self.__meta.name) && (item.handlerName === handlerName);
       })) {
         // The "event name and method name must differ" rule helps

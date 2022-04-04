@@ -1,3 +1,5 @@
+// this should be loaded first
+const opentelemetry = require('./lib/opentelemetry');
 const path = require('path');
 const _ = require('lodash');
 const argv = require('boring')({ end: true });
@@ -39,6 +41,11 @@ let defaults = require('./defaults.js');
 // can be set to a number, which will effectively set the cluster
 // option to `cluster: { processes: n }`.
 //
+// `openTelemetryProvider`
+//
+// If set, Apostrophe will use it as a global OpenTelemetry tracer provider.
+// The expected value is an object istance of TracerProvider.
+//
 // ## Awaiting the Apostrophe function
 //
 // The apos function is async, but in typical cases you do not
@@ -59,8 +66,15 @@ let defaults = require('./defaults.js');
 // `null` in the primary process. In the child process it resolves as
 // documented above.
 
+// The actual entry point, a wrapper that enables the telemetry and starts the
+// root span
 module.exports = async function(options) {
+  const telemetry = opentelemetry(options);
+  let spanName = 'apostrophe:boot';
   const guardTime = 20000;
+  let error;
+
+  // Detect cluster options
   if (process.env.APOS_CLUSTER_PROCESSES) {
     options.cluster = {
       processes: parseInt(process.env.APOS_CLUSTER_PROCESSES)
@@ -70,48 +84,89 @@ module.exports = async function(options) {
     console.log('NODE_ENV is not set to production, disabling cluster mode');
     options.cluster = false;
   }
+
+  // Execute if cluster enabled
   if (options.cluster && !argv._.length) {
     // For bc with node 14 and below we need to check both
     if (cluster.isPrimary || cluster.isMaster) {
-      let processes = options.cluster.processes || cpus().length;
-      if (processes <= 0) {
-        processes = cpus().length + processes;
-      }
-      let capped = '';
-      if (processes > cpus().length) {
-        processes = cpus().length;
-        capped = ' (capped to number of CPU cores)';
-      }
-      if (processes < 2) {
-        processes = 2;
-        if (capped) {
-          capped = ' (less than 2 cores, capped to minimum of 2)';
-        } else {
-          capped = ' (using minimum of 2)';
+      // Activate and return the callback return value
+      return telemetry.aposStartActiveSpan(`${spanName}:primary`, (span) => {
+        let processes = options.cluster.processes || cpus().length;
+        if (processes <= 0) {
+          processes = cpus().length + processes;
         }
-      }
-      console.log(`Starting ${processes} cluster child processes${capped}`);
-      for (let i = 0; i < processes; i++) {
-        clusterFork();
-      }
-      cluster.on('exit', (worker, code, signal) => {
-        if (code !== 0) {
-          if ((Date.now() - worker.bornAt) < guardTime) {
-            console.error(`Worker process ${worker.process.pid} failed in ${seconds(Date.now() - worker.bornAt)}, waiting ${seconds(guardTime)} before restart`);
-            setTimeout(() => {
-              respawn(worker);
-            }, guardTime);
+        let capped = '';
+        if (processes > cpus().length) {
+          processes = cpus().length;
+          capped = ' (capped to number of CPU cores)';
+        }
+        if (processes < 2) {
+          processes = 2;
+          if (capped) {
+            capped = ' (less than 2 cores, capped to minimum of 2)';
           } else {
-            respawn(worker);
+            capped = ' (using minimum of 2)';
           }
         }
+        console.log(`Starting ${processes} cluster child processes${capped}`);
+        for (let i = 0; i < processes; i++) {
+          clusterFork();
+        }
+        cluster.on('exit', (worker, code, signal) => {
+          if (code !== 0) {
+            if ((Date.now() - worker.bornAt) < guardTime) {
+              console.error(`Worker process ${worker.process.pid} failed in ${seconds(Date.now() - worker.bornAt)}, waiting ${seconds(guardTime)} before restart`);
+              setTimeout(() => {
+                respawn(worker);
+              }, guardTime);
+            } else {
+              respawn(worker);
+            }
+          }
+        });
+        span.end();
+        return null;
       });
-      return null;
     } else {
+      // continue as a worker operation, the pid should be recorded by the auto instrumentation
+      spanName += ':worker';
       console.log(`Cluster worker ${process.pid} started`);
     }
   }
 
+  // Create and activate the root span for the boot tracer
+  const self = await telemetry.aposStartActiveSpan(spanName, async (span) => {
+    try {
+      const res = await apostrophe(options, telemetry);
+      span.setStatus(telemetry.SpanStatusCode.OK);
+      return res;
+    } catch (err) {
+      span.recordException(err);
+      span.setStatus({
+        code: telemetry.SpanStatusCode.ERROR,
+        message: err.message
+      });
+      error = err;
+    } finally {
+      span.end();
+    }
+  });
+
+  if (error && options.exit !== false) {
+    console.error(error);
+    // give OTel time to populate the error to the backend
+    if (process.env.APOS_OPENTELEMETRY) {
+      setTimeout(() => process.exit(1), 1500);
+    } else {
+      process.exit(1);
+    }
+  } else {
+    return self;
+  }
+};
+
+// The actual apostrophe bootstrap
+async function apostrophe(options, telemetry) {
   // The core is not a true moog object but it must look enough like one
   // to participate as an async event emitter
   const self = {
@@ -120,111 +175,107 @@ module.exports = async function(options) {
     }
   };
 
-  try {
-    const matches = process.version.match(/^v(\d+)/);
-    const version = parseInt(matches[1]);
-    if (version < 12) {
-      throw new Error('Apostrophe 3.x requires at least Node.js 12.x.');
-    }
-    // The core must have a reference to itself in order to use the
-    // promise event emitter code
-    self.apos = self;
-
-    Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
-
-    // Determine root module and root directory
-    self.root = options.root || getRoot();
-    self.rootDir = options.rootDir || path.dirname(self.root.filename);
-    self.npmRootDir = options.npmRootDir || self.rootDir;
-
-    testModule();
-
-    self.options = mergeConfiguration(options, defaults);
-    autodetectBundles();
-    acceptGlobalOptions();
-
-    // Module-based async events (self.on and self.emit of each module,
-    // handlers are usually registered via `handlers` in the module
-    // definition rather than `self.on`)
-    self.eventHandlers = {};
-
-    // Destroys the Apostrophe object, freeing resources such as
-    // HTTP server ports and database connections. Does **not**
-    // delete any data; the persistent database and media files
-    // remain available for the next startup. Emits the
-    // `apostrophe:destroy` async event; use this mechanism to free your own
-    // server-side resources that could prevent garbage
-    // collection by the JavaScript engine, such as timers
-    // and intervals.
-    self.destroy = async function() {
-      await self.emit('destroy');
-    };
-
-    // Returns true if Apostrophe is running as a command line task
-    // rather than as a server
-    self.isTask = function() {
-      return !!self.argv._.length;
-    };
-
-    // Returns an array of modules that are instances of the given
-    // module name, i.e. they are of that type or they extend it.
-    // For instance, `apos.instancesOf('@apostrophecms/piece-type')` returns
-    // an array of active modules in your project that extend
-    // pieces, such as `@apostrophecms/user` and
-    // your own piece types
-
-    self.instancesOf = function(name) {
-      return _.filter(self.modules, function(module) {
-        return self.synth.instanceOf(module, name);
-      });
-    };
-
-    // Returns true if the object is an instance of the given
-    // moog class name or a subclass thereof. A convenience wrapper
-    // for `apos.synth.instanceOf`
-
-    self.instanceOf = function(object, name) {
-      return self.synth.instanceOf(object, name);
-    };
-
-    // So the asset module can figure out what other modules
-    // are out there and what icons they need without
-    // actually instantiating them
-    self.modulesToBeInstantiated = modulesToBeInstantiated;
-    self.eventAliases = {};
-    self.aliasEvent('modulesReady', 'modulesRegistered');
-    self.aliasEvent('afterInit', 'ready');
-
-    defineModules();
-
-    await instantiateModules();
-    lintModules();
-    await self.emit('modulesRegistered'); // formerly modulesReady
-    self.apos.schema.validateAllSchemas();
-    self.apos.schema.registerAllSchemas();
-    await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
-      await self.apos.migration.migrate(); // emits before and after events, inside the lock
-      await self.apos.global.insertIfMissing();
-      await self.apos.page.implementParkAllInDefaultLocale();
-      await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
-      // Replicate will have created the parked pages across locales if needed, but we may
-      // still need to reset parked properties
-      await self.apos.page.implementParkAllInOtherLocales();
-    });
-    await self.emit('ready'); // formerly afterInit
-    if (self.taskRan) {
-      process.exit(0);
-    } else {
-      await self.emit('run', self.isTask());
-    }
-    return self;
-  } catch (e) {
-    if (options.exit !== false) {
-      /* eslint-disable-next-line no-console */
-      console.error(e);
-      process.exit(1);
-    }
+  const matches = process.version.match(/^v(\d+)/);
+  const version = parseInt(matches[1]);
+  if (version < 12) {
+    throw new Error('Apostrophe 3.x requires at least Node.js 12.x.');
   }
+  // The core must have a reference to itself in order to use the
+  // promise event emitter code
+  self.apos = self;
+
+  // Register the telemetry API as a pseudo module
+  Object.assign(self.apos, { telemetry });
+
+  Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
+
+  // Determine root module and root directory
+  self.root = options.root || getRoot();
+  self.rootDir = options.rootDir || path.dirname(self.root.filename);
+  self.npmRootDir = options.npmRootDir || self.rootDir;
+
+  testModule();
+
+  self.options = mergeConfiguration(options, defaults);
+  autodetectBundles();
+  acceptGlobalOptions();
+
+  // Module-based async events (self.on and self.emit of each module,
+  // handlers are usually registered via `handlers` in the module
+  // definition rather than `self.on`)
+  self.eventHandlers = {};
+
+  // Destroys the Apostrophe object, freeing resources such as
+  // HTTP server ports and database connections. Does **not**
+  // delete any data; the persistent database and media files
+  // remain available for the next startup. Emits the
+  // `apostrophe:destroy` async event; use this mechanism to free your own
+  // server-side resources that could prevent garbage
+  // collection by the JavaScript engine, such as timers
+  // and intervals.
+  self.destroy = async function() {
+    await self.emit('destroy');
+  };
+
+  // Returns true if Apostrophe is running as a command line task
+  // rather than as a server
+  self.isTask = function() {
+    return !!self.argv._.length;
+  };
+
+  // Returns an array of modules that are instances of the given
+  // module name, i.e. they are of that type or they extend it.
+  // For instance, `apos.instancesOf('@apostrophecms/piece-type')` returns
+  // an array of active modules in your project that extend
+  // pieces, such as `@apostrophecms/user` and
+  // your own piece types
+
+  self.instancesOf = function(name) {
+    return _.filter(self.modules, function(module) {
+      return self.synth.instanceOf(module, name);
+    });
+  };
+
+  // Returns true if the object is an instance of the given
+  // moog class name or a subclass thereof. A convenience wrapper
+  // for `apos.synth.instanceOf`
+
+  self.instanceOf = function(object, name) {
+    return self.synth.instanceOf(object, name);
+  };
+
+  // So the asset module can figure out what other modules
+  // are out there and what icons they need without
+  // actually instantiating them
+  self.modulesToBeInstantiated = modulesToBeInstantiated;
+  self.eventAliases = {};
+  self.aliasEvent('modulesReady', 'modulesRegistered');
+  self.aliasEvent('afterInit', 'ready');
+
+  defineModules();
+
+  await instantiateModules();
+  lintModules();
+  await self.emit('modulesRegistered'); // formerly modulesReady
+  self.apos.schema.validateAllSchemas();
+  self.apos.schema.registerAllSchemas();
+  await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
+    await self.apos.migration.migrate(); // emits before and after events, inside the lock
+    await self.apos.global.insertIfMissing();
+    await self.apos.page.implementParkAllInDefaultLocale();
+    await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
+    // Replicate will have created the parked pages across locales if needed, but we may
+    // still need to reset parked properties
+    await self.apos.page.implementParkAllInOtherLocales();
+  });
+  await self.emit('ready'); // formerly afterInit
+  if (self.taskRan) {
+    process.exit(0);
+  } else {
+    await self.emit('run', self.isTask());
+  }
+
+  return self;
 
   // SUPPORTING FUNCTIONS BEGIN HERE
 
