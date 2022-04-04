@@ -44,8 +44,7 @@ module.exports = {
     },
     defaultOptions: {},
     components: {
-      widgetEditor: 'AposRichTextWidgetEditor',
-      widget: 'AposRichTextWidget'
+      widgetEditor: 'AposRichTextWidgetEditor'
     },
     editorTools: {
       styles: {
