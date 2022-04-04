@@ -10,6 +10,7 @@
 ### Fixes
 
 * Documentation of obsolete options has been removed.
+* Dead code relating to activating in-context widget editors have been removed. They are always active and have been for some time. In the future they might be swapped in on scroll, but there will never be a need to swap them in "on click."
 
 ## 3.17.0 (2022-03-31)
 
