@@ -180,18 +180,13 @@ module.exports = {
         //
         // The `crop` object is appended to the `crops` array property
         // of the file object.
-        // HEREE
         crop: [
-          () => {
-            console.log('=============> CROP SHIT <================');
-          },
           self.canUpload,
           async function (req) {
-            console.log('=============> CROP ROUTE <================');
             const _id = self.apos.launder.id(req.body._id);
             const { crop } = req.body;
 
-            if (!crop || typeof crop !== 'object' || !Array.isArray(crop)) {
+            if (!_id || !crop || typeof crop !== 'object' || Array.isArray(crop)) {
               throw self.apos.error('invalid');
             }
 
@@ -464,7 +459,6 @@ module.exports = {
           }
         });
       },
-      // HEREE
       async crop(req, _id, crop) {
         const info = await self.db.findOne({ _id });
 
@@ -477,6 +471,7 @@ module.exports = {
         }
         const crops = info.crops || [];
         const existing = _.find(crops, crop);
+
         if (existing) {
           // We're done, this crop is already available
           return;
@@ -493,12 +488,14 @@ module.exports = {
           sizes: self.imageSizes
         });
 
-        crops.push(crop);
         await self.db.updateOne({
           _id: info._id
         }, {
           $set: {
-            crops
+            crops: [
+              ...crops,
+              crop
+            ]
           }
         });
         await Promise.promisify(fs.unlink)(tempFile);
@@ -1061,7 +1058,6 @@ module.exports = {
       },
       // Middleware method used when only those with attachment privileges should be allowed to do something
       canUpload(req, res, next) {
-        console.log('=============> IN CAN UPLOAD <================');
         if (!self.apos.permission.can(req, 'upload-attachment')) {
           res.statusCode = 403;
           return res.send({
