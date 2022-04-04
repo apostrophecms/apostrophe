@@ -492,29 +492,21 @@ module.exports = {
       },
 
       setETag(req, eTagParts) {
-        console.log('sendETag', eTagParts.join(':'));
-        console.log('=======>');
-
         req.res.header('ETag', eTagParts.join(':'));
       },
 
       checkETag(req, doc, maxAge) {
         const eTagParts = self.generateETagParts(req, doc);
-        console.log('eTagParts', eTagParts);
 
         if (!eTagParts || !self.isSafeToCache(req)) {
           return false;
         }
 
-        console.log('req.headers[\'if-none-match\']', req.headers['if-none-match']);
         const clientETagParts = req.headers['if-none-match'] ? req.headers['if-none-match'].split(':') : [];
         const doesETagMatch = clientETagParts[0] === eTagParts[0] && clientETagParts[1] === eTagParts[1];
 
         const now = Date.now();
         const clientETagAge = (now - clientETagParts[2]) / 1000;
-
-        console.log('clientETagAge', clientETagAge);
-        console.log('maxAge', maxAge);
 
         if (!doesETagMatch || clientETagAge > maxAge) {
           self.setETag(req, [ ...eTagParts, now ]);
