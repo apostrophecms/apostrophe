@@ -184,15 +184,20 @@ module.exports = {
           self.canUpload,
           async function (req) {
             const _id = self.apos.launder.id(req.body._id);
-            let crop = req.body.crop;
-            if (typeof crop !== 'object') {
+            const { crop } = req.body;
+
+            if (!_id || !crop || typeof crop !== 'object' || Array.isArray(crop)) {
               throw self.apos.error('invalid');
             }
-            crop = self.sanitizeCrop(crop);
-            if (!crop) {
+
+            const sanitizedCrop = self.sanitizeCrop(crop);
+
+            if (!sanitizedCrop) {
               throw self.apos.error('invalid');
             }
-            await self.crop(req, _id, crop);
+
+            await self.crop(req, _id, sanitizedCrop);
+
             return true;
           }
         ]
@@ -455,49 +460,60 @@ module.exports = {
         });
       },
       async crop(req, _id, crop) {
-        const info = await self.db.findOne({ _id: _id });
+        const info = await self.db.findOne({ _id });
+
         if (!info) {
           throw self.apos.error('notfound');
         }
+
         if (!self.croppable[info.extension]) {
           throw new Error(info.extension + ' files cannot be cropped, do not present cropping UI for this type');
         }
         const crops = info.crops || [];
         const existing = _.find(crops, crop);
+
         if (existing) {
           // We're done, this crop is already available
           return;
         }
         // Pull the original out of cloud storage to a temporary folder where
         // it can be cropped and popped back into uploadfs
-        const originalFile = '/attachments/' + info._id + '-' + info.name + '.' + info.extension;
-        const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + info.extension;
-        const croppedFile = '/attachments/' + info._id + '-' + info.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + info.extension;
+        const originalFile = `/attachments/${info._id}-${info.name}.${info.extension}`;
+        const tempFile = `${self.uploadfs.getTempPath()}/${self.apos.util.generateId()}.${info.extension}`;
+        const croppedFile = `/attachments/${info._id}-${info.name}.${crop.left}.${crop.top}.${crop.width}.${crop.height}.${info.extension}`;
+
         await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
         await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
           crop: crop,
           sizes: self.imageSizes
         });
-        crops.push(crop);
+
         await self.db.updateOne({
           _id: info._id
         }, {
           $set: {
-            crops
+            crops: [
+              ...crops,
+              crop
+            ]
           }
         });
         await Promise.promisify(fs.unlink)(tempFile);
       },
       sanitizeCrop(crop) {
-        crop = _.pick(crop, 'top', 'left', 'width', 'height');
-        crop.top = self.apos.launder.integer(crop.top, 0, 0, 10000);
-        crop.left = self.apos.launder.integer(crop.left, 0, 0, 10000);
-        crop.width = self.apos.launder.integer(crop.width, 1, 1, 10000);
-        crop.height = self.apos.launder.integer(crop.height, 1, 1, 10000);
-        if (_.keys(crop).length < 4) {
-          return undefined;
+        const neededProps = [ 'top', 'left', 'width', 'height' ];
+        const { integer: sanitizeInteger } = self.apos.launder;
+
+        if (neededProps.some((prop) => !Object.keys(crop).includes(prop))) {
+          return null;
         }
-        return crop;
+
+        return {
+          top: sanitizeInteger(crop.top, 0, 0, 10000),
+          left: sanitizeInteger(crop.left, 0, 0, 10000),
+          width: sanitizeInteger(crop.width, 0, 0, 10000),
+          height: sanitizeInteger(crop.height, 0, 0, 10000)
+        };
       },
       // This method return a default icon url if an attachment is missing
       // to avoid template errors
