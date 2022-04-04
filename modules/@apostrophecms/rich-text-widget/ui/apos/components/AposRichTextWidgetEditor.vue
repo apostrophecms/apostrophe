@@ -1,4 +1,4 @@
-<template>
+w<template>
   <div>
     <bubble-menu
       class="bubble-menu"
@@ -72,6 +72,10 @@ export default {
       default() {
         return null;
       }
+    },
+    focused: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'update' ],
