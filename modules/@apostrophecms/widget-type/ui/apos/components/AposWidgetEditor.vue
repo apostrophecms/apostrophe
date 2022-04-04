@@ -73,6 +73,10 @@ export default {
       default() {
         return {};
       }
+    },
+    focused: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'safe-close', 'modal-result' ],
