@@ -157,10 +157,12 @@ export default {
       if (!this.searching) {
         if (this.searchTerm.length) {
           this.searching = true;
-          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`, {
-            busy: false,
-            draft: true
-          });
+          const list = await apos.http.get(
+            `${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`,
+            {
+              busy: false,
+              draft: true
+            });
           // filter items already selected
           this.searchList = list.results.filter(item => {
             return !this.next.map(i => i._id).includes(item._id);
