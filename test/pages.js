@@ -904,6 +904,42 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
+  it('should not return a 304 status code when requesting a page with an outdated release id', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/', { fullResponse: true });
+
+    const eTagParts = response1.headers.etag.split(':');
+    const outOfDateETagParts = [ ...eTagParts ];
+    outOfDateETagParts[0] = 'abcdefghi';
+
+    const response2 = await apos.http.get('/', {
+      fullResponse: true,
+      headers: {
+        'if-none-match': outOfDateETagParts.join(':')
+      }
+    });
+
+    const eTag1Parts = response1.headers.etag.split(':');
+    const eTag2Parts = response2.headers.etag.split(':');
+
+    assert(response1.status === 200);
+    assert(response1.body);
+
+    assert(response2.status === 200);
+    assert(response2.body);
+
+    // New timestamp
+    assert(eTag1Parts[2] !== eTag2Parts[2]);
+
+    delete apos.page.options.cache;
+  });
+
   it('should not return a 304 status code when requesting a page after the max-age period', async () => {
     apos.page.options.cache = {
       page: {
