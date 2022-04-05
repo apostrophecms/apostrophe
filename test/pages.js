@@ -675,4 +675,23 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
+  it('should set an etag when retrieving a single page', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 1111
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] === apos.asset.getReleaseId());
+    assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[2]);
+
+    delete apos.page.options.cache;
+  });
+
 });
