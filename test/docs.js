@@ -31,6 +31,20 @@ describe('Docs', function() {
               }
             }
           }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [],
+            types: [
+              {
+                name: 'test-page',
+                label: 'Test Page'
+              }
+            ]
+          }
+        },
+        'test-page': {
+          extend: '@apostrophecms/page-type'
         }
       }
     });
@@ -489,6 +503,38 @@ describe('Docs', function() {
     });
 
     assert(johnDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
+  });
+
+  it('should update the pieces parent page\'s `cacheInvalidatedAt` field', async () => {
+    const page = {
+      slug: '/parent/new-page',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'New Page'
+    };
+
+    const object = {
+      aposDocId: 'bruce',
+      aposLocale: 'en:published',
+      slug: 'bruce',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Bruce',
+      lastName: 'Lee',
+      age: 30,
+      alive: false,
+      _parentUrl: '/parent/new-page'
+    };
+
+    await apos.doc.insert(apos.task.getReq(), page);
+    const response = await apos.doc.insert(apos.task.getReq(), object);
+
+    const pageDoc = await apos.doc.db.findOne({
+      slug: '/parent/new-page',
+      aposLocale: 'en:published'
+    });
+
+    assert(pageDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {
