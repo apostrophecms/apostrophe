@@ -675,7 +675,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set an etag when retrieving a single page', async () => {
+  it('should set a custom etag when retrieving a single page', async () => {
     apos.page.options.cache = {
       api: {
         maxAge: 1111
@@ -690,6 +690,56 @@ describe('Pages', function() {
     assert(eTagParts[0] === apos.asset.getReleaseId());
     assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
     assert(eTagParts[2]);
+
+    delete apos.page.options.cache;
+  });
+
+  it('should not set a custom etag when retrieving a single page, when user is connected', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+
+    const jar = apos.http.jar();
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin',
+        session: true
+      },
+      jar
+    });
+
+    const response = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, {
+      fullResponse: true,
+      jar
+    });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] !== apos.asset.getReleaseId());
+    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+
+    delete apos.page.options.cache;
+  });
+
+  it('should not set a custom etag when retrieving a single page, when user is connected using an api key', async () => {
+    apos.page.options.cache = {
+      api: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}?apiKey=${apiKey}`, { fullResponse: true });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] !== apos.asset.getReleaseId());
+    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
 
     delete apos.page.options.cache;
   });
