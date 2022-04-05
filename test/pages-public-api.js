@@ -121,4 +121,28 @@ describe('Pages Public API', function() {
 
     delete apos.page.options.cache;
   });
+
+  it('should set an etag when retrieving a single page', async () => {
+    apos.page.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    apos.page.options.cache = {
+      api: {
+        maxAge: 1111
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${response1.body._id}`, { fullResponse: true });
+
+    const eTagParts = response2.headers.etag.split(':');
+
+    assert(eTagParts[0] === apos.asset.getReleaseId());
+    assert(eTagParts[1] === (new Date(response2.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[2]);
+
+    delete apos.page.options.cache;
+  });
 });

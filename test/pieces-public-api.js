@@ -128,4 +128,27 @@ describe('Pieces Public API', function() {
     delete apos.thing.options.cache;
   });
 
+  it('should set an etag when retrieving a single piece', async () => {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 1111
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] === apos.asset.getReleaseId());
+    assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[2]);
+
+    delete apos.thing.options.cache;
+  });
+
 });
