@@ -91,6 +91,23 @@ describe('Pieces Public API', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
+  it('should not set a "max-age" cache-control value when retrieving a single piece, when "etags" cache option is set, with a public API projection', async () => {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 2222
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    assert(response.headers['cache-control'] === undefined);
+  });
+
   it('should set a "max-age" cache-control value when retrieving pieces, with a public API projection', async () => {
     apos.thing.options.publicApiProjection = {
       title: 1,

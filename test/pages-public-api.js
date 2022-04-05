@@ -82,6 +82,26 @@ describe('Pages Public API', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
+  it('should not set a "max-age" cache-control value when retrieving a single page, when "etags" cache option is set, with a public API projection', async () => {
+    apos.page.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    apos.page.options.cache = {
+      api: {
+        maxAge: 1111
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
+    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${response1.body._id}`, { fullResponse: true });
+
+    assert(response2.headers['cache-control'] === undefined);
+
+    delete apos.page.options.cache;
+  });
+
   it('should set a "max-age" cache-control value when retrieving pages, with a public API projection', async () => {
     apos.page.options.publicApiProjection = {
       title: 1,
