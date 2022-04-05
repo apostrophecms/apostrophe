@@ -184,7 +184,6 @@ module.exports = {
             if (!self.options.cache.etags) {
               self.setMaxAge(req, maxAge);
             } else if (self.checkETag(req, result, maxAge)) {
-              // Stop and send an empty body since the cached response will be used
               return {};
             }
           }
