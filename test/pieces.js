@@ -1457,6 +1457,113 @@ describe('Pieces', function() {
     delete apos.thing.options.cache;
   });
 
+  it('should return a 304 status code when retrieving a piece with a matching etag', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 1111
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
+      fullResponse: true,
+      headers: {
+        'if-none-match': response1.headers.etag
+      }
+    });
+
+    assert(response1.status === 200);
+    assert(response1.body);
+
+    assert(response2.status === 304);
+    assert(response2.body === '');
+
+    // Same ETag should be sent again to the client
+    assert(response1.headers.etag === response2.headers.etag);
+
+    delete apos.thing.options.cache;
+  });
+
+  it('should not return a 304 status code when retrieving a piece that has been edited', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 1111
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    const pieceDoc = await apos.doc.db.findOne({
+      aposDocId: 'testThing',
+      aposLocale: 'en:published'
+    });
+
+    // Edit piece, this should invalidate its cache,
+    // so requesting it again should not return a 304 status code
+    const pieceUpdateResponse = await apos.doc.update(apos.task.getReq(), pieceDoc);
+
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
+      fullResponse: true,
+      headers: {
+        'if-none-match': response1.headers.etag
+      }
+    });
+
+    const eTag1Parts = response1.headers.etag.split(':');
+    const eTag2Parts = response2.headers.etag.split(':');
+
+    assert(response1.status === 200);
+    assert(response1.body);
+
+    assert(response2.status === 200);
+    assert(response2.body);
+
+    // New ETag has been generated, with the new value of the edited piece's `cacheInvalidatedAt` field...
+    assert(eTag2Parts[1] === pieceUpdateResponse.cacheInvalidatedAt.getTime().toString());
+    // ...and a new timestamp
+    assert(eTag2Parts[2] !== eTag1Parts[2]);
+
+    delete apos.thing.options.cache;
+  });
+
+  it('should not return a 304 status code when retrieving a piece after the max-age period', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    const eTagParts = response1.headers.etag.split(':');
+    const outOfDateETagParts = [ ...eTagParts ];
+    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) - (4444 + 1) * 1000; // 1s outdated
+
+    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
+      fullResponse: true,
+      headers: {
+        'if-none-match': outOfDateETagParts.join(':')
+      }
+    });
+
+    const eTag1Parts = response1.headers.etag.split(':');
+    const eTag2Parts = response2.headers.etag.split(':');
+
+    assert(response1.status === 200);
+    assert(response1.body);
+
+    assert(response2.status === 200);
+    assert(response2.body);
+
+    // New timestamp
+    assert(eTag1Parts[2] !== eTag2Parts[2]);
+
+    delete apos.thing.options.cache;
+  });
+
   it('should not set a custom etag when retrieving a single piece, when user is connected', async () => {
     apos.thing.options.cache = {
       api: {
