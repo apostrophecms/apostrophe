@@ -128,7 +128,7 @@ describe('Pieces Public API', function() {
     delete apos.thing.options.cache;
   });
 
-  it('should set an etag when retrieving a single piece', async () => {
+  it('should set a custom etag when retrieving a single piece', async () => {
     apos.thing.options.publicApiProjection = {
       title: 1,
       _url: 1

@@ -122,7 +122,7 @@ describe('Pages Public API', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set an etag when retrieving a single page', async () => {
+  it('should set a custom etag when retrieving a single page', async () => {
     apos.page.options.publicApiProjection = {
       title: 1,
       _url: 1

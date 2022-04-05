@@ -1438,7 +1438,7 @@ describe('Pieces', function() {
     delete apos.thing.options.cache;
   });
 
-  it('should set an etag when retrieving a single piece', async () => {
+  it('should set a custom etag when retrieving a single piece', async () => {
     apos.thing.options.cache = {
       api: {
         maxAge: 1111
@@ -1453,6 +1453,54 @@ describe('Pieces', function() {
     assert(eTagParts[0] === apos.asset.getReleaseId());
     assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
     assert(eTagParts[2]);
+
+    delete apos.thing.options.cache;
+  });
+
+  it('should not set a custom etag when retrieving a single piece, when user is connected', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 3333
+      },
+      etags: true
+    };
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin',
+        session: true
+      },
+      jar
+    });
+
+    const response = await apos.http.get('/api/v1/thing/testThing:en:published', {
+      fullResponse: true,
+      jar
+    });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] !== apos.asset.getReleaseId());
+    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+
+    delete apos.thing.options.cache;
+  });
+
+  it('should not set a custom etag when retrieving a single piece, when user is connected using an api key', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 3333
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get(`/api/v1/thing/testThing:en:published?apiKey=${apiKey}`, { fullResponse: true });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] !== apos.asset.getReleaseId());
+    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
 
     delete apos.thing.options.cache;
   });
