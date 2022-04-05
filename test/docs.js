@@ -455,6 +455,42 @@ describe('Docs', function() {
     assert(larryDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
+  it('should update the related reverse documents\' `cacheInvalidatedAt` field', async () => {
+    const object = {
+      aposDocId: 'john',
+      aposLocale: 'en:published',
+      slug: 'john',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'John',
+      lastName: 'McClane',
+      age: 40,
+      alive: true,
+      friendsIds: [ 'carl' ],
+      _friends: [ { _id: 'carl:en:published' } ]
+    };
+
+    await apos.doc.insert(apos.task.getReq(), object);
+
+    const carlDoc = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    // update carl, now john (related reverse friend) should have its `cacheInvalidatedAt` field updated as well
+    const response = await apos.doc.update(apos.task.getReq(), {
+      ...carlDoc,
+      alive: false
+    });
+
+    const johnDoc = await apos.doc.db.findOne({
+      slug: 'john',
+      aposLocale: 'en:published'
+    });
+
+    assert(johnDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
+  });
+
   it('should not allow you to call the update method if you are not an admin', async function() {
     const cursor = apos.doc.find(apos.task.getAnonReq(), {
       type: 'test-people',
