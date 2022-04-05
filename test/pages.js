@@ -503,6 +503,24 @@ describe('Pages', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
+  it('should not set a cache-control value when retrieving a single page, when "etags" cache option is set', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 5555
+      },
+      api: {
+        maxAge: 5555
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
+
+    assert(response.headers['cache-control'] === undefined);
+
+    delete apos.page.options.cache;
+  });
+
   it('should not set a cache-control value when retrieving pages, when "api" cache option is not set', async () => {
     apos.page.options.cache = {
       page: {

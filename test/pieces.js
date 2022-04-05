@@ -1315,6 +1315,19 @@ describe('Pieces', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
+  it('should not set a cache-control value when retrieving a single piece, when "etags" cache option is set', async () => {
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 5555
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    assert(response.headers['cache-control'] === undefined);
+  });
+
   it('should not set a cache-control value when retrieving pieces, when "api" cache option is not set', async () => {
     apos.thing.options.cache = {
       page: {
