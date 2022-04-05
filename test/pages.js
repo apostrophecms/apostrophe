@@ -708,7 +708,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a custom etag when serving a single page', async () => {
+  it('should set a custom etag when serving a page', async () => {
     apos.page.options.cache = {
       page: {
         maxAge: 4444
@@ -722,6 +722,110 @@ describe('Pages', function() {
     assert(eTagParts[0] === apos.asset.getReleaseId());
     assert(eTagParts[1]);
     assert(eTagParts[2]);
+
+    delete apos.page.options.cache;
+  });
+
+  it('should return a 304 status code when requesting a page with a matching etag', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/', { fullResponse: true });
+    const response2 = await apos.http.get('/', {
+      fullResponse: true,
+      headers: {
+        'if-none-match': response1.headers.etag
+      }
+    });
+
+    assert(response1.status === 200);
+    assert(response1.body);
+
+    assert(response2.status === 304);
+    assert(response2.body === '');
+
+    // Same ETag should be sent again to the client
+    assert(response1.headers.etag === response2.headers.etag);
+
+    delete apos.page.options.cache;
+  });
+
+  it('should not return a 304 status code when requesting a page that has been edited', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/', { fullResponse: true });
+
+    const pageDoc = await apos.doc.db.findOne({
+      slug: '/',
+      aposLocale: 'en:published'
+    });
+
+    // Edit homepage, this should invalidate its cache,
+    // so requesting it again should not return a 304 status code
+    const pageUpdateResponse = await apos.doc.update(apos.task.getReq(), {
+      ...pageDoc,
+      title: 'Home edited'
+    });
+
+    const response2 = await apos.http.get('/', {
+      fullResponse: true,
+      headers: {
+        'if-none-match': response1.headers.etag
+      }
+    });
+
+    const eTag1Parts = response1.headers.etag.split(':');
+    const eTag2Parts = response2.headers.etag.split(':');
+
+    assert(response1.status === 200);
+    assert(response1.body);
+
+    assert(response2.status === 200);
+    assert(response2.body);
+
+    // New ETag has been generated, with the new value of the edited homepage's `cacheInvalidatedAt` field...
+    assert(eTag2Parts[1] === (new Date(pageUpdateResponse.cacheInvalidatedAt)).getTime().toString());
+    // ...and a new timestamp
+    assert(eTag2Parts[2] !== eTag1Parts[2]);
+
+    delete apos.page.options.cache;
+  });
+
+  it('should not return a 304 status code when requesting a page after the max-age period', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+
+    const response1 = await apos.http.get('/', { fullResponse: true });
+
+    const eTagParts = response1.headers.etag.split(':');
+    const outOfDateETagParts = [ ...eTagParts ];
+    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) - 4445000; // 1s outdated
+
+    const response2 = await apos.http.get('/', {
+      fullResponse: true,
+      headers: {
+        'if-none-match': outOfDateETagParts.join(':')
+      }
+    });
+
+    assert(response1.status === 200);
+    assert(response1.body);
+
+    assert(response2.status === 200);
+    assert(response2.body);
 
     delete apos.page.options.cache;
   });
