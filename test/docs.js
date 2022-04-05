@@ -300,7 +300,7 @@ describe('Docs', function() {
     assert(doc.slug.match(/^one\d+$/));
   });
 
-  it('should add the aposDocId to the related documents\' relatedReverseIds field', async () => {
+  it('should add the aposDocId to the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async () => {
     const object = {
       aposDocId: 'paul',
       aposLocale: 'en:published',
@@ -315,7 +315,7 @@ describe('Docs', function() {
       _friends: [ { _id: 'carl:en:published' }, { _id: 'larry:en:published' } ]
     };
 
-    await apos.doc.insert(apos.task.getReq(), object);
+    const response = await apos.doc.insert(apos.task.getReq(), object);
 
     const carlDoc = await apos.doc.db.findOne({
       slug: 'carl',
@@ -329,9 +329,11 @@ describe('Docs', function() {
 
     assert(carlDoc.relatedReverseIds.length === 1);
     assert(carlDoc.relatedReverseIds[0] === 'paul');
+    assert(carlDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
 
     assert(larryDoc.relatedReverseIds.length === 1);
     assert(larryDoc.relatedReverseIds[0] === 'paul');
+    assert(larryDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
   it('should not allow you to call the insert method if you are not an admin', async function() {
@@ -420,7 +422,7 @@ describe('Docs', function() {
     assert(counts.Lori === 2);
   });
 
-  it('should remove the aposDocId from the related documents\' relatedReverseIds field', async () => {
+  it('should remove the aposDocId from the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async () => {
     const paulDoc = await apos.doc.db.findOne({
       slug: 'paul',
       aposLocale: 'en:published'
@@ -433,7 +435,7 @@ describe('Docs', function() {
       _friends: [ { _id: 'larry:en:published' } ]
     };
 
-    await apos.doc.update(apos.task.getReq(), object);
+    const response = await apos.doc.update(apos.task.getReq(), object);
 
     const carlDoc = await apos.doc.db.findOne({
       slug: 'carl',
@@ -446,9 +448,11 @@ describe('Docs', function() {
     });
 
     assert(carlDoc.relatedReverseIds.length === 0);
+    assert(carlDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
 
     assert(larryDoc.relatedReverseIds.length === 1);
     assert(larryDoc.relatedReverseIds[0] === 'paul');
+    assert(larryDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {
@@ -775,8 +779,8 @@ describe('Docs', function() {
       _id: `${response.aposDocId}:en:draft`
     });
 
-    assert(response.cacheInvalidatedAt.toString() === response.updatedAt.toString());
-    assert(draft.cacheInvalidatedAt.toString() === draft.updatedAt.toString());
+    assert(response.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
+    assert(draft.cacheInvalidatedAt.getTime() === draft.updatedAt.getTime());
   });
 
 });
