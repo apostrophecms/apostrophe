@@ -21,7 +21,7 @@
 * Adds possibility for modules to [extend the webpack configuration](https://v3.docs.apostrophecms.org/guide/webpack.html).
 * Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
 * Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
-* Implement custom ETags emission. It allows caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) documents updates, thanks to backlinks mentioned above. For now, only single pages and pieces benefit from the ETags caching system (pages' and pieces' `getOne` REST API route, and regular pages).
+* Implement custom ETags emission. It allows caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) documents updates, thanks to backlinks mentioned above. For now, only single pages and pieces benefit from the ETags caching system (pages' and pieces' `getOne` REST API route, and regular served pages).
 
 ### Fixes
 
