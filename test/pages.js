@@ -662,6 +662,20 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
+  it('should not set a cache-control value when serving a page, when "etags" cache option is set', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+    const response = await apos.http.get('/', { fullResponse: true });
+
+    assert(response.headers['cache-control'] === undefined);
+
+    delete apos.page.options.cache;
+  });
+
   it('should set a cache-control value when serving a page, when "page" cache option is set', async () => {
     apos.page.options.cache = {
       page: {
@@ -689,6 +703,24 @@ describe('Pages', function() {
 
     assert(eTagParts[0] === apos.asset.getReleaseId());
     assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[2]);
+
+    delete apos.page.options.cache;
+  });
+
+  it('should set a custom etag when serving a single page', async () => {
+    apos.page.options.cache = {
+      page: {
+        maxAge: 4444
+      },
+      etags: true
+    };
+    const response = await apos.http.get('/', { fullResponse: true });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] === apos.asset.getReleaseId());
+    assert(eTagParts[1]);
     assert(eTagParts[2]);
 
     delete apos.page.options.cache;
