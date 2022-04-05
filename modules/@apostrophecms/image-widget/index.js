@@ -35,6 +35,12 @@ module.exports = {
             y: {
               type: 'integer'
             }
+          },
+          group: {
+            cropAndSize: {
+              label: 'Crop & Size',
+              fields: [ 'top', 'left', 'width', 'height', 'x', 'y' ]
+            }
           }
         }
       }
