@@ -1,22 +1,39 @@
 <template>
   <AposModal
-    class="apos-doc-editor" :modal="modal"
+    class="apos-doc-editor"
+    :modal="modal"
     :modal-title="modalTitle"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="apostrophe:save"
+        type="primary"
+        label="apostrophe:update"
         :disabled="docFields.hasErrors"
         @click="submit"
       />
+    </template>
+    <template #leftRail>
+      <AposModalRail>
+        <!-- <AposModalTabs
+          :key="tabKey"
+          v-if="tabs.length > 0"
+          :current="currentTab"
+          :tabs="tabs"
+          :errors="fieldErrors"
+          @select-tab="switchPane"
+        /> -->
+      </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
