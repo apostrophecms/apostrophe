@@ -31,6 +31,7 @@ const qs = require('qs');
 const Promise = require('bluebird');
 const path = require('path');
 const { stripIndent } = require('common-tags');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 
 module.exports = {
   options: { alias: 'template' },
@@ -631,91 +632,125 @@ module.exports = {
       // async function.
 
       async renderPageForModule(req, template, data, module) {
-        let scene = req.user ? 'apos' : 'public';
-        if (req.scene) {
-          scene = req.scene;
-        } else {
-          req.scene = scene;
-        }
-
-        const aposBodyData = {
-          modules: {},
-          prefix: req.prefix,
-          sitePrefix: self.apos.prefix,
-          shortName: self.apos.shortName,
-          locale: req.locale,
-          csrfCookieName: self.apos.csrfCookieName,
-          tabId: self.apos.util.generateId(),
-          uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
-          assetBaseUrl: self.apos.asset.getAssetBaseUrl(),
-          scene
-        };
-        if (req.user) {
-          aposBodyData.user = {
-            title: req.user.title,
-            _id: req.user._id,
-            username: req.user.username
-          };
-        }
-        await self.emit('addBodyData', req, aposBodyData);
-        self.addBodyDataAttribute(req, { apos: JSON.stringify(aposBodyData) });
-
-        // Always the last call; signifies we're done initializing the
-        // page as far as the core is concerned; a lovely time for other
-        // modules and project-level javascript to do their own
-        // enhancements.
-        //
-        // This method emits a 'ready' event, and also
-        // emits an 'enhance' event with the entire $body
-        // as its argument.
-        //
-        // Waits for DOMready to give other
-        // things maximum opportunity to happen.
-
-        const decorate = req.query.aposRefresh !== '1';
-
-        // data.url will be the original requested page URL, for use in building
-        // relative links, adding or removing query parameters, etc. If this is a
-        // refresh request, we remove that so that frontend templates don't build
-        // URLs that also refresh
-
-        const args = {
-          outerLayout: decorate ? '@apostrophecms/template:outerLayout.html' : '@apostrophecms/template:refreshLayout.html',
-          permissions: req.user && (req.user._permissions || {}),
-          scene,
-          refreshing: !decorate,
-          // Make the query available to templates for easy access to
-          // filter settings etc.
-          query: req.query,
-          url: unrefreshed(req.url)
-        };
-
-        _.extend(args, data);
-
-        if (req.aposError) {
-          // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
-          return error(req.aposError);
-        }
-
-        try {
-          const content = await module.render(req, template, args);
-
-          const filledContent = self.insertBundlesMarkup({
-            page: req.data.bestPage,
-            scene,
-            template,
-            content,
-            scriptsPlaceholder: req.scriptsPlaceholder,
-            stylesheetsPlaceholder: req.stylesheetsPlaceholder,
-            widgetsBundles: req.widgetsBundles
+        const telemetry = self.apos.telemetry;
+        const spanName = `render:${self.__meta.name}:renderPageForModule`;
+        return telemetry.aposStartActiveSpan(spanName, async (span) => {
+          span.setAttributes({
+            [SemanticAttributes.CODE_FUNCTION]: 'renderPageForModule',
+            [SemanticAttributes.CODE_NAMESPACE]: self.__meta.name
           });
 
-          return filledContent;
-        } catch (e) {
+          let scene = req.user ? 'apos' : 'public';
+          if (req.scene) {
+            scene = req.scene;
+          } else {
+            req.scene = scene;
+          }
+          span.setAttribute(telemetry.AposAttributes.SCENE, scene);
+          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template + '.html');
+
+          const aposBodyData = {
+            modules: {},
+            prefix: req.prefix,
+            sitePrefix: self.apos.prefix,
+            shortName: self.apos.shortName,
+            locale: req.locale,
+            csrfCookieName: self.apos.csrfCookieName,
+            tabId: self.apos.util.generateId(),
+            uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
+            assetBaseUrl: self.apos.asset.getAssetBaseUrl(),
+            scene
+          };
+          if (req.user) {
+            aposBodyData.user = {
+              title: req.user.title,
+              _id: req.user._id,
+              username: req.user.username
+            };
+          }
+          await self.emit('addBodyData', req, aposBodyData);
+          self.addBodyDataAttribute(req, { apos: JSON.stringify(aposBodyData) });
+
+          // Always the last call; signifies we're done initializing the
+          // page as far as the core is concerned; a lovely time for other
+          // modules and project-level javascript to do their own
+          // enhancements.
+          //
+          // This method emits a 'ready' event, and also
+          // emits an 'enhance' event with the entire $body
+          // as its argument.
+          //
+          // Waits for DOMready to give other
+          // things maximum opportunity to happen.
+
+          const decorate = req.query.aposRefresh !== '1';
+
+          // data.url will be the original requested page URL, for use in building
+          // relative links, adding or removing query parameters, etc. If this is a
+          // refresh request, we remove that so that frontend templates don't build
+          // URLs that also refresh
+
+          const args = {
+            outerLayout: decorate ? '@apostrophecms/template:outerLayout.html' : '@apostrophecms/template:refreshLayout.html',
+            permissions: req.user && (req.user._permissions || {}),
+            scene,
+            refreshing: !decorate,
+            // Make the query available to templates for easy access to
+            // filter settings etc.
+            query: req.query,
+            url: unrefreshed(req.url)
+          };
+
+          _.extend(args, data);
+
+          if (req.aposError) {
+          // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
+            telemetry.aposHandleError(span, req.aposError);
+            span.end();
+            return error(req.aposError);
+          }
+
+          try {
+            const spanRenderName = `render:${module.__meta.name}:render`;
+            const content = await telemetry.aposStartActiveSpan(spanRenderName, async (spanRender) => {
+              spanRender.setAttribute(SemanticAttributes.CODE_FUNCTION, 'render');
+              spanRender.setAttribute(SemanticAttributes.CODE_NAMESPACE, module.__meta.name);
+              spanRender.setAttribute(telemetry.AposAttributes.SCENE, scene);
+              spanRender.setAttribute(telemetry.AposAttributes.TEMPLATE, template + '.html');
+
+              try {
+                const content = await module.render(req, template, args);
+                spanRender.setStatus({ code: telemetry.SpanStatusCode.OK });
+                return content;
+              } catch (err) {
+                telemetry.aposHandleError(spanRender, err);
+                throw err;
+              } finally {
+                spanRender.end();
+              }
+            }, span);
+
+            const filledContent = self.insertBundlesMarkup({
+              page: req.data.bestPage,
+              scene,
+              template,
+              content,
+              scriptsPlaceholder: req.scriptsPlaceholder,
+              stylesheetsPlaceholder: req.stylesheetsPlaceholder,
+              widgetsBundles: req.widgetsBundles
+            });
+
+            span.setStatus({ code: telemetry.SpanStatusCode.OK });
+            return filledContent;
+          } catch (e) {
           // The page template threw an exception. Log where it
           // occurred for easier debugging
-          return error(e);
-        }
+            telemetry.aposHandleError(span, e);
+            return error(e);
+          } finally {
+            span.end();
+          }
+        });
 
         function error(e) {
           self.logError(req, e);
