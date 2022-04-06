@@ -263,6 +263,8 @@ export default {
     },
     tabs() {
       const tabs = [];
+
+      console.log('this.groups ===> ', this.groups);
       for (const key in this.groups) {
         if (key !== 'utility') {
           tabs.push({
@@ -271,6 +273,8 @@ export default {
           });
         }
       };
+
+      console.log('tabs ===> ', tabs);
       return tabs;
     },
     modalTitle() {

@@ -111,6 +111,8 @@ export default {
     };
   },
   async mounted() {
+    console.log('this.schema ===> ', this.schema);
+
     this.modal.active = true;
     this.docReady = true;
   },
@@ -124,6 +126,47 @@ export default {
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
+    },
+    groups() {
+      const groups = this.schema.reduce((acc, field) => {
+        const { name, label } = field.group;
+
+        return [
+          ...acc,
+          {
+            [name]: {
+              label: field.group.label,
+              fields: [ field.name ],
+              schema: [ field ]
+            }
+          }
+        ];
+
+      }, []);
+
+      this.schema.forEach(field => {
+        if (!this.filterOutParkedFields([ field.name ]).length) {
+          return;
+        }
+        if (field.group && !groupSet[field.group.name]) {
+          groupSet[field.group.name] = {
+            label: field.group.label,
+            fields: [ field.name ],
+            schema: [ field ]
+          };
+        } else if (field.group) {
+          groupSet[field.group.name].fields.push(field.name);
+          groupSet[field.group.name].schema.push(field);
+        }
+      });
+      if (!groupSet.utility) {
+        groupSet.utility = {
+          label: 'apostrophe:utility',
+          fields: [],
+          schema: []
+        };
+      }
+      return groupSet;
     }
   }
 };
