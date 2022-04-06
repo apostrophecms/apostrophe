@@ -54,7 +54,8 @@ let defaults = require('./defaults.js');
 //
 // If set, Apostrophe will use it to shutdown OpenTelemetry on boot error.
 // If missing, boot errors won't be recorded on the tracing backend.
-// The expected value is an object, istance of NodeSDK.
+// The expected value is an object, istance of NodeSDK or any object or
+// satisfying the type `{ shutdown: () => Promise<void> }`.
 //
 // ## Awaiting the Apostrophe function
 //
@@ -164,7 +165,7 @@ module.exports = async function(options) {
   });
 
   if (self && self.taskRan) {
-    options.openTelemetrySDK
+    await options.openTelemetrySDK
       .shutdown()
       .then(() => process.exit(0));
   }
@@ -176,7 +177,7 @@ module.exports = async function(options) {
     // We can't do much if it's missing - according to our current tests
     // traces will not be sent to the backend.
     if (options.openTelemetrySDK) {
-      options.openTelemetrySDK
+      await options.openTelemetrySDK
         .shutdown()
         .then(() => {
           console.log('OpenTelemetry stopped, errors sent to the backend.');
