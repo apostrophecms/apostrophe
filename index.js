@@ -101,7 +101,7 @@ module.exports = async function(options) {
     // For bc with node 14 and below we need to check both
     if (cluster.isPrimary || cluster.isMaster) {
       // Activate and return the callback return value
-      return telemetry.aposStartActiveSpan(`${spanName}:primary`, (span) => {
+      return telemetry.aposStartActiveSpan(`${spanName}:primary`, async (span) => {
         let processes = options.cluster.processes || cpus().length;
         if (processes <= 0) {
           processes = cpus().length + processes;
@@ -136,6 +136,11 @@ module.exports = async function(options) {
           }
         });
         span.end();
+        if (options.openTelemetrySDK) {
+          await options.openTelemetrySDK
+            .shutdown()
+            .then(() => console.log('OpenTelemetry stopped.'));
+        }
         return null;
       });
     } else {
@@ -164,7 +169,7 @@ module.exports = async function(options) {
     }
   });
 
-  if (self && self.taskRan) {
+  if (self && self.taskRan && options.openTelemetrySDK) {
     await options.openTelemetrySDK
       .shutdown()
       .then(() => process.exit(0));
