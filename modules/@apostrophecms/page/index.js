@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 const { klona } = require('klona');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
@@ -1415,24 +1416,39 @@ database.`);
       // of course wins, followed by the parent "folder," and so on up to the
       // home page.
       async serveGetPage(req) {
-        req.slug = req.params[0];
-        self.normalizeSlug(req);
-        // Had to change the URL, so redirect to it. TODO: this
-        // contains an assumption that we are mounted at /
-        if (req.slug !== req.params[0]) {
-          req.redirect = req.slug;
-        }
-        const builders = self.getServePageBuilders();
-        const query = self.find(req);
-        query.applyBuilders(builders);
-        self.matchPageAndPrefixes(query, req.slug);
-        await self.emit('serveQuery', query);
-        req.data.bestPage = await query.toObject();
-        self.evaluatePageMatch(req);
+        const spanName = `${self.__meta.name}:serveGetPage`;
+        await self.apos.telemetry.aposStartActiveSpan(spanName, async (span) => {
+          span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'serveGetPage');
+          span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
 
-        if (self.options.cache && self.options.cache.page) {
-          self.setMaxAge(req, self.options.cache.page.maxAge);
-        }
+          try {
+            req.slug = req.params[0];
+            self.normalizeSlug(req);
+            // Had to change the URL, so redirect to it. TODO: this
+            // contains an assumption that we are mounted at /
+            if (req.slug !== req.params[0]) {
+              req.redirect = req.slug;
+            }
+            const builders = self.getServePageBuilders();
+            const query = self.find(req);
+            query.applyBuilders(builders);
+            self.matchPageAndPrefixes(query, req.slug);
+            await self.emit('serveQuery', query);
+            req.data.bestPage = await query.toObject();
+            self.evaluatePageMatch(req);
+
+            if (self.options.cache && self.options.cache.page) {
+              self.setMaxAge(req, self.options.cache.page.maxAge);
+            }
+
+            span.setStatus({ code: self.apos.telemetry.SpanStatusCode.OK });
+          } catch (err) {
+            self.apos.telemetry.aposHandleError(span, err);
+            throw err;
+          } finally {
+            span.end();
+          }
+        });
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
       // trailing slashes other than the root, and double slash based open

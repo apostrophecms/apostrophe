@@ -43,52 +43,46 @@ module.exports = function(self) {
 
       // Create the "outer" span
       const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
-      const spanEmit = telemetry.aposStartSpan(`event:${moduleName}:${name}`);
-      spanEmit.setAttribute(SemanticAttributes.CODE_FUNCTION, 'emit');
-      spanEmit.setAttribute(SemanticAttributes.CODE_NAMESPACE, moduleName);
+      await telemetry.aposStartActiveSpan(`event:${moduleName}:${name}`, async (spanEmit) => {
+        spanEmit.setAttribute(SemanticAttributes.CODE_FUNCTION, 'emit');
+        spanEmit.setAttribute(SemanticAttributes.CODE_NAMESPACE, moduleName);
+        spanEmit.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
+        spanEmit.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
 
-      for (const entry of chain) {
-        const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
-        if (handlers) {
-          for (const handler of handlers) {
+        for (const entry of chain) {
+          const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
+          if (handlers) {
+            for (const handler of handlers) {
 
-            // const spanHandler = telemetry.aposStartSpan(
-            //   `event:${moduleName}:${name}:${handler.moduleName}:${handler.handlerName}`,
-            //   spanEmit
-            // );
+              // Create an active "inner" span for each handler using the parent as a context
+              const spanName = `handler:${handler.moduleName}:${handler.handlerName}`;
+              await telemetry.aposStartActiveSpan(spanName, async (spanHandler) => {
+                spanHandler.setAttribute(SemanticAttributes.CODE_FUNCTION, handler.handlerName);
+                spanHandler.setAttribute(SemanticAttributes.CODE_NAMESPACE, handler.moduleName);
+                spanHandler.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
+                spanHandler.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
 
-            // Create an active "inner" span for each handler using the parent as a context
-            const spanName = `event:${moduleName}:${name}:${handler.moduleName}:${handler.handlerName}`;
+                const module = self.apos.modules[handler.moduleName];
+                const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
 
-            await telemetry.aposStartActiveSpan(spanName, async (spanHandler) => {
-              spanHandler.setAttribute(SemanticAttributes.CODE_FUNCTION, handler.handlerName);
-              spanHandler.setAttribute(SemanticAttributes.CODE_NAMESPACE, handler.moduleName);
+                try {
+                  // Although we have `self` it can't hurt to
+                  // supply the correct `this`
+                  await fn.apply(module, args);
+                  spanHandler.setStatus({ code: telemetry.SpanStatusCode.OK });
+                } catch (err) {
+                  telemetry.aposHandleError(spanHandler, err);
+                  throw err;
+                } finally {
+                  spanHandler.end();
+                }
 
-              const module = self.apos.modules[handler.moduleName];
-              const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
-
-              try {
-              // Although we have `self` it can't hurt to
-              // supply the correct `this`
-                await fn.apply(module, args);
-
-                spanHandler.setStatus({ code: telemetry.SpanStatusCode.OK });
-              } catch (err) {
-                spanHandler.recordException(err);
-                spanHandler.setStatus({
-                  code: telemetry.SpanStatusCode.ERROR,
-                  message: err.message
-                });
-                throw err;
-              } finally {
-                spanHandler.end();
-              }
-
-            }, spanEmit);
+              }, spanEmit);
+            }
           }
         }
-      }
-      spanEmit.end();
+        spanEmit.end();
+      });
     },
 
     // You don't need to call this. It is called for you

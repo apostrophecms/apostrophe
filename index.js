@@ -43,8 +43,18 @@ let defaults = require('./defaults.js');
 //
 // `openTelemetryProvider`
 //
-// If set, Apostrophe will use it as a global OpenTelemetry tracer provider.
-// The expected value is an object istance of TracerProvider.
+// If set, Apostrophe will register it as a global OpenTelemetry tracer provider.
+// The expected value is an object, istance of TracerProvider.
+// If the Node SDK is used in the application instead of manual configuration,
+// the provider instance is only available as a
+// private property: `sdkInstance._tracerProvider`. An issue can be opened
+// to discuss the exposure of a public getter with the OpenTelemetry developers.
+//
+// `openTelemetrySDK`
+//
+// If set, Apostrophe will use it to shutdown OpenTelemetry on boot error.
+// If missing, boot errors won't be recorded on the tracing backend.
+// The expected value is an object, istance of NodeSDK.
 //
 // ## Awaiting the Apostrophe function
 //
@@ -138,29 +148,47 @@ module.exports = async function(options) {
   const self = await telemetry.aposStartActiveSpan(spanName, async (span) => {
     try {
       const res = await apostrophe(options, telemetry);
+      if (!res.taskRan) {
+        // Tasks exit early, pass the root span in order to not break
+        // the task handler. Run event is lost, no way out when early exits exist.
+        await res.emit('run', res.isTask(), span);
+      }
       span.setStatus(telemetry.SpanStatusCode.OK);
       return res;
     } catch (err) {
-      span.recordException(err);
-      span.setStatus({
-        code: telemetry.SpanStatusCode.ERROR,
-        message: err.message
-      });
+      telemetry.aposHandleError(span, err);
       error = err;
     } finally {
       span.end();
     }
   });
 
+  if (self && self.taskRan) {
+    options.openTelemetrySDK
+      .shutdown()
+      .then(() => process.exit(0));
+  }
+
+  // Post run. If it was a task, we do clean shutdown from within the task module.
   if (error && options.exit !== false) {
     console.error(error);
-    // give OTel time to populate the error to the backend
-    if (process.env.APOS_OPENTELEMETRY) {
-      setTimeout(() => process.exit(1), 1500);
+    // If the sdk was passed, initiate clean shutdown.
+    // We can't do much if it's missing - according to our current tests
+    // traces will not be sent to the backend.
+    if (options.openTelemetrySDK) {
+      options.openTelemetrySDK
+        .shutdown()
+        .then(() => {
+          console.log('OpenTelemetry stopped, errors sent to the backend.');
+          process.exit(1);
+        });
     } else {
       process.exit(1);
     }
-  } else {
+  }
+
+  // Backward compatible - do not throw the error
+  if (!error) {
     return self;
   }
 };
@@ -269,11 +297,6 @@ async function apostrophe(options, telemetry) {
     await self.apos.page.implementParkAllInOtherLocales();
   });
   await self.emit('ready'); // formerly afterInit
-  if (self.taskRan) {
-    process.exit(0);
-  } else {
-    await self.emit('run', self.isTask());
-  }
 
   return self;
 

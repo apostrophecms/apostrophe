@@ -25,6 +25,7 @@
 // available in the browser for use in the Vue-based admin UI when a user is
 // logged in.
 
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const _ = require('lodash');
 
 module.exports = {
@@ -444,11 +445,27 @@ module.exports = {
       // that point.
 
       async sendPage(req, template, data) {
-        await self.apos.page.emit('beforeSend', req);
-        await self.apos.area.loadDeferredWidgets(req);
-        req.res.send(
-          await self.apos.template.renderPageForModule(req, template, data, self)
-        );
+        const telemetry = self.apos.telemetry;
+        const spanName = `${self.__meta.name}:sendPage`;
+        await telemetry.aposStartActiveSpan(spanName, async (span) => {
+          span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'sendPage');
+          span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template + '.html');
+
+          try {
+            await self.apos.page.emit('beforeSend', req);
+            await self.apos.area.loadDeferredWidgets(req);
+            req.res.send(
+              await self.apos.template.renderPageForModule(req, template, data, self)
+            );
+            span.setStatus({ code: telemetry.SpanStatusCode.OK });
+          } catch (err) {
+            telemetry.aposHandleError(span, err);
+            throw err;
+          } finally {
+            span.end();
+          }
+        });
       },
 
       setMaxAge(req, maxAge) {
@@ -649,7 +666,32 @@ module.exports = {
             // @apostrophecms/db:reset which
             // must run before most modules are awake
             if (self.apos.argv._[0] === `${self.__meta.name}:${name}`) {
-              await info.task(self.apos.argv);
+              const telemetry = self.apos.telemetry;
+              const spanName = `task:${self.__meta.name}:${name}`;
+              // only this span can be sent to the backend, attach to the ROOT
+              await telemetry.tracer.startActiveSpan(
+                spanName,
+                undefined,
+                info.exitAfter !== false ? telemetry.ROOT_CONTEXT : telemetry.context.active(),
+                async (span) => {
+                  span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'executeAfterModuleInitTask');
+                  span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/module');
+                  span.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, self.__meta.name);
+                  span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, name);
+                  try {
+                    await info.task(self.apos.argv);
+                    span.setStatus({ code: telemetry.SpanStatusCode.OK });
+                  } catch (err) {
+                    telemetry.aposHandleError(span, err);
+                    throw err;
+                  } finally {
+                    span.end();
+                    if (info.exitAfter !== false && self.apos.options.openTelemetrySDK) {
+                      await self.apos.options.openTelemetrySDK.shutdown();
+                      console.log('OpenTelemetry stopped.');
+                    }
+                  }
+                });
               // In most cases we exit after running a task
               if (info.exitAfter !== false) {
                 process.exit(0);
