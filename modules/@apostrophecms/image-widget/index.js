@@ -18,22 +18,28 @@ module.exports = {
         fields: {
           add: {
             top: {
-              type: 'integer'
+              type: 'integer',
+              label: 'top'
             },
             left: {
-              type: 'integer'
+              type: 'integer',
+              label: 'left'
             },
             width: {
-              type: 'integer'
+              type: 'integer',
+              label: 'width'
             },
             height: {
-              type: 'integer'
+              type: 'integer',
+              label: 'height'
             },
             x: {
-              type: 'integer'
+              type: 'integer',
+              label: 'x'
             },
             y: {
-              type: 'integer'
+              type: 'integer',
+              label: 'y'
             }
           }
         }

@@ -183,14 +183,18 @@ module.exports = {
         crop: [
           self.canUpload,
           async function (req) {
+            console.log('CROP ROUTE');
             const _id = self.apos.launder.id(req.body._id);
             const { crop } = req.body;
+            console.log('_id', _id);
+            console.log('crop', crop);
 
             if (!_id || !crop || typeof crop !== 'object' || Array.isArray(crop)) {
               throw self.apos.error('invalid');
             }
 
             const sanitizedCrop = self.sanitizeCrop(crop);
+            console.log('sanitizedCrop', sanitizedCrop);
 
             if (!sanitizedCrop) {
               throw self.apos.error('invalid');
@@ -461,6 +465,7 @@ module.exports = {
       },
       async crop(req, _id, crop) {
         const info = await self.db.findOne({ _id });
+        console.log('info', info);
 
         if (!info) {
           throw self.apos.error('notfound');
