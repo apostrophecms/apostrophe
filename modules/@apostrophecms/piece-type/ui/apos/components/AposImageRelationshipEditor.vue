@@ -25,25 +25,28 @@
     </template>
     <template #leftRail>
       <AposModalRail>
-        <!-- <AposModalTabs
-          :key="tabKey"
-          v-if="tabs.length > 0"
+        <AposModalTabs
+          v-if="tabs.length"
           :current="currentTab"
           :tabs="tabs"
           :errors="fieldErrors"
           @select-tab="switchPane"
-        /> -->
+        />
       </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
         <template #bodyMain>
           <AposModalTabsBody>
-            <div class="apos-doc-editor__body">
+            <div v-if="tabs.length" class="apos-doc-editor__body">
               <AposSchema
-                v-if="docReady"
-                :schema="schema"
+                v-for="tab in tabs"
+                :key="tab.name"
+                :schema="groups[tab.name].schema"
+                :current-fields="groups[tab.name].fields"
                 :value="docFields"
+                :utility-rail="false"
+                :ref="tab.name"
                 @input="updateDocFields"
               />
             </div>
@@ -58,6 +61,7 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
+import cuid from 'cuid';
 
 export default {
   name: 'AposImageRelationshipEditor',
@@ -99,6 +103,8 @@ export default {
         },
         hasErrors: false
       },
+      fieldErrors: {},
+
       modal: {
         active: false,
         type: 'overlay',
@@ -107,14 +113,17 @@ export default {
       modalTitle: {
         key: 'apostrophe:editImageRelationshipTitle',
         title: this.title
-      }
+      },
+      groups: [],
+      currentTab: null,
+      tabs: []
     };
   },
   async mounted() {
-    console.log('this.schema ===> ', this.schema);
-
     this.modal.active = true;
     this.docReady = true;
+    this.setGroups();
+    this.setTabs();
   },
   methods: {
     async submit() {
@@ -122,51 +131,70 @@ export default {
       this.modal.showModal = false;
     },
     updateDocFields(value) {
-      this.docFields = value;
+      // this.updateFieldState(value.fieldState);
+      this.docFields.data = {
+        ...this.docFields.data,
+        ...value.data
+      };
+    },
+    updateFieldState(fieldState) {
+      this.tabKey = cuid();
+      for (const key in this.groups) {
+        this.groups[key].fields.forEach(field => {
+          if (fieldState[field]) {
+            this.fieldErrors[key][field] = fieldState[field].error;
+          }
+        });
+      }
+      this.updateErrorCount();
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
-    groups() {
-      const groups = this.schema.reduce((acc, field) => {
-        const { name, label } = field.group;
+    setGroups() {
+      this.groups = this.schema.reduce((acc, {
+        name, type, group
+      }) => {
+        const newField = {
+          name,
+          type
+        };
 
+        const { fields = [], schema = [] } = acc[group.name] || {};
+
+        return {
+          ...acc,
+          [group.name]: {
+            label: group.label,
+            fields: [
+              ...fields,
+              newField.name
+            ],
+            schema: [
+              ...schema,
+              newField
+            ]
+          }
+        };
+      }, {});
+
+      console.log(this.groups);
+    },
+    setTabs() {
+      this.tabs = Object.entries(this.groups).reduce((acc, [ name, { label } ]) => {
         return [
           ...acc,
           {
-            [name]: {
-              label: field.group.label,
-              fields: [ field.name ],
-              schema: [ field ]
-            }
+            name,
+            label
           }
         ];
-
       }, []);
 
-      this.schema.forEach(field => {
-        if (!this.filterOutParkedFields([ field.name ]).length) {
-          return;
-        }
-        if (field.group && !groupSet[field.group.name]) {
-          groupSet[field.group.name] = {
-            label: field.group.label,
-            fields: [ field.name ],
-            schema: [ field ]
-          };
-        } else if (field.group) {
-          groupSet[field.group.name].fields.push(field.name);
-          groupSet[field.group.name].schema.push(field);
-        }
-      });
-      if (!groupSet.utility) {
-        groupSet.utility = {
-          label: 'apostrophe:utility',
-          fields: [],
-          schema: []
-        };
-      }
-      return groupSet;
+      this.currentTab = this.tabs[0].name;
+    },
+    switchPane(name) {
+      this.currentTab = name;
     }
   }
 };
