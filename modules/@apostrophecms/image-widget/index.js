@@ -39,7 +39,17 @@ module.exports = {
           group: {
             cropAndSize: {
               label: 'Crop & Size',
-              fields: [ 'top', 'left', 'width', 'height', 'x', 'y' ]
+              // fields: [ 'top', 'left', 'width', 'height', 'x', 'y' ]
+              fields: [ 'top', 'left' ]
+
+            },
+            test1: {
+              label: 'Test 1',
+              fields: [ 'width', 'height' ]
+            },
+            test2: {
+              label: 'Test 2',
+              fields: [ 'x', 'y' ]
             }
           }
         }
