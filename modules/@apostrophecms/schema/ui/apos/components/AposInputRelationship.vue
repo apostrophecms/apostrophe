@@ -43,6 +43,7 @@
           :value="next"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
+          :image-editor="field.editor === imageRelationshipComponent"
         />
         <AposSearchList
           :list="searchList"
@@ -79,7 +80,8 @@ export default {
       disabled: false,
       searching: false,
       choosing: false,
-      relationshipSchema: null
+      relationshipSchema: null,
+      imageRelationshipComponent: 'AposImageRelationshipEditor'
     };
   },
   computed: {
@@ -198,7 +200,11 @@ export default {
       }
     },
     async editRelationship (item) {
-      const result = await apos.modal.execute('AposRelationshipEditor', {
+      const editor = this.field.editor === this.imageRelationshipComponent
+        ? this.imageRelationshipComponent
+        : 'AposRelationshipEditor';
+
+      const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
         title: item.title,
         value: item._fields

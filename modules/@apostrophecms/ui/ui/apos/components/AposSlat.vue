@@ -114,6 +114,10 @@ export default {
     hasRelationshipSchema: {
       type: Boolean,
       default: false
+    },
+    imageEditor: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'select' ],
@@ -129,7 +133,9 @@ export default {
         },
         menu: [
           {
-            label: 'Edit Relationship',
+            label: this.imageEditor
+              ? 'apostrophe:editImageAdjustments'
+              : 'apostrophe:editRelationship',
             action: 'edit-relationship'
           }
         ]

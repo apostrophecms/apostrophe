@@ -32,6 +32,7 @@
           :slat-count="next.length"
           :removable="removable"
           :has-relationship-schema="hasRelationshipSchema"
+          :image-editor="imageEditor"
         />
       </transition-group>
     </draggable>
@@ -64,6 +65,10 @@ export default {
       default: null
     },
     hasRelationshipSchema: {
+      type: Boolean,
+      default: false
+    },
+    imageEditor: {
       type: Boolean,
       default: false
     }

@@ -43,7 +43,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 import { klona } from 'klona';
 
 export default {
-  name: 'AposRelationshipEditor',
+  name: 'AposImageRelationshipEditor',
   mixins: [
     AposModifiedMixin
   ],
@@ -88,7 +88,7 @@ export default {
         showModal: true
       },
       modalTitle: {
-        key: 'apostrophe:editRelationshipFor',
+        key: 'apostrophe:editImageRelationshipTitle',
         title: this.title
       }
     };
