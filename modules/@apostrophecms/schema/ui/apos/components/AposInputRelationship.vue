@@ -206,10 +206,19 @@ export default {
         ? this.imageRelationshipComponent
         : 'AposRelationshipEditor';
 
+      const imgInfos = item.attachment ? {
+        url: item.attachment._urls.original,
+        width: item.attachment.width,
+        height: item.attachment.height,
+        top: item.attachment?.crop?.top || 0,
+        left: item.attachment?.crop?.left || 0
+      } : {};
+
       const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
         title: item.title,
-        value: item._fields
+        value: item._fields,
+        imgInfos
       });
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
