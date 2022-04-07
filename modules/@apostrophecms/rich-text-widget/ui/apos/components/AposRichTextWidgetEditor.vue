@@ -1,4 +1,4 @@
-w<template>
+<template>
   <div>
     <bubble-menu
       class="bubble-menu"
