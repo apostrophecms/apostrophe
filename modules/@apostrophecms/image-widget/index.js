@@ -24,9 +24,11 @@ module.exports = {
               type: 'integer'
             },
             width: {
+              label: 'W',
               type: 'integer'
             },
             height: {
+              label: 'H',
               type: 'integer'
             },
             x: {
@@ -41,7 +43,6 @@ module.exports = {
               label: 'Crop & Size',
               // fields: [ 'top', 'left', 'width', 'height', 'x', 'y' ]
               fields: [ 'top', 'left' ]
-
             },
             test1: {
               label: 'Test 1',
