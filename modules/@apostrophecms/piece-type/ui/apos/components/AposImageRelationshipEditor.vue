@@ -63,6 +63,10 @@ export default {
     title: {
       type: String,
       required: true
+    },
+    id: {
+      type: String,
+      required: true
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -99,16 +103,9 @@ export default {
   },
   methods: {
     async submit() {
-      console.log('this.$vnode.key', this.$vnode.key);
-      console.log('this', this);
-      console.log('this.docFields', this.docFields);
-      console.log('this.docFields.data', this.docFields.data);
-      console.log('this.schema', this.schema);
-      console.log('this.original', this.original);
       await apos.http.post(`${apos.attachment.action}/crop`, {
         body: {
-          // TODO: retrieve attachment actual id
-          _id: 'cl1ncr3kr0167m0gfhlpe9ptm',
+          _id: this.id,
           crop: this.docFields.data
         }
       });
