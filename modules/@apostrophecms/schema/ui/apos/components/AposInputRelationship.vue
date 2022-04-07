@@ -206,7 +206,7 @@ export default {
 
       const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
-        id: item._id,
+        id: item.attachment._id,
         title: item.title,
         value: item._fields
       });
