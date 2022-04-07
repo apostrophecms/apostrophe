@@ -25,34 +25,38 @@
     </template>
     <template #leftRail>
       <AposModalRail>
-        <AposModalTabs
+        <!-- <div class="apos-schema">
+          <div class="apos-schema__crop-fields">
+            <AposInputString
+              v-model="docFields.data.width"
+              :field="fields.width"
+            />
+          </div>
+        </div> -->
+        <AposSchema
+          :schema="visibleSchema"
+          :value="docFields"
+          :utility-rail="false"
+          @input="updateDocFields"
+        />
+        <!-- TODO: Make grouping and tabs working for relationships -->
+        <!-- <AposModalTabs
           v-if="tabs.length"
           :current="currentTab"
           :tabs="tabs"
           :errors="fieldErrors"
           @select-tab="switchPane"
-        />
+        /> -->
       </AposModalRail>
     </template>
     <template #main>
-      <AposModalBody>
-        <template #bodyMain>
-          <AposModalTabsBody>
-            <div v-if="tabs.length" class="apos-doc-editor__body">
-              <AposSchema
-                v-for="tab in tabs"
-                :key="tab.name"
-                :schema="groups[tab.name].schema"
-                :current-fields="groups[tab.name].fields"
-                :value="docFields"
-                :utility-rail="false"
-                :ref="tab.name"
-                @input="updateDocFields"
-              />
-            </div>
-          </AposModalTabsBody>
-        </template>
-      </AposModalBody>
+      <div class="apos-image-cropper__container">
+        <AposImageCropper
+          :img-infos="imgInfos"
+          :doc-fields="docFields"
+          @change="updateCropping"
+        />
+      </div>
     </template>
   </AposModal>
 </template>
@@ -71,18 +75,18 @@ export default {
   props: {
     schema: {
       type: Array,
-      default() {
-        return [];
-      }
+      default: () => []
     },
     value: {
       type: Object,
-      default() {
-        return null;
-      }
+      default: null
     },
     title: {
       type: String,
+      required: true
+    },
+    imgInfos: {
+      type: Object,
       required: true
     }
   },
@@ -116,14 +120,19 @@ export default {
       },
       groups: [],
       currentTab: null,
-      tabs: []
+      tabs: [],
+      fields: {},
+      visibleSchema: []
     };
   },
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
-    this.setGroups();
-    this.setTabs();
+
+    this.setVisibleSchema();
+    // this.setGroups();
+    // this.setTabs();
+    // this.setFields();
   },
   methods: {
     async submit() {
@@ -133,6 +142,7 @@ export default {
     updateDocFields(value) {
       // this.updateFieldState(value.fieldState);
       this.docFields.data = {
+        _id: cuid(),
         ...this.docFields.data,
         ...value.data
       };
@@ -177,8 +187,6 @@ export default {
           }
         };
       }, {});
-
-      console.log(this.groups);
     },
     setTabs() {
       this.tabs = Object.entries(this.groups).reduce((acc, [ name, { label } ]) => {
@@ -193,9 +201,54 @@ export default {
 
       this.currentTab = this.tabs[0].name;
     },
+    setVisibleSchema () {
+      const fieldsToAlign = [ 'width', 'height' ];
+
+      const visibleFields = this.schema.filter((field) => field.label &&
+        !fieldsToAlign.includes(field.name));
+
+      const alignedField = {
+        name: 'cropFields',
+        type: 'alignedFields',
+        label: 'Crop Size (px)',
+        fields: [
+          ...this.schema.filter((field) => fieldsToAlign.includes(field.name))
+        ]
+      };
+
+      this.visibleSchema = [
+        ...visibleFields,
+        alignedField
+      ];
+
+      console.log('this.visibleSchema ===> ', this.visibleSchema);
+    },
+    setFields () {
+      // this.fields = this.schema.reduce((acc, field) => {
+      //   if (!field.label) {
+      //     return acc;
+      //   }
+
+      //   return {
+      //     ...acc,
+      //     [field.name]: field
+      //   };
+      // }, {});
+    },
     switchPane(name) {
       this.currentTab = name;
+    },
+    updateCropping ({ coordinates, canvas }) {
+      this.updateDocFields({ data: coordinates });
     }
   }
 };
 </script>
+
+<style scoped lang="scss" >
+.apos-image-cropper__container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>

@@ -4,10 +4,37 @@
 <template>
   <div class="apos-schema">
     <div
-      v-for="field in schema" :key="field.name"
+      v-for="(field, index) in schema"
+      :key="`${field.name}${index}`"
       :data-apos-field="field.name"
     >
+      <div
+        v-if="field.type === 'alignedFields'"
+        class="apos-schema__aligned-fields"
+      >
+        <div
+          v-for="subField in field.fields"
+          :key="subField.name"
+          :data-apos-field="subField.name"
+        />
+        {{ subField }}
+        <component
+          v-show="displayComponent(subField.name)"
+          v-model="fieldState[subField.name]"
+          :is="fieldComponentMap[subField.type]"
+          :following-values="followingValues[subField.name]"
+          :condition-met="conditionalFields[subField.name]"
+          :field="fields[subField.name].field"
+          :modifiers="fields[subField.name].modifiers"
+          :display-options="getDisplayOptions(subField.name)"
+          :trigger-validation="triggerValidation"
+          :server-error="fields[subField.name].serverError"
+          :doc-id="docId"
+          :ref="subField.name"
+        />
+      </div>
       <component
+        v-else
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
@@ -122,6 +149,9 @@ export default {
           ...(item.modifiers || [])
         ];
       });
+
+      console.log('fields ===> ', fields);
+
       return fields;
     }
   },
@@ -138,6 +168,9 @@ export default {
     value: {
       deep: true,
       handler(newVal, oldVal) {
+
+        console.log('newVal ===> ', newVal);
+        console.log('this.fieldState ===> ', this.fieldState);
         // The doc might be swapped out completely in cases such as the media
         // library editor. Repopulate the fields if that happens.
         if (
@@ -291,6 +324,12 @@ export default {
 
   .apos-schema ::v-deep img {
     max-width: 100%;
+  }
+
+  .apos-schema__aligned-fields {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
   }
 
   .apos-field {
