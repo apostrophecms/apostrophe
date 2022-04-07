@@ -63,6 +63,10 @@ export default {
     title: {
       type: String,
       required: true
+    },
+    id: {
+      type: String,
+      required: true
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -99,6 +103,12 @@ export default {
   },
   methods: {
     async submit() {
+      await apos.http.post(`${apos.attachment.action}/crop`, {
+        body: {
+          _id: this.id,
+          crop: this.docFields.data
+        }
+      });
       this.$emit('modal-result', this.docFields.data);
       this.modal.showModal = false;
     },
