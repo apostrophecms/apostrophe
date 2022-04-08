@@ -62,15 +62,6 @@ export default {
         this.rendered = '<p>Unable to render this widget.</p>';
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
       }
-    },
-    clicked(e) {
-      // If you do not want a particular click to swap to the edit view
-      // for your widget, you should make sure it does not bubble
-      if (this.moduleOptions.contextual) {
-        e.stopPropagation();
-        e.preventDefault();
-        this.$emit('edit');
-      }
     }
   }
 };
