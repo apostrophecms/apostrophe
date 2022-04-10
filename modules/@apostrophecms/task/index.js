@@ -22,7 +22,7 @@ module.exports = {
   handlers(self) {
     return {
       'apostrophe:run': {
-        async runTask(isTask, parentSpan) {
+        async runTask(isTask) {
 
           if (!isTask) {
             return;
@@ -34,23 +34,20 @@ module.exports = {
           await telemetry.aposStartActiveSpan(spanName, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'runTask');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
+            span.setAttribute(telemetry.AposAttributes.ARGV, self.apos.argv);
 
             let task;
             if (!cmd) {
-              telemetry.aposHandleError(
-                span,
-                'There is no command line argument to serve as a task name, should never happen'
-              );
-              console.error('There is no command line argument to serve as a task name, should never happen');
-              await self.shutdown(1, parentSpan);
+              const msg = 'There is no command line argument to serve as a task name, should never happen';
+              console.error(msg);
+              await self.exit(1, span, msg);
             }
 
             if (cmd === 'help') {
               span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, 'help');
               // list all tasks
               if (self.apos.argv._.length === 1) {
-                parentSpan.end();
-                await self.usage();
+                await self.usage(span);
               }
 
               // help with specific task
@@ -59,9 +56,7 @@ module.exports = {
                 task = self.find(self.apos.argv._[1]);
                 if (!task) {
                   console.error('There is no such task.');
-                  telemetry.aposHandleError(span, 'There is no such task.');
-                  parentSpan.end();
-                  await self.usage();
+                  await self.usage(span, 'There is no such task.');
                 }
                 if (task.usage) {
                   console.log(`\nTips for the ${task.fullName} task:\n`);
@@ -69,7 +64,7 @@ module.exports = {
                 } else {
                   console.log('That is a valid task, but it does not have a help message.');
                 }
-                await self.shutdown(0, parentSpan);
+                await self.exit(0, span);
               }
             }
 
@@ -77,10 +72,7 @@ module.exports = {
 
             if (!task) {
               console.error('\nThere is no such task.');
-              telemetry.aposHandleError(span, `There is no such task ${cmd}`);
-              span.end();
-              parentSpan.end();
-              await self.usage();
+              await self.usage(span, `There is no such task ${cmd}`);
             }
 
             const [ moduleName, taskName ] = task.fullName.split(':');
@@ -89,16 +81,12 @@ module.exports = {
 
             try {
               await task.task(self.apos.argv);
-              span.setStatus({ code: telemetry.SpanStatusCode.OK });
-              span.end();
-              await self.shutdown(0, parentSpan);
+              await self.exit(0, span);
             } catch (e) {
-              telemetry.aposHandleError(span, e);
-              span.end();
               console.error(e);
-              await self.shutdown(1, parentSpan);
+              await self.exit(1, span, e);
             }
-          }, parentSpan);
+          });
         }
       }
     };
@@ -165,6 +153,7 @@ module.exports = {
               _: args,
               ...options || {}
             };
+            span.setAttribute(telemetry.AposAttributes.ARGV, argv);
             self.apos.argv = argv;
             await task.task(argv);
             self.apos.argv = aposArgv;
@@ -198,7 +187,7 @@ module.exports = {
       // Displays a usage message, including a list of available tasks,
       // and exits the entire program with a nonzero status code.
 
-      async usage() {
+      async usage(span, err) {
         // Direct use of console makes sense in tasks. -Tom
         console.error('\nThe following tasks are available:\n');
         for (const [ moduleName, module ] of Object.entries(self.apos.modules)) {
@@ -210,20 +199,25 @@ module.exports = {
         console.error('node app help groupname:taskname\n');
         console.error('To get help with a specific task.\n');
         console.error('To launch the site, run with no arguments.');
-        await self.shutdown(1);
+        await self.exit(1, span, err);
       },
 
-      async shutdown(code, parentSpan) {
-        if (parentSpan) {
-          parentSpan.end();
-        }
-        if (!self.apos.options.openTelemetrySDK) {
-          process.exit(code);
+      async exit(code, span, err) {
+        if (!span) {
+          await self._exit(code);
+          return;
         }
 
-        await self.apos.options.openTelemetrySDK.shutdown();
-        console.log('OpenTelemetry stopped.');
-        process.exit(code);
+        if (err) {
+          self.apos.telemetry.aposHandleError(span, err);
+        } else if (code) {
+          span.setStatus({ code: self.apos.telemetry.SpanStatusCode.ERROR });
+        } else {
+          span.setStatus({ code: self.apos.telemetry.SpanStatusCode.OK });
+        }
+        span.end();
+
+        await self.apos._exit(code);
       },
 
       // Return a `req` object suitable for command line tasks
