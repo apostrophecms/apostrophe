@@ -44,7 +44,7 @@ let defaults = require('./defaults.js');
 // `openTelemetryProvider`
 //
 // If set, Apostrophe will register it as a global OpenTelemetry tracer provider.
-// The expected value is an object, istance of TracerProvider.
+// The expected value is an object, an istance of TracerProvider.
 // If the Node SDK is used in the application instead of manual configuration,
 // the provider instance is only available as a
 // private property: `sdkInstance._tracerProvider`. An issue can be opened
