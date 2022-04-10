@@ -40,7 +40,7 @@ module.exports = function(self) {
       ];
 
       const telemetry = self.apos.telemetry;
-      const willExit = name === 'beforeExit' || (name === 'run' && self.apos.isTask());
+      const willExit = name === 'run' && self.apos.isTask();
 
       // Create the "outer" span
       const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
@@ -89,9 +89,10 @@ module.exports = function(self) {
                   telemetry.aposHandleError(spanHandler, err);
                   throw err;
                 } finally {
-                  spanHandler.end();
+                  if (!willExit) {
+                    spanHandler.end();
+                  }
                 }
-
               }, spanEmit);
             }
           }
