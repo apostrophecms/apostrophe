@@ -2074,7 +2074,13 @@ module.exports = {
                   }
                 }
               ];
-              span.setAttribute(SemanticAttributes.DB_STATEMENT, JSON.stringify({ pipeline }, null, 2));
+              span.setAttribute(
+                SemanticAttributes.DB_STATEMENT,
+                util.inspect({ pipeline }, {
+                  depth: null,
+                  compact: false
+                })
+              );
               const results = await self.apos.doc.db.aggregate(pipeline).toArray();
               const counts = {};
 
@@ -2091,7 +2097,13 @@ module.exports = {
 
               if (!query.get('distinctCounts')) {
                 const criteria = query.get('criteria');
-                span.setAttribute(SemanticAttributes.DB_STATEMENT, JSON.stringify({ criteria }, null, 2));
+                span.setAttribute(
+                  SemanticAttributes.DB_STATEMENT,
+                  util.inspect({ criteria }, {
+                    depth: null,
+                    compact: false
+                  })
+                );
                 result = await self.apos.doc.db.distinct(property, criteria);
               } else {
                 result = await distinctCounts(span);
@@ -2221,13 +2233,19 @@ module.exports = {
                 query.set('totalPages', totalPages);
               }
 
-              span.setAttribute(SemanticAttributes.DB_STATEMENT, JSON.stringify({
-                criteria: {
-                  ...subquery.get('criteria'),
-                  ...(subquery.get('lateCriteria') || {})
-                },
-                totalPages: query.get('totalPages')
-              }, null, 2));
+              span.setAttribute(
+                SemanticAttributes.DB_STATEMENT,
+                util.inspect({
+                  criteria: {
+                    ...subquery.get('criteria'),
+                    ...(subquery.get('lateCriteria') || {})
+                  },
+                  totalPages: query.get('totalPages')
+                }, {
+                  depth: null,
+                  compact: false
+                })
+              );
               span.setStatus({ code: telemetry.SpanStatusCode.OK });
               return count;
             } catch (err) {
@@ -2246,7 +2264,7 @@ module.exports = {
           return telemetry.aposStartActiveSpan(`db:${self.__meta.name}:query:toArray`, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toArray');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-            span.setAttribute(SemanticAttributes.DB_STATEMENT, JSON.stringify({
+            span.setAttribute(SemanticAttributes.DB_STATEMENT, util.inspect({
               criteria: {
                 ...query.get('criteria'),
                 ...(query.get('lateCriteria') || {})
@@ -2255,7 +2273,10 @@ module.exports = {
               limit: query.get('limit'),
               sort: query.get('sortMongo'),
               project: query.get('project')
-            }, null, 2));
+            }, {
+              depth: null,
+              compact: false
+            }));
 
             try {
               const mongo = await query.toMongo();
