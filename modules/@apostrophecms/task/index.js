@@ -34,7 +34,7 @@ module.exports = {
           await telemetry.aposStartActiveSpan(spanName, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'runTask');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
-            span.setAttribute(telemetry.AposAttributes.ARGV, self.apos.argv);
+            span.setAttribute(telemetry.AposAttributes.ARGV, telemetry.stringify(self.apos.argv));
 
             let task;
             if (!cmd) {
@@ -153,7 +153,7 @@ module.exports = {
               _: args,
               ...options || {}
             };
-            span.setAttribute(telemetry.AposAttributes.ARGV, argv);
+            span.setAttribute(telemetry.AposAttributes.ARGV, telemetry.stringify(argv));
             self.apos.argv = argv;
             await task.task(argv);
             self.apos.argv = aposArgv;
@@ -204,7 +204,7 @@ module.exports = {
 
       async exit(code, span, err) {
         if (!span) {
-          await self._exit(code);
+          await self.apos._exit(code);
           return;
         }
 
