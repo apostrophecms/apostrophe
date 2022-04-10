@@ -2099,10 +2099,7 @@ module.exports = {
               ];
               span.setAttribute(
                 SemanticAttributes.DB_STATEMENT,
-                util.inspect({ pipeline }, {
-                  depth: null,
-                  compact: false
-                })
+                telemetry.stringify({ pipeline })
               );
               const results = await self.apos.doc.db.aggregate(pipeline).toArray();
               const counts = {};
@@ -2122,10 +2119,7 @@ module.exports = {
                 const criteria = query.get('criteria');
                 span.setAttribute(
                   SemanticAttributes.DB_STATEMENT,
-                  util.inspect({ criteria }, {
-                    depth: null,
-                    compact: false
-                  })
+                  telemetry.stringify({ criteria })
                 );
                 result = await self.apos.doc.db.distinct(property, criteria);
               } else {
@@ -2258,15 +2252,12 @@ module.exports = {
 
               span.setAttribute(
                 SemanticAttributes.DB_STATEMENT,
-                util.inspect({
+                telemetry.stringify({
                   criteria: {
                     ...subquery.get('criteria'),
                     ...(subquery.get('lateCriteria') || {})
                   },
                   totalPages: query.get('totalPages')
-                }, {
-                  depth: null,
-                  compact: false
                 })
               );
               span.setStatus({ code: telemetry.SpanStatusCode.OK });
@@ -2287,7 +2278,7 @@ module.exports = {
           return telemetry.aposStartActiveSpan(`db:${self.__meta.name}:query:toArray`, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toArray');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-            span.setAttribute(SemanticAttributes.DB_STATEMENT, util.inspect({
+            span.setAttribute(SemanticAttributes.DB_STATEMENT, telemetry.stringify({
               criteria: {
                 ...query.get('criteria'),
                 ...(query.get('lateCriteria') || {})
@@ -2296,9 +2287,6 @@ module.exports = {
               limit: query.get('limit'),
               sort: query.get('sortMongo'),
               project: query.get('project')
-            }, {
-              depth: null,
-              compact: false
             }));
 
             try {

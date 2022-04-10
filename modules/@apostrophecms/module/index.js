@@ -714,10 +714,8 @@ module.exports = {
               const telemetry = self.apos.telemetry;
               const spanName = `task:${self.__meta.name}:${name}`;
               // only this span can be sent to the backend, attach to the ROOT
-              await telemetry.tracer.startActiveSpan(
+              await telemetry.aposStartActiveSpan(
                 spanName,
-                undefined,
-                info.exitAfter !== false ? telemetry.ROOT_CONTEXT : telemetry.context.active(),
                 async (span) => {
                   span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'executeAfterModuleInitTask');
                   span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/module');
@@ -731,15 +729,11 @@ module.exports = {
                     throw err;
                   } finally {
                     span.end();
-                    if (info.exitAfter !== false && self.apos.options.openTelemetrySDK) {
-                      await self.apos.options.openTelemetrySDK.shutdown();
-                      console.log('OpenTelemetry stopped.');
-                    }
                   }
                 });
               // In most cases we exit after running a task
               if (info.exitAfter !== false) {
-                process.exit(0);
+                await self.apos._exit();
               } else {
                 // Provision for @apostrophecms/db:reset which should be
                 // followed by normal initialization so all the collections

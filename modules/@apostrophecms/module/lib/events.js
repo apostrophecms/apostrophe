@@ -40,6 +40,7 @@ module.exports = function(self) {
       ];
 
       const telemetry = self.apos.telemetry;
+      const willExit = name === 'beforeExit' || (name === 'run' && self.apos.isTask());
 
       // Create the "outer" span
       const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
@@ -48,6 +49,13 @@ module.exports = function(self) {
         spanEmit.setAttribute(SemanticAttributes.CODE_NAMESPACE, moduleName);
         spanEmit.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
         spanEmit.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
+
+        if (willExit) {
+          self.apos._onExitQueue.push(() => {
+            console.log(`event:${moduleName}:${name}`);
+            spanEmit.end();
+          });
+        }
 
         for (const entry of chain) {
           const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
@@ -61,6 +69,13 @@ module.exports = function(self) {
                 spanHandler.setAttribute(SemanticAttributes.CODE_NAMESPACE, handler.moduleName);
                 spanHandler.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
                 spanHandler.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
+
+                if (willExit) {
+                  self.apos._onExitQueue.push(() => {
+                    console.log(spanName);
+                    spanHandler.end();
+                  });
+                }
 
                 const module = self.apos.modules[handler.moduleName];
                 const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
@@ -81,7 +96,10 @@ module.exports = function(self) {
             }
           }
         }
-        spanEmit.end();
+
+        if (!willExit) {
+          spanEmit.end();
+        }
       });
     },
 
