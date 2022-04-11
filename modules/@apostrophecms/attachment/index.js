@@ -787,6 +787,14 @@ module.exports = {
         const point = self.getFocalPoint(attachment);
         return point.x + '% ' + point.y + '%';
       },
+      // Returns the attachment width.
+      getWidth(attachment) {
+        return attachment._crop ? attachment._crop.width : attachment.width;
+      },
+      // Returns the attachment height.
+      getHeight(attachment) {
+        return attachment._crop ? attachment._crop.height : attachment.height;
+      },
       // Returns an object with `x` and `y` properties containing the
       // focal point chosen by the user, as percentages. If there is no
       // focal point, null is returned.
@@ -1156,6 +1164,8 @@ module.exports = {
     'hasFocalPoint',
     'getFocalPoint',
     'focalPointToObjectPosition',
+    'getWidth',
+    'getHeight',
     'isCroppable'
   ]
 };

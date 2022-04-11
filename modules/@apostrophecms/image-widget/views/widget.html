@@ -18,8 +18,8 @@
     src="{{ apos.attachment.url(attachment, { size: data.options.size or 'full' }) }}"
     alt="{{ attachment._alt or '' }}"
     {% if dimensionAttrs %}
-      {% if attachment.width %} width="{{ attachment.width }}" {% endif %}
-      {% if attachment.height %} height="{{ attachment.height }}" {% endif %}
+      {% if attachment.width %} width="{{ apos.attachment.getWidth(attachment) }}" {% endif %}
+      {% if attachment.height %} height="{{ apos.attachment.getHeight(attachment) }}" {% endif %}
     {% endif %}
     {% if data.contextOptions and data.contextOptions.sizes %}
       sizes="{{ data.contextOptions.sizes }}"
