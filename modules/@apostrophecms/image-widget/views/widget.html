@@ -24,5 +24,8 @@
     {% if data.contextOptions and data.contextOptions.sizes %}
       sizes="{{ data.contextOptions.sizes }}"
     {% endif %}
+    {% if apos.attachment.hasFocalPoint(attachment) %}
+      style="object-position: {{ apos.attachment.focalPointToObjectPosition(attachment) }}"
+    {%- endif -%}
   />
 {% endif %}

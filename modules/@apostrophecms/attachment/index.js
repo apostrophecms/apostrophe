@@ -785,7 +785,7 @@ module.exports = {
           return 'center center';
         }
         const point = self.getFocalPoint(attachment);
-        return point.x + '% ' + point.y + '%';
+        return `${point.x}% ${point.y}%`;
       },
       // Returns the attachment width.
       getWidth(attachment) {
