@@ -33,12 +33,15 @@
             />
           </div>
         </div> -->
-        <AposSchema
-          :schema="visibleSchema"
-          :value="docFields"
-          :utility-rail="false"
-          @input="updateDocFields"
-        />
+        <div class="apos-schema__container">
+          <AposSchema
+            v-model="docFields"
+            :schema="visibleSchema"
+            :nested-schema="nestedSchema"
+            :utility-rail="false"
+            @input="updateDocFields"
+          />
+        </div>
         <!-- TODO: Make grouping and tabs working for relationships -->
         <!-- <AposModalTabs
           v-if="tabs.length"
@@ -54,7 +57,7 @@
         <AposImageCropper
           :img-infos="imgInfos"
           :doc-fields="docFields"
-          @change="updateCropping"
+          @change="updateDocFields"
         />
       </div>
     </template>
@@ -64,7 +67,7 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { klona } from 'klona';
+// import { klona } from 'klona';
 import cuid from 'cuid';
 
 export default {
@@ -75,7 +78,7 @@ export default {
   props: {
     schema: {
       type: Array,
-      default: () => []
+      default: () => ([])
     },
     value: {
       type: Object,
@@ -95,18 +98,7 @@ export default {
     return {
       docReady: false,
       original: this.value,
-      docFields: {
-        data: {
-          ...((this.value != null) ? this.value
-            : Object.fromEntries(
-              this.schema.map(field =>
-                [ field.name, (field.def !== undefined) ? klona(field.def) : null ]
-              )
-            )
-          )
-        },
-        hasErrors: false
-      },
+      docFields: this.setDocFields(this.value),
       fieldErrors: {},
 
       modal: {
@@ -122,7 +114,8 @@ export default {
       currentTab: null,
       tabs: [],
       fields: {},
-      visibleSchema: []
+      visibleSchema: [],
+      alignedFields: [ 'width', 'height' ]
     };
   },
   async mounted() {
@@ -130,6 +123,8 @@ export default {
     this.docReady = true;
 
     this.setVisibleSchema();
+    this.setNestedSchema();
+
     // this.setGroups();
     // this.setTabs();
     // this.setFields();
@@ -140,11 +135,15 @@ export default {
       this.modal.showModal = false;
     },
     updateDocFields(value) {
+      if (value.hasErrors) {
+        return;
+      }
+
       // this.updateFieldState(value.fieldState);
       this.docFields.data = {
-        _id: cuid(),
         ...this.docFields.data,
-        ...value.data
+        ...value.data,
+        _id: cuid()
       };
     },
     updateFieldState(fieldState) {
@@ -201,51 +200,72 @@ export default {
 
       this.currentTab = this.tabs[0].name;
     },
-    setVisibleSchema () {
-      const fieldsToAlign = [ 'width', 'height' ];
+    setDocFields (original) {
+      const doc = original ||
+        Object.fromEntries(
+          this.schema.map(field => ([ field.name, null ]))
+        );
 
-      const visibleFields = this.schema.filter((field) => field.label &&
-        !fieldsToAlign.includes(field.name));
+      return {
+        data: {
+          ...Object.entries(doc).reduce((acc, [ name, value ]) => {
+            return {
+              ...acc,
+              [name]: typeof value === 'number' ? value : (this.imgInfos[name] || null)
+            };
+          }, {})
+        },
+        hasErrors: false
+      };
+    },
+    setVisibleSchema () {
+      const visibleSchema = this.schema.filter((field) => field.label);
+
+      this.visibleSchema = this.formatSizeFields(visibleSchema);
+    },
+    setNestedSchema () {
+      const notAlignedFields = this.visibleSchema
+        .filter((field) => !this.alignedFields.includes(field.name));
+
+      const sizeFields = this.schema
+        .filter((field) => this.alignedFields.includes(field.name));
 
       const alignedField = {
         name: 'cropFields',
         type: 'alignedFields',
         label: 'Crop Size (px)',
-        fields: [
-          ...this.schema.filter((field) => fieldsToAlign.includes(field.name))
-        ]
+        fields: this.formatSizeFields(sizeFields)
       };
 
-      this.visibleSchema = [
-        ...visibleFields,
+      this.nestedSchema = [
+        ...notAlignedFields,
         alignedField
       ];
-
-      console.log('this.visibleSchema ===> ', this.visibleSchema);
     },
-    setFields () {
-      // this.fields = this.schema.reduce((acc, field) => {
-      //   if (!field.label) {
-      //     return acc;
-      //   }
+    formatSizeFields(fields) {
+      return fields.map((field) => {
+        if (!this.alignedFields.includes(field.name)) {
+          return field;
+        }
 
-      //   return {
-      //     ...acc,
-      //     [field.name]: field
-      //   };
-      // }, {});
+        return {
+          ...field,
+          max: this.imgInfos[field.name]
+        };
+      });
     },
     switchPane(name) {
       this.currentTab = name;
-    },
-    updateCropping ({ coordinates, canvas }) {
-      this.updateDocFields({ data: coordinates });
     }
   }
 };
 </script>
 
 <style scoped lang="scss" >
+.apos-schema__container {
+  margin: 30px 15px 0;
+}
+
 .apos-image-cropper__container {
   display: flex;
   justify-content: center;
