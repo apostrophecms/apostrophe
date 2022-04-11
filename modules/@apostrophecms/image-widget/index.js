@@ -25,11 +25,14 @@ module.exports = {
             },
             width: {
               label: 'W',
-              type: 'integer'
+              type: 'integer',
+              modifiers: [ 'inline' ]
             },
             height: {
               label: 'H',
-              type: 'integer'
+              type: 'integer',
+              modifiers: [ 'inline' ]
+
             },
             x: {
               type: 'integer'
