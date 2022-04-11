@@ -180,7 +180,6 @@ describe('Assets', function() {
     process.env.NODE_ENV = 'development';
 
     await apos.asset.tasks.build.task();
-    await checkBundlesExists('default/', expectedBundlesNames);
 
     async function checkBundlesExists (folderPath, fileNames) {
       for (const fileName of fileNames) {
@@ -188,6 +187,8 @@ describe('Assets', function() {
         assert(extraBundleExists);
       }
     }
+
+    return checkBundlesExists('default/', expectedBundlesNames);
   });
 
   it('should load the right bundles inside the right page', async function () {
