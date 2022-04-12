@@ -59,7 +59,6 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-// import { klona } from 'klona';
 import cuid from 'cuid';
 
 export default {
