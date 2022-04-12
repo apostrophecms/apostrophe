@@ -12,6 +12,8 @@
 * The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
 * In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
 * Implements OpenTelemetry instrumentation.
+* Adds new configuration option - `beforeExit` async handler.
+* Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
 
 ### Fixes
 
