@@ -71,7 +71,7 @@ export default {
         !this.isUpdatingCoordinates &&
         this.checkCoordinatesDiff(coordinates, this.docFields.data)
       ) {
-        this.$emit('change', { data: coordinates });
+        this.$emit('change', { data: coordinates }, true);
       }
 
       this.isUpdatingCoordinates = false;

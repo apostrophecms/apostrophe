@@ -126,28 +126,16 @@ export default {
       this.$emit('modal-result', this.docFields.data);
       this.modal.showModal = false;
     },
-    updateDocFields(value) {
+    updateDocFields(value, repopulateFields = false) {
       if (value.hasErrors) {
         return;
       }
 
-      // this.updateFieldState(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data,
-        _id: cuid()
+        ...repopulateFields && { _id: cuid() }
       };
-    },
-    updateFieldState(fieldState) {
-      this.tabKey = cuid();
-      for (const key in this.groups) {
-        this.groups[key].fields.forEach(field => {
-          if (fieldState[field]) {
-            this.fieldErrors[key][field] = fieldState[field].error;
-          }
-        });
-      }
-      this.updateErrorCount();
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
