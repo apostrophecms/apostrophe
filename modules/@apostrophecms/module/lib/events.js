@@ -40,7 +40,6 @@ module.exports = function(self) {
       ];
 
       const telemetry = self.apos.telemetry;
-      const willExit = name === 'run' && args[0];
 
       // Create the "outer" span
       const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
@@ -50,13 +49,6 @@ module.exports = function(self) {
         spanEmit.setAttribute(SemanticAttributes.CODE_NAMESPACE, moduleName);
         spanEmit.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
         spanEmit.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
-
-        if (willExit) {
-          self.apos._onExitQueue.push(() => {
-            console.log(`event:${moduleName}:${name}`);
-            spanEmit.end();
-          });
-        }
 
         for (const entry of chain) {
           const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
@@ -71,37 +63,27 @@ module.exports = function(self) {
                 spanHandler.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
                 spanHandler.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
 
-                if (willExit) {
-                  self.apos._onExitQueue.push(() => {
-                    console.log(spanHandlerName);
-                    spanHandler.end();
-                  });
-                }
-
-                const module = self.apos.modules[handler.moduleName];
-                const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
-
                 try {
+                  const module = self.apos.modules[handler.moduleName];
+                  const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
                   // Although we have `self` it can't hurt to
                   // supply the correct `this`
                   await fn.apply(module, args);
                   spanHandler.setStatus({ code: telemetry.SpanStatusCode.OK });
+                  spanHandler.end();
                 } catch (err) {
                   telemetry.aposHandleError(spanHandler, err);
+                  // Be sure to close the parent span as well
+                  spanHandler.end();
+                  spanEmit.end();
                   throw err;
-                } finally {
-                  if (!willExit) {
-                    spanHandler.end();
-                  }
                 }
               }, spanEmit);
             }
           }
         }
 
-        if (!willExit) {
-          spanEmit.end();
-        }
+        spanEmit.end();
       });
     },
 
