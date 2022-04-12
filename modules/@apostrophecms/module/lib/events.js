@@ -40,7 +40,7 @@ module.exports = function(self) {
       ];
 
       const telemetry = self.apos.telemetry;
-      const willExit = name === 'run' && self.apos.isTask();
+      const willExit = (name === 'run' && args[0]);
 
       // Create the "outer" span
       const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
