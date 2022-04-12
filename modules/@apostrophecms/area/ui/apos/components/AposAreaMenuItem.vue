@@ -1,7 +1,6 @@
 <template>
   <button
     @click="click" class="apos-area-menu__button"
-    :class="{ 'apos-area-menu__button--separated': item.type }"
     :data-action="item.name"
     :tabindex="String(tabindex)"
     @keydown.prevent.arrow-down="$emit('down')"
@@ -57,12 +56,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-area-menu__button--separated {
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--a-base-9);
-  }
-
   .apos-area-menu__item-icon {
     @include apos-align-icon();
     margin-right: 10px;
