@@ -166,20 +166,12 @@ async function apostrophe(options, telemetry, rootSpan) {
     }
   };
 
-  // On exit queue stack. It expects functions (handlers). The _exit method
-  // will invoke all its members in the reverse order (LIFO) just before
-  // the `options.beforeExit` is invoked.
-  // Currently this acts as a way to end tasks in early process termination
-  // cases (see events), but can be used in any other scenario.
-  self._onExitQueue = [];
-
   // Terminates the process. Emits the `apostrophe:beforeExit` async event;
   // use this mechanism to invoke any pre-exit application level tasks. Any
   // `beforeExit` handler errors will be ignored.
-  // Exhausts _onExitQueue.
-  // Invokes and awaits `options.beforeExit` async function if available,
-  // passing as arguments the exit code and error (if any).
-  self._exit = async function(code = 0, error = null) {
+  // Invokes and awaits `options.beforeExit` function if available,
+  // passing as arguments the exit code and message (if any).
+  self._exit = async function(code = 0, message) {
     try {
       if (self.emit) {
         await self.emit('beforeExit');
@@ -190,39 +182,36 @@ async function apostrophe(options, telemetry, rootSpan) {
       // are already recorded by the event module instrumentation
       console.error('beforeExit emit error', e);
     }
-    if (error) {
-      telemetry.aposHandleError(rootSpan, error);
-    } else if (code !== 0) {
-      rootSpan.setStatus({
-        code: telemetry.SpanStatusCode.ERROR
-      });
+
+    if (code !== 0) {
+      telemetry.aposHandleError(rootSpan, message);
     } else {
       rootSpan.setStatus({
-        code: telemetry.SpanStatusCode.OK
+        code: telemetry.SpanStatusCode.OK,
+        message
       });
-    }
-
-    // Exhaust the exit queue stack
-    let fn = self._onExitQueue.pop();
-    while (fn) {
-      try {
-        await fn();
-      } catch (e) {
-        console.error('_onExitQueue handler error', e);
-      }
-      fn = self._onExitQueue.pop();
     }
     rootSpan.end();
 
     if (typeof options.beforeExit === 'function') {
       try {
-        await options.beforeExit(code, error);
+        await options.beforeExit(code, message);
       } catch (e) {
         console.error('beforeExit handler error', e);
       }
     }
     process.exit(code);
   };
+
+  process.once('SIGINT', (code) => {
+    console.log('Received interrupt signal');
+    self._exit(0, `interrupt (${code})`);
+  });
+
+  process.once('SIGTERM', (code) => {
+    console.log('Received terminate signal');
+    self._exit(0, `terminate (${code})`);
+  });
 
   try {
     const matches = process.version.match(/^v(\d+)/);
@@ -323,7 +312,11 @@ async function apostrophe(options, telemetry, rootSpan) {
     if (self.taskRan) {
       await self._exit();
     } else {
-      await self.emit('run', self.isTask());
+      const SIGNAL = { exit: null };
+      await self.emit('run', self.isTask(), SIGNAL);
+      if (SIGNAL.exit !== null) {
+        await self._exit(SIGNAL.exit);
+      }
     }
 
     return self;
