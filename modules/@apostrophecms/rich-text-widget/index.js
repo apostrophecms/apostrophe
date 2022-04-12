@@ -44,8 +44,7 @@ module.exports = {
     },
     defaultOptions: {},
     components: {
-      widgetEditor: 'AposRichTextWidgetEditor',
-      widget: 'AposRichTextWidget'
+      widgetEditor: 'AposRichTextWidgetEditor'
     },
     editorTools: {
       styles: {
@@ -415,7 +414,6 @@ module.exports = {
 
         const finalData = {
           ...initialData,
-          components: self.options.components,
           tools: self.options.editorTools,
           defaultOptions: self.options.defaultOptions,
           tiptapTextCommands: self.options.tiptapTextCommands,

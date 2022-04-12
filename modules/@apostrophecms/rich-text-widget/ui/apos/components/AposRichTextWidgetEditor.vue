@@ -72,6 +72,10 @@ export default {
       default() {
         return null;
       }
+    },
+    focused: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'update' ],

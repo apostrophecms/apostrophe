@@ -1,12 +1,22 @@
 # Changelog
 
+## UNRELEASED
+
 ### Adds
 
+* The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
+* In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
 * Implements OpenTelemetry instrumentation.
+* Adds new event `apostrophe:beforeExit` and improves the way Apostrophe terminates its process.
 * Adds new configuration option - `beforeExit` async handler.
 * Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
 
-# 3.17.0 (2022-03-31)
+### Fixes
+
+* Documentation of obsolete options has been removed.
+* Dead code relating to activating in-context widget editors have been removed. They are always active and have been for some time. In the future they might be swapped in on scroll, but there will never be a need to swap them in "on click."
+
+## 3.17.0 (2022-03-31)
 
 ### Adds
 
@@ -15,13 +25,14 @@
 * Adds possibility for modules to [extend the webpack configuration](https://v3.docs.apostrophecms.org/guide/webpack.html).
 * Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
 * Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
+* Fixes deprecation warnings displayed after running `npm install`, for dependencies that are directly included by this package.
 
 ### Fixes
 
 * Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
 * The `es5: true` option to `@apostrophecms/asset` works again.
 
-# 3.16.1 (2022-03-21)
+## 3.16.1 (2022-03-21)
 
 ### Fixes
 
