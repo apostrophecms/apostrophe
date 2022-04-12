@@ -169,9 +169,8 @@ async function apostrophe(options, telemetry, rootSpan) {
   // On exit queue stack. It expects functions (handlers). The _exit method
   // will invoke all its members in the reverse order (LIFO) just before
   // the `options.beforeExit` is invoked.
-  // Currently this acts as an escape hatch for telemetry span (end tasks in
-  // early processtermination cases, see events), but can be used in any other
-  // scenario.
+  // Currently this acts as a way to end tasks in early process termination
+  // cases (see events), but can be used in any other scenario.
   self._onExitQueue = [];
 
   // Terminates the process. Emits the `apostrophe:beforeExit` async event;
