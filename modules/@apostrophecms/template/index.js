@@ -647,7 +647,7 @@ module.exports = {
             req.scene = scene;
           }
           span.setAttribute(telemetry.AposAttributes.SCENE, scene);
-          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template + '.html');
+          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template);
 
           const aposBodyData = {
             modules: {},
@@ -716,7 +716,7 @@ module.exports = {
               spanRender.setAttribute(SemanticAttributes.CODE_FUNCTION, 'render');
               spanRender.setAttribute(SemanticAttributes.CODE_NAMESPACE, module.__meta.name);
               spanRender.setAttribute(telemetry.AposAttributes.SCENE, scene);
-              spanRender.setAttribute(telemetry.AposAttributes.TEMPLATE, template + '.html');
+              spanRender.setAttribute(telemetry.AposAttributes.TEMPLATE, template);
 
               try {
                 const content = await module.render(req, template, args);

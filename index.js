@@ -44,7 +44,7 @@ let defaults = require('./defaults.js');
 // `openTelemetryProvider`
 //
 // If set, Apostrophe will register it as a global OpenTelemetry tracer provider.
-// The expected value is an object, an istance of TracerProvider.
+// The expected value is an object, an instance of TracerProvider.
 // If the Node SDK is used in the application instead of manual configuration,
 // the provider instance is only available as a
 // private property: `sdkInstance._tracerProvider`. An issue can be opened
@@ -52,8 +52,8 @@ let defaults = require('./defaults.js');
 //
 // `beforeExit`
 //
-// If set, Apostrophe will invoke it (await) before exit.
-// Expected type signature is `{ beforeExit: () => Promise<void> }`.
+// If set, Apostrophe will invoke it (await) before invoking process.exit.
+// `beforeExit` may be an async function, will be awaited, and takes no arguments.
 //
 // ## Awaiting the Apostrophe function
 //
@@ -185,8 +185,8 @@ async function apostrophe(options, telemetry, rootSpan) {
         await self.emit('beforeExit');
       }
     } catch (e) {
-      // we are at the point, where errors are ignored,
-      // if emitter is already regitered, all handler errors
+      // we are at the point where errors are ignored,
+      // if emitter is already registered, all handler errors
       // are already recorded by the event module instrumentation
       console.error('beforeExit emit error', e);
     }
@@ -212,7 +212,6 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
       fn = self._onExitQueue.pop();
     }
-    console.log('Root end');
     rootSpan.end();
 
     if (typeof options.beforeExit === 'function') {
@@ -236,7 +235,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.apos = self;
 
     // Register the telemetry API as a pseudo module
-    Object.assign(self.apos, { telemetry });
+    self.apos.telemetry = telemetry;
 
     Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
 

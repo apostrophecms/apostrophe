@@ -33,7 +33,7 @@ module.exports = function(self) {
       const telemetry = self.apos.telemetry;
       const spanName = `component:${name}`;
       return telemetry.aposStartActiveSpan(spanName, async (span) => {
-        span.setAttribute(telemetry.AposAttributes.TEMPLATE, name + '.html');
+        span.setAttribute(telemetry.AposAttributes.TEMPLATE, name);
 
         try {
           const parsed = name.match(/^([^:]+):(.+)$/);
@@ -58,7 +58,6 @@ module.exports = function(self) {
           span.setStatus({ code: telemetry.SpanStatusCode.OK });
 
           if (result === undefined) {
-            // XXX should the recursion guard outcome to be sent as an error?
             // Recursion guard stopped it, nunjucks expects a string
             return '';
           } else {

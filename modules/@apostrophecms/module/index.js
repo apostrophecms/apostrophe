@@ -450,7 +450,7 @@ module.exports = {
         await telemetry.aposStartActiveSpan(spanName, async (span) => {
           span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'sendPage');
           span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template + '.html');
+          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template);
 
           try {
             await self.apos.page.emit('beforeSend', req);
