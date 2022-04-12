@@ -2,7 +2,7 @@ const glob = require('glob');
 const fs = require('fs');
 let keys = Object.keys(require('../modules/@apostrophecms/i18n/i18n/en.json'));
 // Core apostrophe events look like keys
-keys = [ ...keys, 'destroy', 'ready', 'modulesRegistered', 'afterInit', 'modulesReady', 'run', 'boot' ];
+keys = [ ...keys, 'destroy', 'ready', 'modulesRegistered', 'afterInit', 'modulesReady', 'run', 'boot', 'beforeExit' ];
 const files = glob.sync('**/*.@(js|vue|html)', { ignore: [ './index.js', '**/node_modules/**/*', 'coverage/**/*' ] });
 
 const undeclared = new Set();
