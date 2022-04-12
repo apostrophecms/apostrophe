@@ -44,11 +44,11 @@ module.exports = function(self) {
       // Create the "outer" span
       const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
       const spanEmitName = `event:${moduleName}:${name}`;
-      await telemetry.aposStartActiveSpan(spanEmitName, async (spanEmit) => {
+      await telemetry.startActiveSpan(spanEmitName, async (spanEmit) => {
         spanEmit.setAttribute(SemanticAttributes.CODE_FUNCTION, 'emit');
         spanEmit.setAttribute(SemanticAttributes.CODE_NAMESPACE, moduleName);
-        spanEmit.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
-        spanEmit.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
+        spanEmit.setAttribute(telemetry.Attributes.EVENT_MODULE, moduleName);
+        spanEmit.setAttribute(telemetry.Attributes.EVENT_NAME, name);
 
         for (const entry of chain) {
           const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
@@ -57,11 +57,11 @@ module.exports = function(self) {
 
               // Create an active "inner" span for each handler using the parent as a context
               const spanHandlerName = spanEmitName + `:handler:${handler.moduleName}:${handler.handlerName}`;
-              await telemetry.aposStartActiveSpan(spanHandlerName, async (spanHandler) => {
+              await telemetry.startActiveSpan(spanHandlerName, async (spanHandler) => {
                 spanHandler.setAttribute(SemanticAttributes.CODE_FUNCTION, handler.handlerName);
                 spanHandler.setAttribute(SemanticAttributes.CODE_NAMESPACE, handler.moduleName);
-                spanHandler.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
-                spanHandler.setAttribute(telemetry.AposAttributes.EVENT_NAME, name);
+                spanHandler.setAttribute(telemetry.Attributes.EVENT_MODULE, moduleName);
+                spanHandler.setAttribute(telemetry.Attributes.EVENT_NAME, name);
 
                 try {
                   const module = self.apos.modules[handler.moduleName];
@@ -69,10 +69,10 @@ module.exports = function(self) {
                   // Although we have `self` it can't hurt to
                   // supply the correct `this`
                   await fn.apply(module, args);
-                  spanHandler.setStatus({ code: telemetry.SpanStatusCode.OK });
+                  spanHandler.setStatus({ code: telemetry.api.SpanStatusCode.OK });
                   spanHandler.end();
                 } catch (err) {
-                  telemetry.aposHandleError(spanHandler, err);
+                  telemetry.handleError(spanHandler, err);
                   // Be sure to close the parent span as well
                   spanHandler.end();
                   spanEmit.end();
