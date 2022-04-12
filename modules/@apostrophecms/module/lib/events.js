@@ -40,11 +40,12 @@ module.exports = function(self) {
       ];
 
       const telemetry = self.apos.telemetry;
-      const willExit = (name === 'run' && args[0]);
+      const willExit = name === 'run' && args[0];
 
       // Create the "outer" span
       const moduleName = (self.__meta && self.__meta.name) || 'apostrophe';
-      await telemetry.aposStartActiveSpan(`event:${moduleName}:${name}`, async (spanEmit) => {
+      const spanEmitName = `event:${moduleName}:${name}`;
+      await telemetry.aposStartActiveSpan(spanEmitName, async (spanEmit) => {
         spanEmit.setAttribute(SemanticAttributes.CODE_FUNCTION, 'emit');
         spanEmit.setAttribute(SemanticAttributes.CODE_NAMESPACE, moduleName);
         spanEmit.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
@@ -63,8 +64,8 @@ module.exports = function(self) {
             for (const handler of handlers) {
 
               // Create an active "inner" span for each handler using the parent as a context
-              const spanName = `handler:${handler.moduleName}:${handler.handlerName}`;
-              await telemetry.aposStartActiveSpan(spanName, async (spanHandler) => {
+              const spanHandlerName = spanEmitName + `:handler:${handler.moduleName}:${handler.handlerName}`;
+              await telemetry.aposStartActiveSpan(spanHandlerName, async (spanHandler) => {
                 spanHandler.setAttribute(SemanticAttributes.CODE_FUNCTION, handler.handlerName);
                 spanHandler.setAttribute(SemanticAttributes.CODE_NAMESPACE, handler.moduleName);
                 spanHandler.setAttribute(telemetry.AposAttributes.EVENT_MODULE, moduleName);
@@ -72,7 +73,7 @@ module.exports = function(self) {
 
                 if (willExit) {
                   self.apos._onExitQueue.push(() => {
-                    console.log(spanName);
+                    console.log(spanHandlerName);
                     spanHandler.end();
                   });
                 }
