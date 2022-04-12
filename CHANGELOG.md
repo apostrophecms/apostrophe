@@ -1,5 +1,9 @@
 # Changelog
 
+### Adds
+
+* Implements OpenTelemetry instrumentation.
+
 # 3.17.0 (2022-03-31)
 
 ### Adds
