@@ -1435,7 +1435,7 @@ database.`);
       // home page.
       async serveGetPage(req) {
         const spanName = `${self.__meta.name}:serveGetPage`;
-        await self.apos.telemetry.aposStartActiveSpan(spanName, async (span) => {
+        await self.apos.telemetry.startActiveSpan(spanName, async (span) => {
           span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'serveGetPage');
           span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
 
@@ -1459,9 +1459,9 @@ database.`);
               self.setMaxAge(req, self.options.cache.page.maxAge);
             }
 
-            span.setStatus({ code: self.apos.telemetry.SpanStatusCode.OK });
+            span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.OK });
           } catch (err) {
-            self.apos.telemetry.aposHandleError(span, err);
+            self.apos.telemetry.handleError(span, err);
             throw err;
           } finally {
             span.end();

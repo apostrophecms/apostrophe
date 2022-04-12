@@ -98,7 +98,7 @@ module.exports = async function(options) {
     // For bc with node 14 and below we need to check both
     if (cluster.isPrimary || cluster.isMaster) {
       // Activate and return the callback return value
-      return telemetry.aposStartActiveSpan(`${spanName}:primary`, async (span) => {
+      return telemetry.startActiveSpan(`${spanName}:primary`, async (span) => {
         let processes = options.cluster.processes || cpus().length;
         if (processes <= 0) {
           processes = cpus().length + processes;
@@ -146,9 +146,9 @@ module.exports = async function(options) {
   }
 
   // Create and activate the root span for the boot tracer
-  const self = await telemetry.aposStartActiveSpan(spanName, async (span) => {
+  const self = await telemetry.startActiveSpan(spanName, async (span) => {
     const res = await apostrophe(options, telemetry, span);
-    span.setStatus(telemetry.SpanStatusCode.OK);
+    span.setStatus(telemetry.api.SpanStatusCode.OK);
     span.end();
     return res;
   });
@@ -184,10 +184,10 @@ async function apostrophe(options, telemetry, rootSpan) {
     }
 
     if (code !== 0) {
-      telemetry.aposHandleError(rootSpan, message);
+      telemetry.handleError(rootSpan, message);
     } else {
       rootSpan.setStatus({
-        code: telemetry.SpanStatusCode.OK,
+        code: telemetry.api.SpanStatusCode.OK,
         message
       });
     }

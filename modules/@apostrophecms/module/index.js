@@ -447,10 +447,10 @@ module.exports = {
       async sendPage(req, template, data) {
         const telemetry = self.apos.telemetry;
         const spanName = `${self.__meta.name}:sendPage`;
-        await telemetry.aposStartActiveSpan(spanName, async (span) => {
+        await telemetry.startActiveSpan(spanName, async (span) => {
           span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'sendPage');
           span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template);
+          span.setAttribute(telemetry.Attributes.TEMPLATE, template);
 
           try {
             await self.apos.page.emit('beforeSend', req);
@@ -458,9 +458,9 @@ module.exports = {
             req.res.send(
               await self.apos.template.renderPageForModule(req, template, data, self)
             );
-            span.setStatus({ code: telemetry.SpanStatusCode.OK });
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
           } catch (err) {
-            telemetry.aposHandleError(span, err);
+            telemetry.handleError(span, err);
             throw err;
           } finally {
             span.end();
@@ -714,18 +714,18 @@ module.exports = {
               const telemetry = self.apos.telemetry;
               const spanName = `task:${self.__meta.name}:${name}`;
               // only this span can be sent to the backend, attach to the ROOT
-              await telemetry.aposStartActiveSpan(
+              await telemetry.startActiveSpan(
                 spanName,
                 async (span) => {
                   span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'executeAfterModuleInitTask');
                   span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/module');
-                  span.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, self.__meta.name);
-                  span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, name);
+                  span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, self.__meta.name);
+                  span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, name);
                   try {
                     await info.task(self.apos.argv);
-                    span.setStatus({ code: telemetry.SpanStatusCode.OK });
+                    span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
                   } catch (err) {
-                    telemetry.aposHandleError(span, err);
+                    telemetry.handleError(span, err);
                     throw err;
                   } finally {
                     span.end();

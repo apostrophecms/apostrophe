@@ -31,10 +31,10 @@ module.exports = {
           const cmd = self.apos.argv._[0];
           const telemetry = self.apos.telemetry;
           const spanName = `task:${cmd}`;
-          await telemetry.aposStartActiveSpan(spanName, async (span) => {
+          await telemetry.startActiveSpan(spanName, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'runTask');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
-            span.setAttribute(telemetry.AposAttributes.ARGV, telemetry.stringify(self.apos.argv));
+            span.setAttribute(telemetry.Attributes.ARGV, telemetry.stringify(self.apos.argv));
 
             let task;
             if (!cmd) {
@@ -44,7 +44,7 @@ module.exports = {
             }
 
             if (cmd === 'help') {
-              span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, 'help');
+              span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'help');
               // list all tasks
               if (self.apos.argv._.length === 1) {
                 return self.usage(signal, span);
@@ -52,7 +52,7 @@ module.exports = {
 
               // help with specific task
               if (self.apos.argv._.length === 2) {
-                span.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, self.apos.argv._[1]);
+                span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, self.apos.argv._[1]);
                 task = self.find(self.apos.argv._[1]);
                 if (!task) {
                   console.error('There is no such task.');
@@ -76,8 +76,8 @@ module.exports = {
             }
 
             const [ moduleName, taskName ] = task.fullName.split(':');
-            span.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, moduleName);
-            span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, taskName);
+            span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, moduleName);
+            span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, taskName);
 
             try {
               await task.task(self.apos.argv);
@@ -134,7 +134,7 @@ module.exports = {
       async invoke(name, args, options) {
         const telemetry = self.apos.telemetry;
         const spanName = `task:${self.__meta.name}:${name}`;
-        await telemetry.aposStartActiveSpan(spanName, async (span) => {
+        await telemetry.startActiveSpan(spanName, async (span) => {
           span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'invoke');
           span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
           try {
@@ -147,19 +147,19 @@ module.exports = {
             }
             const task = self.find(name);
             const [ moduleName, taskName ] = task.fullName.split(':');
-            span.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, moduleName);
-            span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, taskName);
+            span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, moduleName);
+            span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, taskName);
             const argv = {
               _: args,
               ...options || {}
             };
-            span.setAttribute(telemetry.AposAttributes.ARGV, telemetry.stringify(argv));
+            span.setAttribute(telemetry.Attributes.ARGV, telemetry.stringify(argv));
             self.apos.argv = argv;
             await task.task(argv);
             self.apos.argv = aposArgv;
-            span.setStatus({ code: telemetry.SpanStatusCode.OK });
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
           } catch (err) {
-            telemetry.aposHandleError(span, err);
+            telemetry.handleError(span, err);
             throw err;
           } finally {
             span.end();
@@ -213,11 +213,11 @@ module.exports = {
         }
 
         if (err) {
-          self.apos.telemetry.aposHandleError(span, err);
+          self.apos.telemetry.handleError(span, err);
         } else if (code) {
-          span.setStatus({ code: self.apos.telemetry.SpanStatusCode.ERROR });
+          span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.ERROR });
         } else {
-          span.setStatus({ code: self.apos.telemetry.SpanStatusCode.OK });
+          span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.OK });
         }
         span.end();
       },

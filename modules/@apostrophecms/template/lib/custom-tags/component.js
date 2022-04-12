@@ -32,8 +32,8 @@ module.exports = function(self) {
 
       const telemetry = self.apos.telemetry;
       const spanName = `component:${name}`;
-      return telemetry.aposStartActiveSpan(spanName, async (span) => {
-        span.setAttribute(telemetry.AposAttributes.TEMPLATE, name);
+      return telemetry.startActiveSpan(spanName, async (span) => {
+        span.setAttribute(telemetry.Attributes.TEMPLATE, name);
 
         try {
           const parsed = name.match(/^([^:]+):(.+)$/);
@@ -55,7 +55,7 @@ module.exports = function(self) {
             const input = await module.components[componentName](req, data);
             return module.render(req, componentName, input);
           });
-          span.setStatus({ code: telemetry.SpanStatusCode.OK });
+          span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
 
           if (result === undefined) {
             // Recursion guard stopped it, nunjucks expects a string
@@ -64,7 +64,7 @@ module.exports = function(self) {
             return result;
           }
         } catch (err) {
-          telemetry.aposHandleError(span, err);
+          telemetry.handleError(span, err);
           throw err;
         } finally {
           span.end();

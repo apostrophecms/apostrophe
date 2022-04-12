@@ -634,7 +634,7 @@ module.exports = {
       async renderPageForModule(req, template, data, module) {
         const telemetry = self.apos.telemetry;
         const spanName = `render:${self.__meta.name}:renderPageForModule`;
-        return telemetry.aposStartActiveSpan(spanName, async (span) => {
+        return telemetry.startActiveSpan(spanName, async (span) => {
           span.setAttributes({
             [SemanticAttributes.CODE_FUNCTION]: 'renderPageForModule',
             [SemanticAttributes.CODE_NAMESPACE]: self.__meta.name
@@ -646,8 +646,8 @@ module.exports = {
           } else {
             req.scene = scene;
           }
-          span.setAttribute(telemetry.AposAttributes.SCENE, scene);
-          span.setAttribute(telemetry.AposAttributes.TEMPLATE, template);
+          span.setAttribute(telemetry.Attributes.SCENE, scene);
+          span.setAttribute(telemetry.Attributes.TEMPLATE, template);
 
           const aposBodyData = {
             modules: {},
@@ -705,25 +705,25 @@ module.exports = {
 
           if (req.aposError) {
           // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
-            telemetry.aposHandleError(span, req.aposError);
+            telemetry.handleError(span, req.aposError);
             span.end();
             return error(req.aposError);
           }
 
           try {
             const spanRenderName = `render:${module.__meta.name}:render`;
-            const content = await telemetry.aposStartActiveSpan(spanRenderName, async (spanRender) => {
+            const content = await telemetry.startActiveSpan(spanRenderName, async (spanRender) => {
               spanRender.setAttribute(SemanticAttributes.CODE_FUNCTION, 'render');
               spanRender.setAttribute(SemanticAttributes.CODE_NAMESPACE, module.__meta.name);
-              spanRender.setAttribute(telemetry.AposAttributes.SCENE, scene);
-              spanRender.setAttribute(telemetry.AposAttributes.TEMPLATE, template);
+              spanRender.setAttribute(telemetry.Attributes.SCENE, scene);
+              spanRender.setAttribute(telemetry.Attributes.TEMPLATE, template);
 
               try {
                 const content = await module.render(req, template, args);
-                spanRender.setStatus({ code: telemetry.SpanStatusCode.OK });
+                spanRender.setStatus({ code: telemetry.api.SpanStatusCode.OK });
                 return content;
               } catch (err) {
-                telemetry.aposHandleError(spanRender, err);
+                telemetry.handleError(spanRender, err);
                 throw err;
               } finally {
                 spanRender.end();
@@ -740,12 +740,12 @@ module.exports = {
               widgetsBundles: req.widgetsBundles
             });
 
-            span.setStatus({ code: telemetry.SpanStatusCode.OK });
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return filledContent;
           } catch (e) {
           // The page template threw an exception. Log where it
           // occurred for easier debugging
-            telemetry.aposHandleError(span, e);
+            telemetry.handleError(span, e);
             return error(e);
           } finally {
             span.end();

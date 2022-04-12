@@ -441,11 +441,11 @@ module.exports = {
       // `false`, permissions checks are bypassed.
       async insert(req, doc, options) {
         const telemetry = self.apos.telemetry;
-        return telemetry.aposStartActiveSpan(`model:${doc.type}:insert`, async (span) => {
+        return telemetry.startActiveSpan(`model:${doc.type}:insert`, async (span) => {
           span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'insert');
           span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-          span.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, doc.type);
-          span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, 'insert');
+          span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+          span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
 
           try {
             options = options || {};
@@ -453,17 +453,17 @@ module.exports = {
             await m.emit('beforeInsert', req, doc, options);
             await m.emit('beforeSave', req, doc, options);
 
-            await telemetry.aposStartActiveSpan(`db:${doc.type}:insert`, async (spanInsert) => {
+            await telemetry.startActiveSpan(`db:${doc.type}:insert`, async (spanInsert) => {
               spanInsert.setAttribute(SemanticAttributes.CODE_FUNCTION, 'insertBody');
               spanInsert.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-              spanInsert.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, doc.type);
-              spanInsert.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, 'insert');
+              spanInsert.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+              spanInsert.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
               try {
                 const result = await self.insertBody(req, doc, options);
-                spanInsert.setStatus({ code: telemetry.SpanStatusCode.OK });
+                spanInsert.setStatus({ code: telemetry.api.SpanStatusCode.OK });
                 return result;
               } catch (e) {
-                telemetry.aposHandleError(spanInsert, e);
+                telemetry.handleError(spanInsert, e);
                 throw e;
               } finally {
                 spanInsert.end();
@@ -474,10 +474,10 @@ module.exports = {
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
-            span.setStatus({ code: telemetry.SpanStatusCode.OK });
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
-            telemetry.aposHandleError(span, err);
+            telemetry.handleError(span, err);
             throw err;
           } finally {
             span.end();
@@ -510,11 +510,11 @@ module.exports = {
       // `false`, permissions checks are bypassed.
       async update(req, doc, options) {
         const telemetry = self.apos.telemetry;
-        return telemetry.aposStartActiveSpan(`model:${doc.type}:update`, async (span) => {
+        return telemetry.startActiveSpan(`model:${doc.type}:update`, async (span) => {
           span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'update');
           span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-          span.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, doc.type);
-          span.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, 'update');
+          span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+          span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
 
           try {
             options = options || {};
@@ -522,17 +522,17 @@ module.exports = {
             await m.emit('beforeUpdate', req, doc, options);
             await m.emit('beforeSave', req, doc, options);
 
-            await telemetry.aposStartActiveSpan(`db:${doc.type}:update`, async (spanUpdate) => {
+            await telemetry.startActiveSpan(`db:${doc.type}:update`, async (spanUpdate) => {
               spanUpdate.setAttribute(SemanticAttributes.CODE_FUNCTION, 'updateBody');
               spanUpdate.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
-              spanUpdate.setAttribute(telemetry.AposAttributes.TARGET_NAMESPACE, doc.type);
-              spanUpdate.setAttribute(telemetry.AposAttributes.TARGET_FUNCTION, 'update');
+              spanUpdate.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+              spanUpdate.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
               try {
                 const result = await self.updateBody(req, doc, options);
-                spanUpdate.setStatus({ code: telemetry.SpanStatusCode.OK });
+                spanUpdate.setStatus({ code: telemetry.api.SpanStatusCode.OK });
                 return result;
               } catch (e) {
-                telemetry.aposHandleError(spanUpdate, e);
+                telemetry.handleError(spanUpdate, e);
                 throw e;
               } finally {
                 spanUpdate.end();
@@ -543,10 +543,10 @@ module.exports = {
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
-            span.setStatus({ code: telemetry.SpanStatusCode.OK });
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
-            telemetry.aposHandleError(span, err);
+            telemetry.handleError(span, err);
             throw err;
           } finally {
             span.end();

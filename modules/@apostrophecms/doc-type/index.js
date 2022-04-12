@@ -2076,7 +2076,7 @@ module.exports = {
 
         toDistinct(property) {
           const telemetry = self.apos.telemetry;
-          return telemetry.aposStartActiveSpan(`db:${self.__meta.name}:query:toDistinct`, async (span) => {
+          return telemetry.startActiveSpan(`db:${self.__meta.name}:query:toDistinct`, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toDistinct');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
 
@@ -2126,10 +2126,10 @@ module.exports = {
                 result = await distinctCounts(span);
               }
 
-              span.setStatus({ code: telemetry.SpanStatusCode.OK });
+              span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
               return result;
             } catch (err) {
-              telemetry.aposHandleError(span, err);
+              telemetry.handleError(span, err);
               throw err;
             } finally {
               span.end();
@@ -2231,7 +2231,7 @@ module.exports = {
 
         toCount() {
           const telemetry = self.apos.telemetry;
-          return telemetry.aposStartActiveSpan(`db:${self.__meta.name}:query:toCount`, async (span) => {
+          return telemetry.startActiveSpan(`db:${self.__meta.name}:query:toCount`, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toCount');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
 
@@ -2260,10 +2260,10 @@ module.exports = {
                   totalPages: query.get('totalPages')
                 })
               );
-              span.setStatus({ code: telemetry.SpanStatusCode.OK });
+              span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
               return count;
             } catch (err) {
-              telemetry.aposHandleError(span, err);
+              telemetry.handleError(span, err);
               throw err;
             } finally {
               span.end();
@@ -2275,7 +2275,7 @@ module.exports = {
 
         toArray() {
           const telemetry = self.apos.telemetry;
-          return telemetry.aposStartActiveSpan(`db:${self.__meta.name}:query:toArray`, async (span) => {
+          return telemetry.startActiveSpan(`db:${self.__meta.name}:query:toArray`, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toArray');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
             span.setAttribute(SemanticAttributes.DB_STATEMENT, telemetry.stringify({
@@ -2293,10 +2293,10 @@ module.exports = {
               const mongo = await query.toMongo();
               const docs = await query.mongoToArray(mongo);
               await query.after(docs);
-              span.setStatus({ code: telemetry.SpanStatusCode.OK });
+              span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
               return docs;
             } catch (err) {
-              telemetry.aposHandleError(span, err);
+              telemetry.handleError(span, err);
               throw err;
             } finally {
               span.end();
