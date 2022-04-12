@@ -25,14 +25,6 @@
     </template>
     <template #leftRail>
       <AposModalRail>
-        <!-- <div class="apos-schema">
-          <div class="apos-schema__crop-fields">
-            <AposInputString
-              v-model="docFields.data.width"
-              :field="fields.width"
-            />
-          </div>
-        </div> -->
         <div class="apos-schema__container">
           <AposSchema
             v-model="docFields"
@@ -270,5 +262,6 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 0 10%;
 }
 </style>
