@@ -253,6 +253,24 @@ describe('Attachment', function() {
   });
 
   describe('api', async function () {
+    const attachmentMock = {
+      _id: 'cl1uqvv0z002oldgftrxk58e1',
+      crop: null,
+      group: 'images',
+      name: 'test',
+      title: 'test',
+      extension: 'jpg',
+      type: 'attachment',
+      archivedDocIds: [],
+      length: 184317,
+      md5: '816e2fe1190b7aa81ed26d8479e26181',
+      width: 960,
+      height: 542,
+      landscape: true,
+      used: true,
+      utilized: true,
+      archived: false
+    };
 
     it('should annotate images with URLs using .all method', async function () {
       assert(!imageOne._urls);
@@ -260,6 +278,72 @@ describe('Attachment', function() {
       apos.attachment.all({ imageOne }, { annotate: true });
 
       assert(imageOne._urls);
+    });
+
+    it('should return the attachment of a given image with the image cropping and focal point values', function () {
+      const imageMock = {
+        _id: 'cl1uqvvdr002qldgffbcflmmf:en:draft',
+        attachment: {
+          ...attachmentMock
+        },
+        title: 'test',
+        alt: '',
+        slug: 'image-test',
+        archived: false,
+        type: '@apostrophecms/image',
+        _fields: {
+          top: 100,
+          left: 50,
+          width: 300,
+          height: 200,
+          x: 50,
+          y: 25
+        }
+      };
+
+      const attachments = apos.attachment.all(imageMock, { annotate: true });
+
+      assert(attachments[0]._crop.top === imageMock._fields.top);
+      assert(attachments[0]._crop.left === imageMock._fields.left);
+      assert(attachments[0]._crop.width === imageMock._fields.width);
+      assert(attachments[0]._crop.height === imageMock._fields.height);
+
+      assert(attachments[0]._focalPoint.x === imageMock._fields.x);
+      assert(attachments[0]._focalPoint.y === imageMock._fields.y);
+    });
+
+    it('should return the attachment width', async function () {
+      const width = apos.attachment.getWidth(attachmentMock);
+
+      assert(width === 960);
+    });
+
+    it('should return the attachment cropping width', async function () {
+      const width = apos.attachment.getWidth({
+        ...attachmentMock,
+        _crop: {
+          width: 300
+        }
+      });
+
+      assert(width === 300);
+    });
+
+    it('should return the attachment height', async function () {
+      const height = apos.attachment.getHeight(attachmentMock);
+
+      assert(height === 542);
+    });
+
+    it('should return the attachment cropping height', async function () {
+      const height = apos.attachment.getHeight({
+        ...attachmentMock,
+        _crop: {
+          height: 400
+        }
+      });
+
+      assert(height === 400);
     });
   });
 });
