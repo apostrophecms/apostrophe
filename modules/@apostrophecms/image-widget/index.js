@@ -24,13 +24,13 @@ module.exports = {
               type: 'integer'
             },
             width: {
-              label: 'W',
               type: 'integer',
+              label: 'W',
               modifiers: [ 'inline' ]
             },
             height: {
-              label: 'H',
               type: 'integer',
+              label: 'H',
               modifiers: [ 'inline' ]
 
             },
