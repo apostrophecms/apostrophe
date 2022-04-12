@@ -88,11 +88,8 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
-      docReady: false,
       original: this.value,
       docFields: this.setDocFields(this.value),
-      fieldErrors: {},
-
       modal: {
         active: false,
         type: 'overlay',
@@ -103,16 +100,14 @@ export default {
         title: this.title
       },
       groups: [],
-      currentTab: null,
       tabs: [],
-      fields: {},
+      currentTab: null,
       visibleSchema: [],
       alignedFields: [ 'width', 'height' ]
     };
   },
   async mounted() {
     this.modal.active = true;
-    this.docReady = true;
 
     this.setVisibleSchema();
     this.setNestedSchema();
