@@ -11,6 +11,7 @@
 * Blocks users to set values under `minSize` if configured in area (can set only width, only height or both). Auto fixes bad values in input when under `minSize` or above image size during blur.
 * The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
 * In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
+* Implements OpenTelemetry instrumentation.
 
 ### Fixes
 
