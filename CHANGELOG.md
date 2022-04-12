@@ -3,6 +3,8 @@
 ### Adds
 
 * Implements OpenTelemetry instrumentation.
+* Adds new configuration option - `beforeExit` async handler.
+* Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
 
 # 3.17.0 (2022-03-31)
 
