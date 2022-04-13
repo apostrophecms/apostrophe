@@ -697,6 +697,7 @@ module.exports = {
               const ancestorFields = ancestor.attachment && ancestor.attachment._id === value._id && ancestor._fields;
               if (ancestorFields) {
                 value = _.clone(value);
+                o.attachment = value;
                 value._crop = _.pick(ancestorFields, 'top', 'left', 'width', 'height');
                 value._focalPoint = _.pick(ancestorFields, 'x', 'y');
                 break;

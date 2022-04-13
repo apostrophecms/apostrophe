@@ -272,6 +272,26 @@ describe('Attachment', function() {
       archived: false
     };
 
+    const imageMock = {
+      _id: 'cl1uqvvdr002qldgffbcflmmf:en:draft',
+      attachment: {
+        ...attachmentMock
+      },
+      title: 'test',
+      alt: '',
+      slug: 'image-test',
+      archived: false,
+      type: '@apostrophecms/image',
+      _fields: {
+        top: 100,
+        left: 50,
+        width: 300,
+        height: 200,
+        x: 50,
+        y: 25
+      }
+    };
+
     it('should annotate images with URLs using .all method', async function () {
       assert(!imageOne._urls);
 
@@ -281,26 +301,6 @@ describe('Attachment', function() {
     });
 
     it('should return the attachment of a given image with the image cropping and focal point values', function () {
-      const imageMock = {
-        _id: 'cl1uqvvdr002qldgffbcflmmf:en:draft',
-        attachment: {
-          ...attachmentMock
-        },
-        title: 'test',
-        alt: '',
-        slug: 'image-test',
-        archived: false,
-        type: '@apostrophecms/image',
-        _fields: {
-          top: 100,
-          left: 50,
-          width: 300,
-          height: 200,
-          x: 50,
-          y: 25
-        }
-      };
-
       const attachments = apos.attachment.all(imageMock, { annotate: true });
 
       assert(attachments[0]._crop.top === imageMock._fields.top);
@@ -310,6 +310,12 @@ describe('Attachment', function() {
 
       assert(attachments[0]._focalPoint.x === imageMock._fields.x);
       assert(attachments[0]._focalPoint.y === imageMock._fields.y);
+    });
+
+    it('should not clone attachment', function () {
+      const attachments = apos.attachment.all(imageMock, { annotate: true });
+
+      assert(attachments[0] === imageMock.attachment);
     });
 
     it('should return the attachment width', async function () {
