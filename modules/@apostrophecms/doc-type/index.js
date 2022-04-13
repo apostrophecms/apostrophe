@@ -129,10 +129,10 @@ module.exports = {
             });
           }
 
-          if (doc._parentUrl) {
+          if (doc._parentPage) {
             // Update piece index page's cache field
             await self.apos.doc.db.updateOne({
-              slug: doc._parentUrl,
+              slug: doc._parentPage,
               aposLocale: { $in: [ doc.aposLocale, null ] }
             }, {
               $set: { cacheInvalidatedAt: doc.updatedAt }
