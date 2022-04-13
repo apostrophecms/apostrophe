@@ -29,7 +29,11 @@
           <label class="apos-field__label">
             Crop & Size (px)
           </label>
-          <div v-if="errors.width || errors.height" class="apos-field__size-error">
+          <div
+            v-if="errors.width || errors.height"
+            class="apos-field__size-error"
+            :class="{'apos-field__size-error--focused': inputFocused}"
+          >
             {{
               $t('apostrophe:minSize', {
                 width: item.attachment.width,
@@ -44,7 +48,8 @@
               <input
                 :value="docFields.data.width"
                 @input="(e) => input(e, 'width')"
-                @focus="focusInput"
+                @focus="focusInput()"
+                @blur="focusInput(false)"
                 class="apos-input apos-input--text"
                 type="number"
                 min="1"
@@ -58,6 +63,8 @@
               <input
                 :value="docFields.data.height"
                 @input="(e) => input(e, 'height')"
+                @focus="focusInput()"
+                @blur="focusInput(false)"
                 class="apos-input apos-input--text"
                 type="number"
                 min="1"
@@ -128,6 +135,7 @@ export default {
         }
       },
       errors: {},
+      inputFocused: false,
       modal: {
         active: false,
         type: 'overlay',
@@ -231,26 +239,8 @@ export default {
 
       this.currentTab = this.tabs[0].name;
     },
-    // setDocFields (original) {
-    //   const doc = original ||
-    //     Object.fromEntries(
-    //       this.schema.map(field => ([ field.name, null ]))
-    //     );
-
-    //   return {
-    //     data: {
-    //       ...Object.entries(doc).reduce((acc, [ name, value ]) => {
-    //         return {
-    //           ...acc,
-    //           [name]: typeof value === 'number' ? value : (this.imgInfos[name] || null)
-    //         };
-    //       }, {})
-    //     },
-    //     hasErrors: false
-    //   };
-    // },
-    focusInput (param) {
-      console.log('param ===> ', param);
+    focusInput (isFocused = true) {
+      this.inputFocused = isFocused;
     },
     setVisibleSchema () {
       const visibleSchema = this.schema.filter((field) => field.label);
@@ -298,10 +288,18 @@ export default {
   }
 }
 
+.apos-input[type="number"] {
+  padding-right: 5px;
+}
+
 .apos-field__size-error {
   @include type-small;
   color: var(--a-base-1);
   margin-bottom: 10px;
+
+  &--focused {
+    color: var(--a-primary);
+  }
 }
 
 .apos-field__label {
