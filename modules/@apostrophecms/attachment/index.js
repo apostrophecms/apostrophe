@@ -698,7 +698,12 @@ module.exports = {
               if (ancestorFields) {
                 value = _.clone(value);
                 o.attachment = value;
-                value._crop = _.pick(ancestorFields, 'top', 'left', 'width', 'height');
+                value._crop = {
+                  top: ancestorFields.top || 0,
+                  left: ancestorFields.left || 0,
+                  width: ancestorFields.width || 0,
+                  height: ancestorFields.height || 0
+                };
                 value._focalPoint = _.pick(ancestorFields, 'x', 'y');
                 break;
               }
