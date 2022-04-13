@@ -787,11 +787,11 @@ module.exports = {
         const point = self.getFocalPoint(attachment);
         return `${point.x}% ${point.y}%`;
       },
-      // Returns the attachment width.
+      // Returns the effective attachment width.
       getWidth(attachment) {
         return attachment._crop ? attachment._crop.width : attachment.width;
       },
-      // Returns the attachment height.
+      // Returns the effective attachment height.
       getHeight(attachment) {
         return attachment._crop ? attachment._crop.height : attachment.height;
       },
