@@ -2,7 +2,7 @@
   <AposModal
     class="apos-doc-editor"
     :modal="modal"
-    :modal-title="item.title"
+    :modal-title="title"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -106,9 +106,13 @@ export default {
       type: Object,
       default: null
     },
+    title: {
+      type: String,
+      required: true
+    },
     item: {
       type: Object,
-      required: true
+      default: () => ({})
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -153,13 +157,15 @@ export default {
   },
   methods: {
     async submit() {
-      await apos.http.post(`${apos.attachment.action}/crop`, {
-        body: {
-          _id: this.id,
-          crop: this.docFields
-        }
-      });
-      this.$emit('modal-result', this.docFields);
+      if (this.item.attachment) {
+        await apos.http.post(`${apos.attachment.action}/crop`, {
+          body: {
+            _id: this.item.attachment._id,
+            crop: this.docFields.data
+          }
+        });
+      }
+      this.$emit('modal-result', this.docFields.data);
       this.modal.showModal = false;
     },
     updateDocFields(coordinates, updateCoordinates = true) {

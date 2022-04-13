@@ -205,7 +205,9 @@ export default {
 
       const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
-        item
+        item,
+        title: item.title,
+        value: item._fields
       });
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
