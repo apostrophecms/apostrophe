@@ -25,14 +25,29 @@
     </template>
     <template #leftRail>
       <AposModalRail>
-        <div class="apos-schema__container">
-          <AposSchema
-            v-model="docFields"
-            :schema="visibleSchema"
-            :nested-schema="nestedSchema"
-            :utility-rail="false"
-            @input="updateDocFields"
-          />
+        <div class="apos-schema">
+          <div class="apos-schema__aligned-fields">
+            <div class="apos-schema__field">
+              <label for="">
+                W
+              </label>
+              <input
+                class="apos-input apos-input--text"
+                type="number"
+                min="1"
+              >
+            </div>
+            <div class="apos-schema__field">
+              <label for="">
+                H
+              </label>
+              <input
+                class="apos-input apos-input--text"
+                type="number"
+                min="1"
+              >
+            </div>
+          </div>
         </div>
         <!-- TODO: Make grouping and tabs working for relationships -->
         <!-- <AposModalTabs
@@ -246,8 +261,15 @@ export default {
 </script>
 
 <style scoped lang="scss" >
-.apos-schema__container {
+.apos-schema {
   margin: 30px 15px 0;
+
+  &__aligned-fields {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+
+  }
 }
 
 .apos-image-cropper__container {

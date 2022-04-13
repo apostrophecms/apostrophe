@@ -4,43 +4,10 @@
 <template>
   <div class="apos-schema">
     <div
-      v-for="(field, index) in schemaToParse"
-      :key="`${field.name}${index}`"
+      v-for="field in schema" :key="field.name"
       :data-apos-field="field.name"
     >
-      <div
-        v-if="field.type === 'alignedFields'"
-        class="apos-schema__aligned-block"
-      >
-        <label class="apos-field__label">
-          {{ field.label }}
-        </label>
-        <div class="apos-schema__aligned-fields">
-          <div
-            class="apos-schema__aligned-field"
-            v-for="subField in field.fields"
-            :key="subField.name"
-            :data-apos-field="subField.name"
-          >
-            <component
-              v-show="displayComponent(subField.name)"
-              v-model="fieldState[subField.name]"
-              :is="fieldComponentMap[subField.type]"
-              :following-values="followingValues[subField.name]"
-              :condition-met="conditionalFields[subField.name]"
-              :field="fields[subField.name].field"
-              :modifiers="fields[subField.name].modifiers"
-              :display-options="getDisplayOptions(subField.name)"
-              :trigger-validation="triggerValidation"
-              :server-error="fields[subField.name].serverError"
-              :doc-id="docId"
-              :ref="subField.name"
-            />
-          </div>
-        </div>
-      </div>
       <component
-        v-else
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
@@ -72,13 +39,11 @@ export default {
       type: Array,
       required: true
     },
-    nestedSchema: {
-      type: Array,
-      default: null
-    },
     currentFields: {
       type: Array,
-      default: null
+      default() {
+        return null;
+      }
     },
     followingValues: {
       type: Object,
@@ -157,13 +122,7 @@ export default {
           ...(item.modifiers || [])
         ];
       });
-
       return fields;
-    },
-    schemaToParse() {
-      return this.nestedSchema && this.nestedSchema.length
-        ? this.nestedSchema
-        : this.schema;
     }
   },
   watch: {
@@ -332,57 +291,6 @@ export default {
 
   .apos-schema ::v-deep img {
     max-width: 100%;
-  }
-
-  .apos-schema__aligned-fields {
-    display: flex;
-    justify-content: space-between;
-    flex-direction: row;
-
-    &::v-deep {
-
-      .apos-input-wrapper, .apos-field__info {
-        width: auto;
-      }
-
-      .apos-field {
-        position: relative;
-      }
-
-      .apos-field__error {
-        position: absolute;
-        bottom: -25px;
-        right: 0;
-      }
-    }
-  }
-
-  .apos-schema {
-    &__aligned-fields {
-      display: flex;
-      justify-content: space-between;
-      flex-direction: row;
-
-      &::v-deep {
-        .apos-input-wrapper, .apos-field__info {
-          width: auto;
-        }
-      }
-    }
-
-    &__aligned-field {
-      &:first-child {
-        margin-right: 10px;
-      }
-    }
-  }
-
-  .apos-field__label {
-    @include type-label;
-    display: block;
-    margin: 0 0 $spacing-base;
-    padding: 0;
-    color: var(--a-text-primary);
   }
 
   .apos-field {
