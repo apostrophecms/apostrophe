@@ -694,11 +694,17 @@ module.exports = {
             // apos.attachment.url with the returned object
             for (let i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
-              const fields = ancestor.imagesFields && ancestor.imagesFields[o._id];
-              if (fields) {
+              const ancestorFields = ancestor.attachment && ancestor.attachment._id === value._id && ancestor._fields;
+              if (ancestorFields) {
                 value = _.clone(value);
-                value._crop = _.pick(fields, 'top', 'left', 'width', 'height');
-                value._focalPoint = _.pick(fields, 'x', 'y');
+                o.attachment = value;
+                value._crop = {
+                  top: ancestorFields.top || 0,
+                  left: ancestorFields.left || 0,
+                  width: ancestorFields.width,
+                  height: ancestorFields.height
+                };
+                value._focalPoint = _.pick(ancestorFields, 'x', 'y');
                 break;
               }
             }
@@ -778,14 +784,22 @@ module.exports = {
         return attachment._focalPoint && typeof attachment._focalPoint.x === 'number';
       },
       // If a focal point is present on the attachment, convert it to
-      // CSS syntax for `background-position`. No trailing `;` is returned.
+      // CSS syntax for `object-position`. No trailing `;` is returned.
       // The coordinates are in percentage terms.
-      focalPointToBackgroundPosition(attachment) {
+      focalPointToObjectPosition(attachment) {
         if (!self.hasFocalPoint(attachment)) {
           return 'center center';
         }
         const point = self.getFocalPoint(attachment);
-        return point.x + '% ' + point.y + '%';
+        return `${point.x}% ${point.y}%`;
+      },
+      // Returns the effective attachment width.
+      getWidth(attachment) {
+        return attachment._crop ? attachment._crop.width : attachment.width;
+      },
+      // Returns the effective attachment height.
+      getHeight(attachment) {
+        return attachment._crop ? attachment._crop.height : attachment.height;
       },
       // Returns an object with `x` and `y` properties containing the
       // focal point chosen by the user, as percentages. If there is no
@@ -1155,7 +1169,9 @@ module.exports = {
     'all',
     'hasFocalPoint',
     'getFocalPoint',
-    'focalPointToBackgroundPosition',
+    'focalPointToObjectPosition',
+    'getWidth',
+    'getHeight',
     'isCroppable'
   ]
 };
