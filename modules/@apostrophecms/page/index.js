@@ -120,7 +120,7 @@ module.exports = {
               project: self.getAllProjection()
             }).toObject();
 
-            if (self.options.cache && self.options.cache.api) {
+            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -143,7 +143,7 @@ module.exports = {
           } else {
             const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
 
-            if (self.options.cache && self.options.cache.api) {
+            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -179,8 +179,14 @@ module.exports = {
           const criteria = self.getIdCriteria(_id);
           const result = await self.getRestQuery(req).and(criteria).toObject();
 
-          if (self.options.cache && self.options.cache.api) {
-            self.setMaxAge(req, self.options.cache.api.maxAge);
+          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+            const { maxAge } = self.options.cache.api;
+
+            if (!self.options.cache.etags) {
+              self.setMaxAge(req, maxAge);
+            } else if (self.checkETag(req, result, maxAge)) {
+              return {};
+            }
           }
 
           if (!result) {
@@ -1405,6 +1411,18 @@ database.`);
         } catch (err) {
           return await self.serve500Error(req, err);
         }
+
+        if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
+          const { maxAge } = self.options.cache.page;
+
+          if (!self.options.cache.etags) {
+            self.setMaxAge(req, maxAge);
+          } else if (self.checkETag(req, undefined, maxAge)) {
+            // Stop there and send a 304 status code; the cached response will be used
+            return res.sendStatus(304);
+          }
+        }
+
         try {
           await self.serveDeliver(req, null);
         } catch (err) {
@@ -1436,10 +1454,6 @@ database.`);
             await self.emit('serveQuery', query);
             req.data.bestPage = await query.toObject();
             self.evaluatePageMatch(req);
-
-            if (self.options.cache && self.options.cache.page) {
-              self.setMaxAge(req, self.options.cache.page.maxAge);
-            }
 
             span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.OK });
           } catch (err) {
@@ -2124,7 +2138,10 @@ database.`);
               _id: null
             });
           } else {
-            query.project(self.options.publicApiProjection);
+            query.project({
+              ...self.options.publicApiProjection,
+              cacheInvalidatedAt: 1
+            });
           }
         }
         return query;

@@ -91,6 +91,23 @@ describe('Pieces Public API', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
+  it('should not set a "max-age" cache-control value when retrieving a single piece, when "etags" cache option is set, with a public API projection', async () => {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 2222
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    assert(response.headers['cache-control'] === undefined);
+  });
+
   it('should set a "max-age" cache-control value when retrieving pieces, with a public API projection', async () => {
     apos.thing.options.publicApiProjection = {
       title: 1,
@@ -107,6 +124,29 @@ describe('Pieces Public API', function() {
 
     assert(response1.headers['cache-control'] === 'max-age=2222');
     assert(response2.headers['cache-control'] === 'max-age=2222');
+
+    delete apos.thing.options.cache;
+  });
+
+  it('should set a custom etag when retrieving a single piece', async () => {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    apos.thing.options.cache = {
+      api: {
+        maxAge: 1111
+      },
+      etags: true
+    };
+
+    const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
+
+    const eTagParts = response.headers.etag.split(':');
+
+    assert(eTagParts[0] === apos.asset.getReleaseId());
+    assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[2]);
 
     delete apos.thing.options.cache;
   });

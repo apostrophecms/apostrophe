@@ -35,6 +35,7 @@ module.exports = {
     self.apos.isNew = await self.detectNew();
     await self.createIndexes();
     self.addLegacyMigrations();
+    self.addCacheFieldMigration();
   },
   restApiRoutes(self) {
     return {
@@ -199,7 +200,9 @@ module.exports = {
             }
           });
           if (options.setUpdatedAtAndBy !== false) {
-            doc.updatedAt = new Date();
+            const date = new Date();
+            doc.updatedAt = date;
+            doc.cacheInvalidatedAt = date;
             doc.updatedBy = req.user ? {
               _id: req.user._id,
               title: req.user.title || null,
@@ -1223,6 +1226,18 @@ module.exports = {
             }
           }
         }
+      },
+      // Add the "cacheInvalidatedAt" field to the documents that do not have it yet,
+      // and set it to equal doc.updatedAt.
+      setCacheField() {
+        return self.apos.migration.eachDoc({ cacheInvalidatedAt: { $exists: 0 } }, 5, async doc => {
+          await self.apos.doc.db.updateOne({ _id: doc._id }, {
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        });
+      },
+      addCacheFieldMigration() {
+        self.apos.migration.add('add-cache-invalidated-at-field', self.setCacheField);
       },
       ...require('./lib/legacy-migrations')(self)
     };

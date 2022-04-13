@@ -201,7 +201,7 @@ module.exports = {
             result.counts = query.get('countsResults');
           }
 
-          if (self.options.cache && self.options.cache.api) {
+          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             self.setMaxAge(req, self.options.cache.api.maxAge);
           }
 
@@ -215,8 +215,14 @@ module.exports = {
           self.publicApiCheck(req);
           const doc = await self.getRestQuery(req).and({ _id }).toObject();
 
-          if (self.options.cache && self.options.cache.api) {
-            self.setMaxAge(req, self.options.cache.api.maxAge);
+          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+            const { maxAge } = self.options.cache.api;
+
+            if (!self.options.cache.etags) {
+              self.setMaxAge(req, maxAge);
+            } else if (self.checkETag(req, doc, maxAge)) {
+              return {};
+            }
           }
 
           if (!doc) {
@@ -917,7 +923,10 @@ module.exports = {
               _id: null
             });
           } else if (!query.state.project) {
-            query.project(self.options.publicApiProjection);
+            query.project({
+              ...self.options.publicApiProjection,
+              cacheInvalidatedAt: 1
+            });
           }
         }
         return query;
