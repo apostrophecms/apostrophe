@@ -203,16 +203,6 @@ async function apostrophe(options, telemetry, rootSpan) {
     process.exit(code);
   };
 
-  process.once('SIGINT', (code) => {
-    console.log('Received interrupt signal');
-    self._exit(0, `interrupt (${code})`);
-  });
-
-  process.once('SIGTERM', (code) => {
-    console.log('Received terminate signal');
-    self._exit(0, `terminate (${code})`);
-  });
-
   try {
     const matches = process.version.match(/^v(\d+)/);
     const version = parseInt(matches[1]);
@@ -312,10 +302,10 @@ async function apostrophe(options, telemetry, rootSpan) {
     if (self.taskRan) {
       await self._exit();
     } else {
-      const SIGNAL = { exit: null };
-      await self.emit('run', self.isTask(), SIGNAL);
-      if (SIGNAL.exit !== null) {
-        await self._exit(SIGNAL.exit);
+      const after = { exit: null };
+      await self.emit('run', self.isTask(), after);
+      if (after.exit !== null) {
+        await self._exit(after.exit);
       }
     }
 

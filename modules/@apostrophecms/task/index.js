@@ -22,7 +22,7 @@ module.exports = {
   handlers(self) {
     return {
       'apostrophe:run': {
-        async runTask(isTask, signal) {
+        async runTask(isTask, after) {
 
           if (!isTask) {
             return;
@@ -40,14 +40,14 @@ module.exports = {
             if (!cmd) {
               const err = 'There is no command line argument to serve as a task name, should never happen';
               console.error(err);
-              return self.exit(signal, 1, span, err);
+              return self.exit(after, 1, span, err);
             }
 
             if (cmd === 'help') {
               span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'help');
               // list all tasks
               if (self.apos.argv._.length === 1) {
-                return self.usage(signal, span);
+                return self.usage(after, span);
               }
 
               // help with specific task
@@ -56,7 +56,7 @@ module.exports = {
                 task = self.find(self.apos.argv._[1]);
                 if (!task) {
                   console.error('There is no such task.');
-                  return self.usage(signal, span, 'There is no such task.');
+                  return self.usage(after, span, 'There is no such task.');
                 }
                 if (task.usage) {
                   console.log(`\nTips for the ${task.fullName} task:\n`);
@@ -64,7 +64,7 @@ module.exports = {
                 } else {
                   console.log('That is a valid task, but it does not have a help message.');
                 }
-                return self.exit(signal, 0, span);
+                return self.exit(after, 0, span);
               }
             }
 
@@ -72,7 +72,7 @@ module.exports = {
 
             if (!task) {
               console.error('\nThere is no such task.');
-              return self.usage(signal, span, `There is no such task ${cmd}`);
+              return self.usage(after, span, `There is no such task ${cmd}`);
             }
 
             const [ moduleName, taskName ] = task.fullName.split(':');
@@ -81,10 +81,10 @@ module.exports = {
 
             try {
               await task.task(self.apos.argv);
-              return self.exit(signal, 0, span);
+              return self.exit(after, 0, span);
             } catch (e) {
               console.error(e);
-              return self.exit(signal, 1, span, e);
+              return self.exit(after, 1, span, e);
             }
           });
         }
@@ -188,7 +188,7 @@ module.exports = {
       // and exits the entire program with a nonzero status code.
       // Forward signal, span and error to the exit handler.
 
-      usage(signal, span, err) {
+      usage(after, span, err) {
         // Direct use of console makes sense in tasks. -Tom
         console.error('\nThe following tasks are available:\n');
         for (const [ moduleName, module ] of Object.entries(self.apos.modules)) {
@@ -200,14 +200,14 @@ module.exports = {
         console.error('node app help groupname:taskname\n');
         console.error('To get help with a specific task.\n');
         console.error('To launch the site, run with no arguments.');
-        return self.exit(signal, 1, span, err);
+        return self.exit(after, 1, span, err);
       },
 
       // Register error (if any) and close the current telemetry span;
       // send a signal back to the bootstrap to exit the process with a given code.
 
-      exit(signal, code, span, err) {
-        signal.exit = code;
+      exit(after, code, span, err) {
+        after.exit = code;
         if (!span) {
           return;
         }
