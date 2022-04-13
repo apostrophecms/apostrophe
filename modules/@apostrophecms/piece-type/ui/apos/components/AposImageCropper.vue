@@ -2,7 +2,7 @@
   <div class="apos-image-cropper">
     <cropper
       ref="cropper"
-      :src="imgInfos.url"
+      :src="attachment._urls.original"
       @change="onChange"
       :default-size="defaultSize"
     />
@@ -19,7 +19,7 @@ export default {
     Cropper
   },
   props: {
-    imgInfos: {
+    attachment: {
       type: Object,
       required: true
     },
@@ -36,7 +36,10 @@ export default {
     docFields: {
       deep: true,
       handler(newVal, oldVal) {
-        if (this.checkCoordinatesDiff(newVal.data, oldVal.data)) {
+        if (
+          newVal.updateCoordinates &&
+          this.checkCoordinatesDiff(newVal.data, oldVal.data)
+        ) {
           const {
             width, height, left, top
           } = newVal.data;
@@ -71,14 +74,14 @@ export default {
         !this.isUpdatingCoordinates &&
         this.checkCoordinatesDiff(coordinates, this.docFields.data)
       ) {
-        this.$emit('change', { data: coordinates }, true);
+        this.$emit('change', coordinates, false);
       }
 
       this.isUpdatingCoordinates = false;
     },
     checkCoordinatesDiff (coordinates, dataFields) {
       return Object.entries(coordinates)
-        .some(([ name, value ]) => name !== '_id' && dataFields[name] !== value);
+        .some(([ name, value ]) => dataFields[name] !== value);
     }
   }
 };

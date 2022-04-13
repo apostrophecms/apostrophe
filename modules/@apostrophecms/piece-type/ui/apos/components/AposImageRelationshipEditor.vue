@@ -2,7 +2,7 @@
   <AposModal
     class="apos-doc-editor"
     :modal="modal"
-    :modal-title="modalTitle"
+    :modal-title="item.title"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -26,25 +26,42 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-schema">
+          <label class="apos-field__label">
+            Crop & Size (px)
+          </label>
+          <div v-if="errors.width || errors.height" class="apos-field__size-error">
+            {{
+              $t('apostrophe:minSize', {
+                width: item.attachment.width,
+                height: item.attachment.height })
+            }}
+          </div>
           <div class="apos-schema__aligned-fields">
-            <div class="apos-schema__field">
-              <label for="">
+            <div class="apos-field">
+              <label class="apos-field__label apos-field__label--aligned">
                 W
               </label>
               <input
+                :value="docFields.data.width"
+                @input="(e) => input(e, 'width')"
+                @focus="focusInput"
                 class="apos-input apos-input--text"
                 type="number"
                 min="1"
+                :max="item.attachment.width"
               >
             </div>
-            <div class="apos-schema__field">
-              <label for="">
+            <div class="apos-field">
+              <label class="apos-field__label apos-field__label--aligned">
                 H
               </label>
               <input
+                :value="docFields.data.height"
+                @input="(e) => input(e, 'height')"
                 class="apos-input apos-input--text"
                 type="number"
                 min="1"
+                :max="item.attachment.height"
               >
             </div>
           </div>
@@ -62,7 +79,7 @@
     <template #main>
       <div class="apos-image-cropper__container">
         <AposImageCropper
-          :img-infos="imgInfos"
+          :attachment="item.attachment"
           :doc-fields="docFields"
           @change="updateDocFields"
         />
@@ -74,7 +91,6 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import cuid from 'cuid';
 
 export default {
   name: 'AposImageRelationshipEditor',
@@ -90,16 +106,8 @@ export default {
       type: Object,
       default: null
     },
-    title: {
-      type: String,
-      required: true
-    },
-    imgInfos: {
+    item: {
       type: Object,
-      required: true
-    },
-    id: {
-      type: String,
       required: true
     }
   },
@@ -107,7 +115,15 @@ export default {
   data() {
     return {
       original: this.value,
-      docFields: this.setDocFields(this.value),
+      docFields: {
+        data: {
+          width: 0,
+          height: 0,
+          top: 0,
+          left: 0
+        }
+      },
+      errors: {},
       modal: {
         active: false,
         type: 'overlay',
@@ -125,10 +141,11 @@ export default {
     };
   },
   async mounted() {
+    console.log('this.item ===> ', this.item);
     this.modal.active = true;
 
-    this.setVisibleSchema();
-    this.setNestedSchema();
+    // this.setVisibleSchema();
+    // this.setNestedSchema();
 
     // this.setGroups();
     // this.setTabs();
@@ -139,22 +156,31 @@ export default {
       await apos.http.post(`${apos.attachment.action}/crop`, {
         body: {
           _id: this.id,
-          crop: this.docFields.data
+          crop: this.docFields
         }
       });
-      this.$emit('modal-result', this.docFields.data);
+      this.$emit('modal-result', this.docFields);
       this.modal.showModal = false;
     },
-    updateDocFields(value, repopulateFields = false) {
-      if (value.hasErrors) {
+    updateDocFields(coordinates, updateCoordinates = true) {
+      this.docFields = {
+        data: {
+          ...this.docFields.data,
+          ...coordinates
+        },
+        updateCoordinates
+      };
+    },
+    input({ target }, name) {
+      const value = parseInt(target.value, 10);
+
+      if (isNaN(value)) {
         return;
       }
 
-      this.docFields.data = {
-        ...this.docFields.data,
-        ...value.data,
-        ...repopulateFields && { _id: cuid() }
-      };
+      this.errors[name] = value > this.item.attachment[name];
+
+      this.updateDocFields({ [name]: parseInt(target.value, 10) });
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
@@ -199,59 +225,31 @@ export default {
 
       this.currentTab = this.tabs[0].name;
     },
-    setDocFields (original) {
-      const doc = original ||
-        Object.fromEntries(
-          this.schema.map(field => ([ field.name, null ]))
-        );
+    // setDocFields (original) {
+    //   const doc = original ||
+    //     Object.fromEntries(
+    //       this.schema.map(field => ([ field.name, null ]))
+    //     );
 
-      return {
-        data: {
-          ...Object.entries(doc).reduce((acc, [ name, value ]) => {
-            return {
-              ...acc,
-              [name]: typeof value === 'number' ? value : (this.imgInfos[name] || null)
-            };
-          }, {})
-        },
-        hasErrors: false
-      };
+    //   return {
+    //     data: {
+    //       ...Object.entries(doc).reduce((acc, [ name, value ]) => {
+    //         return {
+    //           ...acc,
+    //           [name]: typeof value === 'number' ? value : (this.imgInfos[name] || null)
+    //         };
+    //       }, {})
+    //     },
+    //     hasErrors: false
+    //   };
+    // },
+    focusInput (param) {
+      console.log('param ===> ', param);
     },
     setVisibleSchema () {
       const visibleSchema = this.schema.filter((field) => field.label);
 
       this.visibleSchema = this.formatSizeFields(visibleSchema);
-    },
-    setNestedSchema () {
-      const notAlignedFields = this.visibleSchema
-        .filter((field) => !this.alignedFields.includes(field.name));
-
-      const sizeFields = this.schema
-        .filter((field) => this.alignedFields.includes(field.name));
-
-      const alignedField = {
-        name: 'cropFields',
-        type: 'alignedFields',
-        label: 'Crop Size (px)',
-        fields: this.formatSizeFields(sizeFields)
-      };
-
-      this.nestedSchema = [
-        ...notAlignedFields,
-        alignedField
-      ];
-    },
-    formatSizeFields(fields) {
-      return fields.map((field) => {
-        if (!this.alignedFields.includes(field.name)) {
-          return field;
-        }
-
-        return {
-          ...field,
-          max: this.imgInfos[field.name]
-        };
-      });
     },
     switchPane(name) {
       this.currentTab = name;
@@ -263,13 +261,53 @@ export default {
 <style scoped lang="scss" >
 .apos-schema {
   margin: 30px 15px 0;
+}
 
-  &__aligned-fields {
+.apos-schema__aligned-fields {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+
+  .apos-field {
     display: flex;
-    justify-content: space-between;
-    flex-direction: row;
+    align-items: center;
+    position: relative;
 
+    &:first-child {
+      margin-right: 10px;
+    }
+
+    &__label {
+      margin-right: 5px;
+    }
+
+    .apos-input {
+      margin-top: 0;
+      flex-grow: 1;
+    }
+
+    .apos-input:focus {
+      border-color: var(--a-primary);
+    }
   }
+}
+
+.apos-field__size-error {
+  @include type-small;
+  color: var(--a-base-1);
+  margin-bottom: 10px;
+}
+
+.apos-field__label {
+  @include type-label;
+  display: block;
+  margin: 0 0 $spacing-base;
+  padding: 0;
+  color: var(--a-text-primary);
+}
+
+.apos-field__label--aligned {
+  margin: 0
 }
 
 .apos-image-cropper__container {

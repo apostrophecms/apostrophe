@@ -115,9 +115,9 @@ export default {
       type: Boolean,
       default: false
     },
-    imageEditor: {
-      type: Boolean,
-      default: false
+    labelKey: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'select' ],
@@ -133,7 +133,7 @@ export default {
         },
         menu: [
           {
-            label: this.imageEditor
+            label: this.labelKey
               ? 'apostrophe:editImageAdjustments'
               : 'apostrophe:editRelationship',
             action: 'edit-relationship'

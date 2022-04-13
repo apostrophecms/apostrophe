@@ -43,7 +43,7 @@
           :value="next"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
-          :image-editor="field.editor === imageRelationshipComponent"
+          :label-key="getSlatLabelKey()"
         />
         <AposSearchList
           :list="searchList"
@@ -80,8 +80,7 @@ export default {
       disabled: false,
       searching: false,
       choosing: false,
-      relationshipSchema: null,
-      imageRelationshipComponent: 'AposImageRelationshipEditor'
+      relationshipSchema: null
     };
   },
   computed: {
@@ -202,24 +201,11 @@ export default {
       }
     },
     async editRelationship (item) {
-      const editor = this.field.editor === this.imageRelationshipComponent
-        ? this.imageRelationshipComponent
-        : 'AposRelationshipEditor';
-
-      const imgInfos = item.attachment ? {
-        url: item.attachment._urls.original,
-        width: item.attachment.width,
-        height: item.attachment.height,
-        top: item.attachment?.crop?.top || 0,
-        left: item.attachment?.crop?.left || 0
-      } : {};
+      const editor = this.field.editor || 'AposRelationshipEditor';
 
       const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
-        id: item.attachment._id,
-        title: item.title,
-        value: item._fields,
-        imgInfos
+        item
       });
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
@@ -227,6 +213,11 @@ export default {
           ...this.next[index],
           _fields: result
         });
+      }
+    },
+    getSlatLabelKey () {
+      if (this.field.editor === 'AposImageRelationshipEditor') {
+        return 'apostrophe:editImageAdjustments';
       }
     }
   }
