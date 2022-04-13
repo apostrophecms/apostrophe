@@ -701,8 +701,8 @@ module.exports = {
                 value._crop = {
                   top: ancestorFields.top || 0,
                   left: ancestorFields.left || 0,
-                  width: ancestorFields.width || 0,
-                  height: ancestorFields.height || 0
+                  width: ancestorFields.width,
+                  height: ancestorFields.height
                 };
                 value._focalPoint = _.pick(ancestorFields, 'x', 'y');
                 break;
