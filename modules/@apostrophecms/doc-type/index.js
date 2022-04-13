@@ -94,28 +94,50 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        async updateBacklinks(req, doc) {
+        async updateCacheField(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
 
-          // Remove all references to the doc
+          // - Remove current doc reference from docs that include it
+          // - Update these docs' cache field
           await self.apos.doc.db.updateMany({
             relatedReverseIds: { $in: [ doc.aposDocId ] },
             aposLocale: { $in: [ doc.aposLocale, null ] }
           }, {
-            $pull: { relatedReverseIds: doc.aposDocId }
+            $pull: { relatedReverseIds: doc.aposDocId },
+            $set: { cacheInvalidatedAt: doc.updatedAt }
           });
 
-          if (!relatedDocsIds.length) {
-            return;
+          if (relatedDocsIds.length) {
+            // - Add current doc reference to related docs
+            // - Update related docs' cache field
+            await self.apos.doc.db.updateMany({
+              aposDocId: { $in: relatedDocsIds },
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $push: { relatedReverseIds: doc.aposDocId },
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
           }
 
-          // Add doc reference to all related docs
-          await self.apos.doc.db.updateMany({
-            aposDocId: { $in: relatedDocsIds },
-            aposLocale: { $in: [ doc.aposLocale, null ] }
-          }, {
-            $push: { relatedReverseIds: doc.aposDocId }
-          });
+          if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
+            // Update related reverse docs' cache field
+            await self.apos.doc.db.updateMany({
+              aposDocId: { $in: doc.relatedReverseIds },
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
+          }
+
+          if (doc._parentSlug) {
+            // Update piece index page's cache field
+            await self.apos.doc.db.updateOne({
+              slug: doc._parentSlug,
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
+          }
         },
         prepareForStorage(req, doc) {
           self.apos.schema.prepareForStorage(req, doc);
@@ -918,6 +940,7 @@ module.exports = {
         // Setting it this way rather than setting it to published.updatedAt
         // guarantees no small discrepancy breaking equality comparisons
         draft.updatedAt = draft.lastPublishedAt;
+        draft.cacheInvalidatedAt = draft.lastPublishedAt;
         draft.updatedBy = published.updatedBy;
         draft = await self.update(req.clone({
           mode: 'draft'

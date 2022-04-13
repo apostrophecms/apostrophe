@@ -451,25 +451,70 @@ module.exports = {
         );
       },
 
+      // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
+      // Other session properties must be assumed to be specific to the user, with a possible
+      // impact on the response, and thus mean this request must not be cached.
+      // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
+      isSafeToCache(req) {
+        if (req.user) {
+          return false;
+        }
+
+        return Object.entries(req.session).every(([ key, val ]) =>
+          key === 'cookie' || (
+            (key === 'flash' || key === 'passport') && _.isEmpty(val)
+          )
+        );
+      },
+
       setMaxAge(req, maxAge) {
         if (typeof maxAge !== 'number') {
           self.apos.util.warnDev(`"maxAge" property must be defined as a number in the "${self.__meta.name}" module's cache options"`);
           return;
         }
 
-        // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
-        // Other session properties must be assumed to be specific to the user, with a possible
-        // impact on the response, and thus mean this request must not be cached.
-        // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
-        const isSessionClearForCaching = Object.entries(req.session).every(([ key, val ]) =>
-          key === 'cookie' || (
-            (key === 'flash' || key === 'passport') && _.isEmpty(val)
-          )
-        );
-        const isSafeToCache = !req.user && isSessionClearForCaching;
-        const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
+        const cacheControlValue = self.isSafeToCache(req) ? `max-age=${maxAge}` : 'no-store';
 
         req.res.header('Cache-Control', cacheControlValue);
+      },
+
+      generateETagParts(req, doc) {
+        const context = doc || req.data.piece || req.data.page;
+
+        if (!context || !context.cacheInvalidatedAt) {
+          return null;
+        }
+
+        const releaseId = self.apos.asset.getReleaseId();
+        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime().toString();
+
+        return [ releaseId, cacheInvalidatedAtTimestamp ];
+      },
+
+      setETag(req, eTagParts) {
+        req.res.header('ETag', eTagParts.join(':'));
+      },
+
+      checkETag(req, doc, maxAge) {
+        const eTagParts = self.generateETagParts(req, doc);
+
+        if (!eTagParts || !self.isSafeToCache(req)) {
+          return false;
+        }
+
+        const clientETagParts = req.headers['if-none-match'] ? req.headers['if-none-match'].split(':') : [];
+        const doesETagMatch = clientETagParts[0] === eTagParts[0] && clientETagParts[1] === eTagParts[1];
+
+        const now = Date.now();
+        const clientETagAge = (now - clientETagParts[2]) / 1000;
+
+        if (!doesETagMatch || clientETagAge > maxAge) {
+          self.setETag(req, [ ...eTagParts, now ]);
+          return false;
+        }
+
+        self.setETag(req, clientETagParts);
+        return true;
       },
 
       // Call from init once if this module implements the `getBrowserData` method.
