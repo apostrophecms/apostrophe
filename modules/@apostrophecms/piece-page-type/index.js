@@ -241,7 +241,7 @@ module.exports = {
           if (parentPage) {
             piece._url = self.buildUrl(req, parentPage, piece);
             piece._parentUrl = parentPage._url;
-            piece._parentPage = parentPage.slug;
+            piece._parentSlug = parentPage.slug;
           }
         });
       },

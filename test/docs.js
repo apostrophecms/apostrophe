@@ -523,7 +523,7 @@ describe('Docs', function() {
       lastName: 'Lee',
       age: 30,
       alive: false,
-      _parentPage: '/parent/new-page'
+      _parentSlug: '/parent/new-page'
     };
 
     await apos.doc.insert(apos.task.getReq(), page);
