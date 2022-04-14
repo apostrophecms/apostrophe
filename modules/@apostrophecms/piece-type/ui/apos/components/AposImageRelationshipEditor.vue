@@ -124,7 +124,6 @@ export default {
   },
   emits: [ 'modal-result', 'safe-close' ],
   data() {
-    console.log('this.item', this.item);
     return {
       original: this.value,
       docFields: {
