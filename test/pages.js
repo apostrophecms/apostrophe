@@ -505,13 +505,10 @@ describe('Pages', function() {
 
   it('should not set a cache-control value when retrieving a single page, when "etags" cache option is set', async () => {
     apos.page.options.cache = {
-      page: {
-        maxAge: 5555
-      },
       api: {
-        maxAge: 5555
-      },
-      etags: true
+        maxAge: 5555,
+        etags: true
+      }
     };
 
     const response = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
@@ -665,9 +662,9 @@ describe('Pages', function() {
   it('should not set a cache-control value when serving a page, when "etags" cache option is set', async () => {
     apos.page.options.cache = {
       page: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
     const response = await apos.http.get('/', { fullResponse: true });
 
@@ -692,9 +689,9 @@ describe('Pages', function() {
   it('should set a custom etag when retrieving a single page', async () => {
     apos.page.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
@@ -711,9 +708,9 @@ describe('Pages', function() {
   it('should return a 304 status code when retrieving a page with a matching etag', async () => {
     apos.page.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
@@ -739,9 +736,9 @@ describe('Pages', function() {
   it('should not return a 304 status code when retrieving a page that has been edited', async () => {
     apos.page.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
@@ -782,9 +779,9 @@ describe('Pages', function() {
   it('should not return a 304 status code when retrieving a page after the max-age period', async () => {
     apos.page.options.cache = {
       api: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
@@ -818,9 +815,9 @@ describe('Pages', function() {
   it('should set a custom etag when serving a page', async () => {
     apos.page.options.cache = {
       page: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
     const response = await apos.http.get('/', { fullResponse: true });
 
@@ -836,9 +833,9 @@ describe('Pages', function() {
   it('should return a 304 status code when requesting a page with a matching etag', async () => {
     apos.page.options.cache = {
       page: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/', { fullResponse: true });
@@ -864,9 +861,9 @@ describe('Pages', function() {
   it('should not return a 304 status code when requesting a page that has been edited', async () => {
     apos.page.options.cache = {
       page: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/', { fullResponse: true });
@@ -907,9 +904,9 @@ describe('Pages', function() {
   it('should not return a 304 status code when requesting a page with an outdated release id', async () => {
     apos.page.options.cache = {
       page: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/', { fullResponse: true });
@@ -943,9 +940,9 @@ describe('Pages', function() {
   it('should not return a 304 status code when requesting a page after the max-age period', async () => {
     apos.page.options.cache = {
       page: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/', { fullResponse: true });
@@ -979,9 +976,9 @@ describe('Pages', function() {
   it('should not set a custom etag when retrieving a single page, when user is connected', async () => {
     apos.page.options.cache = {
       api: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const jar = apos.http.jar();
@@ -1011,9 +1008,9 @@ describe('Pages', function() {
   it('should not set a custom etag when retrieving a single page, when user is connected using an api key', async () => {
     apos.page.options.cache = {
       api: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const response = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}?apiKey=${apiKey}`, { fullResponse: true });

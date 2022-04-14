@@ -218,7 +218,7 @@ module.exports = {
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             const { maxAge } = self.options.cache.api;
 
-            if (!self.options.cache.etags) {
+            if (!self.options.cache.api.etags) {
               self.setMaxAge(req, maxAge);
             } else if (self.checkETag(req, doc, maxAge)) {
               return {};
