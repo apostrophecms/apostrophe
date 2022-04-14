@@ -5,6 +5,7 @@
       :src="attachment._urls.uncropped ? attachment._urls.uncropped.original : attachment._urls.original"
       @change="onChange"
       :default-size="defaultSize"
+      :default-position="defaultPosition"
     />
   </div>
 </template>
@@ -61,14 +62,17 @@ export default {
         this.$refs.cropper.setCoordinates(coordinates);
       }, 500
     );
+
+    this.defaultSize = {
+      width: this.docFields.data.width,
+      height: this.docFields.data.height
+    };
+    this.defaultPosition = {
+      top: this.docFields.data.top,
+      left: this.docFields.data.left
+    };
   },
   methods: {
-    defaultSize({ imageSize, visibleArea }) {
-      return {
-        width: (visibleArea || imageSize).width,
-        height: (visibleArea || imageSize).height
-      };
-    },
     onChange ({ coordinates }) {
       if (
         !this.isUpdatingCoordinates &&

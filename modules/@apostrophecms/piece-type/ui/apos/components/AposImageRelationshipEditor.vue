@@ -124,14 +124,15 @@ export default {
   },
   emits: [ 'modal-result', 'safe-close' ],
   data() {
+    console.log('this.item', this.item);
     return {
       original: this.value,
       docFields: {
         data: {
-          width: 0,
-          height: 0,
-          top: 0,
-          left: 0
+          width: this.item.attachment._crop ? this.item.attachment._crop.width : this.item.attachment.width,
+          height: this.item.attachment._crop ? this.item.attachment._crop.height : this.item.attachment.height,
+          top: this.item.attachment._crop ? this.item.attachment._crop.top : 0,
+          left: this.item.attachment._crop ? this.item.attachment._crop.left : 0
         }
       },
       errors: {},
