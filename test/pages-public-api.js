@@ -89,9 +89,9 @@ describe('Pages Public API', function() {
     };
     apos.page.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
@@ -129,9 +129,9 @@ describe('Pages Public API', function() {
     };
     apos.page.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });

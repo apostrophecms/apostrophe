@@ -98,9 +98,9 @@ describe('Pieces Public API', function() {
     };
     apos.thing.options.cache = {
       api: {
-        maxAge: 2222
-      },
-      etags: true
+        maxAge: 2222,
+        etags: true
+      }
     };
 
     const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
@@ -135,9 +135,9 @@ describe('Pieces Public API', function() {
     };
     apos.thing.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });

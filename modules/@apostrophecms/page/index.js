@@ -181,7 +181,7 @@ module.exports = {
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             const { maxAge } = self.options.cache.api;
 
-            if (!self.options.cache.etags) {
+            if (!self.options.cache.api.etags) {
               self.setMaxAge(req, maxAge);
             } else if (self.checkETag(req, result, maxAge)) {
               return {};
@@ -1414,7 +1414,7 @@ database.`);
         if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
           const { maxAge } = self.options.cache.page;
 
-          if (!self.options.cache.etags) {
+          if (!self.options.cache.page.etags) {
             self.setMaxAge(req, maxAge);
           } else if (self.checkETag(req, undefined, maxAge)) {
             // Stop there and send a 304 status code; the cached response will be used
