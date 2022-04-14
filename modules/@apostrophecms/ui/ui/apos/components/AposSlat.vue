@@ -44,7 +44,7 @@
         </a>
         <div v-if="item.attachment && item.attachment.group === 'images' && item.attachment._urls" class="apos-slat__media-preview">
           <img
-            :src="item.attachment._urls['one-sixth']"
+            :src="item.attachment._urls.uncropped ? item.attachment._urls.uncropped['one-sixth'] : item.attachment._urls['one-sixth']"
             :alt="item.description || item.title"
             class="apos-slat__media"
           >

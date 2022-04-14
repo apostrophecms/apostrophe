@@ -712,11 +712,26 @@ module.exports = {
             if (options.annotate) {
               // Add URLs
               value._urls = {};
+              if (value._crop) {
+                value._urls.uncropped = {};
+              }
               if (value.group === 'images') {
                 _.each(self.imageSizes, function (size) {
                   value._urls[size.name] = self.url(value, { size: size.name });
+                  if (value._crop) {
+                    value._urls.uncropped[size.name] = self.url(value, {
+                      size: size.name,
+                      crop: false
+                    });
+                  }
                 });
                 value._urls.original = self.url(value, { size: 'original' });
+                if (value._crop) {
+                  value._urls.uncropped.original = self.url(value, {
+                    size: 'original',
+                    crop: false
+                  });
+                }
               } else {
                 value._url = self.url(value);
               }
