@@ -1318,9 +1318,9 @@ describe('Pieces', function() {
   it('should not set a cache-control value when retrieving a single piece, when "etags" cache option is set', async () => {
     apos.thing.options.cache = {
       api: {
-        maxAge: 5555
-      },
-      etags: true
+        maxAge: 5555,
+        etags: true
+      }
     };
 
     const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
@@ -1441,9 +1441,9 @@ describe('Pieces', function() {
   it('should set a custom etag when retrieving a single piece', async () => {
     apos.thing.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
@@ -1460,9 +1460,9 @@ describe('Pieces', function() {
   it('should return a 304 status code when retrieving a piece with a matching etag', async () => {
     apos.thing.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
@@ -1488,9 +1488,9 @@ describe('Pieces', function() {
   it('should not return a 304 status code when retrieving a piece that has been edited', async () => {
     apos.thing.options.cache = {
       api: {
-        maxAge: 1111
-      },
-      etags: true
+        maxAge: 1111,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
@@ -1531,9 +1531,9 @@ describe('Pieces', function() {
   it('should not return a 304 status code when retrieving a piece after the max-age period', async () => {
     apos.thing.options.cache = {
       api: {
-        maxAge: 4444
-      },
-      etags: true
+        maxAge: 4444,
+        etags: true
+      }
     };
 
     const response1 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
@@ -1567,9 +1567,9 @@ describe('Pieces', function() {
   it('should not set a custom etag when retrieving a single piece, when user is connected', async () => {
     apos.thing.options.cache = {
       api: {
-        maxAge: 3333
-      },
-      etags: true
+        maxAge: 3333,
+        etags: true
+      }
     };
 
     await apos.http.post('/api/v1/@apostrophecms/login/login', {
@@ -1597,9 +1597,9 @@ describe('Pieces', function() {
   it('should not set a custom etag when retrieving a single piece, when user is connected using an api key', async () => {
     apos.thing.options.cache = {
       api: {
-        maxAge: 3333
-      },
-      etags: true
+        maxAge: 3333,
+        etags: true
+      }
     };
 
     const response = await apos.http.get(`/api/v1/thing/testThing:en:published?apiKey=${apiKey}`, { fullResponse: true });
