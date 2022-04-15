@@ -1,3 +1,5 @@
+// this should be loaded first
+const opentelemetry = require('./lib/opentelemetry');
 const path = require('path');
 const _ = require('lodash');
 const argv = require('boring')({ end: true });
@@ -39,6 +41,20 @@ let defaults = require('./defaults.js');
 // can be set to a number, which will effectively set the cluster
 // option to `cluster: { processes: n }`.
 //
+// `openTelemetryProvider`
+//
+// If set, Apostrophe will register it as a global OpenTelemetry tracer provider.
+// The expected value is an object, an instance of TracerProvider.
+// If the Node SDK is used in the application instead of manual configuration,
+// the provider instance is only available as a
+// private property: `sdkInstance._tracerProvider`. An issue can be opened
+// to discuss the exposure of a public getter with the OpenTelemetry developers.
+//
+// `beforeExit`
+//
+// If set, Apostrophe will invoke it (await) before invoking process.exit.
+// `beforeExit` may be an async function, will be awaited, and takes no arguments.
+//
 // ## Awaiting the Apostrophe function
 //
 // The apos function is async, but in typical cases you do not
@@ -59,8 +75,14 @@ let defaults = require('./defaults.js');
 // `null` in the primary process. In the child process it resolves as
 // documented above.
 
+// The actual entry point, a wrapper that enables the telemetry and starts the
+// root span
 module.exports = async function(options) {
+  const telemetry = opentelemetry(options);
+  let spanName = 'apostrophe:boot';
   const guardTime = 20000;
+
+  // Detect cluster options
   if (process.env.APOS_CLUSTER_PROCESSES) {
     options.cluster = {
       processes: parseInt(process.env.APOS_CLUSTER_PROCESSES)
@@ -70,54 +92,115 @@ module.exports = async function(options) {
     console.log('NODE_ENV is not set to production, disabling cluster mode');
     options.cluster = false;
   }
+
+  // Execute if cluster enabled
   if (options.cluster && !argv._.length) {
     // For bc with node 14 and below we need to check both
     if (cluster.isPrimary || cluster.isMaster) {
-      let processes = options.cluster.processes || cpus().length;
-      if (processes <= 0) {
-        processes = cpus().length + processes;
-      }
-      let capped = '';
-      if (processes > cpus().length) {
-        processes = cpus().length;
-        capped = ' (capped to number of CPU cores)';
-      }
-      if (processes < 2) {
-        processes = 2;
-        if (capped) {
-          capped = ' (less than 2 cores, capped to minimum of 2)';
-        } else {
-          capped = ' (using minimum of 2)';
+      // Activate and return the callback return value
+      return telemetry.startActiveSpan(`${spanName}:primary`, async (span) => {
+        let processes = options.cluster.processes || cpus().length;
+        if (processes <= 0) {
+          processes = cpus().length + processes;
         }
-      }
-      console.log(`Starting ${processes} cluster child processes${capped}`);
-      for (let i = 0; i < processes; i++) {
-        clusterFork();
-      }
-      cluster.on('exit', (worker, code, signal) => {
-        if (code !== 0) {
-          if ((Date.now() - worker.bornAt) < guardTime) {
-            console.error(`Worker process ${worker.process.pid} failed in ${seconds(Date.now() - worker.bornAt)}, waiting ${seconds(guardTime)} before restart`);
-            setTimeout(() => {
-              respawn(worker);
-            }, guardTime);
+        let capped = '';
+        if (processes > cpus().length) {
+          processes = cpus().length;
+          capped = ' (capped to number of CPU cores)';
+        }
+        if (processes < 2) {
+          processes = 2;
+          if (capped) {
+            capped = ' (less than 2 cores, capped to minimum of 2)';
           } else {
-            respawn(worker);
+            capped = ' (using minimum of 2)';
           }
         }
+        console.log(`Starting ${processes} cluster child processes${capped}`);
+        for (let i = 0; i < processes; i++) {
+          clusterFork();
+        }
+        cluster.on('exit', (worker, code, signal) => {
+          if (code !== 0) {
+            if ((Date.now() - worker.bornAt) < guardTime) {
+              console.error(`Worker process ${worker.process.pid} failed in ${seconds(Date.now() - worker.bornAt)}, waiting ${seconds(guardTime)} before restart`);
+              setTimeout(() => {
+                respawn(worker);
+              }, guardTime);
+            } else {
+              respawn(worker);
+            }
+          }
+        });
+        span.end();
+        if (typeof options.beforeExit === 'function') {
+          await options.beforeExit();
+        }
+        return null;
       });
-      return null;
     } else {
+      // continue as a worker operation, the pid should be recorded by the auto instrumentation
+      spanName += ':worker';
       console.log(`Cluster worker ${process.pid} started`);
     }
   }
 
+  // Create and activate the root span for the boot tracer
+  const self = await telemetry.startActiveSpan(spanName, async (span) => {
+    const res = await apostrophe(options, telemetry, span);
+    span.setStatus(telemetry.api.SpanStatusCode.OK);
+    span.end();
+    return res;
+  });
+
+  return self;
+};
+
+// The actual apostrophe bootstrap
+async function apostrophe(options, telemetry, rootSpan) {
   // The core is not a true moog object but it must look enough like one
   // to participate as an async event emitter
   const self = {
     __meta: {
       name: 'apostrophe'
     }
+  };
+
+  // Terminates the process. Emits the `apostrophe:beforeExit` async event;
+  // use this mechanism to invoke any pre-exit application level tasks. Any
+  // `beforeExit` handler errors will be ignored.
+  // Invokes and awaits `options.beforeExit` function if available,
+  // passing as arguments the exit code and message (if any).
+  self._exit = async function(code = 0, message) {
+    try {
+      if (self.emit) {
+        await self.emit('beforeExit');
+      }
+    } catch (e) {
+      // we are at the point where errors are ignored,
+      // if emitter is already registered, all handler errors
+      // are already recorded by the event module instrumentation
+      console.error('beforeExit emit error', e);
+    }
+
+    if (code !== 0) {
+      telemetry.handleError(rootSpan, message);
+    } else {
+      rootSpan.setStatus({
+        code: telemetry.api.SpanStatusCode.OK,
+        message
+      });
+    }
+    rootSpan.end();
+
+    if (typeof options.beforeExit === 'function') {
+      try {
+        await options.beforeExit(code, message);
+      } catch (e) {
+        console.error('beforeExit handler error', e);
+      }
+    }
+    process.exit(code);
   };
 
   try {
@@ -129,6 +212,9 @@ module.exports = async function(options) {
     // The core must have a reference to itself in order to use the
     // promise event emitter code
     self.apos = self;
+
+    // Register the telemetry API as a pseudo module
+    self.apos.telemetry = telemetry;
 
     Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
 
@@ -212,17 +298,22 @@ module.exports = async function(options) {
       await self.apos.page.implementParkAllInOtherLocales();
     });
     await self.emit('ready'); // formerly afterInit
+
     if (self.taskRan) {
-      process.exit(0);
+      await self._exit();
     } else {
-      await self.emit('run', self.isTask());
+      const after = { exit: null };
+      await self.emit('run', self.isTask(), after);
+      if (after.exit !== null) {
+        await self._exit(after.exit);
+      }
     }
+
     return self;
   } catch (e) {
     if (options.exit !== false) {
-      /* eslint-disable-next-line no-console */
       console.error(e);
-      process.exit(1);
+      await self._exit(1, e);
     }
   }
 

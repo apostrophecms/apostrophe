@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const cuid = require('cuid');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 
 // This module is responsible for managing all of the documents (apostrophe "docs")
 // in the `aposDocs` mongodb collection.
@@ -439,16 +440,49 @@ module.exports = {
       // If `options.permissions` is set explicitly to
       // `false`, permissions checks are bypassed.
       async insert(req, doc, options) {
-        options = options || {};
-        const m = self.getManager(doc.type);
-        await m.emit('beforeInsert', req, doc, options);
-        await m.emit('beforeSave', req, doc, options);
-        await self.insertBody(req, doc, options);
-        await m.emit('afterInsert', req, doc, options);
-        await m.emit('afterSave', req, doc, options);
-        // TODO: Remove `afterLoad` in next major version. Deprecated.
-        await m.emit('afterLoad', req, [ doc ]);
-        return doc;
+        const telemetry = self.apos.telemetry;
+        return telemetry.startActiveSpan(`model:${doc.type}:insert`, async (span) => {
+          span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'insert');
+          span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+          span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+          span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
+
+          try {
+            options = options || {};
+            const m = self.getManager(doc.type);
+            await m.emit('beforeInsert', req, doc, options);
+            await m.emit('beforeSave', req, doc, options);
+
+            await telemetry.startActiveSpan(`db:${doc.type}:insert`, async (spanInsert) => {
+              spanInsert.setAttribute(SemanticAttributes.CODE_FUNCTION, 'insertBody');
+              spanInsert.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+              spanInsert.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+              spanInsert.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
+              try {
+                const result = await self.insertBody(req, doc, options);
+                spanInsert.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+                return result;
+              } catch (e) {
+                telemetry.handleError(spanInsert, e);
+                throw e;
+              } finally {
+                spanInsert.end();
+              }
+            }, span, {});
+
+            await m.emit('afterInsert', req, doc, options);
+            await m.emit('afterSave', req, doc, options);
+            // TODO: Remove `afterLoad` in next major version. Deprecated.
+            await m.emit('afterLoad', req, [ doc ]);
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+            return doc;
+          } catch (err) {
+            telemetry.handleError(span, err);
+            throw err;
+          } finally {
+            span.end();
+          }
+        });
       },
       // Updates the given document. If the slug is not
       // unique it is made unique. `beforeUpdate`, `beforeSave`,
@@ -475,16 +509,49 @@ module.exports = {
       // If `options.permissions` is set explicitly to
       // `false`, permissions checks are bypassed.
       async update(req, doc, options) {
-        options = options || {};
-        const m = self.getManager(doc.type);
-        await m.emit('beforeUpdate', req, doc, options);
-        await m.emit('beforeSave', req, doc, options);
-        await self.updateBody(req, doc, options);
-        await m.emit('afterUpdate', req, doc, options);
-        await m.emit('afterSave', req, doc, options);
-        // TODO: Remove `afterLoad` in next major version. Deprecated.
-        await m.emit('afterLoad', req, [ doc ]);
-        return doc;
+        const telemetry = self.apos.telemetry;
+        return telemetry.startActiveSpan(`model:${doc.type}:update`, async (span) => {
+          span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'update');
+          span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+          span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+          span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
+
+          try {
+            options = options || {};
+            const m = self.getManager(doc.type);
+            await m.emit('beforeUpdate', req, doc, options);
+            await m.emit('beforeSave', req, doc, options);
+
+            await telemetry.startActiveSpan(`db:${doc.type}:update`, async (spanUpdate) => {
+              spanUpdate.setAttribute(SemanticAttributes.CODE_FUNCTION, 'updateBody');
+              spanUpdate.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+              spanUpdate.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
+              spanUpdate.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
+              try {
+                const result = await self.updateBody(req, doc, options);
+                spanUpdate.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+                return result;
+              } catch (e) {
+                telemetry.handleError(spanUpdate, e);
+                throw e;
+              } finally {
+                spanUpdate.end();
+              }
+            }, span, {});
+
+            await m.emit('afterUpdate', req, doc, options);
+            await m.emit('afterSave', req, doc, options);
+            // TODO: Remove `afterLoad` in next major version. Deprecated.
+            await m.emit('afterLoad', req, [ doc ]);
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+            return doc;
+          } catch (err) {
+            telemetry.handleError(span, err);
+            throw err;
+          } finally {
+            span.end();
+          }
+        });
       },
 
       // True delete. To place a document in the archive,
