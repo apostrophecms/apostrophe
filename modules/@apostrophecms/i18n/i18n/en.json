@@ -57,6 +57,7 @@
   "create": "Create",
   "credit": "Credit",
   "creditUrl": "Credit URL",
+  "cropAndSize": "Crop & Size (px)",
   "currentLocale": "Currently selected locale",
   "cut": "Cut",
   "copy": "Copy",
