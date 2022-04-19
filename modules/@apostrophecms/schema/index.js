@@ -1012,12 +1012,12 @@ module.exports = {
           // so consider that too
           const withType = field.name.replace(/^_/, '').replace(/s$/, '');
           if (!_.find(self.apos.doc.managers, { name: withType })) {
-            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
+            fail('withType property is missing. Hint: it must match the name of a doc type module. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
         }
         if (!field.withType) {
-          fail('withType property is missing. Hint: it must match the "name" property of a doc type.');
+          fail('withType property is missing. Hint: it must match the name of a doc type module.');
         }
         if (Array.isArray(field.withType)) {
           _.each(field.withType, function (type) {
@@ -1025,6 +1025,14 @@ module.exports = {
           });
         } else {
           lintType(field.withType);
+          const withTypeManager = self.apos.doc.getManager(field.withType);
+          field.editor = field.editor || withTypeManager.options.relationshipEditor;
+          if (!field.schema && !Array.isArray(field.withType)) {
+            const withTypeManager = self.apos.doc.getManager(field.withType);
+            const fields = withTypeManager.options.relationshipFields && withTypeManager.options.relationshipFields.add;
+            field.fields = fields && klona(fields);
+            field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
+          }
         }
         if (field.schema && !field.fieldsStorage) {
           field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
@@ -2503,7 +2511,6 @@ module.exports = {
             if (field.type !== 'relationship' && !field.fields) {
               throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
             }
-
             if (field.fields) {
               if (!field.fields.add) {
                 if (Object.keys(field.fields).length) {
