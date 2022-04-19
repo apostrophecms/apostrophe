@@ -58,6 +58,7 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import { klona } from 'klona';
 
 export default {
   name: 'AposInputRelationship',
@@ -65,18 +66,21 @@ export default {
   emits: [ 'input' ],
   data () {
     const next = (this.value && Array.isArray(this.value.data))
-      ? this.value.data : (this.field.def || []);
+      ? klona(this.value.data) : (klona(this.field.def) || []);
+
+    // Remember relationship subfield values even if a document
+    // is temporarily deselected, easing the user's pain if they
+    // inadvertently deselect something for a moment
+    const subfields = Object.fromEntries(
+      (next || []).filter(doc => doc._fields)
+        .map(doc => [ doc._id, doc._fields ])
+    );
+
     return {
       searchTerm: '',
       searchList: [],
       next,
-      // Remember relationship subfield values even if a document
-      // is temporarily deselected, easing the user's pain if they
-      // inadvertently deselect something for a moment
-      subfields: Object.fromEntries((this.next || [])
-        .filter(doc => doc._fields)
-        .map(doc => [ doc._id, doc._fields ])
-      ),
+      subfields,
       disabled: false,
       searching: false,
       choosing: false,
