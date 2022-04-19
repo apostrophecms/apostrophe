@@ -324,13 +324,13 @@ describe('Attachment', function() {
         'one-sixth'
       ];
 
-      assert(attachment._urlsUncropped);
-      assert(!Array.isArray(attachment._urlsUncropped));
-      assert(typeof attachment._urlsUncropped === 'object');
+      assert(attachment._urls.uncropped);
+      assert(!Array.isArray(attachment._urls.uncropped));
+      assert(typeof attachment._urls.uncropped === 'object');
 
       imgVersions.forEach((version) => {
-        assert(attachment._urlsUncropped[version]);
-        assert(typeof attachment._urlsUncropped[version] === 'string');
+        assert(attachment._urls.uncropped[version]);
+        assert(typeof attachment._urls.uncropped[version] === 'string');
       });
     });
 

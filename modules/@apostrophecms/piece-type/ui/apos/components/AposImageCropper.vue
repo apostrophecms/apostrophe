@@ -2,8 +2,8 @@
   <div class="apos-image-cropper">
     <cropper
       ref="cropper"
-      :src="attachment._urlsUncropped
-        ? attachment._urlsUncropped.original
+      :src="attachment._urls.uncropped
+        ? attachment._urls.uncropped.original
         : attachment._urls.original"
       @change="onChange"
       :default-size="defaultSize"
