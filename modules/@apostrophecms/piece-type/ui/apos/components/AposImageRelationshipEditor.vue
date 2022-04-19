@@ -73,7 +73,7 @@
             </div>
           </div>
         </div>
-        <!-- TODO: Make grouping and tabs working for relationships -->
+        <!-- TODO: Implements Grouping for Relationships -->
         <!-- <AposModalTabs
           v-if="tabs.length"
           :current="currentTab"
@@ -143,16 +143,13 @@ export default {
       groups: [],
       tabs: [],
       currentTab: null,
-      visibleSchema: [],
       alignedFields: [ 'width', 'height' ]
     };
   },
   async mounted() {
     this.modal.active = true;
 
-    // this.setVisibleSchema();
-    // this.setNestedSchema();
-
+    // TODO: Implements Grouping for Relationships
     // this.setGroups();
     // this.setTabs();
     // this.setFields();
@@ -207,53 +204,49 @@ export default {
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
-    setGroups() {
-      this.groups = this.schema.reduce((acc, {
-        name, type, group
-      }) => {
-        const newField = {
-          name,
-          type
-        };
+    // TODO: Implements Grouping for Relationships
+    // setGroups() {
+    //   this.groups = this.schema.reduce((acc, {
+    //     name, type, group
+    //   }) => {
+    //     const newField = {
+    //       name,
+    //       type
+    //     };
 
-        const { fields = [], schema = [] } = acc[group.name] || {};
+    //     const { fields = [], schema = [] } = acc[group.name] || {};
 
-        return {
-          ...acc,
-          [group.name]: {
-            label: group.label,
-            fields: [
-              ...fields,
-              newField.name
-            ],
-            schema: [
-              ...schema,
-              newField
-            ]
-          }
-        };
-      }, {});
-    },
-    setTabs() {
-      this.tabs = Object.entries(this.groups).reduce((acc, [ name, { label } ]) => {
-        return [
-          ...acc,
-          {
-            name,
-            label
-          }
-        ];
-      }, []);
+    //     return {
+    //       ...acc,
+    //       [group.name]: {
+    //         label: group.label,
+    //         fields: [
+    //           ...fields,
+    //           newField.name
+    //         ],
+    //         schema: [
+    //           ...schema,
+    //           newField
+    //         ]
+    //       }
+    //     };
+    //   }, {});
+    // },
+    // setTabs() {
+    //   this.tabs = Object.entries(this.groups).reduce((acc, [ name, { label } ]) => {
+    //     return [
+    //       ...acc,
+    //       {
+    //         name,
+    //         label
+    //       }
+    //     ];
+    //   }, []);
 
-      this.currentTab = this.tabs[0].name;
-    },
+    //   this.currentTab = this.tabs[0].name;
+    // },
     focusInput (isFocused = true) {
       this.inputFocused = isFocused;
-    },
-    setVisibleSchema () {
-      const visibleSchema = this.schema.filter((field) => field.label);
-
-      this.visibleSchema = this.formatSizeFields(visibleSchema);
     },
     switchPane(name) {
       this.currentTab = name;
