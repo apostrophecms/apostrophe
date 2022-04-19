@@ -43,7 +43,7 @@
           :value="next"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
-          :image-editor="field.editor === imageRelationshipComponent"
+          :label-key="getSlatLabelKey()"
         />
         <AposSearchList
           :list="searchList"
@@ -58,6 +58,7 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import { klona } from 'klona';
 
 export default {
   name: 'AposInputRelationship',
@@ -65,23 +66,25 @@ export default {
   emits: [ 'input' ],
   data () {
     const next = (this.value && Array.isArray(this.value.data))
-      ? this.value.data : (this.field.def || []);
+      ? klona(this.value.data) : (klona(this.field.def) || []);
+
+    // Remember relationship subfield values even if a document
+    // is temporarily deselected, easing the user's pain if they
+    // inadvertently deselect something for a moment
+    const subfields = Object.fromEntries(
+      (next || []).filter(doc => doc._fields)
+        .map(doc => [ doc._id, doc._fields ])
+    );
+
     return {
       searchTerm: '',
       searchList: [],
       next,
-      // Remember relationship subfield values even if a document
-      // is temporarily deselected, easing the user's pain if they
-      // inadvertently deselect something for a moment
-      subfields: Object.fromEntries((this.next || [])
-        .filter(doc => doc._fields)
-        .map(doc => [ doc._id, doc._fields ])
-      ),
+      subfields,
       disabled: false,
       searching: false,
       choosing: false,
-      relationshipSchema: null,
-      imageRelationshipComponent: 'AposImageRelationshipEditor'
+      relationshipSchema: null
     };
   },
   computed: {
@@ -157,10 +160,12 @@ export default {
       if (!this.searching) {
         if (this.searchTerm.length) {
           this.searching = true;
-          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`, {
-            busy: false,
-            draft: true
-          });
+          const list = await apos.http.get(
+            `${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`,
+            {
+              busy: false,
+              draft: true
+            });
           // filter items already selected
           this.searchList = list.results.filter(item => {
             return !this.next.map(i => i._id).includes(item._id);
@@ -200,9 +205,7 @@ export default {
       }
     },
     async editRelationship (item) {
-      const editor = this.field.editor === this.imageRelationshipComponent
-        ? this.imageRelationshipComponent
-        : 'AposRelationshipEditor';
+      const editor = this.field.editor || 'AposRelationshipEditor';
 
       const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
@@ -216,6 +219,11 @@ export default {
           ...this.next[index],
           _fields: result
         });
+      }
+    },
+    getSlatLabelKey () {
+      if (this.field.editor === 'AposImageRelationshipEditor') {
+        return 'apostrophe:editImageAdjustments';
       }
     }
   }

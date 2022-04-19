@@ -32,7 +32,7 @@
           :slat-count="next.length"
           :removable="removable"
           :has-relationship-schema="hasRelationshipSchema"
-          :image-editor="imageEditor"
+          :label-key="labelKey"
         />
       </transition-group>
     </draggable>
@@ -68,9 +68,9 @@ export default {
       type: Boolean,
       default: false
     },
-    imageEditor: {
-      type: Boolean,
-      default: false
+    labelKey: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'update', 'item-clicked', 'select', 'input' ],

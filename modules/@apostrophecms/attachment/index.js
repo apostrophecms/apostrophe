@@ -694,16 +694,13 @@ module.exports = {
             // apos.attachment.url with the returned object
             for (let i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
-              const ancestorFields = ancestor.attachment && ancestor.attachment._id === value._id && ancestor._fields;
+              const ancestorFields = ancestor.attachment &&
+                ancestor.attachment._id === value._id && ancestor._fields;
+
               if (ancestorFields) {
                 value = _.clone(value);
                 o.attachment = value;
-                value._crop = {
-                  top: ancestorFields.top || 0,
-                  left: ancestorFields.left || 0,
-                  width: ancestorFields.width,
-                  height: ancestorFields.height
-                };
+                value._crop = _.pick(ancestorFields, 'width', 'height', 'top', 'left');
                 value._focalPoint = _.pick(ancestorFields, 'x', 'y');
                 break;
               }
@@ -712,11 +709,26 @@ module.exports = {
             if (options.annotate) {
               // Add URLs
               value._urls = {};
+              if (value._crop) {
+                value._urls.uncropped = {};
+              }
               if (value.group === 'images') {
                 _.each(self.imageSizes, function (size) {
                   value._urls[size.name] = self.url(value, { size: size.name });
+                  if (value._crop) {
+                    value._urls.uncropped[size.name] = self.url(value, {
+                      size: size.name,
+                      crop: false
+                    });
+                  }
                 });
                 value._urls.original = self.url(value, { size: 'original' });
+                if (value._crop) {
+                  value._urls.uncropped.original = self.url(value, {
+                    size: 'original',
+                    crop: false
+                  });
+                }
               } else {
                 value._url = self.url(value);
               }

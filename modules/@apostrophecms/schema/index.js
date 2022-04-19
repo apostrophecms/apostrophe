@@ -1204,52 +1204,7 @@ module.exports = {
           options.alterFields(schema);
         }
 
-        // always make sure there is a default group
-        let groups = [ {
-          name: defaultGroup.name,
-          label: defaultGroup.label,
-          fields: _.map(schema, 'name')
-        } ];
-
-        // if we are getting arrangeFields and it's not empty
-        if (options.arrangeFields && options.arrangeFields.length > 0) {
-          // if it's full of strings, use them for the default group
-          if (_.isString(options.arrangeFields[0])) {
-            groups[0].fields = options.arrangeFields; // if it's full of objects, those are groups, so use them
-          } else if (_.isPlainObject(options.arrangeFields[0])) {
-            // reset the default group's fields, but keep it around,
-            // in case they have fields they forgot to put in a group
-            groups[0].fields = [];
-            groups = groups.concat(options.arrangeFields);
-          }
-        }
-
-        // If there is a later group with the same name, the later
-        // one wins and the earlier is forgotten. Otherwise you can't
-        // ever toss a field out of a group without putting it into
-        // another one, which makes it impossible to un-group a
-        // field and have it appear outside of tabs in the interface.
-        //
-        // A reconfigured group is ordered to the bottom of the list
-        // of groups again, which has the intended effect if you
-        // arrange all of the groups in your module config. However
-        // it comes before any groups with the `last: true` flag that
-        // were not reconfigured. Reconfiguring a group without that
-        // flag clears it.
-
-        const newGroups = [];
-        _.each(groups, function (group) {
-          const index = _.findIndex(newGroups, { name: group.name });
-          if (index !== -1) {
-            newGroups.splice(index, 1);
-          }
-          let i = _.findIndex(newGroups, { last: true });
-          if (i === -1) {
-            i = groups.length;
-          }
-          newGroups.splice(i, 0, group);
-        });
-        groups = newGroups;
+        const groups = self.composeGroups(schema, options.arrangeFields);
 
         // all fields in the schema will end up in this variable
         let newSchema = [];
@@ -1347,6 +1302,56 @@ module.exports = {
           self.setModuleName(field, module);
         });
         return schema;
+      },
+
+      composeGroups (schema, arrangeFields) {
+        // always make sure there is a default group
+        let groups = [ {
+          name: defaultGroup.name,
+          label: defaultGroup.label,
+          fields: _.map(schema, 'name')
+        } ];
+
+        // if we are getting arrangeFields and it's not empty
+        if (arrangeFields && arrangeFields.length > 0) {
+          // if it's full of strings, use them for the default group
+          if (_.isString(arrangeFields[0])) {
+            groups[0].fields = arrangeFields; // if it's full of objects, those are groups, so use them
+          } else if (_.isPlainObject(arrangeFields[0])) {
+            // reset the default group's fields, but keep it around,
+            // in case they have fields they forgot to put in a group
+            groups[0].fields = [];
+            groups = groups.concat(arrangeFields);
+          }
+        }
+
+        // If there is a later group with the same name, the later
+        // one wins and the earlier is forgotten. Otherwise you can't
+        // ever toss a field out of a group without putting it into
+        // another one, which makes it impossible to un-group a
+        // field and have it appear outside of tabs in the interface.
+        //
+        // A reconfigured group is ordered to the bottom of the list
+        // of groups again, which has the intended effect if you
+        // arrange all of the groups in your module config. However
+        // it comes before any groups with the `last: true` flag that
+        // were not reconfigured. Reconfiguring a group without that
+        // flag clears it.
+
+        const newGroups = [];
+        _.each(groups, function (group) {
+          const index = _.findIndex(newGroups, { name: group.name });
+          if (index !== -1) {
+            newGroups.splice(index, 1);
+          }
+          let i = _.findIndex(newGroups, { last: true });
+          if (i === -1) {
+            i = groups.length;
+          }
+          newGroups.splice(i, 0, group);
+        });
+
+        return newGroups;
       },
 
       // Recursively set moduleName property of the field and any subfields,
@@ -2479,26 +2484,26 @@ module.exports = {
           return idsStorageFields[name] || name;
         }
       },
-      groupsToArray(groups) {
+      groupsToArray(groups = {}) {
         return Object.keys(groups).map(name => ({
           name,
           ...groups[name]
         }));
       },
-      fieldsToArray(context, fields) {
+      fieldsToArray(context, fields = {}) {
         const result = [];
         for (const name of Object.keys(fields)) {
           const field = {
             name,
             ...fields[name]
           };
+          const fieldTypesWithSchemas = [ 'object', 'array', 'relationship' ];
           // TODO same for relationship schemas but they are being refactored in another PR
-          if ((field.type === 'object') || (field.type === 'array') || (field.type === 'relationship')) {
-            if (field.type !== 'relationship') {
-              if (!field.fields) {
-                throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
-              }
+          if (fieldTypesWithSchemas.includes(field.type)) {
+            if (field.type !== 'relationship' && !field.fields) {
+              throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
             }
+
             if (field.fields) {
               if (!field.fields.add) {
                 if (Object.keys(field.fields).length) {
@@ -2507,11 +2512,16 @@ module.exports = {
                   throw new Error(`${context}: the subfield ${name} must have a 'fields' property with an 'add' subproperty containing its own fields.`);
                 }
               }
-              field.schema = self.fieldsToArray(context, field.fields.add || {});
+
+              field.schema = self.compose({
+                addFields: self.fieldsToArray(context, field.fields.add),
+                arrangeFields: self.groupsToArray(field.fields.group)
+              });
             }
           }
           result.push(field);
         }
+
         return result;
       },
       // Array "managers" currently offer just a schema property, for parallelism

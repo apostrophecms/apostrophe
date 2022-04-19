@@ -24,12 +24,10 @@ module.exports = {
               type: 'integer'
             },
             width: {
-              type: 'integer',
-              label: 'W'
+              type: 'integer'
             },
             height: {
-              type: 'integer',
-              label: 'H'
+              type: 'integer'
             },
             x: {
               type: 'integer'

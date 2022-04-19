@@ -312,6 +312,28 @@ describe('Attachment', function() {
       assert(attachments[0]._focalPoint.y === imageMock._fields.y);
     });
 
+    it('should return the attachment of a given image with the uncropped urls', function () {
+      const [ attachment ] = apos.attachment.all(imageMock, { annotate: true });
+      const imgVersions = [
+        'original',
+        'max',
+        'full',
+        'two-thirds',
+        'one-half',
+        'one-third',
+        'one-sixth'
+      ];
+
+      assert(attachment._urls.uncropped);
+      assert(!Array.isArray(attachment._urls.uncropped));
+      assert(typeof attachment._urls.uncropped === 'object');
+
+      imgVersions.forEach((version) => {
+        assert(attachment._urls.uncropped[version]);
+        assert(typeof attachment._urls.uncropped[version] === 'string');
+      });
+    });
+
     it('should not clone attachment', function () {
       const attachments = apos.attachment.all(imageMock, { annotate: true });
 
