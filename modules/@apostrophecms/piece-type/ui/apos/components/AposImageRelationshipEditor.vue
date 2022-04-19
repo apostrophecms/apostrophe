@@ -37,7 +37,8 @@
             {{
               $t('apostrophe:minSize', {
                 width: item.attachment.width,
-                height: item.attachment.height })
+                height: item.attachment.height
+              })
             }}
           </div>
           <div class="apos-schema__aligned-fields">
