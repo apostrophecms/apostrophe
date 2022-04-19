@@ -694,16 +694,13 @@ module.exports = {
             // apos.attachment.url with the returned object
             for (let i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
-              const ancestorFields = ancestor.attachment && ancestor.attachment._id === value._id && ancestor._fields;
+              const ancestorFields = ancestor.attachment &&
+                ancestor.attachment._id === value._id && ancestor._fields;
+
               if (ancestorFields) {
                 value = _.clone(value);
                 o.attachment = value;
-                value._crop = {
-                  top: ancestorFields.top || 0,
-                  left: ancestorFields.left || 0,
-                  width: ancestorFields.width,
-                  height: ancestorFields.height
-                };
+                value._crop = _.pick(ancestorFields, 'width', 'height', 'top', 'left');
                 value._focalPoint = _.pick(ancestorFields, 'x', 'y');
                 break;
               }
