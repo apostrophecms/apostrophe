@@ -73,14 +73,6 @@
             </div>
           </div>
         </div>
-        <!-- TODO: Implements Grouping for Relationships -->
-        <!-- <AposModalTabs
-          v-if="tabs.length"
-          :current="currentTab"
-          :tabs="tabs"
-          :errors="fieldErrors"
-          @select-tab="switchPane"
-        /> -->
       </AposModalRail>
     </template>
     <template #main>
@@ -148,11 +140,6 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-
-    // TODO: Implements Grouping for Relationships
-    // this.setGroups();
-    // this.setTabs();
-    // this.setFields();
   },
   methods: {
     setDataValues () {
@@ -204,47 +191,6 @@ export default {
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
-    // TODO: Implements Grouping for Relationships
-    // setGroups() {
-    //   this.groups = this.schema.reduce((acc, {
-    //     name, type, group
-    //   }) => {
-    //     const newField = {
-    //       name,
-    //       type
-    //     };
-
-    //     const { fields = [], schema = [] } = acc[group.name] || {};
-
-    //     return {
-    //       ...acc,
-    //       [group.name]: {
-    //         label: group.label,
-    //         fields: [
-    //           ...fields,
-    //           newField.name
-    //         ],
-    //         schema: [
-    //           ...schema,
-    //           newField
-    //         ]
-    //       }
-    //     };
-    //   }, {});
-    // },
-    // setTabs() {
-    //   this.tabs = Object.entries(this.groups).reduce((acc, [ name, { label } ]) => {
-    //     return [
-    //       ...acc,
-    //       {
-    //         name,
-    //         label
-    //       }
-    //     ];
-    //   }, []);
-
-    //   this.currentTab = this.tabs[0].name;
-    // },
     focusInput (isFocused = true) {
       this.inputFocused = isFocused;
     },
