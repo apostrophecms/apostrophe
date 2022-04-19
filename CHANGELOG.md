@@ -15,6 +15,7 @@
 
 * Documentation of obsolete options has been removed.
 * Dead code relating to activating in-context widget editors have been removed. They are always active and have been for some time. In the future they might be swapped in on scroll, but there will never be a need to swap them in "on click."
+* The `self.email` method of modules now correctly accepts a default `from` address configured for a specific module via the `from` subproperty of the `email` option to that module. Thanks to `chmdebeer` for pointing out the issue and the fix.
 
 ## 3.17.0 (2022-03-31)
 
