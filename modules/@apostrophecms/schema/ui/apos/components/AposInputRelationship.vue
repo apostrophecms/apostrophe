@@ -40,7 +40,7 @@
           v-if="next.length"
           @input="updateSelected"
           @item-clicked="editRelationship"
-          :value="next"
+          :value="withLabels(next)"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
         />
@@ -57,6 +57,7 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import { get } from 'lodash';
 
 export default {
   name: 'AposInputRelationship',
@@ -103,7 +104,7 @@ export default {
         type: this.$t(this.pluralLabel)
       };
     },
-    chooserComponent () {
+    chooserComponent() {
       return apos.modules[this.field.withType].components.managerModal;
     },
     disableUnpublished() {
@@ -210,6 +211,31 @@ export default {
           _fields: result
         });
       }
+    },
+    label(item) {
+      let candidate;
+      if (this.field.titleField) {
+        candidate = get(item, this.field.titleField);
+      }
+      else if (this.schema.find(field => field.name === 'title') && (item.title !== undefined)) {
+        candidate = item.title;
+      }
+      if ((candidate == null) || candidate === '') {
+        for (let i = 0; (i < this.next.length); i++) {
+          if (this.next[i]._id === item._id) {
+            candidate = `#${ i + 1 }`;
+            break;
+          }
+        }
+      }
+      return candidate;
+    },
+    withLabels(items) {
+      const result = items.map(item => ({
+        ...item,
+        title: this.label(item)
+      }));
+      return result;
     }
   }
 };
