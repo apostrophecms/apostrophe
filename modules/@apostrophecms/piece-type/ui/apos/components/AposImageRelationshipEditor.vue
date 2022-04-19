@@ -27,7 +27,7 @@
       <AposModalRail>
         <div class="apos-schema">
           <label class="apos-field__label">
-            Crop & Size (px)
+            {{ $t('apostrophe:cropAndSize') }}
           </label>
           <div
             v-if="errors.width || errors.height"
@@ -127,12 +127,7 @@ export default {
     return {
       original: this.value,
       docFields: {
-        data: {
-          width: this.item.attachment._crop ? this.item.attachment._crop.width : this.item.attachment.width,
-          height: this.item.attachment._crop ? this.item.attachment._crop.height : this.item.attachment.height,
-          top: this.item.attachment._crop ? this.item.attachment._crop.top : 0,
-          left: this.item.attachment._crop ? this.item.attachment._crop.left : 0
-        }
+        data: this.setDataValues()
       },
       errors: {},
       inputFocused: false,
@@ -153,7 +148,6 @@ export default {
     };
   },
   async mounted() {
-    console.log('this.item ===> ', this.item);
     this.modal.active = true;
 
     // this.setVisibleSchema();
@@ -164,6 +158,20 @@ export default {
     // this.setFields();
   },
   methods: {
+    setDataValues () {
+      if (this.item._fields) {
+        return { ...this.item._fields };
+      }
+
+      return {
+        width: this.item.attachment.width,
+        height: this.item.attachment.height,
+        top: 0,
+        left: 0,
+        x: null,
+        y: null
+      };
+    },
     async submit() {
       if (this.item.attachment) {
         await apos.http.post(`${apos.attachment.action}/crop`, {
