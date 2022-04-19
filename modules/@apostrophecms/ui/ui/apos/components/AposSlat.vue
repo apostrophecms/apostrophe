@@ -42,9 +42,16 @@
         >
           <eye-icon :size="14" class="apos-slat__control--view-icon" />
         </a>
-        <div v-if="item.attachment && item.attachment.group === 'images' && item.attachment._urls" class="apos-slat__media-preview">
+        <div
+          v-if="item.attachment &&
+            item.attachment.group === 'images' &&
+            item.attachment._urls"
+          class="apos-slat__media-preview"
+        >
           <img
-            :src="item.attachment._urls.uncropped ? item.attachment._urls.uncropped['one-sixth'] : item.attachment._urls['one-sixth']"
+            :src="item.attachment._urlsUncropped
+              ? item.attachment._urlsUncropped['one-sixth']
+              : item.attachment._urls['one-sixth']"
             :alt="item.description || item.title"
             class="apos-slat__media"
           >

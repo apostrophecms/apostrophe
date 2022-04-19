@@ -710,13 +710,13 @@ module.exports = {
               // Add URLs
               value._urls = {};
               if (value._crop) {
-                value._urls.uncropped = {};
+                value._urlsUncropped = {};
               }
               if (value.group === 'images') {
                 _.each(self.imageSizes, function (size) {
                   value._urls[size.name] = self.url(value, { size: size.name });
                   if (value._crop) {
-                    value._urls.uncropped[size.name] = self.url(value, {
+                    value._urlsUncropped[size.name] = self.url(value, {
                       size: size.name,
                       crop: false
                     });
@@ -724,7 +724,7 @@ module.exports = {
                 });
                 value._urls.original = self.url(value, { size: 'original' });
                 if (value._crop) {
-                  value._urls.uncropped.original = self.url(value, {
+                  value._urlsUncropped.original = self.url(value, {
                     size: 'original',
                     crop: false
                   });
