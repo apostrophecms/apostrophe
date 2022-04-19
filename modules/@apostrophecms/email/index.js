@@ -44,7 +44,7 @@ module.exports = {
         const args = _.assign({
           html: html,
           text: text,
-          from: module.options.email && (module.options.email.from || self.options.from)
+          from: (module.options.email && module.options.email.from) || self.options.from
         }, options);
         if (process.env.APOS_LOG_EMAIL) {
           self.apos.util.debug(args);
