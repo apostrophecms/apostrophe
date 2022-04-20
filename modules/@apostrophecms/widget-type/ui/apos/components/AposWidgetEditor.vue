@@ -128,7 +128,15 @@ export default {
     }
   },
   async mounted() {
+    apos.area.widgetOptions = [
+      klona(this.options),
+      ...apos.area.widgetOptions
+    ];
     this.modal.active = true;
+  },
+  destroyed() {
+    apos.area.widgetOptions = apos.area.widgetOptions
+      .filter((widget) => widget._id !== this.value._id);
   },
   created() {
     this.original = this.value ? klona(this.value) : this.getDefault();
