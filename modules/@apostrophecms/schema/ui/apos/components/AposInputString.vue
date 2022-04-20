@@ -172,6 +172,14 @@ export default {
         if ((s == null) || (s === '')) {
           return s;
         } else {
+          // The native parse float converts 3.0 to 3 and makes
+          // next to become integer. In theory we don't need parseFloat
+          // as the value is natively guarded by the browser 'number' type.
+          // However we need a float value sent to the backend
+          // and we force that when focus is lost.
+          if (this.focus && (`${s}`.match(/\.[0]*$/))) {
+            return s;
+          }
           return parseFloat(s);
         }
       } else {
