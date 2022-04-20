@@ -157,29 +157,36 @@ export default {
       this.next = items;
     },
     async input () {
-      if (!this.searching) {
-        if (this.searchTerm.length) {
-          this.searching = true;
-          const list = await apos.http.get(
-            `${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`,
-            {
-              busy: false,
-              draft: true
-            });
-          // filter items already selected
-          this.searchList = list.results.filter(item => {
-            return !this.next.map(i => i._id).includes(item._id);
-          }).map(item => {
-            return {
-              ...item,
-              disabled: this.disableUnpublished && !item.lastPublishedAt
-            };
-          });
-          this.searching = false;
-        } else {
-          this.searchList = [];
-        }
+      if (this.searching) {
+        return;
       }
+
+      if (!this.searchTerm.length) {
+        this.searchList = [];
+        return;
+      }
+
+      const qs = {};
+      apos.bus.$emit('piece-relationship-query', qs);
+
+      this.searching = true;
+      const list = await apos.http.get(
+        `${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`,
+        {
+          busy: false,
+          draft: true,
+          qs
+        }
+      );
+      // filter items already selected
+      this.searchList = list.results
+        .filter(item => !this.next.map(i => i._id).includes(item._id))
+        .map(item => ({
+          ...item,
+          disabled: this.disableUnpublished && !item.lastPublishedAt
+        }));
+
+      this.searching = false;
     },
     handleFocusOut() {
       // hide search list when click outside the input
@@ -211,7 +218,8 @@ export default {
         schema: this.field.schema,
         item,
         title: item.title,
-        value: item._fields
+        value: item._fields,
+        field: this.field
       });
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
