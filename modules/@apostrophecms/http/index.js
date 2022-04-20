@@ -2,6 +2,7 @@ const _ = require('lodash');
 const qs = require('qs');
 const fetch = require('node-fetch');
 const tough = require('tough-cookie');
+const escapeHost = require('../../../lib/escape-host');
 
 module.exports = {
   options: {
@@ -288,7 +289,7 @@ module.exports = {
 
       getBase() {
         const server = self.apos.modules['@apostrophecms/express'].server;
-        return `http://${server.address().address}:${server.address().port}`;
+        return `http://${escapeHost(server.address().address)}:${server.address().port}`;
       }
 
     };
