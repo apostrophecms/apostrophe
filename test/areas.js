@@ -7,7 +7,7 @@ describe('Areas', function() {
   this.timeout(t.timeout);
 
   after(async function() {
-    await t.destroy(apos);
+    return t.destroy(apos);
   });
 
   /// ///
