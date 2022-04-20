@@ -113,6 +113,10 @@ export default {
     item: {
       type: Object,
       default: () => ({})
+    },
+    field: {
+      type: Object,
+      required: true
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -133,10 +137,7 @@ export default {
         key: 'apostrophe:editImageRelationshipTitle',
         title: this.title
       },
-      groups: [],
-      tabs: [],
-      currentTab: null,
-      alignedFields: [ 'width', 'height' ]
+      currentTab: null
     };
   },
   async mounted() {
@@ -216,6 +217,7 @@ export default {
     display: flex;
     align-items: center;
     position: relative;
+    flex-grow: 1;
 
     &:first-child {
       margin-right: 10px;
