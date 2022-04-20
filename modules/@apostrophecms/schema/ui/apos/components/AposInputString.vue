@@ -177,7 +177,7 @@ export default {
           // as the value is natively guarded by the browser 'number' type.
           // However we need a float value sent to the backend
           // and we force that when focus is lost.
-          if (this.focus && (`${s}`.match(/\.[0]*$/))) {
+          if (this.focus && `${s}`.match(/\.[0]*$/)) {
             return s;
           }
           return parseFloat(s);
