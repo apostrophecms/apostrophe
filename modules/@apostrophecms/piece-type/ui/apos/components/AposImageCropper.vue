@@ -1,10 +1,12 @@
 <template>
   <div class="apos-image-cropper">
+    <span class="apos-image-focal-point" ref="focalPoint" />
     <cropper
       ref="cropper"
       :src="attachment._urls.uncropped
         ? attachment._urls.uncropped.original
         : attachment._urls.original"
+      :stencil-props="{ 'data-stencil': '' }"
       @change="onChange"
       :default-size="defaultSize"
       :default-position="defaultPosition"
@@ -33,7 +35,19 @@ export default {
   },
   emits: [ 'change' ],
   data: () => ({
-    isUpdatingCoordinates: false
+    isUpdatingCoordinates: false,
+    focusPointCoordinates: {
+      // TODO: set it to cropping center when mounted
+      top: 0,
+      left: 0
+    },
+    // TODO: rename these variables
+    dragAndDrop: {
+      pos1: 0,
+      pos2: 0,
+      pos3: 0,
+      pos4: 0
+    }
   }),
   watch: {
     docFields: {
@@ -74,6 +88,10 @@ export default {
       left: this.docFields.data.left
     };
   },
+  mounted () {
+    // TODO: attach mousedown event to elem (@mousedown)
+    this.$refs.focalPoint.addEventListener('mousedown', this.dragMouseDown);
+  },
   methods: {
     onChange ({ coordinates }) {
       if (
@@ -88,13 +106,85 @@ export default {
     checkCoordinatesDiff (coordinates, dataFields) {
       return Object.entries(coordinates)
         .some(([ name, value ]) => dataFields[name] !== value);
+    },
+    dragMouseDown (event) {
+      const { focalPoint } = this.$refs;
+
+      event.preventDefault();
+
+      this.dragAndDrop.pos3 = event.clientX;
+      this.dragAndDrop.pos4 = event.clientY;
+
+      focalPoint.style.cursor = 'grabbing';
+      // TODO: attach mousemove to focalPoint element
+      document.addEventListener('mousemove', this.elementDrag);
+      document.addEventListener('mouseup', this.closeDragElement);
+    },
+    elementDrag(event) {
+      // TODO: break this function down
+      const { focalPoint } = this.$refs;
+
+      event.preventDefault();
+
+      this.dragAndDrop.pos1 = this.dragAndDrop.pos3 - event.clientX;
+      this.dragAndDrop.pos2 = this.dragAndDrop.pos4 - event.clientY;
+      this.dragAndDrop.pos3 = event.clientX;
+      this.dragAndDrop.pos4 = event.clientY;
+
+      const focalPointLeft = focalPoint.offsetLeft - this.dragAndDrop.pos1;
+      const focalPointTop = focalPoint.offsetTop - this.dragAndDrop.pos2;
+
+      // TODO: get element only once!
+      const stencilElement = document.querySelector('[data-stencil]');
+      const stencilStyle = window.getComputedStyle(stencilElement);
+
+      // TODO: use something compatible, not WebKitCSSMatrix (DOMMatrixReadOnly? no because Internet Exp, regular style.transform?, getComputedStyle()?)
+      const matrix = new window.WebKitCSSMatrix(stencilStyle.transform);
+      const stencilTranslateX = matrix.m41;
+      const stencilTranslateY = matrix.m42;
+      const stencilWidth = stencilElement.clientWidth;
+      const stencilHeight = stencilElement.clientHeight;
+
+      const focalPointHalfWidth = (focalPoint.clientWidth + focalPoint.clientLeft * 2) / 2;
+      const focalPointHalfHeight = (focalPoint.clientHeight + focalPoint.clientTop * 2) / 2;
+
+      if (
+        focalPointLeft < stencilTranslateX - focalPointHalfWidth ||
+        focalPointTop < stencilTranslateY - focalPointHalfHeight ||
+        focalPointLeft > stencilTranslateX - focalPointHalfWidth + stencilWidth ||
+        focalPointTop > stencilTranslateY - focalPointHalfHeight + stencilHeight
+      ) {
+        return;
+      }
+
+      focalPoint.style.left = `${focalPointLeft}px`;
+      focalPoint.style.top = `${focalPointTop}px`;
+    },
+    closeDragElement() {
+      const { focalPoint } = this.$refs;
+
+      focalPoint.style.cursor = 'grab';
+      document.removeEventListener('mousemove', this.elementDrag);
+      document.removeEventListener('mouseup', this.closeDragElement);
     }
   }
 };
 </script>
 <style lang='scss'>
 .apos-image-cropper {
+  position: relative;
   max-width: 100%;
+
+  .apos-image-focal-point {
+    position: absolute;
+    z-index: 1;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--a-white);
+    background-color: var(--a-primary);
+    cursor: grab;
+  }
 }
 
 .vue-handler-wrapper {
