@@ -1519,7 +1519,7 @@ module.exports = {
         // `apos.attachment.all` method. Used by our REST APIs.
 
         attachments: {
-          def: false,
+          def: true,
           after(results) {
             const attachments = query.get('attachments');
 
