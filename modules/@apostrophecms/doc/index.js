@@ -272,7 +272,9 @@ module.exports = {
         // deletes both the published and previous docs.
         async deleteOtherModes(req, doc, options) {
           if (doc.aposLocale && doc.aposLocale.endsWith(':draft')) {
-            return cleanup('published');
+            await cleanup('published');
+            await self.emit('afterAllModesDeleted', req, doc, options);
+            return;
           }
           if (doc.aposLocale && doc.aposLocale.endsWith(':published')) {
             return cleanup('previous');
