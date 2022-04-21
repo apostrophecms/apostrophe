@@ -125,9 +125,6 @@ export default {
       document.addEventListener('mouseup', this.closeDragElement);
     },
     elementDrag(event) {
-      // TODO: break this function down
-      const { focalPoint } = this.$refs;
-
       event.preventDefault();
 
       this.dragAndDrop.pos1 = this.dragAndDrop.pos3 - event.clientX;
@@ -135,34 +132,7 @@ export default {
       this.dragAndDrop.pos3 = event.clientX;
       this.dragAndDrop.pos4 = event.clientY;
 
-      const focalPointLeft = focalPoint.offsetLeft - this.dragAndDrop.pos1;
-      const focalPointTop = focalPoint.offsetTop - this.dragAndDrop.pos2;
-
-      // TODO: get element only once!
-      const stencilElement = document.querySelector('[data-stencil]');
-      const stencilStyle = window.getComputedStyle(stencilElement);
-
-      // TODO: use something compatible, not WebKitCSSMatrix (DOMMatrixReadOnly? no because Internet Exp, regular style.transform?, getComputedStyle()?)
-      const matrix = new window.WebKitCSSMatrix(stencilStyle.transform);
-      const stencilTranslateX = matrix.m41;
-      const stencilTranslateY = matrix.m42;
-      const stencilWidth = stencilElement.clientWidth;
-      const stencilHeight = stencilElement.clientHeight;
-
-      const focalPointHalfWidth = (focalPoint.clientWidth + focalPoint.clientLeft * 2) / 2;
-      const focalPointHalfHeight = (focalPoint.clientHeight + focalPoint.clientTop * 2) / 2;
-
-      if (
-        focalPointLeft < stencilTranslateX - focalPointHalfWidth ||
-        focalPointTop < stencilTranslateY - focalPointHalfHeight ||
-        focalPointLeft > stencilTranslateX - focalPointHalfWidth + stencilWidth ||
-        focalPointTop > stencilTranslateY - focalPointHalfHeight + stencilHeight
-      ) {
-        return;
-      }
-
-      focalPoint.style.left = `${focalPointLeft}px`;
-      focalPoint.style.top = `${focalPointTop}px`;
+      this.setFocalPointCoordinates();
     },
     closeDragElement() {
       const { focalPoint } = this.$refs;
@@ -170,6 +140,44 @@ export default {
       focalPoint.style.cursor = 'grab';
       document.removeEventListener('mousemove', this.elementDrag);
       document.removeEventListener('mouseup', this.closeDragElement);
+    },
+    setFocalPointCoordinates () {
+      const { focalPoint } = this.$refs;
+
+      const focalPointCoordinates = {
+        left: focalPoint.offsetLeft - this.dragAndDrop.pos1,
+        top: focalPoint.offsetTop - this.dragAndDrop.pos2
+      };
+
+      const stencilCoordinates = this.getStencilCoordinates();
+
+      const focalPointHalfWidth = (focalPoint.clientWidth + focalPoint.clientLeft * 2) / 2;
+      const focalPointHalfHeight = (focalPoint.clientHeight + focalPoint.clientTop * 2) / 2;
+
+      if (
+        focalPointCoordinates.left < stencilCoordinates.left - focalPointHalfWidth ||
+        focalPointCoordinates.top < stencilCoordinates.top - focalPointHalfHeight ||
+        focalPointCoordinates.left > stencilCoordinates.left - focalPointHalfWidth + stencilCoordinates.width ||
+        focalPointCoordinates.top > stencilCoordinates.top - focalPointHalfHeight + stencilCoordinates.height
+      ) {
+        return;
+      }
+
+      focalPoint.style.left = `${focalPointCoordinates.left}px`;
+      focalPoint.style.top = `${focalPointCoordinates.top}px`;
+    },
+    getStencilCoordinates () {
+      // TODO: use something compatible, not WebKitCSSMatrix (DOMMatrixReadOnly? no because Internet Exp, regular style.transform?, getComputedStyle()?)
+      const stencilElement = document.querySelector('[data-stencil]');
+      const stencilStyle = window.getComputedStyle(stencilElement);
+      const matrix = new window.WebKitCSSMatrix(stencilStyle.transform);
+
+      return {
+        left: matrix.m41,
+        top: matrix.m42,
+        width: stencilElement.clientWidth,
+        height: stencilElement.clientHeight
+      };
     }
   }
 };
