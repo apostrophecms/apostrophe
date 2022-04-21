@@ -9,7 +9,5 @@ export default () => {
         query[optName] = optValue;
       }
     });
-
-    return 'looool';
   });
 };
