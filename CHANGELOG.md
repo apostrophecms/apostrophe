@@ -1,5 +1,10 @@
 # Changelog
 
+# Unreleased
+### Adds
+
+* Adds ability to set `minSize` to areas for image widgets. When setup, browsing relationship images from `AposInputRelationship` or from `AposMediaManager` when it is a chooser, will emit `piece-relationship-query`. We pass the query string object, this one will be filled with appropriate data if needed (in this case minSize array).
+
 # 3.17.0 (2022-03-31)
 
 ### Adds
