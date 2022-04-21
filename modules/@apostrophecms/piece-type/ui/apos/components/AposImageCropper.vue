@@ -52,12 +52,6 @@ export default {
       height: null
     },
     isUpdatingCropperCoordinates: false,
-    // TODO: emit focal point values via event
-    // focal point values in %
-    focalPoint: {
-      x: 0,
-      y: 0
-    },
     // TODO: rename these variables
     dragAndDrop: {
       pos1: 0,
@@ -209,10 +203,12 @@ export default {
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
 
-      this.focalPoint = {
+      const focalPointPercentages = {
         x: 50,
         y: 50
       };
+
+      this.$emit('change', focalPointPercentages, false);
     },
     placeFocalPointOnMove () {
       const { focalPoint } = this.$refs;
@@ -232,10 +228,12 @@ export default {
         focalPoint.style.left = `${left}px`;
         focalPoint.style.top = `${top}px`;
 
-        this.focalPoint = {
+        const focalPointPercentages = {
           x: Math.round((left + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width * 100),
           y: Math.round((top + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height * 100)
         };
+
+        this.$emit('change', focalPointPercentages, false);
       }
     }
   }
