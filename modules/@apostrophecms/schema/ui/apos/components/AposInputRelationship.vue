@@ -134,18 +134,18 @@ export default {
       }
     }
   },
+  mounted () {
+    this.validate(this.next);
+  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
+        this.searchTerm = '';
         return { message: 'required' };
       }
-      if (this.limitReached) {
-        this.searchTerm = 'Limit reached!';
-        this.disabled = true;
-      } else {
-        this.searchTerm = '';
-        this.disabled = false;
-      }
+
+      this.searchTerm = this.limitReached ? 'Limit reached!' : '';
+      this.disabled = !!this.limitReached;
 
       if (this.field.min && this.field.min > value.length) {
         return { message: `minimum of ${this.field.min} required` };
@@ -167,7 +167,10 @@ export default {
       }
 
       const qs = {};
-      apos.bus.$emit('piece-relationship-query', qs);
+
+      if (this.field.withType === '@apostrophecms/image') {
+        apos.bus.$emit('piece-relationship-query', qs);
+      }
 
       this.searching = true;
       const list = await apos.http.get(
