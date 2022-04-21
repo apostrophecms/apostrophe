@@ -8,11 +8,11 @@ describe('Recursion Guard', function() {
 
   let apos;
 
-  after(() => {
+  after(function() {
     return t.destroy(apos);
   });
 
-  it('should exist on the apos.util object', async () => {
+  it('should exist on the apos.util object', async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -123,7 +123,7 @@ describe('Recursion Guard', function() {
     assert(apos.util.recursionGuard);
   });
 
-  it('should create a stack as it goes and stop without executing depth 50', async () => {
+  it('should create a stack as it goes and stop without executing depth 50', async function() {
     let depth = 0;
     let depth49First = true;
     const req = apos.task.getReq();
@@ -161,7 +161,7 @@ describe('Recursion Guard', function() {
     }
   });
 
-  it('should immediately stop runaway self-references among widgets by default', async () => {
+  it('should immediately stop runaway self-references among widgets by default', async function() {
     const req = apos.task.getReq();
     const product = await apos.product.insert(req, {
       title: 'Test Product'
@@ -206,7 +206,7 @@ describe('Recursion Guard', function() {
     assert(!article.main.items[0]._articles[0].main.items[0]._articles);
   });
 
-  it('should eventually stop runaway self-references among widgets that use neverLoadSelf: false', async () => {
+  it('should eventually stop runaway self-references among widgets that use neverLoadSelf: false', async function() {
     const req = apos.task.getReq();
     const selfRefId = cuid();
     await apos.article.insert(req, {
@@ -243,7 +243,7 @@ describe('Recursion Guard', function() {
     assert(article.main.items[0]._articles[0].main.items[0]._articles[0]);
   });
 
-  it('should eventually stop runaway self-references in async components', async () => {
+  it('should eventually stop runaway self-references in async components', async function() {
     let warnings = '';
     // Capture output of util.warn so we can verify there was a warning
     apos.util.warn = function(...args) {

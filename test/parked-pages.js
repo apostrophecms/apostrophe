@@ -128,7 +128,7 @@ describe('Parked Pages', function() {
     }));
   });
 
-  it('all pages should have consistent aposDocId across draft and published', async function() {
+  it('all pages should have consistent aposDocId across draft and published (2)', async function() {
     await validate(apos3, [ '/', '/archive', '/default1', '/default2', '/default3' ]);
     // Should be same db, make sure of that
     await validate(apos2, [ '/', '/archive', '/default1', '/default2', '/default3' ]);

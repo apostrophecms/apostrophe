@@ -10,7 +10,7 @@ describe('Schema builders', function() {
 
   this.timeout(t.timeout);
 
-  after(async () => {
+  after(async function() {
     return t.destroy(apos);
   });
 
@@ -18,7 +18,7 @@ describe('Schema builders', function() {
   // EXISTENCE
   /// ///
 
-  it('test modules exist', async () => {
+  it('test modules exist', async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -118,13 +118,13 @@ describe('Schema builders', function() {
     }
   });
 
-  it('builder for _cats exists', async () => {
+  it('builder for _cats exists', async function() {
     const req = apos.task.getReq();
     const query = apos.people.find(req);
     assert(query._cats);
   });
 
-  it('builder for _cats can select people with a specified cat', async () => {
+  it('builder for _cats can select people with a specified cat', async function() {
     const req = apos.task.getReq();
     const query = apos.people.find(req);
     // Four people should have cat 5 (because their i is greater than 5, see
@@ -134,7 +134,7 @@ describe('Schema builders', function() {
     assert(people.length === 4);
   });
 
-  it('builder for _cats can select people with any of three cats via array', async () => {
+  it('builder for _cats can select people with any of three cats via array', async function() {
     const req = apos.task.getReq();
     const query = apos.people.find(req);
     query._cats([ cats[0]._id, cats[1]._id, cats[2]._id ]);
@@ -143,7 +143,7 @@ describe('Schema builders', function() {
     assert(people.length === 9);
   });
 
-  it('_catsAnd builder can select people with all three cats', async () => {
+  it('_catsAnd builder can select people with all three cats', async function() {
     const req = apos.task.getReq();
     const query = apos.people.find(req);
     query._catsAnd([ cats[0]._id, cats[1]._id, cats[2]._id ]);
@@ -152,7 +152,7 @@ describe('Schema builders', function() {
     assert(people.length === 7);
   });
 
-  it('builder for _cats can select sad people with no cat', async () => {
+  it('builder for _cats can select sad people with no cat', async function() {
     const req = apos.task.getReq();
     const query = apos.people.find(req);
     query._cats('none');

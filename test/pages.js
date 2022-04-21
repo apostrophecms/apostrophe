@@ -457,7 +457,7 @@ describe('Pages', function() {
     assert.strictEqual(archived.level, 2);
   });
 
-  it('should be able to find the parked homepage', async function() {
+  it('should be able to find the parked homepage again', async function() {
     const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/' });
 
     const page = await cursor.toObject();
@@ -495,7 +495,7 @@ describe('Pages', function() {
     }
   });
 
-  it('should not set a cache-control value when retrieving pages, when cache option is not set', async () => {
+  it('should not set a cache-control value when retrieving pages, when cache option is not set', async function() {
     const response1 = await apos.http.get('/api/v1/@apostrophecms/page', { fullResponse: true });
     const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
 
@@ -503,7 +503,7 @@ describe('Pages', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
-  it('should not set a cache-control value when retrieving a single page, when "etags" cache option is set', async () => {
+  it('should not set a cache-control value when retrieving a single page, when "etags" cache option is set', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 5555,
@@ -518,7 +518,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not set a cache-control value when retrieving pages, when "api" cache option is not set', async () => {
+  it('should not set a cache-control value when retrieving pages, when "api" cache option is not set', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 5555
@@ -534,7 +534,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a "max-age" cache-control value when retrieving pieces, when "api" cache option is set', async () => {
+  it('should set a "max-age" cache-control value when retrieving pieces, when "api" cache option is set', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 4444
@@ -550,7 +550,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a "no-store" cache-control value when retrieving pages, when user is connected', async () => {
+  it('should set a "no-store" cache-control value when retrieving pages, when user is connected', async function() {
     const jar = apos.http.jar();
     const user = apos.user.newInstance();
 
@@ -583,7 +583,7 @@ describe('Pages', function() {
     assert(response2.headers['cache-control'] === 'no-store');
   });
 
-  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected', async () => {
+  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 4444
@@ -616,7 +616,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a "no-store" cache-control value when retrieving pages, when user is connected using an api key', async () => {
+  it('should set a "no-store" cache-control value when retrieving pages, when user is connected using an api key', async function() {
     const response1 = await apos.http.get(`/api/v1/@apostrophecms/page?apiKey=${apiKey}`, { fullResponse: true });
     const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}?apiKey=${apiKey}`, { fullResponse: true });
 
@@ -624,7 +624,7 @@ describe('Pages', function() {
     assert(response2.headers['cache-control'] === 'no-store');
   });
 
-  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected using an api key', async () => {
+  it('should set a "no-store" cache-control value when retrieving pages, when "api" cache option is set, when user is connected using an api key', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 4444
@@ -640,13 +640,13 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not set a cache-control value when serving a page, when cache option is not set', async () => {
+  it('should not set a cache-control value when serving a page, when cache option is not set', async function() {
     const response = await apos.http.get('/', { fullResponse: true });
 
     assert(response.headers['cache-control'] === undefined);
   });
 
-  it('should not set a cache-control value when serving a page, when "page" cache option is not set', async () => {
+  it('should not set a cache-control value when serving a page, when "page" cache option is not set', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 4444
@@ -659,7 +659,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not set a cache-control value when serving a page, when "etags" cache option is set', async () => {
+  it('should not set a cache-control value when serving a page, when "etags" cache option is set', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 4444,
@@ -673,7 +673,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a cache-control value when serving a page, when "page" cache option is set', async () => {
+  it('should set a cache-control value when serving a page, when "page" cache option is set', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 5555
@@ -686,7 +686,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a custom etag when retrieving a single page', async () => {
+  it('should set a custom etag when retrieving a single page', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 1111,
@@ -705,7 +705,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should return a 304 status code when retrieving a page with a matching etag', async () => {
+  it('should return a 304 status code when retrieving a page with a matching etag', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 1111,
@@ -733,7 +733,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not return a 304 status code when retrieving a page that has been edited', async () => {
+  it('should not return a 304 status code when retrieving a page that has been edited', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 1111,
@@ -776,7 +776,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not return a 304 status code when retrieving a page after the max-age period', async () => {
+  it('should not return a 304 status code when retrieving a page after the max-age period', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 4444,
@@ -812,7 +812,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a custom etag when serving a page', async () => {
+  it('should set a custom etag when serving a page', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 4444,
@@ -830,7 +830,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should return a 304 status code when requesting a page with a matching etag', async () => {
+  it('should return a 304 status code when requesting a page with a matching etag', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 4444,
@@ -858,7 +858,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not return a 304 status code when requesting a page that has been edited', async () => {
+  it('should not return a 304 status code when requesting a page that has been edited', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 4444,
@@ -901,7 +901,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not return a 304 status code when requesting a page with an outdated release id', async () => {
+  it('should not return a 304 status code when requesting a page with an outdated release id', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 4444,
@@ -937,7 +937,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not return a 304 status code when requesting a page after the max-age period', async () => {
+  it('should not return a 304 status code when requesting a page after the max-age period', async function() {
     apos.page.options.cache = {
       page: {
         maxAge: 4444,
@@ -973,7 +973,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not set a custom etag when retrieving a single page, when user is connected', async () => {
+  it('should not set a custom etag when retrieving a single page, when user is connected', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 4444,
@@ -1005,7 +1005,7 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
-  it('should not set a custom etag when retrieving a single page, when user is connected using an api key', async () => {
+  it('should not set a custom etag when retrieving a single page, when user is connected using an api key', async function() {
     apos.page.options.cache = {
       api: {
         maxAge: 4444,

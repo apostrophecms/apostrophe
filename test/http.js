@@ -32,7 +32,7 @@ describe('Http', function() {
     jar = apos.http.jar();
   });
 
-  it('should be able to make an http request', async () => {
+  it('should be able to make an http request', async function() {
     const result = await apos.http.get('/', {
       jar
     });
@@ -40,7 +40,7 @@ describe('Http', function() {
     assert(result.match(/logged out/));
   });
 
-  it('should be able to make an http POST request with csrf header via default csrf convenience of http.post', async () => {
+  it('should be able to make an http POST request with csrf header via default csrf convenience of http.post', async function() {
     const response = await apos.http.post('/csrf-test', {
       jar,
       body: {}

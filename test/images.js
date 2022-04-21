@@ -154,21 +154,21 @@ describe('Images', function() {
 
   });
 
-  it('REST: should be able to log in as admin', async () => {
+  it('REST: should be able to log in as admin', async function() {
     jar = await login('admin');
   });
 
-  it('"editable" API includes images for admin', async () => {
+  it('"editable" API includes images for admin', async function() {
 
     const editable = await getEditableImages(jar);
     assert(editable.length === 4);
   });
 
-  it('REST: should be able to log in as contributor', async () => {
+  it('REST: should be able to log in as contributor', async function() {
     jar = await login('contributor');
   });
 
-  it('"editable" API does not include images for contributor', async () => {
+  it('"editable" API does not include images for contributor', async function() {
     const editable = await getEditableImages(jar);
     assert(editable.length === 0);
   });
