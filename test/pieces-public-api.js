@@ -1,5 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 let apos;
 
@@ -31,6 +33,12 @@ describe('Pieces Public API', function() {
               foo: {
                 label: 'Foo',
                 type: 'string'
+              },
+              _image: {
+                label: 'Image',
+                type: 'relationship',
+                withType: '@apostrophecms/image',
+                max: 1
               }
             }
           }
@@ -151,4 +159,80 @@ describe('Pieces Public API', function() {
     delete apos.thing.options.cache;
   });
 
+  it('should resolve _urls for image attachments', async function () {
+    // Reproduces https://github.com/apostrophecms/apostrophe/issues/3643
+    // Create piece with image
+    await await apos.doc.db.deleteMany({ type: 'thing' });
+    const req = apos.task.getReq();
+    await wipeUploads();
+    const attachment = await upload('upload_image.png');
+    const image = await apos.image.insert(req, {
+      type: '@apostrophecms/image',
+      slug: 'image-1',
+      visibility: 'public',
+      attachment
+    });
+    await apos.thing.insert(req, {
+      ...testThing,
+      _id: 'testThingAttachment:en:published',
+      title: 'Hello Image',
+      _image: [ image ]
+    });
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1,
+      _image: 1
+    };
+
+    // Test
+    const response = await apos.http.get('/api/v1/thing');
+    assert(response);
+    assert.strictEqual(response.results.length, 1);
+
+    const [ img ] = response.results[0]._image;
+    assert(img);
+    const att = img.attachment;
+    assert(att);
+    assert(att._urls);
+    assert(Object.keys(att._urls).length > 0);
+  });
+
 });
+
+// HELPERS
+const uploadSource = path.join(__dirname, '/data/upload_tests/');
+
+async function wipeUploads() {
+  deleteFolderRecursive(path.join(__dirname, '/public/uploads'));
+  await await apos.doc.db.deleteMany({ type: '@apostrophecms/image' });
+  return apos.db.collection('aposAttachments').deleteMany({});
+
+  function deleteFolderRecursive (path) {
+    let files = [];
+    if (fs.existsSync(path)) {
+      files = fs.readdirSync(path);
+      files.forEach(function(file, index) {
+        const curPath = path + '/' + file;
+        if (fs.lstatSync(curPath).isDirectory()) { // recurse
+          deleteFolderRecursive(curPath);
+        } else { // delete file
+          fs.unlinkSync(curPath);
+        }
+      });
+      fs.rmdirSync(path);
+    }
+  }
+}
+
+async function upload(filename) {
+  const info = await apos.attachment.insert(apos.task.getReq(), {
+    name: filename,
+    path: uploadSource + filename
+  });
+  // make sure it exists in mongo
+  const result = await apos.db.collection('aposAttachments').findOne({
+    _id: info._id
+  });
+  assert(result);
+  return result;
+}

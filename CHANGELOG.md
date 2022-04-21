@@ -10,12 +10,15 @@
 * Adds new event `apostrophe:beforeExit` and improves the way Apostrophe terminates its process.
 * Adds new configuration option - `beforeExit` async handler.
 * Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
+* Support for Node.js 17 and 18. MongoDB connections to `localhost` will now successfully find a typical dev MongoDB server bound only to `127.0.0.1`, Apostrophe can generate valid ipv6 URLs pointing back to itself, and `webpack` and `vue-loader` have been updated to address incompatibilities.
 
 ### Fixes
 
 * Documentation of obsolete options has been removed.
 * Dead code relating to activating in-context widget editors have been removed. They are always active and have been for some time. In the future they might be swapped in on scroll, but there will never be a need to swap them in "on click."
 * The `self.email` method of modules now correctly accepts a default `from` address configured for a specific module via the `from` subproperty of the `email` option to that module. Thanks to `chmdebeer` for pointing out the issue and the fix.
+* Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
+* Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
 
 ## 3.17.0 (2022-03-31)
 
