@@ -1028,8 +1028,8 @@ module.exports = {
           const withTypeManager = self.apos.doc.getManager(field.withType);
           field.editor = field.editor || withTypeManager.options.relationshipEditor;
           if (!field.schema && !Array.isArray(field.withType)) {
-            const withTypeManager = self.apos.doc.getManager(field.withType);
-            const fields = withTypeManager.options.relationshipFields && withTypeManager.options.relationshipFields.add;
+            const fieldsOption = withTypeManager.options.relationshipFields;
+            const fields = fieldsOption && fieldsOption.add;
             field.fields = fields && klona(fields);
             field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
           }
