@@ -145,7 +145,11 @@ export default {
   },
   methods: {
     setDataValues () {
-      if (this.item._fields) {
+      if (
+        this.item._fields &&
+        this.item._fields.width &&
+        this.item._fields.height
+      ) {
         return { ...this.item._fields };
       }
 
