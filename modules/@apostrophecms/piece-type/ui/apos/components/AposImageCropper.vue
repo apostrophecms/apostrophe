@@ -106,6 +106,8 @@ export default {
   },
   methods: {
     onCropperReady () {
+      // TODO: force center focal point on first load, if no focal point value
+      // TODO: set focal point value on load with current data
       this.centerFocalPoint();
       window.addEventListener('resize', this.centerFocalPointDebounced);
     },
@@ -188,7 +190,6 @@ export default {
     /**
      * Place the focal point at the center of the stencil.
      * TODO: center focal point only when outside stencil
-     * TODO: force center focal point on first load
      */
     centerFocalPoint () {
       const { focalPoint } = this.$refs;
