@@ -25,6 +25,8 @@ import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
+// TODO: focal point tooltip
+
 export default {
   components: {
     Cropper
@@ -50,10 +52,11 @@ export default {
       height: null
     },
     isUpdatingCropperCoordinates: false,
-    focusPointCoordinates: {
-      // TODO: set it to cropping center when mounted
-      top: 0,
-      left: 0
+    // TODO: emit focal point values via event
+    // focal point values in %
+    focalPoint: {
+      x: 0,
+      y: 0
     },
     // TODO: rename these variables
     dragAndDrop: {
@@ -92,7 +95,7 @@ export default {
         this.$refs.cropper.setCoordinates(coordinates);
       }, this.debounceTimeout
     );
-    this.placeFocalPointDebounced = debounce(this.placeFocalPoint, this.debounceTimeout);
+    this.centerFocalPointDebounced = debounce(this.centerFocalPoint, this.debounceTimeout);
 
     this.defaultSize = {
       width: this.docFields.data.width,
@@ -105,12 +108,12 @@ export default {
   },
   beforeDestroy() {
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
-    window.removeEventListener('resize', this.placeFocalPointDebounced);
+    window.removeEventListener('resize', this.centerFocalPointDebounced);
   },
   methods: {
     onCropperReady () {
-      this.placeFocalPoint();
-      window.addEventListener('resize', this.placeFocalPointDebounced);
+      this.centerFocalPoint();
+      window.addEventListener('resize', this.centerFocalPointDebounced);
     },
     onCropperChange ({ coordinates }) {
       if (
@@ -118,7 +121,7 @@ export default {
         this.checkCropperCoordinatesDiff(coordinates, this.docFields.data)
       ) {
         this.$emit('change', coordinates, false);
-        this.placeFocalPoint();
+        this.centerFocalPoint();
       }
 
       this.isUpdatingCropperCoordinates = false;
@@ -190,8 +193,10 @@ export default {
     },
     /**
      * Place the focal point at the center of the stencil.
+     * TODO: center focal point only when outside stencil
+     * TODO: force center focal point on first load
      */
-    placeFocalPoint () {
+    centerFocalPoint () {
       const { focalPoint } = this.$refs;
 
       this.storeStencilCoordinates();
@@ -203,6 +208,11 @@ export default {
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
+
+      this.focalPoint = {
+        x: 50,
+        y: 50
+      };
     },
     placeFocalPointOnMove () {
       const { focalPoint } = this.$refs;
@@ -221,6 +231,11 @@ export default {
       if (left > leftLimit && top > topLimit && left < rightLimit && top < bottomLimit) {
         focalPoint.style.left = `${left}px`;
         focalPoint.style.top = `${top}px`;
+
+        this.focalPoint = {
+          x: Math.round((left + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width * 100),
+          y: Math.round((top + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height * 100)
+        };
       }
     }
   }
