@@ -157,7 +157,7 @@ describe('Locales', function() {
     return apos.user.insert(apos.task.getReq(), user);
   });
 
-  it('REST: should be able to log in as admin', async () => {
+  it('REST: should be able to log in as admin', async function() {
     jar = apos.http.jar();
 
     await apos.http.post('/api/v1/@apostrophecms/login/login', {
@@ -177,7 +177,7 @@ describe('Locales', function() {
     assert(page.includes(`<a href="/api/v1/@apostrophecms/page/${home._id}/locale/en-CA">Canadian English (en-CA)</a>`));
   });
 
-  it('localize API should succeed', async () => {
+  it('localize API should succeed', async function() {
     return apos.http.post(`/api/v1/@apostrophecms/page/${child._id}/localize`, {
       body: {
         toLocale: 'en-CA'
@@ -186,7 +186,7 @@ describe('Locales', function() {
     });
   });
 
-  it('after localizing child page should exist in 2 locales', async () => {
+  it('after localizing child page should exist in 2 locales', async function() {
     const versions = await apos.doc.db.find({ aposDocId: child.aposDocId }).toArray();
     assert(versions.length === 2);
     assert(!versions.find(version => version.title !== 'Child Page'));
@@ -235,7 +235,7 @@ describe('Locales', function() {
     assert(home);
   });
 
-  it('Mexico locale should be received when hostname is correct', async() => {
+  it('Mexico locale should be received when hostname is correct', async function() {
     const reqEsMX = apos.task.getReq({
       locale: 'es-MX',
       mode: 'draft'
@@ -258,7 +258,7 @@ describe('Locales', function() {
     assert(homePageEsMX.includes('<title>Pagina De Inicio</title>'));
   });
 
-  it('localize API should not succeed a second time without the update flag', async () => {
+  it('localize API should not succeed a second time without the update flag', async function() {
     try {
       await apos.http.post(`/api/v1/@apostrophecms/page/${child._id}/localize`, {
         body: {
@@ -272,7 +272,7 @@ describe('Locales', function() {
     }
   });
 
-  it('localize API should succeed a second time with the update flag', async () => {
+  it('localize API should succeed a second time with the update flag', async function() {
     return apos.http.post(`/api/v1/@apostrophecms/page/${child._id}/localize`, {
       body: {
         toLocale: 'en-CA',

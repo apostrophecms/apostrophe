@@ -6,11 +6,11 @@ describe('Soft Redirects', function() {
 
   this.timeout(t.timeout);
 
-  after(async () => {
+  after(async function() {
     return t.destroy(apos);
   });
 
-  it('should exist', async () => {
+  it('should exist', async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -32,26 +32,26 @@ describe('Soft Redirects', function() {
     assert(apos.modules['@apostrophecms/soft-redirect']);
   });
 
-  it('should be able to serve the /child page (which also populates historicUrls)', async () => {
+  it('should be able to serve the /child page (which also populates historicUrls)', async function() {
     const body = await apos.http.get('/child');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
 
-  it('should be able to change the URL via db', async () => {
+  it('should be able to change the URL via db', async function() {
     return apos.doc.db.updateOne({
       slug: '/child',
       aposLocale: 'en:published'
     }, { $set: { slug: '/child-moved' } });
   });
 
-  it('should be able to serve the page at its new URL', async () => {
+  it('should be able to serve the page at its new URL', async function() {
     const body = await apos.http.get('/child-moved');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
 
-  it('should be able to serve the page at its old URL too, via redirect', async () => {
+  it('should be able to serve the page at its old URL too, via redirect', async function() {
     const response = await apos.http.get('/child', {
       followRedirect: false,
       fullResponse: true,
@@ -65,15 +65,15 @@ describe('Soft Redirects', function() {
 
 });
 
-describe('Soft Redirects - with `statusCode` option', async function() {
+describe('Soft Redirects - with `statusCode` option', function() {
 
   this.timeout(t.timeout);
 
-  after(async() => {
+  after(async function() {
     return t.destroy(apos);
   });
 
-  it('should exist', async () => {
+  it('should exist', async function() {
     apos = await t.create({
       root: module,
 
@@ -102,13 +102,13 @@ describe('Soft Redirects - with `statusCode` option', async function() {
     assert.strictEqual(apos.modules['@apostrophecms/soft-redirect'].options.statusCode, 301);
   });
 
-  it('should be able to serve the /child page (which also populates historicUrls)', async () => {
+  it('should be able to serve the /child page (which also populates historicUrls)', async function() {
     const body = await apos.http.get('/child');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
 
-  it('should be able to change the URL via db', async () => {
+  it('should be able to change the URL via db', async function() {
     return apos.doc.db.updateOne({
       slug: '/child',
       aposLocale: 'en:published'
@@ -119,13 +119,13 @@ describe('Soft Redirects - with `statusCode` option', async function() {
     });
   });
 
-  it('should be able to serve the page at its new URL', async () => {
+  it('should be able to serve the page at its new URL', async function() {
     const body = await apos.http.get('/child-moved');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
 
-  it('should be able to serve the page at its old URL too, via redirect', async () => {
+  it('should be able to serve the page at its old URL too, via redirect', async function() {
     const response = await apos.http.get('/child', {
       fullResponse: true,
       redirect: 'manual'

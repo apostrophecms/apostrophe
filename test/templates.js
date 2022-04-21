@@ -9,7 +9,7 @@ describe('Templates', function() {
 
   this.timeout(t.timeout);
 
-  after(async () => {
+  after(async function() {
     return t.destroy(apos);
   });
 
@@ -31,7 +31,7 @@ describe('Templates', function() {
       .map(s => s.trim());
   };
 
-  it('should have a templates property', async () => {
+  it('should have a templates property', async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -181,7 +181,7 @@ describe('Templates', function() {
     assert.strictEqual(result, '<p>first line<br />\nsecond line<br />\n<a href="http://niceurl.com">This is okay</a></p>\n');
   });
 
-  it('should render fragments containing async components correctly', async () => {
+  it('should render fragments containing async components correctly', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-page'].renderPage(req, 'page');
     const aboveFragment = result.indexOf('Above Fragment');
@@ -205,7 +205,7 @@ describe('Templates', function() {
     assert(afterComponent < belowFragment);
   });
 
-  it('should render fragment without passing any keyword arguments', async () => {
+  it('should render fragment without passing any keyword arguments', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
 
@@ -219,7 +219,7 @@ describe('Templates', function() {
     ]);
   });
 
-  it('should support keyword arguments and render macros and fragments from other fragments', async () => {
+  it('should support keyword arguments and render macros and fragments from other fragments', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
 
@@ -236,7 +236,7 @@ describe('Templates', function() {
     ]);
   });
 
-  it('should render rendercall blocks', async () => {
+  it('should render rendercall blocks', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
 
@@ -257,7 +257,7 @@ describe('Templates', function() {
     ]);
   });
 
-  it('should skip positional arguments when there is keyword arguments (1)', async () => {
+  it('should skip positional arguments when there is keyword arguments (1)', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
 
@@ -270,7 +270,7 @@ describe('Templates', function() {
     ]);
   });
 
-  it('should skip positional arguments when there is keyword arguments (2)', async () => {
+  it('should skip positional arguments when there is keyword arguments (2)', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
 
@@ -283,7 +283,7 @@ describe('Templates', function() {
     ]);
   });
 
-  it('should filter out unknown keyword arguments', async () => {
+  it('should filter out unknown keyword arguments', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'page');
 
@@ -296,7 +296,7 @@ describe('Templates', function() {
     ]);
   });
 
-  it('should support apos helpers and localization in fragments', async () => {
+  it('should support apos helpers and localization in fragments', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['fragment-all'].renderPage(req, 'aux-test');
     assert(result.includes('gee-whiz'));

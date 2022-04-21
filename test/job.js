@@ -59,7 +59,7 @@ describe('Job module', function() {
     assert(found.ended === true);
   });
   let jar;
-  it('should get admin jar', async () => {
+  it('should get admin jar', async function() {
     await t.createAdmin(apos);
 
     jar = await t.getUserJar(apos);

@@ -9,11 +9,11 @@ describe('Urls', function() {
   let apos;
   let start;
 
-  after(async () => {
+  after(async function() {
     return t.destroy(apos);
   });
 
-  it('should exist on the apos object', async () => {
+  it('should exist on the apos object', async function() {
     apos = await t.create({
       root: module
     });
