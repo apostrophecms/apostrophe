@@ -159,7 +159,7 @@ describe('Pieces Public API', function() {
     delete apos.thing.options.cache;
   });
 
-  it('should resolve _urls for image attachments', async () => {
+  it('should resolve _urls for image attachments', async function () {
     // Reproduces https://github.com/apostrophecms/apostrophe/issues/3643
     // Create piece with image
     await await apos.doc.db.deleteMany({ type: 'thing' });
