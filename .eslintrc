@@ -1,8 +1,7 @@
 {
   "extends": [
     "apostrophe",
-    "plugin:vue/vue3-recommended",
-    "plugin:mocha/recommended"
+    "plugin:vue/vue3-recommended"
   ],
   "globals": {
     "apos": true
@@ -49,10 +48,7 @@
         ]
       }
     ],
-    "vue/attributes-order": 0,
-    "mocha/no-setup-in-describe": 0,
-    "mocha/no-global-tests": 0,
-    "mocha/max-top-level-suites": 0
+    "vue/attributes-order": 0
   },
   "overrides": [
     {
