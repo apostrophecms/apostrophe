@@ -612,8 +612,8 @@ module.exports = {
             });
             self.server.on('listening', function () {
               self.address = self.server.address().address;
-              if (self.address === '::') {
-                // :: is not recognized as an ipv6 address by Chrome
+              if ((self.address === '::') || (self.address === '::1')) {
+                // Synonyms that are harder to build a URL with
                 self.address = 'localhost';
               }
               self.port = self.server.address().port;
