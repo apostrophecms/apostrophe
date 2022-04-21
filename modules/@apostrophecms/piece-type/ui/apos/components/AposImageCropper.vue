@@ -130,6 +130,7 @@ export default {
       this.dragAndDrop.pos4 = event.clientY;
 
       this.$refs.focalPoint.style.cursor = 'grabbing';
+      this.$refs.focalPoint.style.transitionDuration = '0s';
 
       document.addEventListener('mousemove', this.onMouseMove);
       document.addEventListener('mouseup', this.onMouseUp);
@@ -146,6 +147,7 @@ export default {
     },
     onMouseUp() {
       this.$refs.focalPoint.style.cursor = 'grab';
+      this.$refs.focalPoint.style.transitionDuration = '0.1s';
 
       document.removeEventListener('mousemove', this.onMouseMove);
       document.removeEventListener('mouseup', this.onMouseUp);
