@@ -10,6 +10,7 @@
 * Adds new event `apostrophe:beforeExit` and improves the way Apostrophe terminates its process.
 * Adds new configuration option - `beforeExit` async handler.
 * Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
+* Adds new event `@apostrophecms/doc:afterAllModesDeleted` fired after all modes of a given document are purged.
 
 ### Fixes
 
