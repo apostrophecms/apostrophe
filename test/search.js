@@ -8,13 +8,13 @@ describe('Search', function() {
 
   this.timeout(t.timeout);
 
-  after(async () => {
+  after(async function() {
     return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should be a property of the apos object', async () => {
+  it('should be a property of the apos object', async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -30,7 +30,7 @@ describe('Search', function() {
     assert(apos.search);
   });
 
-  it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', async () => {
+  it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', async function() {
     const req = apos.task.getReq();
     await apos.doc.insert(req, {
       title: 'Testing Search Event',

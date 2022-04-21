@@ -11,7 +11,7 @@ describe('Middleware and Route Order', function() {
     return t.destroy(apos);
   });
 
-  it('should stand up', async () => {
+  it('should stand up', async function() {
     apos = await t.create({
       root: module,
 
@@ -72,13 +72,13 @@ describe('Middleware and Route Order', function() {
       }
     });
   });
-  it('should hit all middleware in thirdRouteA', async () => {
+  it('should hit all middleware in thirdRouteA', async function() {
     const result = await apos.http.get('/api/v1/third/third-route-a');
     assert(result.firstMiddlewareRan);
     assert(result.secondMiddlewareRan);
     assert(result.thirdMiddlewareRan);
   });
-  it('should hit only the first middleware in thirdRouteB', async () => {
+  it('should hit only the first middleware in thirdRouteB', async function() {
     const result = await apos.http.get('/api/v1/third/third-route-b');
     assert(result.firstMiddlewareRan);
     assert(!result.secondMiddlewareRan);

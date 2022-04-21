@@ -43,7 +43,7 @@ describe('Pages Public API', function() {
     assert(apos.page.__meta.name === '@apostrophecms/page');
   });
 
-  it('cannot GET the home page without session without publicApiProjection', async () => {
+  it('cannot GET the home page without session without publicApiProjection', async function() {
     try {
       await apos.http.get('/api/v1/@apostrophecms/page', {});
       // Getting here would be bad
@@ -53,7 +53,7 @@ describe('Pages Public API', function() {
     }
   });
 
-  it('can GET the home page without session with publicApiProjection', async () => {
+  it('can GET the home page without session with publicApiProjection', async function() {
     // Patch the option to simplify test
     apos.page.options.publicApiProjection = {
       title: 1,
@@ -69,7 +69,7 @@ describe('Pages Public API', function() {
     assert(!home.searchSummary);
   });
 
-  it('should not set a "max-age" cache-control value when retrieving pages, when cache option is not set, with a public API projection', async () => {
+  it('should not set a "max-age" cache-control value when retrieving pages, when cache option is not set, with a public API projection', async function() {
     apos.page.options.publicApiProjection = {
       title: 1,
       _url: 1
@@ -82,7 +82,7 @@ describe('Pages Public API', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
-  it('should not set a "max-age" cache-control value when retrieving a single page, when "etags" cache option is set, with a public API projection', async () => {
+  it('should not set a "max-age" cache-control value when retrieving a single page, when "etags" cache option is set, with a public API projection', async function() {
     apos.page.options.publicApiProjection = {
       title: 1,
       _url: 1
@@ -102,7 +102,7 @@ describe('Pages Public API', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a "max-age" cache-control value when retrieving pages, with a public API projection', async () => {
+  it('should set a "max-age" cache-control value when retrieving pages, with a public API projection', async function() {
     apos.page.options.publicApiProjection = {
       title: 1,
       _url: 1
@@ -122,7 +122,7 @@ describe('Pages Public API', function() {
     delete apos.page.options.cache;
   });
 
-  it('should set a custom etag when retrieving a single page', async () => {
+  it('should set a custom etag when retrieving a single page', async function() {
     apos.page.options.publicApiProjection = {
       title: 1,
       _url: 1

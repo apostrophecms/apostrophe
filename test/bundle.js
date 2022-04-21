@@ -8,7 +8,7 @@ describe('Bundle', function() {
 
   this.timeout(t.timeout);
 
-  before(() => {
+  before(function() {
     // bundles work only in node_modules, symlink our test bundle
     if (!fs.existsSync(path.join(__dirname, '/node_modules/test-bundle'))) {
       fs.symlinkSync(path.join(__dirname, '/test-bundle'), path.join(__dirname, '/node_modules/test-bundle'), 'dir');

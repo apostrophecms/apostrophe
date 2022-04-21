@@ -199,7 +199,7 @@ describe('Schemas', function() {
 
   this.timeout(t.timeout);
 
-  after(async () => {
+  after(async function() {
     return t.destroy(apos);
   });
 
@@ -207,7 +207,7 @@ describe('Schemas', function() {
   // EXISTENCE
   /// ///
 
-  it('should be a property of the apos object', async () => {
+  it('should be a property of the apos object', async function() {
     apos = await t.create({
       root: module
     });
@@ -273,7 +273,7 @@ describe('Schemas', function() {
     assert.strictEqual(_newPage.group.name, 'otherFields');
   });
 
-  it('should error if a field is required and an empty value is submitted for a string field type', async () => {
+  it('should error if a field is required and an empty value is submitted for a string field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -291,7 +291,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'name', 'required');
   });
 
-  it('should error if the value submitted is less than min length for a string field type', async () => {
+  it('should error if the value submitted is less than min length for a string field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -309,7 +309,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'name', 'min');
   });
 
-  it('should convert and keep the correct value for a field which is required for a string field type', async () => {
+  it('should convert and keep the correct value for a field which is required for a string field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -330,7 +330,7 @@ describe('Schemas', function() {
     assert(result.name === 'Apostrophe^CMS');
   });
 
-  it('should keep an empty submitted field value null when there is a min / max configuration for an integer field type', async () => {
+  it('should keep an empty submitted field value null when there is a min / max configuration for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -353,7 +353,7 @@ describe('Schemas', function() {
     assert(result.price === null);
   });
 
-  it('should keep an empty submitted field value null when there is a min / max configuration for a float field type', async () => {
+  it('should keep an empty submitted field value null when there is a min / max configuration for a float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -376,7 +376,7 @@ describe('Schemas', function() {
     assert(result.price === null);
   });
 
-  it('should ensure a max value is being trimmed to the max length for a string field type', async () => {
+  it('should ensure a max value is being trimmed to the max length for a string field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -398,7 +398,7 @@ describe('Schemas', function() {
     assert(result.name === 'Apost');
   });
 
-  it('should allow saving a 0 value provided as a number if a field is required for an integer field type', async () => {
+  it('should allow saving a 0 value provided as a number if a field is required for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -420,7 +420,7 @@ describe('Schemas', function() {
     assert(result.price === 0);
   });
 
-  it('should allow saving a 0 value provided as a float if a field is required for an float field type', async () => {
+  it('should allow saving a 0 value provided as a float if a field is required for an float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -442,7 +442,7 @@ describe('Schemas', function() {
     assert(result.price === 0.00);
   });
 
-  it('should allow saving a 0 value provided as a number if a field is required for an float field type', async () => {
+  it('should allow saving a 0 value provided as a number if a field is required for an float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -464,7 +464,7 @@ describe('Schemas', function() {
     assert(result.price === 0);
   });
 
-  it('should allow saving a 0 value provided as a number if a field is required for an string field type', async () => {
+  it('should allow saving a 0 value provided as a number if a field is required for an string field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -486,7 +486,7 @@ describe('Schemas', function() {
     assert(result.price === '0');
   });
 
-  it('should allow saving a 0 value provided as a string if a field is required for an integer field type', async () => {
+  it('should allow saving a 0 value provided as a string if a field is required for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -508,7 +508,7 @@ describe('Schemas', function() {
     assert(result.price === 0);
   });
 
-  it('should allow saving a 0 value provided as a string if a field is required for an string field type', async () => {
+  it('should allow saving a 0 value provided as a string if a field is required for an string field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -530,7 +530,7 @@ describe('Schemas', function() {
     assert(result.price === '0');
   });
 
-  it('should allow saving a 0 value provided as a string if a field is required for an float field type', async () => {
+  it('should allow saving a 0 value provided as a string if a field is required for an float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -552,7 +552,7 @@ describe('Schemas', function() {
     assert(result.price === 0);
   });
 
-  it('should allow saving a 0 value provided as a string if there is no min value set for an integer field type', async () => {
+  it('should allow saving a 0 value provided as a string if there is no min value set for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -573,7 +573,7 @@ describe('Schemas', function() {
     assert(result.price === 0);
   });
 
-  it('should allow saving a 0 value provided as a string if there is no min value set for a float field type', async () => {
+  it('should allow saving a 0 value provided as a string if there is no min value set for a float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -594,7 +594,7 @@ describe('Schemas', function() {
     assert(result.price === 0);
   });
 
-  it('should allow saving a negative value provided as a number for an integer field type', async () => {
+  it('should allow saving a negative value provided as a number for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -615,7 +615,7 @@ describe('Schemas', function() {
     assert(result.price === -1);
   });
 
-  it('should allow saving a negative value provided as a float for an float field type', async () => {
+  it('should allow saving a negative value provided as a float for an float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -636,7 +636,7 @@ describe('Schemas', function() {
     assert(result.price === -1.3);
   });
 
-  it('should allow saving a negative value provided as a float for an string field type', async () => {
+  it('should allow saving a negative value provided as a float for an string field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -657,7 +657,7 @@ describe('Schemas', function() {
     assert(result.price === '-1.3');
   });
 
-  it('should allow saving a negative value provided as a number if a field is required for an integer field type', async () => {
+  it('should allow saving a negative value provided as a number if a field is required for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -679,7 +679,7 @@ describe('Schemas', function() {
     assert(result.price === -1);
   });
 
-  it('should allow saving a negative value provided as a number if a field is required for an float field type', async () => {
+  it('should allow saving a negative value provided as a number if a field is required for an float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -701,7 +701,7 @@ describe('Schemas', function() {
     assert(result.price === -1.3);
   });
 
-  it('should allow saving a negative value provided as a string if a field is required for an float field type', async () => {
+  it('should allow saving a negative value provided as a string if a field is required for an float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -723,7 +723,7 @@ describe('Schemas', function() {
     assert(result.price === -1.3);
   });
 
-  it('should override the saved value if min and max value has been set and the submitted value is out of range for an integer field type', async () => {
+  it('should override the saved value if min and max value has been set and the submitted value is out of range for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -746,7 +746,7 @@ describe('Schemas', function() {
     assert(result.price === 5);
   });
 
-  it('should override the saved value if min and max value has been set and the submitted value is out of range for a float field type', async () => {
+  it('should override the saved value if min and max value has been set and the submitted value is out of range for a float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -769,7 +769,7 @@ describe('Schemas', function() {
     assert(result.price === 5.1);
   });
 
-  it('should ensure a min value is being set to the configured min value if a lower value is submitted for an integer field type', async () => {
+  it('should ensure a min value is being set to the configured min value if a lower value is submitted for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -791,7 +791,7 @@ describe('Schemas', function() {
     assert(result.price === 5);
   });
 
-  it('should ensure a min value is being set to the configured min value if a lower value is submitted for a float field type', async () => {
+  it('should ensure a min value is being set to the configured min value if a lower value is submitted for a float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -813,7 +813,7 @@ describe('Schemas', function() {
     assert(result.price === 5.3);
   });
 
-  it('should ensure a max value is being set to the max if a higher value is submitted for an integer field type', async () => {
+  it('should ensure a max value is being set to the max if a higher value is submitted for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -835,7 +835,7 @@ describe('Schemas', function() {
     assert(result.price === 5);
   });
 
-  it('should ensure a max value is being set to the max if a higher value is submitted for a float field type', async () => {
+  it('should ensure a max value is being set to the max if a higher value is submitted for a float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -857,7 +857,7 @@ describe('Schemas', function() {
     assert(result.price === 5.9);
   });
 
-  it('should not modify a value if the submitted value is within min and max for an integer field type', async () => {
+  it('should not modify a value if the submitted value is within min and max for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -880,7 +880,7 @@ describe('Schemas', function() {
     assert(result.price === 5);
   });
 
-  it('should not modify a value if the submitted value is within min and max for a float field type', async () => {
+  it('should not modify a value if the submitted value is within min and max for a float field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -903,7 +903,7 @@ describe('Schemas', function() {
     assert(result.price === 4.3);
   });
 
-  it('should not allow a text value to be submitted for a required integer field', async () => {
+  it('should not allow a text value to be submitted for a required integer field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -921,7 +921,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should not allow a text value to be submitted for a required float field', async () => {
+  it('should not allow a text value to be submitted for a required float field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -939,7 +939,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should not allow a text value to be submitted for a non required integer field with min and max', async () => {
+  it('should not allow a text value to be submitted for a non required integer field with min and max', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -958,7 +958,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should not allow a text value to be submitted for a non required float field with min and max', async () => {
+  it('should not allow a text value to be submitted for a non required float field with min and max', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -977,7 +977,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should not allow a text value to be submitted for a non required integer field with a default value set', async () => {
+  it('should not allow a text value to be submitted for a non required integer field with a default value set', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -995,7 +995,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should not allow a text value to be submitted for a non required float field with a default value set', async () => {
+  it('should not allow a text value to be submitted for a non required float field with a default value set', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1013,7 +1013,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should not allow a text value to be submitted for a non required integer field', async () => {
+  it('should not allow a text value to be submitted for a non required integer field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1030,7 +1030,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should not allow a text value to be submitted for a non required float field', async () => {
+  it('should not allow a text value to be submitted for a non required float field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1047,7 +1047,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
-  it('should allow a parsable string/integer value to be submitted for a non required integer field', async () => {
+  it('should allow a parsable string/integer value to be submitted for a non required integer field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1067,7 +1067,7 @@ describe('Schemas', function() {
     assert(result.price === 22);
   });
 
-  it('should allow a parsable string/float value to be submitted for a non required float field', async () => {
+  it('should allow a parsable string/float value to be submitted for a non required float field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1087,7 +1087,7 @@ describe('Schemas', function() {
     assert(result.price === 11.4);
   });
 
-  it('should convert simple data correctly', async () => {
+  it('should convert simple data correctly', async function() {
     const schema = apos.schema.compose({
       addFields: simpleFields
     });
@@ -1111,7 +1111,7 @@ describe('Schemas', function() {
     assert(result.slug === 'this-is-cool');
   });
 
-  it('should update a password if provided', async () => {
+  it('should update a password if provided', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1134,7 +1134,7 @@ describe('Schemas', function() {
     assert(result.password === 'silly');
   });
 
-  it('should leave a password alone if not provided', async () => {
+  it('should leave a password alone if not provided', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1157,7 +1157,7 @@ describe('Schemas', function() {
     assert(result.password === 'serious');
   });
 
-  it('should handle array schemas', async () => {
+  it('should handle array schemas', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1197,7 +1197,7 @@ describe('Schemas', function() {
     assert(result.addresses[1].address === '602 test ave');
   });
 
-  it('should convert string values to areas correctly', async () => {
+  it('should convert string values to areas correctly', async function() {
     const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
     const input = {
@@ -1219,7 +1219,7 @@ describe('Schemas', function() {
     assert(result.body.items[0].content === apos.util.escapeHtml(input.body));
   });
 
-  it('should convert arrays of widgets to areas correctly', async () => {
+  it('should convert arrays of widgets to areas correctly', async function() {
     const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
     const input = {
@@ -1247,7 +1247,7 @@ describe('Schemas', function() {
     assert.strictEqual(result.body.items[0].content, '<h4>This is <strong>a header.</strong></h4>');
   });
 
-  it('should not accept a widget not in the widgets object of the area', async () => {
+  it('should not accept a widget not in the widgets object of the area', async function() {
     const schema = apos.schema.compose(hasAreaWithoutWidgets);
     assert(schema.length === 1);
     const input = {
@@ -1268,7 +1268,7 @@ describe('Schemas', function() {
     assert(!result.body.items[0]);
   });
 
-  it('should convert areas gracefully when they are undefined', async () => {
+  it('should convert areas gracefully when they are undefined', async function() {
     const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
     const input = {
@@ -1288,7 +1288,7 @@ describe('Schemas', function() {
     assert(!result.body.items[0]);
   });
 
-  it('should clean up extra slashes in page slugs', async () => {
+  it('should clean up extra slashes in page slugs', async function() {
     const req = apos.task.getReq();
     const schema = apos.schema.compose({ addFields: pageSlug });
     assert(schema.length === 1);
@@ -1300,7 +1300,7 @@ describe('Schemas', function() {
     assert.strictEqual(result.slug, '/wiggy/wacky/wobbly/whizzle');
   });
 
-  it('retains trailing / on the home page', async () => {
+  it('retains trailing / on the home page', async function() {
     const req = apos.task.getReq();
     const schema = apos.schema.compose({ addFields: pageSlug });
     assert(schema.length === 1);
@@ -1312,7 +1312,7 @@ describe('Schemas', function() {
     assert(result.slug === '/');
   });
 
-  it('does not keep slashes when page: true not present for slug', async () => {
+  it('does not keep slashes when page: true not present for slug', async function() {
     const req = apos.task.getReq();
     const schema = apos.schema.compose({ addFields: regularSlug });
     assert(schema.length === 1);
@@ -1324,7 +1324,7 @@ describe('Schemas', function() {
     assert(result.slug === 'wiggy-wacky-wobbly-whizzle');
   });
 
-  it('enforces required property for ordinary field', async () => {
+  it('enforces required property for ordinary field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1338,7 +1338,7 @@ describe('Schemas', function() {
     await testSchemaError(schema, { age: '' }, 'age', 'required');
   });
 
-  it('ignores required property for hidden field', async () => {
+  it('ignores required property for hidden field', async function() {
     const req = apos.task.getReq();
     const schema = apos.schema.compose({
       addFields: [
@@ -1382,7 +1382,7 @@ describe('Schemas', function() {
     assert(output.ageOrShoeSize === 'shoeSize');
   });
 
-  it('enforces required property for shown field', async () => {
+  it('enforces required property for shown field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1423,7 +1423,7 @@ describe('Schemas', function() {
     }, 'age', 'required');
   });
 
-  it('ignores required property for recursively hidden field', async () => {
+  it('ignores required property for recursively hidden field', async function() {
     const req = apos.task.getReq();
     const schema = apos.schema.compose({
       addFields: [
@@ -1485,7 +1485,7 @@ describe('Schemas', function() {
     assert(output.ageOrShoeSize === 'age');
   });
 
-  it('enforces required property for recursively shown field', async () => {
+  it('enforces required property for recursively shown field', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {
@@ -1544,7 +1544,7 @@ describe('Schemas', function() {
     }, 'age', 'required');
   });
 
-  it('ignores required property for recursively hidden field with boolean', async () => {
+  it('ignores required property for recursively hidden field with boolean', async function() {
     const req = apos.task.getReq();
     const schema = apos.schema.compose({
       addFields: [
@@ -1604,7 +1604,7 @@ describe('Schemas', function() {
     assert(output.ageOrShoeSize === 'age');
   });
 
-  it('enforces required property for recursively shown field with boolean', async () => {
+  it('enforces required property for recursively shown field with boolean', async function() {
     const schema = apos.schema.compose({
       addFields: [
         {

@@ -204,7 +204,7 @@ describe('Locks', function() {
     });
   });
 
-  it('Second lock should wait for release of first one', async () => {
+  it('Second lock should wait for release of first one', async function() {
     let timedOut = false;
     await apos.lock.lock('test-lock');
     setTimeout(async () => {

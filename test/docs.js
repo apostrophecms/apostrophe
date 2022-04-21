@@ -314,7 +314,7 @@ describe('Docs', function() {
     assert(doc.slug.match(/^one\d+$/));
   });
 
-  it('should add the aposDocId to the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async () => {
+  it('should add the aposDocId to the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async function() {
     const object = {
       aposDocId: 'paul',
       aposLocale: 'en:published',
@@ -436,7 +436,7 @@ describe('Docs', function() {
     assert(counts.Lori === 2);
   });
 
-  it('should remove the aposDocId from the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async () => {
+  it('should remove the aposDocId from the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async function() {
     const paulDoc = await apos.doc.db.findOne({
       slug: 'paul',
       aposLocale: 'en:published'
@@ -469,7 +469,7 @@ describe('Docs', function() {
     assert(larryDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
-  it('should update the related reverse documents\' `cacheInvalidatedAt` field', async () => {
+  it('should update the related reverse documents\' `cacheInvalidatedAt` field', async function() {
     const object = {
       aposDocId: 'john',
       aposLocale: 'en:published',
@@ -505,7 +505,7 @@ describe('Docs', function() {
     assert(johnDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
-  it('should update the pieces parent page\'s `cacheInvalidatedAt` field', async () => {
+  it('should update the pieces parent page\'s `cacheInvalidatedAt` field', async function() {
     const page = {
       slug: '/parent/new-page',
       visibility: 'public',
@@ -778,7 +778,7 @@ describe('Docs', function() {
   // MIGRATIONS
   /// ///
 
-  it('should add via a migration the `cacheInvalidatedAt` field to any doc and set it to equal the doc\'s `updatedAt` field', async () => {
+  it('should add via a migration the `cacheInvalidatedAt` field to any doc and set it to equal the doc\'s `updatedAt` field', async function() {
     const objects = [
       {
         slug: 'test-for-cacheInvalidatedAt-field-migration1',
@@ -816,7 +816,7 @@ describe('Docs', function() {
     });
   });
 
-  it('should not add via a migration the `cacheInvalidatedAt` field to docs that already have it', async () => {
+  it('should not add via a migration the `cacheInvalidatedAt` field to docs that already have it', async function() {
     const object = {
       slug: 'test-for-cacheInvalidatedAt-field-migration3',
       visibility: 'public',

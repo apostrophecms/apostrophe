@@ -15,7 +15,7 @@ describe('Pieces Public API', function() {
   // EXISTENCE
   /// ///
 
-  it('should initialize with a schema', async () => {
+  it('should initialize with a schema', async function() {
     apos = await t.create({
       root: module,
 
@@ -48,13 +48,13 @@ describe('Pieces Public API', function() {
     visibility: 'public'
   };
 
-  it('should be able to insert a piece into the database', async () => {
+  it('should be able to insert a piece into the database', async function() {
     await apos.thing.insert(apos.task.getReq(), testThing);
     const thing = await apos.thing.find(apos.task.getReq(), { _id: 'testThing:en:published' }).toObject();
     assert(thing);
   });
 
-  it('should not be able to anonymously retrieve a piece by id from the database without a public API projection', async () => {
+  it('should not be able to anonymously retrieve a piece by id from the database without a public API projection', async function() {
     try {
       await apos.http.get('/api/v1/thing');
       // Bad, we expected a 404
@@ -64,7 +64,7 @@ describe('Pieces Public API', function() {
     }
   });
 
-  it('should be able to anonymously retrieve a piece by id from the database with a public API projection', async () => {
+  it('should be able to anonymously retrieve a piece by id from the database with a public API projection', async function() {
     // Patch the option setting to simplify the test code
     apos.thing.options.publicApiProjection = {
       title: 1,
@@ -78,7 +78,7 @@ describe('Pieces Public API', function() {
     assert(!response.results[0].foo);
   });
 
-  it('should not set a "max-age" cache-control value when retrieving pieces, when cache option is not set, with a public API projection', async () => {
+  it('should not set a "max-age" cache-control value when retrieving pieces, when cache option is not set, with a public API projection', async function() {
     apos.thing.options.publicApiProjection = {
       title: 1,
       _url: 1
@@ -91,7 +91,7 @@ describe('Pieces Public API', function() {
     assert(response2.headers['cache-control'] === undefined);
   });
 
-  it('should not set a "max-age" cache-control value when retrieving a single piece, when "etags" cache option is set, with a public API projection', async () => {
+  it('should not set a "max-age" cache-control value when retrieving a single piece, when "etags" cache option is set, with a public API projection', async function() {
     apos.thing.options.publicApiProjection = {
       title: 1,
       _url: 1
@@ -108,7 +108,7 @@ describe('Pieces Public API', function() {
     assert(response.headers['cache-control'] === undefined);
   });
 
-  it('should set a "max-age" cache-control value when retrieving pieces, with a public API projection', async () => {
+  it('should set a "max-age" cache-control value when retrieving pieces, with a public API projection', async function() {
     apos.thing.options.publicApiProjection = {
       title: 1,
       _url: 1
@@ -128,7 +128,7 @@ describe('Pieces Public API', function() {
     delete apos.thing.options.cache;
   });
 
-  it('should set a custom etag when retrieving a single piece', async () => {
+  it('should set a custom etag when retrieving a single piece', async function() {
     apos.thing.options.publicApiProjection = {
       title: 1,
       _url: 1

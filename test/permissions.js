@@ -36,13 +36,13 @@ describe('Permissions', function() {
     it('Allows the admin to update by type', function() {
       assert(apos.permission.can(apos.task.getAdminReq(), 'edit', '@apostrophecms/home-page'));
     });
-    it('allows the public to view a particular doc via criteria and via can()', async () => {
+    it('allows the public to view a particular doc via criteria and via can()', async function() {
       const req = apos.task.getAnonReq();
       const home = await apos.page.find(req, { slug: '/' }).toObject();
       assert(home);
       assert(apos.permission.can(apos.task.getAnonReq(), 'view', home));
     });
-    it('public cannot update via actual update api', async () => {
+    it('public cannot update via actual update api', async function() {
       const req = apos.task.getAnonReq();
       const home = await apos.page.find(req, { slug: '/' }).toObject();
       assert(home);
@@ -54,7 +54,7 @@ describe('Permissions', function() {
         assert(e.message === 'forbidden');
       }
     });
-    it('contributor cannot update published doc via actual update api', async () => {
+    it('contributor cannot update published doc via actual update api', async function() {
       const req = apos.task.getContributorReq();
       const home = await apos.page.find(req, { slug: '/' }).toObject();
       assert(home);
@@ -66,7 +66,7 @@ describe('Permissions', function() {
         assert(e.message === 'forbidden');
       }
     });
-    it('contributor can update draft doc via actual update api', async () => {
+    it('contributor can update draft doc via actual update api', async function() {
       const req = apos.task.getContributorReq({
         mode: 'draft'
       });
@@ -76,7 +76,7 @@ describe('Permissions', function() {
       const updated = await apos.page.update(req, home);
       assert(updated.title === 'Contributor Updated');
     });
-    it('contributor cannot publish doc', async () => {
+    it('contributor cannot publish doc', async function() {
       const req = apos.task.getContributorReq({
         mode: 'draft'
       });
@@ -89,7 +89,7 @@ describe('Permissions', function() {
         assert(e.message === 'forbidden');
       }
     });
-    it('editor can publish doc', async () => {
+    it('editor can publish doc', async function() {
       const req = apos.task.getEditorReq({
         mode: 'draft'
       });
@@ -100,7 +100,7 @@ describe('Permissions', function() {
       const pHome = await apos.page.find(pReq, { slug: '/' }).toObject();
       assert(pHome.title === 'Contributor Updated');
     });
-    it('editor can update published doc via actual update api', async () => {
+    it('editor can update published doc via actual update api', async function() {
       const req = apos.task.getEditorReq();
       const home = await apos.page.find(req, { slug: '/' }).toObject();
       assert(home);
@@ -108,19 +108,19 @@ describe('Permissions', function() {
       const updated = await apos.page.update(req, home);
       assert(updated.title === 'Editor Updated');
     });
-    it('admin can update via actual update api', async () => {
+    it('admin can update via actual update api', async function() {
       const req = apos.task.getAdminReq();
       const home = await apos.page.find(req, { slug: '/' }).toObject();
       assert(home);
       home.visibility = 'loginRequired';
       await apos.page.update(req, home);
     });
-    it('public cannot access when visibility is loginRequired', async () => {
+    it('public cannot access when visibility is loginRequired', async function() {
       const anonReq = apos.task.getAnonReq();
       const home = await apos.page.find(anonReq, { slug: '/' }).toObject();
       assert(!home);
     });
-    it('guest can access when visibility is loginRequired', async () => {
+    it('guest can access when visibility is loginRequired', async function() {
       const guestReq = apos.task.getGuestReq();
       const home = await apos.page.find(guestReq, { slug: '/' }).toObject();
       assert(home);
