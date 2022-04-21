@@ -16,6 +16,7 @@
 
 * Documentation of obsolete options has been removed.
 * Dead code relating to activating in-context widget editors have been removed. They are always active and have been for some time. In the future they might be swapped in on scroll, but there will never be a need to swap them in "on click."
+* Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
 * Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
 
 ## 3.17.0 (2022-03-31)
