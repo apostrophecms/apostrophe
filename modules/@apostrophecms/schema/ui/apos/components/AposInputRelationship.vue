@@ -213,6 +213,7 @@ export default {
         title: item.title,
         value: item._fields
       });
+
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
         this.$set(this.next, index, {
