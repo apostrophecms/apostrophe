@@ -1,6 +1,10 @@
 <template>
   <div class="apos-image-cropper">
-    <span class="apos-image-focal-point" ref="focalPoint" />
+    <span
+      class="apos-image-focal-point"
+      ref="focalPoint"
+      @mousedown="dragMouseDown"
+    />
     <cropper
       ref="cropper"
       :src="attachment._urls.uncropped
@@ -88,9 +92,10 @@ export default {
       left: this.docFields.data.left
     };
   },
-  mounted () {
-    // TODO: attach mousedown event to elem (@mousedown)
-    this.$refs.focalPoint.addEventListener('mousedown', this.dragMouseDown);
+  destroyed() {
+    const { focalPoint } = this.$refs;
+
+    focalPoint.removeEventListener('mousedown', this.dragMouseDown);
   },
   methods: {
     onChange ({ coordinates }) {
@@ -116,7 +121,6 @@ export default {
       this.dragAndDrop.pos4 = event.clientY;
 
       focalPoint.style.cursor = 'grabbing';
-      // TODO: attach mousemove to focalPoint element
       document.addEventListener('mousemove', this.elementDrag);
       document.addEventListener('mouseup', this.closeDragElement);
     },
