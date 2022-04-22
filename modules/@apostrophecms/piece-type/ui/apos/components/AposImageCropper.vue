@@ -27,7 +27,6 @@ import 'vue-advanced-cropper/dist/style.css';
 
 // TODO: focal point tooltip
 // TODO: clicking sets focal point
-// TODO: fix cropper and focal point on load
 // TODO: clean, jsdoc...
 
 export default {
@@ -215,7 +214,8 @@ export default {
      */
     placeFocalPoint () {
       const { focalPoint } = this.$refs;
-      const { x = 50, y = 50 } = this.docFields.data;
+      const x = this.docFields.data.x || 50;
+      const y = this.docFields.data.y || 50;
 
       const focalPointSize = this.getFocalPointSize();
 
@@ -250,6 +250,7 @@ export default {
         y
       });
 
+      console.log(coordinates);
       this.$emit('change', coordinates, false);
     }
   }
