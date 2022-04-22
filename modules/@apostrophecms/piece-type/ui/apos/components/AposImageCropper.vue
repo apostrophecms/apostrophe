@@ -1,7 +1,6 @@
 <template>
   <div
     class="apos-image-cropper"
-    @click="onImageClick"
   >
     <span
       class="apos-image-focal-point"
@@ -206,15 +205,13 @@ export default {
         .entries(coordinates)
         .some(([ name, value ]) => dataFields[name] !== value);
     },
-    /**
-     * Store coordinates in order to use them
-     * to keep focal point inside the stencil when moving it.
-     */
     storeStencilCoordinates () {
-      // TODO: use something compatible, not WebKitCSSMatrix (DOMMatrixReadOnly? no because Internet Exp, regular style.transform?, getComputedStyle()?)
       const stencilElement = document.querySelector('[data-stencil]');
       const stencilStyle = window.getComputedStyle(stencilElement);
-      const matrix = new window.WebKitCSSMatrix(stencilStyle.transform);
+
+      // TODO: DOMMatrixReadOnly is not IE compatible. Should we use something compatible with IE?
+      // In that case, use regular elem.style.transform and extract values with a regex
+      const matrix = new window.DOMMatrixReadOnly(stencilStyle.transform);
 
       this.stencilCoordinates = {
         left: matrix.m41,
