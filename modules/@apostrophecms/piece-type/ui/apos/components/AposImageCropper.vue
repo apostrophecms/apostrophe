@@ -26,6 +26,9 @@ import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
 // TODO: focal point tooltip
+// TODO: clicking sets focal point
+// TODO: fix cropper and focal point on load
+// TODO: clean, jsdoc...
 
 export default {
   components: {
@@ -84,12 +87,19 @@ export default {
     }
   },
   created () {
-    this.setCropperCoordinates = debounce(
-      (coordinates) => {
-        this.$refs.cropper.setCoordinates(coordinates);
-      }, this.debounceTimeout
-    );
-    this.centerFocalPointDebounced = debounce(this.centerFocalPoint, this.debounceTimeout);
+    this.setCropperCoordinates = debounce(coordinates => {
+      this.$refs.cropper.setCoordinates(coordinates);
+    }, this.debounceTimeout);
+
+    this.emitFocalPointCoordinates = debounce(coordinates => {
+      console.log(coordinates);
+      this.$emit('change', coordinates, false);
+    }, this.debounceTimeout);
+
+    this.placeFocalPointAfterResize = debounce(() => {
+      this.storeStencilCoordinates();
+      this.placeFocalPoint();
+    }, this.debounceTimeout);
 
     this.defaultSize = {
       width: this.docFields.data.width,
@@ -102,21 +112,15 @@ export default {
   },
   beforeDestroy() {
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
-    // window.removeEventListener('resize', this.centerFocalPointDebounced);
+
+    window.removeEventListener('resize', this.placeFocalPointAfterResize);
   },
   methods: {
     onCropperReady () {
-      const { x, y } = this.docFields.data;
-
       this.storeStencilCoordinates();
+      this.placeFocalPoint();
 
-      if (!x || !y) {
-        this.centerFocalPoint();
-      } else {
-        this.placeFocalPoint();
-      }
-
-      // window.addEventListener('resize', this.centerFocalPointDebounced);
+      window.addEventListener('resize', this.placeFocalPointAfterResize);
     },
     onCropperChange ({ coordinates }) {
       if (
@@ -124,7 +128,9 @@ export default {
         this.checkCropperCoordinatesDiff(coordinates, this.docFields.data)
       ) {
         this.storeStencilCoordinates();
-        // this.centerFocalPoint();
+
+        // TODO: emit focal point new coordinates, stop placing
+        // this.placeFocalPoint();
 
         this.$emit('change', coordinates, false);
       }
@@ -197,33 +203,11 @@ export default {
       };
     },
     /**
-     * Place the focal point at the center of the stencil.
-     * TODO: center focal point only when outside stencil
-     */
-    centerFocalPoint () {
-      const { focalPoint } = this.$refs;
-
-      const focalPointSize = this.getFocalPointSize();
-
-      const left = this.stencilCoordinates.left + this.stencilCoordinates.width / 2 - focalPointSize.halfWidth;
-      const top = this.stencilCoordinates.top + this.stencilCoordinates.height / 2 - focalPointSize.halfHeight;
-
-      focalPoint.style.left = `${left}px`;
-      focalPoint.style.top = `${top}px`;
-
-      const focalPointPercentages = {
-        x: 50,
-        y: 50
-      };
-
-      this.$emit('change', focalPointPercentages, false);
-    },
-    /**
      * Place the focal point at its coordinates.
      */
     placeFocalPoint () {
       const { focalPoint } = this.$refs;
-      const { x, y } = this.docFields.data;
+      const { x = 50, y = 50 } = this.docFields.data;
 
       const focalPointSize = this.getFocalPointSize();
 
@@ -233,6 +217,9 @@ export default {
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
     },
+    /**
+     * Drag focal point and emit its new coordinates (null if outside stencil).
+     */
     moveFocalPoint () {
       const { focalPoint } = this.$refs;
 
@@ -241,23 +228,26 @@ export default {
       const left = focalPoint.offsetLeft - this.dragAndDrop.pos1;
       const top = focalPoint.offsetTop - this.dragAndDrop.pos2;
 
-      const leftLimit = this.stencilCoordinates.left - focalPointSize.halfWidth;
-      const topLimit = this.stencilCoordinates.top - focalPointSize.halfHeight;
-      const rightLimit = leftLimit + this.stencilCoordinates.width;
-      const bottomLimit = topLimit + this.stencilCoordinates.height;
+      focalPoint.style.left = `${left}px`;
+      focalPoint.style.top = `${top}px`;
 
-      // keep focal point inside stencil
-      if (left > leftLimit && top > topLimit && left < rightLimit && top < bottomLimit) {
-        focalPoint.style.left = `${left}px`;
-        focalPoint.style.top = `${top}px`;
+      const x = (left + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width * 100;
+      const y = (top + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height * 100;
 
-        const focalPointPercentages = {
-          x: Math.round((left + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width * 100),
-          y: Math.round((top + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height * 100)
-        };
+      const sanitizeCoordinates = ({ x, y }) => (x >= 0 && x <= 100 && y >= 0 && y <= 100) ? {
+        x: Math.abs(Math.round(x)),
+        y: Math.abs(Math.round(y))
+      } : {
+        x: null,
+        y: null
+      };
 
-        this.$emit('change', focalPointPercentages, false);
-      }
+      this.emitFocalPointCoordinates(
+        sanitizeCoordinates({
+          x,
+          y
+        })
+      );
     }
   }
 };
