@@ -102,22 +102,31 @@ export default {
   },
   beforeDestroy() {
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
-    window.removeEventListener('resize', this.centerFocalPointDebounced);
+    // window.removeEventListener('resize', this.centerFocalPointDebounced);
   },
   methods: {
     onCropperReady () {
-      // TODO: force center focal point on first load, if no focal point value
-      // TODO: set focal point value on load with current data
-      this.centerFocalPoint();
-      window.addEventListener('resize', this.centerFocalPointDebounced);
+      const { x, y } = this.docFields.data;
+
+      this.storeStencilCoordinates();
+
+      if (!x || !y) {
+        this.centerFocalPoint();
+      } else {
+        this.placeFocalPoint();
+      }
+
+      // window.addEventListener('resize', this.centerFocalPointDebounced);
     },
     onCropperChange ({ coordinates }) {
       if (
         !this.isUpdatingCropperCoordinates &&
         this.checkCropperCoordinatesDiff(coordinates, this.docFields.data)
       ) {
+        this.storeStencilCoordinates();
+        // this.centerFocalPoint();
+
         this.$emit('change', coordinates, false);
-        this.centerFocalPoint();
       }
 
       this.isUpdatingCropperCoordinates = false;
@@ -142,7 +151,7 @@ export default {
       this.dragAndDrop.pos3 = event.clientX;
       this.dragAndDrop.pos4 = event.clientY;
 
-      this.placeFocalPointOnMove();
+      this.moveFocalPoint();
     },
     onMouseUp() {
       this.$refs.focalPoint.style.cursor = 'grab';
@@ -194,8 +203,6 @@ export default {
     centerFocalPoint () {
       const { focalPoint } = this.$refs;
 
-      this.storeStencilCoordinates();
-
       const focalPointSize = this.getFocalPointSize();
 
       const left = this.stencilCoordinates.left + this.stencilCoordinates.width / 2 - focalPointSize.halfWidth;
@@ -211,7 +218,22 @@ export default {
 
       this.$emit('change', focalPointPercentages, false);
     },
-    placeFocalPointOnMove () {
+    /**
+     * Place the focal point at its coordinates.
+     */
+    placeFocalPoint () {
+      const { focalPoint } = this.$refs;
+      const { x, y } = this.docFields.data;
+
+      const focalPointSize = this.getFocalPointSize();
+
+      const left = Math.round(x / 100 * this.stencilCoordinates.width + this.stencilCoordinates.left - focalPointSize.halfWidth);
+      const top = Math.round(y / 100 * this.stencilCoordinates.height + this.stencilCoordinates.top - focalPointSize.halfHeight);
+
+      focalPoint.style.left = `${left}px`;
+      focalPoint.style.top = `${top}px`;
+    },
+    moveFocalPoint () {
       const { focalPoint } = this.$refs;
 
       const focalPointSize = this.getFocalPointSize();
