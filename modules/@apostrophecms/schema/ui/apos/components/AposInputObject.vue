@@ -25,7 +25,6 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import { klona } from 'klona';
 
 export default {
   name: 'AposInputObject',
