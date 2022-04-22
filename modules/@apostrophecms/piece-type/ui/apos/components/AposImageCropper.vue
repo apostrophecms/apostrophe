@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-image-cropper">
+  <div
+    class="apos-image-cropper"
+    @click="onImageClick"
+  >
     <span
       class="apos-image-focal-point"
       ref="focalPoint"
@@ -10,7 +13,8 @@
       :src="attachment._urls.uncropped
         ? attachment._urls.uncropped.original
         : attachment._urls.original"
-      :stencil-props="{ 'data-stencil': '' }"
+      :stencil-props="{ [selectors.stencil]: '' }"
+      :foreground-class="selectors.foreground"
       :debounce="debounceTimeout"
       @ready="onCropperReady"
       @change="onCropperChange"
@@ -26,7 +30,6 @@ import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
 // TODO: focal point tooltip
-// TODO: clicking sets focal point
 // TODO: clean, jsdoc...
 
 export default {
@@ -46,6 +49,10 @@ export default {
   emits: [ 'change' ],
   data: () => ({
     debounceTimeout: 200,
+    selectors: {
+      stencil: 'data-stencil',
+      foreground: 'apos-image-cropper__foreground'
+    },
     // coordinates based on cropper visible area, used to place the focal point in viewport
     stencilCoordinates: {
       left: null,
@@ -172,6 +179,33 @@ export default {
       document.removeEventListener('mousemove', this.onMouseMove);
       document.removeEventListener('mouseup', this.onMouseUp);
     },
+    onImageClick (event) {
+      // TODO: wip
+      console.log(event);
+
+      const { focalPoint } = this.$refs;
+
+      const focalPointSize = this.getFocalPointSize();
+
+      const isOutsideStencil = event.target.classList.contains('apos-image-cropper__foreground');
+
+      // console.log('event.offsetX', event.offsetX);
+      // console.log('event.offsetY', event.offsetY);
+      // console.log('isOutsideStencil', isOutsideStencil);
+
+      let left = event.offsetX - focalPointSize.halfWidth;
+      let top = event.offsetY - focalPointSize.halfHeight;
+
+      if (!isOutsideStencil) {
+        left += this.stencilCoordinates.left;
+        top += this.stencilCoordinates.top;
+      }
+
+      focalPoint.style.left = `${left}px`;
+      focalPoint.style.top = `${top}px`;
+
+      this.updateFocalPointCoordinatesDebounced();
+    },
     checkCropperCoordinatesDiff (coordinates, dataFields) {
       return Object
         .entries(coordinates)
@@ -209,11 +243,12 @@ export default {
       };
     },
     /**
-     * Place the focal point at its coordinates,
+     * Place the focal point at its coordinates inside the stencil,
      * or at the center of the stencil by default.
      */
     placeFocalPoint () {
       const { focalPoint } = this.$refs;
+
       const x = this.docFields.data.x || 50;
       const y = this.docFields.data.y || 50;
 
@@ -260,6 +295,7 @@ export default {
 .apos-image-cropper {
   position: relative;
   max-width: 100%;
+  cursor: pointer;
 
   .apos-image-focal-point {
     position: absolute;
