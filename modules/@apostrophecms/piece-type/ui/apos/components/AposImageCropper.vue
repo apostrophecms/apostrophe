@@ -61,12 +61,9 @@ export default {
       height: null
     },
     isUpdatingCropperCoordinates: false,
-    // TODO: rename these variables
     dragAndDrop: {
-      pos1: 0,
-      pos2: 0,
-      pos3: 0,
-      pos4: 0
+      clientX: 0,
+      clientY: 0
     }
   }),
   watch: {
@@ -143,8 +140,8 @@ export default {
 
       const { focalPoint } = this.$refs;
 
-      this.dragAndDrop.pos3 = event.clientX;
-      this.dragAndDrop.pos4 = event.clientY;
+      this.dragAndDrop.clientX = event.clientX;
+      this.dragAndDrop.clientY = event.clientY;
 
       focalPoint.style.cursor = 'grabbing';
       focalPoint.style.transitionDuration = '0s';
@@ -157,13 +154,11 @@ export default {
 
       const { focalPoint } = this.$refs;
 
-      this.dragAndDrop.pos1 = this.dragAndDrop.pos3 - event.clientX;
-      this.dragAndDrop.pos2 = this.dragAndDrop.pos4 - event.clientY;
-      this.dragAndDrop.pos3 = event.clientX;
-      this.dragAndDrop.pos4 = event.clientY;
+      const left = focalPoint.offsetLeft - this.dragAndDrop.clientX + event.clientX;
+      const top = focalPoint.offsetTop - this.dragAndDrop.clientY + event.clientY;
 
-      const left = focalPoint.offsetLeft - this.dragAndDrop.pos1;
-      const top = focalPoint.offsetTop - this.dragAndDrop.pos2;
+      this.dragAndDrop.clientX = event.clientX;
+      this.dragAndDrop.clientY = event.clientY;
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
