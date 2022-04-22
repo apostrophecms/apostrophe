@@ -91,15 +91,12 @@ export default {
       this.$refs.cropper.setCoordinates(coordinates);
     }, this.debounceTimeout);
 
-    this.emitFocalPointCoordinates = debounce(coordinates => {
-      console.log(coordinates);
-      this.$emit('change', coordinates, false);
-    }, this.debounceTimeout);
-
     this.placeFocalPointAfterResize = debounce(() => {
       this.storeStencilCoordinates();
       this.placeFocalPoint();
     }, this.debounceTimeout);
+
+    this.updateFocalPointCoordinatesDebounced = debounce(this.updateFocalPointCoordinates, this.debounceTimeout);
 
     this.defaultSize = {
       width: this.docFields.data.width,
@@ -128,9 +125,7 @@ export default {
         this.checkCropperCoordinatesDiff(coordinates, this.docFields.data)
       ) {
         this.storeStencilCoordinates();
-
-        // TODO: emit focal point new coordinates, stop placing
-        // this.placeFocalPoint();
+        this.updateFocalPointCoordinates();
 
         this.$emit('change', coordinates, false);
       }
@@ -140,11 +135,13 @@ export default {
     onFocalPointMouseDown (event) {
       event.preventDefault();
 
+      const { focalPoint } = this.$refs;
+
       this.dragAndDrop.pos3 = event.clientX;
       this.dragAndDrop.pos4 = event.clientY;
 
-      this.$refs.focalPoint.style.cursor = 'grabbing';
-      this.$refs.focalPoint.style.transitionDuration = '0s';
+      focalPoint.style.cursor = 'grabbing';
+      focalPoint.style.transitionDuration = '0s';
 
       document.addEventListener('mousemove', this.onMouseMove);
       document.addEventListener('mouseup', this.onMouseUp);
@@ -152,16 +149,26 @@ export default {
     onMouseMove(event) {
       event.preventDefault();
 
+      const { focalPoint } = this.$refs;
+
       this.dragAndDrop.pos1 = this.dragAndDrop.pos3 - event.clientX;
       this.dragAndDrop.pos2 = this.dragAndDrop.pos4 - event.clientY;
       this.dragAndDrop.pos3 = event.clientX;
       this.dragAndDrop.pos4 = event.clientY;
 
-      this.moveFocalPoint();
+      const left = focalPoint.offsetLeft - this.dragAndDrop.pos1;
+      const top = focalPoint.offsetTop - this.dragAndDrop.pos2;
+
+      focalPoint.style.left = `${left}px`;
+      focalPoint.style.top = `${top}px`;
+
+      this.updateFocalPointCoordinatesDebounced();
     },
     onMouseUp() {
-      this.$refs.focalPoint.style.cursor = 'grab';
-      this.$refs.focalPoint.style.transitionDuration = '0.1s';
+      const { focalPoint } = this.$refs;
+
+      focalPoint.style.cursor = 'grab';
+      focalPoint.style.transitionDuration = '0.1s';
 
       document.removeEventListener('mousemove', this.onMouseMove);
       document.removeEventListener('mouseup', this.onMouseUp);
@@ -203,7 +210,8 @@ export default {
       };
     },
     /**
-     * Place the focal point at its coordinates.
+     * Place the focal point at its coordinates,
+     * or at the center of the stencil by default.
      */
     placeFocalPoint () {
       const { focalPoint } = this.$refs;
@@ -218,36 +226,31 @@ export default {
       focalPoint.style.top = `${top}px`;
     },
     /**
-     * Drag focal point and emit its new coordinates (null if outside stencil).
+     * Get focal point position inside the stencil
+     * and emit it to update x and y percentages.
      */
-    moveFocalPoint () {
+    updateFocalPointCoordinates () {
       const { focalPoint } = this.$refs;
 
       const focalPointSize = this.getFocalPointSize();
 
-      const left = focalPoint.offsetLeft - this.dragAndDrop.pos1;
-      const top = focalPoint.offsetTop - this.dragAndDrop.pos2;
+      const x = (focalPoint.offsetLeft + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width;
+      const y = (focalPoint.offsetTop + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height;
 
-      focalPoint.style.left = `${left}px`;
-      focalPoint.style.top = `${top}px`;
-
-      const x = (left + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width * 100;
-      const y = (top + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height * 100;
-
-      const sanitizeCoordinates = ({ x, y }) => (x >= 0 && x <= 100 && y >= 0 && y <= 100) ? {
-        x: Math.abs(Math.round(x)),
-        y: Math.abs(Math.round(y))
+      const sanitizeCoordinates = ({ x, y }) => (x >= 0 && x <= 1 && y >= 0 && y <= 1) ? {
+        x: Math.abs(Math.round(x * 100)),
+        y: Math.abs(Math.round(y * 100))
       } : {
         x: null,
         y: null
       };
 
-      this.emitFocalPointCoordinates(
-        sanitizeCoordinates({
-          x,
-          y
-        })
-      );
+      const coordinates = sanitizeCoordinates({
+        x,
+        y
+      });
+
+      this.$emit('change', coordinates, false);
     }
   }
 };
