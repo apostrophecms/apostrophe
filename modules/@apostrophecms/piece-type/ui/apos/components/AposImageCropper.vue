@@ -29,6 +29,7 @@ import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
 // TODO: focal point tooltip
+// TODO: handle click
 // TODO: clean, jsdoc...
 
 export default {
@@ -174,7 +175,6 @@ export default {
       document.removeEventListener('mouseup', this.onMouseUp);
     },
     onImageClick (event) {
-      // TODO: wip
       console.log(event);
 
       const { focalPoint } = this.$refs;
@@ -297,8 +297,7 @@ export default {
     border-radius: 50%;
     border: 1px solid var(--a-white);
     background-color: var(--a-primary);
-    /* TODO: use box-shadow variable? */
-    box-shadow: 0 0 4px 0 rgb(0 0 0 / 50%);
+    box-shadow: 0 0 4px var(--a-black);
     transition: left 0.1s ease, top 0.1s ease;
     cursor: grab;
   }
