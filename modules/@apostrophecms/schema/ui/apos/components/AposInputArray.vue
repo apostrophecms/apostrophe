@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 
 export default {
   name: 'AposInputArray',

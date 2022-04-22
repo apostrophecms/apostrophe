@@ -1,5 +1,5 @@
-import util from './util.js';
-import http from './http.js';
+import util from './util';
+import http from './http';
 
 export default () => {
   util();

@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import { klona } from 'klona';
 
 export default {
