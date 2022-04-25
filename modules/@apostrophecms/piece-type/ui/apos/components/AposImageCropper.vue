@@ -1,6 +1,7 @@
 <template>
   <div
     class="apos-image-cropper"
+    @click="onImageClick"
   >
     <span
       class="apos-image-focal-point"
@@ -12,8 +13,7 @@
       :src="attachment._urls.uncropped
         ? attachment._urls.uncropped.original
         : attachment._urls.original"
-      :stencil-props="{ [selectors.stencil]: '' }"
-      :foreground-class="selectors.foreground"
+      :stencil-props="{ 'data-stencil': '' }"
       :debounce="debounceTimeout"
       @ready="onCropperReady"
       @change="onCropperChange"
@@ -29,7 +29,7 @@ import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
 // TODO: focal point tooltip
-// TODO: handle click
+// TODO: do not place focal point when moving stencil
 // TODO: clean, jsdoc...
 
 export default {
@@ -49,11 +49,6 @@ export default {
   emits: [ 'change' ],
   data: () => ({
     debounceTimeout: 200,
-    selectors: {
-      stencil: 'data-stencil',
-      foreground: 'apos-image-cropper__foreground'
-    },
-    // coordinates based on cropper visible area, used to place the focal point in viewport
     stencilCoordinates: {
       left: null,
       top: null,
@@ -174,26 +169,18 @@ export default {
       document.removeEventListener('mousemove', this.onMouseMove);
       document.removeEventListener('mouseup', this.onMouseUp);
     },
+    /**
+     * Place focal point at the position where the image has been clicked,
+     * relatively to the current target in order to set the left and top
+     * properties accordingly.
+     */
     onImageClick (event) {
-      console.log(event);
-
       const { focalPoint } = this.$refs;
 
       const focalPointSize = this.getFocalPointSize();
 
-      const isOutsideStencil = event.target.classList.contains('apos-image-cropper__foreground');
-
-      // console.log('event.offsetX', event.offsetX);
-      // console.log('event.offsetY', event.offsetY);
-      // console.log('isOutsideStencil', isOutsideStencil);
-
-      let left = event.offsetX - focalPointSize.halfWidth;
-      let top = event.offsetY - focalPointSize.halfHeight;
-
-      if (!isOutsideStencil) {
-        left += this.stencilCoordinates.left;
-        top += this.stencilCoordinates.top;
-      }
+      const left = event.clientX - event.currentTarget.offsetLeft - event.currentTarget.offsetParent.offsetLeft - focalPointSize.halfWidth;
+      const top = event.clientY - event.currentTarget.offsetTop - event.currentTarget.offsetParent.offsetTop - focalPointSize.halfHeight;
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
