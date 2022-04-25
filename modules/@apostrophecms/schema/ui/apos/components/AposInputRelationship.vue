@@ -43,7 +43,8 @@
           :value="next"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
-          :edit-relationship-label="getEditRelationshipLabel()"
+          :editor-label="field.editorLabel"
+          :editor-icon="field.editorIcon"
         />
         <AposSearchList
           :list="searchList"
