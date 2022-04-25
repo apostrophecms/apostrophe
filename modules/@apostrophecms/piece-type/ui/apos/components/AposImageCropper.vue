@@ -14,7 +14,7 @@
         ? attachment._urls.uncropped.original
         : attachment._urls.original"
       :stencil-props="{ 'data-stencil': '' }"
-      :debounce="debounceTimeout"
+      :debounce="0"
       @ready="onCropperReady"
       @change="onCropperChange"
       :default-size="defaultSize"
@@ -29,7 +29,6 @@ import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
 // TODO: focal point tooltip
-// TODO: do not place focal point when moving stencil
 // TODO: clean, jsdoc...
 
 export default {
@@ -49,6 +48,7 @@ export default {
   emits: [ 'change' ],
   data: () => ({
     debounceTimeout: 200,
+    isCropperChanging: false,
     isUpdatingCropperCoordinates: false,
     stencilCoordinates: {
       left: null,
@@ -94,12 +94,15 @@ export default {
       this.placeFocalPoint();
     }, this.debounceTimeout);
 
+    this.handleCropperChangeDebounced = debounce(this.handleCropperChange, this.debounceTimeout);
+
     this.updateFocalPointCoordinatesDebounced = debounce(this.updateFocalPointCoordinates, this.debounceTimeout);
 
     this.defaultSize = {
       width: this.docFields.data.width,
       height: this.docFields.data.height
     };
+
     this.defaultPosition = {
       top: this.docFields.data.top,
       left: this.docFields.data.left
@@ -118,17 +121,9 @@ export default {
       window.addEventListener('resize', this.placeFocalPointAfterResize);
     },
     onCropperChange ({ coordinates }) {
-      if (
-        !this.isUpdatingCropperCoordinates &&
-        this.checkCropperCoordinatesDiff(coordinates, this.docFields.data)
-      ) {
-        this.storeStencilCoordinates();
-        this.updateFocalPointCoordinates();
+      this.isChangingCropper = true;
 
-        this.$emit('change', coordinates, false);
-      }
-
-      this.isUpdatingCropperCoordinates = false;
+      this.handleCropperChangeDebounced(coordinates);
     },
     onFocalPointMouseDown (event) {
       event.preventDefault();
@@ -175,6 +170,10 @@ export default {
      * properties accordingly.
      */
     onImageClick (event) {
+      if (this.isChangingCropper) {
+        return;
+      }
+
       const { focalPoint } = this.$refs;
 
       const focalPointSize = this.getFocalPointSize();
@@ -186,6 +185,21 @@ export default {
       focalPoint.style.top = `${top}px`;
 
       this.updateFocalPointCoordinatesDebounced();
+    },
+    handleCropperChange (coordinates) {
+      this.isChangingCropper = false;
+
+      if (
+        !this.isUpdatingCropperCoordinates &&
+        this.checkCropperCoordinatesDiff(coordinates, this.docFields.data)
+      ) {
+        this.storeStencilCoordinates();
+        this.updateFocalPointCoordinates();
+
+        this.$emit('change', coordinates, false);
+      }
+
+      this.isUpdatingCropperCoordinates = false;
     },
     checkCropperCoordinatesDiff (coordinates, dataFields) {
       return Object
