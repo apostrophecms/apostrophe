@@ -1706,7 +1706,6 @@ module.exports = {
         }
         const find = options.find;
         const builders = options.builders || {};
-        const hints = options.hints || {};
         const getCriteria = options.getCriteria || {};
         await method(items, idsStorage, fieldsStorage, objectField, ids => {
           const idsCriteria = {};
@@ -1884,13 +1883,6 @@ module.exports = {
               if (_relationship.buildersByType && _relationship.buildersByType[type]) {
                 _.extend(options.builders, _relationship.buildersByType[type]);
               }
-              if (_relationship.hints) {
-                _.extend(options.hints, _relationship.hints);
-              }
-              if (_relationship.hintsByType && _relationship.hintsByType[type]) {
-                _.extend(options.hints, _relationship.hints);
-                _.extend(options.hints, _relationship.hintsByType[type]);
-              }
               await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
                 // Allow options to the getter to be specified in the schema,
                 return self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
@@ -1933,9 +1925,6 @@ module.exports = {
           // specified in the relationship configuration
           if (relationship.builders) {
             _.extend(options.builders, relationship.builders);
-          }
-          if (relationship.hints) {
-            _.extend(options.hints, relationship.hints);
           }
 
           // Allow options to the getter to be specified in the schema
