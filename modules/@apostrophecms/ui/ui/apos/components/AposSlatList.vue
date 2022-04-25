@@ -32,7 +32,7 @@
           :slat-count="next.length"
           :removable="removable"
           :has-relationship-schema="hasRelationshipSchema"
-          :label-key="labelKey"
+          :edit-relationship-label="editRelationshipLabel"
         />
       </transition-group>
     </draggable>
@@ -68,7 +68,7 @@ export default {
       type: Boolean,
       default: false
     },
-    labelKey: {
+    editRelationshipLabel: {
       type: String,
       default: null
     }

@@ -43,7 +43,7 @@
           :value="next"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
-          :label-key="getSlatLabelKey()"
+          :edit-relationship-label="getEditRelationshipLabel()"
         />
         <AposSearchList
           :list="searchList"
@@ -222,7 +222,7 @@ export default {
         });
       }
     },
-    getSlatLabelKey () {
+    getEditRelationshipLabel () {
       if (this.field.editor === 'AposImageRelationshipEditor') {
         return 'apostrophe:editImageAdjustments';
       }
