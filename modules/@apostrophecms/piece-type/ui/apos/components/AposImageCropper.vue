@@ -45,7 +45,7 @@ export default {
   },
   emits: [ 'change' ],
   data: () => ({
-    debounceTimeout: 200,
+    debounceTimeout: 500,
     isCropperChanging: false,
     isUpdatingCropperCoordinates: false,
     stencilCoordinates: {
