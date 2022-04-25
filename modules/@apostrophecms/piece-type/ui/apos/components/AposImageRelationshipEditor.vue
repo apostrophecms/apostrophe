@@ -26,6 +26,43 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-schema">
+          <div class="apos-field">
+            <label class="apos-field__label">
+              {{ $t('apostrophe:aspectRatio') }}
+            </label>
+            <select @change="onAspectRatioChange">
+              <option value="">
+                {{ $t('apostrophe:aspectRatioFree') }}
+              </option>
+              <option :value="1">
+                1:1
+              </option>
+              <option :value="2 / 3">
+                2:3
+              </option>
+              <option :value="3 / 4">
+                3:4
+              </option>
+              <option :value="3 / 2">
+                3:2
+              </option>
+              <option :value="4 / 3">
+                4:3
+              </option>
+              <option :value="5 / 4">
+                5:4
+              </option>
+              <option :value="16 / 9">
+                16:9
+              </option>
+              <option :value="9 / 16">
+                9:16
+              </option>
+              <option :value="4 / 5">
+                4:5
+              </option>
+            </select>
+          </div>
           <label class="apos-field__label">
             {{ $t('apostrophe:cropAndSize') }}
           </label>
@@ -48,9 +85,9 @@
               </label>
               <input
                 :value="docFields.data.width"
-                @input="(e) => input(e, 'width')"
-                @focus="focusInput()"
-                @blur="focusInput(false)"
+                @input="onWidthInput"
+                @focus="onInputFocus"
+                @blur="onInputBlur"
                 class="apos-input apos-input--text"
                 type="number"
                 min="1"
@@ -63,9 +100,9 @@
               </label>
               <input
                 :value="docFields.data.height"
-                @input="(e) => input(e, 'height')"
-                @focus="focusInput()"
-                @blur="focusInput(false)"
+                @input="onHeightInput"
+                @focus="onInputFocus"
+                @blur="onInputBlur"
                 class="apos-input apos-input--text"
                 type="number"
                 min="1"
@@ -91,6 +128,9 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+
+// TODO: generate select's options dynamically?
+// TODO: style select
 
 export default {
   name: 'AposImageRelationshipEditor',
@@ -179,16 +219,31 @@ export default {
         updateCoordinates
       };
     },
-    input({ target }, name) {
-      const value = parseInt(target.value, 10);
+    onWidthInput (event) {
+      this.handleSizeInput(event.target.value, 'width');
+    },
+    onHeightInput (event) {
+      this.handleSizeInput(event.target.value, 'height');
+    },
+    handleSizeInput(value, name) {
+      const parsedValue = parseInt(value, 10);
 
-      if (isNaN(value)) {
+      if (isNaN(parsedValue)) {
         return;
       }
 
       this.errors[name] = value > this.item.attachment[name];
 
-      this.updateDocFields({ [name]: parseInt(target.value, 10) });
+      this.updateDocFields({ [name]: parsedValue });
+    },
+    onInputFocus () {
+      this.focusInput();
+    },
+    onInputBlur () {
+      this.focusInput(false);
+    },
+    onAspectRatioChange (event) {
+      this.updateDocFields({ aspectRatio: event.target.value });
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);

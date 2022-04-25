@@ -28,6 +28,7 @@
   "archivingWillLoseDraftChanges": " Nezverejnené zmeny konceptu tohto {{ type }} budú natrvalo odstránené.",
   "archivingWillUnpublish": "Týmto sa tiež zruší zverejnenie súboru {{ type }}.",
   "areYouSure": "Ste si istý?",
+  "aspectRatio": "Pomer strán",
   "assetTypeBuildComplete": "👍 {{ label }} je kompletný!",
   "assetTypeBuilding": "🧑‍💻 Budovanie {{ label }}...",
   "back": "Naspäť",

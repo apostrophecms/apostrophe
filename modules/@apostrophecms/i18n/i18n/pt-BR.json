@@ -25,6 +25,7 @@
   "archivingWillLoseDraftChanges": "Alterações em rascunhos para este(a) {{ type }} serão excluídas permanentemente.",
   "archivingWillUnpublish": "Isso também cancelará a publicação do(a) {{ type }}.",
   "areYouSure": "Você tem certeza?",
+  "aspectRatio": "Proporção de tela",
   "assetTypeBuildComplete": "👍 {{ label }} completado!",
   "assetTypeBuilding": "🧑‍💻 Fazendo o build: {{ label }}...",
   "back": "Voltar",
