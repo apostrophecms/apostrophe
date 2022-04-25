@@ -27,7 +27,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasRelationshipSchema"
+          v-if="hasContextMenu"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -122,7 +122,7 @@ export default {
       type: Boolean,
       default: false
     },
-    labelKey: {
+    editRelationshipLabel: {
       type: String,
       default: null
     }
@@ -140,9 +140,7 @@ export default {
         },
         menu: [
           {
-            label: this.labelKey
-              ? 'apostrophe:editImageAdjustments'
-              : 'apostrophe:editRelationship',
+            label: this.editRelationshipLabel || 'apostrophe:editRelationship',
             action: 'edit-relationship'
           }
         ]
@@ -157,6 +155,13 @@ export default {
       } else {
         return `${(size / 1000000).toFixed(1)}MB`;
       }
+    },
+    hasContextMenu() {
+      if (this.item.attachment && this.item.attachment.group === 'images') {
+        return this.hasRelationshipSchema && this.item.attachment._isCroppable;
+      }
+
+      return this.hasRelationshipSchema;
     }
   },
   methods: {
@@ -175,11 +180,8 @@ export default {
     },
     move(dir) {
       if (this.engaged) {
-        if (dir > 0) {
-          this.$emit('move', this.item._id, 1);
-        } else {
-          this.$emit('move', this.item._id, -1);
-        }
+        const direction = dir > 0 ? 1 : -1;
+        this.$emit('move', this.item._id, direction);
       }
     },
     remove(focusNext) {
