@@ -6,6 +6,7 @@
     <span
       class="apos-image-focal-point"
       ref="focalPoint"
+      v-apos-tooltip="'apostrophe:focalPoint'"
       @mousedown="onFocalPointMouseDown"
     />
     <cropper
@@ -28,7 +29,6 @@ import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
-// TODO: focal point tooltip
 // TODO: clean, jsdoc...
 
 export default {
