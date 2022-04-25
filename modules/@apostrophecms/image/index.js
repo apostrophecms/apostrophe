@@ -28,7 +28,30 @@ module.exports = {
     showPermissions: true,
     // Images should by default be considered "related documents" when localizing
     // another document that references them
-    relatedDocument: true
+    relatedDocument: true,
+    relationshipEditor: 'AposImageRelationshipEditor',
+    relationshipFields: {
+      add: {
+        top: {
+          type: 'integer'
+        },
+        left: {
+          type: 'integer'
+        },
+        width: {
+          type: 'integer'
+        },
+        height: {
+          type: 'integer'
+        },
+        x: {
+          type: 'integer'
+        },
+        y: {
+          type: 'integer'
+        }
+      }
+    }
   },
   fields: {
     remove: [ 'visibility' ],

@@ -1,5 +1,12 @@
 # Changelog
 
+# UNRELEASED
+
+### Adds
+
+* Images may now be cropped to suit a particular placement after selecting them.
+* Developers may now specify an alternate Vue component to be used for editing the subfields of relationships, either at the field level or as a default for all relationships with a particular piece type.
+
 # 3.17.0 (2022-03-31)
 
 ### Adds
