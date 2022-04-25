@@ -249,9 +249,6 @@ export default {
     storeStencilCoordinates () {
       const stencilElement = document.querySelector('[data-stencil]');
       const stencilStyle = window.getComputedStyle(stencilElement);
-
-      // TODO: DOMMatrixReadOnly is not IE compatible. Should we use something compatible with IE?
-      // In that case, use regular elem.style.transform and extract values with a regex
       const matrix = new window.DOMMatrixReadOnly(stencilStyle.transform);
 
       this.stencilCoordinates = {
