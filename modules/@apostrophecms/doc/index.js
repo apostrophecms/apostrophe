@@ -30,6 +30,7 @@ module.exports = {
   },
   async init(self) {
     self.managers = {};
+    self.contextOperations = [];
     self.enableBrowserData();
     await self.enableCollection();
     self.apos.isNew = await self.detectNew();
@@ -987,9 +988,33 @@ module.exports = {
           'slug'
         ];
       },
+      // Add context menu operation to be used in AposDocContextMenu.
+      // Expected operation format is:
+      // {
+      //   context: 'update',
+      //   action: 'someAction',
+      //   modal: 'ModalComponent',
+      //   label: 'Context Menu Label'
+      // }
+      // All properties are required.
+      // The only supported `context` for now is `update`.
+      // `action` is the operation idefntifier and should be unique per a module -
+      // the actual action registered is `moduleName:action`.
+      // `modal` is the name of the modal component to be opened.
+      // `label` is the menu label to be shown when expanding the context menu.
+      // Additional optional `modifiers` property is supported - button modifiers
+      // as supported by `AposContextMenu` (e.g. modifiers: [ 'danger' ]).
+      addContextOperation(moduleName, operation) {
+        self.contextOperations.push({
+          ...operation,
+          action: `${moduleName}:${operation.action}`,
+          moduleName
+        });
+      },
       getBrowserData(req) {
         return {
-          action: self.action
+          action: self.action,
+          contextOperations: self.contextOperations
         };
       },
       migrateRelationshipIds(doc) {
