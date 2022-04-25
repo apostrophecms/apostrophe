@@ -29,6 +29,8 @@ import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
+const DEBOUNCE_TIMEOUT = 500;
+
 export default {
   components: {
     Cropper
@@ -45,7 +47,6 @@ export default {
   },
   emits: [ 'change' ],
   data: () => ({
-    debounceTimeout: 500,
     isCropperChanging: false,
     isUpdatingCropperCoordinates: false,
     stencilCoordinates: {
