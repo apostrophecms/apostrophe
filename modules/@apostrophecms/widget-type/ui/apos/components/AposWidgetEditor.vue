@@ -135,8 +135,7 @@ export default {
     this.modal.active = true;
   },
   destroyed() {
-    apos.area.widgetOptions = apos.area.widgetOptions
-      .filter((widget) => widget._id !== this.value._id);
+    apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
     this.original = this.value ? klona(this.value) : this.getDefault();
