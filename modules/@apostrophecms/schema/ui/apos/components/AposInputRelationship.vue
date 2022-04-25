@@ -135,23 +135,30 @@ export default {
     }
   },
   mounted () {
-    this.validate(this.next);
+    this.checkLimit();
   },
   methods: {
     validate(value) {
+      this.checkLimit();
+
       if (this.field.required && !value.length) {
-        this.searchTerm = '';
         return { message: 'required' };
       }
-
-      this.searchTerm = this.limitReached ? 'Limit reached!' : '';
-      this.disabled = !!this.limitReached;
 
       if (this.field.min && this.field.min > value.length) {
         return { message: `minimum of ${this.field.min} required` };
       }
 
       return false;
+    },
+    checkLimit() {
+      if (this.limitReached) {
+        this.searchTerm = 'Limit reached!';
+      } else if (this.searchTerm === 'Limit reached!') {
+        this.searchTerm = '';
+      }
+
+      this.disabled = !!this.limitReached;
     },
     updateSelected(items) {
       this.next = items;
@@ -166,7 +173,9 @@ export default {
         return;
       }
 
-      const qs = {};
+      const qs = {
+        autocomplete: this.searchTerm
+      };
 
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
@@ -174,7 +183,7 @@ export default {
 
       this.searching = true;
       const list = await apos.http.get(
-        `${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`,
+        apos.modules[this.field.withType].action,
         {
           busy: false,
           draft: true,
