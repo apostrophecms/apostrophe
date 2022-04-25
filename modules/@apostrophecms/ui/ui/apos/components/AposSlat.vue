@@ -27,7 +27,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasContextMenu && more.menu.length"
+          v-if="hasRelationshipSchema && more.menu.length"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -35,14 +35,16 @@
           menu-offset="40, 10"
         />
         <AposButton
-          v-if="editorIcon"
+          class="apos-slat__editor-btn"
+          v-if="editorIcon && hasRelationshipSchema"
+          role="button"
           :tooltip="{
             content: editorLabel,
             placement: 'bottom'
           }"
           :icon="editorIcon"
           :icon-only="true"
-          :modifiers="['no-motion', 'inline']"
+          :modifiers="['inline']"
           @click="$emit('item-clicked', item)"
         />
         <a
@@ -51,7 +53,6 @@
           :href="item._url || item._urls.original"
           target="_blank"
         >
-          <span>toto</span>
           <eye-icon :size="14" class="apos-slat__control--view-icon" />
         </a>
         <div
@@ -171,13 +172,6 @@ export default {
       } else {
         return `${(size / 1000000).toFixed(1)}MB`;
       }
-    },
-    hasContextMenu() {
-      if (this.item.attachment && this.item.attachment.group === 'images') {
-        return this.hasRelationshipSchema && this.item.attachment._isCroppable;
-      }
-
-      return this.hasRelationshipSchema;
     }
   },
   methods: {
@@ -288,6 +282,10 @@ export default {
     max-width: 220px;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  .apos-slat__editor-btn {
+    margin-right: 5px;
   }
 
   .apos-slat__control {
