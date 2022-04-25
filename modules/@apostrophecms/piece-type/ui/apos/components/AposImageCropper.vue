@@ -73,7 +73,7 @@ export default {
           } = newVal.data;
 
           this.isUpdatingCropperCoordinates = true;
-          this.setCropperCoordinates({
+          this.setCropperCoordinatesDebounced({
             width,
             height,
             left,
@@ -84,46 +84,32 @@ export default {
     }
   },
   created () {
-    this.setCropperCoordinates = debounce(coordinates => {
-      this.$refs.cropper.setCoordinates(coordinates);
-    }, this.debounceTimeout);
-
-    this.placeFocalPointInStencilAfterResize = debounce(() => {
-      this.storeStencilCoordinates();
-      this.placeFocalPointInStencil();
-    }, this.debounceTimeout);
-
-    this.handleCropperChangeDebounced = debounce(this.handleCropperChange, this.debounceTimeout);
-
-    this.updateFocalPointCoordinatesDebounced = debounce(this.updateFocalPointCoordinates, this.debounceTimeout);
-
     this.defaultSize = {
       width: this.docFields.data.width,
       height: this.docFields.data.height
     };
-
     this.defaultPosition = {
       top: this.docFields.data.top,
       left: this.docFields.data.left
     };
+    this.onScreenResizeDebounced = debounce(this.onScreenResize, DEBOUNCE_TIMEOUT);
+    this.handleCropperChangeDebounced = debounce(this.handleCropperChange, DEBOUNCE_TIMEOUT);
+    this.setCropperCoordinatesDebounced = debounce(this.setCropperCoordinates, DEBOUNCE_TIMEOUT);
+    this.updateFocalPointCoordinatesDebounced = debounce(this.updateFocalPointCoordinates, DEBOUNCE_TIMEOUT);
   },
   beforeDestroy() {
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
-
-    window.removeEventListener('resize', this.placeFocalPointInStencilAfterResize);
+    window.removeEventListener('resize', this.onScreenResizeDebounced);
   },
   methods: {
     /**
-     * Place the focal point inside the stencil
-     * and register an event to keep it at the
-     * same position, relative to the stencil,
-     * when resizing the screen.
+     * Place the focal point inside the stencil to its current position.
      */
     onCropperReady () {
       this.storeStencilCoordinates();
       this.placeFocalPointInStencil();
 
-      window.addEventListener('resize', this.placeFocalPointInStencilAfterResize);
+      window.addEventListener('resize', this.onScreenResizeDebounced);
     },
     /**
      * Instantly give the information that cropper is changing
@@ -215,6 +201,15 @@ export default {
       this.updateFocalPointCoordinatesDebounced();
     },
     /**
+     * Place the focal point back to its position (inside the stencil),
+     * when resizing the screen so that the percentages
+     * relative to the stencil remain the same.
+     */
+    onScreenResize () {
+      this.storeStencilCoordinates();
+      this.placeFocalPointInStencil();
+    },
+    /**
      * Update stencil and focal point coordinates
      * after cropper has changed and emit its new coordinates.
      */
@@ -232,6 +227,40 @@ export default {
       }
 
       this.isUpdatingCropperCoordinates = false;
+    },
+    /**
+     * Set cropper coordinates via its API.
+     */
+    setCropperCoordinates (coordinates) {
+      this.$refs.cropper.setCoordinates(coordinates);
+    },
+    /**
+     * Get focal point relative position inside the stencil
+     * and emit it to update `x` and `y` as percentages,
+     * or as `null` if outside it.
+     */
+    updateFocalPointCoordinates () {
+      const { focalPoint } = this.$refs;
+
+      const focalPointSize = this.getFocalPointSize();
+
+      const x = (focalPoint.offsetLeft + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width;
+      const y = (focalPoint.offsetTop + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height;
+
+      const sanitizeCoordinates = ({ x, y }) => (x >= 0 && x <= 1 && y >= 0 && y <= 1) ? {
+        x: Math.abs(Math.round(x * 100)),
+        y: Math.abs(Math.round(y * 100))
+      } : {
+        x: null,
+        y: null
+      };
+
+      const coordinates = sanitizeCoordinates({
+        x,
+        y
+      });
+
+      this.$emit('change', coordinates, false);
     },
     /**
      * Return wether the cropper coordinates have changed or not.
@@ -293,34 +322,6 @@ export default {
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
-    },
-    /**
-     * Get focal point relative position inside the stencil
-     * and emit it to update `x` and `y` as percentages,
-     * or as `null` if outside it.
-     */
-    updateFocalPointCoordinates () {
-      const { focalPoint } = this.$refs;
-
-      const focalPointSize = this.getFocalPointSize();
-
-      const x = (focalPoint.offsetLeft + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width;
-      const y = (focalPoint.offsetTop + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height;
-
-      const sanitizeCoordinates = ({ x, y }) => (x >= 0 && x <= 1 && y >= 0 && y <= 1) ? {
-        x: Math.abs(Math.round(x * 100)),
-        y: Math.abs(Math.round(y * 100))
-      } : {
-        x: null,
-        y: null
-      };
-
-      const coordinates = sanitizeCoordinates({
-        x,
-        y
-      });
-
-      this.$emit('change', coordinates, false);
     }
   }
 };
