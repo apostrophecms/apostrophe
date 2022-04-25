@@ -49,14 +49,14 @@ export default {
   emits: [ 'change' ],
   data: () => ({
     debounceTimeout: 200,
+    isUpdatingCropperCoordinates: false,
     stencilCoordinates: {
       left: null,
       top: null,
       width: null,
       height: null
     },
-    isUpdatingCropperCoordinates: false,
-    dragAndDrop: {
+    focalPointDragCoordinates: {
       clientX: 0,
       clientY: 0
     }
@@ -135,8 +135,8 @@ export default {
 
       const { focalPoint } = this.$refs;
 
-      this.dragAndDrop.clientX = event.clientX;
-      this.dragAndDrop.clientY = event.clientY;
+      this.focalPointDragCoordinates.clientX = event.clientX;
+      this.focalPointDragCoordinates.clientY = event.clientY;
 
       focalPoint.style.cursor = 'grabbing';
       focalPoint.style.transitionDuration = '0s';
@@ -149,11 +149,11 @@ export default {
 
       const { focalPoint } = this.$refs;
 
-      const left = focalPoint.offsetLeft - this.dragAndDrop.clientX + event.clientX;
-      const top = focalPoint.offsetTop - this.dragAndDrop.clientY + event.clientY;
+      const left = focalPoint.offsetLeft - this.focalPointDragCoordinates.clientX + event.clientX;
+      const top = focalPoint.offsetTop - this.focalPointDragCoordinates.clientY + event.clientY;
 
-      this.dragAndDrop.clientX = event.clientX;
-      this.dragAndDrop.clientY = event.clientY;
+      this.focalPointDragCoordinates.clientX = event.clientX;
+      this.focalPointDragCoordinates.clientY = event.clientY;
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
