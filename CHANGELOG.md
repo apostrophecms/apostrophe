@@ -1,5 +1,11 @@
 # Changelog
 
+# unreleased
+
+### Adds
+
+* Uses the isCroppable method to know if an image attachment is croppable or not. Passes this info to the frontend when requesting documents attachments. Uses this info to show the context menu or not.
+
 # 3.17.0 (2022-03-31)
 
 ### Adds
