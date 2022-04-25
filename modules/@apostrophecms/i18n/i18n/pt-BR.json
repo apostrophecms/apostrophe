@@ -26,6 +26,7 @@
   "archivingWillUnpublish": "Isso também cancelará a publicação do(a) {{ type }}.",
   "areYouSure": "Você tem certeza?",
   "aspectRatio": "Proporção de tela",
+  "aspectRatioFree": "Livre",
   "assetTypeBuildComplete": "👍 {{ label }} completado!",
   "assetTypeBuilding": "🧑‍💻 Fazendo o build: {{ label }}...",
   "back": "Voltar",

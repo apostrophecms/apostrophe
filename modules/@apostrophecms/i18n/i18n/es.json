@@ -26,6 +26,7 @@
   "archivingWillUnpublish": "Esto también despublicará el {{ type }}.",
   "areYouSure": "¿Está Seguro?",
   "aspectRatio": "Relación de aspecto",
+  "aspectRatioFree": "Libre",
   "assetTypeBuildComplete": "👍 ¡{{ label }} está completo!",
   "assetTypeBuilding": "🧑‍💻 Creando {{ label }}...",
   "back": "Atrás",

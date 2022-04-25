@@ -29,6 +29,7 @@
   "archivingWillUnpublish": "Týmto sa tiež zruší zverejnenie súboru {{ type }}.",
   "areYouSure": "Ste si istý?",
   "aspectRatio": "Pomer strán",
+  "aspectRatioFree": "Voľný",
   "assetTypeBuildComplete": "👍 {{ label }} je kompletný!",
   "assetTypeBuilding": "🧑‍💻 Budovanie {{ label }}...",
   "back": "Naspäť",
