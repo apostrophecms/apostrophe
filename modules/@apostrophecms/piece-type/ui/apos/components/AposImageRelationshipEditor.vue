@@ -30,14 +30,14 @@
             {{ $t('apostrophe:cropAndSize') }}
           </label>
           <div
-            v-if="errors.width || errors.height"
-            class="apos-field__size-error"
-            :class="{'apos-field__size-error--focused': inputFocused}"
+            v-if="minSize[0] && minSize[1]"
+            class="apos-field__min-size"
+            :class="{'apos-field__min-size--focused': inputFocused}"
           >
             {{
               $t('apostrophe:minSize', {
-                width: item.attachment.width,
-                height: item.attachment.height
+                width: minSize[0],
+                height: minSize[1]
               })
             }}
           </div>
@@ -49,11 +49,10 @@
               <input
                 :value="docFields.data.width"
                 @input="(e) => input(e, 'width')"
-                @focus="focusInput()"
-                @blur="focusInput(false)"
+                @blur="(e) => blurInput(e, 'width')"
                 class="apos-input apos-input--text"
                 type="number"
-                min="1"
+                :min="minSize[0] || 1"
                 :max="item.attachment.width"
               >
             </div>
@@ -64,11 +63,10 @@
               <input
                 :value="docFields.data.height"
                 @input="(e) => input(e, 'height')"
-                @focus="focusInput()"
-                @blur="focusInput(false)"
+                @blur="(e) => blurInput(e, 'height')"
                 class="apos-input apos-input--text"
                 type="number"
-                min="1"
+                :min="minSize[1] || 1"
                 :max="item.attachment.height"
               >
             </div>
@@ -81,6 +79,7 @@
         <AposImageCropper
           :attachment="item.attachment"
           :doc-fields="docFields"
+          :min-size="minSize"
           @change="updateDocFields"
         />
       </div>
@@ -133,7 +132,8 @@ export default {
         key: 'apostrophe:editImageRelationshipTitle',
         title: this.title
       },
-      currentTab: null
+      currentTab: null,
+      minSize: this.getMinSize()
     };
   },
   async mounted() {
@@ -186,18 +186,33 @@ export default {
         return;
       }
 
-      this.errors[name] = value > this.item.attachment[name];
+      this.validate(value, name);
 
-      this.updateDocFields({ [name]: parseInt(target.value, 10) });
+      this.updateDocFields({ [name]: value });
+    },
+    validate(value, name) {
+      const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
+
+      const err = value > this.item.attachment[name]
+        ? 'maxSize'
+        : value < minSize && 'minSize';
+
+      this.errors[name] = err;
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
-    focusInput (isFocused = true) {
-      this.inputFocused = isFocused;
+    blurInput({ target }, name) {
+      const value = parseInt(target.value, 10);
+
     },
     switchPane(name) {
       this.currentTab = name;
+    },
+    getMinSize() {
+      const [ widgetOptions ] = apos.area.widgetOptions;
+
+      return widgetOptions.minSize || [];
     }
   }
 };
@@ -242,7 +257,7 @@ export default {
   padding-right: 5px;
 }
 
-.apos-field__size-error {
+.apos-field__min-size {
   @include type-small;
   color: var(--a-base-1);
   margin-bottom: 10px;

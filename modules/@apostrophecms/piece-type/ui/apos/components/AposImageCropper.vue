@@ -8,6 +8,8 @@
       @change="onChange"
       :default-size="defaultSize"
       :default-position="defaultPosition"
+      :min-width="minSize[0]"
+      :min-height="minSize[1]"
     />
   </div>
 </template>
@@ -29,6 +31,10 @@ export default {
     docFields: {
       type: Object,
       required: true
+    },
+    minSize: {
+      type: Array,
+      default: () => ([])
     }
   },
   emits: [ 'change' ],
