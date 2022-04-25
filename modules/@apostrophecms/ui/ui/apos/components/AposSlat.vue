@@ -27,12 +27,23 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasContextMenu"
+          v-if="hasContextMenu && more.menu.length"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
           menu-placement="bottom-start"
           menu-offset="40, 10"
+        />
+        <AposButton
+          v-if="editorIcon"
+          :tooltip="{
+            content: editorLabel,
+            placement: 'bottom'
+          }"
+          :icon="editorIcon"
+          :icon-only="true"
+          :modifiers="['no-motion', 'inline']"
+          @click="$emit('item-clicked', item)"
         />
         <a
           class="apos-slat__control apos-slat__control--view"
@@ -40,6 +51,7 @@
           :href="item._url || item._urls.original"
           target="_blank"
         >
+          <span>toto</span>
           <eye-icon :size="14" class="apos-slat__control--view-icon" />
         </a>
         <div
@@ -122,7 +134,11 @@ export default {
       type: Boolean,
       default: false
     },
-    editRelationshipLabel: {
+    editorLabel: {
+      type: String,
+      default: null
+    },
+    editorIcon: {
       type: String,
       default: null
     }
@@ -139,10 +155,10 @@ export default {
           type: 'inline'
         },
         menu: [
-          {
-            label: this.editRelationshipLabel || 'apostrophe:editRelationship',
+          ...!this.editorIcon ? [ {
+            label: 'apostrophe:editRelationship',
             action: 'edit-relationship'
-          }
+          } ] : []
         ]
       }
     };
