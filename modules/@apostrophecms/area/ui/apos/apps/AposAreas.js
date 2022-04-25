@@ -5,6 +5,8 @@ export default function() {
 
   let widgetsRendering = 0;
 
+  apos.area.widgetOptions = [];
+
   createWidgetClipboardApp();
 
   createAreaApps();

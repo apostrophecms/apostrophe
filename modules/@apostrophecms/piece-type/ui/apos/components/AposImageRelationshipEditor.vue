@@ -133,10 +133,7 @@ export default {
         key: 'apostrophe:editImageRelationshipTitle',
         title: this.title
       },
-      groups: [],
-      tabs: [],
-      currentTab: null,
-      alignedFields: [ 'width', 'height' ]
+      currentTab: null
     };
   },
   async mounted() {
@@ -144,7 +141,11 @@ export default {
   },
   methods: {
     setDataValues () {
-      if (this.item._fields) {
+      if (
+        this.item._fields &&
+        this.item._fields.width &&
+        this.item._fields.height
+      ) {
         return { ...this.item._fields };
       }
 
@@ -216,6 +217,7 @@ export default {
     display: flex;
     align-items: center;
     position: relative;
+    flex-grow: 1;
 
     &:first-child {
       margin-right: 10px;

@@ -120,7 +120,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'safe-close', 'archive', 'save', 'search' ],
+  emits: [ 'safe-close', 'archive', 'save', 'search', 'piece-relationship-query' ],
   data() {
     return {
       items: [],
@@ -248,6 +248,10 @@ export default {
             qs.choices = filter.name;
           }
         });
+      }
+
+      if (this.relationshipField) {
+        apos.bus.$emit('piece-relationship-query', qs);
       }
 
       // Avoid undefined properties.
