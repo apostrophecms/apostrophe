@@ -688,11 +688,6 @@ module.exports = {
 
             value._isCroppable = self.isCroppable(value);
 
-            console.log('value firsté ===> ', require('util').inspect(value, {
-              colors: true,
-              depth: 0
-            }));
-
             o[key] = value;
 
             // If one of our ancestors has a relationship to the piece that
@@ -742,10 +737,6 @@ module.exports = {
               }
             }
 
-            console.log('value ===> ', require('util').inspect(value, {
-              colors: true,
-              depth: 0
-            }));
             winners.push(value);
           }
         });
@@ -843,16 +834,9 @@ module.exports = {
       // Returns true if this type of attachment is croppable.
       // Available as a template helper.
       isCroppable(attachment) {
-        const res = attachment
-          ? self.croppable[self.resolveExtension(attachment.extension)]
-          : false;
-
-        console.log('res ===> ', require('util').inspect(res, {
-          colors: true,
-          depth: 2
-        }));
-
-        return res;
+        return (attachment &&
+          self.croppable[self.resolveExtension(attachment.extension)]) ||
+          false;
       },
       // Returns true if this type of attachment is sized,
       // i.e. uploadfs produces versions of it for each configured
