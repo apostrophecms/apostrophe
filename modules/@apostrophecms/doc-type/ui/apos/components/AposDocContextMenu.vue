@@ -323,7 +323,7 @@ export default {
     menuHandler(action) {
       const operation = this.customOperations.find(op => op.action === action);
       if (operation) {
-        this._customAction(this.context, operation);
+        this.customAction(this.context, operation);
         return;
       }
       this[action](this.context);
@@ -357,7 +357,7 @@ export default {
         }
       });
     },
-    async _customAction(doc, operation) {
+    async customAction(doc, operation) {
       await apos.modal.execute(operation.modal, {
         moduleName: operation.moduleName,
         doc

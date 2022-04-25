@@ -998,18 +998,21 @@ module.exports = {
       // }
       // All properties are required.
       // The only supported `context` for now is `update`.
-      // `action` is the operation idefntifier and should be unique per a module -
-      // the actual action registered is `moduleName:action`.
+      // `action` is the operation idefntifier and should be globally unique.
+      // Overriding existing custom actions is possible (the last wins).
       // `modal` is the name of the modal component to be opened.
       // `label` is the menu label to be shown when expanding the context menu.
       // Additional optional `modifiers` property is supported - button modifiers
       // as supported by `AposContextMenu` (e.g. modifiers: [ 'danger' ]).
       addContextOperation(moduleName, operation) {
-        self.contextOperations.push({
-          ...operation,
-          action: `${moduleName}:${operation.action}`,
-          moduleName
-        });
+        self.contextOperations = [
+          ...self.contextOperations
+            .filter(op => op.action !== operation.action),
+          {
+            ...operation,
+            moduleName
+          }
+        ];
       },
       getBrowserData(req) {
         return {
