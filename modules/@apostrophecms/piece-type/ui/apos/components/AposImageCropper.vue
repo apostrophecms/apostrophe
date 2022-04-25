@@ -29,8 +29,6 @@ import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
-// TODO: clean, jsdoc...
-
 export default {
   components: {
     Cropper
@@ -114,17 +112,32 @@ export default {
     window.removeEventListener('resize', this.placeFocalPointAfterResize);
   },
   methods: {
+    /**
+     * Place the focal point according to the stencil
+     * and attach an event that re-places it after resizing the screen,
+     * to keep it at the same stencil-relative position.
+     */
     onCropperReady () {
       this.storeStencilCoordinates();
       this.placeFocalPoint();
 
       window.addEventListener('resize', this.placeFocalPointAfterResize);
     },
+    /**
+     * Debounce is handled manually here,
+     * not via the cropper `debounce` prop so that we directly have
+     * the information it is changing, not after its debounce time.
+     */
     onCropperChange ({ coordinates }) {
       this.isChangingCropper = true;
 
       this.handleCropperChangeDebounced(coordinates);
     },
+    /**
+     * Register events and coordinates to handle drag & drop.
+     * Update CSS values during manipulation
+     * to have a smooth drag & drop experience.
+     */
     onFocalPointMouseDown (event) {
       event.preventDefault();
 
@@ -136,10 +149,14 @@ export default {
       focalPoint.style.cursor = 'grabbing';
       focalPoint.style.transitionDuration = '0s';
 
-      document.addEventListener('mousemove', this.onMouseMove);
-      document.addEventListener('mouseup', this.onMouseUp);
+      document.addEventListener('mousemove', this.onFocalPointMouseMove);
+      document.addEventListener('mouseup', this.onFocalPointMouseUp);
     },
-    onMouseMove(event) {
+    /**
+     * Plage focal point to follow the mouse pointer
+     * and get its new coordinates.
+     */
+    onFocalPointMouseMove(event) {
       event.preventDefault();
 
       const { focalPoint } = this.$refs;
@@ -155,14 +172,18 @@ export default {
 
       this.updateFocalPointCoordinatesDebounced();
     },
-    onMouseUp() {
+    /**
+     * Remove events when releasing click on the focal point element.
+     * Revert CSS values after manipulation.
+     */
+    onFocalPointMouseUp() {
       const { focalPoint } = this.$refs;
 
       focalPoint.style.cursor = 'grab';
       focalPoint.style.transitionDuration = '0.1s';
 
-      document.removeEventListener('mousemove', this.onMouseMove);
-      document.removeEventListener('mouseup', this.onMouseUp);
+      document.removeEventListener('mousemove', this.onFocalPointMouseMove);
+      document.removeEventListener('mouseup', this.onFocalPointMouseUp);
     },
     /**
      * Place focal point at the position where the image has been clicked,
@@ -186,6 +207,10 @@ export default {
 
       this.updateFocalPointCoordinatesDebounced();
     },
+    /**
+     * Update stencil and focal point coordinates
+     * after cropper has changed and emit its new coordinates.
+     */
     handleCropperChange (coordinates) {
       this.isChangingCropper = false;
 
@@ -201,11 +226,19 @@ export default {
 
       this.isUpdatingCropperCoordinates = false;
     },
+    /**
+     * Return wether the cropper coordinates have changed or not.
+     */
     checkCropperCoordinatesDiff (coordinates, dataFields) {
       return Object
         .entries(coordinates)
         .some(([ name, value ]) => dataFields[name] !== value);
     },
+    /**
+     * Store the stencil actual coordinates relative to the viewport,
+     * which are used for focal point DOM manipulation and its
+     * relative position calculation.
+     */
     storeStencilCoordinates () {
       const stencilElement = document.querySelector('[data-stencil]');
       const stencilStyle = window.getComputedStyle(stencilElement);
@@ -221,6 +254,10 @@ export default {
         height: stencilElement.clientHeight
       };
     },
+    /**
+     * Return the size and half size of the focal point element,
+     * used for its DOM manipulation and relative position calculation.
+     */
     getFocalPointSize () {
       const { focalPoint } = this.$refs;
 
@@ -278,7 +315,6 @@ export default {
         y
       });
 
-      console.log(coordinates);
       this.$emit('change', coordinates, false);
     }
   }
