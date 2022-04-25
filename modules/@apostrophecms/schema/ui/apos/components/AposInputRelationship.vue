@@ -230,8 +230,7 @@ export default {
         schema: this.field.schema,
         item,
         title: item.title,
-        value: item._fields,
-        field: this.field
+        value: item._fields
       });
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);

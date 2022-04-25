@@ -113,10 +113,6 @@ export default {
     item: {
       type: Object,
       default: () => ({})
-    },
-    field: {
-      type: Object,
-      required: true
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
