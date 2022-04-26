@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
+
 let apos;
 
 describe('Docs', function() {
@@ -30,6 +31,20 @@ describe('Docs', function() {
               }
             }
           }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [],
+            types: [
+              {
+                name: 'test-page',
+                label: 'Test Page'
+              }
+            ]
+          }
+        },
+        'test-page': {
+          extend: '@apostrophecms/page-type'
         }
       }
     });
@@ -299,7 +314,7 @@ describe('Docs', function() {
     assert(doc.slug.match(/^one\d+$/));
   });
 
-  it('should add the aposDocId to the related documents\' relatedReverseIds field', async () => {
+  it('should add the aposDocId to the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async function() {
     const object = {
       aposDocId: 'paul',
       aposLocale: 'en:published',
@@ -314,7 +329,7 @@ describe('Docs', function() {
       _friends: [ { _id: 'carl:en:published' }, { _id: 'larry:en:published' } ]
     };
 
-    await apos.doc.insert(apos.task.getReq(), object);
+    const response = await apos.doc.insert(apos.task.getReq(), object);
 
     const carlDoc = await apos.doc.db.findOne({
       slug: 'carl',
@@ -328,9 +343,11 @@ describe('Docs', function() {
 
     assert(carlDoc.relatedReverseIds.length === 1);
     assert(carlDoc.relatedReverseIds[0] === 'paul');
+    assert(carlDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
 
     assert(larryDoc.relatedReverseIds.length === 1);
     assert(larryDoc.relatedReverseIds[0] === 'paul');
+    assert(larryDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
   it('should not allow you to call the insert method if you are not an admin', async function() {
@@ -419,7 +436,7 @@ describe('Docs', function() {
     assert(counts.Lori === 2);
   });
 
-  it('should remove the aposDocId from the related documents\' relatedReverseIds field', async () => {
+  it('should remove the aposDocId from the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async function() {
     const paulDoc = await apos.doc.db.findOne({
       slug: 'paul',
       aposLocale: 'en:published'
@@ -432,7 +449,7 @@ describe('Docs', function() {
       _friends: [ { _id: 'larry:en:published' } ]
     };
 
-    await apos.doc.update(apos.task.getReq(), object);
+    const response = await apos.doc.update(apos.task.getReq(), object);
 
     const carlDoc = await apos.doc.db.findOne({
       slug: 'carl',
@@ -445,9 +462,79 @@ describe('Docs', function() {
     });
 
     assert(carlDoc.relatedReverseIds.length === 0);
+    assert(carlDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
 
     assert(larryDoc.relatedReverseIds.length === 1);
     assert(larryDoc.relatedReverseIds[0] === 'paul');
+    assert(larryDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
+  });
+
+  it('should update the related reverse documents\' `cacheInvalidatedAt` field', async function() {
+    const object = {
+      aposDocId: 'john',
+      aposLocale: 'en:published',
+      slug: 'john',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'John',
+      lastName: 'McClane',
+      age: 40,
+      alive: true,
+      friendsIds: [ 'carl' ],
+      _friends: [ { _id: 'carl:en:published' } ]
+    };
+
+    await apos.doc.insert(apos.task.getReq(), object);
+
+    const carlDoc = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    // update carl, now john (related reverse friend) should have its `cacheInvalidatedAt` field updated as well
+    const response = await apos.doc.update(apos.task.getReq(), {
+      ...carlDoc,
+      alive: false
+    });
+
+    const johnDoc = await apos.doc.db.findOne({
+      slug: 'john',
+      aposLocale: 'en:published'
+    });
+
+    assert(johnDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
+  });
+
+  it('should update the pieces parent page\'s `cacheInvalidatedAt` field', async function() {
+    const page = {
+      slug: '/parent/new-page',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'New Page'
+    };
+
+    const object = {
+      aposDocId: 'bruce',
+      aposLocale: 'en:published',
+      slug: 'bruce',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Bruce',
+      lastName: 'Lee',
+      age: 30,
+      alive: false,
+      _parentSlug: '/parent/new-page'
+    };
+
+    await apos.doc.insert(apos.task.getReq(), page);
+    const response = await apos.doc.insert(apos.task.getReq(), object);
+
+    const pageDoc = await apos.doc.db.findOne({
+      slug: '/parent/new-page',
+      aposLocale: 'en:published'
+    });
+
+    assert(pageDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {
@@ -685,6 +772,97 @@ describe('Docs', function() {
       }
     });
     await apos.doc.createTextIndex();
+  });
+
+  /// ///
+  // MIGRATIONS
+  /// ///
+
+  it('should add via a migration the `cacheInvalidatedAt` field to any doc and set it to equal the doc\'s `updatedAt` field', async function() {
+    const objects = [
+      {
+        slug: 'test-for-cacheInvalidatedAt-field-migration1',
+        visibility: 'public',
+        type: 'test-people',
+        firstName: 'Kurt',
+        lastName: 'Cobain',
+        age: 27,
+        alive: false,
+        updatedAt: '2022-03-28T12:57:03.685Z'
+      },
+      {
+        slug: 'test-for-cacheInvalidatedAt-field-migration2',
+        visibility: 'public',
+        type: 'test-people',
+        firstName: 'Jim',
+        lastName: 'Morrison',
+        age: 27,
+        alive: false,
+        updatedAt: '2020-08-29T12:57:03.685Z'
+      }
+    ];
+
+    await apos.doc.db.insertMany(objects);
+    await apos.doc.setCacheField();
+
+    const docs = await apos.doc.db.find({ slug: /test-for-cacheInvalidatedAt-field-migration/ }).toArray();
+    docs.forEach((doc, index) => {
+      const timestamps = {
+        doc: new Date(doc.cacheInvalidatedAt).toString(),
+        expected: new Date(objects[index].updatedAt).toString()
+
+      };
+      assert(timestamps.doc === timestamps.expected);
+    });
+  });
+
+  it('should not add via a migration the `cacheInvalidatedAt` field to docs that already have it', async function() {
+    const object = {
+      slug: 'test-for-cacheInvalidatedAt-field-migration3',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Janis',
+      lastName: 'Joplin',
+      age: 27,
+      alive: false,
+      updatedAt: '2018-08-29T12:57:03.685Z',
+      cacheInvalidatedAt: '2019-08-29T12:57:03.685Z'
+    };
+
+    await apos.doc.db.insert(object);
+    await apos.doc.setCacheField();
+
+    const doc = await apos.doc.db.findOne({ slug: 'test-for-cacheInvalidatedAt-field-migration3' });
+    const timestamps = {
+      doc: new Date(doc.cacheInvalidatedAt).toString(),
+      expected: new Date(object.cacheInvalidatedAt).toString()
+    };
+
+    assert(timestamps.doc === timestamps.expected);
+  });
+
+  /// ///
+  // CACHING
+  /// ///
+
+  it('should add a `cacheInvalidatedAt` field and set it to equal `updatedAt` field when saving a doc', async function() {
+    const object = {
+      slug: 'test-for-cacheInvalidatedAt-field',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Michael',
+      lastName: 'Jackson',
+      age: 64,
+      alive: true
+    };
+
+    const response = await apos.doc.insert(apos.task.getReq(), object);
+    const draft = await apos.doc.db.findOne({
+      _id: `${response.aposDocId}:en:draft`
+    });
+
+    assert(response.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
+    assert(draft.cacheInvalidatedAt.getTime() === draft.updatedAt.getTime());
   });
 
 });

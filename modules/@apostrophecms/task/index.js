@@ -15,62 +15,78 @@
 
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 
 module.exports = {
   options: { alias: 'task' },
   handlers(self) {
     return {
       'apostrophe:run': {
-        async runTask(isTask) {
+        async runTask(isTask, after) {
 
           if (!isTask) {
             return;
           }
 
-          let task;
           const cmd = self.apos.argv._[0];
-          if (!cmd) {
-            throw new Error('There is no command line argument to serve as a task name, should never happen');
-          }
+          const telemetry = self.apos.telemetry;
+          const spanName = `task:${cmd}`;
+          await telemetry.startActiveSpan(spanName, async (span) => {
+            span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'runTask');
+            span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
+            span.setAttribute(telemetry.Attributes.ARGV, telemetry.stringify(self.apos.argv));
 
-          if (cmd === 'help') {
-
-            // list all tasks
-            if (self.apos.argv._.length === 1) {
-              self.usage();
+            let task;
+            if (!cmd) {
+              const err = 'There is no command line argument to serve as a task name, should never happen';
+              console.error(err);
+              return self.exit(after, 1, span, err);
             }
 
-            // help with specific task
-            if (self.apos.argv._.length === 2) {
-              task = self.find(self.apos.argv._[1]);
-              if (!task) {
-                console.error('There is no such task.');
-                self.usage();
+            if (cmd === 'help') {
+              span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'help');
+              // list all tasks
+              if (self.apos.argv._.length === 1) {
+                return self.usage(after, span);
               }
-              if (task.usage) {
-                console.log(`\nTips for the ${task.fullName} task:\n`);
-                console.log(task.usage);
-              } else {
-                console.log('That is a valid task, but it does not have a help message.');
+
+              // help with specific task
+              if (self.apos.argv._.length === 2) {
+                span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, self.apos.argv._[1]);
+                task = self.find(self.apos.argv._[1]);
+                if (!task) {
+                  console.error('There is no such task.');
+                  return self.usage(after, span, 'There is no such task.');
+                }
+                if (task.usage) {
+                  console.log(`\nTips for the ${task.fullName} task:\n`);
+                  console.log(task.usage);
+                } else {
+                  console.log('That is a valid task, but it does not have a help message.');
+                }
+                return self.exit(after, 0, span);
               }
-              process.exit(0);
             }
-          }
 
-          task = self.find(cmd);
+            task = self.find(cmd);
 
-          if (!task) {
-            console.error('\nThere is no such task.');
-            self.usage();
-          }
+            if (!task) {
+              console.error('\nThere is no such task.');
+              return self.usage(after, span, `There is no such task ${cmd}`);
+            }
 
-          try {
-            await task.task(self.apos.argv);
-          } catch (e) {
-            console.error(e);
-            process.exit(1);
-          }
-          process.exit(0);
+            const [ moduleName, taskName ] = task.fullName.split(':');
+            span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, moduleName);
+            span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, taskName);
+
+            try {
+              await task.task(self.apos.argv);
+              return self.exit(after, 0, span);
+            } catch (e) {
+              console.error(e);
+              return self.exit(after, 1, span, e);
+            }
+          });
         }
       }
     };
@@ -116,21 +132,39 @@ module.exports = {
       // task developer might assume they can exit the process directly.
 
       async invoke(name, args, options) {
-        const aposArgv = self.apos.argv;
-        if (Array.isArray(args)) {
-          args.splice(0, 0, name);
-        } else {
-          options = args;
-          args = [ name ];
-        }
-        const task = self.find(name);
-        const argv = {
-          _: args,
-          ...options || {}
-        };
-        self.apos.argv = argv;
-        await task.task(argv);
-        self.apos.argv = aposArgv;
+        const telemetry = self.apos.telemetry;
+        const spanName = `task:${self.__meta.name}:${name}`;
+        await telemetry.startActiveSpan(spanName, async (span) => {
+          span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'invoke');
+          span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
+          try {
+            const aposArgv = self.apos.argv;
+            if (Array.isArray(args)) {
+              args.splice(0, 0, name);
+            } else {
+              options = args;
+              args = [ name ];
+            }
+            const task = self.find(name);
+            const [ moduleName, taskName ] = task.fullName.split(':');
+            span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, moduleName);
+            span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, taskName);
+            const argv = {
+              _: args,
+              ...options || {}
+            };
+            span.setAttribute(telemetry.Attributes.ARGV, telemetry.stringify(argv));
+            self.apos.argv = argv;
+            await task.task(argv);
+            self.apos.argv = aposArgv;
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+          } catch (err) {
+            telemetry.handleError(span, err);
+            throw err;
+          } finally {
+            span.end();
+          }
+        });
       },
 
       // Identifies the task corresponding to the given command line argument.
@@ -152,8 +186,9 @@ module.exports = {
 
       // Displays a usage message, including a list of available tasks,
       // and exits the entire program with a nonzero status code.
+      // Forward signal, span and error to the exit handler.
 
-      usage() {
+      usage(after, span, err) {
         // Direct use of console makes sense in tasks. -Tom
         console.error('\nThe following tasks are available:\n');
         for (const [ moduleName, module ] of Object.entries(self.apos.modules)) {
@@ -165,7 +200,26 @@ module.exports = {
         console.error('node app help groupname:taskname\n');
         console.error('To get help with a specific task.\n');
         console.error('To launch the site, run with no arguments.');
-        process.exit(1);
+        return self.exit(after, 1, span, err);
+      },
+
+      // Register error (if any) and close the current telemetry span;
+      // send a signal back to the bootstrap to exit the process with a given code.
+
+      exit(after, code, span, err) {
+        after.exit = code;
+        if (!span) {
+          return;
+        }
+
+        if (err) {
+          self.apos.telemetry.handleError(span, err);
+        } else if (code) {
+          span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.ERROR });
+        } else {
+          span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.OK });
+        }
+        span.end();
       },
 
       // Return a `req` object suitable for command line tasks

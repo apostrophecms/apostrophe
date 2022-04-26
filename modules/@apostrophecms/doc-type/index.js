@@ -1,3 +1,4 @@
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const _ = require('lodash');
 const util = require('util');
 
@@ -94,28 +95,50 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        async updateBacklinks(req, doc) {
+        async updateCacheField(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
 
-          // Remove all references to the doc
+          // - Remove current doc reference from docs that include it
+          // - Update these docs' cache field
           await self.apos.doc.db.updateMany({
             relatedReverseIds: { $in: [ doc.aposDocId ] },
             aposLocale: { $in: [ doc.aposLocale, null ] }
           }, {
-            $pull: { relatedReverseIds: doc.aposDocId }
+            $pull: { relatedReverseIds: doc.aposDocId },
+            $set: { cacheInvalidatedAt: doc.updatedAt }
           });
 
-          if (!relatedDocsIds.length) {
-            return;
+          if (relatedDocsIds.length) {
+            // - Add current doc reference to related docs
+            // - Update related docs' cache field
+            await self.apos.doc.db.updateMany({
+              aposDocId: { $in: relatedDocsIds },
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $push: { relatedReverseIds: doc.aposDocId },
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
           }
 
-          // Add doc reference to all related docs
-          await self.apos.doc.db.updateMany({
-            aposDocId: { $in: relatedDocsIds },
-            aposLocale: { $in: [ doc.aposLocale, null ] }
-          }, {
-            $push: { relatedReverseIds: doc.aposDocId }
-          });
+          if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
+            // Update related reverse docs' cache field
+            await self.apos.doc.db.updateMany({
+              aposDocId: { $in: doc.relatedReverseIds },
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
+          }
+
+          if (doc._parentSlug) {
+            // Update piece index page's cache field
+            await self.apos.doc.db.updateOne({
+              slug: doc._parentSlug,
+              aposLocale: { $in: [ doc.aposLocale, null ] }
+            }, {
+              $set: { cacheInvalidatedAt: doc.updatedAt }
+            });
+          }
         },
         prepareForStorage(req, doc) {
           self.apos.schema.prepareForStorage(req, doc);
@@ -918,6 +941,7 @@ module.exports = {
         // Setting it this way rather than setting it to published.updatedAt
         // guarantees no small discrepancy breaking equality comparisons
         draft.updatedAt = draft.lastPublishedAt;
+        draft.cacheInvalidatedAt = draft.lastPublishedAt;
         draft.updatedBy = published.updatedBy;
         draft = await self.update(req.clone({
           mode: 'draft'
@@ -1495,7 +1519,7 @@ module.exports = {
         // `apos.attachment.all` method. Used by our REST APIs.
 
         attachments: {
-          def: false,
+          def: true,
           after(results) {
             const attachments = query.get('attachments');
 
@@ -2050,41 +2074,67 @@ module.exports = {
         // the distinct values and whose values are the counts.
         // This has a performance impact. Not chainable.
 
-        async toDistinct(property) {
-          await query.finalize();
+        toDistinct(property) {
+          const telemetry = self.apos.telemetry;
+          return telemetry.startActiveSpan(`db:${self.__meta.name}:query:toDistinct`, async (span) => {
+            span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toDistinct');
+            span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
 
-          if (!query.get('distinctCounts')) {
-            return self.apos.doc.db.distinct(property, query.get('criteria'));
-          } else {
-            return distinctCounts();
-          }
-
-          async function distinctCounts() {
-            const pipeline = [
-              {
-                $match: query.get('criteria')
-              },
-              {
-                $unwind: '$' + property
-              },
-              {
-                $group: {
-                  _id: '$' + property,
-                  count: {
-                    $sum: 1
+            async function distinctCounts(span) {
+              const pipeline = [
+                {
+                  $match: query.get('criteria')
+                },
+                {
+                  $unwind: '$' + property
+                },
+                {
+                  $group: {
+                    _id: '$' + property,
+                    count: {
+                      $sum: 1
+                    }
                   }
                 }
-              }
-            ];
-            const results = await self.apos.doc.db.aggregate(pipeline).toArray();
-            const counts = {};
+              ];
+              span.setAttribute(
+                SemanticAttributes.DB_STATEMENT,
+                telemetry.stringify({ pipeline })
+              );
+              const results = await self.apos.doc.db.aggregate(pipeline).toArray();
+              const counts = {};
 
-            _.each(results, function(doc) {
-              counts[doc._id] = doc.count;
-            });
-            query.set('distinctCounts', counts);
-            return results.map(result => result._id);
-          }
+              _.each(results, function(doc) {
+                counts[doc._id] = doc.count;
+              });
+              query.set('distinctCounts', counts);
+              return results.map(result => result._id);
+            }
+
+            try {
+              await query.finalize();
+              let result;
+
+              if (!query.get('distinctCounts')) {
+                const criteria = query.get('criteria');
+                span.setAttribute(
+                  SemanticAttributes.DB_STATEMENT,
+                  telemetry.stringify({ criteria })
+                );
+                result = await self.apos.doc.db.distinct(property, criteria);
+              } else {
+                result = await distinctCounts(span);
+              }
+
+              span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+              return result;
+            } catch (err) {
+              telemetry.handleError(span, err);
+              throw err;
+            } finally {
+              span.end();
+            }
+          });
         },
 
         // Returns an array of objects with
@@ -2179,30 +2229,79 @@ module.exports = {
         //
         // Not chainable.
 
-        async toCount() {
-          const subquery = query.clone();
-          subquery.skip(undefined);
-          subquery.limit(undefined);
-          subquery.page(undefined);
-          subquery.perPage(undefined);
-          const mongo = await subquery.toMongo();
-          const count = await mongo.count();
-          if (query.get('perPage')) {
-            const perPage = query.get('perPage');
-            const totalPages = Math.ceil(count / perPage);
+        toCount() {
+          const telemetry = self.apos.telemetry;
+          return telemetry.startActiveSpan(`db:${self.__meta.name}:query:toCount`, async (span) => {
+            span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toCount');
+            span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
 
-            query.set('totalPages', totalPages);
-          }
-          return count;
+            try {
+              const subquery = query.clone();
+              subquery.skip(undefined);
+              subquery.limit(undefined);
+              subquery.page(undefined);
+              subquery.perPage(undefined);
+              const mongo = await subquery.toMongo();
+              const count = await mongo.count();
+              if (query.get('perPage')) {
+                const perPage = query.get('perPage');
+                const totalPages = Math.ceil(count / perPage);
+
+                query.set('totalPages', totalPages);
+              }
+
+              span.setAttribute(
+                SemanticAttributes.DB_STATEMENT,
+                telemetry.stringify({
+                  criteria: {
+                    ...subquery.get('criteria'),
+                    ...(subquery.get('lateCriteria') || {})
+                  },
+                  totalPages: query.get('totalPages')
+                })
+              );
+              span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+              return count;
+            } catch (err) {
+              telemetry.handleError(span, err);
+              throw err;
+            } finally {
+              span.end();
+            }
+          });
         },
 
         // Returns an array of documents matching the query. Not chainable.
 
-        async toArray() {
-          const mongo = await query.toMongo();
-          const docs = await query.mongoToArray(mongo);
-          await query.after(docs);
-          return docs;
+        toArray() {
+          const telemetry = self.apos.telemetry;
+          return telemetry.startActiveSpan(`db:${self.__meta.name}:query:toArray`, async (span) => {
+            span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'toArray');
+            span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+            span.setAttribute(SemanticAttributes.DB_STATEMENT, telemetry.stringify({
+              criteria: {
+                ...query.get('criteria'),
+                ...(query.get('lateCriteria') || {})
+              },
+              skip: query.get('skip'),
+              limit: query.get('limit'),
+              sort: query.get('sortMongo'),
+              project: query.get('project')
+            }));
+
+            try {
+              const mongo = await query.toMongo();
+              const docs = await query.mongoToArray(mongo);
+              await query.after(docs);
+              span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+              return docs;
+            } catch (err) {
+              telemetry.handleError(span, err);
+              throw err;
+            } finally {
+              span.end();
+            }
+          });
         },
 
         // Returns a MongoDB query. You can use this

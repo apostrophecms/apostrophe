@@ -8,11 +8,11 @@ describe('Utils', function() {
 
   let apos;
 
-  after(() => {
+  after(function() {
     return t.destroy(apos);
   });
 
-  it('should exist on the apos object', async () => {
+  it('should exist on the apos object', async function() {
     apos = await t.create({
       root: module
     });
@@ -233,14 +233,14 @@ describe('Utils', function() {
       assert(true);
     });
 
-    it('can get a top level property with utils.get', () => {
+    it('can get a top level property with utils.get', function() {
       const data = {
         age: 5
       };
       assert(apos.util.get(data, 'age') === 5);
     });
 
-    it('can set a top level property with utils.set', () => {
+    it('can set a top level property with utils.set', function() {
       const data = {
         age: 5
       };
@@ -248,7 +248,7 @@ describe('Utils', function() {
       assert(data.age === 7);
     });
 
-    it('can get a nested property with utils.get', () => {
+    it('can get a nested property with utils.get', function() {
       const data = {
         shoe: {
           size: 5
@@ -257,7 +257,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, 'shoe.size') === 5);
     });
 
-    it('can set a nested property with utils.set', () => {
+    it('can set a nested property with utils.set', function() {
       const data = {
         shoe: {
           size: 5
@@ -267,7 +267,7 @@ describe('Utils', function() {
       assert(data.shoe.size === 7);
     });
 
-    it('can get a nested property with utils.get', () => {
+    it('can get a nested property with utils.get (2)', function() {
       const data = {
         shoe: {
           size: 5
@@ -276,7 +276,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, 'shoe.size') === 5);
     });
 
-    it('can get a nested array property with utils.get', () => {
+    it('can get a nested array property with utils.get', function() {
       const data = {
         shoe: {
           laces: [
@@ -288,7 +288,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, 'shoe.laces.0', 'intact'));
     });
 
-    it('can set a nested array property with utils.set', () => {
+    it('can set a nested array property with utils.set', function() {
       const data = {
         shoe: {
           laces: [
@@ -301,7 +301,7 @@ describe('Utils', function() {
       assert(data.shoe.laces[0] === 'gnarly');
     });
 
-    it('can get a subobject with @ syntax', () => {
+    it('can get a subobject with @ syntax', function() {
       const data = {
         shoes: [
           {
@@ -315,7 +315,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, '@stylin')._id === 'stylin');
     });
 
-    it('can update a subobject property with @ syntax', () => {
+    it('can update a subobject property with @ syntax', function() {
       const data = {
         shoes: [
           {
@@ -333,7 +333,7 @@ describe('Utils', function() {
       assert.strictEqual(data.shoes[0].size, 7);
     });
 
-    it('can get a subobject property with @ syntax', () => {
+    it('can get a subobject property with @ syntax', function() {
       const data = {
         shoes: [
           {
@@ -349,7 +349,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, '@stylin.size') === 5);
     });
 
-    it('can replace a subobject with @ syntax', () => {
+    it('can replace a subobject with @ syntax', function() {
       const data = {
         shoes: [
           {

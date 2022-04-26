@@ -105,7 +105,7 @@ describe('Express', function() {
     assert(apos.app !== apos.baseApp);
   });
 
-  it('should successfully make a GET request to establish CSRF', async function() {
+  it('should successfully make a GET request to establish CSRF (prefix)', async function() {
     jar = apos.http.jar();
     const body = await apos.http.get('/prefix/tests/welcome', {
       jar

@@ -25,6 +25,7 @@
 // available in the browser for use in the Vue-based admin UI when a user is
 // logged in.
 
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const _ = require('lodash');
 
 module.exports = {
@@ -444,10 +445,42 @@ module.exports = {
       // that point.
 
       async sendPage(req, template, data) {
-        await self.apos.page.emit('beforeSend', req);
-        await self.apos.area.loadDeferredWidgets(req);
-        req.res.send(
-          await self.apos.template.renderPageForModule(req, template, data, self)
+        const telemetry = self.apos.telemetry;
+        const spanName = `${self.__meta.name}:sendPage`;
+        await telemetry.startActiveSpan(spanName, async (span) => {
+          span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'sendPage');
+          span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+          span.setAttribute(telemetry.Attributes.TEMPLATE, template);
+
+          try {
+            await self.apos.page.emit('beforeSend', req);
+            await self.apos.area.loadDeferredWidgets(req);
+            req.res.send(
+              await self.apos.template.renderPageForModule(req, template, data, self)
+            );
+            span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+          } catch (err) {
+            telemetry.handleError(span, err);
+            throw err;
+          } finally {
+            span.end();
+          }
+        });
+      },
+
+      // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
+      // Other session properties must be assumed to be specific to the user, with a possible
+      // impact on the response, and thus mean this request must not be cached.
+      // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
+      isSafeToCache(req) {
+        if (req.user) {
+          return false;
+        }
+
+        return Object.entries(req.session).every(([ key, val ]) =>
+          key === 'cookie' || (
+            (key === 'flash' || key === 'passport') && _.isEmpty(val)
+          )
         );
       },
 
@@ -457,19 +490,48 @@ module.exports = {
           return;
         }
 
-        // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
-        // Other session properties must be assumed to be specific to the user, with a possible
-        // impact on the response, and thus mean this request must not be cached.
-        // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
-        const isSessionClearForCaching = Object.entries(req.session).every(([ key, val ]) =>
-          key === 'cookie' || (
-            (key === 'flash' || key === 'passport') && _.isEmpty(val)
-          )
-        );
-        const isSafeToCache = !req.user && isSessionClearForCaching;
-        const cacheControlValue = isSafeToCache ? `max-age=${maxAge}` : 'no-store';
+        const cacheControlValue = self.isSafeToCache(req) ? `max-age=${maxAge}` : 'no-store';
 
         req.res.header('Cache-Control', cacheControlValue);
+      },
+
+      generateETagParts(req, doc) {
+        const context = doc || req.data.piece || req.data.page;
+
+        if (!context || !context.cacheInvalidatedAt) {
+          return null;
+        }
+
+        const releaseId = self.apos.asset.getReleaseId();
+        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime().toString();
+
+        return [ releaseId, cacheInvalidatedAtTimestamp ];
+      },
+
+      setETag(req, eTagParts) {
+        req.res.header('ETag', eTagParts.join(':'));
+      },
+
+      checkETag(req, doc, maxAge) {
+        const eTagParts = self.generateETagParts(req, doc);
+
+        if (!eTagParts || !self.isSafeToCache(req)) {
+          return false;
+        }
+
+        const clientETagParts = req.headers['if-none-match'] ? req.headers['if-none-match'].split(':') : [];
+        const doesETagMatch = clientETagParts[0] === eTagParts[0] && clientETagParts[1] === eTagParts[1];
+
+        const now = Date.now();
+        const clientETagAge = (now - clientETagParts[2]) / 1000;
+
+        if (!doesETagMatch || clientETagAge > maxAge) {
+          self.setETag(req, [ ...eTagParts, now ]);
+          return false;
+        }
+
+        self.setETag(req, clientETagParts);
+        return true;
       },
 
       // Call from init once if this module implements the `getBrowserData` method.
@@ -649,10 +711,29 @@ module.exports = {
             // @apostrophecms/db:reset which
             // must run before most modules are awake
             if (self.apos.argv._[0] === `${self.__meta.name}:${name}`) {
-              await info.task(self.apos.argv);
+              const telemetry = self.apos.telemetry;
+              const spanName = `task:${self.__meta.name}:${name}`;
+              // only this span can be sent to the backend, attach to the ROOT
+              await telemetry.startActiveSpan(
+                spanName,
+                async (span) => {
+                  span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'executeAfterModuleInitTask');
+                  span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/module');
+                  span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, self.__meta.name);
+                  span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, name);
+                  try {
+                    await info.task(self.apos.argv);
+                    span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
+                  } catch (err) {
+                    telemetry.handleError(span, err);
+                    throw err;
+                  } finally {
+                    span.end();
+                  }
+                });
               // In most cases we exit after running a task
               if (info.exitAfter !== false) {
-                process.exit(0);
+                await self.apos._exit();
               } else {
                 // Provision for @apostrophecms/db:reset which should be
                 // followed by normal initialization so all the collections

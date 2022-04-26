@@ -13,27 +13,6 @@
 //
 // The label of the widget, as seen in menus for adding widgets.
 //
-// ### `playerData`
-//
-// By default, all of the permanent properties of your widget's schema
-// are present in the page as JSON and can be accessed via the
-// `data` argument of the `play` method of your browser-side object
-// (see `always.js` in `@apostrophecms/image-widget` for an example).
-//
-// This is often useful, but if the information is sensitive and you
-// don't want it to be available in this way, set:
-//
-// `playerData: false`
-//
-// If you want the `play` method to have access to *some* of the
-// properties, set:
-//
-// `playerData: [ 'propName1', 'propName2' ]`
-//
-// **When you have editing privileges, you always have access to
-// 100% of the permanent properties of the widget in this way.**
-// This is needed for the editing experience.
-//
 // ### `neverLoadSelf`
 //
 // If true, this widget's `load` method will never recursively invoke
@@ -118,7 +97,6 @@ const _ = require('lodash');
 module.exports = {
   cascades: [ 'fields' ],
   options: {
-    playerData: false,
     neverLoadSelf: true
   },
   init(self) {
@@ -371,7 +349,8 @@ module.exports = {
           schema: schema,
           contextual: self.options.contextual,
           skipInitialModal: self.options.skipInitialModal,
-          className: self.options.className
+          className: self.options.className,
+          components: self.options.components
         });
         return result;
       }

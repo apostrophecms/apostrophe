@@ -7,8 +7,24 @@
 * Images may now be cropped to suit a particular placement after selecting them.
 * Developers may now specify an alternate Vue component to be used for editing the subfields of relationships, either at the field level or as a default for all relationships with a particular piece type.
 * Adds ability to set `minSize` to areas for image widgets. When setup, browsing relationship images from `AposInputRelationship` or from `AposMediaManager` when it is a chooser, will emit `piece-relationship-query`. We pass the query string object, this one will be filled with appropriate data if needed (in this case minSize array).
+* The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
+* In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
+* Implements OpenTelemetry instrumentation.
+* Adds new event `apostrophe:beforeExit` and improves the way Apostrophe terminates its process.
+* Adds new configuration option - `beforeExit` async handler.
+* Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
+* Adds new event `@apostrophecms/doc:afterAllModesDeleted` fired after all modes of a given document are purged.
+* Support for Node.js 17 and 18. MongoDB connections to `localhost` will now successfully find a typical dev MongoDB server bound only to `127.0.0.1`, Apostrophe can generate valid ipv6 URLs pointing back to itself, and `webpack` and `vue-loader` have been updated to address incompatibilities.
 
-# 3.17.0 (2022-03-31)
+### Fixes
+
+* Documentation of obsolete options has been removed.
+* Dead code relating to activating in-context widget editors have been removed. They are always active and have been for some time. In the future they might be swapped in on scroll, but there will never be a need to swap them in "on click."
+* The `self.email` method of modules now correctly accepts a default `from` address configured for a specific module via the `from` subproperty of the `email` option to that module. Thanks to `chmdebeer` for pointing out the issue and the fix.
+* Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
+* Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
+
+## 3.17.0 (2022-03-31)
 
 ### Adds
 
@@ -17,13 +33,18 @@
 * Adds possibility for modules to [extend the webpack configuration](https://v3.docs.apostrophecms.org/guide/webpack.html).
 * Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
 * Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
+* Fixes deprecation warnings displayed after running `npm install`, for dependencies that are directly included by this package.
+* Implement custom ETags emission when `etags` cache option is enabled. [See the documentation for more information](https://v3.docs.apostrophecms.org/guide/caching.html).  
+It allows caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) document updates, thanks to backlinks mentioned above.  
+Note that for now, only single pages and pieces benefit from the ETags caching system (pages' and pieces' `getOne` REST API route, and regular served pages).  
+The cache of an index page corresponding to the type of a piece that was just saved will automatically be invalidated. However, please consider that it won't be effective when a related piece is saved, therefore the cache will automatically be invalidated _after_ the cache lifetime set in `maxAge` cache option.
 
 ### Fixes
 
 * Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
 * The `es5: true` option to `@apostrophecms/asset` works again.
 
-# 3.16.1 (2022-03-21)
+## 3.16.1 (2022-03-21)
 
 ### Fixes
 

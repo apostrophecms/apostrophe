@@ -1,4 +1,5 @@
 const cuid = require('cuid');
+const mongodbConnect = require('../lib/mongodb-connect');
 
 // Properly clean up an apostrophe instance and drop its
 // database collections to create a sane environment for the next test.
@@ -19,11 +20,7 @@ async function destroy(apos) {
   // object to clean up the database, otherwise we have to get hold of one
   // when initialization failed and that's really not apostrophe's concern
   if (dbName) {
-    const mongo = require('mongodb');
-    const client = await mongo.MongoClient.connect(`mongodb://localhost:27017/${dbName}`, {
-      useUnifiedTopology: true,
-      useNewUrlParser: true
-    });
+    const client = await mongodbConnect(`mongodb://localhost:27017/${dbName}`);
     const db = client.db(dbName);
     await db.dropDatabase();
     await client.close();

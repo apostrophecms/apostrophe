@@ -6,7 +6,7 @@
     'color-hex-length': 'short',
     'color-named': 'never',
     'color-no-invalid-hex': true,
-    'declaration-property-unit-whitelist': { 'line-height': [] },
+    'declaration-property-unit-allowed-list': { 'line-height': [] },
     'font-family-no-duplicate-names': true,
     'number-leading-zero': 'always',
     'number-max-precision': 2,
@@ -80,5 +80,15 @@
         ]
       }
     ]
-  }
+  },
+  overrides: [
+    {
+      files: ['**/*.scss'],
+      customSyntax: 'postcss-scss'
+    },
+    {
+      files: ['**/*.vue'],
+      customSyntax: 'postcss-html'
+    }
+  ]
 }
