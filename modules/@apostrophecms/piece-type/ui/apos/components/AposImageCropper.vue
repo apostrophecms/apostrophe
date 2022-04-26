@@ -152,11 +152,30 @@ export default {
 
       const { focalPoint } = this.$refs;
 
+      const focalPointSize = this.getFocalPointSize();
+
       const left = focalPoint.offsetLeft - this.focalPointDragCoordinates.clientX + event.clientX;
       const top = focalPoint.offsetTop - this.focalPointDragCoordinates.clientY + event.clientY;
 
       this.focalPointDragCoordinates.clientX = event.clientX;
       this.focalPointDragCoordinates.clientY = event.clientY;
+
+      // For some reason, positioning the focal point at the very top of the image
+      // results in having a negative `top` value.
+      // Let's apply a margin of error for every edge to prevent having `null`
+      // focal point values when placing it at the image borders.
+      const MARGIN_OF_ERROR = 1;
+
+      const limits = {
+        left: -focalPointSize.halfWidth + MARGIN_OF_ERROR,
+        top: -focalPointSize.halfHeight + MARGIN_OF_ERROR,
+        right: focalPoint.offsetParent.clientWidth - focalPointSize.halfWidth - MARGIN_OF_ERROR,
+        bottom: focalPoint.offsetParent.clientHeight - focalPointSize.halfHeight - MARGIN_OF_ERROR
+      };
+
+      if (left < limits.left || top < limits.top || left > limits.right || top > limits.bottom) {
+        return;
+      };
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
