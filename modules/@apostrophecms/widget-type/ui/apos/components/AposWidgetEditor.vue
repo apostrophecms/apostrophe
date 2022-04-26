@@ -132,7 +132,6 @@ export default {
     }
   },
   async mounted() {
-    console.log('*** Pushing options:', JSON.stringify(this.options));
     apos.area.widgetOptions = [
       klona(this.options),
       ...apos.area.widgetOptions
@@ -140,7 +139,6 @@ export default {
     this.modal.active = true;
   },
   destroyed() {
-    console.log('destroying');
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
