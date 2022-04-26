@@ -7,6 +7,7 @@
 * Images may now be cropped to suit a particular placement after selecting them.
 * Developers may now specify an alternate Vue component to be used for editing the subfields of relationships, either at the field level or as a default for all relationships with a particular piece type.
 * Adds ability to set `minSize` to areas for image widgets. When setup, browsing relationship images from `AposInputRelationship` or from `AposMediaManager` when it is a chooser, will emit `piece-relationship-query`. We pass the query string object, this one will be filled with appropriate data if needed (in this case minSize array).
+* Uses the `isCroppable` method to know if an image attachment is croppable or not. Passes this info to the frontend when requesting documents attachments. Uses this info to show the context menu or not.
 
 # 3.17.0 (2022-03-31)
 

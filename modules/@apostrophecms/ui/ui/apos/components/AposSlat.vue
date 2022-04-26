@@ -27,12 +27,25 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasRelationshipSchema"
+          v-if="hasRelationshipSchema && more.menu.length"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
           menu-placement="bottom-start"
           menu-offset="40, 10"
+        />
+        <AposButton
+          class="apos-slat__editor-btn"
+          v-if="editorIcon && hasRelationshipSchema"
+          role="button"
+          :tooltip="{
+            content: editorLabel,
+            placement: 'bottom'
+          }"
+          :icon="editorIcon"
+          :icon-only="true"
+          :modifiers="['inline']"
+          @click="$emit('item-clicked', item)"
         />
         <a
           class="apos-slat__control apos-slat__control--view"
@@ -122,7 +135,11 @@ export default {
       type: Boolean,
       default: false
     },
-    labelKey: {
+    editorLabel: {
+      type: String,
+      default: null
+    },
+    editorIcon: {
       type: String,
       default: null
     }
@@ -139,12 +156,10 @@ export default {
           type: 'inline'
         },
         menu: [
-          {
-            label: this.labelKey
-              ? 'apostrophe:editImageAdjustments'
-              : 'apostrophe:editRelationship',
+          ...!this.editorIcon ? [ {
+            label: 'apostrophe:editRelationship',
             action: 'edit-relationship'
-          }
+          } ] : []
         ]
       }
     };
@@ -175,11 +190,8 @@ export default {
     },
     move(dir) {
       if (this.engaged) {
-        if (dir > 0) {
-          this.$emit('move', this.item._id, 1);
-        } else {
-          this.$emit('move', this.item._id, -1);
-        }
+        const direction = dir > 0 ? 1 : -1;
+        this.$emit('move', this.item._id, direction);
       }
     },
     remove(focusNext) {
@@ -270,6 +282,10 @@ export default {
     max-width: 220px;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  .apos-slat__editor-btn {
+    margin-right: 5px;
   }
 
   .apos-slat__control {

@@ -30,6 +30,8 @@ module.exports = {
     // another document that references them
     relatedDocument: true,
     relationshipEditor: 'AposImageRelationshipEditor',
+    relationshipEditorLabel: 'apostrophe:editImageAdjustments',
+    relationshipEditorIcon: 'image-edit-outline',
     relationshipFields: {
       add: {
         top: {
