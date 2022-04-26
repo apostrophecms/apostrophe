@@ -43,7 +43,8 @@
           :value="next"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
-          :label-key="getSlatLabelKey()"
+          :editor-label="field.editorLabel"
+          :editor-icon="field.editorIcon"
         />
         <AposSearchList
           :list="searchList"
@@ -232,6 +233,7 @@ export default {
         title: item.title,
         value: item._fields
       });
+
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
         this.$set(this.next, index, {
@@ -240,7 +242,7 @@ export default {
         });
       }
     },
-    getSlatLabelKey () {
+    getEditRelationshipLabel () {
       if (this.field.editor === 'AposImageRelationshipEditor') {
         return 'apostrophe:editImageAdjustments';
       }

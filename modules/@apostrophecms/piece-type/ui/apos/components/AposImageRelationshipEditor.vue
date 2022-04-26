@@ -30,14 +30,14 @@
             {{ $t('apostrophe:cropAndSize') }}
           </label>
           <div
-            v-if="errors.width || errors.height"
-            class="apos-field__size-error"
-            :class="{'apos-field__size-error--focused': inputFocused}"
+            v-if="minSize[0] || minSize[1]"
+            class="apos-field__min-size"
+            :class="{'apos-field__min-size--correcting': correctingSizes}"
           >
             {{
               $t('apostrophe:minSize', {
-                width: item.attachment.width,
-                height: item.attachment.height
+                width: minSize[0] || '???',
+                height: minSize[1] || '???'
               })
             }}
           </div>
@@ -48,12 +48,11 @@
               </label>
               <input
                 :value="docFields.data.width"
-                @input="(e) => input(e, 'width')"
-                @focus="focusInput()"
-                @blur="focusInput(false)"
+                @input="inputWidth"
+                @blur="blurInputWidth"
                 class="apos-input apos-input--text"
                 type="number"
-                min="1"
+                :min="minSize[0] || 1"
                 :max="item.attachment.width"
               >
             </div>
@@ -63,12 +62,11 @@
               </label>
               <input
                 :value="docFields.data.height"
-                @input="(e) => input(e, 'height')"
-                @focus="focusInput()"
-                @blur="focusInput(false)"
+                @input="inputHeight"
+                @blur="blurInputHeight"
                 class="apos-input apos-input--text"
                 type="number"
-                min="1"
+                :min="minSize[1] || 1"
                 :max="item.attachment.height"
               >
             </div>
@@ -82,6 +80,7 @@
           :attachment="item.attachment"
           :doc-fields="docFields"
           :aspect-ratio="aspectRatio"
+          :min-size="minSize"
           @change="updateDocFields"
         />
       </div>
@@ -135,7 +134,9 @@ export default {
         title: this.title
       },
       currentTab: null,
-      aspectRatio: this.getAspectRatio()
+      aspectRatio: this.getAspectRatio(),
+      minSize: this.getMinSize(),
+      correctingSizes: false
     };
   },
   async mounted() {
@@ -181,6 +182,12 @@ export default {
         updateCoordinates
       };
     },
+    inputWidth(e) {
+      this.input(e, 'width');
+    },
+    inputHeight(e) {
+      this.input(e, 'height');
+    },
     input({ target }, name) {
       const value = parseInt(target.value, 10);
 
@@ -188,15 +195,38 @@ export default {
         return;
       }
 
-      this.errors[name] = value > this.item.attachment[name];
-
-      this.updateDocFields({ [name]: parseInt(target.value, 10) });
+      this.updateDocFields({ [name]: value });
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
-    focusInput (isFocused = true) {
-      this.inputFocused = isFocused;
+    blurInputWidth(e) {
+      this.blurInput(e, 'width');
+    },
+    blurInputHeight(e) {
+      this.blurInput(e, 'height');
+    },
+    blurInput({ target }, name) {
+      const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
+      const maxSize = this.item.attachment[name];
+      const value = parseInt(target.value, 10);
+
+      if (value > maxSize) {
+        this.updateDocFields({ [name]: maxSize });
+        return;
+      }
+
+      if (isNaN(minSize) || typeof minSize !== 'number' || value >= minSize) {
+        return;
+      }
+
+      this.correctingSizes = true;
+
+      this.updateDocFields({ [name]: minSize });
+
+      setTimeout(() => {
+        this.correctingSizes = false;
+      }, 1500);
     },
     switchPane(name) {
       this.currentTab = name;
@@ -205,6 +235,11 @@ export default {
       const [ widgetOptions = {} ] = apos.area.widgetOptions || [];
 
       return widgetOptions.aspectRatio || [];
+    },
+    getMinSize() {
+      const [ widgetOptions = {} ] = apos.area.widgetOptions;
+
+      return widgetOptions.minSize || [];
     }
   }
 };
@@ -249,12 +284,12 @@ export default {
   padding-right: 5px;
 }
 
-.apos-field__size-error {
+.apos-field__min-size {
   @include type-small;
   color: var(--a-base-1);
   margin-bottom: 10px;
 
-  &--focused {
+  &--correcting {
     color: var(--a-primary);
   }
 }

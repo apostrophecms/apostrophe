@@ -7,6 +7,8 @@
 * Images may now be cropped to suit a particular placement after selecting them.
 * Developers may now specify an alternate Vue component to be used for editing the subfields of relationships, either at the field level or as a default for all relationships with a particular piece type.
 * Adds ability to set `minSize` to areas for image widgets. When setup, browsing relationship images from `AposInputRelationship` or from `AposMediaManager` when it is a chooser, will emit `piece-relationship-query`. We pass the query string object, this one will be filled with appropriate data if needed (in this case minSize array).
+* Prevent cropping of SVG files as this is not possible in the general case.
+* Blocks users to set values under `minSize` if configured in area (can set only width, only height or both). Auto fixes bad values in input when under `minSize` or above image size during blur.
 
 # 3.17.0 (2022-03-31)
 

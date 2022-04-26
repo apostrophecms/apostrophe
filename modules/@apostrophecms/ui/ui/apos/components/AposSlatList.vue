@@ -32,7 +32,8 @@
           :slat-count="next.length"
           :removable="removable"
           :has-relationship-schema="hasRelationshipSchema"
-          :label-key="labelKey"
+          :editor-label="editorLabel"
+          :editor-icon="editorIcon"
         />
       </transition-group>
     </draggable>
@@ -68,7 +69,11 @@ export default {
       type: Boolean,
       default: false
     },
-    labelKey: {
+    editorLabel: {
+      type: String,
+      default: null
+    },
+    editorIcon: {
       type: String,
       default: null
     }

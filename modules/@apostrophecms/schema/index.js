@@ -1027,6 +1027,9 @@ module.exports = {
           lintType(field.withType);
           const withTypeManager = self.apos.doc.getManager(field.withType);
           field.editor = field.editor || withTypeManager.options.relationshipEditor;
+          field.editorLabel = field.editorLabel || withTypeManager.options.relationshipEditorLabel;
+          field.editorIcon = field.editorIcon || withTypeManager.options.relationshipEditorIcon;
+
           if (!field.schema && !Array.isArray(field.withType)) {
             const fieldsOption = withTypeManager.options.relationshipFields;
             const fields = fieldsOption && fieldsOption.add;

@@ -11,6 +11,8 @@
       :stencil-props="{
         aspectRatio: getAspectRatio,
       }"
+      :min-width="minSize[0]"
+      :min-height="minSize[1]"
     />
   </div>
 </template>
@@ -36,6 +38,10 @@ export default {
     aspectRatio: {
       type: Array,
       default: null
+    },
+    minSize: {
+      type: Array,
+      default: () => ([])
     }
   },
   emits: [ 'change' ],
