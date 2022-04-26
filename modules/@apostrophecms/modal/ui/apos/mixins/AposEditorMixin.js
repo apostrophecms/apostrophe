@@ -208,17 +208,18 @@ export default {
         }
         const withType = relationship.field.withType;
         const module = apos.modules[withType];
-        if (relationship.value) {
-          relationship.context[relationship.field.name] = (await apos.http.post(`${module.action}/${relationship.field.postprocessor}`, {
-            body: {
-              relationship: relationship.value,
-              // Pass the options of the widget currently being edited, some
-              // postprocessors need these (e.g. autocropping cares about widget aspectRatio)
-              widgetOptions: apos.area.widgetOptions.slice(0, 1)
-            },
-            busy: true
-          })).relationship;
-        }
+        relationship.context[relationship.field.name] = (await apos.http.post(`${module.action}/${relationship.field.postprocessor}`, {
+          qs: {
+            aposMode: 'draft'
+          },
+          body: {
+            relationship: relationship.value,
+            // Pass the options of the widget currently being edited, some
+            // postprocessors need these (e.g. autocropping cares about widget aspectRatio)
+            widgetOptions: apos.area.widgetOptions[0]
+          },
+          busy: true
+        })).relationship;
       }
       function findRelationships(schema, object) {
         const relationships = [];
