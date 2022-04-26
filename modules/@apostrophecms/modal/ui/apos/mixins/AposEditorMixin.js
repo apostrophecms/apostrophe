@@ -222,7 +222,7 @@ export default {
         })).relationship;
       }
       function findRelationships(schema, object) {
-        const relationships = [];
+        let relationships = [];
         for (const field of schema) {
           if (field.type === 'relationship') {
             relationships.push({
@@ -232,10 +232,10 @@ export default {
             });
           } else if (field.type === 'array') {
             for (const value of (object[field.name] || [])) {
-              relationships = [...relationships, findRelationships(field.schema, value)];
+              relationships = [ ...relationships, findRelationships(field.schema, value) ];
             }
           } else if (field.type === 'object') {
-            relationships = [...relationships, findRelationships(field.schema, object[field.name] || {})];
+            relationships = [ ...relationships, findRelationships(field.schema, object[field.name] || {}) ];
           }
         }
         return relationships;
