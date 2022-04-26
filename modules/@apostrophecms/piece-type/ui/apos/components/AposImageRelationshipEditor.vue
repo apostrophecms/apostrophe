@@ -81,6 +81,7 @@
         <AposImageCropper
           :attachment="item.attachment"
           :doc-fields="docFields"
+          :aspect-ratio="aspectRatio"
           @change="updateDocFields"
         />
       </div>
@@ -133,7 +134,8 @@ export default {
         key: 'apostrophe:editImageRelationshipTitle',
         title: this.title
       },
-      currentTab: null
+      currentTab: null,
+      aspectRatio: this.getAspectRatio()
     };
   },
   async mounted() {
@@ -198,6 +200,11 @@ export default {
     },
     switchPane(name) {
       this.currentTab = name;
+    },
+    getAspectRatio() {
+      const [ widgetOptions = {} ] = apos.area.widgetOptions || [];
+
+      return widgetOptions.aspectRatio || [];
     }
   }
 };

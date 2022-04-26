@@ -8,6 +8,9 @@
       @change="onChange"
       :default-size="defaultSize"
       :default-position="defaultPosition"
+      :stencil-props="{
+        aspectRatio: getAspectRatio,
+      }"
     />
   </div>
 </template>
@@ -29,12 +32,27 @@ export default {
     docFields: {
       type: Object,
       required: true
+    },
+    aspectRatio: {
+      type: Array,
+      default: null
     }
   },
   emits: [ 'change' ],
   data: () => ({
     isUpdatingCoordinates: false
   }),
+  computed: {
+    getAspectRatio() {
+      if (!this.aspectRatio || this.aspectRatio.length !== 2) {
+        return null;
+      }
+
+      const [ width, height ] = this.aspectRatio;
+
+      return width / height;
+    }
+  },
   watch: {
     docFields: {
       deep: true,
