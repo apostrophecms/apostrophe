@@ -30,14 +30,14 @@
             {{ $t('apostrophe:cropAndSize') }}
           </label>
           <div
-            v-if="minSize[0] && minSize[1]"
+            v-if="minSize[0] || minSize[1]"
             class="apos-field__min-size"
-            :class="{'apos-field__min-size--focused': inputFocused}"
+            :class="{'apos-field__min-size--correcting': correctingSizes}"
           >
             {{
               $t('apostrophe:minSize', {
-                width: minSize[0],
-                height: minSize[1]
+                width: minSize[0] || '???',
+                height: minSize[1] || '???'
               })
             }}
           </div>
@@ -48,8 +48,8 @@
               </label>
               <input
                 :value="docFields.data.width"
-                @input="(e) => input(e, 'width')"
-                @blur="(e) => blurInput(e, 'width')"
+                @input="inputWidth"
+                @blur="blurInputWidth"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minSize[0] || 1"
@@ -62,8 +62,8 @@
               </label>
               <input
                 :value="docFields.data.height"
-                @input="(e) => input(e, 'height')"
-                @blur="(e) => blurInput(e, 'height')"
+                @input="inputHeight"
+                @blur="blurInputHeight"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minSize[1] || 1"
@@ -133,7 +133,8 @@ export default {
         title: this.title
       },
       currentTab: null,
-      minSize: this.getMinSize()
+      minSize: this.getMinSize(),
+      correctingSizes: false
     };
   },
   async mounted() {
@@ -179,6 +180,12 @@ export default {
         updateCoordinates
       };
     },
+    inputWidth(e) {
+      this.input(e, 'width');
+    },
+    inputHeight(e) {
+      this.input(e, 'height');
+    },
     input({ target }, name) {
       const value = parseInt(target.value, 10);
 
@@ -186,31 +193,43 @@ export default {
         return;
       }
 
-      this.validate(value, name);
-
       this.updateDocFields({ [name]: value });
-    },
-    validate(value, name) {
-      const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
-
-      const err = value > this.item.attachment[name]
-        ? 'maxSize'
-        : value < minSize && 'minSize';
-
-      this.errors[name] = err;
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
+    blurInputWidth(e) {
+      this.blurInput(e, 'width');
+    },
+    blurInputHeight(e) {
+      this.blurInput(e, 'height');
+    },
     blurInput({ target }, name) {
+      const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
+      const maxSize = this.item.attachment[name];
       const value = parseInt(target.value, 10);
 
+      if (value > maxSize) {
+        this.updateDocFields({ [name]: maxSize });
+      }
+
+      if (isNaN(minSize) || typeof minSize !== 'number' || value >= minSize) {
+        return;
+      }
+
+      this.correctingSizes = true;
+
+      this.updateDocFields({ [name]: minSize });
+
+      setTimeout(() => {
+        this.correctingSizes = false;
+      }, 1500);
     },
     switchPane(name) {
       this.currentTab = name;
     },
     getMinSize() {
-      const [ widgetOptions ] = apos.area.widgetOptions;
+      const [ widgetOptions = {} ] = apos.area.widgetOptions;
 
       return widgetOptions.minSize || [];
     }
@@ -262,7 +281,7 @@ export default {
   color: var(--a-base-1);
   margin-bottom: 10px;
 
-  &--focused {
+  &--correcting {
     color: var(--a-primary);
   }
 }
