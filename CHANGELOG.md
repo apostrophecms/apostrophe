@@ -5,11 +5,13 @@
 ### Adds
 
 * Images may now be cropped to suit a particular placement after selecting them.
+* Editors may also select a "focal point" for the image after selecting it. This ensures that this particular point remains visible even if CSS would otherwise crop it, which is a common issue in responsive design. See the `@apostrophecms/image` widget for a sample implementation of the necessary styles.
+* Adds the `aspectRatio` option for image widgets. When set to `[ w, h ]` (a ratio of width to height), images are automatically cropped to this aspect ratio when chosen for that particular widget. If the user does not crop manually, then cropping happens automatically.
+* Adds the `minSize` option for image widgets. This ensures that the images chosen are at least the given size `[ width, height ]`, and also ensures the user cannot choose something smaller than that when cropping.
+* Implements OpenTelemetry instrumentation.
 * Developers may now specify an alternate Vue component to be used for editing the subfields of relationships, either at the field level or as a default for all relationships with a particular piece type.
-* Adds ability to set `minSize` to areas for image widgets. When setup, browsing relationship images from `AposInputRelationship` or from `AposMediaManager` when it is a chooser, will emit `piece-relationship-query`. We pass the query string object, this one will be filled with appropriate data if needed (in this case minSize array).
 * The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
 * In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
-* Implements OpenTelemetry instrumentation.
 * Adds new event `apostrophe:beforeExit` and improves the way Apostrophe terminates its process.
 * Adds new configuration option - `beforeExit` async handler.
 * Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
