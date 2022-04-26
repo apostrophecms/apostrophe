@@ -181,7 +181,7 @@ describe('Images', function() {
   it('REST: should be able to upload an image with an attachment as an admin', async function() {
     jar = await login('admin');
     const formData = new FormData();
-    formData.append('file', fs.createReadStream(path.join(__dirname, '/public/test-image.jpg')));
+    formData.append('file', fs.createReadStream(path.join(apos.rootDir, '/public/test-image.jpg')));
 
     // Make an async request to upload the image.
     const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
