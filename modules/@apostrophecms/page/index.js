@@ -1455,10 +1455,6 @@ database.`);
             req.data.bestPage = await query.toObject();
             self.evaluatePageMatch(req);
 
-            if (self.options.cache && self.options.cache.page) {
-              self.setMaxAge(req, self.options.cache.page.maxAge);
-            }
-
             span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.OK });
           } catch (err) {
             self.apos.telemetry.handleError(span, err);
