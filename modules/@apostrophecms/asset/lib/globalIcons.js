@@ -53,6 +53,7 @@ module.exports = {
   'help-circle-icon': 'HelpCircle',
   'information-outline-icon': 'InformationOutline',
   'information-icon': 'Information',
+  'image-edit-outline': 'ImageEditOutline',
   'image-icon': 'Image',
   'image-size-select-actual-icon': 'ImageSizeSelectActual',
   'play-box-icon': 'PlayBox',
