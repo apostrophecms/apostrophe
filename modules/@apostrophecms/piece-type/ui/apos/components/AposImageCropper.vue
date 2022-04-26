@@ -283,8 +283,15 @@ export default {
         this.stencilCoordinates.top
       ) / this.stencilCoordinates.height;
 
-      const sanitizeCoordinates = ({ x, y }) =>
-        (x >= 0 && x <= 1 && y >= 0 && y <= 1)
+      const coordinates = sanitizeCoordinates({
+        x,
+        y
+      });
+
+      this.$emit('change', coordinates, false);
+
+      function sanitizeCoordinates ({ x, y }) {
+        return (x >= 0 && x <= 1 && y >= 0 && y <= 1)
           ? {
             x: Math.abs(Math.round(x * 100)),
             y: Math.abs(Math.round(y * 100))
@@ -293,16 +300,10 @@ export default {
             x: null,
             y: null
           };
-
-      const coordinates = sanitizeCoordinates({
-        x,
-        y
-      });
-
-      this.$emit('change', coordinates, false);
+      }
     },
     /**
-     * Returns wether the cropper coordinates have changed or not.
+     * Returns whether the cropper coordinates have changed or not.
      */
     checkCropperCoordinatesDiff (coordinates, dataFields) {
       return Object
