@@ -104,7 +104,7 @@ export default {
   },
   methods: {
     /**
-     * Place the focal point inside the stencil to its current position.
+     * Places the focal point inside the stencil to its current position.
      */
     onCropperReady () {
       this.storeStencilCoordinates();
@@ -113,8 +113,8 @@ export default {
       window.addEventListener('resize', this.onScreenResizeDebounced);
     },
     /**
-     * Instantly give the information that cropper is changing
-     * and handle its new coordinates.
+     * Instantly gives the information that cropper is changing
+     * and handles its new coordinates.
      * Please note that debounce is handled manually here,
      * not via the cropper `debounce` prop so that we directly have
      * the information it is changing, not after its debounce time.
@@ -125,8 +125,8 @@ export default {
       this.handleCropperChangeDebounced(coordinates);
     },
     /**
-     * Register events and coordinates to handle drag & drop.
-     * Update CSS values during manipulation to have a smooth and clean
+     * Registers events and coordinates to handle drag & drop.
+     * Updates CSS values during manipulation to have a smooth and clean
      * drag & drop experience (pause transition when moving the focal point).
      */
     onFocalPointMouseDown (event) {
@@ -144,8 +144,8 @@ export default {
       document.addEventListener('mouseup', this.onFocalPointMouseUp);
     },
     /**
-     * Move focal point to follow the mouse pointer
-     * and update its new coordinates.
+     * Moves focal point to follow the mouse pointer
+     * and updates its new coordinates.
      */
     onFocalPointMouseMove(event) {
       event.preventDefault();
@@ -183,8 +183,8 @@ export default {
       this.updateFocalPointCoordinatesDebounced();
     },
     /**
-     * Remove events when releasing click on the focal point element.
-     * Revert CSS values after manipulation.
+     * Removes events when releasing click on the focal point element.
+     * Reverts CSS values after manipulation.
      */
     onFocalPointMouseUp() {
       const { focalPoint } = this.$refs;
@@ -196,11 +196,11 @@ export default {
       document.removeEventListener('mouseup', this.onFocalPointMouseUp);
     },
     /**
-     * Place focal point at the position where the image has been clicked
-     * and update its new coordinates.
-     * Position it in relation of the current target offset
+     * Places focal point at the position where the image has been clicked
+     * and updates its new coordinates.
+     * Positions it in relation of the current target offset
      * in order to set the `left` and `top` properties accordingly.
-     * Do not place focal point when cropper is changing (move or resize)
+     * Does not place focal point when cropper is changing (move or resize)
      * to keep a friendly user experience.
      */
     onImageClick (event) {
@@ -229,7 +229,7 @@ export default {
       this.updateFocalPointCoordinatesDebounced();
     },
     /**
-     * Place the focal point back to its position (inside the stencil),
+     * Places the focal point back to its position (inside the stencil),
      * when resizing the screen so that the percentages
      * relative to the stencil remain the same.
      */
@@ -238,8 +238,8 @@ export default {
       this.placeFocalPointInStencil();
     },
     /**
-     * Update stencil and focal point coordinates
-     * after cropper has changed and emit its new coordinates.
+     * Updates stencil and focal point coordinates
+     * after cropper has changed and emits its new coordinates.
      */
     handleCropperChange (coordinates) {
       this.isChangingCropper = false;
@@ -257,14 +257,14 @@ export default {
       this.isUpdatingCropperCoordinates = false;
     },
     /**
-     * Set cropper coordinates via its API.
+     * Sets cropper coordinates via its API.
      */
     setCropperCoordinates (coordinates) {
       this.$refs.cropper.setCoordinates(coordinates);
     },
     /**
-     * Get focal point relative position inside the stencil
-     * and emit it to update `x` and `y` as percentages,
+     * Gets focal point relative position inside the stencil
+     * and emits it to update `x` and `y` as percentages,
      * or as `null` if outside it.
      */
     updateFocalPointCoordinates () {
@@ -302,7 +302,7 @@ export default {
       this.$emit('change', coordinates, false);
     },
     /**
-     * Return wether the cropper coordinates have changed or not.
+     * Returns wether the cropper coordinates have changed or not.
      */
     checkCropperCoordinatesDiff (coordinates, dataFields) {
       return Object
@@ -310,7 +310,7 @@ export default {
         .some(([ name, value ]) => dataFields[name] !== value);
     },
     /**
-     * Store the stencil actual coordinates relative to the viewport,
+     * Stores the stencil actual coordinates relative to the viewport,
      * which are used for focal point DOM manipulation and its
      * relative position calculation.
      */
@@ -327,7 +327,7 @@ export default {
       };
     },
     /**
-     * Return the size and half size of the focal point element,
+     * Returns the size and half size of the focal point element,
      * used for its DOM manipulation and relative position calculation.
      */
     getFocalPointSize () {
@@ -345,7 +345,7 @@ export default {
       };
     },
     /**
-     * Place the focal point at its current coordinates
+     * Places the focal point at its current coordinates
      * inside the stencil or at the center of it by default.
      */
     placeFocalPointInStencil () {
