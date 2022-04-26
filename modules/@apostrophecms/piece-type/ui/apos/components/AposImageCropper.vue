@@ -6,7 +6,7 @@
         ? attachment._urls.uncropped.original
         : attachment._urls.original"
       @change="onChange"
-      :stencil-props="{ aspectRatio }"
+      :stencil-props="stencilProps"
       :default-size="defaultSize"
       :default-position="defaultPosition"
     />
@@ -17,9 +17,6 @@
 import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
-
-// FIXME: [Vue warn]: Avoid mutating a prop directly since the value will be overwritten whenever the parent component re-renders.
-// Instead, use a data or computed property based on the prop's value. Prop being mutated: "stencilProps"
 
 export default {
   components: {
@@ -37,13 +34,9 @@ export default {
   },
   emits: [ 'change' ],
   data: () => ({
-    isUpdatingCoordinates: false
+    isUpdatingCoordinates: false,
+    stencilProps: {}
   }),
-  computed: {
-    aspectRatio () {
-      return this.docFields.data.aspectRatio || null;
-    }
-  },
   watch: {
     docFields: {
       deep: true,
@@ -53,9 +46,10 @@ export default {
           this.checkCoordinatesDiff(newVal.data, oldVal.data)
         ) {
           const {
-            width, height, left, top
+            width, height, left, top, aspectRatio
           } = newVal.data;
 
+          this.stencilProps.aspectRatio = aspectRatio;
           this.isUpdatingCoordinates = true;
           this.setCoordinates({
             width,
