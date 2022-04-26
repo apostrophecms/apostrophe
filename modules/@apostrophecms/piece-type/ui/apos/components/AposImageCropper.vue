@@ -212,8 +212,16 @@ export default {
 
       const focalPointSize = this.getFocalPointSize();
 
-      const left = event.clientX - event.currentTarget.offsetLeft - event.currentTarget.offsetParent.offsetLeft - focalPointSize.halfWidth;
-      const top = event.clientY - event.currentTarget.offsetTop - event.currentTarget.offsetParent.offsetTop - focalPointSize.halfHeight;
+      const left =
+        event.clientX -
+        event.currentTarget.offsetLeft -
+        event.currentTarget.offsetParent.offsetLeft -
+        focalPointSize.halfWidth;
+      const top =
+        event.clientY -
+        event.currentTarget.offsetTop -
+        event.currentTarget.offsetParent.offsetTop -
+        focalPointSize.halfHeight;
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
@@ -264,16 +272,27 @@ export default {
 
       const focalPointSize = this.getFocalPointSize();
 
-      const x = (focalPoint.offsetLeft + focalPointSize.halfWidth - this.stencilCoordinates.left) / this.stencilCoordinates.width;
-      const y = (focalPoint.offsetTop + focalPointSize.halfHeight - this.stencilCoordinates.top) / this.stencilCoordinates.height;
+      const x = (
+        focalPoint.offsetLeft +
+        focalPointSize.halfWidth -
+        this.stencilCoordinates.left
+      ) / this.stencilCoordinates.width;
+      const y = (
+        focalPoint.offsetTop +
+        focalPointSize.halfHeight -
+        this.stencilCoordinates.top
+      ) / this.stencilCoordinates.height;
 
-      const sanitizeCoordinates = ({ x, y }) => (x >= 0 && x <= 1 && y >= 0 && y <= 1) ? {
-        x: Math.abs(Math.round(x * 100)),
-        y: Math.abs(Math.round(y * 100))
-      } : {
-        x: null,
-        y: null
-      };
+      const sanitizeCoordinates = ({ x, y }) =>
+        (x >= 0 && x <= 1 && y >= 0 && y <= 1)
+          ? {
+            x: Math.abs(Math.round(x * 100)),
+            y: Math.abs(Math.round(y * 100))
+          }
+          : {
+            x: null,
+            y: null
+          };
 
       const coordinates = sanitizeCoordinates({
         x,
@@ -338,10 +357,14 @@ export default {
       const focalPointSize = this.getFocalPointSize();
 
       const left = Math.round(
-        x / 100 * this.stencilCoordinates.width + this.stencilCoordinates.left - focalPointSize.halfWidth
+        x / 100 * this.stencilCoordinates.width +
+        this.stencilCoordinates.left -
+        focalPointSize.halfWidth
       );
       const top = Math.round(
-        y / 100 * this.stencilCoordinates.height + this.stencilCoordinates.top - focalPointSize.halfHeight
+        y / 100 * this.stencilCoordinates.height +
+        this.stencilCoordinates.top -
+        focalPointSize.halfHeight
       );
 
       focalPoint.style.left = `${left}px`;
