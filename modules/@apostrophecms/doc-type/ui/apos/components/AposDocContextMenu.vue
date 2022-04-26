@@ -103,7 +103,9 @@ export default {
   data() {
     return {
       // Updated by both the context prop and any content-changed apos events
-      context: this.doc
+      context: this.doc,
+      // Custom context menu operations
+      customOperations: apos.modules['@apostrophecms/doc'].contextOperations
     };
   },
   computed: {
@@ -147,6 +149,7 @@ export default {
             action: 'localize'
           }
         ] : []),
+        ...this.customMenusByContext,
         ...((this.showDiscardDraft && this.canDiscardDraft) ? [
           {
             label: this.context.lastPublishedAt ? 'apostrophe:discardDraft' : 'apostrophe:deleteDraft',
@@ -170,6 +173,24 @@ export default {
       ];
       return menu;
     },
+    customMenusByContext() {
+      const menus = this.customOperationsByContext
+        .map(op => ({
+          label: op.label,
+          action: op.action,
+          modifiers: op.modifiers || []
+        }));
+      menus.sort((a, b) => a.modifiers.length - b.modifiers.length);
+      return menus;
+    },
+    customOperationsByContext() {
+      return this.customOperations.filter(op => {
+        if (op.context === 'update' && this.isUpdateOperation) {
+          return true;
+        }
+        return false;
+      });
+    },
     moduleName() {
       if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
@@ -179,6 +200,9 @@ export default {
     },
     moduleOptions() {
       return apos.modules[this.moduleName];
+    },
+    isUpdateOperation() {
+      return !!this.context._id;
     },
     canPublish() {
       if (this.context._id) {
@@ -297,6 +321,11 @@ export default {
       }
     },
     menuHandler(action) {
+      const operation = this.customOperations.find(op => op.action === action);
+      if (operation) {
+        this.customAction(this.context, operation);
+        return;
+      }
       this[action](this.context);
     },
     async edit(doc) {
@@ -326,6 +355,12 @@ export default {
             _id: doc._id
           }
         }
+      });
+    },
+    async customAction(doc, operation) {
+      await apos.modal.execute(operation.modal, {
+        moduleName: operation.moduleName,
+        doc
       });
     },
     async localize(doc) {
