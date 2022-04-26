@@ -26,6 +26,15 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-schema">
+          <div class="apos-field">
+            <label class="apos-field__label">
+              {{ $t('apostrophe:aspectRatio') }}
+            </label>
+            <AposSelect
+              :choices="aspectRatiosChoices"
+              @change="updateAspectRatio"
+            />
+          </div>
           <label class="apos-field__label">
             {{ $t('apostrophe:cropAndSize') }}
           </label>
@@ -135,9 +144,28 @@ export default {
       },
       currentTab: null,
       aspectRatio: this.getAspectRatio(),
+      aspectRatios: [
+        [ 1, 1 ],
+        [ 2, 3 ],
+        [ 3, 4 ],
+        [ 3, 2 ],
+        [ 4, 3 ],
+        [ 5, 4 ],
+        [ 16, 9 ],
+        [ 9, 16 ],
+        [ 4, 5 ]
+      ],
       minSize: this.getMinSize(),
       correctingSizes: false
     };
+  },
+  computed: {
+    aspectRatiosChoices () {
+      return this.aspectRatios.map(([ width, height ]) => ({
+        label: `${width}:${height}`,
+        value: width / height
+      }));
+    }
   },
   async mounted() {
     this.modal.active = true;
@@ -235,6 +263,10 @@ export default {
       const [ widgetOptions = {} ] = apos.area.widgetOptions || [];
 
       return widgetOptions.aspectRatio || [];
+    },
+    updateAspectRatio(value) {
+      // TODO: handle that
+      console.log(value);
     },
     getMinSize() {
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
