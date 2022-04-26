@@ -211,6 +211,7 @@ export default {
 
       if (value > maxSize) {
         this.updateDocFields({ [name]: maxSize });
+        return;
       }
 
       if (isNaN(minSize) || typeof minSize !== 'number' || value >= minSize) {
