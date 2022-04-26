@@ -29,8 +29,6 @@ import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
-const DEBOUNCE_TIMEOUT = 500;
-
 export default {
   components: {
     Cropper
@@ -84,6 +82,13 @@ export default {
     }
   },
   created () {
+    const DEBOUNCE_TIMEOUT = 500;
+
+    this.onScreenResizeDebounced = debounce(this.onScreenResize, DEBOUNCE_TIMEOUT);
+    this.handleCropperChangeDebounced = debounce(this.handleCropperChange, DEBOUNCE_TIMEOUT);
+    this.setCropperCoordinatesDebounced = debounce(this.setCropperCoordinates, DEBOUNCE_TIMEOUT);
+    this.updateFocalPointCoordinatesDebounced = debounce(this.updateFocalPointCoordinates, DEBOUNCE_TIMEOUT);
+
     this.defaultSize = {
       width: this.docFields.data.width,
       height: this.docFields.data.height
@@ -92,10 +97,6 @@ export default {
       top: this.docFields.data.top,
       left: this.docFields.data.left
     };
-    this.onScreenResizeDebounced = debounce(this.onScreenResize, DEBOUNCE_TIMEOUT);
-    this.handleCropperChangeDebounced = debounce(this.handleCropperChange, DEBOUNCE_TIMEOUT);
-    this.setCropperCoordinatesDebounced = debounce(this.setCropperCoordinates, DEBOUNCE_TIMEOUT);
-    this.updateFocalPointCoordinatesDebounced = debounce(this.updateFocalPointCoordinates, DEBOUNCE_TIMEOUT);
   },
   beforeDestroy() {
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
