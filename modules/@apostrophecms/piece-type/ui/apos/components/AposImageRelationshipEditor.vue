@@ -58,7 +58,7 @@
               <input
                 :value="docFields.data.width"
                 @input="inputWidth"
-                @blur="blurInputWidth"
+                @blur="blurInput"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minSize[0] || 1"
@@ -72,7 +72,7 @@
               <input
                 :value="docFields.data.height"
                 @input="inputHeight"
-                @blur="blurInputHeight"
+                @blur="blurInput"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minSize[1] || 1"
@@ -223,38 +223,48 @@ export default {
         return;
       }
 
+      this.computeAspectRatio(value, name);
+
       this.updateDocFields({ [name]: value });
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
-    blurInputWidth(e) {
-      this.blurInput(e, 'width');
-    },
-    blurInputHeight(e) {
-      this.blurInput(e, 'height');
-    },
-    blurInput({ target }, name) {
-      const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
-      const maxSize = this.item.attachment[name];
-      const value = parseInt(target.value, 10);
+    blurInput() {
+      const maxSizeUpdated = [ 'width', 'height' ].reduce((acc, name) => {
+        const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
+        const maxSize = this.item.attachment[name];
+        const value = parseInt(this.docFields.data[name], 10);
 
-      if (value > maxSize) {
-        this.updateDocFields({ [name]: maxSize });
+        if (value > maxSize) {
+          this.updateDocFields({ [name]: maxSize });
+          return true;
+        }
+
+        if (isNaN(minSize) || typeof minSize !== 'number' || value >= minSize) {
+          return acc;
+        }
+
+        this.correctingSizes = true;
+
+        this.updateDocFields({ [name]: minSize });
+
+        setTimeout(() => {
+          this.correctingSizes = false;
+        }, 1500);
+
+        return acc;
+      }, false);
+
+      if (!maxSizeUpdated || !this.aspectRatio || this.aspectRatio.length !== 2) {
         return;
       }
 
-      if (isNaN(minSize) || typeof minSize !== 'number' || value >= minSize) {
-        return;
-      }
+      const [ width, height ] = this.aspectRatio;
 
-      this.correctingSizes = true;
+      const higherValueField = (width / height) > 1 ? 'height' : 'width';
 
-      this.updateDocFields({ [name]: minSize });
-
-      setTimeout(() => {
-        this.correctingSizes = false;
-      }, 1500);
+      this.computeAspectRatio(this.docFields.data[higherValueField], higherValueField);
     },
     switchPane(name) {
       this.currentTab = name;
@@ -272,6 +282,23 @@ export default {
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
 
       return widgetOptions.minSize || [];
+    },
+    computeAspectRatio(value, name) {
+      if (!this.aspectRatio || this.aspectRatio.length !== 2) {
+        return;
+      }
+
+      const isWidth = name === 'width';
+      const [ width, height ] = this.aspectRatio;
+
+      const aspectRatio = width / height;
+      const fieldToUpdate = isWidth ? 'height' : 'width';
+
+      const computedValue = isWidth
+        ? (value / aspectRatio)
+        : (value * aspectRatio);
+
+      this.updateDocFields({ [fieldToUpdate]: Math.round(computedValue) }, false);
     }
   }
 };
