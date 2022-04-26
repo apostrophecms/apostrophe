@@ -9,8 +9,14 @@
 * Adds ability to set `minSize` to areas for image widgets. When setup, browsing relationship images from `AposInputRelationship` or from `AposMediaManager` when it is a chooser, will emit `piece-relationship-query`. We pass the query string object, this one will be filled with appropriate data if needed (in this case minSize array).
 * Prevent cropping of SVG files as this is not possible in the general case.
 * Blocks users to set values under `minSize` if configured in area (can set only width, only height or both). Auto fixes bad values in input when under `minSize` or above image size during blur.
+* The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
+* In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
 
-# 3.17.0 (2022-03-31)
+### Fixes
+
+* Documentation of obsolete options has been removed.
+
+## 3.17.0 (2022-03-31)
 
 ### Adds
 
@@ -25,7 +31,7 @@
 * Apostrophe's webpack build now works properly when developing code that imports module-specific npm dependencies from `ui/src` or `ui/apos` when using `npm link` to develop the module in question.
 * The `es5: true` option to `@apostrophecms/asset` works again.
 
-# 3.16.1 (2022-03-21)
+## 3.16.1 (2022-03-21)
 
 ### Fixes
 
