@@ -132,6 +132,7 @@ export default {
     }
   },
   async mounted() {
+    console.log('*** Pushing options:', JSON.stringify(this.options));
     apos.area.widgetOptions = [
       klona(this.options),
       ...apos.area.widgetOptions
@@ -139,6 +140,7 @@ export default {
     this.modal.active = true;
   },
   destroyed() {
+    console.log('destroying');
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
@@ -148,11 +150,19 @@ export default {
     updateDocFields(value) {
       this.docFields = value;
     },
-    save() {
+    async save() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
           this.triggerValidation = false;
+          return;
+        }
+        try {
+          await this.postprocess();
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the widget.'
+          });
           return;
         }
         const widget = this.docFields.data;

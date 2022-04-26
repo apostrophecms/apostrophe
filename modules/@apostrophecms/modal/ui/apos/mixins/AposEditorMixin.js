@@ -161,6 +161,7 @@ export default {
     // in the schema. fallback is a fallback error message, if none is provided
     // by the server.
     async handleSaveError(e, { fallback }) {
+      console.error(e);
       if (e.body && e.body.data && e.body.data.errors) {
         const serverErrors = {};
         let first;
@@ -194,7 +195,50 @@ export default {
       this.$nextTick(async () => {
         this.triggerValidation = false;
       });
+    },
+    // Perform any postprocessing required by direct or nested schema fields
+    // before the object can be saved
+    async postprocess() {
+      // Relationship fields may have postprocessors (e.g. autocropping)
+      const relationships = findRelationships(this.schema, this.docFields.data);
+      console.log(relationships);
+      for (const relationship of relationships) {
+        if (!(relationship.value && relationship.field.postprocessor)) {
+          continue;
+        }
+        const withType = relationship.field.withType;
+        const module = apos.modules[withType];
+        if (relationship.value) {
+          relationship.context[relationship.field.name] = (await apos.http.post(`${module.action}/${relationship.field.postprocessor}`, {
+            body: {
+              relationship: relationship.value,
+              // Pass the options of the widget currently being edited, some
+              // postprocessors need these (e.g. autocropping cares about widget aspectRatio)
+              widgetOptions: apos.area.widgetOptions.slice(0, 1)
+            },
+            busy: true
+          })).relationship;
+        }
+      }
+      function findRelationships(schema, object) {
+        const relationships = [];
+        for (const field of schema) {
+          if (field.type === 'relationship') {
+            relationships.push({
+              context: object,
+              field,
+              value: object[field.name]
+            });
+          } else if (field.type === 'array') {
+            for (const value of (object[field.name] || [])) {
+              relationships = [...relationships, findRelationships(field.schema, value)];
+            }
+          } else if (field.type === 'object') {
+            relationships = [...relationships, findRelationships(field.schema, object[field.name] || {})];
+          }
+        }
+        return relationships;
+      }
     }
-
   }
 };

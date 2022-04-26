@@ -1027,6 +1027,7 @@ module.exports = {
           lintType(field.withType);
           const withTypeManager = self.apos.doc.getManager(field.withType);
           field.editor = field.editor || withTypeManager.options.relationshipEditor;
+          field.postprocessor = field.postprocessor || withTypeManager.options.relationshipPostprocessor;
           if (!field.schema && !Array.isArray(field.withType)) {
             const fieldsOption = withTypeManager.options.relationshipFields;
             const fields = fieldsOption && fieldsOption.add;
@@ -1724,8 +1725,6 @@ module.exports = {
           // Builders hardcoded as part of this relationship's options don't
           // require any sanitization
           query.applyBuilders(builders);
-          // Hints, on the other hand, must be sanitized
-          query.applyBuildersSafely(hints);
           return query.toArray();
         }, self.apos.doc.toAposDocId);
       },
@@ -1866,8 +1865,7 @@ module.exports = {
 
               const options = {
                 find: find,
-                builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
-                hints: {}
+                builders: { relationships: withRelationshipsNext[relationship._dotPath] || false }
               };
               const subname = relationship.name + ':' + type;
               const _relationship = _.assign({}, relationship, {
@@ -1917,8 +1915,7 @@ module.exports = {
 
           const options = {
             find: find,
-            builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
-            hints: {}
+            builders: { relationships: withRelationshipsNext[relationship._dotPath] || false }
           };
 
           // Allow options to the get() method to be
