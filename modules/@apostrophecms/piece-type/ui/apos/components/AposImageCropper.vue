@@ -337,8 +337,12 @@ export default {
 
       const focalPointSize = this.getFocalPointSize();
 
-      const left = Math.round(x / 100 * this.stencilCoordinates.width + this.stencilCoordinates.left - focalPointSize.halfWidth);
-      const top = Math.round(y / 100 * this.stencilCoordinates.height + this.stencilCoordinates.top - focalPointSize.halfHeight);
+      const left = Math.round(
+        x / 100 * this.stencilCoordinates.width + this.stencilCoordinates.left - focalPointSize.halfWidth
+      );
+      const top = Math.round(
+        y / 100 * this.stencilCoordinates.height + this.stencilCoordinates.top - focalPointSize.halfHeight
+      );
 
       focalPoint.style.left = `${left}px`;
       focalPoint.style.top = `${top}px`;
