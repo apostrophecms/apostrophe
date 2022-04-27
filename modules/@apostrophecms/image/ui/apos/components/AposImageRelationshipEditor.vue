@@ -39,7 +39,7 @@
             </label>
             <AposSelect
               :choices="aspectRatios"
-              :disabled="disableAspectRatios"
+              :disabled="disableAspectRatio"
               @change="updateAspectRatio"
             />
           </div>
@@ -110,10 +110,6 @@ import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixi
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import getAspectRatios from '../lib/aspectRatios';
 
-// TODO: persist aspectRatio value and use it on mount
-// to automatically select the current aspect ratio
-// (use `AposSelect` ":selected-value" prop to pass it).
-
 export default {
   name: 'AposImageRelationshipEditor',
   mixins: [
@@ -139,7 +135,7 @@ export default {
   },
   emits: [ 'modal-result', 'safe-close' ],
   data() {
-    const { aspectRatio, disableAspectRatios } = this.getAspectRatioFromConfig();
+    const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
 
     return {
       original: this.value,
@@ -147,7 +143,6 @@ export default {
         data: this.setDataValues()
       },
       errors: {},
-      inputFocused: false,
       modal: {
         active: false,
         type: 'overlay',
@@ -160,7 +155,7 @@ export default {
       currentTab: null,
       aspectRatio,
       aspectRatios: getAspectRatios(this.$t('apostrophe:aspectRatioFree')),
-      disableAspectRatios,
+      disableAspectRatio,
       minSize: this.getMinSize(),
       correctingSizes: false
     };
@@ -319,10 +314,10 @@ export default {
       return widgetOptions.aspectRatio && widgetOptions.aspectRatio.length === 2
         ? {
           aspectRatio: widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1],
-          disableAspectRatios: true
+          disableAspectRatio: true
         } : {
           aspectRatio: null,
-          disableAspectRatios: false
+          disableAspectRatio: false
         };
     },
     updateAspectRatio(value) {
