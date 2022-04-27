@@ -30,7 +30,7 @@
             <label class="apos-field__label">
               {{ $t('apostrophe:aspectRatio') }}
               <AposIndicator
-                v-if="disableAspectRatios"
+                v-if="disableAspectRatio"
                 class="apos-field__tooltip"
                 icon="information-outline-icon"
                 fill-color="var(--a-primary)"
@@ -243,6 +243,7 @@ export default {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     blurInput() {
+      // FIXME:
       const [ maxSizeUpdated, minSizeUpdated ] = [ 'width', 'height' ].reduce((acc, name) => {
         const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
         const maxSize = this.item.attachment[name];
@@ -273,8 +274,6 @@ export default {
 
       const [ minWidth, minHeight ] = this.minSize;
 
-      console.log('this.aspectRatio ===> ', this.aspectRatio);
-
       const ratio = maxSizeUpdated
         ? (this.maxWidth / this.maxHeight) * this.aspectRatio
         : ((minWidth / minHeight) * this.aspectRatio);
@@ -282,28 +281,6 @@ export default {
       const referenceValueField = ratio > 1 ? 'width' : 'height';
 
       this.computeAspectRatio(this.docFields.data[referenceValueField], referenceValueField);
-      // if (maxSizeUpdated) {
-      // } else {
-      //   const referenceValueField = ratio < 1 ? 'width' : 'height';
-
-      //   this.computeAspectRatio(this.docFields.data[referenceValueField], referenceValueField);
-      // }
-
-      // if (maxSizeUpdated) {
-      //   const higherValueField = this.aspectRatio > 1 ? 'width' : 'height';
-
-      //   this.computeAspectRatio(this.docFields.data[higherValueField], higherValueField);
-      // } else {
-
-      //   const minSizeRatio = this.minSize[0] / this.minSize[1];
-
-      //   const globalRatio = (minSizeRatio * this.aspectRatio);
-
-      //   const referenceValueField = globalRatio > 1 ? 'width' : 'height';
-
-      //   // const lowerValueField = globalRatio < 1 ? 'width' : 'height';
-
-      // }
     },
     switchPane(name) {
       this.currentTab = name;
