@@ -220,7 +220,10 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     // Determine root module and root directory
     self.root = options.root || getRoot();
+    console.log('options.root', options.root, 'getRoot', getRoot(), 'resolved', self.root);
     self.rootDir = options.rootDir || path.dirname(self.root.filename);
+    console.log('options.rootDir', options.rootDir, 'path.dirname', path.dirname(self.root.filename), 'resolved', self.rootDir);
+
     self.npmRootDir = options.npmRootDir || self.rootDir;
 
     testModule();
