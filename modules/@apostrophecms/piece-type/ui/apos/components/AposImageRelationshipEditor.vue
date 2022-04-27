@@ -165,10 +165,18 @@ export default {
   },
   computed: {
     aspectRatiosChoices () {
-      return this.aspectRatios.map(([ width, height ]) => ({
-        label: `${width}:${height}`,
-        value: width / height
-      }));
+      const freeAspectRatio = {
+        label: this.$t('apostrophe:aspectRatioFree'),
+        value: ''
+      };
+
+      return [
+        freeAspectRatio,
+        ...this.aspectRatios.map(([ width, height ]) => ({
+          label: `${width}:${height}`,
+          value: width / height
+        }))
+      ];
     }
   },
   async mounted() {
