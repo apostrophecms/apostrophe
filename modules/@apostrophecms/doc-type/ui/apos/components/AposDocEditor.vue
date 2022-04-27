@@ -815,6 +815,11 @@ export default {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
     onContentChanged(e) {
+      if (e.doc.type !== this.docType) {
+        this.docType = e.doc.type;
+      }
+      this.docFields.data = e.doc;
+
       if ((e.action === 'archive') || (e.action === 'delete') || (e.action === 'revert-draft-to-published')) {
         this.modal.showModal = false;
       }
