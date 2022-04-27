@@ -71,9 +71,6 @@ export default {
       }
     }
   },
-  mounted () {
-    console.log('this.aspectRatio ===> ', this.aspectRatio);
-  },
   created () {
     this.setCoordinates = debounce(
       (coordinates) => {
