@@ -241,14 +241,14 @@ export default {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     blurInput() {
-      const maxSizeUpdated = [ 'width', 'height' ].reduce((acc, name) => {
+      const [ maxSizeUpdated, minSizeUpdated ] = [ 'width', 'height' ].reduce((acc, name) => {
         const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
         const maxSize = this.item.attachment[name];
         const value = parseInt(this.docFields.data[name], 10);
 
         if (value > maxSize) {
           this.updateDocFields({ [name]: maxSize });
-          return true;
+          return [ true ];
         }
 
         if (isNaN(minSize) || typeof minSize !== 'number' || value >= minSize) {
@@ -262,16 +262,46 @@ export default {
           this.correctingSizes = false;
         }, 1500);
 
-        return acc;
-      }, false);
+        return [ null, true ];
+      }, []);
 
-      if (!maxSizeUpdated || !this.aspectRatio || this.aspectRatio.length !== 2) {
+      if ((!maxSizeUpdated && !minSizeUpdated) || !this.aspectRatio) {
         return;
       }
 
-      const higherValueField = this.aspectRatio > 1 ? 'height' : 'width';
+      const [ minWidth, minHeight ] = this.minSize;
 
-      this.computeAspectRatio(this.docFields.data[higherValueField], higherValueField);
+      console.log('this.aspectRatio ===> ', this.aspectRatio);
+
+      const ratio = maxSizeUpdated
+        ? (this.maxWidth / this.maxHeight) * this.aspectRatio
+        : ((minWidth / minHeight) * this.aspectRatio);
+
+      const referenceValueField = ratio > 1 ? 'width' : 'height';
+
+      this.computeAspectRatio(this.docFields.data[referenceValueField], referenceValueField);
+      // if (maxSizeUpdated) {
+      // } else {
+      //   const referenceValueField = ratio < 1 ? 'width' : 'height';
+
+      //   this.computeAspectRatio(this.docFields.data[referenceValueField], referenceValueField);
+      // }
+
+      // if (maxSizeUpdated) {
+      //   const higherValueField = this.aspectRatio > 1 ? 'width' : 'height';
+
+      //   this.computeAspectRatio(this.docFields.data[higherValueField], higherValueField);
+      // } else {
+
+      //   const minSizeRatio = this.minSize[0] / this.minSize[1];
+
+      //   const globalRatio = (minSizeRatio * this.aspectRatio);
+
+      //   const referenceValueField = globalRatio > 1 ? 'width' : 'height';
+
+      //   // const lowerValueField = globalRatio < 1 ? 'width' : 'height';
+
+      // }
     },
     switchPane(name) {
       this.currentTab = name;
