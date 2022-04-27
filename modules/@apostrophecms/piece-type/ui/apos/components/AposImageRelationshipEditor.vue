@@ -319,6 +319,10 @@ export default {
 <style scoped lang="scss" >
 .apos-schema {
   margin: 30px 15px 0;
+
+  > .apos-field {
+    margin-bottom: 20px;
+  }
 }
 
 .apos-schema__aligned-fields {
