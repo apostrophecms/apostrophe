@@ -13,7 +13,7 @@ const DEFAULT_ASPECT_RATIOS = [
 export default (freeLabel) => {
   const freeAspectRatio = {
     label: freeLabel,
-    value: ''
+    value: null
   };
 
   return [
