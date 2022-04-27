@@ -22,6 +22,9 @@ import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
+// FIXME: Avoid mutating a prop directly since the value will be overwritten whenever the parent component re-renders.
+// Instead, use a data or computed property based on the prop's value. Prop being mutated: "stencilProps"
+
 export default {
   components: {
     Cropper
