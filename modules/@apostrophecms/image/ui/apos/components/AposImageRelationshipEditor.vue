@@ -29,6 +29,13 @@
           <div class="apos-field">
             <label class="apos-field__label">
               {{ $t('apostrophe:aspectRatio') }}
+              <AposIndicator
+                v-if="disableAspectRatios"
+                class="apos-field__tooltip"
+                icon="information-outline-icon"
+                fill-color="var(--a-primary)"
+                :tooltip="$t('apostrophe:aspectRatioWarning')"
+              />
             </label>
             <AposSelect
               :choices="aspectRatios"
@@ -348,8 +355,18 @@ export default {
 .apos-schema {
   margin: 30px 15px 0;
 
-  > .apos-field {
+ .apos-field {
     margin-bottom: 20px;
+
+    &__label {
+      position: relative;
+    }
+
+    &__tooltip {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
   }
 }
 
