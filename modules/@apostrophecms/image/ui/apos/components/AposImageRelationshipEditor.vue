@@ -63,7 +63,7 @@
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minSize[0] || 1"
-                :max="item.attachment.width"
+                :max="maxWidth"
               >
             </div>
             <div class="apos-field">
@@ -77,7 +77,7 @@
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minSize[1] || 1"
-                :max="item.attachment.height"
+                :max="maxHeight"
               >
             </div>
           </div>
@@ -134,8 +134,6 @@ export default {
   data() {
     const { aspectRatio, disableAspectRatios } = this.getAspectRatioFromConfig();
 
-    console.log('typeof aspectRatio ===> ', typeof aspectRatio);
-
     return {
       original: this.value,
       docFields: {
@@ -159,6 +157,26 @@ export default {
       minSize: this.getMinSize(),
       correctingSizes: false
     };
+  },
+  computed: {
+    maxWidth() {
+      if (!this.aspectRatio || this.aspectRatio > 1) {
+        return this.item.attachment.width;
+      }
+
+      const maxWidth = this.item.attachment.height * this.aspectRatio;
+
+      return Math.round(maxWidth);
+    },
+    maxHeight() {
+      if (!this.aspectRatio || this.aspectRatio < 1) {
+        return this.item.attachment.height;
+      }
+
+      const maxHeight = this.item.attachment.width / this.aspectRatio;
+
+      return Math.round(maxHeight);
+    }
   },
   async mounted() {
     this.modal.active = true;
