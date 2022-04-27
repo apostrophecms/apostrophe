@@ -27,6 +27,7 @@
   "areYouSure": "Você tem certeza?",
   "aspectRatio": "Proporção de tela",
   "aspectRatioFree": "Livre",
+  "aspectRatioWarning": "A proporção não pode ser alterada para este widget",
   "assetTypeBuildComplete": "👍 {{ label }} completado!",
   "assetTypeBuilding": "🧑‍💻 Fazendo o build: {{ label }}...",
   "back": "Voltar",

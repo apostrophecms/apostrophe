@@ -27,6 +27,7 @@
   "areYouSure": "¿Está Seguro?",
   "aspectRatio": "Relación de aspecto",
   "aspectRatioFree": "Libre",
+  "aspectRatioWarning": "La relación de aspecto no se puede cambiar para este widget",
   "assetTypeBuildComplete": "👍 ¡{{ label }} está completo!",
   "assetTypeBuilding": "🧑‍💻 Creando {{ label }}...",
   "back": "Atrás",

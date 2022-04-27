@@ -30,6 +30,7 @@
   "areYouSure": "Ste si istý?",
   "aspectRatio": "Pomer strán",
   "aspectRatioFree": "Voľný",
+  "aspectRatioWarning": "Pre túto miniaplikáciu nie je možné zmeniť pomer strán",
   "assetTypeBuildComplete": "👍 {{ label }} je kompletný!",
   "assetTypeBuilding": "🧑‍💻 Budovanie {{ label }}...",
   "back": "Naspäť",
