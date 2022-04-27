@@ -14,6 +14,7 @@
             :schema="field.schema"
             :trigger-validation="triggerValidation"
             :utility-rail="false"
+            :generation="generation"
             v-model="schemaInput"
             ref="schema"
           />
@@ -25,13 +26,21 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
-import { klona } from 'klona';
 
 export default {
   name: 'AposInputObject',
   mixins: [ AposInputMixin ],
+  props: {
+    generation: {
+      type: Number,
+      required: false,
+      default() {
+        return null;
+      }
+    }
+  },
   data () {
-    const next = this.value ? this.value.data : (this.field.def || {});
+    const next = this.getNext();
     return {
       schemaInput: {
         data: next
@@ -42,6 +51,12 @@ export default {
   watch: {
     schemaInput() {
       this.next = this.schemaInput.data;
+    },
+    generation() {
+      this.next = this.getNext();
+      this.schemaInput = {
+        data: this.next
+      };
     }
   },
   methods: {
@@ -49,6 +64,10 @@ export default {
       if (this.schemaInput.hasErrors) {
         return 'invalid';
       }
+    },
+    // Return next at mount or when generation changes
+    getNext() {
+      return this.value ? this.value.data : (this.field.def || {});
     }
   }
 };

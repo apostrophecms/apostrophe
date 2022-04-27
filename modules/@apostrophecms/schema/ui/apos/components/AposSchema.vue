@@ -15,7 +15,8 @@
 
   2. When `value.data._id` changes (an entirely different document is in play).
 
-  3. When the optional prop `generation` changes to a new number.
+  3. When the optional prop `generation` changes to a new number. This
+  prop is also passed on to the individual input field components.
 
   If you need to force an update from the calling component, increment the
   `generation` prop. This should be done only if the value has changed for
@@ -40,6 +41,7 @@
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
         :ref="field.name"
+        :generation="generation"
       />
     </div>
   </div>

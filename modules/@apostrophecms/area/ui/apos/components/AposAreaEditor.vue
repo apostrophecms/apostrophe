@@ -115,23 +115,23 @@ export default {
       default() {
         return {};
       }
+    },
+    generation: {
+      type: Number,
+      required: false,
+      default() {
+        return null;
+      }
     }
   },
   emits: [ 'changed' ],
   data() {
-    const validItems = this.items.filter(item => {
-      if (!window.apos.modules[`${item.type}-widget`]) {
-        console.warn(`The widget type ${item.type} exists in the content but is not configured.`);
-      }
-      return window.apos.modules[`${item.type}-widget`];
-    });
-
     return {
       addWidgetEditor: null,
       addWidgetOptions: null,
       addWidgetType: null,
       areaId: cuid(),
-      next: validItems,
+      next: this.getValidItems(),
       hoveredWidget: null,
       focusedWidget: null,
       contextMenuOptions: {
@@ -189,6 +189,9 @@ export default {
         _id: this.id,
         items: this.next
       });
+    },
+    generation() {
+      this.next = this.getValidItems();
     }
   },
   mounted() {
@@ -506,6 +509,14 @@ export default {
       } else {
         return this.renderings[widget._id];
       }
+    },
+    getValidItems() {
+      return this.items.filter(item => {
+        if (!window.apos.modules[`${item.type}-widget`]) {
+          console.warn(`The widget type ${item.type} exists in the content but is not configured.`);
+        }
+        return window.apos.modules[`${item.type}-widget`];
+      });
     }
   }
 };
