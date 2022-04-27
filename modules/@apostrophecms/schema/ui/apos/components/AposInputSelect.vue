@@ -7,26 +7,13 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-input-wrapper">
-        <select
-          class="apos-input apos-input--select" :id="uid"
-          @change="change($event.target.value)"
-          :disabled="field.readOnly"
-        >
-          <option
-            v-for="choice in choices" :key="JSON.stringify(choice.value)"
-            :value="JSON.stringify(choice.value)"
-            :selected="choice.value === value.data"
-          >
-            {{ $t(choice.label) }}
-          </option>
-        </select>
-        <AposIndicator
-          icon="menu-down-icon"
-          class="apos-input-icon"
-          :icon-size="20"
-        />
-      </div>
+      <AposSelect
+        :icon="icon"
+        :choices="choices"
+        :disabled="field.readOnly"
+        :selected-value="value.data"
+        @change="change"
+      />
     </template>
   </AposInputWrapper>
 </template>
@@ -105,9 +92,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-.apos-input-icon {
-  @include apos-transition();
-}
-</style>

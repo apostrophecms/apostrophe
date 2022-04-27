@@ -2,13 +2,14 @@
   <div class="apos-input-wrapper">
     <select
       class="apos-input apos-input--select"
-      :disabled="isDisabled"
+      :disabled="disabled"
       @change="change($event.target.value)"
     >
       <option
         v-for="choice in choices"
         :key="JSON.stringify(choice.value)"
         :value="JSON.stringify(choice.value)"
+        :selected="choice.value === selectedValue"
       >
         {{ $t(choice.label) }}
       </option>
@@ -21,8 +22,6 @@
   </div>
 </template>
 <script>
-
-// TODO: use this component in AposInputSelect
 
 export default {
   name: 'AposSelect',
@@ -37,7 +36,11 @@ export default {
         return [];
       }
     },
-    isDisabled: {
+    selectedValue: {
+      type: String,
+      default: ''
+    },
+    disabled: {
       type: Boolean,
       default: false
     }

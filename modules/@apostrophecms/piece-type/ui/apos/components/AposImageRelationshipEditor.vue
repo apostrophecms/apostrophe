@@ -101,6 +101,10 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
+// TODO: persist aspectRatio value and use it on mount
+// to automatically select the current aspect ratio
+// (use `AposSelect` ":selected-value" prop to pass it).
+
 export default {
   name: 'AposImageRelationshipEditor',
   mixins: [
