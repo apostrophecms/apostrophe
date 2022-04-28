@@ -11,7 +11,7 @@
         :icon="icon"
         :choices="choices"
         :disabled="field.readOnly"
-        :selected-value="value.data"
+        :selected="value.data"
         @change="change"
       />
     </template>
