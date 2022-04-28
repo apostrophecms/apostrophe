@@ -22,6 +22,7 @@
           :id="next._id"
           :field-id="field._id"
           :field="field"
+          :generation="generation"
           @changed="changed"
         />
       </div>
@@ -37,6 +38,15 @@ import cuid from 'cuid';
 export default {
   name: 'AposInputArea',
   mixins: [ AposInputMixin ],
+  props: {
+    generation: {
+      type: Number,
+      required: false,
+      default() {
+        return null;
+      }
+    }
+  },
   data () {
     return {
       next: this.value.data || this.getEmptyValue(),

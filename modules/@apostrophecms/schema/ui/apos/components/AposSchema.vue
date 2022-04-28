@@ -1,5 +1,26 @@
 <!--
-  AposSchema takes an array of fields with their values, renders their inputs, and emits their `input` events
+  AposSchema takes an array of fields (`schema`), renders their inputs,
+  and emits a new object with a `value` subproperty and a `hasErrors`
+  subproperty via the input event whenever the value of a field
+  or subfield changes.
+
+  At mount time the fields are initialized from the subproperties of the
+  `value.data` prop.
+
+  For performance reasons, this component is not strictly v-model compliant.
+  While all changes will emit an outgoing `input` event, the
+  incoming `value` prop only updates the fields in three situations:
+
+  1. At mount time, to set the initial values of the fields.
+
+  2. When `value.data._id` changes (an entirely different document is in play).
+
+  3. When the optional prop `generation` changes to a new number. This
+  prop is also passed on to the individual input field components.
+
+  If you need to force an update from the calling component, increment the
+  `generation` prop. This should be done only if the value has changed for
+  an external reason.
 -->
 <template>
   <div class="apos-schema">
@@ -20,6 +41,7 @@
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
         :ref="field.name"
+        :generation="generation"
       />
     </div>
   </div>
@@ -34,6 +56,13 @@ export default {
     value: {
       type: Object,
       required: true
+    },
+    generation: {
+      type: Number,
+      required: false,
+      default() {
+        return null;
+      }
     },
     schema: {
       type: Array,
@@ -135,21 +164,22 @@ export default {
     schema() {
       this.populateDocData();
     },
-    value: {
-      deep: true,
-      handler(newVal, oldVal) {
-        // The doc might be swapped out completely in cases such as the media
-        // library editor. Repopulate the fields if that happens.
-        if (
-          // If the fieldState had been cleared and there's new populated data
-          (!this.fieldState._id && newVal.data._id) ||
-          // or if there *is* active fieldState, but the new data is a new doc
-          (this.fieldState._id && newVal.data._id !== this.fieldState._id.data)
-        ) {
-          // repopulate the schema.
-          this.populateDocData();
-        }
+    'value.data._id'(_id) {
+      // The doc might be swapped out completely in cases such as the media
+      // library editor. Repopulate the fields if that happens.
+      if (
+        // If the fieldState had been cleared and there's new populated data
+        (!this.fieldState._id && _id) ||
+        // or if there *is* active fieldState, but the new data is a new doc
+        (this.fieldState._id && _id !== this.fieldState._id.data)
+      ) {
+        // repopulate the schema.
+        this.populateDocData();
       }
+    },
+    generation() {
+      // repopulate the schema.
+      this.populateDocData();
     },
     conditionalFields(newVal, oldVal) {
       for (const field in oldVal) {

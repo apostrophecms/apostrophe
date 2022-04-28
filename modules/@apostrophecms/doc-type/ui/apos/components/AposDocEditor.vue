@@ -71,6 +71,7 @@
               @validate="triggerValidate"
               :server-errors="serverErrors"
               :ref="tab.name"
+              :generation="generation"
             />
           </div>
         </template>
@@ -95,6 +96,7 @@
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
             :server-errors="serverErrors"
+            :generation="generation"
           />
         </div>
       </AposModalRail>
@@ -154,7 +156,8 @@ export default {
       published: null,
       errorCount: 0,
       restoreOnly: false,
-      saveMenu: null
+      saveMenu: null,
+      generation: 0
     };
   },
   computed: {
@@ -816,6 +819,12 @@ export default {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
     onContentChanged(e) {
+      if (e.doc.type !== this.docType) {
+        this.docType = e.doc.type;
+      }
+      this.docFields.data = e.doc;
+      this.generation++;
+
       if ((e.action === 'archive') || (e.action === 'delete') || (e.action === 'revert-draft-to-published')) {
         this.modal.showModal = false;
       }

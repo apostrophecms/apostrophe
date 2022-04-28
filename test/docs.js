@@ -159,6 +159,67 @@ describe('Docs', function() {
     assert(person._friends[0].slug === 'larry');
   });
 
+  it('should support custom context menu (required only)', async function() {
+    const operation = {
+      context: 'update',
+      action: 'test',
+      label: 'Menu Label',
+      modal: 'SomeModalComponent'
+    };
+    assert.strictEqual(apos.doc.contextOperations.length, 0);
+
+    apos.doc.addContextOperation('test-people', operation);
+    assert.strictEqual(apos.doc.contextOperations.length, 1);
+    assert.deepStrictEqual(apos.doc.contextOperations[0], {
+      ...operation,
+      moduleName: 'test-people'
+    });
+  });
+
+  it('should support custom context menu (with optional)', async function() {
+    apos.doc.contextOperations = [];
+    const operation = {
+      context: 'update',
+      action: 'test',
+      label: 'Menu Label',
+      modal: 'SomeModalComponent',
+      modifiers: [ 'danger' ]
+    };
+    assert.strictEqual(apos.doc.contextOperations.length, 0);
+
+    apos.doc.addContextOperation('test-people', operation);
+    assert.strictEqual(apos.doc.contextOperations.length, 1);
+    assert.deepStrictEqual(apos.doc.contextOperations[0], {
+      ...operation,
+      moduleName: 'test-people'
+    });
+  });
+
+  it('should override custom context menu', async function() {
+    apos.doc.contextOperations = [];
+    const operation1 = {
+      context: 'update',
+      action: 'test',
+      label: 'Op1',
+      modal: 'SomeModalComponent'
+    };
+    const operation2 = {
+      context: 'update',
+      action: 'test',
+      label: 'Op2',
+      modal: 'SomeModalComponent'
+    };
+    assert.strictEqual(apos.doc.contextOperations.length, 0);
+
+    apos.doc.addContextOperation('test-people', operation1);
+    apos.doc.addContextOperation('test-people', operation2);
+    assert.strictEqual(apos.doc.contextOperations.length, 1);
+    assert.deepStrictEqual(apos.doc.contextOperations[0], {
+      ...operation2,
+      moduleName: 'test-people'
+    });
+  });
+
   /// ///
   // UNIQUENESS
   /// ///

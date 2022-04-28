@@ -15,6 +15,8 @@
 * Adds new configuration option - `beforeExit` async handler.
 * Handlers listening for the `apostrophe:run` event are now able to send an exit code to the Apostrophe bootstrap routine.
 * Support for Node.js 17 and 18. MongoDB connections to `localhost` will now successfully find a typical dev MongoDB server bound only to `127.0.0.1`, Apostrophe can generate valid ipv6 URLs pointing back to itself, and `webpack` and `vue-loader` have been updated to address incompatibilities.
+* Adds support for custom context menus provided by any module (see `apos.doc.addContextOperation()`).
+* The `AposSchema` component now supports an optional `generation` prop which may be used to force a refresh when the value of the object changes externally. This is a compromise to avoid the performance hit of checking numerous subfields for possible changes every time the `value` prop changes in response to an `input` event.
 * Adds new event `@apostrophecms/doc:afterAllModesDeleted` fired after all modes of a given document are purged.
 
 ### Fixes
