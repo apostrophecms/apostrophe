@@ -201,7 +201,6 @@ export default {
     async postprocess() {
       // Relationship fields may have postprocessors (e.g. autocropping)
       const relationships = findRelationships(this.schema, this.docFields.data);
-      console.log(relationships);
       for (const relationship of relationships) {
         if (!(relationship.value && relationship.field.postprocessor)) {
           continue;
