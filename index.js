@@ -220,12 +220,7 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     // Determine root module and root directory
     self.root = options.root || getRoot();
-    console.log('options.root', options.root, 'getRoot', getRoot(), 'resolved', self.root);
     self.rootDir = options.rootDir || path.dirname(self.root.filename);
-    console.log('options.rootDir', options.rootDir, 'path.dirname', path.dirname(self.root.filename), 'resolved', self.rootDir);
-    console.log(process.env.GITHUB_WORKSPACE);
-    require('child_process').execSync(`echo ${__dirname} && ls ${__dirname}`, { stdio: 'inherit' });
-    require('child_process').execSync(`echo ${process.env.GITHUB_WORKSPACE}/test && ls ${process.env.GITHUB_WORKSPACE}/test`, { stdio: 'inherit' });
     self.npmRootDir = options.npmRootDir || self.rootDir;
 
     testModule();
