@@ -27,7 +27,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasRelationshipSchema && more.menu.length"
+          v-if="hasRelationshipEditor && more.menu.length"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -36,7 +36,7 @@
         />
         <AposButton
           class="apos-slat__editor-btn"
-          v-if="editorIcon && hasRelationshipSchema"
+          v-if="editorIcon && hasRelationshipEditor"
           role="button"
           :tooltip="{
             content: editorLabel,
@@ -172,6 +172,12 @@ export default {
       } else {
         return `${(size / 1000000).toFixed(1)}MB`;
       }
+    },
+    hasRelationshipEditor() {
+      if (this.item.attachment && this.item.attachment.group === 'images') {
+        return this.hasRelationshipSchema && this.item.attachment._isCroppable;
+      }
+      return this.hasRelationshipSchema;
     }
   },
   methods: {

@@ -14,12 +14,12 @@
       :src="attachment._urls.uncropped
         ? attachment._urls.uncropped.original
         : attachment._urls.original"
-      :stencil-props="{ 'data-stencil': '' }"
       :debounce="0"
       @ready="onCropperReady"
       @change="onCropperChange"
       :default-size="defaultSize"
       :default-position="defaultPosition"
+      :stencil-props="stencilProps"
       :min-width="minSize[0]"
       :min-height="minSize[1]"
     />
@@ -44,6 +44,10 @@ export default {
       type: Object,
       required: true
     },
+    aspectRatio: {
+      type: Number,
+      default: null
+    },
     minSize: {
       type: Array,
       default: () => ([])
@@ -51,6 +55,9 @@ export default {
   },
   emits: [ 'change' ],
   data: () => ({
+    stencilProps: {
+      'data-stencil': ''
+    },
     isCropperChanging: false,
     isUpdatingCropperCoordinates: false,
     stencilCoordinates: {
@@ -84,6 +91,12 @@ export default {
             top
           });
         }
+      }
+    },
+    aspectRatio: {
+      handler(newVal) {
+        this.stencilProps.aspectRatio = newVal;
+        this.$refs.cropper.refresh();
       }
     }
   },
@@ -384,6 +397,7 @@ export default {
 .apos-image-cropper {
   position: relative;
   max-width: 100%;
+  height: 100%;
   cursor: pointer;
 
   .apos-image-focal-point {
