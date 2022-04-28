@@ -2,6 +2,9 @@
   <div
     class="apos-image-cropper"
     @click="onImageClick"
+    :style="{
+      height: cropperHeight
+    }"
   >
     <span
       class="apos-image-focal-point"
@@ -51,26 +54,33 @@ export default {
     minSize: {
       type: Array,
       default: () => ([])
+    },
+    containerHeight: {
+      type: Number,
+      required: true
     }
   },
   emits: [ 'change' ],
-  data: () => ({
-    stencilProps: {
-      'data-stencil': ''
-    },
-    isCropperChanging: false,
-    isUpdatingCropperCoordinates: false,
-    stencilCoordinates: {
-      left: null,
-      top: null,
-      width: null,
-      height: null
-    },
-    focalPointDragCoordinates: {
-      clientX: 0,
-      clientY: 0
+  data () {
+    return {
+      stencilProps: {
+        'data-stencil': ''
+      },
+      cropperHeight: this.getCropperHeight(),
+      isCropperChanging: false,
+      isUpdatingCropperCoordinates: false,
+      stencilCoordinates: {
+        left: null,
+        top: null,
+        width: null,
+        height: null
+      },
+      focalPointDragCoordinates: {
+        clientX: 0,
+        clientY: 0
+      }
     }
-  }),
+  },
   watch: {
     docFields: {
       deep: true,
@@ -122,10 +132,24 @@ export default {
     window.removeEventListener('resize', this.onScreenResizeDebounced);
   },
   methods: {
+    getCropperHeight() {
+      const { width, height } = this.attachment
+
+      // If the image is landscape, we don't set any height (properly managed by the lib)
+      // Otherwise we want to avoid the cropper to exceed the max height
+      if (width > height || height <= this.containerHeight) {
+        return 'auto'
+      }
+
+      return '100%'
+    },
     /**
      * Places the focal point inside the stencil to its current position.
      */
     onCropperReady () {
+      this.stencilProps.aspectRatio = this.aspectRatio;
+      this.$refs.cropper.refresh();
+
       this.storeStencilCoordinates();
       this.placeFocalPointInStencil();
 
@@ -397,8 +421,11 @@ export default {
 .apos-image-cropper {
   position: relative;
   max-width: 100%;
-  height: 100%;
+  // height: auto;
+  max-height: 100%;
   cursor: pointer;
+  // flex-shrink: 1;
+  // flex-grow: 0;
 
   .apos-image-focal-point {
     position: absolute;

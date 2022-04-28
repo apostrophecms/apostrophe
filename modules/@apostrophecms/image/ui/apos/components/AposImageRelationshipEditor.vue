@@ -2,7 +2,7 @@
   <AposModal
     class="apos-doc-editor"
     :modal="modal"
-    :modal-title="title"
+    :modal-title="$t('apostrophe:editImageRelationshipTitle')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -92,12 +92,14 @@
       </AposModalRail>
     </template>
     <template #main>
-      <div class="apos-image-cropper__container">
+      <div ref="cropperContainer" class="apos-image-cropper__container">
         <AposImageCropper
+          v-if="containerHeight"
           :attachment="item.attachment"
           :doc-fields="docFields"
           :aspect-ratio="aspectRatio"
           :min-size="minSize"
+          :container-height="containerHeight"
           @change="updateDocFields"
         />
       </div>
@@ -162,11 +164,19 @@ export default {
       maxWidth: this.item.attachment.width,
       maxHeight: this.item.attachment.height,
       minWidth: minSize[0] || 1,
-      minHeight: minSize[1] || 1
+      minHeight: minSize[1] || 1,
+      containerHeight: 0
     };
   },
   async mounted() {
     this.modal.active = true;
+
+    this.$nextTick(() => {
+      this.containerHeight = this.$refs.cropperContainer.clientHeight
+    })
+
+    this.computeMaxSizes();
+    this.computeMinSizes();
   },
   methods: {
     computeMaxSizes() {
@@ -208,11 +218,19 @@ export default {
 
       const [ minWidth, minHeight ] = this.minSize;
 
+      if (!this.aspectRatio) {
+        this.minWidth = minWidth;
+        this.minHeight = minHeight;
+
+        return;
+      }
+
       // If ratio wants a square, we simply take the higher min size of the image
       if (this.aspectRatio === 1) {
         const higherValue = minWidth > minHeight ? minWidth : minHeight;
-        this.maxWidth = higherValue;
-        this.maxHeight = higherValue;
+        this.minWidth = higherValue;
+        this.minHeight = higherValue;
+
         return;
       }
 
@@ -483,10 +501,9 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 10%;
-  padding: 30px 0;
-  height: calc(100vh - 40px - 75px);
-  overflow: hidden;
+  margin: 30px 10%;
+  // We remove the modal's paddings - header height - container margin
+  height: calc(100vh - 40px - 75px - 60px);
   box-sizing: border-box;
 }
 </style>
