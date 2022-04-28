@@ -1027,6 +1027,7 @@ module.exports = {
           lintType(field.withType);
           const withTypeManager = self.apos.doc.getManager(field.withType);
           field.editor = field.editor || withTypeManager.options.relationshipEditor;
+          field.postprocessor = field.postprocessor || withTypeManager.options.relationshipPostprocessor;
           field.editorLabel = field.editorLabel || withTypeManager.options.relationshipEditorLabel;
           field.editorIcon = field.editorIcon || withTypeManager.options.relationshipEditorIcon;
 
@@ -1709,7 +1710,6 @@ module.exports = {
         }
         const find = options.find;
         const builders = options.builders || {};
-        const hints = options.hints || {};
         const getCriteria = options.getCriteria || {};
         await method(items, idsStorage, fieldsStorage, objectField, ids => {
           const idsCriteria = {};
@@ -1728,8 +1728,6 @@ module.exports = {
           // Builders hardcoded as part of this relationship's options don't
           // require any sanitization
           query.applyBuilders(builders);
-          // Hints, on the other hand, must be sanitized
-          query.applyBuildersSafely(hints);
           return query.toArray();
         }, self.apos.doc.toAposDocId);
       },
@@ -1870,8 +1868,7 @@ module.exports = {
 
               const options = {
                 find: find,
-                builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
-                hints: {}
+                builders: { relationships: withRelationshipsNext[relationship._dotPath] || false }
               };
               const subname = relationship.name + ':' + type;
               const _relationship = _.assign({}, relationship, {
@@ -1886,13 +1883,6 @@ module.exports = {
               }
               if (_relationship.buildersByType && _relationship.buildersByType[type]) {
                 _.extend(options.builders, _relationship.buildersByType[type]);
-              }
-              if (_relationship.hints) {
-                _.extend(options.hints, _relationship.hints);
-              }
-              if (_relationship.hintsByType && _relationship.hintsByType[type]) {
-                _.extend(options.hints, _relationship.hints);
-                _.extend(options.hints, _relationship.hintsByType[type]);
               }
               await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
                 // Allow options to the getter to be specified in the schema,
@@ -1928,17 +1918,13 @@ module.exports = {
 
           const options = {
             find: find,
-            builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
-            hints: {}
+            builders: { relationships: withRelationshipsNext[relationship._dotPath] || false }
           };
 
           // Allow options to the get() method to be
           // specified in the relationship configuration
           if (relationship.builders) {
             _.extend(options.builders, relationship.builders);
-          }
-          if (relationship.hints) {
-            _.extend(options.hints, relationship.hints);
           }
 
           // Allow options to the getter to be specified in the schema

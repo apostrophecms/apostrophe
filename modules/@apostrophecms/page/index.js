@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 const { klona } = require('klona');
+const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
@@ -119,7 +120,7 @@ module.exports = {
               project: self.getAllProjection()
             }).toObject();
 
-            if (self.options.cache && self.options.cache.api) {
+            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -142,7 +143,7 @@ module.exports = {
           } else {
             const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
 
-            if (self.options.cache && self.options.cache.api) {
+            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -178,8 +179,14 @@ module.exports = {
           const criteria = self.getIdCriteria(_id);
           const result = await self.getRestQuery(req).and(criteria).toObject();
 
-          if (self.options.cache && self.options.cache.api) {
-            self.setMaxAge(req, self.options.cache.api.maxAge);
+          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+            const { maxAge } = self.options.cache.api;
+
+            if (!self.options.cache.api.etags) {
+              self.setMaxAge(req, maxAge);
+            } else if (self.checkETag(req, result, maxAge)) {
+              return {};
+            }
           }
 
           if (!result) {
@@ -1404,6 +1411,18 @@ database.`);
         } catch (err) {
           return await self.serve500Error(req, err);
         }
+
+        if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
+          const { maxAge } = self.options.cache.page;
+
+          if (!self.options.cache.page.etags) {
+            self.setMaxAge(req, maxAge);
+          } else if (self.checkETag(req, undefined, maxAge)) {
+            // Stop there and send a 304 status code; the cached response will be used
+            return res.sendStatus(304);
+          }
+        }
+
         try {
           await self.serveDeliver(req, null);
         } catch (err) {
@@ -1415,24 +1434,35 @@ database.`);
       // of course wins, followed by the parent "folder," and so on up to the
       // home page.
       async serveGetPage(req) {
-        req.slug = req.params[0];
-        self.normalizeSlug(req);
-        // Had to change the URL, so redirect to it. TODO: this
-        // contains an assumption that we are mounted at /
-        if (req.slug !== req.params[0]) {
-          req.redirect = req.slug;
-        }
-        const builders = self.getServePageBuilders();
-        const query = self.find(req);
-        query.applyBuilders(builders);
-        self.matchPageAndPrefixes(query, req.slug);
-        await self.emit('serveQuery', query);
-        req.data.bestPage = await query.toObject();
-        self.evaluatePageMatch(req);
+        const spanName = `${self.__meta.name}:serveGetPage`;
+        await self.apos.telemetry.startActiveSpan(spanName, async (span) => {
+          span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'serveGetPage');
+          span.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
 
-        if (self.options.cache && self.options.cache.page) {
-          self.setMaxAge(req, self.options.cache.page.maxAge);
-        }
+          try {
+            req.slug = req.params[0];
+            self.normalizeSlug(req);
+            // Had to change the URL, so redirect to it. TODO: this
+            // contains an assumption that we are mounted at /
+            if (req.slug !== req.params[0]) {
+              req.redirect = req.slug;
+            }
+            const builders = self.getServePageBuilders();
+            const query = self.find(req);
+            query.applyBuilders(builders);
+            self.matchPageAndPrefixes(query, req.slug);
+            await self.emit('serveQuery', query);
+            req.data.bestPage = await query.toObject();
+            self.evaluatePageMatch(req);
+
+            span.setStatus({ code: self.apos.telemetry.api.SpanStatusCode.OK });
+          } catch (err) {
+            self.apos.telemetry.handleError(span, err);
+            throw err;
+          } finally {
+            span.end();
+          }
+        });
       },
       // Normalize req.slug to account for unneeded trailing whitespace,
       // trailing slashes other than the root, and double slash based open
@@ -2108,7 +2138,10 @@ database.`);
               _id: null
             });
           } else {
-            query.project(self.options.publicApiProjection);
+            query.project({
+              ...self.options.publicApiProjection,
+              cacheInvalidatedAt: 1
+            });
           }
         }
         return query;

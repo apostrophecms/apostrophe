@@ -49,7 +49,8 @@
 // in your project. However you may find it easier to just use the
 // `client` option.
 
-const mongo = require('mongodb');
+const mongodbConnect = require('../../../lib/mongodb-connect');
+const escapeHost = require('../../../lib/escape-host');
 
 module.exports = {
   options: {
@@ -119,18 +120,14 @@ module.exports = {
           if (!self.options.name) {
             self.options.name = self.apos.shortName;
           }
-          uri += self.options.host + ':' + self.options.port + '/' + self.options.name;
+          uri += escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
         }
 
-        const connectOptions = {
-          useUnifiedTopology: true,
-          useNewUrlParser: true,
-          ...Object(self.options.connect || {})
-        };
-        self.apos.dbClient = await mongo.MongoClient.connect(uri, connectOptions);
-        const parsed = new URL(uri);
+        self.apos.dbClient = await mongodbConnect(uri, self.options.connect);
         self.uri = uri;
-        self.apos.db = self.apos.dbClient.db(parsed.pathname.substr(1));
+        const parsed = new URL(uri);
+        self.apos.db = self.apos.dbClient.db(parsed.pathname.substring(1));
+
       },
       async versionCheck() {
         if (!self.options.versionCheck) {

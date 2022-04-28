@@ -60,7 +60,7 @@ describe('REST API routing', function() {
       }
     });
   });
-  it('should respond properly to getAll', async () => {
+  it('should respond properly to getAll', async function() {
     jar = apos.http.jar();
     const body = await apos.http.get('/api/v1/rest-test', {
       // Establish CSRF cookie in jar
@@ -70,35 +70,35 @@ describe('REST API routing', function() {
     // we'll test that with pieces
     assert(body.action === 'getAll');
   });
-  it('should respond properly to post', async () => {
+  it('should respond properly to post', async function() {
     const body = await apos.http.post('/api/v1/rest-test', {
       // Use the cookie jar because CSRF tokens are required
       jar
     });
     assert(body.action === 'post');
   });
-  it('should respond properly to delete', async () => {
+  it('should respond properly to delete', async function() {
     const body = await apos.http.delete('/api/v1/rest-test/1000', {
       jar
     });
     assert(body.action === 'delete');
     assert(body._id === '1000');
   });
-  it('should respond properly to patch', async () => {
+  it('should respond properly to patch', async function() {
     const body = await apos.http.patch('/api/v1/rest-test/1000', {
       jar
     });
     assert(body.action === 'patch');
     assert(body._id === '1000');
   });
-  it('should respond properly to put', async () => {
+  it('should respond properly to put', async function() {
     const body = await apos.http.put('/api/v1/rest-test/1000', {
       jar
     });
     assert(body.action === 'put');
     assert(body._id === '1000');
   });
-  it('should respond properly to getOne', async () => {
+  it('should respond properly to getOne', async function() {
     const body = await apos.http.get('/api/v1/rest-test/1000', {
       jar
     });

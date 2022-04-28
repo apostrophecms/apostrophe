@@ -7,11 +7,11 @@ describe('Widgets', function() {
 
   this.timeout(t.timeout);
 
-  after(async () => {
+  after(async function() {
     return t.destroy(apos);
   });
 
-  it('should add test modules', async () => {
+  it('should add test modules', async function() {
     apos = await t.create({
       root: module,
       modules: {

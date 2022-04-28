@@ -101,6 +101,7 @@
         :options="options.widgets[widget.type]"
         :type="widget.type"
         :doc-id="docId"
+        :focused="focused"
       />
       <component
         v-else

@@ -141,6 +141,7 @@
   "filterByTag": "Filtrar por Etiqueta",
   "filterResultsByType": "Filtrar Resultados por Tipo",
   "findOrAddTag": "Encuentrar una etiqueta o añadir una etiqueta nueva",
+  "focalPoint": "Seleccione un punto focal para esta imagen",
   "globalDocLabel": "Contenido Global",
   "goToPage": "Ir a página {{ page }}",
   "guest": "Invitado",

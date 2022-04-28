@@ -151,7 +151,7 @@ describe('Pages REST', function() {
 
   });
 
-  it('REST: should be able to log in as admin', async () => {
+  it('REST: should be able to log in as admin', async function() {
     jar = apos.http.jar();
 
     // establish session
@@ -180,7 +180,7 @@ describe('Pages REST', function() {
     assert(page.match(/logged in/));
   });
 
-  it('can GET the home page without session', async () => {
+  it('can GET the home page without session', async function() {
     const home = await apos.http.get('/api/v1/@apostrophecms/page', {});
     assert(home);
     assert(home.slug === '/');
@@ -372,7 +372,7 @@ describe('Pages REST', function() {
     assert.strictEqual(page.rank, 2);
   });
 
-  it('cannot POST a page without a session', async () => {
+  it('cannot POST a page without a session', async function() {
     const body = {
       slug: '/new-tab',
       visibility: 'public',
@@ -692,7 +692,7 @@ describe('Pages REST', function() {
     assert(page.archived);
   });
 
-  it('Can use PATCH to add a widget to an area by path', async () => {
+  it('Can use PATCH to add a widget to an area by path', async function() {
     let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
@@ -711,7 +711,7 @@ describe('Pages REST', function() {
     assert(page.body.items[0].content.match(/<b>Bold<\/b>/));
   });
 
-  it('Can use PATCH to update a widget by path', async () => {
+  it('Can use PATCH to update a widget by path', async function() {
     let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
@@ -728,7 +728,7 @@ describe('Pages REST', function() {
     assert(page.body.items[0].content.match(/normal/));
   });
 
-  it('Can use PATCH to update a widget via @ syntax', async () => {
+  it('Can use PATCH to update a widget via @ syntax', async function() {
     let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     const _id = `@${page.body.items[0]._id}`;
     page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
@@ -746,7 +746,7 @@ describe('Pages REST', function() {
     assert(page.body.items[0].content.match(/I @ syntax/));
   });
 
-  it('Can use $position to insert a widget at the beginning of the area', async () => {
+  it('Can use $position to insert a widget at the beginning of the area', async function() {
     let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
@@ -773,7 +773,7 @@ describe('Pages REST', function() {
     assert(!page.body.items[2]);
   });
 
-  it('Can use $position to insert a widget in the middle of the area', async () => {
+  it('Can use $position to insert a widget in the middle of the area', async function() {
     let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
@@ -802,7 +802,7 @@ describe('Pages REST', function() {
     assert(!page.body.items[3]);
   });
 
-  it('Can use $before to insert a widget in the middle of the area', async () => {
+  it('Can use $before to insert a widget in the middle of the area', async function() {
     let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
@@ -833,7 +833,7 @@ describe('Pages REST', function() {
     assert(!page.body.items[4]);
   });
 
-  it('Can use $after to insert a widget in the middle of the area', async () => {
+  it('Can use $after to insert a widget in the middle of the area', async function() {
     let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
     page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling:en:published', {
       body: {
@@ -866,7 +866,7 @@ describe('Pages REST', function() {
     assert(!page.body.items[5]);
   });
 
-  it('can patch an @ reference in a patch containing other out-of-order @ references', async () => {
+  it('can patch an @ reference in a patch containing other out-of-order @ references', async function() {
     // recreate the exact scenario since we cannot
     // reproduce it from scratch
     await apos.doc.db.updateOne({
@@ -1419,7 +1419,7 @@ describe('Pages REST', function() {
 
   let advisoryLockTestId;
 
-  it('can insert a page for advisory lock testing', async () => {
+  it('can insert a page for advisory lock testing', async function() {
     const body = {
       slug: '/advisory-test',
       visibility: 'public',
@@ -1437,7 +1437,7 @@ describe('Pages REST', function() {
     advisoryLockTestId = page._id;
   });
 
-  it('can get an advisory lock on a page while patching a property', async () => {
+  it('can get an advisory lock on a page while patching a property', async function() {
     const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
@@ -1451,7 +1451,7 @@ describe('Pages REST', function() {
     assert(page.title === 'Advisory Test Patched');
   });
 
-  it('cannot get an advisory lock with a different context id', async () => {
+  it('cannot get an advisory lock with a different context id', async function() {
     try {
       await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
         jar,
@@ -1470,7 +1470,7 @@ describe('Pages REST', function() {
     }
   });
 
-  it('can get an advisory lock with a different context id if forcing', async () => {
+  it('can get an advisory lock with a different context id if forcing', async function() {
     await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
@@ -1483,7 +1483,7 @@ describe('Pages REST', function() {
     });
   });
 
-  it('can renew the advisory lock with the second context id after forcing', async () => {
+  it('can renew the advisory lock with the second context id after forcing', async function() {
     await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
@@ -1495,7 +1495,7 @@ describe('Pages REST', function() {
     });
   });
 
-  it('can unlock the advisory lock while patching a property', async () => {
+  it('can unlock the advisory lock while patching a property', async function() {
     const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
@@ -1509,7 +1509,7 @@ describe('Pages REST', function() {
     assert(page.title === 'Advisory Test Patched Again');
   });
 
-  it('can relock with the first context id after unlocking', async () => {
+  it('can relock with the first context id after unlocking', async function() {
     const doc = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
@@ -1563,7 +1563,7 @@ describe('Pages REST', function() {
 
   let jar2;
 
-  it('should be able to log in as second user', async () => {
+  it('should be able to log in as second user', async function() {
     jar2 = apos.http.jar();
 
     // establish session
@@ -1592,7 +1592,7 @@ describe('Pages REST', function() {
     assert(page.match(/logged in/));
   });
 
-  it('second user with a distinct tabId gets an appropriate error specifying who has the lock', async () => {
+  it('second user with a distinct tabId gets an appropriate error specifying who has the lock', async function() {
     try {
       await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
         jar: jar2,

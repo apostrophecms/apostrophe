@@ -37,7 +37,7 @@ describe('Attachment', function() {
 
   let imageOne;
 
-  describe('insert', async function() {
+  describe('insert', function() {
 
     async function insert(filename) {
       const info = await apos.attachment.insert(apos.task.getReq(), {
