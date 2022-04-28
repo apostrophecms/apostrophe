@@ -69,7 +69,7 @@
                 @blur="blurInput"
                 class="apos-input apos-input--text"
                 type="number"
-                :min="minSize[0] || 1"
+                :min="minWidth"
                 :max="maxWidth"
               >
             </div>
@@ -83,7 +83,7 @@
                 @blur="blurInput"
                 class="apos-input apos-input--text"
                 type="number"
-                :min="minSize[1] || 1"
+                :min="minHeight"
                 :max="maxHeight"
               >
             </div>
@@ -136,6 +136,7 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
+    const minSize = this.getMinSize();
 
     return {
       original: this.value,
@@ -156,35 +157,77 @@ export default {
       aspectRatio,
       aspectRatios: getAspectRatios(this.$t('apostrophe:aspectRatioFree')),
       disableAspectRatio,
-      minSize: this.getMinSize(),
-      correctingSizes: false
+      minSize,
+      correctingSizes: false,
+      maxWidth: this.item.attachment.width,
+      maxHeight: this.item.attachment.height,
+      minWidth: minSize[0] || 1,
+      minHeight: minSize[1] || 1
     };
-  },
-  computed: {
-    maxWidth() {
-      if (!this.aspectRatio || this.aspectRatio > 1) {
-        return this.item.attachment.width;
-      }
-
-      const maxWidth = this.item.attachment.height * this.aspectRatio;
-
-      return Math.round(maxWidth);
-    },
-    maxHeight() {
-      if (!this.aspectRatio || this.aspectRatio < 1) {
-        return this.item.attachment.height;
-      }
-
-      const maxHeight = this.item.attachment.width / this.aspectRatio;
-
-      return Math.round(maxHeight);
-    }
   },
   async mounted() {
     this.modal.active = true;
   },
   methods: {
-    setDataValues () {
+    computeMaxSizes() {
+      const { width, height } = this.item.attachment;
+
+      if (!this.aspectRatio) {
+        this.maxWidth = width;
+        this.maxHeight = height;
+
+        return;
+      }
+
+      // If ratio wants a square, we simply take the lower size of the image
+      if (this.aspectRatio === 1) {
+        const lowerValue = width < height ? width : height;
+
+        this.maxWidth = lowerValue;
+        this.maxHeight = lowerValue;
+
+        return;
+      }
+
+      const imageRatio = height / width;
+      const ratio = imageRatio * this.aspectRatio;
+
+      // If ratio is positive, we want to set max height
+      // based on the width and vice versa
+      this.maxWidth = ratio > 1
+        ? width
+        : Math.round(height * this.aspectRatio);
+      this.maxHeight = ratio > 1
+        ? Math.round(width / this.aspectRatio)
+        : height;
+    },
+    computeMinSizes() {
+      if (!this.minSize || !this.minSize.length) {
+        return;
+      }
+
+      const [ minWidth, minHeight ] = this.minSize;
+
+      // If ratio wants a square, we simply take the higher min size of the image
+      if (this.aspectRatio === 1) {
+        const higherValue = minWidth > minHeight ? minWidth : minHeight;
+        this.maxWidth = higherValue;
+        this.maxHeight = higherValue;
+        return;
+      }
+
+      const minSizeRatio = minHeight / minWidth;
+      const ratio = minSizeRatio * this.aspectRatio;
+
+      if (ratio > 1) {
+        this.minWidth = Math.round(minHeight * this.aspectRatio);
+        this.minHeight = minHeight;
+      } else if (ratio < 1) {
+        this.minWidth = minWidth;
+        this.minHeight = Math.round(minWidth / this.aspectRatio);
+      }
+    },
+    setDataValues() {
       if (
         this.item._fields &&
         this.item._fields.width &&
@@ -243,44 +286,80 @@ export default {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     blurInput() {
-      // FIXME:
-      const [ maxSizeUpdated, minSizeUpdated ] = [ 'width', 'height' ].reduce((acc, name) => {
-        const minSize = name === 'width' ? this.minSize[0] : this.minSize[1];
-        const maxSize = this.item.attachment[name];
-        const value = parseInt(this.docFields.data[name], 10);
+      const { width, height } = this.docFields.data;
 
-        if (value > maxSize) {
-          this.updateDocFields({ [name]: maxSize });
-          return [ true ];
+      if (!this.aspectRatio) {
+        const { widthUpdated, minWidthUpdated } = width > this.maxWidth
+          ? { widthUpdated: this.maxWidth }
+          : width < this.minWidth && {
+            widthUpdated: this.minWidth,
+            minWidthUpdated: true
+          };
+
+        const { heightUpdated, minHeightUpdated } = height > this.maxHeight
+          ? { heightUpdated: this.maxHeight }
+          : height < this.minHeight && {
+            heightUpdated: this.minHeight,
+            minHeightUpdated: true
+          };
+
+        this.updateDocFields({
+          ...widthUpdated && { width: widthUpdated },
+          ...heightUpdated && { height: heightUpdated }
+        }, false);
+
+        if (minWidthUpdated || minHeightUpdated) {
+          this.minSizeUpdated();
         }
 
-        if (isNaN(minSize) || typeof minSize !== 'number' || value >= minSize) {
-          return acc;
-        }
-
-        this.correctingSizes = true;
-        this.updateDocFields({ [name]: minSize });
-
-        setTimeout(() => {
-          this.correctingSizes = false;
-        }, 1500);
-
-        return [ null, true ];
-      }, []);
-
-      if ((!maxSizeUpdated && !minSizeUpdated) || !this.aspectRatio) {
         return;
       }
 
-      const [ minWidth, minHeight ] = this.minSize;
+      if (width > this.maxWidth || height > this.maxHeight) {
+        if (this.aspectRatio === 1) {
+          const lowerValue = this.maxWidth < this.maxHeight
+            ? this.maxWidth
+            : this.maxHeight;
 
-      const ratio = maxSizeUpdated
-        ? (this.maxWidth / this.maxHeight) * this.aspectRatio
-        : ((minWidth / minHeight) * this.aspectRatio);
+          this.updateDocFields({
+            width: lowerValue,
+            height: lowerValue
+          }, false);
+        } else {
+          this.updateDocFields({
+            width: this.maxWidth,
+            height: this.maxHeight
+          }, false);
+        }
+        return;
+      }
 
-      const referenceValueField = ratio > 1 ? 'width' : 'height';
+      if (width < this.minWidth || height < this.minHeight) {
+        if (this.aspectRatio === 1) {
+          const higherValue = this.minWidth > this.minHeight
+            ? this.minWidth
+            : this.minHeight;
 
-      this.computeAspectRatio(this.docFields.data[referenceValueField], referenceValueField);
+          this.updateDocFields({
+            width: higherValue,
+            height: higherValue
+          }, false);
+        } else {
+          this.updateDocFields({
+            width: this.minWidth,
+            height: this.minHeight
+          }, false);
+        }
+
+        this.minSizeUpdated();
+      }
+    },
+    minSizeUpdated() {
+      this.correctingSizes = true;
+
+      setTimeout(() => {
+        this.correctingSizes = false;
+      }, 1500);
     },
     switchPane(name) {
       this.currentTab = name;
@@ -299,6 +378,8 @@ export default {
     },
     updateAspectRatio(value) {
       this.aspectRatio = parseFloat(value);
+      this.computeMaxSizes();
+      this.computeMinSizes();
     },
     getMinSize() {
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
