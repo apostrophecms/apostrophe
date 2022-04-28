@@ -4,16 +4,16 @@
 
 ### Adds
 
-* Images may now be cropped to suit a particular placement after selecting them.
+* Images may now be cropped to suit a particular placement after selecting them. SVG files may not be cropped as it is not possible in the general case.
+* Editors may also select a "focal point" for the image after selecting it. This ensures that this particular point remains visible even if CSS would otherwise crop it, which is a common issue in responsive design. See the `@apostrophecms/image` widget for a sample implementation of the necessary styles.
+* Adds the `aspectRatio` option for image widgets. When set to `[ w, h ]` (a ratio of width to height), images are automatically cropped to this aspect ratio when chosen for that particular widget. If the user does not crop manually, then cropping happens automatically.
+* Adds the `minSize` option for image widgets. This ensures that the images chosen are at least the given size `[ width, height ]`, and also ensures the user cannot choose something smaller than that when cropping.
+* Implements OpenTelemetry instrumentation.
 * Developers may now specify an alternate Vue component to be used for editing the subfields of relationships, either at the field level or as a default for all relationships with a particular piece type.
-* Adds ability to set `minSize` to areas for image widgets. When setup, browsing relationship images from `AposInputRelationship` or from `AposMediaManager` when it is a chooser, will emit `piece-relationship-query`. We pass the query string object, this one will be filled with appropriate data if needed (in this case minSize array).
-* Prevent cropping of SVG files as this is not possible in the general case.
-* Blocks users to set values under `minSize` if configured in area (can set only width, only height or both). Auto fixes bad values in input when under `minSize` or above image size during blur.
 * The widget type base module now always passes on the `components` option as browser data, so that individual widget type modules that support contextual editing can be implemented more conveniently.
 * In-context widget editor components now receive a `focused` prop which is helpful in deciding when to display additional UI.
-* Implements OpenTelemetry instrumentation.
 * Adds new configuration option - `beforeExit` async handler.
-* Handlers listening for `apostrophe:run` event are now able to send exit signal to the Apostrophe bootstrap routine.
+* Handlers listening for the `apostrophe:run` event are now able to send an exit code to the Apostrophe bootstrap routine.
 * Support for Node.js 17 and 18. MongoDB connections to `localhost` will now successfully find a typical dev MongoDB server bound only to `127.0.0.1`, Apostrophe can generate valid ipv6 URLs pointing back to itself, and `webpack` and `vue-loader` have been updated to address incompatibilities.
 * Adds new event `@apostrophecms/doc:afterAllModesDeleted` fired after all modes of a given document are purged.
 
@@ -21,9 +21,9 @@
 
 * Documentation of obsolete options has been removed.
 * Dead code relating to activating in-context widget editors have been removed. They are always active and have been for some time. In the future they might be swapped in on scroll, but there will never be a need to swap them in "on click."
-* Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
-* Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
 * The `self.email` method of modules now correctly accepts a default `from` address configured for a specific module via the `from` subproperty of the `email` option to that module. Thanks to `chmdebeer` for pointing out the issue and the fix.
+* Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
+* Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
 
 ## 3.17.0 (2022-03-31)
 

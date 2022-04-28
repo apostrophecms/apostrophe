@@ -148,11 +148,19 @@ export default {
     updateDocFields(value) {
       this.docFields = value;
     },
-    save() {
+    async save() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
           this.triggerValidation = false;
+          return;
+        }
+        try {
+          await this.postprocess();
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the widget.'
+          });
           return;
         }
         const widget = this.docFields.data;

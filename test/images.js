@@ -1,8 +1,13 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const FormData = require('form-data');
+
 let apos;
 let jar;
 let inserted;
+let image;
 
 const mockImages = [
   {
@@ -171,6 +176,91 @@ describe('Images', function() {
   it('"editable" API does not include images for contributor', async function() {
     const editable = await getEditableImages(jar);
     assert(editable.length === 0);
+  });
+
+  it('REST: should be able to upload an image with an attachment as an admin', async function() {
+    jar = await login('admin');
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(path.join(apos.rootDir, '/public/test-image.jpg')));
+
+    // Make an async request to upload the image.
+    const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+      body: formData,
+      jar
+    });
+
+    image = await apos.http.post('/api/v1/@apostrophecms/image', {
+      body: {
+        title: 'Test Image',
+        attachment
+      },
+      jar
+    });
+    assert(image);
+    assert(image.title === 'Test Image');
+  });
+
+  it('REST: autocrop should have no effect when there are no widget options', async function() {
+    const result = await apos.http.post('/api/v1/@apostrophecms/image/autocrop', {
+      body: {
+        relationship: [ image ],
+        widgetOptions: {}
+      },
+      jar
+    });
+    assert(result.relationship);
+    assert(result.relationship[0]);
+    assert(result.relationship[0].title === 'Test Image');
+    assert(!result.relationship[0]._fields);
+  });
+
+  it('REST: autocrop should work when aspectRatio is less than actual image', async function() {
+    const result = await apos.http.post('/api/v1/@apostrophecms/image/autocrop', {
+      body: {
+        relationship: [ image ],
+        widgetOptions: {
+          aspectRatio: [ 1, 2 ]
+        }
+      },
+      jar
+    });
+    assert(result.relationship);
+    const output = result.relationship[0];
+    assert(output);
+    assert(output.title === 'Test Image');
+    const fields = output._fields;
+    assert(fields);
+    // Useful for visual verification
+    // require('child_process').execSync(`open test/public${output.attachment._urls.full} &`);
+
+    assert.strictEqual(fields.top, 0);
+    assert.strictEqual(fields.left, 75);
+    assert.strictEqual(fields.width, 300);
+    assert.strictEqual(fields.height, 600);
+  });
+
+  it('REST: autocrop should work when aspectRatio is greater than actual image', async function() {
+    const result = await apos.http.post('/api/v1/@apostrophecms/image/autocrop', {
+      body: {
+        relationship: [ image ],
+        widgetOptions: {
+          aspectRatio: [ 2, 1 ]
+        }
+      },
+      jar
+    });
+    assert(result.relationship);
+    const output = result.relationship[0];
+    assert(output);
+    assert(output.title === 'Test Image');
+    const fields = output._fields;
+    assert(fields);
+    // Useful for visual verification
+    // require('child_process').execSync(`open test/public${output.attachment._urls.full} &`);
+    assert.strictEqual(fields.top, 187);
+    assert.strictEqual(fields.left, 0);
+    assert.strictEqual(fields.width, 450);
+    assert.strictEqual(fields.height, 225);
   });
 
 });
