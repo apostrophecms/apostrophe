@@ -132,7 +132,14 @@ export default {
     }
   },
   async mounted() {
+    apos.area.widgetOptions = [
+      klona(this.options),
+      ...apos.area.widgetOptions
+    ];
     this.modal.active = true;
+  },
+  destroyed() {
+    apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
     this.original = this.value ? klona(this.value) : this.getDefault();
@@ -141,11 +148,19 @@ export default {
     updateDocFields(value) {
       this.docFields = value;
     },
-    save() {
+    async save() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
           this.triggerValidation = false;
+          return;
+        }
+        try {
+          await this.postprocess();
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the widget.'
+          });
           return;
         }
         const widget = this.docFields.data;

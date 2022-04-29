@@ -27,12 +27,25 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasRelationshipSchema"
+          v-if="hasRelationshipEditor && more.menu.length"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
           menu-placement="bottom-start"
           menu-offset="40, 10"
+        />
+        <AposButton
+          class="apos-slat__editor-btn"
+          v-if="editorIcon && hasRelationshipEditor"
+          role="button"
+          :tooltip="{
+            content: editorLabel,
+            placement: 'bottom'
+          }"
+          :icon="editorIcon"
+          :icon-only="true"
+          :modifiers="['inline']"
+          @click="$emit('item-clicked', item)"
         />
         <a
           class="apos-slat__control apos-slat__control--view"
@@ -42,9 +55,16 @@
         >
           <eye-icon :size="14" class="apos-slat__control--view-icon" />
         </a>
-        <div v-if="item.attachment && item.attachment.group === 'images' && item.attachment._urls" class="apos-slat__media-preview">
+        <div
+          v-if="item.attachment &&
+            item.attachment.group === 'images' &&
+            item.attachment._urls"
+          class="apos-slat__media-preview"
+        >
           <img
-            :src="item.attachment._urls['one-sixth']"
+            :src="item.attachment._urls.uncropped
+              ? item.attachment._urls.uncropped['one-sixth']
+              : item.attachment._urls['one-sixth']"
             :alt="item.description || item.title"
             class="apos-slat__media"
           >
@@ -114,6 +134,14 @@ export default {
     hasRelationshipSchema: {
       type: Boolean,
       default: false
+    },
+    editorLabel: {
+      type: String,
+      default: null
+    },
+    editorIcon: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'select' ],
@@ -128,10 +156,10 @@ export default {
           type: 'inline'
         },
         menu: [
-          {
-            label: 'Edit Relationship',
+          ...!this.editorIcon ? [ {
+            label: 'apostrophe:editRelationship',
             action: 'edit-relationship'
-          }
+          } ] : []
         ]
       }
     };
@@ -144,6 +172,12 @@ export default {
       } else {
         return `${(size / 1000000).toFixed(1)}MB`;
       }
+    },
+    hasRelationshipEditor() {
+      if (this.item.attachment && this.item.attachment.group === 'images') {
+        return this.hasRelationshipSchema && this.item.attachment._isCroppable;
+      }
+      return this.hasRelationshipSchema;
     }
   },
   methods: {
@@ -162,11 +196,8 @@ export default {
     },
     move(dir) {
       if (this.engaged) {
-        if (dir > 0) {
-          this.$emit('move', this.item._id, 1);
-        } else {
-          this.$emit('move', this.item._id, -1);
-        }
+        const direction = dir > 0 ? 1 : -1;
+        this.$emit('move', this.item._id, direction);
       }
     },
     remove(focusNext) {
@@ -257,6 +288,10 @@ export default {
     max-width: 220px;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  .apos-slat__editor-btn {
+    margin-right: 5px;
   }
 
   .apos-slat__control {

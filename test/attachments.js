@@ -1,6 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
 let apos;
@@ -8,6 +8,8 @@ let apos;
 describe('Attachment', function() {
 
   after(async function() {
+    await wipeIt();
+
     return t.destroy(apos);
   });
 
@@ -18,23 +20,7 @@ describe('Attachment', function() {
   const collectionName = 'aposAttachments';
 
   async function wipeIt() {
-    deleteFolderRecursive(path.join(__dirname, '/public/uploads'));
-
-    function deleteFolderRecursive (path) {
-      let files = [];
-      if (fs.existsSync(path)) {
-        files = fs.readdirSync(path);
-        files.forEach(function(file, index) {
-          const curPath = path + '/' + file;
-          if (fs.lstatSync(curPath).isDirectory()) { // recurse
-            deleteFolderRecursive(curPath);
-          } else { // delete file
-            fs.unlinkSync(curPath);
-          }
-        });
-        fs.rmdirSync(path);
-      }
-    }
+    await fs.remove(path.join(__dirname, '/public/uploads'));
 
     return apos.db.collection(collectionName).removeMany({});
   }
@@ -49,11 +35,6 @@ describe('Attachment', function() {
     assert(apos.attachment);
   });
 
-  describe('wipe', function() {
-    it('should clear previous material if any', async function() {
-      return wipeIt();
-    });
-  });
   let imageOne;
 
   describe('insert', function() {
@@ -64,8 +45,9 @@ describe('Attachment', function() {
         path: uploadSource + filename
       });
       const t = uploadTarget + info._id + '-' + info.name + '.' + info.extension;
+
       // file should be uploaded
-      assert(fs.existsSync(t));
+      assert(await fs.pathExists(t));
 
       // make sure it exists in mongo
       const result = await apos.db.collection(collectionName).findOne({
@@ -270,7 +252,45 @@ describe('Attachment', function() {
     });
   });
 
-  describe('api', function () {
+  describe('api', async function () {
+    const attachmentMock = {
+      _id: 'cl1uqvv0z002oldgftrxk58e1',
+      crop: null,
+      group: 'images',
+      name: 'test',
+      title: 'test',
+      extension: 'jpg',
+      type: 'attachment',
+      archivedDocIds: [],
+      length: 184317,
+      md5: '816e2fe1190b7aa81ed26d8479e26181',
+      width: 960,
+      height: 542,
+      landscape: true,
+      used: true,
+      utilized: true,
+      archived: false
+    };
+
+    const imageMock = {
+      _id: 'cl1uqvvdr002qldgffbcflmmf:en:draft',
+      attachment: {
+        ...attachmentMock
+      },
+      title: 'test',
+      alt: '',
+      slug: 'image-test',
+      archived: false,
+      type: '@apostrophecms/image',
+      _fields: {
+        top: 100,
+        left: 50,
+        width: 300,
+        height: 200,
+        x: 50,
+        y: 25
+      }
+    };
 
     it('should annotate images with URLs using .all method', async function () {
       assert(!imageOne._urls);
@@ -279,6 +299,79 @@ describe('Attachment', function() {
 
       assert(imageOne._urls);
     });
-  });
 
+    it('should return the attachment of a given image with the image cropping and focal point values', function () {
+      const attachments = apos.attachment.all(imageMock, { annotate: true });
+
+      assert(attachments[0]._crop.top === imageMock._fields.top);
+      assert(attachments[0]._crop.left === imageMock._fields.left);
+      assert(attachments[0]._crop.width === imageMock._fields.width);
+      assert(attachments[0]._crop.height === imageMock._fields.height);
+
+      assert(attachments[0]._focalPoint.x === imageMock._fields.x);
+      assert(attachments[0]._focalPoint.y === imageMock._fields.y);
+    });
+
+    it('should return the attachment of a given image with the uncropped urls', function () {
+      const [ attachment ] = apos.attachment.all(imageMock, { annotate: true });
+      const imgVersions = [
+        'original',
+        'max',
+        'full',
+        'two-thirds',
+        'one-half',
+        'one-third',
+        'one-sixth'
+      ];
+
+      assert(attachment._urls.uncropped);
+      assert(!Array.isArray(attachment._urls.uncropped));
+      assert(typeof attachment._urls.uncropped === 'object');
+
+      imgVersions.forEach((version) => {
+        assert(attachment._urls.uncropped[version]);
+        assert(typeof attachment._urls.uncropped[version] === 'string');
+      });
+    });
+
+    it('should not clone attachment', function () {
+      const attachments = apos.attachment.all(imageMock, { annotate: true });
+
+      assert(attachments[0] === imageMock.attachment);
+    });
+
+    it('should return the attachment width', async function () {
+      const width = apos.attachment.getWidth(attachmentMock);
+
+      assert(width === 960);
+    });
+
+    it('should return the attachment cropping width', async function () {
+      const width = apos.attachment.getWidth({
+        ...attachmentMock,
+        _crop: {
+          width: 300
+        }
+      });
+
+      assert(width === 300);
+    });
+
+    it('should return the attachment height', async function () {
+      const height = apos.attachment.getHeight(attachmentMock);
+
+      assert(height === 542);
+    });
+
+    it('should return the attachment cropping height', async function () {
+      const height = apos.attachment.getHeight({
+        ...attachmentMock,
+        _crop: {
+          height: 400
+        }
+      });
+
+      assert(height === 400);
+    });
+  });
 });

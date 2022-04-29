@@ -32,6 +32,8 @@
           :slat-count="next.length"
           :removable="removable"
           :has-relationship-schema="hasRelationshipSchema"
+          :editor-label="editorLabel"
+          :editor-icon="editorIcon"
         />
       </transition-group>
     </draggable>
@@ -66,6 +68,14 @@ export default {
     hasRelationshipSchema: {
       type: Boolean,
       default: false
+    },
+    editorLabel: {
+      type: String,
+      default: null
+    },
+    editorIcon: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'update', 'item-clicked', 'select', 'input' ],

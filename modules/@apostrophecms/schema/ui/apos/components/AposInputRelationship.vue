@@ -43,6 +43,8 @@
           :value="next"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
+          :editor-label="field.editorLabel"
+          :editor-icon="field.editorIcon"
         />
         <AposSearchList
           :list="searchList"
@@ -57,6 +59,7 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import { klona } from 'klona';
 
 export default {
   name: 'AposInputRelationship',
@@ -64,18 +67,21 @@ export default {
   emits: [ 'input' ],
   data () {
     const next = (this.value && Array.isArray(this.value.data))
-      ? this.value.data : (this.field.def || []);
+      ? klona(this.value.data) : (klona(this.field.def) || []);
+
+    // Remember relationship subfield values even if a document
+    // is temporarily deselected, easing the user's pain if they
+    // inadvertently deselect something for a moment
+    const subfields = Object.fromEntries(
+      (next || []).filter(doc => doc._fields)
+        .map(doc => [ doc._id, doc._fields ])
+    );
+
     return {
       searchTerm: '',
       searchList: [],
       next,
-      // Remember relationship subfield values even if a document
-      // is temporarily deselected, easing the user's pain if they
-      // inadvertently deselect something for a moment
-      subfields: Object.fromEntries((this.next || [])
-        .filter(doc => doc._fields)
-        .map(doc => [ doc._id, doc._fields ])
-      ),
+      subfields,
       disabled: false,
       searching: false,
       choosing: false,
@@ -129,17 +135,15 @@ export default {
       }
     }
   },
+  mounted () {
+    this.checkLimit();
+  },
   methods: {
     validate(value) {
+      this.checkLimit();
+
       if (this.field.required && !value.length) {
         return { message: 'required' };
-      }
-      if (this.limitReached) {
-        this.searchTerm = 'Limit reached!';
-        this.disabled = true;
-      } else {
-        this.searchTerm = '';
-        this.disabled = false;
       }
 
       if (this.field.min && this.field.min > value.length) {
@@ -148,31 +152,54 @@ export default {
 
       return false;
     },
+    checkLimit() {
+      if (this.limitReached) {
+        this.searchTerm = 'Limit reached!';
+      } else if (this.searchTerm === 'Limit reached!') {
+        this.searchTerm = '';
+      }
+
+      this.disabled = !!this.limitReached;
+    },
     updateSelected(items) {
       this.next = items;
     },
     async input () {
-      if (!this.searching) {
-        if (this.searchTerm.length) {
-          this.searching = true;
-          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`, {
-            busy: false,
-            draft: true
-          });
-          // filter items already selected
-          this.searchList = list.results.filter(item => {
-            return !this.next.map(i => i._id).includes(item._id);
-          }).map(item => {
-            return {
-              ...item,
-              disabled: this.disableUnpublished && !item.lastPublishedAt
-            };
-          });
-          this.searching = false;
-        } else {
-          this.searchList = [];
-        }
+      if (this.searching) {
+        return;
       }
+
+      if (!this.searchTerm.length) {
+        this.searchList = [];
+        return;
+      }
+
+      const qs = {
+        autocomplete: this.searchTerm
+      };
+
+      if (this.field.withType === '@apostrophecms/image') {
+        apos.bus.$emit('piece-relationship-query', qs);
+      }
+
+      this.searching = true;
+      const list = await apos.http.get(
+        apos.modules[this.field.withType].action,
+        {
+          busy: false,
+          draft: true,
+          qs
+        }
+      );
+      // filter items already selected
+      this.searchList = list.results
+        .filter(item => !this.next.map(i => i._id).includes(item._id))
+        .map(item => ({
+          ...item,
+          disabled: this.disableUnpublished && !item.lastPublishedAt
+        }));
+
+      this.searching = false;
     },
     handleFocusOut() {
       // hide search list when click outside the input
@@ -198,17 +225,26 @@ export default {
       }
     },
     async editRelationship (item) {
-      const result = await apos.modal.execute('AposRelationshipEditor', {
+      const editor = this.field.editor || 'AposRelationshipEditor';
+
+      const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
+        item,
         title: item.title,
         value: item._fields
       });
+
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
         this.$set(this.next, index, {
           ...this.next[index],
           _fields: result
         });
+      }
+    },
+    getEditRelationshipLabel () {
+      if (this.field.editor === 'AposImageRelationshipEditor') {
+        return 'apostrophe:editImageAdjustments';
       }
     }
   }

@@ -626,6 +626,7 @@ export default {
       }
       let doc;
       try {
+        await this.postprocess();
         doc = await requestMethod(route, {
           busy: true,
           body,

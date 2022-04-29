@@ -1,0 +1,61 @@
+<template>
+  <div class="apos-input-wrapper">
+    <select
+      class="apos-input apos-input--select"
+      :disabled="disabled"
+      @change="change($event.target.value)"
+    >
+      <option
+        v-for="choice in choices"
+        :key="JSON.stringify(choice.value)"
+        :value="JSON.stringify(choice.value)"
+        :selected="choice.value === selected"
+      >
+        {{ $t(choice.label) }}
+      </option>
+    </select>
+    <AposIndicator
+      icon="menu-down-icon"
+      class="apos-input-icon"
+      :icon-size="20"
+    />
+  </div>
+</template>
+<script>
+
+export default {
+  name: 'AposSelect',
+  props: {
+    icon: {
+      type: String,
+      default: 'menu-down-icon'
+    },
+    choices: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
+    selected: {
+      type: [ String, Number ],
+      default: ''
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: [ 'change' ],
+  methods: {
+    change(value) {
+      this.$emit('change', value);
+    }
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+.apos-input-icon {
+  @include apos-transition();
+}
+</style>

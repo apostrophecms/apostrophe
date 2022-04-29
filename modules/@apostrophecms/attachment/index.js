@@ -184,15 +184,20 @@ module.exports = {
           self.canUpload,
           async function (req) {
             const _id = self.apos.launder.id(req.body._id);
-            let crop = req.body.crop;
-            if (typeof crop !== 'object') {
+            const { crop } = req.body;
+
+            if (!_id || !crop || typeof crop !== 'object' || Array.isArray(crop)) {
               throw self.apos.error('invalid');
             }
-            crop = self.sanitizeCrop(crop);
-            if (!crop) {
+
+            const sanitizedCrop = self.sanitizeCrop(crop);
+
+            if (!sanitizedCrop) {
               throw self.apos.error('invalid');
             }
-            await self.crop(req, _id, crop);
+
+            await self.crop(req, _id, sanitizedCrop);
+
             return true;
           }
         ]
@@ -455,49 +460,62 @@ module.exports = {
         });
       },
       async crop(req, _id, crop) {
-        const info = await self.db.findOne({ _id: _id });
+        const info = await self.db.findOne({ _id });
+
         if (!info) {
           throw self.apos.error('notfound');
         }
+
         if (!self.croppable[info.extension]) {
-          throw new Error(info.extension + ' files cannot be cropped, do not present cropping UI for this type');
+          throw self.apos.error('invalid', req.t('apostrophe:fileTypeCannotBeCropped', {
+            extension: info.extension
+          }));
         }
         const crops = info.crops || [];
         const existing = _.find(crops, crop);
+
         if (existing) {
           // We're done, this crop is already available
           return;
         }
         // Pull the original out of cloud storage to a temporary folder where
         // it can be cropped and popped back into uploadfs
-        const originalFile = '/attachments/' + info._id + '-' + info.name + '.' + info.extension;
-        const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + info.extension;
-        const croppedFile = '/attachments/' + info._id + '-' + info.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + info.extension;
+        const originalFile = `/attachments/${info._id}-${info.name}.${info.extension}`;
+        const tempFile = `${self.uploadfs.getTempPath()}/${self.apos.util.generateId()}.${info.extension}`;
+        const croppedFile = `/attachments/${info._id}-${info.name}.${crop.left}.${crop.top}.${crop.width}.${crop.height}.${info.extension}`;
+
         await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
         await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
           crop: crop,
           sizes: self.imageSizes
         });
-        crops.push(crop);
+
         await self.db.updateOne({
           _id: info._id
         }, {
           $set: {
-            crops
+            crops: [
+              ...crops,
+              crop
+            ]
           }
         });
         await Promise.promisify(fs.unlink)(tempFile);
       },
       sanitizeCrop(crop) {
-        crop = _.pick(crop, 'top', 'left', 'width', 'height');
-        crop.top = self.apos.launder.integer(crop.top, 0, 0, 10000);
-        crop.left = self.apos.launder.integer(crop.left, 0, 0, 10000);
-        crop.width = self.apos.launder.integer(crop.width, 1, 1, 10000);
-        crop.height = self.apos.launder.integer(crop.height, 1, 1, 10000);
-        if (_.keys(crop).length < 4) {
-          return undefined;
+        const neededProps = [ 'top', 'left', 'width', 'height' ];
+        const { integer: sanitizeInteger } = self.apos.launder;
+
+        if (neededProps.some((prop) => !Object.keys(crop).includes(prop))) {
+          return null;
         }
-        return crop;
+
+        return {
+          top: sanitizeInteger(crop.top, 0, 0, 10000),
+          left: sanitizeInteger(crop.left, 0, 0, 10000),
+          width: sanitizeInteger(crop.width, 0, 0, 10000),
+          height: sanitizeInteger(crop.height, 0, 0, 10000)
+        };
       },
       // This method return a default icon url if an attachment is missing
       // to avoid template errors
@@ -669,6 +687,9 @@ module.exports = {
             if (o.alt) {
               value._alt = o.alt;
             }
+
+            value._isCroppable = self.isCroppable(value);
+
             o[key] = value;
 
             // If one of our ancestors has a relationship to the piece that
@@ -678,11 +699,14 @@ module.exports = {
             // apos.attachment.url with the returned object
             for (let i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
-              const fields = ancestor.imagesFields && ancestor.imagesFields[o._id];
-              if (fields) {
+              const ancestorFields = ancestor.attachment &&
+                ancestor.attachment._id === value._id && ancestor._fields;
+
+              if (ancestorFields) {
                 value = _.clone(value);
-                value._crop = _.pick(fields, 'top', 'left', 'width', 'height');
-                value._focalPoint = _.pick(fields, 'x', 'y');
+                o.attachment = value;
+                value._crop = _.pick(ancestorFields, 'width', 'height', 'top', 'left');
+                value._focalPoint = _.pick(ancestorFields, 'x', 'y');
                 break;
               }
             }
@@ -690,15 +714,31 @@ module.exports = {
             if (options.annotate) {
               // Add URLs
               value._urls = {};
+              if (value._crop) {
+                value._urls.uncropped = {};
+              }
               if (value.group === 'images') {
                 _.each(self.imageSizes, function (size) {
                   value._urls[size.name] = self.url(value, { size: size.name });
+                  if (value._crop) {
+                    value._urls.uncropped[size.name] = self.url(value, {
+                      size: size.name,
+                      crop: false
+                    });
+                  }
                 });
                 value._urls.original = self.url(value, { size: 'original' });
+                if (value._crop) {
+                  value._urls.uncropped.original = self.url(value, {
+                    size: 'original',
+                    crop: false
+                  });
+                }
               } else {
                 value._url = self.url(value);
               }
             }
+
             winners.push(value);
           }
         });
@@ -762,14 +802,22 @@ module.exports = {
         return attachment._focalPoint && typeof attachment._focalPoint.x === 'number';
       },
       // If a focal point is present on the attachment, convert it to
-      // CSS syntax for `background-position`. No trailing `;` is returned.
+      // CSS syntax for `object-position`. No trailing `;` is returned.
       // The coordinates are in percentage terms.
-      focalPointToBackgroundPosition(attachment) {
+      focalPointToObjectPosition(attachment) {
         if (!self.hasFocalPoint(attachment)) {
           return 'center center';
         }
         const point = self.getFocalPoint(attachment);
-        return point.x + '% ' + point.y + '%';
+        return `${point.x}% ${point.y}%`;
+      },
+      // Returns the effective attachment width.
+      getWidth(attachment) {
+        return attachment._crop ? attachment._crop.width : attachment.width;
+      },
+      // Returns the effective attachment height.
+      getHeight(attachment) {
+        return attachment._crop ? attachment._crop.height : attachment.height;
       },
       // Returns an object with `x` and `y` properties containing the
       // focal point chosen by the user, as percentages. If there is no
@@ -788,7 +836,9 @@ module.exports = {
       // Returns true if this type of attachment is croppable.
       // Available as a template helper.
       isCroppable(attachment) {
-        return attachment && self.croppable[self.resolveExtension(attachment.extension)];
+        return (attachment &&
+          self.croppable[self.resolveExtension(attachment.extension)]) ||
+          false;
       },
       // Returns true if this type of attachment is sized,
       // i.e. uploadfs produces versions of it for each configured
@@ -1139,7 +1189,9 @@ module.exports = {
     'all',
     'hasFocalPoint',
     'getFocalPoint',
-    'focalPointToBackgroundPosition',
+    'focalPointToObjectPosition',
+    'getWidth',
+    'getHeight',
     'isCroppable'
   ]
 };

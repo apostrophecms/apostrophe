@@ -115,6 +115,7 @@
     "uploadfs": "^1.17.1",
     "v-tooltip": "^2.0.3",
     "vue": "^2.6.14",
+    "vue-advanced-cropper": "^1.10.1",
     "vue-click-outside-element": "^1.0.15",
     "vue-loader": "^15.9.6",
     "vue-material-design-icons": "~4.12.1",
