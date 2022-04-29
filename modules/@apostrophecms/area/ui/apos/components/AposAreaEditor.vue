@@ -38,6 +38,7 @@
         :area-id="areaId"
         :key="widget._id"
         :widget="widget"
+        :generation="generation"
         :i="i"
         :options="options"
         :next="next"
