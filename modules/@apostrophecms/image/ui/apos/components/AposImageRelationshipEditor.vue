@@ -269,7 +269,8 @@ export default {
           body: {
             _id: this.item.attachment._id,
             crop: this.docFields.data
-          }
+          },
+          busy: true
         });
       }
       this.$emit('modal-result', this.docFields.data);
