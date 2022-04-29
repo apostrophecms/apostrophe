@@ -467,7 +467,9 @@ module.exports = {
         }
 
         if (!self.croppable[info.extension]) {
-          throw new Error(info.extension + ' files cannot be cropped, do not present cropping UI for this type');
+          throw self.apos.error('invalid', req.t('apostrophe:fileTypeCannotBeCropped', {
+            extension: info.extension
+          }));
         }
         const crops = info.crops || [];
         const existing = _.find(crops, crop);

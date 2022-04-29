@@ -146,7 +146,7 @@ module.exports = {
         }
         const relationship = await sanitizeRelationship(req.body.relationship);
         for (const image of relationship) {
-          if (!closeEnough(image)) {
+          if (!closeEnough(image) && self.apos.attachment.isCroppable(image.attachment)) {
             await autocrop(image, widgetOptions);
           }
         }
