@@ -1004,6 +1004,9 @@ module.exports = {
       // `label` is the menu label to be shown when expanding the context menu.
       // Additional optional `modifiers` property is supported - button modifiers
       // as supported by `AposContextMenu` (e.g. modifiers: [ 'danger' ]).
+      // An optional `manuallyPublished` boolean property is supported - if true
+      // the menu will be shown only for docs which have `autopublish: false` and
+      // `localized: true` options.
       addContextOperation(moduleName, operation) {
         self.contextOperations = [
           ...self.contextOperations

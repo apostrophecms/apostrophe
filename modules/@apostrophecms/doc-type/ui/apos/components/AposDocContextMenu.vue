@@ -186,6 +186,9 @@ export default {
     customOperationsByContext() {
       return this.customOperations.filter(op => {
         if (op.context === 'update' && this.isUpdateOperation) {
+          if (typeof op.manuallyPublished === 'boolean') {
+            return op.manuallyPublished === this.manuallyPublished;
+          }
           return true;
         }
         return false;

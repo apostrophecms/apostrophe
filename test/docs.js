@@ -183,6 +183,7 @@ describe('Docs', function() {
       action: 'test',
       label: 'Menu Label',
       modal: 'SomeModalComponent',
+      manuallyPublished: true,
       modifiers: [ 'danger' ]
     };
     assert.strictEqual(apos.doc.contextOperations.length, 0);
