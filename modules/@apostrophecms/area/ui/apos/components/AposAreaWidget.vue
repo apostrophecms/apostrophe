@@ -102,6 +102,7 @@
         :type="widget.type"
         :doc-id="docId"
         :focused="focused"
+        :key="generation"
       />
       <component
         v-else
@@ -115,6 +116,7 @@
         @edit="$emit('edit', i);"
         :doc-id="docId"
         :rendering="rendering"
+        :key="generation"
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
@@ -200,6 +202,13 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    generation: {
+      type: Number,
+      required: false,
+      default() {
+        return null;
+      }
     }
   },
   emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
