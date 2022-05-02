@@ -73,7 +73,9 @@
               <AposButton
                 v-on="{ click: allSelected ? deselectAll : selectAll }"
                 class="apos-locale-select-all"
-                :label="allSelected ? $t('apostrophe:deselectAll') : $t('apostrophe:selectAll')"
+                :label="allSelected
+                  ? $t('apostrophe:deselectAll')
+                  : $t('apostrophe:selectAll')"
                 type="quiet"
                 :modifiers="[ 'inline' ]"
               />
@@ -84,34 +86,38 @@
                 class="apos-locales-filter"
                 ref="searchInput"
               />
-              <transition-group tag="ul" name="selected-list" class="apos-selected-locales">
+              <transition-group
+                tag="ul"
+                name="selected-list"
+                class="apos-selected-locales"
+              >
                 <li
-                  v-for="locale in selectedLocales"
-                  :key="locale.name"
+                  v-for="loc in selectedLocales"
+                  :key="loc.name"
                   class="apos-locale-item--selected"
                 >
                   <AposButton
                     type="primary"
-                    @click.prevent="removeLocale(locale)"
+                    @click.prevent="removeLocale(loc)"
                     class="apos-locale-button"
                     :modifiers="[ 'small' ]"
                     icon="close-icon"
                     :icon-size="12"
-                    :label="locale.label"
+                    :label="loc.label"
                   />
                 </li>
               </transition-group>
               <ul class="apos-locales">
                 <li
-                  v-for="locale in filteredLocales"
-                  :key="locale.name"
+                  v-for="loc in filteredLocales"
+                  :key="loc.name"
                   class="apos-locale-item"
-                  :class="localeClasses(locale)"
-                  @click="toggleLocale(locale)"
+                  :class="localeClasses(loc)"
+                  @click="toggleLocale(loc)"
                 >
                   <span class="apos-locale">
                     <AposIndicator
-                      v-if="isCurrentLocale(locale) && !isSelected(locale)"
+                      v-if="isCurrentLocale(loc) && !isSelected(loc)"
                       icon="map-marker-icon"
                       class="apos-current-locale-icon"
                       :icon-size="14"
@@ -119,20 +125,24 @@
                       tooltip="Current Locale"
                     />
                     <AposIndicator
-                      v-if="isSelected(locale)"
+                      v-if="isSelected(loc)"
                       icon="check-bold-icon"
                       class="apos-check-icon"
                       :icon-size="10"
                       title="Currently selected locale"
                     />
-                    {{ locale.label }}
-                    <span class="apos-locale-name">({{ locale.name }})</span>
+                    {{ loc.label }}
+                    <span class="apos-locale-name">
+                      ({{ loc.name }})
+                    </span>
                     <span
                       class="apos-locale-localized"
                       :class="{
-                        'apos-state-is-localized': isLocalized(locale),
+                        'apos-state-is-localized': isLocalized(loc),
                       }"
-                      v-apos-tooltip="isLocalized(locale) ? 'Localized' : 'Not Yet Localized'"
+                      v-apos-tooltip="isLocalized(loc)
+                        ? 'Localized'
+                        : 'Not Yet Localized'"
                     />
                   </span>
                 </li>
@@ -146,14 +156,14 @@
               <ul class="apos-selected-locales">
                 <li
                   class="apos-locale-item--selected"
-                  v-for="locale in selectedLocales"
-                  :key="locale.name"
+                  v-for="loc in selectedLocales"
+                  :key="loc.name"
                 >
                   <AposButton
                     type="primary"
                     class="apos-locale-to-localize"
                     :modifiers="[ 'small' ]"
-                    :label="locale.label"
+                    :label="loc.label"
                     :disabled="true"
                   />
                 </li>
@@ -163,8 +173,7 @@
                 v-if="wizard.values.toLocalize.data !== 'thisDoc'"
                 class="apos-wizard__field-group"
               >
-                <p
-                  class="apos-wizard__field-group-heading">
+                <p class="apos-wizard__field-group-heading">
                   {{ $t('apostrophe:relatedDocSettings') }}
                   <AposIndicator
                     class="apos-wizard__field-group-heading__info"
@@ -193,7 +202,7 @@
                 />
 
                 <AposInputCheckboxes
-                  v-if="relatedDocTypes.length > 0"
+                  v-if="relatedDocTypes.length"
                   :field="relatedDocTypesField"
                   v-model="wizard.values.relatedDocTypesToLocalize"
                 />
@@ -250,12 +259,13 @@ export default {
     },
     locale: {
       required: false,
-      type: Object
+      type: Object,
+      default: null
     }
   },
   emits: [ 'safe-close', 'modal-result' ],
   data() {
-    const result = {
+    return {
       modal: {
         busy: false,
         busyTitle: this.$t('apostrophe:localizingBusy'),
@@ -310,14 +320,21 @@ export default {
           confirmSettings: {
             title: this.$t('apostrophe:confirmSettings'),
             complete() {
+              const {
+                toLocalize,
+                relatedDocTypesToLocalize
+              } = this.wizard.values;
+
               // If they choose related docs only, they must check at least one related doc type to continue
-              return (this.wizard.values.toLocalize.data !== 'relatedDocsOnly') || this.relatedDocTypes.find(type => this.wizard.values.relatedDocTypesToLocalize.data.includes(type.value));
+              return (toLocalize.data !== 'relatedDocsOnly') ||
+                this.relatedDocTypes
+                  .find(({ value }) => relatedDocTypesToLocalize.data.includes(value));
             }
           }
         },
         values: {
           toLocalize: { data: 'thisDocAndRelated' },
-          toLocales: { data: this.locale ? [this.locale] : [] },
+          toLocales: { data: this.locale ? [ this.locale ] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
           relatedDocTypesToLocalize: { data: [] }
         }
@@ -336,20 +353,22 @@ export default {
       searchValue: {
         value: '',
         error: false
-      }
+      },
+      toLocalizeChoices: [
+        {
+          value: 'thisDoc',
+          label: 'apostrophe:thisDocument'
+        },
+        {
+          value: 'thisDocAndRelated',
+          label: 'apostrophe:thisDocumentAndRelated'
+        },
+        {
+          value: 'relatedDocsOnly',
+          label: 'apostrophe:relatedDocsOnly'
+        }
+      ]
     };
-    return result;
-  },
-  watch: {
-    'wizard.values.relatedDocSettings.data'() {
-      this.updateRelatedDocs();
-    },
-    'wizard.values.toLocalize.data'() {
-      this.updateRelatedDocs();
-    },
-    selectedLocales() {
-      this.updateRelatedDocs();
-    }
   },
   computed: {
     moduleOptions() {
@@ -376,22 +395,6 @@ export default {
     allSelected() {
       return this.selectedLocales.length === this.locales.filter(locale => !this.isCurrentLocale(locale)).length;
     },
-    toLocalizeChoices() {
-      return [
-        {
-          value: 'thisDoc',
-          label: 'apostrophe:thisDocument',
-        },
-        {
-          value: 'thisDocAndRelated',
-          label: 'apostrophe:thisDocumentAndRelated',
-        },
-        {
-          value: 'relatedDocsOnly',
-          label: 'apostrophe:relatedDocsOnly',
-        }
-      ];
-    },
     relatedDocTypes() {
       const types = {};
       for (const doc of this.relatedDocs) {
@@ -401,12 +404,6 @@ export default {
             count: 0,
             readOnly: false
           };
-          if (!this.docTypesSeen.includes(doc.type)) {
-            this.docTypesSeen.push(doc.type);
-            if (apos.modules[doc.type].relatedDocument) {
-              this.wizard.values.relatedDocTypesToLocalize.data.push(doc.type);
-            }
-          }
         }
         types[doc.type].count++;
       }
@@ -451,13 +448,27 @@ export default {
       const names = this.visibleStepNames;
       const result = names[names.indexOf(this.wizard.step) + 1];
       return result;
+    }
+  },
+  watch: {
+    'wizard.values.relatedDocSettings.data'() {
+      this.updateRelatedDocs();
     },
-    relatedDocypesField() {
-      return {
-        name: 'relatedDocTypesToLocalize',
-        label: 'apostrophe:relatedDocTypesToLocalize',
-        choices: relatedDocTypes,
-      };
+    'wizard.values.toLocalize.data'() {
+      this.updateRelatedDocs();
+    },
+    selectedLocales() {
+      this.updateRelatedDocs();
+    },
+    relatedDocs() {
+      for (const doc of this.relatedDocs) {
+        if (!this.docTypesSeen.includes(doc.type)) {
+          this.docTypesSeen.push(doc.type);
+          if (apos.modules[doc.type].relatedDocument) {
+            this.wizard.values.relatedDocTypesToLocalize.data.push(doc.type);
+          }
+        }
+      }
     }
   },
   async mounted() {
@@ -528,7 +539,7 @@ export default {
       if (!this.isSelected(locale) && !this.isCurrentLocale(locale)) {
         this.wizard.values.toLocales.data.push(locale);
       } else if (this.isSelected(locale)) {
-       this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(l => l !== locale);
+        this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(l => l !== locale);
       }
       // Reset search filter
       if (this.filteredLocales.length < 2) {
@@ -588,7 +599,7 @@ export default {
     },
     updateFilter(event) {
       if (event && event.data !== undefined) {
-        this.wizard.sections.selectLocales.filter = event.data
+        this.wizard.sections.selectLocales.filter = event.data;
       }
     },
     async submit() {
@@ -608,13 +619,16 @@ export default {
         }
       }
       for (const doc of docs) {
-        if ((doc._id !== this.fullDoc._id) && !this.wizard.values.relatedDocTypesToLocalize.data.includes(doc.type)) {
+        if (
+          (doc._id !== this.fullDoc._id) &&
+          !this.wizard.values.relatedDocTypesToLocalize.data.includes(doc.type)
+        ) {
           continue;
         }
         this.modal.busy = true;
         for (const locale of this.selectedLocales) {
           try {
-            const result = await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
+            await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
               body: {
                 toLocale: locale.name,
                 update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
@@ -622,7 +636,11 @@ export default {
               busy: true
             });
 
-            notifications.push({ type: 'success', locale, doc })
+            notifications.push({
+              type: 'success',
+              locale,
+              doc
+            });
 
             if (this.locale) {
               // Ask for the redirect URL, this way it still works if we
@@ -646,7 +664,8 @@ export default {
                 type: 'error',
                 locale,
                 doc,
-                detail: e?.body?.data?.parentNotLocalized && 'apostrophe:parentNotLocalized'
+                detail: e?.body?.data?.parentNotLocalized &&
+                  'apostrophe:parentNotLocalized'
               });
             }
           }
@@ -756,7 +775,7 @@ export default {
       this.allRelatedDocsKnown = true;
       if (this.wizard.values.relatedDocSettings.data === 'localizeNewRelated') {
         // Find the ids that are unlocalized in at least one of the target locales
-        let unlocalizedIds = new Set();
+        const unlocalizedIds = new Set();
         for (const locale of this.selectedLocales) {
           const existingIdsForLocale = (await apos.http.post(`${apos.modules['@apostrophecms/i18n'].action}/exist-in-locale`, {
             busy: true,
