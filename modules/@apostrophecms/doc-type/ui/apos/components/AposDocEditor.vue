@@ -142,7 +142,7 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
-      tabKey: cuid(),
+      // tabKey: cuid(),
       docType: this.moduleName,
       docReady: false,
       fieldErrors: {},
@@ -230,33 +230,33 @@ export default {
       // `@apostrophecms/page` module action.
       return (window.apos.modules[this.moduleName] || {}).action;
     },
-    groups() {
-      const groupSet = {};
+    // groups() {
+    //   const groupSet = {};
 
-      this.schema.forEach(field => {
-        if (!this.filterOutParkedFields([ field.name ]).length) {
-          return;
-        }
-        if (field.group && !groupSet[field.group.name]) {
-          groupSet[field.group.name] = {
-            label: field.group.label,
-            fields: [ field.name ],
-            schema: [ field ]
-          };
-        } else if (field.group) {
-          groupSet[field.group.name].fields.push(field.name);
-          groupSet[field.group.name].schema.push(field);
-        }
-      });
-      if (!groupSet.utility) {
-        groupSet.utility = {
-          label: 'apostrophe:utility',
-          fields: [],
-          schema: []
-        };
-      }
-      return groupSet;
-    },
+    //   this.schema.forEach(field => {
+    //     if (!this.filterOutParkedFields([ field.name ]).length) {
+    //       return;
+    //     }
+    //     if (field.group && !groupSet[field.group.name]) {
+    //       groupSet[field.group.name] = {
+    //         label: field.group.label,
+    //         fields: [ field.name ],
+    //         schema: [ field ]
+    //       };
+    //     } else if (field.group) {
+    //       groupSet[field.group.name].fields.push(field.name);
+    //       groupSet[field.group.name].schema.push(field);
+    //     }
+    //   });
+    //   if (!groupSet.utility) {
+    //     groupSet.utility = {
+    //       label: 'apostrophe:utility',
+    //       fields: [],
+    //       schema: []
+    //     };
+    //   }
+    //   return groupSet;
+    // },
     utilityFields() {
       let fields = [];
       if (this.groups.utility && this.groups.utility.fields) {
@@ -264,18 +264,18 @@ export default {
       }
       return this.filterOutParkedFields(fields);
     },
-    tabs() {
-      const tabs = [];
-      for (const key in this.groups) {
-        if (key !== 'utility') {
-          tabs.push({
-            name: key,
-            label: this.groups[key].label
-          });
-        }
-      };
-      return tabs;
-    },
+    // tabs() {
+    //   const tabs = [];
+    //   for (const key in this.groups) {
+    //     if (key !== 'utility') {
+    //       tabs.push({
+    //         name: key,
+    //         label: this.groups[key].label
+    //       });
+    //     }
+    //   };
+    //   return tabs;
+    // },
     modalTitle() {
       if (this.docId) {
         return {
@@ -365,12 +365,12 @@ export default {
     },
     original() {
       this.saveMenu = this.computeSaveMenu();
-    },
-    tabs() {
-      if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
-        this.currentTab = this.tabs[0] && this.tabs[0].name;
-      }
     }
+    // tabs() {
+    //   if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
+    //     this.currentTab = this.tabs[0] && this.tabs[0].name;
+    //   }
+    // }
 
   },
   async mounted() {
