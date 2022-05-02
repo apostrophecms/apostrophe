@@ -26,7 +26,7 @@
 * The `self.email` method of modules now correctly accepts a default `from` address configured for a specific module via the `from` subproperty of the `email` option to that module. Thanks to `chmdebeer` for pointing out the issue and the fix.
 * Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
 * Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
-* Fixes vue files not being parsed by eslint CLI command, fixes all lint errors in vue files.
+* Fixes vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
 
 ## 3.17.0 (2022-03-31)
 
