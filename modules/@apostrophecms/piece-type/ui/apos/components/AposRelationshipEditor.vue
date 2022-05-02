@@ -18,6 +18,17 @@
         @click="submit"
       />
     </template>
+    <template #leftRail>
+      <AposModalRail>
+        <AposModalTabs
+          :key="tabKey"
+          v-if="tabs.length > 0"
+          :current="currentTab"
+          :tabs="tabs"
+          @select-tab="switchPane"
+        />
+      </AposModalRail>
+    </template>
     <template #main>
       <AposModalBody>
         <template #bodyMain>
@@ -39,13 +50,15 @@
 
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
+import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 
 export default {
   name: 'AposRelationshipEditor',
   mixins: [
-    AposModifiedMixin
+    AposModifiedMixin,
+    AposModalTabsMixin
   ],
   props: {
     schema: {
