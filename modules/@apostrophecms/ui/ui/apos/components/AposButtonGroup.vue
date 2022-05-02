@@ -1,5 +1,9 @@
 <template>
-  <div class="apos-button-group" :class="modifierClass" role="menubar">
+  <div
+    class="apos-button-group"
+    :class="modifierClass"
+    role="menubar"
+  >
     <div class="apos-button-group__inner">
       <slot />
     </div>
@@ -23,8 +27,7 @@ export default {
     }
   },
   data() {
-    return {
-    };
+    return {};
   },
   computed: {
     modifierClass() {

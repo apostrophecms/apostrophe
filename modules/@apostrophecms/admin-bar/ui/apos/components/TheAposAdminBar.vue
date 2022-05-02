@@ -1,5 +1,9 @@
 <template>
-  <div data-apos-test="adminBar" class="apos-admin-bar-wrapper" :class="themeClass">
+  <div
+    data-apos-test="adminBar"
+    class="apos-admin-bar-wrapper"
+    :class="themeClass"
+  >
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">

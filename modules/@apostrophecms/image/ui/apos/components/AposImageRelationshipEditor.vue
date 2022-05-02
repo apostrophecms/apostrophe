@@ -172,8 +172,8 @@ export default {
     this.modal.active = true;
 
     this.$nextTick(() => {
-      this.containerHeight = this.$refs.cropperContainer.clientHeight
-    })
+      this.containerHeight = this.$refs.cropperContainer.clientHeight;
+    });
 
     this.computeMaxSizes();
     this.computeMinSizes();
