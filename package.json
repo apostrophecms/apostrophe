@@ -6,7 +6,7 @@
   "scripts": {
     "pretest": "npm run lint",
     "test": "nyc --reporter=html mocha -t 10000",
-    "lint": "eslint . && node scripts/lint-i18n"
+    "lint": "eslint --ext .js,.vue . && node scripts/lint-i18n"
   },
   "repository": {
     "type": "git",
