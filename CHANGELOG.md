@@ -1,6 +1,6 @@
 # Changelog
 
-# UNRELEASED
+# 3.18.0 (2022-05-03)
 
 ### Adds
 
