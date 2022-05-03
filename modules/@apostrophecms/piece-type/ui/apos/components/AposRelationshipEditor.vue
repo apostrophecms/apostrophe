@@ -35,8 +35,11 @@
           <AposModalTabsBody>
             <div class="apos-doc-editor__body">
               <AposSchema
-                v-if="docReady"
-                :schema="schema"
+                v-for="tab in tabs"
+                v-show="tab.name === currentTab"
+                :key="tab.name"
+                :schema="groups[tab.name].schema"
+                :current-fields="groups[tab.name].fields"
                 :value="docFields"
                 @input="updateDocFields"
               />
