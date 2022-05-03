@@ -75,7 +75,7 @@ module.exports = {
       return 'color: var(--a-primary);';
     },
     className() {
-      return `apos-spinner--${this.weight}`
+      return `apos-spinner--${this.weight}`;
     }
   },
 };
@@ -110,18 +110,22 @@ module.exports = {
 
 @keyframes clockwise {
   from {
+    // stylelint-disable-next-line property-no-vendor-prefix
     -webkit-transform: rotate(0deg);
   }
-    to {
+  to {
+    // stylelint-disable-next-line property-no-vendor-prefix
     -webkit-transform: rotate(359deg);
   }
 }
 
 @keyframes counterClockwise {
   from {
+    // stylelint-disable-next-line property-no-vendor-prefix
     -webkit-transform: rotate(0deg);
   }
-    to {
+  to {
+    // stylelint-disable-next-line property-no-vendor-prefix
     -webkit-transform: rotate(-359deg);
   }
 }
