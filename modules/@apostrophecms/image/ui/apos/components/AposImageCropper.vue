@@ -429,8 +429,8 @@ export default {
 
   .apos-image-focal-point {
     z-index: $z-index-default;
-    position: absolute;
     width: 10px;
+    position: absolute;
     height: 10px;
     border-radius: 50%;
     border: 1px solid var(--a-white);
