@@ -110,23 +110,19 @@ module.exports = {
 
 @keyframes clockwise {
   from {
-    // stylelint-disable-next-line property-no-vendor-prefix
-    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
   }
   to {
-    // stylelint-disable-next-line property-no-vendor-prefix
-    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
   }
 }
 
 @keyframes counterClockwise {
   from {
-    // stylelint-disable-next-line property-no-vendor-prefix
-    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
   }
   to {
-    // stylelint-disable-next-line property-no-vendor-prefix
-    -webkit-transform: rotate(-359deg);
+    transform: rotate(-359deg);
   }
 }
 </style>
