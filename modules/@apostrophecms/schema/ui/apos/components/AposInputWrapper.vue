@@ -53,6 +53,7 @@
 // friends, which override the `body` slot
 export default {
   name: 'AposInputWrapper',
+  inject: [ 'originalDoc' ],
   props: {
     field: {
       type: Object,
@@ -141,6 +142,7 @@ export default {
     }
   },
   mounted: function () {
+    console.log('mount time:', JSON.stringify(this.originalDoc, null, '  '));
     if (this.field.type === 'radio' || this.field.type === 'checkbox') {
       this.wrapEl = 'fieldset';
       this.labelEl = 'legend';
