@@ -31,6 +31,16 @@ module.exports = {
           following: [ 'title', 'archived' ],
           required: true
         },
+        scheduledPublishing: {
+          type: 'date',
+          label: 'apostrophe:scheduledPublishing',
+          // draftLabel: 'Publish this document on',
+          publishedLabel: 'apostrophe:scheduledUpdating'
+        },
+        scheduledUnpublishing: {
+          type: 'date',
+          label: 'apostrophe:scheduledUnpublishing'
+        },
         archived: {
           type: 'boolean',
           label: 'apostrophe:archived',
@@ -65,7 +75,9 @@ module.exports = {
         utility: {
           fields: [
             'slug',
-            'visibility'
+            'visibility',
+            'scheduledPublishing',
+            'scheduledUnpublishing'
           ]
         }
       }

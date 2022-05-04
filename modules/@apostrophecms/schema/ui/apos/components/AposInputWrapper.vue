@@ -7,7 +7,7 @@
           class="apos-field__label"
           :is="labelEl" :for="uid"
         >
-          {{ $t(field.label) }}
+          {{ $t(label) }}
           <span v-if="field.required" class="apos-field__required">
             *
           </span>
@@ -53,6 +53,13 @@
 // friends, which override the `body` slot
 export default {
   name: 'AposInputWrapper',
+  // FIXME: [Vue warn]: Error in render: "TypeError: Cannot read properties of undefined (reading 'ref')"
+  inject: [ 'originalDoc' ],
+  // inject: {
+  //   originalDoc: {
+  //     ref: null
+  //   }
+  // },
   props: {
     field: {
       type: Object,
@@ -92,6 +99,17 @@ export default {
     };
   },
   computed: {
+    label () {
+      if (!this.originalDoc.ref) {
+        return this.field.label;
+      }
+
+      const label = this.originalDoc.ref.lastPublishedAt
+        ? this.field.publishedLabel
+        : this.field.draftLabel;
+
+      return label || this.field.label;
+    },
     classList: function () {
       const classes = [
         'apos-field',
