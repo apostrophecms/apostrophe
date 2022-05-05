@@ -53,13 +53,13 @@
 // friends, which override the `body` slot
 export default {
   name: 'AposInputWrapper',
-  // FIXME: [Vue warn]: Error in render: "TypeError: Cannot read properties of undefined (reading 'ref')"
-  inject: [ 'originalDoc' ],
-  // inject: {
-  //   originalDoc: {
-  //     ref: null
-  //   }
-  // },
+  inject: {
+    originalDoc: {
+      default: () => ({
+        ref: null
+      })
+    }
+  },
   props: {
     field: {
       type: Object,
