@@ -1,6 +1,12 @@
 # Changelog
 
-# 3.18.0 (2022-05-03)
+## UNRELEASED
+
+### Fixes
+
+* The admin UI now rebuilds properly in a development environment when new npm modules are installed in a multisite project (`apos.rootDir` differs from `apos.npmRootDir`).
+
+## 3.18.0 (2022-05-03)
 
 ### Adds
 
