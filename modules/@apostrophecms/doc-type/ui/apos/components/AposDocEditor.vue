@@ -158,7 +158,9 @@ export default {
       },
       triggerValidation: false,
       original: null,
-      originalDoc: {},
+      originalDoc: {
+        ref: null
+      },
       published: null,
       errorCount: 0,
       restoreOnly: false,
