@@ -9,6 +9,7 @@
     <template #body>
       <div class="apos-input-wrapper">
         <AposToggle
+          v-if="!field.required"
           v-model="disabled"
           class="apos-toggle"
           @toggle="toggle"
@@ -18,6 +19,7 @@
           class="apos-input apos-input--date"
           type="date"
           :disabled="disabled"
+          @change="setDateAndTime"
         >
         <span class="apos-input--label">
           {{ $t('apostrophe:at') }}
@@ -27,6 +29,7 @@
           class="apos-input apos-input--time"
           type="time"
           :disabled="disabled"
+          @change="setDateAndTime"
         >
       </div>
     </template>
@@ -35,26 +38,45 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import dayjs from 'dayjs';
 
 export default {
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
   data() {
     return {
+      next: (this.value && this.value.data) || '',
       date: '',
       time: '',
-      disabled: true
+      disabled: !this.field.required
     };
+  },
+  mounted () {
+    this.initDateAndTime();
   },
   methods: {
     toggle() {
-      console.log('this.time ===> ', this.time);
-
-      console.log('this.date ===> ', this.date);
       this.disabled = !this.disabled;
     },
     validate() {
       // TODO: validate this field
+
+      // if no value adn required
+      if (this.field.required && !this.dateAndTime) {
+        return 'required';
+      }
+    },
+    initDateAndTime() {
+      if (this.next) {
+        this.date = dayjs(this.next).format('YYYY-MM-DD');
+        this.time = dayjs(this.next).format('HH:mm:ss');
+        this.disabled = false;
+      }
+    },
+    setDateAndTime() {
+      if (this.date) {
+        this.next = dayjs(`${this.date} ${this.time}:00`.trim()).toISOString();
+      }
     }
   }
 
