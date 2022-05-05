@@ -102,7 +102,11 @@ export default {
     label () {
       const { label, publishedLabel } = this.field;
 
-      if (this.originalDoc.ref && this.originalDoc.ref.lastPublishedAt && publishedLabel) {
+      if (
+        this.originalDoc.ref &&
+        this.originalDoc.ref.lastPublishedAt &&
+        publishedLabel
+      ) {
         return publishedLabel;
       }
 
