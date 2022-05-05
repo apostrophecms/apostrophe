@@ -606,22 +606,7 @@ module.exports = (self) => {
     name: 'dateAndTime',
     vueComponent: 'AposInputDateAndTime',
     convert (req, field, data, destination) {
-      console.log('field  ===> ', require('util').inspect(field, {
-        colors: true,
-        depth: 2
-      }));
-
-      console.log('data ===> ', require('util').inspect(data, {
-        colors: true,
-        depth: 2
-      }));
-
-      console.log('destination ===> ', require('util').inspect(destination, {
-        colors: true,
-        depth: 2
-      }));
-
-      destination[field.name] = data[field.name] || field.def;
+      destination[field.name] = self.apos.launder.date(data[field.name], field.def);
     }
   });
 
