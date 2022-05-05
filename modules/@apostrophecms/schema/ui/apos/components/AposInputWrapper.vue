@@ -100,15 +100,13 @@ export default {
   },
   computed: {
     label () {
-      if (!this.originalDoc.ref) {
-        return this.field.label;
+      const { label, publishedLabel } = this.field;
+
+      if (this.originalDoc.ref && this.originalDoc.ref.lastPublishedAt && publishedLabel) {
+        return publishedLabel;
       }
 
-      const label = this.originalDoc.ref.lastPublishedAt
-        ? this.field.publishedLabel
-        : this.field.draftLabel;
-
-      return label || this.field.label;
+      return label;
     },
     classList: function () {
       const classes = [

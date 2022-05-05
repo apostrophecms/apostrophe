@@ -34,7 +34,6 @@ module.exports = {
         scheduledPublishing: {
           type: 'date',
           label: 'apostrophe:scheduledPublishing',
-          // draftLabel: 'Publish this document on',
           publishedLabel: 'apostrophe:scheduledUpdating'
         },
         scheduledUnpublishing: {
