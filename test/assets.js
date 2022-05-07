@@ -1,5 +1,5 @@
 const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert').strict;
 const fs = require('fs-extra');
 const path = require('path');
 
@@ -13,11 +13,17 @@ let apos;
 
 const badModules = {
   badModuleConfig: {
+    options: {
+      ignoreNoCodeWarning: true
+    },
     webpack: {
       badprop: {}
     }
   },
   badModuleConfig2: {
+    options: {
+      ignoreNoCodeWarning: true
+    },
     webpack: []
   }
 };
@@ -78,11 +84,14 @@ const modules = {
 describe('Assets', function() {
   const {
     publicFolderPath,
+    cacheFolderPath,
     getScriptMarkup,
     getStylesheetMarkup,
     expectedBundlesNames,
     deleteBuiltFolders,
-    allBundlesAreIncluded
+    allBundlesAreIncluded,
+    removeCache,
+    getCacheMeta
   } = loadUtils();
 
   after(async function() {
@@ -90,7 +99,7 @@ describe('Assets', function() {
     return t.destroy(apos);
   });
 
-  this.timeout(90000);
+  this.timeout(5 * 60 * 1000);
 
   it('should exist on the apos object', async function() {
     apos = await t.create({
@@ -284,10 +293,222 @@ describe('Assets', function() {
     assert(bundlePage.includes(getScriptMarkup('extra2-module-bundle', 'module')));
     assert(bundlePage.includes(getScriptMarkup('extra2-nomodule-bundle', 'nomodule')));
   });
+
+  it('should build with cache and gain performance', async function() {
+    await t.destroy(apos);
+    await removeCache();
+    await removeCache(cacheFolderPath.replace('/webpack-cache', '/changed'));
+
+    const es5Modules = {
+      ...modules,
+      '@apostrophecms/asset': {
+        options: {
+          es5: true
+        }
+      }
+    };
+
+    apos = await t.create({
+      root: module,
+      modules: es5Modules
+    });
+    assert.throws(() => fs.readdirSync(cacheFolderPath), {
+      code: 'ENOENT'
+    });
+
+    let startTime;
+
+    // Cold run
+    startTime = Date.now();
+    await apos.asset.tasks.build.task({
+      'check-apos-build': false
+    });
+    const execTime = Date.now() - startTime;
+    const { meta, folders } = getCacheMeta();
+    assert.equal(folders.length, 3);
+    assert.equal(Object.keys(meta).length, 3);
+    assert(meta['default:apos']);
+    assert(meta['default:src']);
+    assert(meta['default:src-es5']);
+
+    // Cache
+    startTime = Date.now();
+    await apos.asset.tasks.build.task({
+      'check-apos-build': false
+    });
+    const execTimeCached = Date.now() - startTime;
+    const { meta: meta2, folders: folders2 } = getCacheMeta();
+    assert.equal(folders2.length, 3);
+    assert.equal(Object.keys(meta2).length, 3);
+    assert(meta2['default:apos']);
+    assert(meta2['default:src']);
+    assert(meta2['default:src-es5']);
+
+    // Expect at least 40% gain, in reallity it should be 50+
+    const gain = (execTime - execTimeCached) / execTime * 100;
+    assert(gain >= 40, `Expected gain >=40%, got ${gain}%`);
+
+    // Modification times
+    assert(meta['default:apos'].mdate);
+    assert(meta2['default:apos'].mdate);
+    assert(meta['default:src'].mdate);
+    assert(meta2['default:src'].mdate);
+    assert(meta['default:src-es5'].mdate);
+    assert(meta2['default:src-es5'].mdate);
+    assert(
+      new Date(meta['default:apos'].mdate) < new Date(meta2['default:apos'].mdate)
+    );
+    assert.equal(
+      new Date(meta2['default:apos'].mdate).toISOString(),
+      fs.statSync(meta2['default:apos'].location).mtime.toISOString()
+    );
+    assert(
+      new Date(meta['default:src'].mdate) < new Date(meta2['default:src'].mdate)
+    );
+    assert.equal(
+      new Date(meta2['default:src'].mdate).toISOString(),
+      fs.statSync(meta2['default:src'].location).mtime.toISOString()
+    );
+    assert(
+      new Date(meta['default:src-es5'].mdate) < new Date(meta2['default:src-es5'].mdate)
+    );
+    assert.equal(
+      new Date(meta2['default:src-es5'].mdate).toISOString(),
+      fs.statSync(meta2['default:src-es5'].location).mtime.toISOString()
+    );
+  });
+
+  it('should invalidate build cache when namespace changes', async function() {
+    process.env.APOS_DEBUG_NAMESPACE = 'test';
+    await apos.asset.tasks.build.task({
+      'check-apos-build': false
+    });
+    const { meta, folders } = getCacheMeta();
+    assert.equal(folders.length, 6);
+    assert.equal(Object.keys(meta).length, 6);
+    assert(meta['test:apos']);
+    assert(meta['test:src']);
+    assert(meta['test:src-es5']);
+    assert(meta['default:apos']);
+    assert(meta['default:src']);
+    assert(meta['default:src-es5']);
+    delete process.env.APOS_DEBUG_NAMESPACE;
+  });
+
+  it('should invalidate build cache when packages change', async function() {
+    await t.destroy(apos);
+    const lock = require('./package-lock.json');
+    assert.equal(lock.version, 'current');
+    lock.version = 'new';
+    fs.writeFileSync(
+      path.join(process.cwd(), 'test/package-lock.json'),
+      JSON.stringify(lock, null, '  '),
+      'utf8'
+    );
+    const es5Modules = {
+      ...modules,
+      '@apostrophecms/asset': {
+        options: {
+          es5: true
+        }
+      }
+    };
+
+    apos = await t.create({
+      root: module,
+      modules: es5Modules
+    });
+    await apos.asset.tasks.build.task({
+      'check-apos-build': false
+    });
+
+    const { meta, folders } = getCacheMeta();
+    assert.equal(folders.length, 9);
+    assert.equal(Object.keys(meta).length, 9);
+    assert(meta['default:apos_2']);
+    assert(meta['default:src_2']);
+    assert(meta['default:src-es5_2']);
+  });
+
+  it('should invalidate build cache when configuration changes', async function() {
+    await t.destroy(apos);
+    const es5Modules = {
+      ...modules,
+      'bundle-page': {
+        webpack: {
+          extensions: {
+            ext1: {
+              resolve: {
+                alias: {
+                  ext1: 'changed'
+                }
+              }
+            }
+          }
+        }
+      },
+      '@apostrophecms/asset': {
+        options: {
+          es5: true
+        }
+      }
+    };
+    apos = await t.create({
+      root: module,
+      modules: es5Modules
+    });
+    await apos.asset.tasks.build.task({
+      'check-apos-build': false
+    });
+
+    const { meta, folders } = getCacheMeta();
+    assert.equal(folders.length, 11);
+    assert.equal(Object.keys(meta).length, 11);
+    assert(!meta['default:apos_3']);
+    assert(meta['default:src_3']);
+    assert(meta['default:src-es5_3']);
+  });
+
+  it('should clear build cache', async function() {
+    const cacheFolders = fs.readdirSync(cacheFolderPath, 'utf8');
+    assert(cacheFolders.length > 0);
+    await apos.asset.tasks['clear-cache'].task();
+
+    assert.equal(fs.readdirSync(cacheFolderPath, 'utf8').length, 0);
+  });
+
+  it('should be able to override the build cache location via APOS_ASSET_CACHE', async function() {
+    await t.destroy(apos);
+    await removeCache();
+    const altCacheLoc = cacheFolderPath.replace('/webpack-cache', '/changed');
+    await removeCache(altCacheLoc);
+    process.env.APOS_ASSET_CACHE = altCacheLoc;
+
+    apos = await t.create({
+      root: module,
+      modules
+    });
+    assert.throws(() => fs.readdirSync(altCacheLoc), {
+      code: 'ENOENT'
+    });
+    await apos.asset.tasks.build.task({
+      'check-apos-build': false
+    });
+    const { meta, folders } = getCacheMeta(altCacheLoc);
+    assert.equal(folders.length, 2);
+    assert.equal(Object.keys(meta).length, 2);
+    assert(meta['default:apos']);
+    assert(meta['default:src']);
+
+    delete process.env.APOS_ASSET_CACHE;
+    await removeCache(altCacheLoc);
+  });
 });
 
 function loadUtils () {
   const publicFolderPath = path.join(process.cwd(), 'test/public');
+  const cacheFolderPath = process.env.APOS_ASSET_CACHE ||
+              path.join(process.cwd(), 'test/data/temp/webpack-cache');
 
   const getScriptMarkup = (file, mod) => {
     const moduleStr = mod === 'module' ? ' type="module"' : ' nomodule';
@@ -318,12 +539,47 @@ function loadUtils () {
     assert(page.includes(getScriptMarkup('extra2-module-bundle')));
   };
 
+  const removeCache = async (loc) => {
+    await fs.remove(loc || cacheFolderPath);
+  };
+
+  const getCacheMeta = (loc) => {
+    const cacheFolders = fs.readdirSync(loc || cacheFolderPath, 'utf8');
+    const i = {};
+    const meta = cacheFolders
+      .reduce((prev, folder) => {
+        const location = `${loc || cacheFolderPath}/${folder}/.apos`;
+        const m = fs.readFileSync(location, 'utf8');
+        let [ mdate, id ] = m.split(' ');
+        // e.g. default:apos_2, default:apos_3, etc
+        if (prev[id]) {
+          i[id] = (i[id] || 1) + 1;
+          id = `${id}_${i[id]}`;
+        }
+        return {
+          ...prev,
+          [id]: {
+            mdate: new Date(mdate),
+            folder,
+            location
+          }
+        };
+      }, {});
+    return {
+      folders: cacheFolders,
+      meta
+    };
+  };
+
   return {
     publicFolderPath,
+    cacheFolderPath,
     getScriptMarkup,
     getStylesheetMarkup,
     expectedBundlesNames,
     deleteBuiltFolders,
-    allBundlesAreIncluded
+    allBundlesAreIncluded,
+    removeCache,
+    getCacheMeta
   };
 }

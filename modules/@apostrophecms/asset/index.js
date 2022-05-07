@@ -4,6 +4,7 @@ const Promise = require('bluebird');
 const webpackModule = require('webpack');
 const globalIcons = require('./lib/globalIcons');
 const path = require('path');
+const util = require('util');
 const express = require('express');
 const { stripIndent } = require('common-tags');
 const { merge: webpackMerge } = require('webpack-merge');
@@ -111,6 +112,8 @@ module.exports = {
         usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
         async task(argv) {
+          // The lock could become huge, cache it, see computeCacheMeta()
+          let _packageLockContentCached;
           const req = self.apos.task.getReq();
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
@@ -317,7 +320,13 @@ module.exports = {
                 ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
                 : webpackInstanceConfig;
 
+              // Inject the cache location at the end - we need the merged
+              const cacheMeta = await computeCacheMeta(name, webpackInstanceConfigMerged);
+              webpackInstanceConfigMerged.cache.cacheLocation = cacheMeta.location;
+
               const result = await webpack(webpackInstanceConfigMerged);
+              await writeCacheMeta(name, cacheMeta);
+
               if (result.compilation.errors.length) {
                 // Throwing a string is appropriate in a command line task
                 throw cleanErrors(result.toString('errors'));
@@ -667,6 +676,93 @@ module.exports = {
             // confused by this
             return errors.replace(/(ERROR in[\s\S]*?Module parse failed[\s\S]*)You may need an appropriate loader.*/, '$1');
           }
+
+          // A (CPU intensive) webpack cache helper to compute a hash and build paths.
+          // Cache the result when possible.
+          // The base cache path is by default `data/temp/webpack-cache`
+          // but it can be overridden by an APOS_ASSET_CACHE environment.
+          // In order to compute an accurate hash, this helper needs
+          // the final, merged webpack configuration.
+          async function computeCacheMeta(name, webpackConfig) {
+            const cacheBase = self.getCacheBasePath();
+
+            if (!_packageLockContentCached) {
+              const packageLock = await findPackageLock();
+              if (packageLock === false) {
+                // this should happen only when testing and
+                // we don't wanna break all non-core module tests
+                _packageLockContentCached = 'none';
+              } else {
+                _packageLockContentCached = await fs.readFile(packageLock, 'utf8');
+              }
+            }
+
+            // Plugins can output timestamps or other random information as
+            // configuration (e.g. StylelintWebpackPlugin). As we don't have
+            // control over plugins, we need to remove their configuration values.
+            // We keep only the plugin name and config keys sorted list.
+            // Additionally plugins are sorted by their constructor names.
+            // A shallow clone is enough to avoid modification of the original
+            // config.
+            const config = { ...webpackConfig };
+            config.plugins = (config.plugins || []).map(p => {
+              const result = [];
+              if (p.constructor && p.constructor.name) {
+                result.push(p.constructor.name);
+              }
+              const keys = Object.keys(p);
+              keys.sort();
+              result.push(...keys);
+              return result;
+            });
+            config.plugins.sort((a, b) => (a[0] || '').localeCompare(b[0]));
+            const configString = util.inspect(config, {
+              depth: 10,
+              compact: true,
+              breakLength: Infinity
+            });
+            const hash = self.apos.util.md5(
+              `${self.getNamespace()}:${name}:${_packageLockContentCached}:${configString}`
+            );
+            const location = path.resolve(cacheBase, hash);
+
+            return {
+              base: cacheBase,
+              hash,
+              location
+            };
+          }
+
+          // Add .apos, useful for debugging, testing and cache invalidation.
+          // It also keeps in sync the modified time of the cache folder.
+          async function writeCacheMeta(name, cacheMeta) {
+            try {
+              const cachePath = path.join(cacheMeta.location, '.apos');
+              const lastModified = new Date();
+              await fs.writeFile(
+                cachePath,
+                `${lastModified.toISOString()} ${self.getNamespace()}:${name}`,
+                'utf8'
+              );
+              // should be the same as the meta
+              await fs.utimes(cachePath, lastModified, lastModified);
+            } catch (e) {
+              // Build probably faild, path is missing, ignore
+            }
+          }
+        }
+      },
+
+      'clear-cache': {
+        usage: 'Clear build cache',
+        afterModuleInit: true,
+        async task(argv) {
+          const cacheBaseDir = self.getCacheBasePath();
+
+          await fs.emptyDir(cacheBaseDir);
+          self.apos.util.log(
+            self.apos.task.getReq().t('apostrophe:assetWebpackCacheCleared')
+          );
         }
       }
     };
@@ -766,6 +862,10 @@ module.exports = {
         } else {
           return `/apos-frontend/${namespace}`;
         }
+      },
+      getCacheBasePath() {
+        return process.env.APOS_ASSET_CACHE ||
+              path.join(self.apos.rootDir, 'data/temp/webpack-cache');
       },
       // An implementation method that you should not need to call.
       // Sets a predetermined configuration for the frontend builds.
