@@ -2,6 +2,7 @@ const t = require('../test-lib/test.js');
 const assert = require('assert').strict;
 const fs = require('fs-extra');
 const path = require('path');
+const Promise = require('bluebird');
 
 const {
   checkModulesWebpackConfig,
@@ -91,11 +92,13 @@ describe('Assets', function() {
     deleteBuiltFolders,
     allBundlesAreIncluded,
     removeCache,
-    getCacheMeta
+    getCacheMeta,
+    retryAssertTrue
   } = loadUtils();
 
   after(async function() {
     await deleteBuiltFolders(publicFolderPath, true);
+    await removeCache();
     return t.destroy(apos);
   });
 
@@ -503,6 +506,189 @@ describe('Assets', function() {
     delete process.env.APOS_ASSET_CACHE;
     await removeCache(altCacheLoc);
   });
+
+  it('should watch and rebuild assets and reload page in development', async function() {
+    await t.destroy(apos);
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules
+    });
+    const restartId = apos.asset.restartId;
+    assert(apos.asset.buildWatcher);
+    assert(apos.asset.restartId);
+
+    // Modify asset and rebuild
+    const assetPath = path.join(process.cwd(), 'test/modules/bundle-page/ui/src/extra.js');
+    const assetPathPublic = path.join(process.cwd(), 'test/public/apos-frontend/default/extra-module-bundle.js');
+    const assetContent = 'export default () => {};\n';
+    fs.writeFileSync(
+      assetPath,
+      'export default () => { \'bundle-page-watcher-test\'; };\n',
+      'utf8'
+    );
+
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublic, 'utf8')).match(/bundle-page-watcher-test/),
+      'Unable to verify public asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+
+    await retryAssertTrue(
+      () => apos.asset.restartId !== restartId,
+      'Unable to verify restartId has been changed',
+      500,
+      10000
+    );
+
+    await t.destroy(apos);
+    assert.equal(apos.asset.buildWatcher, null);
+    apos = null;
+    fs.writeFileSync(assetPath, assetContent, 'utf8');
+  });
+
+  it('should watch and rebuild assets in a debounced queue', async function() {
+    await t.destroy(apos);
+    let timesRebuilt = 0;
+    const inc = () => {
+      timesRebuilt += 1;
+    };
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        ...modules,
+        '@apostrophecms/asset': {
+          extendMethods() {
+            return {
+              async watchUiAndRebuild(_super) {
+                return _super(inc);
+              }
+            };
+          }
+        }
+      }
+    });
+    assert(apos.asset.buildWatcher);
+
+    const assetPath = path.join(process.cwd(), 'test/modules/bundle-page/ui/src/extra.js');
+    const assetPathPublic = path.join(process.cwd(), 'test/public/apos-frontend/default/extra-module-bundle.js');
+    const assetContent = 'export default () => {};\n';
+
+    // Modify below the debounce rate
+    for (const i of [ 1, 2, 3 ]) {
+      await fs.writeFile(
+        assetPath,
+        `export default () => { 'bundle-page-watcher-test-${i}'; };\n`,
+        'utf8'
+      );
+      await Promise.delay(300);
+    }
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublic, 'utf8')).match(/bundle-page-watcher-test-3/),
+      'Unable to verify public asset rebuilding by the watcher',
+      500,
+      10000
+    );
+    await retryAssertTrue(
+      () => timesRebuilt === 1,
+      `Expected to rebuild 1 time, got ${timesRebuilt}`,
+      100,
+      5000
+    );
+
+    // Modify above the debounce rate, test the queue cap
+    timesRebuilt = 0;
+    for (const i of [ 1, 2, 3 ]) {
+      await fs.writeFile(
+        assetPath,
+        `export default () => { 'bundle-page-watcher-test-${i}0'; };\n`,
+        'utf8'
+      );
+      await Promise.delay(1050);
+    }
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublic, 'utf8')).match(/bundle-page-watcher-test-30/),
+      'Unable to verify public asset rebuilding by the watcher',
+      500,
+      10000
+    );
+    await retryAssertTrue(
+      () => timesRebuilt === 2,
+      `Expected to rebuild 2 times, got ${timesRebuilt}`,
+      100,
+      5000
+    );
+
+    await t.destroy(apos);
+    apos = null;
+    fs.writeFileSync(assetPath, assetContent, 'utf8');
+  });
+
+  it('should be able to setup the debounce time', async function() {
+    await t.destroy(apos);
+
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/asset': {
+          options: {
+            watchDebounceMs: 500
+          }
+        }
+      }
+    });
+    assert.equal(apos.asset.buildWatcherDebounceMs, 500);
+  });
+
+  it('should not watch if explicitly disabled by option or env in development', async function() {
+    await t.destroy(apos);
+    process.env.APOS_ASSETWATCH_DISABLE = '1';
+
+    apos = await t.create({
+      root: module
+    });
+    assert(!apos.asset.buildWatcher);
+    delete process.env.APOS_ASSETWATCH_DISABLE;
+    await t.destroy(apos);
+
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/asset': {
+          options: {
+            watch: false
+          }
+        }
+      }
+    });
+    assert(!apos.asset.buildWatcher);
+  });
+
+  it('should not watch if autoBuild is disabled', async function() {
+    await t.destroy(apos);
+
+    apos = await t.create({
+      root: module
+    });
+    assert(!apos.asset.buildWatcher);
+  });
+
+  it('should not watch in production', async function() {
+    await t.destroy(apos);
+    process.env.NODE_ENV = 'production';
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules
+    });
+    assert(!apos.asset.buildWatcher);
+    process.env.NODE_ENV = 'development';
+  });
 });
 
 function loadUtils () {
@@ -571,6 +757,19 @@ function loadUtils () {
     };
   };
 
+  // Retry `max` ms with `delay` ms between the retries
+  // until `assertFn` returns true or fail with `failMsg`
+  const retryAssertTrue = async (assertFn, failMsg, delay, max) => {
+    let current = 0;
+    while (!(await assertFn())) {
+      await Promise.delay(delay);
+      current += delay;
+      if (current >= max) {
+        assert.fail(`${failMsg}`);
+      }
+    }
+  };
+
   return {
     publicFolderPath,
     cacheFolderPath,
@@ -580,6 +779,7 @@ function loadUtils () {
     deleteBuiltFolders,
     allBundlesAreIncluded,
     removeCache,
-    getCacheMeta
+    getCacheMeta,
+    retryAssertTrue
   };
 }
