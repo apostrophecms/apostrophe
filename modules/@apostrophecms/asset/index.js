@@ -891,6 +891,11 @@ module.exports = {
         }
         return false;
       },
+      // Start watching assets from `modules/` and
+      // every symlinked package found in `node_modules/`.
+      // `rebuildCallback` is invoked with queue length argument
+      //  on actual build attempt only.
+      // It's there mainly for testing and debugging purposes.
       async watchUiAndRebuild(rebuildCallback) {
         if (self.buildWatcherDisable || self.buildWatcher) {
           return;
@@ -975,15 +980,15 @@ module.exports = {
           _queueLength -= 1;
           await dequeue();
         }
-        function chain(f) {
+        async function chain(f) {
           enqueue(rebuild);
           if (!_queueRunning) {
-            dequeue();
+            await dequeue();
           }
         }
 
         // Find all symlinks in node modules.
-        // This would find both `apostrophe` and `@company/module-name`
+        // This would find both `module-name` and `@company/module-name`
         // package symlinks
         async function findSymlinks(sub = '') {
           let result = [];
@@ -992,7 +997,7 @@ module.exports = {
           while (mod) {
             if (mod.isSymbolicLink()) {
               result.push(sub + mod.name);
-            } else if (mod.name.startsWith('@')) {
+            } else if (!sub && mod.name.startsWith('@')) {
               const dres = await findSymlinks(`${mod.name}/`);
               result = [ ...result, ...dres ];
             }
