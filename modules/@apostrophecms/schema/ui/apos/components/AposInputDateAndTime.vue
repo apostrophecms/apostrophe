@@ -17,8 +17,8 @@
         <input
           v-model="date"
           class="apos-input apos-input--date"
+          :class="{'apos-input--disabled': disabled}"
           type="date"
-          :disabled="disabled"
           @change="setDateAndTime"
         >
         <span class="apos-input--label">
@@ -27,8 +27,8 @@
         <input
           v-model="time"
           class="apos-input apos-input--time"
+          :class="{'apos-input--disabled': disabled}"
           type="time"
-          :disabled="disabled"
           @change="setDateAndTime"
         >
       </div>
@@ -45,7 +45,7 @@ export default {
   emits: [ 'return' ],
   data() {
     return {
-      next: (this.value && this.value.data) || '',
+      next: (this.value && this.value.data) || null,
       date: '',
       time: '',
       disabled: !this.field.required
@@ -57,12 +57,16 @@ export default {
   methods: {
     toggle() {
       this.disabled = !this.disabled;
+
+      if (this.disabled) {
+        this.next = null;
+      }
     },
     validate() {
       // TODO: validate this field
 
       // if no value adn required
-      if (this.field.required && !this.dateAndTime) {
+      if (this.field.required && !this.next) {
         return 'required';
       }
     },
@@ -76,6 +80,10 @@ export default {
     setDateAndTime() {
       if (this.date) {
         this.next = dayjs(`${this.date} ${this.time}:00`.trim()).toISOString();
+        this.disabled = false;
+      } else {
+        this.next = null;
+        this.disabled = true;
       }
     }
   }
@@ -96,9 +104,10 @@ export default {
   .apos-input {
     padding: 10px;
 
-    &:disabled {
+    &--disabled {
       background-color: var(--a-white);
       border-color: var(--a-base-8);
+      color: var(--a-base-4);
     }
 
     &--label {
