@@ -607,7 +607,7 @@ module.exports = (self) => {
     vueComponent: 'AposInputDateAndTime',
     convert (req, field, data, destination) {
       destination[field.name] = data[field.name]
-        ? self.apos.launder.date(data[field.name], field.def)
+        ? self.apos.launder.date(data[field.name])
         : null;
     }
   });
@@ -1111,29 +1111,29 @@ module.exports = (self) => {
       }
     }
   });
+
+  function checkStringLength (string, min, max) {
+    if (string && min && string.length < min) {
+      // Would be unpleasant, but shouldn't happen since the browser
+      // also implements this. We're just checking for naughty scripts
+      throw self.apos.error('min');
+    }
+    // If max is longer than allowed, trim the value down to the max length
+    if (string && max && string.length > max) {
+      return string.substr(0, max);
+    }
+
+    return string;
+  }
+
+  function relationshipQueryBuilderLaunder(v) {
+    if (Array.isArray(v)) {
+      return self.apos.launder.ids(v);
+    } else if (typeof v === 'string' && v.length) {
+      return [ self.apos.launder.id(v) ];
+    } else if (v === 'none') {
+      return 'none';
+    }
+    return undefined;
+  }
 };
-
-function checkStringLength (string, min, max) {
-  if (string && min && string.length < min) {
-    // Would be unpleasant, but shouldn't happen since the browser
-    // also implements this. We're just checking for naughty scripts
-    throw self.apos.error('min');
-  }
-  // If max is longer than allowed, trim the value down to the max length
-  if (string && max && string.length > max) {
-    return string.substr(0, max);
-  }
-
-  return string;
-}
-
-function relationshipQueryBuilderLaunder(v) {
-  if (Array.isArray(v)) {
-    return self.apos.launder.ids(v);
-  } else if (typeof v === 'string' && v.length) {
-    return [ self.apos.launder.id(v) ];
-  } else if (v === 'none') {
-    return 'none';
-  }
-  return undefined;
-}
