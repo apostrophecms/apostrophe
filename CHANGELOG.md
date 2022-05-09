@@ -5,6 +5,7 @@
 ### Adds
 
 * Wepback cache for build performance in development and production mode.
+* Add asset task `apostrophecms/asset:clear-cache` for force clearing the webpack build cache.
 
 ### Fixes
 
