@@ -63,9 +63,6 @@ export default {
       }
     },
     validate() {
-      // TODO: validate this field
-
-      // if no value adn required
       if (this.field.required && !this.next) {
         return 'required';
       }
@@ -111,6 +108,7 @@ export default {
     }
 
     &--label {
+      font-family: var(--a-family-default);
       margin: 0 12px;
     }
   }
