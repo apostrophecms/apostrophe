@@ -76,7 +76,7 @@ export default {
     },
     setDateAndTime() {
       if (this.date) {
-        this.next = dayjs(`${this.date} ${this.time}:00`.trim()).toISOString();
+        this.next = dayjs(`${this.date} ${this.time}`.trim()).toISOString();
         this.disabled = false;
       } else {
         this.next = null;
