@@ -23,9 +23,6 @@ export default {
       activated: false
     };
   },
-  mounted() {
-    console.log('this.value ===> ', this.value);
-  },
   methods: {
     toggle() {
       this.activated = !this.activated;
@@ -64,8 +61,8 @@ export default {
       background-color: var(--a-primary);
 
       &:before {
-      transform: translateX(calc($toggleWidth - $btnSize))
-    }
+        transform: translateX(calc($toggleWidth - $btnSize))
+      }
     }
   }
 </style>
