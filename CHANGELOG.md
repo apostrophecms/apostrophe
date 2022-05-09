@@ -2,6 +2,10 @@
 
 ## 3.18.1
 
+### Adds
+
+* New schema field `dateAndTime` added. Done for the scheduled publishing feature but can be reused for any purpose.
+
 ### Fixes
 
 * The admin UI now rebuilds properly in a development environment when new npm modules are installed in a multisite project (`apos.rootDir` differs from `apos.npmRootDir`).

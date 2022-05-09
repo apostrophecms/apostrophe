@@ -30,6 +30,7 @@
   "aspectRatioWarning": "A proporção não pode ser alterada para este widget",
   "assetTypeBuildComplete": "👍 {{ label }} completado!",
   "assetTypeBuilding": "🧑‍💻 Fazendo o build: {{ label }}...",
+  "at": "às",
   "back": "Voltar",
   "backToHome": "Voltar ao início",
   "basics": "Básico",

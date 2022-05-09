@@ -33,6 +33,7 @@
   "aspectRatioWarning": "Pre túto miniaplikáciu nie je možné zmeniť pomer strán",
   "assetTypeBuildComplete": "👍 {{ label }} je kompletný!",
   "assetTypeBuilding": "🧑‍💻 Budovanie {{ label }}...",
+  "at": "o",
   "back": "Naspäť",
   "backToHome": "Naspäť na domovskú stránku",
   "basics": "Základy",

@@ -25,6 +25,7 @@
   "archivingWillLoseDraftChanges": "Cambios al borrador de este {{ type }} sin publicar serán eliminados permanentemente.",
   "archivingWillUnpublish": "Esto también despublicará el {{ type }}.",
   "areYouSure": "¿Está Seguro?",
+  "at": "a las",
   "aspectRatio": "Relación de aspecto",
   "aspectRatioFree": "Libre",
   "aspectRatioWarning": "La relación de aspecto no se puede cambiar para este widget",
