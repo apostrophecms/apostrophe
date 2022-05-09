@@ -381,9 +381,7 @@ module.exports = {
           if (!published) {
             throw self.apos.error('notfound');
           }
-          const manager = self.apos.doc.getManager(published.type);
-          await manager.unpublish(req, published);
-
+          await self.unpublish(req, published);
           return true;
         },
         ':_id/submit': async (req) => {

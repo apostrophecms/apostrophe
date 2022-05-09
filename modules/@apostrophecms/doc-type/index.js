@@ -807,6 +807,7 @@ module.exports = {
           _id: published._id.replace(PUBLISHED_SUFFIX, PREVIOUS_SUFFIX)
         });
 
+        // TODO: `manager.emit`?
         self.emit('beforeUnpublish', req, published);
 
         await self.apos.doc.db.updateOne(

@@ -412,9 +412,7 @@ module.exports = {
             throw self.apos.error('notfound');
           }
           return self.withLock(req, async () => {
-            const manager = self.apos.doc.getManager(published.type);
-            await manager.unpublish(req, published);
-
+            await self.unpublish(req, published);
             return true;
           });
         },
