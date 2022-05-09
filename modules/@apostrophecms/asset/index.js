@@ -632,16 +632,26 @@ module.exports = {
           async function lockFileIsNewer(name) {
             const timestamp = fs.readFileSync(`${bundleDir}/${name}-build-timestamp.txt`, 'utf8');
             let pkgStats;
-
-            if (await fs.pathExists(`${self.apos.rootDir}/package-lock.json`)) {
-              pkgStats = await fs.stat(`${self.apos.rootDir}/package-lock.json`);
-            } else if (await fs.pathExists(`${self.apos.rootDir}/yarn.lock`)) {
-              pkgStats = await fs.stat(`${self.apos.rootDir}/yarn.lock`);
+            const packageLock = await findPackageLock();
+            if (packageLock) {
+              pkgStats = await fs.stat(packageLock);
             }
 
             const pkgTimestamp = pkgStats && pkgStats.mtimeMs;
 
             return pkgTimestamp > parseInt(timestamp);
+          }
+
+          async function findPackageLock() {
+            const packageLockPath = path.join(self.apos.npmRootDir, 'package-lock.json');
+            const yarnPath = path.join(self.apos.npmRootDir, 'yarn.lock');
+            if (await fs.pathExists(packageLockPath)) {
+              return packageLockPath;
+            } else if (await fs.pathExists(yarnPath)) {
+              return yarnPath;
+            } else {
+              return false;
+            }
           }
 
           function getComponentName(component, { enumerateImports } = {}, i) {
