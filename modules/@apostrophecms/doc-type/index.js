@@ -219,6 +219,7 @@ module.exports = {
             // avoid overcomplicating parked pages
             return;
           }
+
           if (doc.modified) {
             doc = await self.revertDraftToPublished(req, doc, {
               overrides: {
@@ -226,27 +227,8 @@ module.exports = {
               }
             });
           }
-          await self.apos.doc.db.updateOne({
-            _id: doc._id
-          }, {
-            $set: {
-              lastPublishedAt: null
-            }
-          });
-          const published = await self.apos.doc.db.findOne({
-            _id: doc._id.replace(':draft', ':published')
-          });
-          const previous = await self.apos.doc.db.findOne({
-            _id: doc._id.replace(':draft', ':previous')
-          });
-          if (published) {
-            await self.apos.doc.db.removeOne({ _id: published._id });
-            await self.emit('afterDelete', req, published, { checkForChildren: false });
-          }
-          if (previous) {
-            await self.apos.doc.db.removeOne({ _id: previous._id });
-            await self.emit('afterDelete', req, previous, { checkForChildren: false });
-          }
+
+          await self.unpublish(req, doc);
         },
         async deduplicate(req, doc) {
           const $set = await self.getDeduplicationSet(req, doc);
@@ -787,6 +769,68 @@ module.exports = {
           options,
           firstTime
         });
+        return draft;
+      },
+      async unpublish(req, doc) {
+        console.log('[doc-type] unpublish', doc._id, doc.type, doc.title);
+
+        const DRAFT_SUFFIX = ':draft';
+        const PUBLISHED_SUFFIX = ':published';
+        const PREVIOUS_SUFFIX = ':previous';
+
+        const isDocDraft = doc._id.includes(DRAFT_SUFFIX);
+        const isDocPublished = doc._id.includes(PUBLISHED_SUFFIX);
+
+        if (!isDocDraft && !isDocPublished) {
+          // TODO: throw?
+          return;
+        }
+
+        const published = isDocPublished
+          ? doc
+          : await self.apos.doc.db.findOne({
+            _id: doc._id.replace(DRAFT_SUFFIX, PUBLISHED_SUFFIX)
+          });
+
+        const draft = isDocDraft
+          ? doc
+          : await self.apos.doc.db.findOne({
+            _id: doc._id.replace(PUBLISHED_SUFFIX, DRAFT_SUFFIX)
+          });
+
+        if (!draft) {
+          // TODO: throw?
+          return;
+        }
+
+        const previous = await self.apos.doc.db.findOne({
+          _id: published._id.replace(PUBLISHED_SUFFIX, PREVIOUS_SUFFIX)
+        });
+
+        self.emit('beforeUnpublish', req, published);
+
+        await self.apos.doc.db.updateOne(
+          { _id: draft._id },
+          {
+            $set: {
+              // TODO:: set `modified: 1`?
+              modified: 1,
+              // TODO: unset `lastPublishedAt`?
+              lastPublishedAt: null
+            }
+          }
+        );
+
+        // TODO: use `doc.db.removeOne()` rather than `doc.delete()`?
+        if (published) {
+          await self.apos.doc.delete(req.clone({ mode: 'published' }), published, { checkForChildren: false });
+        }
+
+        if (previous) {
+          // TODO: `mode: previous`?
+          await self.apos.doc.delete(req.clone({ mode: 'published' }), previous, { checkForChildren: false });
+        }
+
         return draft;
       },
       // Localize (export) the given draft to another locale, creating the document in the

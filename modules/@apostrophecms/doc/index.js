@@ -579,6 +579,12 @@ module.exports = {
         return m.publish(req, draft, options);
       },
 
+      async unpublish(req, doc) {
+        console.log('[doc] unpublish', doc._id, doc.type, doc.title);
+        const m = self.getManager(doc.type);
+        return m.unpublish(req, doc);
+      },
+
       // Revert to the previously published content, or if
       // already equal to the previously published content, to the
       // publication before that. Returns `false` if the draft

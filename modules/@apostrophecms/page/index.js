@@ -413,20 +413,8 @@ module.exports = {
           }
           return self.withLock(req, async () => {
             const manager = self.apos.doc.getManager(published.type);
-            manager.emit('beforeUnpublish', req, published);
-            await self.apos.doc.delete(req.clone({
-              mode: 'published'
-            }), published);
-            await self.apos.doc.db.updateOne({
-              _id: published._id.replace(':published', ':draft')
-            }, {
-              $set: {
-                modified: 1
-              },
-              $unset: {
-                lastPublishedAt: 1
-              }
-            });
+            await manager.unpublish(req, published);
+
             return true;
           });
         },
@@ -1347,6 +1335,14 @@ database.`);
         const manager = self.apos.doc.getManager(draft.type);
         return manager.publish(req, draft, options);
       },
+
+      async unpublish(req, page) {
+        console.log('[page] unpublish', page._id, page.type, page.title);
+
+        const manager = self.apos.doc.getManager(page.type);
+        return manager.unpublish(req, page);
+      },
+
       // Localize the draft, i.e. copy it to another locale, creating
       // that locale's draft for the first time if necessary. By default
       // existing documents are not updated

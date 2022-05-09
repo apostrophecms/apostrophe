@@ -382,20 +382,8 @@ module.exports = {
             throw self.apos.error('notfound');
           }
           const manager = self.apos.doc.getManager(published.type);
-          manager.emit('beforeUnpublish', req, published);
-          await self.apos.doc.delete(req.clone({
-            mode: 'published'
-          }), published);
-          await self.apos.doc.db.updateOne({
-            _id: published._id.replace(':published', ':draft')
-          }, {
-            $set: {
-              modified: 1
-            },
-            $unset: {
-              lastPublishedAt: 1
-            }
-          });
+          await manager.unpublish(req, published);
+
           return true;
         },
         ':_id/submit': async (req) => {
