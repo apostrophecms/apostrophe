@@ -606,7 +606,9 @@ module.exports = (self) => {
     name: 'dateAndTime',
     vueComponent: 'AposInputDateAndTime',
     convert (req, field, data, destination) {
-      destination[field.name] = self.apos.launder.date(data[field.name], field.def);
+      destination[field.name] = data[field.name]
+        ? self.apos.launder.date(data[field.name], field.def)
+        : null;
     }
   });
 
