@@ -35,6 +35,7 @@
   "assetTypeBuilding": "🧑‍💻 Building the {{ label }}...",
   "assetWebpackConfigWarning": "⚠️ In the module {{ module }}, your webpack config is incorrect. It must be an object and should contain only two properties extensions and bundles.",
   "assetWebpackBundlesWarning": "⚠️ In the module {{ module }} your webpack config is incorrect. Each bundle can only have one property 'templates' that must be an array of strings.",
+  "assetWebpackCacheCleared": "Build cache cleared.",
   "back": "Back",
   "backToHome": "Back to Home",
   "basics": "Basics",

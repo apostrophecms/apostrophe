@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Wepback cache for build performance in development and production mode.
+* Add asset task `apostrophecms/asset:clear-cache` for force clearing the webpack build cache.
+
 ### Fixes
 
 * The admin UI now rebuilds properly in a development environment when new npm modules are installed in a multisite project (`apos.rootDir` differs from `apos.npmRootDir`).
