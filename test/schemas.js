@@ -1652,6 +1652,31 @@ describe('Schemas', function() {
       age: null
     }, 'age', 'required');
   });
+
+  it('should save date and time with the right format', async function () {
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          name: 'emptyValue',
+          type: 'dateAndTime'
+        },
+        {
+          name: 'goodValue',
+          type: 'dateAndTime'
+        }
+      ]
+    });
+
+    const output = {};
+    await apos.schema.convert(req, schema, {
+      emptyValue: null,
+      goodValue: '2022-05-09T22:36:00.000Z'
+    }, output);
+
+    assert(output.emptyValue === null);
+    assert(output.goodValue === '2022-05-09T22:36:00.000Z');
+  });
 });
 
 async function testSchemaError(schema, input, path, name) {
