@@ -116,7 +116,7 @@ module.exports = {
         afterModuleInit: true,
         async task(argv) {
           // The lock could become huge, cache it, see computeCacheMeta()
-          let _packageLockContentCached;
+          let packageLockContentCached;
           const req = self.apos.task.getReq();
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
@@ -689,14 +689,14 @@ module.exports = {
           async function computeCacheMeta(name, webpackConfig) {
             const cacheBase = self.getCacheBasePath();
 
-            if (!_packageLockContentCached) {
+            if (!packageLockContentCached) {
               const packageLock = await findPackageLock();
               if (packageLock === false) {
                 // this should happen only when testing and
-                // we don't wanna break all non-core module tests
-                _packageLockContentCached = 'none';
+                // we don't want to break all non-core module tests
+                packageLockContentCached = 'none';
               } else {
-                _packageLockContentCached = await fs.readFile(packageLock, 'utf8');
+                packageLockContentCached = await fs.readFile(packageLock, 'utf8');
               }
             }
 
@@ -725,7 +725,7 @@ module.exports = {
               breakLength: Infinity
             });
             const hash = self.apos.util.md5(
-              `${self.getNamespace()}:${name}:${_packageLockContentCached}:${configString}`
+              `${self.getNamespace()}:${name}:${packageLockContentCached}:${configString}`
             );
             const location = path.resolve(cacheBase, hash);
 
@@ -750,7 +750,7 @@ module.exports = {
               // should be the same as the meta
               await fs.utimes(cachePath, lastModified, lastModified);
             } catch (e) {
-              // Build probably faild, path is missing, ignore
+              // Build probably failed, path is missing, ignore
             }
           }
         }

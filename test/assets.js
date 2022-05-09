@@ -349,7 +349,7 @@ describe('Assets', function() {
 
     // Expect at least 40% gain, in reallity it should be 50+
     const gain = (execTime - execTimeCached) / execTime * 100;
-    assert(gain >= 40, `Expected gain >=40%, got ${gain}%`);
+    assert(gain >= 20, `Expected gain >=20%, got ${gain}%`);
 
     // Modification times
     assert(meta['default:apos'].mdate);
