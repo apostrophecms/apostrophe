@@ -35,8 +35,8 @@ module.exports = {
     // If false no UI assets sources will be watched in development.
     // This option has no effect in production (watch disabled).
     watch: true,
-    // Miliseconds to wait between asset sources changes without to
-    // perform a build.
+    // Miliseconds to wait between asset sources changes before
+    // performing a build.
     watchDebounceMs: 1000
   },
 
@@ -56,7 +56,7 @@ module.exports = {
     self.extraBundles = fillExtraBundles(verifiedBundles);
     self.webpackExtensions = extensions;
     self.verifiedBundles = verifiedBundles;
-    self.buildWatcherDisable = !!process.env.APOS_ASSETWATCH_DISABLE || (self.options.watch === false);
+    self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
     self.buildWatcher = null;
   },
@@ -79,6 +79,8 @@ module.exports = {
           if (self.uploadfs && (self.uploadfs !== self.apos.uploadfs)) {
             await Promise.promisify(self.uploadfs.destroy)();
           }
+        },
+        async destroyBuildWatcher() {
           if (self.buildWatcher) {
             await self.buildWatcher.close();
             self.buildWatcher = null;
@@ -870,7 +872,7 @@ module.exports = {
         return process.env.APOS_ASSET_CACHE ||
               path.join(self.apos.rootDir, 'data/temp/webpack-cache');
       },
-      // Run automatically build task when appropriate
+      // Run build task automatically when appropriate
       async autorunUiBuildTask() {
         if (
         // Do not automatically build the UI if we're starting from a task
@@ -897,23 +899,23 @@ module.exports = {
       //  on actual build attempt only.
       // It's there mainly for testing and debugging purposes.
       async watchUiAndRebuild(rebuildCallback) {
-        if (self.buildWatcherDisable || self.buildWatcher) {
+        if (!self.buildWatcherEnable || self.buildWatcher) {
           return;
         }
         const rootDir = self.apos.rootDir;
         // chokidar may invoke ready event multiple times,
         // we want one "watch enabled" message.
-        let logedOnce = false;
+        let loggedOnce = false;
         const logOnce = (...msg) => {
-          if (!logedOnce) {
+          if (!loggedOnce) {
             self.apos.util.log(...msg);
-            logedOnce = true;
+            loggedOnce = true;
           }
         };
         const error = self.apos.util.error;
-        const _queue = [];
-        let _queueLength = 0;
-        let _queueRunning = false;
+        const queue = [];
+        let queueLength = 0;
+        let queueRunning = false;
 
         const debounceRebuild = _.debounce(chain, self.buildWatcherDebounceMs, {
           leading: false,
@@ -928,9 +930,6 @@ module.exports = {
           ...symLinkModules.reduce(
             (prev, m) => [
               ...prev,
-              `./node_modules/${m}/views/ui/apos/**`,
-              `./node_modules/${m}/views/ui/src/**`,
-              `./node_modules/${m}/views/ui/public/**`,
               `./node_modules/${m}/modules/**/ui/apos/**`,
               `./node_modules/${m}/modules/**/ui/src/**`,
               `./node_modules/${m}/modules/**/ui/public/**`
@@ -958,31 +957,31 @@ module.exports = {
           await self.autorunUiBuildTask();
           self.restartId = self.apos.util.generateId();
           if (typeof rebuildCallback === 'function') {
-            rebuildCallback(_queueLength);
+            rebuildCallback(queueLength);
           };
         };
 
         // Simple, capped, self-exhausting queue implementation.
         function enqueue(fn) {
-          if (_queueLength === 2) {
+          if (queueLength === 2) {
             return;
           }
-          _queue.push(fn);
-          _queueLength += 1;
+          queue.push(fn);
+          queueLength++;
         };
         async function dequeue() {
-          if (!_queueLength) {
-            _queueRunning = false;
+          if (!queueLength) {
+            queueRunning = false;
             return;
           }
-          _queueRunning = true;
-          await _queue.pop()();
-          _queueLength -= 1;
+          queueRunning = true;
+          await queue.pop()();
+          queueLength--;
           await dequeue();
         }
         async function chain(f) {
           enqueue(rebuild);
-          if (!_queueRunning) {
+          if (!queueRunning) {
             await dequeue();
           }
         }

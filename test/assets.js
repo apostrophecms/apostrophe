@@ -646,17 +646,19 @@ describe('Assets', function() {
 
   it('should not watch if explicitly disabled by option or env in development', async function() {
     await t.destroy(apos);
-    process.env.APOS_ASSETWATCH_DISABLE = '1';
+    process.env.APOS_ASSET_WATCH = '0';
 
     apos = await t.create({
-      root: module
+      root: module,
+      autoBuild: true
     });
     assert(!apos.asset.buildWatcher);
-    delete process.env.APOS_ASSETWATCH_DISABLE;
+    delete process.env.APOS_ASSET_WATCH;
     await t.destroy(apos);
 
     apos = await t.create({
       root: module,
+      autoBuild: true,
       modules: {
         '@apostrophecms/asset': {
           options: {
