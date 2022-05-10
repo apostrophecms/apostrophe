@@ -228,7 +228,7 @@ module.exports = {
             });
           }
 
-          await self.unpublish(req, doc);
+          return self.unpublish(req, doc);
         },
         async deduplicate(req, doc) {
           const $set = await self.getDeduplicationSet(req, doc);
