@@ -108,8 +108,8 @@ export default {
     }
 
     &--label {
-      font-family: var(--a-family-default);
       margin: 0 12px;
+      font-family: var(--a-family-default);
     }
   }
 </style>
