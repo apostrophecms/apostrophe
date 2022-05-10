@@ -834,7 +834,12 @@ export default {
       this.docFields.data = e.doc;
       this.generation++;
 
-      if ((e.action === 'archive') || (e.action === 'delete') || (e.action === 'revert-draft-to-published')) {
+      if (
+        e.action === 'archive' ||
+        e.action === 'unpublish' ||
+        e.action === 'delete' ||
+        e.action === 'revert-draft-to-published'
+      ) {
         this.modal.showModal = false;
       }
     },
