@@ -1,6 +1,10 @@
 # Changelog
 
-## UNRELEASED
+## 3.18.1
+
+### Adds
+
+* New schema field `dateAndTime` added. Done for the scheduled publishing feature but can be reused for any purpose.
 
 ### Adds
 
