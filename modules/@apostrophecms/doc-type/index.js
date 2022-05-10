@@ -771,9 +771,12 @@ module.exports = {
         });
         return draft;
       },
-      async unpublish(req, doc) {
-        console.log('[doc-type] unpublish', doc._id, doc.type, doc.title);
 
+      // Unpublish a document as well as its previous version if any,
+      // and update the draft version.
+      // This method accepts the draft or the published version of the document
+      // to achieve this.
+      async unpublish(req, doc) {
         const DRAFT_SUFFIX = ':draft';
         const PUBLISHED_SUFFIX = ':published';
         const PREVIOUS_SUFFIX = ':previous';

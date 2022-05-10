@@ -335,10 +335,7 @@ export default {
     },
     menuHandler(action) {
       const operation = this.customOperations.find(op => op.action === action);
-      console.log('action', action);
-      console.log('operation', operation);
       if (operation) {
-        console.log('this.context', this.context);
         this.customAction(this.context, operation);
         return;
       }

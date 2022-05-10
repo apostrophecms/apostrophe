@@ -381,8 +381,7 @@ module.exports = {
           if (!published) {
             throw self.apos.error('notfound');
           }
-          await self.unpublish(req, published);
-          return true;
+          return self.unpublish(req, published);
         },
         ':_id/submit': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);

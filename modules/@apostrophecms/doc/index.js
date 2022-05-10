@@ -579,8 +579,8 @@ module.exports = {
         return m.publish(req, draft, options);
       },
 
+      // Unpublish a given document.
       async unpublish(req, doc) {
-        console.log('[doc] unpublish', doc._id, doc.type, doc.title);
         const m = self.getManager(doc.type);
         return m.unpublish(req, doc);
       },

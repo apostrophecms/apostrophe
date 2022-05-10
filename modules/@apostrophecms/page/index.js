@@ -411,10 +411,10 @@ module.exports = {
           if (!published) {
             throw self.apos.error('notfound');
           }
-          return self.withLock(req, async () => {
-            await self.unpublish(req, published);
-            return true;
-          });
+          return self.withLock(
+            req,
+            async () => self.unpublish(req, published)
+          );
         },
         ':_id/submit': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -1334,9 +1334,8 @@ database.`);
         return manager.publish(req, draft, options);
       },
 
+      // Unpublish a page
       async unpublish(req, page) {
-        console.log('[page] unpublish', page._id, page.type, page.title);
-
         const manager = self.apos.doc.getManager(page.type);
         return manager.unpublish(req, page);
       },
