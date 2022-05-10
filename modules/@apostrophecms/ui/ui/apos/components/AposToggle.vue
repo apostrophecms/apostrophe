@@ -40,9 +40,9 @@ export default {
       box-sizing: content-box;
       position: relative;
       border-radius: 34px;
-      padding: 4px;
-      height: $toggleHeight;
       width: $toggleWidth;
+      height: $toggleHeight;
+      padding: 4px;
       cursor: pointer;
       background-color: var(--a-base-3);
 
@@ -61,7 +61,7 @@ export default {
       background-color: var(--a-primary);
 
       &:before {
-        transform: translateX(calc($toggleWidth - $btnSize))
+        transform: translateX(calc($toggleWidth - $btnSize));
       }
     }
   }
