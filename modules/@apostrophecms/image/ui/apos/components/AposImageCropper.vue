@@ -428,15 +428,15 @@ export default {
   // flex-grow: 0;
 
   .apos-image-focal-point {
+    z-index: $z-index-default;
     position: absolute;
-    z-index: 1;
     width: 10px;
     height: 10px;
     border-radius: 50%;
     border: 1px solid var(--a-white);
     background-color: var(--a-primary);
     box-shadow: 0 0 4px var(--a-black);
-    transition: left 0.1s ease, top 0.1s ease;
+    transition: left 0.15s ease, top 0.15s ease;
     cursor: grab;
   }
 }
