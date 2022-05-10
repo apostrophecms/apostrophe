@@ -10,10 +10,11 @@ const mongodbConnect = require('../lib/mongodb-connect');
 // If `apos` is null, no work is done.
 
 async function destroy(apos) {
-  const dbName = apos.db && apos.db.databaseName;
-  if (apos) {
-    await apos.destroy();
+  if (!apos) {
+    return;
   }
+  await apos.destroy();
+  const dbName = apos.db && apos.db.databaseName;
   // TODO at some point accommodate nonsense like testing remote databases
   // that won't let us use dropDatabase, no shell available etc., but the
   // important principle here is that we should not have to have an apos
