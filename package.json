@@ -6,7 +6,7 @@
   "scripts": {
     "pretest": "npm run lint",
     "test": "nyc --reporter=html mocha -t 10000",
-    "lint": "eslint . && node scripts/lint-i18n"
+    "lint": "eslint . && node scripts/lint-i18n && stylelint modules/**/*.{scss,vue}"
   },
   "repository": {
     "type": "git",
@@ -105,7 +105,6 @@
     "server-destroy": "^1.0.1",
     "sluggo": "^0.3.0",
     "stylelint": "^14.6.1",
-    "stylelint-config-standard": "^25.0.0",
     "stylelint-declaration-strict-value": "^1.8.0",
     "stylelint-order": "^5.0.0",
     "stylelint-webpack-plugin": "^3.2.0",

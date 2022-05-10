@@ -89,15 +89,16 @@ export default {
 
   &__header--tiny {
     flex-direction: row;
+    // stylelint-disable-next-line scale-unlimited/declaration-strict-value
     color: #F8F9FA;
 
     .apos-login__project {
-      opacity: 0.7
+      opacity: 0.7;
     }
 
     .apos-login__project-name {
+      // stylelint-disable-next-line scale-unlimited/declaration-strict-value
       font-size: 21px;
-
     }
 
     .apos-login__project-env {

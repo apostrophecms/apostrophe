@@ -1,6 +1,7 @@
 {
   plugins: [
-    'stylelint-order', 'stylelint-declaration-strict-value'
+    'stylelint-order',
+    'stylelint-declaration-strict-value'
   ],
   rules: {
     'color-hex-length': 'short',

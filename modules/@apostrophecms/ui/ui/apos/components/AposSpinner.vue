@@ -75,7 +75,7 @@ module.exports = {
       return 'color: var(--a-primary);';
     },
     className() {
-      return `apos-spinner--${this.weight}`
+      return `apos-spinner--${this.weight}`;
     }
   },
 };
@@ -110,19 +110,19 @@ module.exports = {
 
 @keyframes clockwise {
   from {
-    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
   }
-    to {
-    -webkit-transform: rotate(359deg);
+  to {
+    transform: rotate(359deg);
   }
 }
 
 @keyframes counterClockwise {
   from {
-    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
   }
-    to {
-    -webkit-transform: rotate(-359deg);
+  to {
+    transform: rotate(-359deg);
   }
 }
 </style>

@@ -309,8 +309,8 @@ export default {
 
 .apos-available-locale {
   display: inline-block;
-  font-size: 10px;
   color: var(--a-primary);
+  font-size: var(--a-type-small);
 }
 
 .apos-available-locale:not(:last-of-type) {
