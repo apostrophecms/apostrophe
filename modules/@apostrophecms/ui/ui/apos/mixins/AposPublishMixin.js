@@ -82,6 +82,30 @@ export default {
         return false;
       }
     },
+    // A UI method to unpublish a document.
+    async unpublish(doc) {
+      const action = window.apos.modules[doc.type].action;
+      try {
+        doc = await apos.http.post(`${action}/${doc._id}/unpublish`, {
+          body: {},
+          busy: true
+        });
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'unpublish'
+        });
+        return doc;
+      } catch (e) {
+        // TODO: rm log
+        console.error(e);
+        await apos.alert({
+          heading: this.$t('apostrophe:errorWhileUnpublishing'),
+          description: e.message || this.$t('apostrophe:errorWhileUnpublishing'),
+          localize: false
+        });
+        return false;
+      }
+    },
     // A UI method to submit a draft document for review and possible publication
     // ("propose changes").
     async submitDraft(doc) {

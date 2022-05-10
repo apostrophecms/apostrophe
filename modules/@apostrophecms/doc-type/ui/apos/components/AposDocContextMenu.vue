@@ -164,6 +164,13 @@ export default {
             modifiers: [ 'danger' ]
           }
         ] : []),
+        ...(this.canUnpublish ? [
+          {
+            label: 'apostrophe:unpublish',
+            action: 'unpublish',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
         ...(this.showRestore && this.canRestore ? [
           {
             label: 'apostrophe:restore',
@@ -251,6 +258,9 @@ export default {
         ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
       );
     },
+    canUnpublish() {
+      return this.manuallyPublished && this.context.lastPublishedAt;
+    },
     canCopy() {
       return this.canEdit && !this.moduleOptions.singleton && this.context._id;
     },
@@ -325,7 +335,10 @@ export default {
     },
     menuHandler(action) {
       const operation = this.customOperations.find(op => op.action === action);
+      console.log('action', action);
+      console.log('operation', operation);
       if (operation) {
+        console.log('this.context', this.context);
         this.customAction(this.context, operation);
         return;
       }
