@@ -96,8 +96,6 @@ export default {
         });
         return doc;
       } catch (e) {
-        // TODO: rm log
-        console.error(e);
         await apos.alert({
           heading: this.$t('apostrophe:errorWhileUnpublishing'),
           description: e.message || this.$t('apostrophe:errorWhileUnpublishing'),
