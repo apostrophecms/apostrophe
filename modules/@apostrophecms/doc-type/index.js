@@ -795,6 +795,10 @@ module.exports = {
             _id: doc._id.replace(DRAFT_SUFFIX, PUBLISHED_SUFFIX)
           });
 
+        if (!published) {
+          return;
+        }
+
         const draft = isDocDraft
           ? doc
           : await self.apos.doc.db.findOne({
@@ -810,7 +814,6 @@ module.exports = {
           _id: published._id.replace(PUBLISHED_SUFFIX, PREVIOUS_SUFFIX)
         });
 
-        // TODO: `manager.emit`?
         self.emit('beforeUnpublish', req, published);
 
         await self.apos.doc.db.updateOne(
@@ -826,9 +829,7 @@ module.exports = {
         );
 
         // TODO: use `doc.db.removeOne()` rather than `doc.delete()`?
-        if (published) {
-          await self.apos.doc.delete(req.clone({ mode: 'published' }), published, { checkForChildren: false });
-        }
+        await self.apos.doc.delete(req.clone({ mode: 'published' }), published, { checkForChildren: false });
 
         if (previous) {
           // TODO: `mode: previous`?
