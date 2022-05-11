@@ -125,6 +125,11 @@ export default {
     AposAdvisoryLockMixin,
     AposArchiveMixin
   ],
+  provide () {
+    return {
+      originalDoc: this.originalDoc
+    };
+  },
   props: {
     moduleName: {
       type: String,
@@ -153,6 +158,9 @@ export default {
       },
       triggerValidation: false,
       original: null,
+      originalDoc: {
+        ref: null
+      },
       published: null,
       errorCount: 0,
       restoreOnly: false,
@@ -363,7 +371,8 @@ export default {
     manuallyPublished() {
       this.saveMenu = this.computeSaveMenu();
     },
-    original() {
+    original(newVal) {
+      this.originalDoc.ref = newVal;
       this.saveMenu = this.computeSaveMenu();
     },
     tabs() {

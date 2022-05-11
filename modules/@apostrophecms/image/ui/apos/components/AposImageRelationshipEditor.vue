@@ -427,7 +427,7 @@ export default {
 .apos-schema {
   margin: 30px 15px 0;
 
- .apos-field {
+  .apos-field {
     margin-bottom: 20px;
 
     &__label {
@@ -448,9 +448,9 @@ export default {
   flex-direction: row;
 
   .apos-field {
+    position: relative;
     display: flex;
     align-items: center;
-    position: relative;
     flex-grow: 1;
 
     &:first-child {
@@ -472,7 +472,7 @@ export default {
   }
 }
 
-.apos-input[type="number"] {
+.apos-input[type='number'] {
   padding-right: 5px;
 }
 
@@ -495,16 +495,16 @@ export default {
 }
 
 .apos-field__label--aligned {
-  margin: 0
+  margin: 0;
 }
 
 .apos-image-cropper__container {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 30px 10%;
   // We remove the modal's paddings - header height - container margin
   height: calc(100vh - 40px - 75px - 60px);
+  margin: 30px 10%;
   box-sizing: border-box;
 }
 </style>

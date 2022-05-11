@@ -4,10 +4,13 @@ const Promise = require('bluebird');
 const webpackModule = require('webpack');
 const globalIcons = require('./lib/globalIcons');
 const path = require('path');
+const util = require('util');
 const express = require('express');
 const { stripIndent } = require('common-tags');
 const { merge: webpackMerge } = require('webpack-merge');
 const cuid = require('cuid');
+const chokidar = require('chokidar');
+const _ = require('lodash');
 const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
@@ -28,7 +31,13 @@ module.exports = {
     // If this option is true and process.env.NODE_ENV is not `production`,
     // the browser will refresh when the Apostrophe application
     // restarts. A useful companion to `nodemon`.
-    refreshOnRestart: false
+    refreshOnRestart: false,
+    // If false no UI assets sources will be watched in development.
+    // This option has no effect in production (watch disabled).
+    watch: true,
+    // Miliseconds to wait between asset sources changes before
+    // performing a build.
+    watchDebounceMs: 1000
   },
 
   async init(self) {
@@ -47,26 +56,17 @@ module.exports = {
     self.extraBundles = fillExtraBundles(verifiedBundles);
     self.webpackExtensions = extensions;
     self.verifiedBundles = verifiedBundles;
+    self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
+    self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
+    self.buildWatcher = null;
   },
   handlers (self) {
     return {
       'apostrophe:modulesRegistered': {
         async runUiBuildTask() {
-          if (
-            // Do not automatically build the UI if we're starting from a task
-            !self.apos.isTask() &&
-            // Or if we're in production
-            process.env.NODE_ENV !== 'production' &&
-            // Or if we've set an app option to skip the auto build
-            self.apos.options.autoBuild !== false
-          ) {
-
-            checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
-            // If starting up normally, run the build task, checking if we
-            // really need to update the apos build
-            await self.apos.task.invoke('@apostrophecms/asset:build', {
-              'check-apos-build': true
-            });
+          const ran = await self.autorunUiBuildTask();
+          if (ran) {
+            await self.watchUiAndRebuild();
           }
         },
         injectAssetsPlaceholders() {
@@ -78,6 +78,12 @@ module.exports = {
         async destroyUploadfs() {
           if (self.uploadfs && (self.uploadfs !== self.apos.uploadfs)) {
             await Promise.promisify(self.uploadfs.destroy)();
+          }
+        },
+        async destroyBuildWatcher() {
+          if (self.buildWatcher) {
+            await self.buildWatcher.close();
+            self.buildWatcher = null;
           }
         }
       }
@@ -111,6 +117,8 @@ module.exports = {
         usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
         async task(argv) {
+          // The lock could become huge, cache it, see computeCacheMeta()
+          let packageLockContentCached;
           const req = self.apos.task.getReq();
           const namespace = self.getNamespace();
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
@@ -317,7 +325,13 @@ module.exports = {
                 ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
                 : webpackInstanceConfig;
 
+              // Inject the cache location at the end - we need the merged
+              const cacheMeta = await computeCacheMeta(name, webpackInstanceConfigMerged);
+              webpackInstanceConfigMerged.cache.cacheLocation = cacheMeta.location;
+
               const result = await webpack(webpackInstanceConfigMerged);
+              await writeCacheMeta(name, cacheMeta);
+
               if (result.compilation.errors.length) {
                 // Throwing a string is appropriate in a command line task
                 throw cleanErrors(result.toString('errors'));
@@ -632,16 +646,26 @@ module.exports = {
           async function lockFileIsNewer(name) {
             const timestamp = fs.readFileSync(`${bundleDir}/${name}-build-timestamp.txt`, 'utf8');
             let pkgStats;
-
-            if (await fs.pathExists(`${self.apos.rootDir}/package-lock.json`)) {
-              pkgStats = await fs.stat(`${self.apos.rootDir}/package-lock.json`);
-            } else if (await fs.pathExists(`${self.apos.rootDir}/yarn.lock`)) {
-              pkgStats = await fs.stat(`${self.apos.rootDir}/yarn.lock`);
+            const packageLock = await findPackageLock();
+            if (packageLock) {
+              pkgStats = await fs.stat(packageLock);
             }
 
             const pkgTimestamp = pkgStats && pkgStats.mtimeMs;
 
             return pkgTimestamp > parseInt(timestamp);
+          }
+
+          async function findPackageLock() {
+            const packageLockPath = path.join(self.apos.npmRootDir, 'package-lock.json');
+            const yarnPath = path.join(self.apos.npmRootDir, 'yarn.lock');
+            if (await fs.pathExists(packageLockPath)) {
+              return packageLockPath;
+            } else if (await fs.pathExists(yarnPath)) {
+              return yarnPath;
+            } else {
+              return false;
+            }
           }
 
           function getComponentName(component, { enumerateImports } = {}, i) {
@@ -657,6 +681,93 @@ module.exports = {
             // confused by this
             return errors.replace(/(ERROR in[\s\S]*?Module parse failed[\s\S]*)You may need an appropriate loader.*/, '$1');
           }
+
+          // A (CPU intensive) webpack cache helper to compute a hash and build paths.
+          // Cache the result when possible.
+          // The base cache path is by default `data/temp/webpack-cache`
+          // but it can be overridden by an APOS_ASSET_CACHE environment.
+          // In order to compute an accurate hash, this helper needs
+          // the final, merged webpack configuration.
+          async function computeCacheMeta(name, webpackConfig) {
+            const cacheBase = self.getCacheBasePath();
+
+            if (!packageLockContentCached) {
+              const packageLock = await findPackageLock();
+              if (packageLock === false) {
+                // this should happen only when testing and
+                // we don't want to break all non-core module tests
+                packageLockContentCached = 'none';
+              } else {
+                packageLockContentCached = await fs.readFile(packageLock, 'utf8');
+              }
+            }
+
+            // Plugins can output timestamps or other random information as
+            // configuration (e.g. StylelintWebpackPlugin). As we don't have
+            // control over plugins, we need to remove their configuration values.
+            // We keep only the plugin name and config keys sorted list.
+            // Additionally plugins are sorted by their constructor names.
+            // A shallow clone is enough to avoid modification of the original
+            // config.
+            const config = { ...webpackConfig };
+            config.plugins = (config.plugins || []).map(p => {
+              const result = [];
+              if (p.constructor && p.constructor.name) {
+                result.push(p.constructor.name);
+              }
+              const keys = Object.keys(p);
+              keys.sort();
+              result.push(...keys);
+              return result;
+            });
+            config.plugins.sort((a, b) => (a[0] || '').localeCompare(b[0]));
+            const configString = util.inspect(config, {
+              depth: 10,
+              compact: true,
+              breakLength: Infinity
+            });
+            const hash = self.apos.util.md5(
+              `${self.getNamespace()}:${name}:${packageLockContentCached}:${configString}`
+            );
+            const location = path.resolve(cacheBase, hash);
+
+            return {
+              base: cacheBase,
+              hash,
+              location
+            };
+          }
+
+          // Add .apos, useful for debugging, testing and cache invalidation.
+          // It also keeps in sync the modified time of the cache folder.
+          async function writeCacheMeta(name, cacheMeta) {
+            try {
+              const cachePath = path.join(cacheMeta.location, '.apos');
+              const lastModified = new Date();
+              await fs.writeFile(
+                cachePath,
+                `${lastModified.toISOString()} ${self.getNamespace()}:${name}`,
+                'utf8'
+              );
+              // should be the same as the meta
+              await fs.utimes(cachePath, lastModified, lastModified);
+            } catch (e) {
+              // Build probably failed, path is missing, ignore
+            }
+          }
+        }
+      },
+
+      'clear-cache': {
+        usage: 'Clear build cache',
+        afterModuleInit: true,
+        async task(argv) {
+          const cacheBaseDir = self.getCacheBasePath();
+
+          await fs.emptyDir(cacheBaseDir);
+          self.apos.util.log(
+            self.apos.task.getReq().t('apostrophe:assetWebpackCacheCleared')
+          );
         }
       }
     };
@@ -755,6 +866,144 @@ module.exports = {
           }
         } else {
           return `/apos-frontend/${namespace}`;
+        }
+      },
+      getCacheBasePath() {
+        return process.env.APOS_ASSET_CACHE ||
+              path.join(self.apos.rootDir, 'data/temp/webpack-cache');
+      },
+      // Run build task automatically when appropriate
+      async autorunUiBuildTask() {
+        if (
+        // Do not automatically build the UI if we're starting from a task
+          !self.apos.isTask() &&
+            // Or if we're in production
+            process.env.NODE_ENV !== 'production' &&
+            // Or if we've set an app option to skip the auto build
+            self.apos.options.autoBuild !== false
+        ) {
+
+          checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
+          // If starting up normally, run the build task, checking if we
+          // really need to update the apos build
+          await self.apos.task.invoke('@apostrophecms/asset:build', {
+            'check-apos-build': true
+          });
+          return true;
+        }
+        return false;
+      },
+      // Start watching assets from `modules/` and
+      // every symlinked package found in `node_modules/`.
+      // `rebuildCallback` is invoked with queue length argument
+      //  on actual build attempt only.
+      // It's there mainly for testing and debugging purposes.
+      async watchUiAndRebuild(rebuildCallback) {
+        if (!self.buildWatcherEnable || self.buildWatcher) {
+          return;
+        }
+        const rootDir = self.apos.rootDir;
+        // chokidar may invoke ready event multiple times,
+        // we want one "watch enabled" message.
+        let loggedOnce = false;
+        const logOnce = (...msg) => {
+          if (!loggedOnce) {
+            self.apos.util.log(...msg);
+            loggedOnce = true;
+          }
+        };
+        const error = self.apos.util.error;
+        const queue = [];
+        let queueLength = 0;
+        let queueRunning = false;
+
+        const debounceRebuild = _.debounce(chain, self.buildWatcherDebounceMs, {
+          leading: false,
+          trailing: true
+        });
+
+        const symLinkModules = await findSymlinks();
+        const watchDirs = [
+          './modules/**/ui/apos/**',
+          './modules/**/ui/src/**',
+          './modules/**/ui/public/**',
+          ...symLinkModules.reduce(
+            (prev, m) => [
+              ...prev,
+              `./node_modules/${m}/modules/**/ui/apos/**`,
+              `./node_modules/${m}/modules/**/ui/src/**`,
+              `./node_modules/${m}/modules/**/ui/public/**`
+            ],
+            []
+          )
+        ];
+        self.buildWatcher = chokidar.watch(watchDirs, {
+          cwd: rootDir,
+          ignoreInitial: true
+        });
+
+        self.buildWatcher
+          .on('add', debounceRebuild)
+          .on('change', debounceRebuild)
+          .on('unlink', debounceRebuild)
+          .on('addDir', debounceRebuild)
+          .on('unlinkDir', debounceRebuild)
+          .on('error', e => error(`Watcher error: ${e}`))
+          .on('ready', () => logOnce(
+            self.apos.task.getReq().t('apostrophe:assetBuildWatchStarted')
+          ));
+
+        async function rebuild() {
+          await self.autorunUiBuildTask();
+          self.restartId = self.apos.util.generateId();
+          if (typeof rebuildCallback === 'function') {
+            rebuildCallback(queueLength);
+          };
+        };
+
+        // Simple, capped, self-exhausting queue implementation.
+        function enqueue(fn) {
+          if (queueLength === 2) {
+            return;
+          }
+          queue.push(fn);
+          queueLength++;
+        };
+        async function dequeue() {
+          if (!queueLength) {
+            queueRunning = false;
+            return;
+          }
+          queueRunning = true;
+          await queue.pop()();
+          queueLength--;
+          await dequeue();
+        }
+        async function chain(f) {
+          enqueue(rebuild);
+          if (!queueRunning) {
+            await dequeue();
+          }
+        }
+
+        // Find all symlinks in node modules.
+        // This would find both `module-name` and `@company/module-name`
+        // package symlinks
+        async function findSymlinks(sub = '') {
+          let result = [];
+          const handle = await fs.promises.opendir(path.join(rootDir, 'node_modules', sub));
+          let mod = await handle.read();
+          while (mod) {
+            if (mod.isSymbolicLink()) {
+              result.push(sub + mod.name);
+            } else if (!sub && mod.name.startsWith('@')) {
+              const dres = await findSymlinks(`${mod.name}/`);
+              result = [ ...result, ...dres ];
+            }
+            mod = await handle.read();
+          }
+          await handle.close();
+          return result;
         }
       },
       // An implementation method that you should not need to call.
@@ -903,9 +1152,17 @@ module.exports = {
           // Long polling: keep the logs quiet by responding slowly, except the
           // first time. If we restart, the request will fail immediately,
           // and the client will know to try again with `fast`. The client also
-          // uses `fast` the first time
-          if (!req.query.fast) {
-            await Promise.delay(30000);
+          // uses `fast` the first time.
+          if (req.query.fast) {
+            return self.restartId;
+          }
+          // Long polling will be interrupted if restartId changes.
+          let delay = 30000;
+          const step = 300;
+          const oldRestartId = self.restartId;
+          while (delay > 0 && oldRestartId === self.restartId) {
+            delay -= step;
+            await Promise.delay(step);
           }
           return self.restartId;
         }

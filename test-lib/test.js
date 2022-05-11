@@ -34,4 +34,16 @@ for (const dir of dirs) {
 
 fs.writeFileSync(packageJson, JSON.stringify(packageJsonInfo, null, '  '));
 
+// A "project level" package-lock.json for checking webpack build cache
+
+const packageLockJson = path.join(__dirname, '/../test/package-lock.json');
+const packageLockJsonInfo = {
+  _: 'Do not change, fake lock used for testing',
+  name: 'apostrophe',
+  version: 'current',
+  packages: {}
+};
+fs.removeSync(packageLockJson);
+fs.writeFileSync(packageLockJson, JSON.stringify(packageLockJsonInfo, null, '  '));
+
 module.exports = require('./util.js');

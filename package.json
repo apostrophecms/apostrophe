@@ -1,12 +1,15 @@
 {
   "name": "apostrophe",
-  "version": "3.17.0",
+  "version": "3.19.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
     "test": "nyc --reporter=html mocha -t 10000",
-    "lint": "eslint --ext .js,.vue . && node scripts/lint-i18n"
+    "eslint": "eslint --ext .js,.vue .",
+    "i18n": "node scripts/lint-i18n",
+    "stylelint": "stylelint modules/**/*.{scss,vue}",
+    "lint": "npm run eslint && npm run i18n && npm run stylelint"
   },
   "repository": {
     "type": "git",
@@ -105,7 +108,6 @@
     "server-destroy": "^1.0.1",
     "sluggo": "^0.3.0",
     "stylelint": "^14.6.1",
-    "stylelint-config-standard": "^25.0.0",
     "stylelint-declaration-strict-value": "^1.8.0",
     "stylelint-order": "^5.0.0",
     "stylelint-webpack-plugin": "^3.2.0",

@@ -7,7 +7,7 @@
           class="apos-field__label"
           :is="labelEl" :for="uid"
         >
-          {{ $t(field.label) }}
+          {{ $t(label) }}
           <span v-if="field.required" class="apos-field__required">
             *
           </span>
@@ -55,6 +55,13 @@
 // friends, which override the `body` slot
 export default {
   name: 'AposInputWrapper',
+  inject: {
+    originalDoc: {
+      default: () => ({
+        ref: null
+      })
+    }
+  },
   props: {
     field: {
       type: Object,
@@ -94,6 +101,19 @@ export default {
     };
   },
   computed: {
+    label () {
+      const { label, publishedLabel } = this.field;
+
+      if (
+        this.originalDoc.ref &&
+        this.originalDoc.ref.lastPublishedAt &&
+        publishedLabel
+      ) {
+        return publishedLabel;
+      }
+
+      return label;
+    },
     classList: function () {
       const classes = [
         'apos-field',

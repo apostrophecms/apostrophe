@@ -1,6 +1,34 @@
 # Changelog
 
-# UNRELEASED
+## UNRELEASED
+
+### Fixes
+
+* Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
+
+## 3.19.0
+
+### Adds
+
+* New schema field type `dateAndTime` added. This schema field type saves in ISO8601 format, as UTC (Universal Coordinated Time), but is edited in a user-friendly way in the user's current time zone and locale.
+* Webpack disk cache for better build performance in development and, if appropriately configured, production as well.
+* In development, Webpack rebuilds the front end without the need to restart the Node.js process, yielding an additional speedup. To get this speedup for existing projects, see the `nodemonConfig` section of the latest `package.json` in [a3-boilerplate](https://github.com/apostrophecms/a3-boilerplate) for the new "ignore" rules you'll need to prevent nodemon from stopping the process and restarting.
+* Added the new command line task `apostrophecms/asset:clear-cache` for clearing the webpack disk cache. This should be necessary only in rare cases where the configuration has changed in ways Apostrophe can't automatically detect.
+* A separate `publishedLabel` field can be set for any schema field of a page or piece. If present it is displayed instead of `label` if the document has already been published.
+
+### 3.18.1
+
+### Adds
+
+* Webpack cache for build performance in development and production mode.
+* Add a watcher in development mode to rebuild the assets on changes in the same process.
+* Add asset task `apostrophecms/asset:clear-cache` for force clearing the webpack build cache.
+
+### Fixes
+
+* The admin UI now rebuilds properly in a development environment when new npm modules are installed in a multisite project (`apos.rootDir` differs from `apos.npmRootDir`).
+
+## 3.18.0 (2022-05-03)
 
 ### Adds
 
@@ -26,7 +54,7 @@
 * The `self.email` method of modules now correctly accepts a default `from` address configured for a specific module via the `from` subproperty of the `email` option to that module. Thanks to `chmdebeer` for pointing out the issue and the fix.
 * Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
 * Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
-* Fixes vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
+* The `nestedModuleSubdirs` feature no longer throws an error and interrupts startup if a project contains both `@apostrophecms/asset` and `asset`, which should be considered separate module names.
 
 ## 3.17.0 (2022-03-31)
 
