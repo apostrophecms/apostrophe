@@ -15,6 +15,8 @@
 * In development, Webpack rebuilds the front end without the need to restart the Node.js process, yielding an additional speedup. To get this speedup for existing projects, see the `nodemonConfig` section of the latest `package.json` in [a3-boilerplate](https://github.com/apostrophecms/a3-boilerplate) for the new "ignore" rules you'll need to prevent nodemon from stopping the process and restarting.
 * Added the new command line task `apostrophecms/asset:clear-cache` for clearing the webpack disk cache. This should be necessary only in rare cases where the configuration has changed in ways Apostrophe can't automatically detect.
 * A separate `publishedLabel` field can be set for any schema field of a page or piece. If present it is displayed instead of `label` if the document has already been published.
+* Adds an `unpublish` method, available for any doc-type.  
+An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
 
 ### 3.18.1
 
