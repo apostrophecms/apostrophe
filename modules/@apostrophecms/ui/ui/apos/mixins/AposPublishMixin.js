@@ -90,6 +90,10 @@ export default {
           body: {},
           busy: true
         });
+        apos.notify('apostrophe:noLongerPublished', {
+          type: 'success',
+          dismiss: true
+        });
         apos.bus.$emit('content-changed', {
           doc,
           action: 'unpublish'
@@ -97,7 +101,7 @@ export default {
         return doc;
       } catch (e) {
         await apos.alert({
-          heading: this.$t('apostrophe:errorWhileUnpublishing'),
+          heading: this.$t('apostrophe:error'),
           description: e.message || this.$t('apostrophe:errorWhileUnpublishing'),
           localize: false
         });
