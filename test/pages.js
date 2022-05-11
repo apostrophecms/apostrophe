@@ -49,7 +49,19 @@ describe('Pages', function() {
           }
         },
         'test-page': {
-          extend: '@apostrophecms/page-type'
+          extend: '@apostrophecms/page-type',
+          extendMethods(self) {
+            return {
+              emit(_super, message, req, data, ...args) {
+                // Sort of a way to spy `emit` function
+                self.emitStack = {
+                  ...(self.emitStack || {}),
+                  [message]: data
+                };
+                return _super(message, req, data, ...args);
+              }
+            };
+          }
         }
       }
     });
@@ -1021,6 +1033,59 @@ describe('Pages', function() {
     assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
 
     delete apos.page.options.cache;
+  });
+
+  describe('unpublish', function() {
+    it('should unpublish the published and previous versions of a page and return the draft one', async function() {
+      const baseItem = {
+        aposDocId: 'some-page',
+        type: 'test-page',
+        slug: '/some-page',
+        visibility: 'public',
+        path: '/some-page',
+        level: 1,
+        rank: 0
+      };
+      const draftItem = {
+        ...baseItem,
+        _id: 'some-page:en:draft',
+        aposLocale: 'en:draft'
+      };
+      const publishedItem = {
+        ...baseItem,
+        _id: 'some-page:en:published',
+        aposLocale: 'en:published'
+      };
+      const previousItem = {
+        ...baseItem,
+        _id: 'some-page:en:previous',
+        aposLocale: 'en:previous'
+      };
+
+      await apos.doc.db.insertMany([
+        draftItem,
+        publishedItem,
+        previousItem
+      ]);
+
+      const draft = await apos.http.post(
+        `/api/v1/@apostrophecms/page/${publishedItem._id}/unpublish?apiKey=${apiKey}`,
+        {
+          body: {},
+          busy: true
+        }
+      );
+
+      const published = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
+      const previous = await apos.doc.db.findOne({ _id: 'some-page:en:previous' });
+
+      assert(published === null);
+      assert(previous === null);
+      assert(draft._id === draftItem._id);
+      assert(draft.modified === 1);
+      assert(draft.lastPublishedAt === null);
+      assert(apos.modules['test-page'].emitStack.beforeUnpublish._id === publishedItem._id);
+    });
   });
 
 });
