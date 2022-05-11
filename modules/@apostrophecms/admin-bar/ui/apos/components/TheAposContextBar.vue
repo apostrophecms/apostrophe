@@ -131,7 +131,6 @@ export default {
   },
   async mounted() {
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
-    apos.bus.$on('unpublish', this.onUnpublish);
     apos.bus.$on('set-context', this.onSetContext);
     apos.bus.$on('push-context', this.onPushContext);
     apos.bus.$on('pop-context', this.onPopContext);
@@ -594,37 +593,6 @@ export default {
         await apos.alert({
           heading: this.$t('apostrophe:error'),
           description: e.message || this.$t('apostrophe:errorWhileRestoring'),
-          localize: false
-        });
-      }
-    },
-    async onUnpublish(data) {
-      try {
-        await apos.http.post(`${data.action}/${data._id}/unpublish`, {
-          body: {},
-          busy: true
-        });
-        apos.notify('apostrophe:noLongerPublished', {
-          type: 'success',
-          dismiss: true
-        });
-        // This handler covers the modals too, so make sure it's
-        // for the context document before altering any admin bar state
-        // because of it
-        if (data._id.replace(/:.*$/, '') === (this.context._id.replace(/:.*$/, ''))) {
-          this.context = {
-            ...this.context,
-            modified: true,
-            lastPublishedAt: null
-          };
-          // No refresh is needed here because we're still in draft mode
-          // looking at the draft mode, and the thing that changed is the
-          // published mode
-        }
-      } catch (e) {
-        await apos.alert({
-          heading: this.$t('apostrophe:error'),
-          description: e.message || this.$t('apostrophe:errorWhileUnpublishing'),
           localize: false
         });
       }
