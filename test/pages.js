@@ -1036,39 +1036,43 @@ describe('Pages', function() {
   });
 
   describe('unpublish', function() {
-    it('should unpublish the published and previous versions of a page and return the draft one', async function() {
-      const baseItem = {
-        aposDocId: 'some-page',
-        type: 'test-page',
-        slug: '/some-page',
-        visibility: 'public',
-        path: '/some-page',
-        level: 1,
-        rank: 0
-      };
-      const draftItem = {
-        ...baseItem,
-        _id: 'some-page:en:draft',
-        aposLocale: 'en:draft'
-      };
-      const publishedItem = {
-        ...baseItem,
-        _id: 'some-page:en:published',
-        aposLocale: 'en:published'
-      };
-      const previousItem = {
-        ...baseItem,
-        _id: 'some-page:en:previous',
-        aposLocale: 'en:previous'
-      };
+    const baseItem = {
+      aposDocId: 'some-page',
+      type: 'test-page',
+      slug: '/some-page',
+      visibility: 'public',
+      path: '/some-page',
+      level: 1,
+      rank: 0
+    };
+    const draftItem = {
+      ...baseItem,
+      _id: 'some-page:en:draft',
+      aposLocale: 'en:draft'
+    };
+    const publishedItem = {
+      ...baseItem,
+      _id: 'some-page:en:published',
+      aposLocale: 'en:published'
+    };
+    const previousItem = {
+      ...baseItem,
+      _id: 'some-page:en:previous',
+      aposLocale: 'en:previous'
+    };
 
+    let draft;
+    let published;
+    let previous;
+
+    this.beforeEach(async function() {
       await apos.doc.db.insertMany([
         draftItem,
         publishedItem,
         previousItem
       ]);
 
-      const draft = await apos.http.post(
+      draft = await apos.http.post(
         `/api/v1/@apostrophecms/page/${publishedItem._id}/unpublish?apiKey=${apiKey}`,
         {
           body: {},
@@ -1076,14 +1080,28 @@ describe('Pages', function() {
         }
       );
 
-      const published = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
-      const previous = await apos.doc.db.findOne({ _id: 'some-page:en:previous' });
+      published = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
+      previous = await apos.doc.db.findOne({ _id: 'some-page:en:previous' });
+    });
 
+    this.afterEach(async function() {
+      await apos.doc.db.deleteMany({
+        aposDocId: 'some-page'
+      });
+    });
+
+    it('should remove the published and previous versions of a page', function() {
       assert(published === null);
       assert(previous === null);
+    });
+
+    it('should update the draft version of a page', function() {
       assert(draft._id === draftItem._id);
       assert(draft.modified === 1);
       assert(draft.lastPublishedAt === null);
+    });
+
+    it('should emit the `beforeUnpublish` event with the published version of a page', function() {
       assert(apos.modules['test-page'].emitStack.beforeUnpublish._id === publishedItem._id);
     });
   });
