@@ -779,7 +779,6 @@ module.exports = {
       async unpublish(req, doc) {
         const DRAFT_SUFFIX = ':draft';
         const PUBLISHED_SUFFIX = ':published';
-        const PREVIOUS_SUFFIX = ':previous';
 
         const isDocDraft = doc._id.includes(DRAFT_SUFFIX);
         const isDocPublished = doc._id.includes(PUBLISHED_SUFFIX);
@@ -810,10 +809,6 @@ module.exports = {
           return;
         }
 
-        const previous = await self.apos.doc.db.findOne({
-          _id: published._id.replace(PUBLISHED_SUFFIX, PREVIOUS_SUFFIX)
-        });
-
         self.emit('beforeUnpublish', req, published);
 
         await self.apos.doc.db.updateOne(
@@ -828,15 +823,15 @@ module.exports = {
           }
         );
 
-        // TODO: use `doc.db.removeOne()` rather than `doc.delete()`?
-        await self.apos.doc.delete(req.clone({ mode: 'published' }), published, { checkForChildren: false });
+        const updatedDraft = await self.apos.doc.db.findOne({
+          _id: draft._id
+        });
 
-        if (previous) {
-          // TODO: `mode: previous`?
-          await self.apos.doc.delete(req.clone({ mode: 'published' }), previous, { checkForChildren: false });
-        }
+        // Note: calling `apos.doc.delete` removes the previous version of the document
+        const clonedReq = req.clone({ mode: 'published' });
+        await self.apos.doc.delete(clonedReq, published, { checkForChildren: false });
 
-        return draft;
+        return updatedDraft;
       },
       // Localize (export) the given draft to another locale, creating the document in the
       // other locale if necessary. By default, if the document already exists in the
