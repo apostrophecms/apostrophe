@@ -12,12 +12,6 @@
 
 ### 3.18.1
 
-### Adds
-
-* Webpack cache for build performance in development and production mode.
-* Add a watcher in development mode to rebuild the assets on changes in the same process.
-* Add asset task `apostrophecms/asset:clear-cache` for force clearing the webpack build cache.
-
 ### Fixes
 
 * The admin UI now rebuilds properly in a development environment when new npm modules are installed in a multisite project (`apos.rootDir` differs from `apos.npmRootDir`).
