@@ -66,9 +66,9 @@
 * Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
 * Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
 * Fixes deprecation warnings displayed after running `npm install`, for dependencies that are directly included by this package.
-* Implement custom ETags emission when `etags` cache option is enabled. [See the documentation for more information](https://v3.docs.apostrophecms.org/guide/caching.html).
-It allows caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) document updates, thanks to backlinks mentioned above.
-Note that for now, only single pages and pieces benefit from the ETags caching system (pages' and pieces' `getOne` REST API route, and regular served pages).
+* Implement custom ETags emission when `etags` cache option is enabled. [See the documentation for more information](https://v3.docs.apostrophecms.org/guide/caching.html).  
+It allows caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) document updates, thanks to backlinks mentioned above.  
+Note that for now, only single pages and pieces benefit from the ETags caching system (pages' and pieces' `getOne` REST API route, and regular served pages).  
 The cache of an index page corresponding to the type of a piece that was just saved will automatically be invalidated. However, please consider that it won't be effective when a related piece is saved, therefore the cache will automatically be invalidated _after_ the cache lifetime set in `maxAge` cache option.
 
 ### Fixes
