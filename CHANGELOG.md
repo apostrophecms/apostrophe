@@ -1,10 +1,15 @@
 # Changelog
 
-## 3.18.1
+## 3.19.0
 
 ### Adds
 
-* New schema field `dateAndTime` added. Done for the scheduled publishing feature but can be reused for any purpose.
+* New schema field type `dateAndTime` added. This schema field type saves in ISO8601 format, as UTC (Universal Coordinated Time), but is edited in a user-friendly way in the user's current time zone and locale.
+* Webpack disk cache for better build performance in development and, if appropriately configured, production as well.
+* In development, Webpack rebuilds the front end without the need to restart the Node.js process, yielding an additional speedup. To get this speedup for existing projects, see the `nodemonConfig` section of the latest `package.json` in [a3-boilerplate](https://github.com/apostrophecms/a3-boilerplate) for the new "ignore" rules you'll need to prevent nodemon from stopping the process and restarting.
+* Added the new command line task `apostrophecms/asset:clear-cache` for clearing the webpack disk cache. This should be necessary only in rare cases where the configuration has changed in ways Apostrophe can't automatically detect.
+
+### 3.18.1
 
 ### Adds
 
