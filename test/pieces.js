@@ -167,6 +167,18 @@ describe('Pieces', function() {
                 }
               }
             }
+          },
+          extendMethods(self) {
+            return {
+              emit(_super, message, req, data, ...args) {
+                // Sort of a way to spy `emit` function
+                self.emitStack = {
+                  ...(self.emitStack || {}),
+                  [message]: data
+                };
+                return _super(message, req, data, ...args);
+              }
+            };
           }
         },
         article: {
@@ -1610,5 +1622,55 @@ describe('Pieces', function() {
     assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
 
     delete apos.thing.options.cache;
+  });
+
+  describe('unpublish', function() {
+    it('should unpublish the published and previous versions of a piece and return the draft one', async function() {
+      const baseItem = {
+        aposDocId: 'some-product',
+        type: 'product',
+        slug: '/some-product',
+        visibility: 'public'
+      };
+      const draftItem = {
+        ...baseItem,
+        _id: 'some-product:en:draft',
+        aposLocale: 'en:draft'
+      };
+      const publishedItem = {
+        ...baseItem,
+        _id: 'some-product:en:published',
+        aposLocale: 'en:published'
+      };
+      const previousItem = {
+        ...baseItem,
+        _id: 'some-product:en:previous',
+        aposLocale: 'en:previous'
+      };
+
+      await apos.doc.db.insertMany([
+        draftItem,
+        publishedItem,
+        previousItem
+      ]);
+
+      const draft = await apos.http.post(
+        `/api/v1/product/${publishedItem._id}/unpublish?apiKey=${apiKey}`,
+        {
+          body: {},
+          busy: true
+        }
+      );
+
+      const published = await apos.doc.db.findOne({ _id: 'some-product:en:published' });
+      const previous = await apos.doc.db.findOne({ _id: 'some-product:en:previous' });
+
+      assert(published === null);
+      assert(previous === null);
+      assert(draft._id === draftItem._id);
+      assert(draft.modified === 1);
+      assert(draft.lastPublishedAt === null);
+      assert(apos.modules.product.emitStack.beforeUnpublish._id === publishedItem._id);
+    });
   });
 });
