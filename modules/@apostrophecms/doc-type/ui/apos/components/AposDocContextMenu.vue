@@ -259,7 +259,12 @@ export default {
       );
     },
     canUnpublish() {
-      return this.manuallyPublished && this.context.lastPublishedAt;
+      return (
+        !this.context.parked &&
+        this.moduleOptions.canPublish &&
+        this.context.lastPublishedAt &&
+        this.manuallyPublished
+      );
     },
     canCopy() {
       return this.canEdit && !this.moduleOptions.singleton && this.context._id;
