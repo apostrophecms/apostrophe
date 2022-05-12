@@ -261,6 +261,8 @@ export default {
     canUnpublish() {
       return (
         !this.context.parked &&
+        // TODO: check can publish ok backend
+        // TODO: e2e test that
         this.moduleOptions.canPublish &&
         this.context.lastPublishedAt &&
         this.manuallyPublished
