@@ -809,7 +809,7 @@ module.exports = {
           return;
         }
 
-        self.emit('beforeUnpublish', req, published);
+        await self.emit('beforeUnpublish', req, published);
 
         await self.apos.doc.db.updateOne(
           { _id: draft._id },
