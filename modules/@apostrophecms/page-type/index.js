@@ -175,6 +175,11 @@ module.exports = {
             // acceptable coverage here for now
             throw self.apos.error('invalid', 'You must unpublish child pages before unpublishing their parent.');
           }
+        },
+        async parkedPageMustNotBePublished(req, published) {
+          if (published.parked) {
+            throw self.apos.error('invalid', 'apostrophe:pageIsParkedAndCannotBeUnpublished');
+          }
         }
       },
       afterRevertPublishedToPrevious: {
