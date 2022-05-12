@@ -79,7 +79,7 @@ export default {
         clientX: 0,
         clientY: 0
       }
-    }
+    };
   },
   watch: {
     docFields: {
@@ -133,15 +133,13 @@ export default {
   },
   methods: {
     getCropperHeight() {
-      const { width, height } = this.attachment
+      const { width, height } = this.attachment;
 
       // If the image is landscape, we don't set any height (properly managed by the lib)
       // Otherwise we want to avoid the cropper to exceed the max height
-      if (width > height || height <= this.containerHeight) {
-        return 'auto'
-      }
-
-      return '100%'
+      return width > height || height <= this.containerHeight
+        ? 'auto'
+        : '100%';
     },
     /**
      * Places the focal point inside the stencil to its current position.

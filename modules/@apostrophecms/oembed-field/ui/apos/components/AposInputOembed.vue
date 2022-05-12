@@ -19,12 +19,16 @@
           class="apos-input-icon"
           :is="icon"
         />
+        <!-- eslint-disable vue/no-v-html -->
         <div
-          v-if="!error && oembedResult.html" v-html="oembedResult.html"
-          class="apos-input__embed" :class="{ 'apos-is-dynamic': !!dynamicRatio }"
+          v-if="!error && oembedResult.html"
+          v-html="oembedResult.html"
+          class="apos-input__embed"
+          :class="{ 'apos-is-dynamic': !!dynamicRatio }"
           :style="{ paddingTop: dynamicRatio && `${(dynamicRatio * 100)}%` }"
         />
       </div>
+      <!-- eslint-enable vue/no-v-html -->
     </template>
   </AposInputWrapper>
 </template>

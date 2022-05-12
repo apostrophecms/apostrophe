@@ -53,7 +53,7 @@ export default {
       default: null
     }
   },
-  emits: ['return-to'],
+  emits: [ 'return-to' ],
   computed: {
     last() {
       return Object.keys(this.items).length - 1;

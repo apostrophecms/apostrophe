@@ -1,8 +1,14 @@
 <template>
   <ul class="apos-confirm__notifications">
-    <li v-for="(item, index) in notifications" :key="index" class="apos-confirm__notification">
+    <li
+      v-for="(item, index) in notifications"
+      :key="index"
+      class="apos-confirm__notification"
+    >
       <div :class="className(item.type)">
-        <span class="apos-confirm__notification-locale">{{ item.locale.label }}</span>
+        <span class="apos-confirm__notification-locale">
+          {{ item.locale.label }}
+        </span>
         <div class="apos-confirm__notification-meta">
           <span class="apos-confirm__notification-title">
             <CheckIcon
@@ -17,7 +23,9 @@
             />
             {{ item.doc.title }}
           </span>
-          <span class="apos-confirm__notification-item-type">{{ docType(item.doc) }}</span>
+          <span class="apos-confirm__notification-item-type">
+            {{ docType(item.doc) }}
+          </span>
         </div>
         <div class="apos-confirm__notification-detail" v-if="item.detail">
           {{ $t(item.detail) }}
@@ -33,7 +41,10 @@ import CancelIcon from 'vue-material-design-icons/Cancel.vue';
 
 export default {
   name: 'AposI18nLocalizeErrors',
-  components: { CheckIcon, CancelIcon },
+  components: {
+    CheckIcon,
+    CancelIcon
+  },
   props: {
     notifications: {
       required: true,

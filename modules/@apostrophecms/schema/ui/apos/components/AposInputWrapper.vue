@@ -31,11 +31,13 @@
             />
           </span>
         </component>
+        <!-- eslint-disable vue/no-v-html -->
         <p
           v-if="(field.help || field.htmlHelp) && !displayOptions.helpTooltip"
           class="apos-field__help"
           v-html="$t(field.help || field.htmlHelp)"
         />
+        <!-- eslint-enable vue/no-v-html -->
         <slot name="additional" />
       </div>
       <slot name="body" />

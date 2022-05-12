@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
+
 ## 3.19.0
 
 ### Adds
