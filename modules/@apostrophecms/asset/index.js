@@ -930,6 +930,9 @@ module.exports = {
           ...symLinkModules.reduce(
             (prev, m) => [
               ...prev,
+              `./node_modules/${m}/ui/apos/**`,
+              `./node_modules/${m}/ui/src/**`,
+              `./node_modules/${m}/ui/public/**`,
               `./node_modules/${m}/modules/**/ui/apos/**`,
               `./node_modules/${m}/modules/**/ui/src/**`,
               `./node_modules/${m}/modules/**/ui/public/**`
