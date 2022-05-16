@@ -176,7 +176,7 @@ module.exports = {
             throw self.apos.error('invalid', 'You must unpublish child pages before unpublishing their parent.');
           }
         },
-        async parkedPageMustNotBePublished(req, published) {
+        async parkedPageMustNotBeUnpublished(req, published) {
           if (published.parked) {
             throw self.apos.error('invalid', 'apostrophe:pageIsParkedAndCannotBeUnpublished');
           }

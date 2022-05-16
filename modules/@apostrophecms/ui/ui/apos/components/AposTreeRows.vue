@@ -54,7 +54,7 @@
             v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
             icon="lock-icon"
             class="apos-tree__row__icon apos-tree__row__icon--parked"
-            tooltip="apostrophe:pageIsParkedAndCannotBeMoved"
+            tooltip="apostrophe:pageIsParked"
           />
           <AposIndicator
             v-if="index === 0 && row.type === '@apostrophecms/archive-page'"

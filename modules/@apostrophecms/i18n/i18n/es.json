@@ -222,7 +222,7 @@
   "page": "Página",
   "pageDoesNotExistYet": "La Página Aún No Existe",
   "pageDoesNotExistYetDescription": "La página que provee un listado para este tipo de pieza aún no esta disponible en {{ mode }} en la configuración regional {{ locale }}.",
-  "pageIsParkedAndCannotBeMoved": "Esta página esta aparcada y no se puede mover",
+  "pageIsParked": "Esta página esta aparcada y no se puede mover",
   "pageIsParkedAndCannotBeUnpublished": "Esta página está aparcada y no se puede despublicar",
   "pageNumber": "Página {{ number }}",
   "pageTitle": "Título de la Página",

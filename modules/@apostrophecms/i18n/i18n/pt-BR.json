@@ -220,7 +220,7 @@
   "page": "Página",
   "pageDoesNotExistYet": "Página ainda não existe",
   "pageDoesNotExistYetDescription": "A página que fornece uma lista para este tipo de peça ainda não está disponível como {{ mode }} no local de {{ locale }}.",
-  "pageIsParkedAndCannotBeMoved": "Esta página está estacionada e não pode ser movida",
+  "pageIsParked": "Esta página está estacionada e não pode ser movida",
   "pageIsParkedAndCannotBeUnpublished": "Esta página está estacionada e não pode ser despublicada",
   "pageNumber": "Página {{ number }}",
   "pageTitle": "Título da Página",

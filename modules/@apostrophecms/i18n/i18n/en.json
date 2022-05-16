@@ -242,7 +242,7 @@
   "page": "Page",
   "pageDoesNotExistYet": "Page Does Not Exist Yet",
   "pageDoesNotExistYetDescription": "The page that provides a listing for this type of piece is not yet available as {{ mode }} in the {{ locale }} locale.",
-  "pageIsParkedAndCannotBeMoved": "This page is parked and cannot be moved",
+  "pageIsParked": "This page is parked and cannot be moved",
   "pageIsParkedAndCannotBeUnpublished": "This page is parked and cannot be unpublished",
   "pageNumber": "Page {{ number }}",
   "pageTitle": "Page Title",

@@ -616,7 +616,7 @@ describe('Draft / Published', function() {
 
       it('should update the draft version of a page', function() {
         assert(draft._id === draftItem._id);
-        assert(draft.modified === 1);
+        assert(draft.modified === true);
         assert(draft.lastPublishedAt === null);
       });
 
@@ -681,7 +681,7 @@ describe('Draft / Published', function() {
 
       it('should update the draft version of a piece', function() {
         assert(draft._id === draftItem._id);
-        assert(draft.modified === 1);
+        assert(draft.modified === true);
         assert(draft.lastPublishedAt === null);
       });
 

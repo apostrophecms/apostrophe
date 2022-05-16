@@ -784,7 +784,6 @@ module.exports = {
         const isDocPublished = doc._id.includes(PUBLISHED_SUFFIX);
 
         if (!isDocDraft && !isDocPublished) {
-          // TODO: throw?
           return;
         }
 
@@ -805,7 +804,6 @@ module.exports = {
           });
 
         if (!draft) {
-          // TODO: throw?
           return;
         }
 
@@ -815,9 +813,7 @@ module.exports = {
           { _id: draft._id },
           {
             $set: {
-              // TODO:: set `modified: 1`?
-              modified: 1,
-              // TODO: unset `lastPublishedAt`?
+              modified: true,
               lastPublishedAt: null
             }
           }
