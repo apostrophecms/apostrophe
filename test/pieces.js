@@ -167,18 +167,6 @@ describe('Pieces', function() {
                 }
               }
             }
-          },
-          extendMethods(self) {
-            return {
-              emit(_super, message, req, data, ...args) {
-                // Sort of a way to spy `emit` function
-                self.emitStack = {
-                  ...(self.emitStack || {}),
-                  [message]: data
-                };
-                return _super(message, req, data, ...args);
-              }
-            };
           }
         },
         article: {
@@ -1685,10 +1673,6 @@ describe('Pieces', function() {
       assert(draft._id === draftItem._id);
       assert(draft.modified === true);
       assert(draft.lastPublishedAt === null);
-    });
-
-    it('should emit the `beforeUnpublish` event with the published version of a piece', function() {
-      assert(apos.modules.product.emitStack.beforeUnpublish._id === publishedItem._id);
     });
   });
 });

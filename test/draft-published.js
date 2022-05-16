@@ -115,20 +115,6 @@ describe('Draft / Published', function() {
               }
             }
           }
-        },
-        '@apostrophecms/doc-type': {
-          extendMethods(self) {
-            return {
-              emit(_super, message, req, data, ...args) {
-                // Sort of a way to spy `emit` function
-                self.emitStack = {
-                  ...(self.emitStack || {}),
-                  [message]: data
-                };
-                return _super(message, req, data, ...args);
-              }
-            };
-          }
         }
       }
     });
@@ -619,9 +605,46 @@ describe('Draft / Published', function() {
         assert(draft.modified === true);
         assert(draft.lastPublishedAt === null);
       });
+    });
 
-      it('should emit the `beforeUnpublish` event with the published version of a page', function() {
-        assert(apos.modules['test-page'].emitStack.beforeUnpublish._id === publishedItem._id);
+    describe('parked page', function() {
+      it('should not unpublish parked pages', async function() {
+        const baseItem = {
+          aposDocId: 'some-parked-page',
+          type: 'test-page',
+          slug: '/some-parked-page',
+          visibility: 'public',
+          path: '/some-parked-page',
+          level: 1,
+          rank: 0,
+          parked: 1
+        };
+        const draftItem = {
+          ...baseItem,
+          _id: 'some-parked-page:en:draft',
+          aposLocale: 'en:draft'
+        };
+        const publishedItem = {
+          ...baseItem,
+          _id: 'some-parked-page:en:published',
+          aposLocale: 'en:published'
+        };
+
+        await apos.doc.db.insertMany([
+          draftItem,
+          publishedItem
+        ]);
+
+        const res = await apos.doc.db.findOne({ _id: 'some-parked-page:en:published' });
+
+        const req = apos.task.getReq({ mode: 'published' });
+        try {
+          await apos.page.unpublish(req, res);
+        } catch (error) {
+          assert(error.message === 'apostrophe:pageIsParkedAndCannotBeUnpublished');
+          return;
+        }
+        throw new Error('unpublish should have thrown');
       });
     });
 
@@ -683,10 +706,6 @@ describe('Draft / Published', function() {
         assert(draft._id === draftItem._id);
         assert(draft.modified === true);
         assert(draft.lastPublishedAt === null);
-      });
-
-      it('should emit the `beforeUnpublish` event with the published version of a piece', function() {
-        assert(apos.product.emitStack.beforeUnpublish._id === publishedItem._id);
       });
     });
   });

@@ -49,19 +49,7 @@ describe('Pages', function() {
           }
         },
         'test-page': {
-          extend: '@apostrophecms/page-type',
-          extendMethods(self) {
-            return {
-              emit(_super, message, req, data, ...args) {
-                // Sort of a way to spy `emit` function
-                self.emitStack = {
-                  ...(self.emitStack || {}),
-                  [message]: data
-                };
-                return _super(message, req, data, ...args);
-              }
-            };
-          }
+          extend: '@apostrophecms/page-type'
         }
       }
     });
@@ -1099,10 +1087,6 @@ describe('Pages', function() {
       assert(draft._id === draftItem._id);
       assert(draft.modified === true);
       assert(draft.lastPublishedAt === null);
-    });
-
-    it('should emit the `beforeUnpublish` event with the published version of a page', function() {
-      assert(apos.modules['test-page'].emitStack.beforeUnpublish._id === publishedItem._id);
     });
   });
 
