@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const path = require('path');
 
 module.exports = {
   checkModulesWebpackConfig(modules, t) {
@@ -144,8 +145,32 @@ module.exports = {
         }
       };
     }, {});
+  },
+
+  // Find all symlinks in node modules.
+  // This would find both `module-name` and `@company/module-name`
+  // package symlinks
+  findNodeModulesSymlinks(rootDir) {
+    return findSymlinks(path.join(rootDir, 'node_modules'));
   }
 };
+
+async function findSymlinks(where, sub = '') {
+  let result = [];
+  const handle = await fs.promises.opendir(path.join(where, sub));
+  let mod = await handle.read();
+  while (mod) {
+    if (mod.isSymbolicLink()) {
+      result.push(sub + mod.name);
+    } else if (!sub && mod.name.startsWith('@')) {
+      const dres = await findSymlinks(where, `${mod.name}/`);
+      result = [ ...result, ...dres ];
+    }
+    mod = await handle.read();
+  }
+  await handle.close();
+  return result;
+}
 
 function getModulesWebpackConfigs (modulesMeta) {
   const { extensions, bundles } = modulesMeta.reduce((acc, meta) => {

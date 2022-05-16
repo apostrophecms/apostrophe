@@ -2,9 +2,14 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Trigger only the relevant build when in a watch mode.
+
 ### Fixes
 
 * Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
+* Fix a bug where some Apostrophe modules symlinked in `node_modules` are not being watched.
 
 ## 3.19.0
 

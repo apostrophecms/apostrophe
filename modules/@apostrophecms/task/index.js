@@ -117,6 +117,8 @@ module.exports = {
       // normally be hyphenated, i.e. at the command line you might write
       // `--total=20`.
       //
+      // This method will return the value returned by the task.
+      //
       // **Gotchas**
       //
       // If you can invoke a method directly rather than invoking a task, do
@@ -132,6 +134,7 @@ module.exports = {
       // task developer might assume they can exit the process directly.
 
       async invoke(name, args, options) {
+        let result;
         const telemetry = self.apos.telemetry;
         const spanName = `task:${self.__meta.name}:${name}`;
         await telemetry.startActiveSpan(spanName, async (span) => {
@@ -155,7 +158,7 @@ module.exports = {
             };
             span.setAttribute(telemetry.Attributes.ARGV, telemetry.stringify(argv));
             self.apos.argv = argv;
-            await task.task(argv);
+            result = await task.task(argv);
             self.apos.argv = aposArgv;
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
           } catch (err) {
@@ -165,6 +168,7 @@ module.exports = {
             span.end();
           }
         });
+        return result;
       },
 
       // Identifies the task corresponding to the given command line argument.
