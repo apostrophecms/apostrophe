@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adds an `unpublish` method, available for any doc-type.  
+An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
+
 ### Fixes
 
 * Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.

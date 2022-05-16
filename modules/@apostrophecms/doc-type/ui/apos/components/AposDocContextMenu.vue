@@ -164,6 +164,13 @@ export default {
             modifiers: [ 'danger' ]
           }
         ] : []),
+        ...(this.canUnpublish ? [
+          {
+            label: 'apostrophe:unpublish',
+            action: 'unpublish',
+            modifiers: [ 'danger' ]
+          }
+        ] : []),
         ...(this.showRestore && this.canRestore ? [
           {
             label: 'apostrophe:restore',
@@ -249,6 +256,14 @@ export default {
         !this.context.archived &&
         !this.context.parked &&
         ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
+      );
+    },
+    canUnpublish() {
+      return (
+        !this.context.parked &&
+        this.moduleOptions.canPublish &&
+        this.context.lastPublishedAt &&
+        this.manuallyPublished
       );
     },
     canCopy() {
