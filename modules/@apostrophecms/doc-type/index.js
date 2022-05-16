@@ -780,8 +780,8 @@ module.exports = {
         const DRAFT_SUFFIX = ':draft';
         const PUBLISHED_SUFFIX = ':published';
 
-        const isDocDraft = doc._id.includes(DRAFT_SUFFIX);
-        const isDocPublished = doc._id.includes(PUBLISHED_SUFFIX);
+        const isDocDraft = doc._id.endsWith(DRAFT_SUFFIX);
+        const isDocPublished = doc._id.endsWith(PUBLISHED_SUFFIX);
 
         if (!isDocDraft && !isDocPublished) {
           return;
