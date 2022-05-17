@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.20.1 (2022-05-17)
+
+### Fixes
+
+* Minor corrections to French translation.
+
 ## 3.20.0
 
 ### Adds
