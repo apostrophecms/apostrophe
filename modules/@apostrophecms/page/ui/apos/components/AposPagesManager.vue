@@ -194,14 +194,14 @@ export default {
         action: 'live',
         modifiers: this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
       }, {
-        label: 'apostrophe:archive',
+        label: 'apostrophe:archived',
         action: 'archive',
         modifiers: !this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
       } ];
     },
     pageSetMenuButton() {
       const button = {
-        label: this.pageSetMenuSelectionIsLive ? 'apostrophe:live' : 'apostrophe:archive',
+        label: this.pageSetMenuSelectionIsLive ? 'apostrophe:live' : 'apostrophe:archived',
         icon: 'chevron-down-icon',
         modifiers: [ 'no-motion', 'outline', 'icon-right' ],
         class: 'apos-pages-manager__page-set-menu-button'

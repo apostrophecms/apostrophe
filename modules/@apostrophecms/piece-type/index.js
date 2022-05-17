@@ -83,7 +83,7 @@ module.exports = {
         def: null
       },
       archived: {
-        label: 'apostrophe:archive',
+        label: 'apostrophe:archived',
         inputType: 'radio',
         choices: [
           {
@@ -92,7 +92,7 @@ module.exports = {
           },
           {
             value: true,
-            label: 'apostrophe:archive'
+            label: 'apostrophe:archived'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
