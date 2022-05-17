@@ -38,12 +38,16 @@ module.exports = {
       remove: [ 'archived' ],
       group: {
         utility: {
-          fields: [
+          // Keep `slug`, `type`, `visibility` and `orphan` fields before others,
+          // in case of modules improving `@apostrophecms/doc-type` that would add
+          // custom fields (included in `self.fieldsGroups.utility.fields`).
+          fields: _.uniq([
             'slug',
             'type',
             'visibility',
-            'orphan'
-          ]
+            'orphan',
+            ...self.fieldsGroups.utility.fields
+          ])
         }
       }
     };
