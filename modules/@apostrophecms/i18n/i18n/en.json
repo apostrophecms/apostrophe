@@ -147,7 +147,7 @@
   "fileTypeNotAccepted": "File type was not accepted. Allowed extensions: {{ extensions }}",
   "fileInvalid": "File was not accepted. It may be corrupted or its content may not match its file extension.",
   "files": "Files",
-  "fileTypeCannotBeCropped": "{{ extension}} files cannot be cropped, do not present the cropping UI for this type",
+  "fileTypeCannotBeCropped": "{{ extension }} files cannot be cropped, do not present the cropping UI for this type",
   "filter": "Filter",
   "filterByTag": "Filter by Tag",
   "filterResultsByType": "Filter Results By Type",
