@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.20.0
+
+### Adds
+
+* Adds French translation of the admin UI (use the `fr` locale).
+
 ## 3.19.0
 
 ### Adds
