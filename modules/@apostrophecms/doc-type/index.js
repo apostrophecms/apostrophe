@@ -228,7 +228,7 @@ module.exports = {
             });
           }
 
-          return self.unpublish(req, doc);
+          return self.unpublish(req, doc, { descendantsMustNotBePublished: false });
         },
         async deduplicate(req, doc) {
           const $set = await self.getDeduplicationSet(req, doc);
@@ -776,7 +776,7 @@ module.exports = {
       // and update the draft version.
       // This method accepts the draft or the published version of the document
       // to achieve this.
-      async unpublish(req, doc) {
+      async unpublish(req, doc, options) {
         const DRAFT_SUFFIX = ':draft';
         const PUBLISHED_SUFFIX = ':published';
 
@@ -807,7 +807,7 @@ module.exports = {
           return;
         }
 
-        await self.emit('beforeUnpublish', req, published);
+        await self.emit('beforeUnpublish', req, published, options);
 
         await self.apos.doc.db.updateOne(
           { _id: draft._id },
