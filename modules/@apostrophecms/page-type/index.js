@@ -166,7 +166,10 @@ module.exports = {
         }
       },
       beforeUnpublish: {
-        async descendantsMustNotBePublished(req, published) {
+        async descendantsMustNotBePublished(req, published, options = {}) {
+          if (options.descendantsMustNotBePublished === false) {
+            return;
+          }
           const descendants = await self.apos.doc.db.countDocuments({
             path: self.apos.page.matchDescendants(published),
             aposLocale: published.aposLocale
