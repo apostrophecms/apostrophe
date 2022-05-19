@@ -989,6 +989,15 @@ module.exports = {
       // This handler has no watcher dependencies and it's safe to be invoked
       // by any code base.
       async rebuild(changes, rebuildCallback) {
+        rebuildCallback = typeof rebuildCallback === 'function'
+          ? rebuildCallback
+          : () => {};
+        const result = {
+          changes: [],
+          restartId: self.restartId,
+          builds: []
+        };
+
         const pulledChanges = [];
         let change = changes.pop();
         while (change) {
@@ -997,26 +1006,25 @@ module.exports = {
         }
         // No changes - should never happen.
         if (pulledChanges.length === 0) {
-          if (typeof rebuildCallback === 'function') {
-            rebuildCallback({
-              changes: [],
-              restartId: self.restartId,
-              builds: []
-            });
-          };
-          return;
+          return rebuildCallback(result);
         }
-        const buildsTriggered = await self.autorunUiBuildTask(pulledChanges);
-        if (buildsTriggered.length > 0) {
-          self.restartId = self.apos.util.generateId();
-        }
-        if (typeof rebuildCallback === 'function') {
-          rebuildCallback({
+        try {
+          const buildsTriggered = await self.autorunUiBuildTask(pulledChanges);
+          if (buildsTriggered.length > 0) {
+            self.restartId = self.apos.util.generateId();
+          }
+          return rebuildCallback({
             changes: pulledChanges,
             restartId: self.restartId,
             builds: buildsTriggered
           });
-        };
+        } catch (e) {
+          // The build error is detailed enough, no message
+          // on our end.
+          self.apos.util.error(e);
+        }
+
+        rebuildCallback(result);
       },
 
       // Start watching assets from `modules/` and

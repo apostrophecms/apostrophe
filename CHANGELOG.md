@@ -10,6 +10,7 @@
 
 * Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
 * Fix a bug where some Apostrophe modules symlinked in `node_modules` are not being watched.
+* Recover after webpack build error in watch mode (development only).
 
 ## 3.19.0
 

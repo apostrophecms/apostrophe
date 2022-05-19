@@ -137,11 +137,11 @@ module.exports = {
         let result;
         const telemetry = self.apos.telemetry;
         const spanName = `task:${self.__meta.name}:${name}`;
+        const aposArgv = self.apos.argv;
         await telemetry.startActiveSpan(spanName, async (span) => {
           span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'invoke');
           span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
           try {
-            const aposArgv = self.apos.argv;
             if (Array.isArray(args)) {
               args.splice(0, 0, name);
             } else {
@@ -159,12 +159,12 @@ module.exports = {
             span.setAttribute(telemetry.Attributes.ARGV, telemetry.stringify(argv));
             self.apos.argv = argv;
             result = await task.task(argv);
-            self.apos.argv = aposArgv;
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
           } catch (err) {
             telemetry.handleError(span, err);
             throw err;
           } finally {
+            self.apos.argv = aposArgv;
             span.end();
           }
         });
