@@ -233,6 +233,7 @@
   "pageDoesNotExistYet": "Stránka zatiaľ neexistuje",
   "pageDoesNotExistYetDescription": "Stránka, ktorá poskytuje záznam pre tento diel, ešte nie je k dispozícii ako {{ mode }} v jazykovej mutácii {{ locale }}.",
   "pageIsParked": "Táto stránka je uzamknutá nemožno ju presunúť",
+  "pageIsParkedAndCannotBeUnpublished": "Táto stránka je zaparkovaná a jej zverejnenie nie je možné zrušiť",
   "pageNumber": "Stránka {{ number }}",
   "pageTitle": "Názov stránky",
   "pages": "Stránky",
