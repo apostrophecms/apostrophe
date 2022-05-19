@@ -507,17 +507,34 @@ describe('Assets', function() {
     await removeCache(altCacheLoc);
   });
 
-  it('should watch and rebuild assets and reload page in development', async function() {
+  it('should watch and rebuild assets and reload page in development (bundle src)', async function() {
     await t.destroy(apos);
+    let result = {};
+    const cb = (obj) => {
+      result = obj;
+    };
 
     apos = await t.create({
       root: module,
       autoBuild: true,
-      modules
+      modules: {
+        ...modules,
+        '@apostrophecms/asset': {
+          extendMethods() {
+            return {
+              async watchUiAndRebuild(_super) {
+                return _super(cb);
+              }
+            };
+          }
+        }
+      }
     });
     const restartId = apos.asset.restartId;
     assert(apos.asset.buildWatcher);
     assert(apos.asset.restartId);
+    assert(!result.builds);
+    assert(!result.changes);
 
     // Modify asset and rebuild
     const assetPath = path.join(process.cwd(), 'test/modules/bundle-page/ui/src/extra.js');
@@ -525,12 +542,12 @@ describe('Assets', function() {
     const assetContent = 'export default () => {};\n';
     fs.writeFileSync(
       assetPath,
-      'export default () => { \'bundle-page-watcher-test\'; };\n',
+      'export default () => { \'bundle-page-watcher-test-src\'; };\n',
       'utf8'
     );
 
     await retryAssertTrue(
-      async () => (await fs.readFile(assetPathPublic, 'utf8')).match(/bundle-page-watcher-test/),
+      async () => (await fs.readFile(assetPathPublic, 'utf8')).match(/bundle-page-watcher-test-src/),
       'Unable to verify public asset was rebuilt by the watcher',
       500,
       10000
@@ -543,10 +560,621 @@ describe('Assets', function() {
       10000
     );
 
+    await retryAssertTrue(
+      () => result.builds.length === 1 && result.builds.includes('src'),
+      'Unable to verify build "src" has been triggered',
+      50,
+      1000
+    );
+
+    await retryAssertTrue(
+      () => result.changes.length === 1 && result.changes[0].includes('modules/bundle-page/ui/src/extra.js'),
+      'Unable to verify changes contain the proper file',
+      50,
+      1000
+    );
+
     await t.destroy(apos);
     assert.equal(apos.asset.buildWatcher, null);
     apos = null;
     fs.writeFileSync(assetPath, assetContent, 'utf8');
+  });
+
+  it('should watch and rebuild assets and reload page in development (src, src-es5)', async function() {
+    await t.destroy(apos);
+    let result = {};
+    const setTestResult = (obj) => {
+      result = obj;
+    };
+    const rootPath = process.cwd();
+    const assetPathJs = path.join(rootPath, 'test/modules/default-page/ui/src/index.js');
+    const assetPathScss = path.join(rootPath, 'test/modules/default-page/ui/src/index.scss');
+    const assetPathPublicJs = path.join(rootPath, 'test/public/apos-frontend/default/public-module-bundle.js');
+    const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
+    const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
+    const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
+    const assetContentJs = 'export default () => {};\n';
+    const assetContentScss = '.default-page {color:red};\n';
+    // Resurrect the default assets content if test has failed
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+    fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        'default-page': {},
+        '@apostrophecms/asset': {
+          options: {
+            es5: true
+          },
+          extendMethods() {
+            return {
+              async watchUiAndRebuild(_super) {
+                return _super(setTestResult);
+              }
+            };
+          }
+        }
+      }
+    });
+    // Assert defaults
+    const restartId = apos.asset.restartId;
+    assert(apos.asset.buildWatcher);
+    assert(apos.asset.restartId);
+    assert(!result.builds);
+    assert(!result.changes);
+
+    // * modify assets and rebuild
+    fs.writeFileSync(
+      assetPathJs,
+      'export default () => { \'default-page-watcher-test-src\'; };\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      assetPathScss,
+      '.default-page-watcher-test-src{color:red};\n',
+      'utf8'
+    );
+
+    // * change is in the public bundle
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublicJs, 'utf8')).match(/default-page-watcher-test-src/),
+      'Unable to verify public JS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublicCss, 'utf8')).match(/\.default-page-watcher-test-src/),
+      'Unable to verify public CSS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+
+    // * change is in the apos bundle
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathAposJs, 'utf8')).match(/default-page-watcher-test-src/),
+      'Unable to verify apos JS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathAposCss, 'utf8')).match(/\.default-page-watcher-test-src/),
+      'Unable to verify apos CSS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+
+    // * page has been restarted
+    await retryAssertTrue(
+      () => apos.asset.restartId !== restartId,
+      'Unable to verify restartId has been changed',
+      500,
+      10000
+    );
+
+    // * only src related builds were triggered
+    await retryAssertTrue(
+      () => result.builds.length === 2 &&
+        result.builds.includes('src') &&
+        result.builds.includes('src-es5'),
+      'Unable to verify builds "src" and "src-es5" have been triggered',
+      50,
+      1000
+    );
+
+    // * changes detected
+    await retryAssertTrue(
+      () =>
+        result.changes.length === 2 &&
+        result.changes
+          .filter(f =>
+            (f.includes('modules/default-page/ui/src/index.js') ||
+            f.includes('modules/default-page/ui/src/index.scss'))
+          )
+          .length === 2,
+      'Unable to verify changes contain the proper source files',
+      50,
+      1000
+    );
+
+    await t.destroy(apos);
+    assert.equal(apos.asset.buildWatcher, null);
+    apos = null;
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+    fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
+  });
+
+  it('should watch and rebuild assets and reload page in development (public)', async function() {
+    await t.destroy(apos);
+    let result = {};
+    const setTestResult = (obj) => {
+      result = obj;
+    };
+    const rootPath = process.cwd();
+    const assetPathJs = path.join(rootPath, 'test/modules/default-page/ui/public/index.js');
+    const assetPathCss = path.join(rootPath, 'test/modules/default-page/ui/public/index.css');
+    const assetPathPublicJs = path.join(rootPath, 'test/public/apos-frontend/default/public-module-bundle.js');
+    const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
+    const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
+    const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
+    const assetContentJs = 'export default () => {};\n';
+    const assetContentScss = '.default-page {color:red};\n';
+    // Resurrect the default assets content if test has failed
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+    fs.writeFileSync(assetPathCss, assetContentScss, 'utf8');
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        'default-page': {},
+        '@apostrophecms/asset': {
+          options: {
+            es5: true
+          },
+          extendMethods() {
+            return {
+              async watchUiAndRebuild(_super) {
+                return _super(setTestResult);
+              }
+            };
+          }
+        }
+      }
+    });
+    // Assert defaults
+    const restartId = apos.asset.restartId;
+    assert(apos.asset.buildWatcher);
+    assert(apos.asset.restartId);
+    assert(!result.builds);
+    assert(!result.changes);
+
+    // * modify assets and rebuild
+    fs.writeFileSync(
+      assetPathJs,
+      'export default () => { \'default-page-watcher-test-public\'; };\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      assetPathCss,
+      '.default-page-watcher-test-public{color:red};\n',
+      'utf8'
+    );
+
+    // * change is in the public bundle
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublicJs, 'utf8')).match(/default-page-watcher-test-public/),
+      'Unable to verify public JS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublicCss, 'utf8')).match(/\.default-page-watcher-test-public/),
+      'Unable to verify public CSS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+
+    // * change is in the apos bundle
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathAposJs, 'utf8')).match(/default-page-watcher-test-public/),
+      'Unable to verify apos JS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathAposCss, 'utf8')).match(/\.default-page-watcher-test-public/),
+      'Unable to verify apos CSS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+
+    // * page has been restarted
+    await retryAssertTrue(
+      () => apos.asset.restartId !== restartId,
+      'Unable to verify restartId has been changed',
+      500,
+      10000
+    );
+
+    // * only public build was triggered
+    await retryAssertTrue(
+      () => result.builds.length === 1 &&
+        result.builds.includes('public'),
+      'Unable to verify build "public" has been triggered',
+      50,
+      1000
+    );
+
+    // * changes detected
+    await retryAssertTrue(
+      () =>
+        result.changes.length === 2 &&
+        result.changes
+          .filter(f =>
+            (f.includes('modules/default-page/ui/public/index.js') ||
+            f.includes('modules/default-page/ui/public/index.css'))
+          )
+          .length === 2,
+      'Unable to verify changes contain the proper source files',
+      50,
+      1000
+    );
+
+    await t.destroy(apos);
+    assert.equal(apos.asset.buildWatcher, null);
+    apos = null;
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+    fs.writeFileSync(assetPathCss, assetContentScss, 'utf8');
+  });
+
+  it('should watch and rebuild assets and reload page in development (apos)', async function() {
+    await t.destroy(apos);
+    let result = {};
+    const setTestResult = (obj) => {
+      result = obj;
+    };
+    const rootPath = process.cwd();
+    const assetPathJs = path.join(rootPath, 'test/modules/default-page/ui/apos/components/FakeComponent.vue');
+    const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
+    const assetContentJs = '<template><span /></template>\n';
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        'default-page': {
+          options: {
+            components: {
+              fake: 'FakeComponent'
+            }
+          }
+        },
+        '@apostrophecms/asset': {
+          options: {
+            es5: true
+          },
+          extendMethods() {
+            return {
+              async watchUiAndRebuild(_super) {
+                return _super(setTestResult);
+              }
+            };
+          }
+        }
+      }
+    });
+    // Assert defaults
+    const restartId = apos.asset.restartId;
+    assert(apos.asset.buildWatcher);
+    assert(apos.asset.restartId);
+    assert(!result.builds);
+    assert(!result.changes);
+
+    // * modify assets and rebuild
+    fs.writeFileSync(
+      assetPathJs,
+      '<template><span>default-page-watcher-test-apos</span></template>\n',
+      'utf8'
+    );
+
+    // * change is in the apos bundle
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathAposJs, 'utf8'))
+        .includes('default-page-watcher-test-apos'),
+      'Unable to verify apos JS asset was rebuilt by the watcher',
+      500,
+      20000
+    );
+
+    // * page has been restarted
+    await retryAssertTrue(
+      () => apos.asset.restartId !== restartId,
+      'Unable to verify restartId has been changed',
+      500,
+      10000
+    );
+
+    // * only apos build was triggered
+    await retryAssertTrue(
+      () => result.builds.length === 1 &&
+        result.builds.includes('apos'),
+      'Unable to verify build "apos" has been triggered',
+      50,
+      1000
+    );
+
+    // * changes detected
+    await retryAssertTrue(
+      () =>
+        result.changes.length === 1 &&
+        result.changes[0].includes('modules/default-page/ui/apos/components/FakeComponent.vue'),
+      'Unable to verify changes contain the proper source files',
+      50,
+      1000
+    );
+
+    await t.destroy(apos);
+    assert.equal(apos.asset.buildWatcher, null);
+    apos = null;
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+  });
+
+  it('should watch and recover after build error in development', async function() {
+    await t.destroy(apos);
+    let result = {};
+    let called = 0;
+    const setTestResult = (obj) => {
+      result = obj;
+      called++;
+    };
+    const rootPath = process.cwd();
+    const assetPathScss = path.join(rootPath, 'test/modules/default-page/ui/src/index.scss');
+    const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
+    const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
+    const assetContentScss = '.default-page {color:red};\n';
+    // Resurrect the default assets content if test has failed
+    fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        'default-page': {},
+        '@apostrophecms/asset': {
+          extendMethods() {
+            return {
+              async watchUiAndRebuild(_super) {
+                return _super(setTestResult);
+              }
+            };
+          }
+        }
+      }
+    });
+    // Assert defaults
+    const restartId = apos.asset.restartId;
+    assert(apos.asset.buildWatcher);
+    assert(apos.asset.restartId);
+    assert(!result.builds);
+    assert(!result.changes);
+
+    // * modify assets and rebuild
+    fs.writeFileSync(
+      assetPathScss,
+      'bad code;\n',
+      'utf8'
+    );
+
+    // * wait till the build ends
+    await retryAssertTrue(
+      () => called === 1 && result.builds.length === 0,
+      'Unable to verify build with error was triggered',
+      100,
+      10000
+    );
+
+    // * page has NOT been restarted
+    await retryAssertTrue(
+      () => apos.asset.restartId === restartId,
+      'Unable to verify restartId has been changed',
+      100,
+      10000
+    );
+
+    // * modify assets and recover
+    fs.writeFileSync(
+      assetPathScss,
+      '.default-page-watcher-test-recover{color:red};\n',
+      'utf8'
+    );
+
+    // * change is in the public bundle
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathPublicCss, 'utf8')).match(/\.default-page-watcher-test-recover/),
+      'Unable to verify public CSS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+
+    // * change is in the apos bundle
+    await retryAssertTrue(
+      async () => (await fs.readFile(assetPathAposCss, 'utf8')).match(/\.default-page-watcher-test-recover/),
+      'Unable to verify apos CSS asset was rebuilt by the watcher',
+      500,
+      10000
+    );
+
+    // * page has been restarted
+    await retryAssertTrue(
+      () => apos.asset.restartId !== restartId,
+      'Unable to verify restartId has been changed',
+      500,
+      10000
+    );
+
+    // * only src related builds were triggered
+    await retryAssertTrue(
+      () => result.builds.length === 1 &&
+        result.builds.includes('src'),
+      'Unable to verify build "src" have been triggered',
+      50,
+      1000
+    );
+
+    // * changes detected
+    await retryAssertTrue(
+      () =>
+        result.changes.length === 1 &&
+        result.changes
+          .filter(f =>
+            (f.includes('modules/default-page/ui/src/index.scss'))
+          )
+          .length === 1,
+      'Unable to verify changes contain the proper source files',
+      50,
+      1000
+    );
+
+    await t.destroy(apos);
+    assert.equal(apos.asset.buildWatcher, null);
+    apos = null;
+    fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
+  });
+
+  it('should watch but not rebuild assets and not reload page when changes are not in use', async function() {
+    await t.destroy(apos);
+    let result = {};
+    let rebuilt = false;
+    const setTestResult = (obj) => {
+      result = obj;
+      rebuilt = true;
+    };
+    const rootPath = process.cwd();
+    const assetPathJs = path.join(rootPath, 'test/modules/default-page/ui/src/index.js');
+    const assetPathScss = path.join(rootPath, 'test/modules/default-page/ui/src/index.scss');
+    const assetPathPublicJs = path.join(rootPath, 'test/public/apos-frontend/default/public-module-bundle.js');
+    const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
+    const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
+    const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
+    const assetContentJs = 'export default () => {};\n';
+    const assetContentScss = '.default-page {color:red};\n';
+    // Resurrect the default assets content if test has failed
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+    fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        '@apostrophecms/asset': {
+          options: {
+            es5: true
+          },
+          extendMethods() {
+            return {
+              async watchUiAndRebuild(_super) {
+                return _super(setTestResult);
+              }
+            };
+          }
+        }
+      }
+    });
+    // Assert defaults
+    const restartId = apos.asset.restartId;
+    assert(apos.asset.buildWatcher);
+    assert(apos.asset.restartId);
+    assert(!result.builds);
+    assert(!result.changes);
+    assert.equal(rebuilt, false);
+
+    // * modify assets
+    fs.writeFileSync(
+      assetPathJs,
+      'export default () => { \'default-page-watcher-test-src\'; };\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      assetPathScss,
+      '.default-page-watcher-test-src{color:red};\n',
+      'utf8'
+    );
+
+    // * rebuild handler has been triggered
+    await retryAssertTrue(
+      () => rebuilt === true,
+      'Unable to verify rebuild has been triggered',
+      500,
+      10000
+    );
+
+    // * change is NOT in the public bundle
+    await retryAssertTrue(
+      async () => !(await fs.readFile(assetPathPublicJs, 'utf8')).match(/default-page-watcher-test-src/),
+      'Unable to verify public JS asset was NOT rebuilt by the watcher',
+      500,
+      1000
+    );
+    await retryAssertTrue(
+      async () => !(await fs.readFile(assetPathPublicCss, 'utf8')).match(/\.default-page-watcher-test-src/),
+      'Unable to verify public CSS asset was NOT rebuilt by the watcher',
+      500,
+      1000
+    );
+
+    // * change is NOT in the apos bundle
+    await retryAssertTrue(
+      async () => !(await fs.readFile(assetPathAposJs, 'utf8')).match(/default-page-watcher-test-src/),
+      'Unable to verify apos JS asset was NOT rebuilt by the watcher',
+      500,
+      1000
+    );
+    await retryAssertTrue(
+      async () => !(await fs.readFile(assetPathAposCss, 'utf8')).match(/\.default-page-watcher-test-src/),
+      'Unable to verify apos CSS asset was NOT rebuilt by the watcher',
+      500,
+      1000
+    );
+
+    // * page has NOT been restarted
+    await retryAssertTrue(
+      () => apos.asset.restartId === restartId,
+      'Unable to verify restartId has NOT been changed',
+      500,
+      1000
+    );
+
+    // * no builds were triggered
+    await retryAssertTrue(
+      () => result.builds.length === 0,
+      'Unable to verify builds "src" and "src-es5" have NOT been triggered',
+      50,
+      1000
+    );
+
+    // * changes detected
+    await retryAssertTrue(
+      () =>
+        result.changes.length === 2 &&
+        result.changes
+          .filter(f =>
+            (f.includes('modules/default-page/ui/src/index.js') ||
+            f.includes('modules/default-page/ui/src/index.scss'))
+          )
+          .length === 2,
+      'Unable to verify changes contain the proper source files',
+      50,
+      1000
+    );
+
+    await t.destroy(apos);
+    assert.equal(apos.asset.buildWatcher, null);
+    apos = null;
+    fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
+    fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
   });
 
   it('should watch and rebuild assets in a debounced queue', async function() {
@@ -642,6 +1270,34 @@ describe('Assets', function() {
       }
     });
     assert.equal(apos.asset.buildWatcherDebounceMs, 500);
+  });
+
+  it('should be able to register an external build watcher', async function() {
+    await t.destroy(apos);
+
+    const chokidar = require('chokidar');
+    let instance;
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        '@apostrophecms/asset': {
+          methods(self) {
+            return {
+              registerBuildWatcher() {
+                self.buildWatcher = chokidar.watch([ __filename ], {
+                  cwd: self.apos.rootDir,
+                  ignoreInitial: true
+                });
+                instance = self.buildWatcher;
+              }
+            };
+          }
+        }
+      }
+    });
+    assert.equal(apos.asset.buildWatcher, instance);
   });
 
   it('should not watch if explicitly disabled by option or env in development', async function() {

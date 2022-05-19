@@ -4,12 +4,15 @@
 
 ### Adds
 
+* Trigger only the relevant build when in a watch mode (development).
 * Adds an `unpublish` method, available for any doc-type.  
 An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
 
 ### Fixes
 
 * Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
+* Fix a bug where some Apostrophe modules symlinked in `node_modules` are not being watched.
+* Recover after webpack build error in watch mode (development only).
 
 ## 3.20.1 (2022-05-17)
 

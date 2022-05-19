@@ -16,7 +16,8 @@ const {
   getWebpackExtensions,
   fillExtraBundles,
   getBundlesNames,
-  writeBundlesImportFiles
+  writeBundlesImportFiles,
+  findNodeModulesSymlinks
 } = require('./lib/webpack/utils');
 
 module.exports = {
@@ -116,7 +117,7 @@ module.exports = {
       build: {
         usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
-        async task(argv) {
+        async task(argv = {}) {
           // The lock could become huge, cache it, see computeCacheMeta()
           let packageLockContentCached;
           const req = self.apos.task.getReq();
@@ -124,6 +125,18 @@ module.exports = {
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           const modulesToInstantiate = self.apos.modulesToBeInstantiated();
+          // Make it clear if builds should detect changes
+          const detectChanges = Array.isArray(argv.changes);
+          // Remove invalid changes. `argv.changes` is an array of relative
+          // to `apos.rootDir` files or folders
+          const sourceChanges = detectChanges
+            ? filterValidChanges(
+              argv.changes || [],
+              Object.keys(self.apos.modules)
+            )
+            : [];
+          // Keep track of the executed builds
+          const buildsExecuted = [];
 
           // Don't clutter up with previous builds.
           await fs.remove(buildDir);
@@ -136,9 +149,12 @@ module.exports = {
           await moduleOverrides(`${bundleDir}/modules`, 'public');
 
           for (const [ name, options ] of Object.entries(self.builds)) {
-            // If the option is not present always rebuild everything
+            // If the option is not present always rebuild everything...
             let rebuild = argv && !argv['check-apos-build'];
-            if (!rebuild) {
+            // ...but only when not in a watcher mode
+            if (detectChanges) {
+              rebuild = shouldRebuildFor(name, options, sourceChanges);
+            } else if (!rebuild) {
               let checkTimestamp = false;
 
               // Only builds contributing to the apos admin UI (currently just "apos")
@@ -180,7 +196,19 @@ module.exports = {
                 name,
                 options
               });
+              buildsExecuted.push(name);
             }
+          }
+
+          // No need of deploy if in a watcher mode.
+          // Also we return an array of build names that
+          // have been triggered - this is required by the watcher
+          // so that page refresh is issued only when needed.
+          if (detectChanges) {
+            // merge the scenes that have been built
+            const scenes = [ ...new Set(buildsExecuted.map(name => self.builds[name].scenes).flat()) ];
+            merge(scenes);
+            return buildsExecuted;
           }
 
           // Discover the set of unique asset scenes that exist (currently
@@ -755,6 +783,36 @@ module.exports = {
               // Build probably failed, path is missing, ignore
             }
           }
+
+          // Given a set of changes, leave only those that belong to an active
+          // Apostrophe module. This would avoid unnecessary builds for non-active
+          // watched files (e.g. in multi instance mode).
+          // It's an expensive brute force O(n^2), so we do it once for all builds
+          // and we rely on the fact that mass changes happen rarely.
+          function filterValidChanges(all, modules) {
+            return all.filter(c => {
+              for (const module of modules) {
+                if (c.includes(module)) {
+                  return true;
+                }
+              }
+              return false;
+            });
+          }
+
+          // Detect if a build should be executed based on the changed
+          // paths. This function is invoked only when the appropriate `argv.changes`
+          // is passed to the task.
+          function shouldRebuildFor(buildName, buildOptions, changes) {
+            const name = buildOptions.source || buildName;
+            const id = `/ui/${name}/`;
+            for (const change of changes) {
+              if (change.includes(id)) {
+                return true;
+              }
+            }
+            return false;
+          }
         }
       },
 
@@ -872,8 +930,34 @@ module.exports = {
         return process.env.APOS_ASSET_CACHE ||
               path.join(self.apos.rootDir, 'data/temp/webpack-cache');
       },
-      // Run build task automatically when appropriate
-      async autorunUiBuildTask() {
+
+      // Override to set externally a build watcher (a `chokidar` instance).
+      // This method will be invoked only if/when needed.
+      // Example:
+      // ```js
+      // registerBuildWatcher() {
+      //   self.buildWatcher = chokidar.watch(pathsToWatch, {
+      //     cwd: self.apos.rootDir,
+      //     ignoreInitial: true
+      //   });
+      // }
+      // ```
+      registerBuildWatcher() {
+        self.buildWatcher = null;
+      },
+
+      // Run build task automatically when appropriate.
+      // If `changes` is provided (array of modified files/folders, relative
+      // to the application root), this method will return the result of the
+      // build task (array of builds that have been triggered by the changes).
+      // If `changes` is not provided (falsy value), a boolean will be returned,
+      // indicating if the build task has been invoked or not.
+      // IMPORTANT: Be cautious when changing the return type behavior.
+      // The build watcher initialization (event triggered) depends on a Boolean value,
+      // and the rebuild handler (triggered by the build watcher on
+      // detected change) depends on an Array value.
+      async autorunUiBuildTask(changes) {
+        let result = changes ? [] : false;
         if (
         // Do not automatically build the UI if we're starting from a task
           !self.apos.isTask() &&
@@ -882,26 +966,78 @@ module.exports = {
             // Or if we've set an app option to skip the auto build
             self.apos.options.autoBuild !== false
         ) {
-
           checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
           // If starting up normally, run the build task, checking if we
           // really need to update the apos build
-          await self.apos.task.invoke('@apostrophecms/asset:build', {
-            'check-apos-build': true
+          const buildsTriggered = await self.apos.task.invoke('@apostrophecms/asset:build', {
+            'check-apos-build': true,
+            changes
           });
-          return true;
+          result = changes ? buildsTriggered : true;
         }
-        return false;
+        return result;
       },
+
+      // The rebuild handler triggered (debounced) by the build watcher.
+      // The `changes` argument is a reference to a central pool of changes.
+      // It contains relative to the application root file paths.
+      // The pool is being exhausted before triggering the build task.
+      // Array manipulations are sync only, so no race condition is possible.
+      // `rebuildCallback` is used for testing and debug purposes. It allows
+      // access to the changes processed by the build task,
+      // the new restartId and the build names that the changes have triggered.
+      // This handler has no watcher dependencies and it's safe to be invoked
+      // by any code base.
+      async rebuild(changes, rebuildCallback) {
+        rebuildCallback = typeof rebuildCallback === 'function'
+          ? rebuildCallback
+          : () => {};
+        const result = {
+          changes: [],
+          restartId: self.restartId,
+          builds: []
+        };
+
+        const pulledChanges = [];
+        let change = changes.pop();
+        while (change) {
+          pulledChanges.push(change);
+          change = changes.pop();
+        }
+        // No changes - should never happen.
+        if (pulledChanges.length === 0) {
+          return rebuildCallback(result);
+        }
+        try {
+          const buildsTriggered = await self.autorunUiBuildTask(pulledChanges);
+          if (buildsTriggered.length > 0) {
+            self.restartId = self.apos.util.generateId();
+          }
+          return rebuildCallback({
+            changes: pulledChanges,
+            restartId: self.restartId,
+            builds: buildsTriggered
+          });
+        } catch (e) {
+          // The build error is detailed enough, no message
+          // on our end.
+          self.apos.util.error(e);
+        }
+
+        rebuildCallback(result);
+      },
+
       // Start watching assets from `modules/` and
       // every symlinked package found in `node_modules/`.
       // `rebuildCallback` is invoked with queue length argument
       //  on actual build attempt only.
       // It's there mainly for testing and debugging purposes.
       async watchUiAndRebuild(rebuildCallback) {
-        if (!self.buildWatcherEnable || self.buildWatcher) {
+        if (!self.buildWatcherEnable) {
           return;
         }
+        // Allow custom watcher registration
+        self.registerBuildWatcher();
         const rootDir = self.apos.rootDir;
         // chokidar may invoke ready event multiple times,
         // we want one "watch enabled" message.
@@ -916,50 +1052,54 @@ module.exports = {
         const queue = [];
         let queueLength = 0;
         let queueRunning = false;
+        // The pool of changes - it HAS to be exhausted by the rebuild handler
+        // or we'll end up with a memory leak in development.
+        const changesPool = [];
 
         const debounceRebuild = _.debounce(chain, self.buildWatcherDebounceMs, {
           leading: false,
           trailing: true
         });
+        const addChangeAndDebounceRebuild = (fileOrDir) => {
+          changesPool.push(fileOrDir);
+          return debounceRebuild();
+        };
 
-        const symLinkModules = await findSymlinks();
-        const watchDirs = [
-          './modules/**/ui/apos/**',
-          './modules/**/ui/src/**',
-          './modules/**/ui/public/**',
-          ...symLinkModules.reduce(
-            (prev, m) => [
-              ...prev,
+        if (!self.buildWatcher) {
+          const symLinkModules = await findNodeModulesSymlinks(rootDir);
+          const watchDirs = [
+            './modules/**/ui/apos/**',
+            './modules/**/ui/src/**',
+            './modules/**/ui/public/**',
+            ...symLinkModules.reduce(
+              (prev, m) => [
+                ...prev,
+              `./node_modules/${m}/ui/apos/**`,
+              `./node_modules/${m}/ui/src/**`,
+              `./node_modules/${m}/ui/public/**`,
               `./node_modules/${m}/modules/**/ui/apos/**`,
               `./node_modules/${m}/modules/**/ui/src/**`,
               `./node_modules/${m}/modules/**/ui/public/**`
-            ],
-            []
-          )
-        ];
-        self.buildWatcher = chokidar.watch(watchDirs, {
-          cwd: rootDir,
-          ignoreInitial: true
-        });
+              ],
+              []
+            )
+          ];
+          self.buildWatcher = chokidar.watch(watchDirs, {
+            cwd: rootDir,
+            ignoreInitial: true
+          });
+        }
 
         self.buildWatcher
-          .on('add', debounceRebuild)
-          .on('change', debounceRebuild)
-          .on('unlink', debounceRebuild)
-          .on('addDir', debounceRebuild)
-          .on('unlinkDir', debounceRebuild)
+          .on('add', addChangeAndDebounceRebuild)
+          .on('change', addChangeAndDebounceRebuild)
+          .on('unlink', addChangeAndDebounceRebuild)
+          .on('addDir', addChangeAndDebounceRebuild)
+          .on('unlinkDir', addChangeAndDebounceRebuild)
           .on('error', e => error(`Watcher error: ${e}`))
           .on('ready', () => logOnce(
             self.apos.task.getReq().t('apostrophe:assetBuildWatchStarted')
           ));
-
-        async function rebuild() {
-          await self.autorunUiBuildTask();
-          self.restartId = self.apos.util.generateId();
-          if (typeof rebuildCallback === 'function') {
-            rebuildCallback(queueLength);
-          };
-        };
 
         // Simple, capped, self-exhausting queue implementation.
         function enqueue(fn) {
@@ -975,37 +1115,18 @@ module.exports = {
             return;
           }
           queueRunning = true;
-          await queue.pop()();
+          await queue.pop()(changesPool, rebuildCallback);
           queueLength--;
           await dequeue();
         }
-        async function chain(f) {
-          enqueue(rebuild);
+        async function chain() {
+          enqueue(self.rebuild);
           if (!queueRunning) {
             await dequeue();
           }
         }
-
-        // Find all symlinks in node modules.
-        // This would find both `module-name` and `@company/module-name`
-        // package symlinks
-        async function findSymlinks(sub = '') {
-          let result = [];
-          const handle = await fs.promises.opendir(path.join(rootDir, 'node_modules', sub));
-          let mod = await handle.read();
-          while (mod) {
-            if (mod.isSymbolicLink()) {
-              result.push(sub + mod.name);
-            } else if (!sub && mod.name.startsWith('@')) {
-              const dres = await findSymlinks(`${mod.name}/`);
-              result = [ ...result, ...dres ];
-            }
-            mod = await handle.read();
-          }
-          await handle.close();
-          return result;
-        }
       },
+
       // An implementation method that you should not need to call.
       // Sets a predetermined configuration for the frontend builds.
       // If you are trying to enable IE11 support for ui/src, use the
