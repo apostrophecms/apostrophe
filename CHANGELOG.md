@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Trigger only the relevant build when in a watch mode (development).
+* Trigger only the relevant build when in a watch mode (development). The build paths should not contain comma (`,`).
 * Adds an `unpublish` method, available for any doc-type.  
 An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
 
@@ -13,6 +13,7 @@ An _Unpublish_ option has also been added to the context menu of the modal when 
 * Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
 * Fix a bug where some Apostrophe modules symlinked in `node_modules` are not being watched.
 * Recover after webpack build error in watch mode (development only).
+* Fixes an edge case when failing (throw) task invoked via `task.invoke` will result in `apos.isTask()` to always return true due to `apos.argv` not reverted properly.
 
 ## 3.20.1 (2022-05-17)
 
