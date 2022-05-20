@@ -126,12 +126,12 @@ module.exports = {
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           const modulesToInstantiate = self.apos.modulesToBeInstantiated();
           // Make it clear if builds should detect changes
-          const detectChanges = Array.isArray(argv.changes);
-          // Remove invalid changes. `argv.changes` is an array of relative
+          const detectChanges = typeof argv.changes === 'string';
+          // Remove invalid changes. `argv.changes` is a comma separated list of relative
           // to `apos.rootDir` files or folders
           const sourceChanges = detectChanges
             ? filterValidChanges(
-              argv.changes || [],
+              argv.changes.split(',').map(p => p.trim()),
               Object.keys(self.apos.modules)
             )
             : [];
@@ -958,6 +958,7 @@ module.exports = {
       // detected change) depends on an Array value.
       async autorunUiBuildTask(changes) {
         let result = changes ? [] : false;
+        let _changes;
         if (
         // Do not automatically build the UI if we're starting from a task
           !self.apos.isTask() &&
@@ -969,11 +970,16 @@ module.exports = {
           checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
           // If starting up normally, run the build task, checking if we
           // really need to update the apos build
+          if (changes) {
+            // Important: don't pass empty string, it will cause the task
+            // to enter selective build mode and do nothing. Undefined is OK.
+            _changes = changes.join(',');
+          }
           const buildsTriggered = await self.apos.task.invoke('@apostrophecms/asset:build', {
             'check-apos-build': true,
-            changes
+            changes: _changes
           });
-          result = changes ? buildsTriggered : true;
+          result = _changes ? buildsTriggered : true;
         }
         return result;
       },
