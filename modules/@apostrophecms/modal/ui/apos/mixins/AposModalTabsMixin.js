@@ -40,7 +40,6 @@ export default {
         };
       }
 
-      console.log('groupSet ===> ', groupSet);
       return groupSet;
     },
     tabs() {
@@ -54,7 +53,6 @@ export default {
         }
       };
 
-      console.log('tabs  ===> ', tabs);
       return tabs;
     }
   },
