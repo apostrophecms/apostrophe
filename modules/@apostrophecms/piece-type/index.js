@@ -83,7 +83,7 @@ module.exports = {
         def: null
       },
       archived: {
-        label: 'apostrophe:archive',
+        label: 'apostrophe:archived',
         inputType: 'radio',
         choices: [
           {
@@ -92,7 +92,7 @@ module.exports = {
           },
           {
             value: true,
-            label: 'apostrophe:archive'
+            label: 'apostrophe:archived'
           }
         ],
         // TODO: Delete `allowedInChooser` if not used.
@@ -381,22 +381,7 @@ module.exports = {
           if (!published) {
             throw self.apos.error('notfound');
           }
-          const manager = self.apos.doc.getManager(published.type);
-          manager.emit('beforeUnpublish', req, published);
-          await self.apos.doc.delete(req.clone({
-            mode: 'published'
-          }), published);
-          await self.apos.doc.db.updateOne({
-            _id: published._id.replace(':published', ':draft')
-          }, {
-            $set: {
-              modified: 1
-            },
-            $unset: {
-              lastPublishedAt: 1
-            }
-          });
-          return true;
+          return self.unpublish(req, published);
         },
         ':_id/submit': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);

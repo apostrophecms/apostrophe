@@ -1023,4 +1023,71 @@ describe('Pages', function() {
     delete apos.page.options.cache;
   });
 
+  describe('unpublish', function() {
+    const baseItem = {
+      aposDocId: 'some-page',
+      type: 'test-page',
+      slug: '/some-page',
+      visibility: 'public',
+      path: '/some-page',
+      level: 1,
+      rank: 0
+    };
+    const draftItem = {
+      ...baseItem,
+      _id: 'some-page:en:draft',
+      aposLocale: 'en:draft'
+    };
+    const publishedItem = {
+      ...baseItem,
+      _id: 'some-page:en:published',
+      aposLocale: 'en:published'
+    };
+    const previousItem = {
+      ...baseItem,
+      _id: 'some-page:en:previous',
+      aposLocale: 'en:previous'
+    };
+
+    let draft;
+    let published;
+    let previous;
+
+    this.beforeEach(async function() {
+      await apos.doc.db.insertMany([
+        draftItem,
+        publishedItem,
+        previousItem
+      ]);
+
+      draft = await apos.http.post(
+        `/api/v1/@apostrophecms/page/${publishedItem._id}/unpublish?apiKey=${apiKey}`,
+        {
+          body: {},
+          busy: true
+        }
+      );
+
+      published = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
+      previous = await apos.doc.db.findOne({ _id: 'some-page:en:previous' });
+    });
+
+    this.afterEach(async function() {
+      await apos.doc.db.deleteMany({
+        aposDocId: 'some-page'
+      });
+    });
+
+    it('should remove the published and previous versions of a page', function() {
+      assert(published === null);
+      assert(previous === null);
+    });
+
+    it('should update the draft version of a page', function() {
+      assert(draft._id === draftItem._id);
+      assert(draft.modified === true);
+      assert(draft.lastPublishedAt === null);
+    });
+  });
+
 });

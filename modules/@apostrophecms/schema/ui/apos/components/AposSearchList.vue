@@ -1,9 +1,11 @@
 <template>
   <ul class="apos-search">
     <li
-      :class="getClasses(item)" v-for="item in list"
-      :key="item._id" @click="select(item, $event)"
+      v-for="item in list"
+      :key="item._id"
+      :class="getClasses(item)"
       v-apos-tooltip="item.disabled ? disabledTooltip : null"
+      @click="select(item, $event)"
     >
       <div class="apos-search__item__main">
         <div class="apos-search__item__title">
@@ -36,7 +38,7 @@ export default {
     },
     disabledTooltip: {
       type: String,
-      required: false
+      default: null
     }
   },
   emits: [ 'select' ],

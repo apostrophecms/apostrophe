@@ -542,4 +542,171 @@ describe('Draft / Published', function() {
     assert(siblingPublished && siblingPublished._children && siblingPublished._children[0] && siblingPublished._children[0]._id === grandchild._id.replace(':draft', ':published'));
   });
 
+  describe('unpublish', function() {
+    describe('page', function() {
+      const baseItem = {
+        aposDocId: 'some-page',
+        type: 'test-page',
+        slug: '/some-page',
+        visibility: 'public',
+        path: '/some-page',
+        level: 1,
+        rank: 0
+      };
+      const draftItem = {
+        ...baseItem,
+        _id: 'some-page:en:draft',
+        aposLocale: 'en:draft'
+      };
+      const publishedItem = {
+        ...baseItem,
+        _id: 'some-page:en:published',
+        aposLocale: 'en:published'
+      };
+      const previousItem = {
+        ...baseItem,
+        _id: 'some-page:en:previous',
+        aposLocale: 'en:previous'
+      };
+
+      let draft;
+      let published;
+      let previous;
+
+      this.beforeEach(async function() {
+        await apos.doc.db.insertMany([
+          draftItem,
+          publishedItem,
+          previousItem
+        ]);
+
+        const res = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
+
+        const req = apos.task.getReq({ mode: 'published' });
+        draft = await apos.page.unpublish(req, res);
+
+        published = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
+        previous = await apos.doc.db.findOne({ _id: 'some-page:en:previous' });
+      });
+
+      this.afterEach(async function() {
+        await apos.doc.db.deleteMany({
+          aposDocId: 'some-page'
+        });
+      });
+
+      it('should remove the published and previous versions of a page', function() {
+        assert(published === null);
+        assert(previous === null);
+      });
+
+      it('should update the draft version of a page', function() {
+        assert(draft._id === draftItem._id);
+        assert(draft.modified === true);
+        assert(draft.lastPublishedAt === null);
+      });
+    });
+
+    describe('parked page', function() {
+      it('should not unpublish parked pages', async function() {
+        const baseItem = {
+          aposDocId: 'some-parked-page',
+          type: 'test-page',
+          slug: '/some-parked-page',
+          visibility: 'public',
+          path: '/some-parked-page',
+          level: 1,
+          rank: 0,
+          parked: 1
+        };
+        const draftItem = {
+          ...baseItem,
+          _id: 'some-parked-page:en:draft',
+          aposLocale: 'en:draft'
+        };
+        const publishedItem = {
+          ...baseItem,
+          _id: 'some-parked-page:en:published',
+          aposLocale: 'en:published'
+        };
+
+        await apos.doc.db.insertMany([
+          draftItem,
+          publishedItem
+        ]);
+
+        const res = await apos.doc.db.findOne({ _id: 'some-parked-page:en:published' });
+
+        const req = apos.task.getReq({ mode: 'published' });
+        try {
+          await apos.page.unpublish(req, res);
+        } catch (error) {
+          assert(error.message === 'apostrophe:pageIsParkedAndCannotBeUnpublished');
+          return;
+        }
+        throw new Error('unpublish should have thrown');
+      });
+    });
+
+    describe('piece', function() {
+      const baseItem = {
+        aposDocId: 'some-product',
+        type: 'product',
+        slug: '/some-product',
+        visibility: 'public'
+      };
+      const draftItem = {
+        ...baseItem,
+        _id: 'some-product:en:draft',
+        aposLocale: 'en:draft'
+      };
+      const publishedItem = {
+        ...baseItem,
+        _id: 'some-product:en:published',
+        aposLocale: 'en:published'
+      };
+      const previousItem = {
+        ...baseItem,
+        _id: 'some-product:en:previous',
+        aposLocale: 'en:previous'
+      };
+
+      let draft;
+      let published;
+      let previous;
+
+      this.beforeEach(async function() {
+        await apos.doc.db.insertMany([
+          draftItem,
+          publishedItem,
+          previousItem
+        ]);
+
+        const res = await apos.doc.db.findOne({ _id: 'some-product:en:published' });
+
+        const req = apos.task.getReq({ mode: 'published' });
+        draft = await apos.product.unpublish(req, res);
+
+        published = await apos.doc.db.findOne({ _id: 'some-product:en:published' });
+        previous = await apos.doc.db.findOne({ _id: 'some-product:en:previous' });
+      });
+
+      this.afterEach(async function() {
+        await apos.doc.db.deleteMany({
+          aposDocId: 'some-product'
+        });
+      });
+
+      it('should remove the published and previous versions of a piece', function() {
+        assert(published === null);
+        assert(previous === null);
+      });
+
+      it('should update the draft version of a piece', function() {
+        assert(draft._id === draftItem._id);
+        assert(draft.modified === true);
+        assert(draft.lastPublishedAt === null);
+      });
+    });
+  });
 });

@@ -11,16 +11,16 @@
     >
       <defs>
         <linearGradient id="linear-gradient" x1="-280.32" y1="390.11" x2="-279.82" y2="390.9" gradientTransform="matrix(22.2, 0, 0, -22.2, 6233.2, 8673.92)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#cca9ff"/>
-          <stop offset="1" stop-color="#6516dd"/>
+          <stop offset="0" stop-color="#cca9ff" />
+          <stop offset="1" stop-color="#6516dd" />
         </linearGradient>
         <linearGradient id="linear-gradient-2" x1="-276.41" y1="379.82" x2="-276.72" y2="379.33" gradientTransform="matrix(17.69, 0, 0, -13.7, 4908.02, 5205.92)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#c8a2ff"/>
-          <stop offset="1" stop-color="#6516dd"/>
+          <stop offset="0" stop-color="#c8a2ff" />
+          <stop offset="1" stop-color="#6516dd" />
         </linearGradient>
       </defs>
-      <path class="apos-spinner__svg-track" d="M11.5.32a11.1,11.1,0,1,0,11.1,11.1A11.1,11.1,0,0,0,11.5.32Zm0,5.2a5.9,5.9,0,1,1-5.9,5.9A5.9,5.9,0,0,1,11.5,5.52Z" fill="url(#linear-gradient)"/>
-      <path class="apos-spinner__svg-spinner" d="M11.5.32a11.1,11.1,0,0,1,11.1,11.1,2.6,2.6,0,0,1-5.19.17v-.17a5.9,5.9,0,0,0-5.9-5.9A5.83,5.83,0,0,0,9,6.07l-.29.14A2.6,2.6,0,1,1,6.29,1.62,11,11,0,0,1,11.5.32Z" fill="url(#linear-gradient-2)"/>
+      <path class="apos-spinner__svg-track" d="M11.5.32a11.1,11.1,0,1,0,11.1,11.1A11.1,11.1,0,0,0,11.5.32Zm0,5.2a5.9,5.9,0,1,1-5.9,5.9A5.9,5.9,0,0,1,11.5,5.52Z" fill="url(#linear-gradient)" />
+      <path class="apos-spinner__svg-spinner" d="M11.5.32a11.1,11.1,0,0,1,11.1,11.1,2.6,2.6,0,0,1-5.19.17v-.17a5.9,5.9,0,0,0-5.9-5.9A5.83,5.83,0,0,0,9,6.07l-.29.14A2.6,2.6,0,1,1,6.29,1.62,11,11,0,0,1,11.5.32Z" fill="url(#linear-gradient-2)" />
     </svg>
     <svg
       v-else
@@ -75,9 +75,9 @@ module.exports = {
       return 'color: var(--a-primary);';
     },
     className() {
-      return `apos-spinner--${this.weight}`
+      return `apos-spinner--${this.weight}`;
     }
-  },
+  }
 };
 </script>
 
@@ -110,19 +110,19 @@ module.exports = {
 
 @keyframes clockwise {
   from {
-    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
   }
-    to {
-    -webkit-transform: rotate(359deg);
+  to {
+    transform: rotate(359deg);
   }
 }
 
 @keyframes counterClockwise {
   from {
-    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
   }
-    to {
-    -webkit-transform: rotate(-359deg);
+  to {
+    transform: rotate(-359deg);
   }
 }
 </style>

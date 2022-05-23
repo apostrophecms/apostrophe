@@ -126,6 +126,11 @@ export default {
     AposArchiveMixin,
     AposDocsErrorsMixin
   ],
+  provide () {
+    return {
+      originalDoc: this.originalDoc
+    };
+  },
   props: {
     moduleName: {
       type: String,
@@ -153,6 +158,9 @@ export default {
       },
       triggerValidation: false,
       original: null,
+      originalDoc: {
+        ref: null
+      },
       published: null,
       restoreOnly: false,
       saveMenu: null,
@@ -313,7 +321,8 @@ export default {
     manuallyPublished() {
       this.saveMenu = this.computeSaveMenu();
     },
-    original() {
+    original(newVal) {
+      this.originalDoc.ref = newVal;
       this.saveMenu = this.computeSaveMenu();
     }
   },
@@ -742,7 +751,12 @@ export default {
       this.docFields.data = e.doc;
       this.generation++;
 
-      if ((e.action === 'archive') || (e.action === 'delete') || (e.action === 'revert-draft-to-published')) {
+      if (
+        e.action === 'archive' ||
+        e.action === 'unpublish' ||
+        e.action === 'delete' ||
+        e.action === 'revert-draft-to-published'
+      ) {
         this.modal.showModal = false;
       }
     },

@@ -79,7 +79,7 @@ export default {
         clientX: 0,
         clientY: 0
       }
-    }
+    };
   },
   watch: {
     docFields: {
@@ -133,15 +133,13 @@ export default {
   },
   methods: {
     getCropperHeight() {
-      const { width, height } = this.attachment
+      const { width, height } = this.attachment;
 
       // If the image is landscape, we don't set any height (properly managed by the lib)
       // Otherwise we want to avoid the cropper to exceed the max height
-      if (width > height || height <= this.containerHeight) {
-        return 'auto'
-      }
-
-      return '100%'
+      return width > height || height <= this.containerHeight
+        ? 'auto'
+        : '100%';
     },
     /**
      * Places the focal point inside the stencil to its current position.
@@ -428,15 +426,15 @@ export default {
   // flex-grow: 0;
 
   .apos-image-focal-point {
+    z-index: $z-index-default;
     position: absolute;
-    z-index: 1;
     width: 10px;
     height: 10px;
     border-radius: 50%;
     border: 1px solid var(--a-white);
     background-color: var(--a-primary);
     box-shadow: 0 0 4px var(--a-black);
-    transition: left 0.1s ease, top 0.1s ease;
+    transition: left 0.15s ease, top 0.15s ease;
     cursor: grab;
   }
 }

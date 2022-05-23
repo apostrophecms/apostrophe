@@ -31,7 +31,7 @@ export default {
       default: 1
     }
   },
-  emits: ['click'],
+  emits: [ 'click' ],
   data() {
     return {
       index: this.activeIndex

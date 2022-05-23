@@ -1,6 +1,49 @@
 # Changelog
 
-# UNRELEASED
+## UNRELEASED
+
+### Adds
+
+* Trigger only the relevant build when in a watch mode (development). The build paths should not contain comma (`,`).
+* Adds an `unpublish` method, available for any doc-type.  
+An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
+
+### Fixes
+
+* Vue files not being parsed when running eslint through command line, fixes all lint errors in vue files.
+* Fix a bug where some Apostrophe modules symlinked in `node_modules` are not being watched.
+* Recover after webpack build error in watch mode (development only).
+* Fixes an edge case when failing (throw) task invoked via `task.invoke` will result in `apos.isTask()` to always return true due to `apos.argv` not reverted properly.
+
+## 3.20.1 (2022-05-17)
+
+### Fixes
+
+* Minor corrections to French translation.
+
+## 3.20.0
+
+### Adds
+
+* Adds French translation of the admin UI (use the `fr` locale).
+
+## 3.19.0
+
+### Adds
+
+* New schema field type `dateAndTime` added. This schema field type saves in ISO8601 format, as UTC (Universal Coordinated Time), but is edited in a user-friendly way in the user's current time zone and locale.
+* Webpack disk cache for better build performance in development and, if appropriately configured, production as well.
+* In development, Webpack rebuilds the front end without the need to restart the Node.js process, yielding an additional speedup. To get this speedup for existing projects, see the `nodemonConfig` section of the latest `package.json` in [a3-boilerplate](https://github.com/apostrophecms/a3-boilerplate) for the new "ignore" rules you'll need to prevent nodemon from stopping the process and restarting.
+* Added the new command line task `apostrophecms/asset:clear-cache` for clearing the webpack disk cache. This should be necessary only in rare cases where the configuration has changed in ways Apostrophe can't automatically detect.
+* A separate `publishedLabel` field can be set for any schema field of a page or piece. If present it is displayed instead of `label` if the document has already been published.
+
+### 3.18.1
+
+### Fixes
+
+* The admin UI now rebuilds properly in a development environment when new npm modules are installed in a multisite project (`apos.rootDir` differs from `apos.npmRootDir`).
+
+## 3.18.0 (2022-05-03)
 
 ### Adds
 
@@ -26,6 +69,7 @@
 * The `self.email` method of modules now correctly accepts a default `from` address configured for a specific module via the `from` subproperty of the `email` option to that module. Thanks to `chmdebeer` for pointing out the issue and the fix.
 * Fixes `_urls` not added on attachment fields when pieces API index is requested (#3643)
 * Fixes float field UI bug that transforms the value to integer when there is no field error and the first number after the decimal is `0`.
+* The `nestedModuleSubdirs` feature no longer throws an error and interrupts startup if a project contains both `@apostrophecms/asset` and `asset`, which should be considered separate module names.
 
 ## 3.17.0 (2022-03-31)
 

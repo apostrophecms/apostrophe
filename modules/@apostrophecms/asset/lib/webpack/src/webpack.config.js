@@ -50,6 +50,13 @@ module.exports = ({
           : `[name]-${moduleName}-bundle.js`;
       }
     },
+    // cacheLocation will be added dynamically later
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [ __filename ]
+      }
+    },
     resolveLoader: {
       extensions: [ '*', '.js' ],
       // Make sure css-loader and postcss-loader can always be found, even

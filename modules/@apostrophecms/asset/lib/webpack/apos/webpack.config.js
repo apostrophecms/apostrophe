@@ -33,6 +33,13 @@ module.exports = ({
       path: outputPath,
       filename: outputFilename
     },
+    // cacheLocation will be added dynamically later
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [ __filename ]
+      }
+    },
     // we could extend this with aliases for other apostrophe modules
     // at a later date if needed
     resolveLoader: {
