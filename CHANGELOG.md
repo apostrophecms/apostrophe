@@ -7,6 +7,7 @@
 * Trigger only the relevant build when in a watch mode (development). The build paths should not contain comma (`,`).
 * Adds an `unpublish` method, available for any doc-type.  
 An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
+* Allows developers to group fields in relationships the same way it's done for normal schemas.
 
 ### Fixes
 
