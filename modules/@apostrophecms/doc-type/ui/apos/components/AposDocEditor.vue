@@ -26,14 +26,14 @@
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
         @click="onRestore"
-        :tooltip="tooltip"
+        :tooltip="errorTooltip"
       />
       <AposButtonSplit
         v-else-if="saveMenu"
         :menu="saveMenu"
         menu-label="Select Save Method"
         :disabled="saveDisabled"
-        :tooltip="tooltip"
+        :tooltip="errorTooltip"
         :selected="savePreference"
         @click="saveHandler($event)"
       />
@@ -42,7 +42,7 @@
       <AposModalRail>
         <AposModalTabs
           :key="tabKey"
-          v-if="tabs.length > 0"
+          v-if="tabs.length"
           :current="currentTab"
           :tabs="tabs"
           :errors="fieldErrors"
@@ -105,15 +105,15 @@
 </template>
 
 <script>
+import { klona } from 'klona';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
+import AposDocsErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { klona } from 'klona';
-import cuid from 'cuid';
 
 export default {
   name: 'AposDocEditor',
@@ -123,7 +123,8 @@ export default {
     AposEditorMixin,
     AposPublishMixin,
     AposAdvisoryLockMixin,
-    AposArchiveMixin
+    AposArchiveMixin,
+    AposDocsErrorsMixin
   ],
   props: {
     moduleName: {
@@ -142,7 +143,6 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
-      // tabKey: cuid(),
       docType: this.moduleName,
       docReady: false,
       fieldErrors: {},
@@ -154,7 +154,6 @@ export default {
       triggerValidation: false,
       original: null,
       published: null,
-      errorCount: 0,
       restoreOnly: false,
       saveMenu: null,
       generation: 0
@@ -163,16 +162,6 @@ export default {
   computed: {
     getOnePath() {
       return `${this.moduleAction}/${this.docId}`;
-    },
-    tooltip() {
-      let msg;
-      if (this.errorCount) {
-        msg = {
-          key: 'apostrophe:errorCount',
-          count: this.errorCount
-        };
-      }
-      return msg;
     },
     followingUtils() {
       return this.followingValues('utility');
@@ -461,28 +450,6 @@ export default {
       }
       window.location = this.original._url;
     },
-    updateFieldState(fieldState) {
-      this.tabKey = cuid();
-      for (const key in this.groups) {
-        this.groups[key].fields.forEach(field => {
-          if (fieldState[field]) {
-            this.fieldErrors[key][field] = fieldState[field].error;
-          }
-        });
-      }
-      this.updateErrorCount();
-    },
-    updateErrorCount() {
-      let count = 0;
-      for (const key in this.fieldErrors) {
-        for (const tabKey in this.fieldErrors[key]) {
-          if (this.fieldErrors[key][tabKey]) {
-            count++;
-          }
-        }
-      }
-      this.errorCount = count;
-    },
     focusNextError() {
       let field;
       for (const key in this.fieldErrors) {
@@ -499,11 +466,6 @@ export default {
             this.getAposSchema(field).scrollFieldIntoView(field.name);
           }
         }
-      }
-    },
-    prepErrors() {
-      for (const name in this.groups) {
-        this.fieldErrors[name] = {};
       }
     },
     // Implementing a method expected by the advisory lock mixin
@@ -675,7 +637,7 @@ export default {
       });
     },
     updateDocFields(value) {
-      this.updateFieldState(value.fieldState);
+      this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data

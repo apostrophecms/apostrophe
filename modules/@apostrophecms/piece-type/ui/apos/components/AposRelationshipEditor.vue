@@ -14,7 +14,8 @@
     <template #primaryControls>
       <AposButton
         type="primary" label="apostrophe:save"
-        :disabled="docFields.hasErrors"
+        :disabled="!!errorCount"
+        :tooltip="errorTooltip"
         @click="submit"
       />
     </template>
@@ -22,9 +23,10 @@
       <AposModalRail>
         <AposModalTabs
           :key="tabKey"
-          v-if="tabs.length > 0"
+          v-if="tabs.length"
           :current="currentTab"
           :tabs="tabs"
+          :errors="fieldErrors"
           @select-tab="switchPane"
         />
       </AposModalRail>
@@ -52,16 +54,19 @@
 </template>
 
 <script>
+import { klona } from 'klona';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
+import AposDocsErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsErrorsMixin';
+
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { klona } from 'klona';
 
 export default {
   name: 'AposRelationshipEditor',
   mixins: [
     AposModifiedMixin,
-    AposModalTabsMixin
+    AposModalTabsMixin,
+    AposDocsErrorsMixin
   ],
   props: {
     schema: {
@@ -106,7 +111,8 @@ export default {
       modalTitle: {
         key: 'apostrophe:editRelationshipFor',
         title: this.title
-      }
+      },
+      fieldErrors: {}
     };
   },
   async mounted() {
@@ -119,7 +125,11 @@ export default {
       this.modal.showModal = false;
     },
     updateDocFields(value) {
-      this.docFields = value;
+      this.updateFieldErrors(value.fieldState);
+      this.docFields.data = {
+        ...this.docFields.data,
+        ...value.data
+      };
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
