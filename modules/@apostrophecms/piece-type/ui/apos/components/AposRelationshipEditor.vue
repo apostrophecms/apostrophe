@@ -111,8 +111,7 @@ export default {
       modalTitle: {
         key: 'apostrophe:editRelationshipFor',
         title: this.title
-      },
-      fieldErrors: {}
+      }
     };
   },
   async mounted() {
