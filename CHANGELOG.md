@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+## Fixes
+
+* Take into account query string in redirections.
+
 ## 2.221.0 (2022-06-07)
 
 ## Adds
