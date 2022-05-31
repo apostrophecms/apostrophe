@@ -202,7 +202,13 @@ module.exports = {
             .checkLoginAttempts(user.username, loginNamespace);
 
           if (reached) {
-            throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached'));
+            const maxAttemptsKey = self.options.throttle.lockoutMinutes > 1
+              ? 'apostrophe:loginMaxAttemptsReached_plural'
+              : 'apostrophe:loginMaxAttemptsReached';
+
+            throw self.apos.error('invalid', req.t(maxAttemptsKey, {
+              count: self.options.throttle.lockoutMinutes
+            }));
           }
 
           try {
@@ -598,7 +604,11 @@ module.exports = {
         const { cachedAttempts, reached } = await self.checkLoginAttempts(username);
 
         if (reached) {
-          throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached', {
+          const maxAttemptsKey = self.options.throttle.lockoutMinutes > 1
+            ? 'apostrophe:loginMaxAttemptsReached_plural'
+            : 'apostrophe:loginMaxAttemptsReached';
+
+          throw self.apos.error('invalid', req.t(maxAttemptsKey, {
             count: self.options.throttle.lockoutMinutes
           }));
         }
