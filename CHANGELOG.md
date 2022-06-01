@@ -1,8 +1,8 @@
 # Changelog
 
-## unreleased
+## UNRELEASED
 
-### Fixes for
+### Fixes
 
 * Fixes login maximum attempts error message that wasn't showing the plural when lockoutMinutes is more than 1.
 
