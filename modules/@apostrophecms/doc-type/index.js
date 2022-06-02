@@ -91,6 +91,7 @@ module.exports = {
     self.composeSchema();
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
+    self.addContextMenu();
   },
   handlers(self) {
     return {
@@ -281,6 +282,16 @@ module.exports = {
 
   methods(self) {
     return {
+      addContextMenu() {
+        self.apos.doc.addContextOperation(self.__meta.name, {
+          action: 'shareDraft',
+          context: 'update',
+          label: 'apostrophe:shareDraft',
+          modal: 'AposModalShareDraft',
+          manuallyPublished: true,
+          hasUrl: true
+        });
+      },
       getRelatedDocsIds(req, doc) {
         const relatedDocsIds = [];
         const handlers = {
