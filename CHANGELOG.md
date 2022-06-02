@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Fix a Webpack cache issue leading to modules symlinked in `node_modules` not being rebuilt. 
+
 ## 3.21.0 (2022-05-25)
 
 ### Adds
