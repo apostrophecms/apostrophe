@@ -33,7 +33,7 @@
   "aspectRatioWarning": "The aspect ratio cannot be changed for this widget",
   "assetTypeBuildComplete": "👍 {{ label }} is complete!",
   "assetTypeBuilding": "🧑‍💻 Building the {{ label }}...",
-  "assetWebpackConfigWarning": "⚠️ In the module {{ module }}, your webpack config is incorrect. It must be an object and should contain only two properties extensions and bundles.",
+  "assetWebpackConfigWarning": "⚠️ In the module {{ module }}, your webpack config is incorrect. It must be an object and should contain only the properties: {{ properties }}.",
   "assetWebpackBundlesWarning": "⚠️ In the module {{ module }} your webpack config is incorrect. Each bundle can only have one property 'templates' that must be an array of strings.",
   "assetWebpackCacheCleared": "Build cache cleared.",
   "assetBuildWatchStarted": "Watching for UI changes...",
