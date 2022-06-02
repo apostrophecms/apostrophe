@@ -771,7 +771,7 @@ module.exports = {
             let managedPathsRegex;
             if (symLinkModules.length > 0) {
               const regex = symLinkModules
-                .map(m => m.replace('/', '\\/'))
+                .map(m => self.apos.util.regExpQuote(m))
                 .join('|');
               managedPathsRegex = new RegExp(
                 '^(.+?[\\/]node_modules)[\\/]((?!' + regex + ')).*[\\/]*'
