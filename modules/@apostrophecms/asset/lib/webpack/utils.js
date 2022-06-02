@@ -3,7 +3,8 @@ const path = require('path');
 
 module.exports = {
   checkModulesWebpackConfig(modules, t) {
-    const allowedProperties = [ 'extensions', 'bundles' ];
+    const allowedProperties = [ 'extensions', 'extensionsOptions', 'bundles' ];
+
     for (const mod of Object.values(modules)) {
       const webpackConfig = mod.__meta.webpack[mod.__meta.name];
 
@@ -18,7 +19,8 @@ module.exports = {
         Object.keys(webpackConfig).some((prop) => !allowedProperties.includes(prop))
       ) {
         const error = t('apostrophe:assetWebpackConfigWarning', {
-          module: mod.__meta.name
+          module: mod.__meta.name,
+          properties: allowedProperties.join(', ')
         });
 
         throw new Error(error);
@@ -173,42 +175,58 @@ async function findSymlinks(where, sub = '') {
 }
 
 function getModulesWebpackConfigs (modulesMeta) {
-  const { extensions, bundles } = modulesMeta.reduce((acc, meta) => {
+  const {
+    extensions, extensionsOptions, bundles
+  } = modulesMeta.reduce((modulesAcc, meta) => {
     const { webpack, __meta } = meta;
 
     const configs = formatConfigs(__meta.chain, webpack);
 
     if (!configs.length) {
-      return acc;
+      return modulesAcc;
     }
 
-    const moduleBundles = configs.reduce((acc, conf) => {
-      return {
+    const reduce = (list, prop) => {
+      return list.reduce((acc, cur) => ({
         ...acc,
-        ...conf.bundles
-      };
-    }, {});
+        ...cur[prop] || {}
+      }), {});
+    };
+
+    const extensionsOptions = configs.reduce((acc, { extensionsOptions = {} }) => {
+      return [
+        ...acc,
+        extensionsOptions
+      ];
+    }, []);
 
     return {
       extensions: {
-        ...acc.extensions,
-        ...configs.reduce((acc, config) => ({
-          ...acc,
-          ...config.extensions
-        }), {})
+        ...modulesAcc.extensions,
+        ...reduce(configs, 'extensions')
       },
+      extensionsOptions: [
+        ...modulesAcc.extensionsOptions,
+        ...extensionsOptions
+      ],
       bundles: {
-        ...acc.bundles,
-        ...moduleBundles
+        ...modulesAcc.bundles,
+        ...reduce(configs, 'bundles')
       }
     };
   }, {
     extensions: {},
+    extensionsOptions: [],
     bundles: {}
   });
 
+  console.log('extensionsOptions ===> ', require('util').inspect(extensionsOptions, {
+    colors: true,
+    depth: 2
+  }));
+
   return {
-    extensions,
+    extensions: fillExtensionsOptions(extensions, extensionsOptions),
     foundBundles: flattenBundles(bundles)
   };
 };
@@ -223,8 +241,8 @@ async function verifyBundlesEntryPoints (bundles) {
 
     return {
       bundleName,
-      ...jsFileExists && { jsPath: jsPath },
-      ...scssFileExists && { scssPath: scssPath }
+      ...jsFileExists && { jsPath },
+      ...scssFileExists && { scssPath }
     };
   });
 
@@ -263,10 +281,13 @@ function formatConfigs (chain, webpackConfigs) {
         return null;
       }
 
-      const { bundles = {}, extensions = {} } = config;
+      const {
+        bundles = {}, extensions = {}, extensionsOptions = {}
+      } = config;
 
       return {
         extensions,
+        extensionsOptions,
         bundles: {
           [name]: {
             bundleNames: Object.keys(bundles),
@@ -288,4 +309,53 @@ function flattenBundles (bundles) {
         }))
       ];
     }, []);
+}
+
+function fillExtensionsOptions (exts, extensionsOptions) {
+  const options = formatExtensionsOptions(extensionsOptions);
+
+  const isObject = (val) => val &&
+    typeof val === 'object' && !Array.isArray(val);
+
+  const extensions = Object.entries(exts).reduce((acc, [ name, config ]) => {
+    if (isObject(config)) {
+      return {
+        ...acc,
+        [name]: config
+      };
+    }
+
+    if (typeof config !== 'function') {
+      return acc;
+    }
+
+    return acc;
+  }, {});
+
+  return extensions;
+}
+
+function formatExtensionsOptions (options) {
+  const obj = {};
+  options.forEach((opt) => {
+    Object.entries(opt).forEach(([ name, config ]) => {
+      obj[name] = [
+        ...obj[name] || [],
+        config
+      ];
+    });
+  });
+
+  const formatted = options.reduce((acc, opt) => {
+
+    const conf = Object.entries(opt).reduce((acc, cur) => {
+      console.log('cur ===> ', require('util').inspect(cur, {
+        colors: true,
+        depth: 2
+      }));
+    }, {});
+
+  }, {});
+
+  return obj;
 }
