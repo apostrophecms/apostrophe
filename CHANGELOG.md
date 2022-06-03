@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Possibility to pass options to webpack extensions from any module.
+
 ## 3.21.0 (2022-05-25)
 
 ### Adds
