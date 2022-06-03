@@ -3,7 +3,7 @@ const path = require('path');
 
 module.exports = {
   checkModulesWebpackConfig(modules, t) {
-    const allowedProperties = [ 'extensions', 'extensionsOptions', 'bundles' ];
+    const allowedProperties = [ 'extensions', 'extensionOptions', 'bundles' ];
 
     for (const mod of Object.values(modules)) {
       const webpackConfig = mod.__meta.webpack[mod.__meta.name];
@@ -54,7 +54,7 @@ module.exports = {
       .map((name) => getMetadata(name));
 
     const {
-      extensions, extensionsOptions, foundBundles
+      extensions, extensionOptions, foundBundles
     } = getModulesWebpackConfigs(
       modulesMeta
     );
@@ -63,7 +63,7 @@ module.exports = {
 
     return {
       extensions,
-      extensionsOptions,
+      extensionOptions,
       verifiedBundles
     };
   },
@@ -179,7 +179,7 @@ async function findSymlinks(where, sub = '') {
 
 function getModulesWebpackConfigs (modulesMeta) {
   const {
-    extensions, extensionsOptions, bundles
+    extensions, extensionOptions, bundles
   } = modulesMeta.reduce((modulesAcc, meta) => {
     const { webpack, __meta } = meta;
 
@@ -196,10 +196,10 @@ function getModulesWebpackConfigs (modulesMeta) {
       }), {});
     };
 
-    const extensionsOptions = configs.reduce((acc, { extensionsOptions = {} }) => {
+    const extensionOptions = configs.reduce((acc, { extensionOptions = {} }) => {
       return [
         ...acc,
-        extensionsOptions
+        extensionOptions
       ];
     }, []);
 
@@ -208,9 +208,9 @@ function getModulesWebpackConfigs (modulesMeta) {
         ...modulesAcc.extensions,
         ...reduce(configs, 'extensions')
       },
-      extensionsOptions: [
-        ...modulesAcc.extensionsOptions,
-        ...extensionsOptions
+      extensionOptions: [
+        ...modulesAcc.extensionOptions,
+        ...extensionOptions
       ],
       bundles: {
         ...modulesAcc.bundles,
@@ -219,17 +219,17 @@ function getModulesWebpackConfigs (modulesMeta) {
     };
   }, {
     extensions: {},
-    extensionsOptions: [],
+    extensionOptions: [],
     bundles: {}
   });
 
-  const formattedOptions = formatExtensionsOptions(extensionsOptions);
+  const formattedOptions = formatExtensionsOptions(extensionOptions);
 
   const { exts, options } = fillExtensionsOptions(extensions, formattedOptions);
 
   return {
     extensions: exts,
-    extensionsOptions: options,
+    extensionOptions: options,
     foundBundles: flattenBundles(bundles)
   };
 };
@@ -285,12 +285,12 @@ function formatConfigs (chain, webpackConfigs) {
       }
 
       const {
-        bundles = {}, extensions = {}, extensionsOptions = {}
+        bundles = {}, extensions = {}, extensionOptions = {}
       } = config;
 
       return {
         extensions,
-        extensionsOptions,
+        extensionOptions,
         bundles: {
           [name]: {
             bundleNames: Object.keys(bundles),

@@ -50,7 +50,7 @@ module.exports = {
     self.initUploadfs();
 
     const {
-      extensions, extensionsOptions, verifiedBundles
+      extensions, extensionOptions, verifiedBundles
     } = await getWebpackExtensions({
       getMetadata: self.apos.synth.getMetadata,
       modulesToInstantiate: self.apos.modulesToBeInstantiated()
@@ -58,7 +58,8 @@ module.exports = {
 
     self.extraBundles = fillExtraBundles(verifiedBundles);
     self.webpackExtensions = extensions;
-    self.webpackExtensionOptions = extensionsOptions;
+    self.webpackExtensions = extensions;
+    self.webpackExtensionOptions = extensionOptions;
     self.verifiedBundles = verifiedBundles;
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
