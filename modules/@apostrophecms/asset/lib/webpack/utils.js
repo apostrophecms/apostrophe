@@ -53,7 +53,9 @@ module.exports = {
     const modulesMeta = modulesToInstantiate
       .map((name) => getMetadata(name));
 
-    const { extensions, foundBundles } = getModulesWebpackConfigs(
+    const {
+      extensions, extensionsOptions, foundBundles
+    } = getModulesWebpackConfigs(
       modulesMeta
     );
 
@@ -61,6 +63,7 @@ module.exports = {
 
     return {
       extensions,
+      extensionsOptions,
       verifiedBundles
     };
   },
@@ -220,13 +223,13 @@ function getModulesWebpackConfigs (modulesMeta) {
     bundles: {}
   });
 
-  console.log('extensionsOptions ===> ', require('util').inspect(extensionsOptions, {
-    colors: true,
-    depth: 2
-  }));
+  const formattedOptions = formatExtensionsOptions(extensionsOptions);
+
+  const { exts, options } = fillExtensionsOptions(extensions, formattedOptions);
 
   return {
-    extensions: fillExtensionsOptions(extensions, extensionsOptions),
+    extensions: exts,
+    extensionsOptions: options,
     foundBundles: flattenBundles(bundles)
   };
 };
@@ -311,17 +314,18 @@ function flattenBundles (bundles) {
     }, []);
 }
 
-function fillExtensionsOptions (exts, extensionsOptions) {
-  const options = formatExtensionsOptions(extensionsOptions);
-
+function fillExtensionsOptions (extensions, options) {
   const isObject = (val) => val &&
     typeof val === 'object' && !Array.isArray(val);
 
-  const extensions = Object.entries(exts).reduce((acc, [ name, config ]) => {
+  return Object.entries(extensions).reduce((acc, [ name, config ]) => {
     if (isObject(config)) {
       return {
         ...acc,
-        [name]: config
+        exts: {
+          ...acc.exts,
+          [name]: config
+        }
       };
     }
 
@@ -329,33 +333,46 @@ function fillExtensionsOptions (exts, extensionsOptions) {
       return acc;
     }
 
-    return acc;
-  }, {});
+    const computedOptions = computeOptions(options[name], isObject);
 
-  return extensions;
+    return {
+      exts: {
+        ...acc.exts,
+        [name]: config(computedOptions)
+      },
+      options: {
+        ...acc.options,
+        [name]: computedOptions
+      }
+    };
+  }, {
+    exts: {},
+    options: {}
+  });
+
+  function computeOptions (options, isObject) {
+    return options.reduce((acc, option) => {
+      if (!isObject(option) && typeof option !== 'function') {
+        return acc;
+      }
+
+      return {
+        ...acc,
+        ...isObject(option) ? option : option(acc)
+      };
+    }, {});
+  }
 }
 
 function formatExtensionsOptions (options) {
-  const obj = {};
-  options.forEach((opt) => {
-    Object.entries(opt).forEach(([ name, config ]) => {
-      obj[name] = [
-        ...obj[name] || [],
-        config
-      ];
-    });
-  });
-
-  const formatted = options.reduce((acc, opt) => {
-
-    const conf = Object.entries(opt).reduce((acc, cur) => {
-      console.log('cur ===> ', require('util').inspect(cur, {
-        colors: true,
-        depth: 2
-      }));
-    }, {});
-
-  }, {});
-
-  return obj;
+  return options.reduce(
+    (acc, current) => {
+      return {
+        ...acc,
+        ...Object.fromEntries(Object.entries(current)
+          .map(([ ext, option ]) => [ ext, [ option, ...(acc[ext] || []) ] ]))
+      };
+    },
+    {}
+  );
 }
