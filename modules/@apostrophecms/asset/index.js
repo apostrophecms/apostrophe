@@ -50,7 +50,7 @@ module.exports = {
     self.initUploadfs();
 
     const {
-      extensions, extensionOptions, verifiedBundles
+      extensions = {}, extensionOptions = {}, verifiedBundles = {}
     } = await getWebpackExtensions({
       getMetadata: self.apos.synth.getMetadata,
       modulesToInstantiate: self.apos.modulesToBeInstantiated()
