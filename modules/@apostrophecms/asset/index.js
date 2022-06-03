@@ -58,7 +58,6 @@ module.exports = {
 
     self.extraBundles = fillExtraBundles(verifiedBundles);
     self.webpackExtensions = extensions;
-    self.webpackExtensions = extensions;
     self.webpackExtensionOptions = extensionOptions;
     self.verifiedBundles = verifiedBundles;
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
