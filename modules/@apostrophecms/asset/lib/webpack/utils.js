@@ -333,7 +333,7 @@ function fillExtensionsOptions (extensions, options) {
       return acc;
     }
 
-    const computedOptions = computeOptions(options[name], isObject);
+    const computedOptions = computeOptions(options[name] || [], isObject);
 
     return {
       exts: {
