@@ -14,6 +14,16 @@ module.exports = {
           }
         }
       }
+    },
+    extensionOptions: {
+      ext1(options) {
+        return {
+          alias: {
+            ...options.alias || {},
+            testAlias: 'test-path'
+          }
+        };
+      }
     }
   },
   fields: {

@@ -8,12 +8,16 @@ module.exports = {
       extra2: {}
     },
     extensions: {
-      ext1: {
-        resolve: {
-          alias: {
-            ext1Overriden: 'bar-path'
+      ext1(options) {
+        return {
+          mode: options.mode,
+          resolve: {
+            alias: {
+              ext1Overriden: 'bar-path',
+              ...options.alias
+            }
           }
-        }
+        };
       },
       ext2: {
         resolve: {
@@ -21,6 +25,11 @@ module.exports = {
             ext2: 'ext2-path'
           }
         }
+      }
+    },
+    extensionOptions: {
+      ext1: {
+        mode: 'production'
       }
     }
   }

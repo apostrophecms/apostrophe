@@ -145,7 +145,9 @@ describe('Assets', function() {
       modules
     });
 
-    const { extensions, verifiedBundles } = await getWebpackExtensions({
+    const {
+      extensions, verifiedBundles
+    } = await getWebpackExtensions({
       name: 'src',
       getMetadata: apos.synth.getMetadata,
       modulesToInstantiate: apos.modulesToBeInstantiated()
@@ -173,6 +175,23 @@ describe('Assets', function() {
     filled.css.forEach((name) => {
       assert(expectedEntryPointsNames.css.includes(name));
     });
+  });
+
+  it('should pass the right options to webpack extensions from all modules', async function() {
+    const {
+      extensions, extensionOptions
+    } = await getWebpackExtensions({
+      name: 'src',
+      getMetadata: apos.synth.getMetadata,
+      modulesToInstantiate: apos.modulesToBeInstantiated()
+    });
+
+    assert(extensions.ext1.mode === 'production');
+    assert(extensions.ext1.resolve.alias.testAlias === 'test-path');
+    assert(extensions.ext1.resolve.alias.ext1Overriden === 'bar-path');
+
+    assert(extensionOptions.ext1.mode === 'production');
+    assert(extensionOptions.ext1.alias.testAlias === 'test-path');
   });
 
   it('should build the right bundles in dev and prod modes', async function () {
@@ -465,8 +484,9 @@ describe('Assets', function() {
     });
 
     const { meta, folders } = getCacheMeta();
-    assert.equal(folders.length, 11);
-    assert.equal(Object.keys(meta).length, 11);
+
+    assert.equal(folders.length, 12);
+    assert.equal(Object.keys(meta).length, 12);
     assert(!meta['default:apos_3']);
     assert(meta['default:src_3']);
     assert(meta['default:src-es5_3']);
@@ -594,7 +614,7 @@ describe('Assets', function() {
     const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
     const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
     const assetContentJs = 'export default () => {};\n';
-    const assetContentScss = '.default-page {color:red};\n';
+    const assetContentScss = '.default-page {color:red;}\n';
     // Resurrect the default assets content if test has failed
     fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
     fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
@@ -633,7 +653,7 @@ describe('Assets', function() {
     );
     fs.writeFileSync(
       assetPathScss,
-      '.default-page-watcher-test-src{color:red};\n',
+      '.default-page-watcher-test-src{color:red;}\n',
       'utf8'
     );
 
@@ -719,7 +739,7 @@ describe('Assets', function() {
     const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
     const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
     const assetContentJs = 'export default () => {};\n';
-    const assetContentScss = '.default-page {color:red};\n';
+    const assetContentScss = '.default-page {color:red;}\n';
     // Resurrect the default assets content if test has failed
     fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
     fs.writeFileSync(assetPathCss, assetContentScss, 'utf8');
@@ -758,7 +778,7 @@ describe('Assets', function() {
     );
     fs.writeFileSync(
       assetPathCss,
-      '.default-page-watcher-test-public{color:red};\n',
+      '.default-page-watcher-test-public{color:red;}\n',
       'utf8'
     );
 
@@ -934,7 +954,7 @@ describe('Assets', function() {
     const assetPathScss = path.join(rootPath, 'test/modules/default-page/ui/src/index.scss');
     const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
     const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
-    const assetContentScss = '.default-page {color:red};\n';
+    const assetContentScss = '.default-page {color:red;}\n';
     // Resurrect the default assets content if test has failed
     fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
 
@@ -987,7 +1007,7 @@ describe('Assets', function() {
     // * modify assets and recover
     fs.writeFileSync(
       assetPathScss,
-      '.default-page-watcher-test-recover{color:red};\n',
+      '.default-page-watcher-test-recover{color:red;}\n',
       'utf8'
     );
 
@@ -1060,7 +1080,7 @@ describe('Assets', function() {
     const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
     const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
     const assetContentJs = 'export default () => {};\n';
-    const assetContentScss = '.default-page {color:red};\n';
+    const assetContentScss = '.default-page {color:red;}\n';
     // Resurrect the default assets content if test has failed
     fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
     fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
@@ -1099,7 +1119,7 @@ describe('Assets', function() {
     );
     fs.writeFileSync(
       assetPathScss,
-      '.default-page-watcher-test-src{color:red};\n',
+      '.default-page-watcher-test-src{color:red;}\n',
       'utf8'
     );
 
@@ -1346,6 +1366,15 @@ describe('Assets', function() {
     });
     assert(!apos.asset.buildWatcher);
     process.env.NODE_ENV = 'development';
+  });
+
+  it('should allows passing options from any module to a webpack extension', async function() {
+    await t.destroy(apos);
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true
+    });
   });
 });
 
