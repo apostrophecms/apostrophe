@@ -199,7 +199,7 @@ export default {
           return false;
         }
 
-        return op.context === 'update' && this.isUpdateOperation
+        return op.context === 'update' && this.isUpdateOperation;
       });
     },
     moduleName() {
