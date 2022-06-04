@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.1 (2022-06-04)
+
+### Fixes
+
+* Work around backwards compatibility break in `sass` module by pinning to `sass` `1.50.x` while we investigate. If you saw the error `RangeError: Invalid value: Not in inclusive range 0..145: -1` you can now fix that by upgrading with `npm update`. If it does not immediately clear up the issue in development, try `node app @apostrophecms/asset:clear-cache`.
+ 
 ## 3.21.0 (2022-05-25)
 
 ### Adds
