@@ -212,7 +212,7 @@ export default {
       aposSchema.scrollFieldIntoView(name);
     }
     this.methodTitleFieldChoices = await this.getTitleFieldChoicesFromMethod();
-    
+
   },
   methods: {
     async select(_id) {
@@ -367,10 +367,10 @@ export default {
         if (candidate && titleField.type === 'select') {
 
           // Choices are a normal, hardcoded array
-          if (Array.isArray(titleField.choices)) {  
+          if (Array.isArray(titleField.choices)) {
             choice = titleField.choices?.find(choice => choice.value === candidate);
             if (choice && choice.label) {
-              candidate = choice.label;  
+              candidate = choice.label;
             }
 
           // Choices are provided by a method
@@ -408,7 +408,7 @@ export default {
       let choices = null;
       const action = `${this.moduleOptions.action}/choices`;
       const titleField = this.schema.find(field => field.name === this.field.titleField);
-      
+
       if (titleField?.choices && typeof titleField.choices === 'string') {
         try {
           const result = await apos.http.get(
@@ -420,7 +420,7 @@ export default {
             }
           );
           if (result && result.choices) {
-            choices = result.choices
+            choices = result.choices;
           }
         } catch (e) {
           console.error(this.$t('apostrophe:errorFetchingTitleFieldChoicesByMethod', { name: titleField.name }));
