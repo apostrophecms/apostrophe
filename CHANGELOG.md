@@ -5,6 +5,12 @@
 ### Fixes
 
 * Fixes login maximum attempts error message that wasn't showing the plural when lockoutMinutes is more than 1.
+* Fixes the text color of the current array item's slat label in the array editor modal 
+* Fixes the maximum width of an array item's slat label so as to not obscure the Remove button in narrow viewports
+
+### Changes
+
+* If an array field's titleField option is set to a select field, use the select's label as the slat label, rather than the select's value.
 
 ## 3.21.1 (2022-06-04)
 
