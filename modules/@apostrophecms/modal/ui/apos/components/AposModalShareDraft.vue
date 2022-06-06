@@ -14,13 +14,12 @@
             <h2 class="apos-share-draft__heading">
               {{ $t('apostrophe:shareDraftHeader') }}
             </h2>
-            <a
-              href=""
+            <Close
               class="apos-share-draft__close"
+              :title="$t('apostrophe:close')"
+              :size="18"
               @click.prevent="close"
-            >
-              ×
-            </a>
+            />
           </div>
           <div class="apos-share-draft__content">
             <div class="apos-share-draft__toggle-wrapper">
@@ -38,16 +37,21 @@
             </p>
             <input
               type="text"
-              value="https://dummy-url/wefe3456wfewfki9"
+              value="https://dummy-url.com/wefe3456wfewuidfki9wefe3456wf554ewfki9"
               disabled
               class="apos-share-draft__url"
             >
             <a
               href=""
-              class="apos-share-draft__copy-link"
+              class="apos-share-draft__link-copy"
               @click.prevent="copy"
             >
-              {{ $t('apostrophe:shareDraftCopyLink') }}
+              <LinkVariant
+                class="apos-share-draft__link-icon"
+                :title="$t('apostrophe:shareDraftCopyLink')"
+                :size="16"
+              />
+              &nbsp;{{ $t('apostrophe:shareDraftCopyLink') }}
             </a>
           </div>
         </template>
@@ -57,7 +61,14 @@
 </template>
 
 <script>
+import Close from 'vue-material-design-icons/Close.vue';
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue';
+
 export default {
+  components: {
+    Close,
+    LinkVariant
+  },
   emits: [ 'safe-close' ],
   data() {
     return {
@@ -110,7 +121,6 @@ export default {
   left: auto;
   max-width: 700px;
   height: auto;
-  text-align: center;
 }
 
 ::v-deep .apos-modal__overlay {
@@ -144,8 +154,9 @@ export default {
 }
 
 .apos-share-draft__close {
-  text-decoration: none;
+  height: 18px;
   align-self: center;
+  cursor: pointer;
 }
 
 .apos-share-draft__content {
@@ -173,7 +184,6 @@ export default {
   line-height: var(--a-line-tall);
   max-width: 355px;
   color: var(--a-base-2);
-  text-align: left;
 }
 
 .apos-share-draft__url {
@@ -185,12 +195,18 @@ export default {
   box-sizing: border-box;
 }
 
-.apos-share-draft__copy-link {
+.apos-share-draft__link-icon {
+  height: 16px;
+}
+
+.apos-share-draft__link-copy {
   @include type-base;
   display: flex;
-  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-items: center;
   margin-top: $spacing-double;
   text-decoration: none;
   color: var(--a-primary);
+  font-weight: var(--a-weight-bold);;
 }
 </style>
