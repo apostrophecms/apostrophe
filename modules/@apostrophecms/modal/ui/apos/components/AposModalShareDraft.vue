@@ -94,7 +94,6 @@ export default {
       this.disabled = !this.disabled;
     },
     close() {
-      console.log('close');
       this.modal.showModal = false;
     }
   }
