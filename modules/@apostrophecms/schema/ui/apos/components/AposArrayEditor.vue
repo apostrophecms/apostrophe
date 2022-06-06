@@ -48,7 +48,7 @@
             @input="update"
             @select="select"
             :selected="currentId"
-            :value="slatLabels"
+            :value="withLabels(next)"
           />
         </div>
       </AposModalRail>
@@ -121,7 +121,6 @@ export default {
         type: 'overlay',
         showModal: false
       },
-      slatLabels: [],
       methodTitleFieldChoices: null,
       // If we don't clone, then we're making
       // permanent modifications whether the user
@@ -199,11 +198,6 @@ export default {
       return serverErrors;
     }
   },
-  watch: {
-    currentId() {
-      this.slatLabels = this.withLabels(this.next);
-    }
-  },
   async mounted() {
     this.modal.active = true;
     if (this.next.length) {
@@ -218,7 +212,6 @@ export default {
       aposSchema.scrollFieldIntoView(name);
     }
     this.methodTitleFieldChoices = await this.getTitleFieldChoicesFromMethod();
-    this.slatLabels = this.withLabels(this.next);
     
   },
   methods: {
@@ -370,10 +363,10 @@ export default {
         candidate = get(item, this.field.titleField);
         const titleField = this.schema.find(field => field.name === this.field.titleField);
 
-        // If field is a select, the choice label is a better slat label
+        // If field is a select, use the choice label as the slat title
         if (candidate && titleField.type === 'select') {
 
-          // Choices are the normal, hardcoded array
+          // Choices are a normal, hardcoded array
           if (Array.isArray(titleField.choices)) {  
             choice = titleField.choices?.find(choice => choice.value === candidate);
             if (choice && choice.label) {
@@ -412,24 +405,29 @@ export default {
       // If the titleField for this array is provided by a method,
       // go get the choices so we can use their labels as slat labels
 
-      if (!this.field.titleField) {
-        return null;
-      }
-
+      let choices = null;
+      const action = `${this.moduleOptions.action}/choices`;
       const titleField = this.schema.find(field => field.name === this.field.titleField);
       
-      if (titleField.choices && typeof titleField.choices === 'string') {
-        const action = `${this.moduleOptions.action}/choices`;
-        const result = await apos.http.get(
-          action,
-          {
-            qs: {
-              fieldId: titleField._id
+      if (titleField?.choices && typeof titleField.choices === 'string') {
+        try {
+          const result = await apos.http.get(
+            action,
+            {
+              qs: {
+                fieldId: titleField._id
+              }
             }
+          );
+          if (result && result.choices) {
+            choices = result.choices
           }
-        );
-        return result.choices;
+        } catch (e) {
+          console.error(this.$t('apostrophe:errorFetchingTitleFieldChoicesByMethod', { name: titleField.name }));
+        }
       }
+
+      return choices;
     }
   }
 };

@@ -121,6 +121,7 @@
   "errorCount": "{{ count }} error remaining",
   "errorCount_plural": "{{ count }} errors remaining",
   "errorCreatingNewContent": "Error while creating new, empty content.",
+  "errorFetchingTitleFieldChoicesByMethod": "An error occurred while fetching the choices for the titleField {{ name }}",
   "errorWhileRestoring": "An error occurred while restoring the previously published version.",
   "errorWhileUnpublishing": "An error occurred while unpublishing the document.",
   "errorWhileArchiving": "An error occurred while moving the document to the archive.",
