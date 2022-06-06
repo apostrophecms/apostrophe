@@ -80,6 +80,7 @@ export default {
     },
     toggle() {
       console.log('toggle');
+      this.disabled = !this.disabled;
     },
     close() {
       console.log('close');
