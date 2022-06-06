@@ -152,17 +152,45 @@ export default {
   margin-top: $spacing-double;
 }
 
+.apos-share-draft__toggle-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.apos-share-draft__toggle {
+  margin-right: 12px;
+}
+
+.apos-share-draft__toggle-label {
+  @include type-base;
+  max-width: 370px;
+  line-height: var(--a-line-tallest);
+  margin: 0;
+}
+
 .apos-share-draft__description {
   @include type-small;
-  margin-top: $spacing-double;
   line-height: var(--a-line-tall);
   max-width: 355px;
   color: var(--a-base-2);
+  text-align: left;
 }
 
-// .apos-share-draft__description {
-//   @include type-base;
-//   max-width: 370px;
-//   line-height: var(--a-line-tallest);
-// }
+.apos-share-draft__url {
+  width: 100%;
+  padding: 5px;
+  border-radius: 5px;
+  border-width: 1px;
+  background-color: var(--a-base-10);
+  box-sizing: border-box;
+}
+
+.apos-share-draft__copy-link {
+  @include type-base;
+  display: flex;
+  flex-direction: row-reverse;
+  margin-top: $spacing-double;
+  text-decoration: none;
+  color: var(--a-primary);
+}
 </style>
