@@ -5,6 +5,9 @@
 ### Fixes
 
 * Fixes login maximum attempts error message that wasn't showing the plural when lockoutMinutes is more than 1.
+* Disable the slat controls of the attachment component while uploading.
+* Fixes bug when re-attaching the same file won't trigger an upload.
+* AposSlat now fully respects the disabled state.
 
 ## 3.21.1 (2022-06-04)
 
