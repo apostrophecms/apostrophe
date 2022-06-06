@@ -166,11 +166,12 @@ describe('Docs', function() {
       label: 'Menu Label',
       modal: 'SomeModalComponent'
     };
-    assert.strictEqual(apos.doc.contextOperations.length, 0);
+    const initialLength = apos.doc.contextOperations.length;
 
     apos.doc.addContextOperation('test-people', operation);
-    assert.strictEqual(apos.doc.contextOperations.length, 1);
-    assert.deepStrictEqual(apos.doc.contextOperations[0], {
+
+    assert.strictEqual(apos.doc.contextOperations.length, initialLength + 1);
+    assert.deepStrictEqual(apos.doc.contextOperations.find(op => op.action === 'test'), {
       ...operation,
       moduleName: 'test-people'
     });
