@@ -125,6 +125,7 @@ module.exports = {
           const buildDir = `${self.apos.rootDir}/apos-build/${namespace}`;
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           const modulesToInstantiate = self.apos.modulesToBeInstantiated();
+          const symLinkModules = await findNodeModulesSymlinks(self.apos.npmRootDir);
           // Make it clear if builds should detect changes
           const detectChanges = typeof argv.changes === 'string';
           // Remove invalid changes. `argv.changes` is a comma separated list of relative
@@ -353,9 +354,16 @@ module.exports = {
                 ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
                 : webpackInstanceConfig;
 
-              // Inject the cache location at the end - we need the merged
-              const cacheMeta = await computeCacheMeta(name, webpackInstanceConfigMerged);
+              // Inject the cache location at the end - we need the merged config
+              const cacheMeta = await computeCacheMeta(name, webpackInstanceConfigMerged, symLinkModules);
               webpackInstanceConfigMerged.cache.cacheLocation = cacheMeta.location;
+              // Exclude symlinked modules from the cache managedPaths, no other way for now
+              // https://github.com/webpack/webpack/issues/12112
+              if (cacheMeta.managedPathsRegex) {
+                webpackInstanceConfigMerged.snapshot = {
+                  managedPaths: [ cacheMeta.managedPathsRegex ]
+                };
+              }
 
               const result = await webpack(webpackInstanceConfigMerged);
               await writeCacheMeta(name, cacheMeta);
@@ -716,7 +724,7 @@ module.exports = {
           // but it can be overridden by an APOS_ASSET_CACHE environment.
           // In order to compute an accurate hash, this helper needs
           // the final, merged webpack configuration.
-          async function computeCacheMeta(name, webpackConfig) {
+          async function computeCacheMeta(name, webpackConfig, symLinkModules) {
             const cacheBase = self.getCacheBasePath();
 
             if (!packageLockContentCached) {
@@ -759,10 +767,22 @@ module.exports = {
             );
             const location = path.resolve(cacheBase, hash);
 
+            // Retrieve symlinkModules and convert them to managedPaths regex rule
+            let managedPathsRegex;
+            if (symLinkModules.length > 0) {
+              const regex = symLinkModules
+                .map(m => self.apos.util.regExpQuote(m))
+                .join('|');
+              managedPathsRegex = new RegExp(
+                '^(.+?[\\/]node_modules)[\\/]((?!' + regex + ')).*[\\/]*'
+              );
+            }
+
             return {
               base: cacheBase,
               hash,
-              location
+              location,
+              managedPathsRegex
             };
           }
 

@@ -1215,6 +1215,7 @@ describe('Assets', function() {
       );
       await Promise.delay(300);
     }
+
     await retryAssertTrue(
       async () => (await fs.readFile(assetPathPublic, 'utf8')).match(/bundle-page-watcher-test-3/),
       'Unable to verify public asset rebuilding by the watcher',
@@ -1245,8 +1246,8 @@ describe('Assets', function() {
       10000
     );
     await retryAssertTrue(
-      () => timesRebuilt === 2,
-      `Expected to rebuild 2 times, got ${timesRebuilt}`,
+      () => timesRebuilt === 3,
+      `Expected to rebuild 3 times, got ${timesRebuilt}`,
       100,
       5000
     );
