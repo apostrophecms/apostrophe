@@ -3,7 +3,8 @@ const path = require('path');
 
 module.exports = {
   checkModulesWebpackConfig(modules, t) {
-    const allowedProperties = [ 'extensions', 'bundles' ];
+    const allowedProperties = [ 'extensions', 'extensionOptions', 'bundles' ];
+
     for (const mod of Object.values(modules)) {
       const webpackConfig = mod.__meta.webpack[mod.__meta.name];
 
@@ -18,7 +19,8 @@ module.exports = {
         Object.keys(webpackConfig).some((prop) => !allowedProperties.includes(prop))
       ) {
         const error = t('apostrophe:assetWebpackConfigWarning', {
-          module: mod.__meta.name
+          module: mod.__meta.name,
+          properties: allowedProperties.join(', ')
         });
 
         throw new Error(error);
@@ -51,7 +53,9 @@ module.exports = {
     const modulesMeta = modulesToInstantiate
       .map((name) => getMetadata(name));
 
-    const { extensions, foundBundles } = getModulesWebpackConfigs(
+    const {
+      extensions, extensionOptions, foundBundles
+    } = getModulesWebpackConfigs(
       modulesMeta
     );
 
@@ -59,6 +63,7 @@ module.exports = {
 
     return {
       extensions,
+      extensionOptions,
       verifiedBundles
     };
   },
@@ -173,42 +178,58 @@ async function findSymlinks(where, sub = '') {
 }
 
 function getModulesWebpackConfigs (modulesMeta) {
-  const { extensions, bundles } = modulesMeta.reduce((acc, meta) => {
+  const {
+    extensions, extensionOptions, bundles
+  } = modulesMeta.reduce((modulesAcc, meta) => {
     const { webpack, __meta } = meta;
 
     const configs = formatConfigs(__meta.chain, webpack);
 
     if (!configs.length) {
-      return acc;
+      return modulesAcc;
     }
 
-    const moduleBundles = configs.reduce((acc, conf) => {
-      return {
+    const reduce = (list, prop) => {
+      return list.reduce((acc, cur) => ({
         ...acc,
-        ...conf.bundles
-      };
-    }, {});
+        ...cur[prop] || {}
+      }), {});
+    };
+
+    const extensionOptions = configs.reduce((acc, { extensionOptions = {} }) => {
+      return [
+        ...acc,
+        extensionOptions
+      ];
+    }, []);
 
     return {
       extensions: {
-        ...acc.extensions,
-        ...configs.reduce((acc, config) => ({
-          ...acc,
-          ...config.extensions
-        }), {})
+        ...modulesAcc.extensions,
+        ...reduce(configs, 'extensions')
       },
+      extensionOptions: [
+        ...modulesAcc.extensionOptions,
+        ...extensionOptions
+      ],
       bundles: {
-        ...acc.bundles,
-        ...moduleBundles
+        ...modulesAcc.bundles,
+        ...reduce(configs, 'bundles')
       }
     };
   }, {
     extensions: {},
+    extensionOptions: [],
     bundles: {}
   });
 
+  const formattedOptions = formatExtensionsOptions(extensionOptions);
+
+  const { exts, options } = fillExtensionsOptions(extensions, formattedOptions);
+
   return {
-    extensions,
+    extensions: exts,
+    extensionOptions: options,
     foundBundles: flattenBundles(bundles)
   };
 };
@@ -223,8 +244,8 @@ async function verifyBundlesEntryPoints (bundles) {
 
     return {
       bundleName,
-      ...jsFileExists && { jsPath: jsPath },
-      ...scssFileExists && { scssPath: scssPath }
+      ...jsFileExists && { jsPath },
+      ...scssFileExists && { scssPath }
     };
   });
 
@@ -263,10 +284,13 @@ function formatConfigs (chain, webpackConfigs) {
         return null;
       }
 
-      const { bundles = {}, extensions = {} } = config;
+      const {
+        bundles = {}, extensions = {}, extensionOptions = {}
+      } = config;
 
       return {
         extensions,
+        extensionOptions,
         bundles: {
           [name]: {
             bundleNames: Object.keys(bundles),
@@ -288,4 +312,67 @@ function flattenBundles (bundles) {
         }))
       ];
     }, []);
+}
+
+function fillExtensionsOptions (extensions, options) {
+  const isObject = (val) => val &&
+    typeof val === 'object' && !Array.isArray(val);
+
+  return Object.entries(extensions).reduce((acc, [ name, config ]) => {
+    if (isObject(config)) {
+      return {
+        ...acc,
+        exts: {
+          ...acc.exts,
+          [name]: config
+        }
+      };
+    }
+
+    if (typeof config !== 'function') {
+      return acc;
+    }
+
+    const computedOptions = computeOptions(options[name] || [], isObject);
+
+    return {
+      exts: {
+        ...acc.exts,
+        [name]: config(computedOptions)
+      },
+      options: {
+        ...acc.options,
+        [name]: computedOptions
+      }
+    };
+  }, {
+    exts: {},
+    options: {}
+  });
+
+  function computeOptions (options, isObject) {
+    return options.reduce((acc, option) => {
+      if (!isObject(option) && typeof option !== 'function') {
+        return acc;
+      }
+
+      return {
+        ...acc,
+        ...isObject(option) ? option : option(acc)
+      };
+    }, {});
+  }
+}
+
+function formatExtensionsOptions (options) {
+  return options.reduce(
+    (acc, current) => {
+      return {
+        ...acc,
+        ...Object.fromEntries(Object.entries(current)
+          .map(([ ext, option ]) => [ ext, [ option, ...(acc[ext] || []) ] ]))
+      };
+    },
+    {}
+  );
 }

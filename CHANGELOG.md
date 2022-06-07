@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Possibility to pass options to webpack extensions from any module.
+
 ### Fixes
 
 * Fix a Webpack cache issue leading to modules symlinked in `node_modules` not being rebuilt. 
