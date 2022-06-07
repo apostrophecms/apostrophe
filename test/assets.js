@@ -1354,73 +1354,18 @@ describe('Assets', function() {
   it('should pass the right options to webpack extensions from all modules', async function() {
     await t.destroy(apos);
 
+    const { extConfig1, extConfig2 } = getWebpackConfigsForExtensionOptions();
+
     apos = await t.create({
       root: module,
-      autoBuild: true,
       modules: {
         'test-widget': {
           extend: '@apostrophecms/widget-type',
-          webpack: {
-            extensions: {
-              ext1 ({ mode, alias = {} }) {
-                return {
-                  mode,
-                  resolve: {
-                    alias: {
-                      ext1: 'ext1-path',
-                      ...alias
-                    }
-                  }
-                };
-              },
-              ext2 ({ alias = {} }) {
-                return {
-                  resolve: {
-                    alias: {
-                      ext2: 'ext2-path',
-                      ...alias
-                    }
-                  }
-                };
-              }
-            },
-            extensionOptions: {
-              ext1: {
-                mode: 'production'
-              },
-              ext2 (options) {
-                return {
-                  alias: {
-                    newAlias1: 'new-path1',
-                    ...options.alias || {}
-                  }
-                };
-              }
-            }
-          }
+          webpack: extConfig1
         },
         test: {
           extend: '@apostrophecms/piece-type',
-          webpack: {
-            extensionOptions: {
-              ext1(options) {
-                return {
-                  alias: {
-                    ...options.alias || {},
-                    testAlias: 'test-path'
-                  }
-                };
-              },
-              ext2 (options) {
-                return {
-                  alias: {
-                    newAlias2: 'new-path2',
-                    ...options.alias || {}
-                  }
-                };
-              }
-            }
-          }
+          webpack: extConfig2
         }
       }
     });
@@ -1433,19 +1378,40 @@ describe('Assets', function() {
       modulesToInstantiate: apos.modulesToBeInstantiated()
     });
 
-    assert(extensions.ext1.mode === 'production');
-    assert(extensions.ext1.resolve.alias.testAlias === 'test-path');
-    assert(extensions.ext1.resolve.alias.ext1 === 'ext1-path');
+    assertWebpackExtensionOptions(extensions, extensionOptions);
+  });
 
-    assert(extensions.ext2.resolve.alias.ext2 === 'ext2-path');
-    assert(extensions.ext2.resolve.alias.newAlias1 === 'new-path1');
-    assert(extensions.ext2.resolve.alias.newAlias2 === 'new-path2');
+  it('should allow two modules extending each others to pass options to the same webpack extension', async function() {
+    await t.destroy(apos);
 
-    assert(extensionOptions.ext1.mode === 'production');
-    assert(extensionOptions.ext1.alias.testAlias === 'test-path');
+    const { extConfig1, extConfig2 } = getWebpackConfigsForExtensionOptions();
 
-    assert(extensionOptions.ext2.alias.newAlias1 === 'new-path1');
-    assert(extensionOptions.ext2.alias.newAlias2 === 'new-path2');
+    apos = await t.create({
+      root: module,
+      modules: {
+        'test-widget': {
+          extend: '@apostrophecms/widget-type',
+          instantiate: false,
+          webpack: extConfig1
+        },
+        'test-widget-special': {
+          extend: 'test-widget',
+          webpack: extConfig2
+        }
+      }
+    });
+
+    assert(!apos.modules['test-widget']);
+
+    const {
+      extensions, extensionOptions
+    } = await getWebpackExtensions({
+      name: 'src',
+      getMetadata: apos.synth.getMetadata,
+      modulesToInstantiate: apos.modulesToBeInstantiated()
+    });
+
+    assertWebpackExtensionOptions(extensions, extensionOptions);
   });
 });
 
@@ -1539,5 +1505,84 @@ function loadUtils () {
     removeCache,
     getCacheMeta,
     retryAssertTrue
+  };
+}
+
+function assertWebpackExtensionOptions(extensions, extensionOptions) {
+  assert(extensions.ext1.mode === 'production');
+  assert(extensions.ext1.resolve.alias.testAlias === 'test-path');
+  assert(extensions.ext1.resolve.alias.ext1 === 'ext1-path');
+
+  assert(extensions.ext2.resolve.alias.ext2 === 'ext2-path');
+  assert(extensions.ext2.resolve.alias.newAlias1 === 'new-path1');
+  assert(extensions.ext2.resolve.alias.newAlias2 === 'new-path2');
+
+  assert(extensionOptions.ext1.mode === 'production');
+  assert(extensionOptions.ext1.alias.testAlias === 'test-path');
+
+  assert(extensionOptions.ext2.alias.newAlias1 === 'new-path1');
+  assert(extensionOptions.ext2.alias.newAlias2 === 'new-path2');
+}
+
+function getWebpackConfigsForExtensionOptions () {
+  return {
+    extConfig1: {
+      extensions: {
+        ext1 ({ mode, alias = {} }) {
+          return {
+            mode,
+            resolve: {
+              alias: {
+                ext1: 'ext1-path',
+                ...alias
+              }
+            }
+          };
+        },
+        ext2 ({ alias = {} }) {
+          return {
+            resolve: {
+              alias: {
+                ext2: 'ext2-path',
+                ...alias
+              }
+            }
+          };
+        }
+      },
+      extensionOptions: {
+        ext1: {
+          mode: 'production'
+        },
+        ext2 (options) {
+          return {
+            alias: {
+              newAlias1: 'new-path1',
+              ...options.alias || {}
+            }
+          };
+        }
+      }
+    },
+    extConfig2: {
+      extensionOptions: {
+        ext1(options) {
+          return {
+            alias: {
+              ...options.alias || {},
+              testAlias: 'test-path'
+            }
+          };
+        },
+        ext2 (options) {
+          return {
+            alias: {
+              newAlias2: 'new-path2',
+              ...options.alias || {}
+            }
+          };
+        }
+      }
+    }
   };
 }
