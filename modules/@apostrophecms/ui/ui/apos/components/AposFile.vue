@@ -24,6 +24,7 @@
         </template>
       </p>
       <input
+        ref="uploadField"
         type="file"
         class="apos-sr-only"
         :disabled="disabled || fileOrAttachment"
@@ -35,7 +36,7 @@
       <AposSlatList
         :value="[fileOrAttachment]"
         @input="update"
-        :disabled="readOnly"
+        :disabled="attachmentDisabled"
       />
     </div>
   </div>
@@ -77,10 +78,13 @@ export default {
     };
   },
   computed: {
-    fileOrAttachment () {
+    fileOrAttachment() {
       return this.selectedFile || this.attachment;
     },
-    messages () {
+    attachmentDisabled() {
+      return this.uploading || this.readOnly || this.disabled;
+    },
+    messages() {
       const msgs = {
         primary: 'Drop a file here or',
         highlighted: 'click to open the file explorer'
@@ -100,6 +104,7 @@ export default {
     async uploadFile ({ target, dataTransfer }) {
       this.dragging = false;
       const [ file ] = target.files ? target.files : (dataTransfer.files || []);
+      this.resetField();
 
       const extension = file.name.split('.').pop();
       const allowedFile = await this.checkFileGroup(`.${extension}`);
@@ -116,6 +121,9 @@ export default {
       };
 
       this.$emit('upload-file', file);
+    },
+    resetField() {
+      this.$refs.uploadField.value = null;
     },
     dragHandler (event) {
       event.preventDefault();
