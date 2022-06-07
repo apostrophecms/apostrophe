@@ -357,14 +357,15 @@ export default {
     },
     label(item) {
       let candidate;
-      // let choice;
       if (this.field.titleField) {
 
         // Initial field value
         candidate = get(item, this.field.titleField);
 
+        // If the titleField references a select input, use the
+        // select label as the slat label, rather than the value.
         if (this.titleFieldChoices) {
-          const choice = this.titleFieldChoices?.find(choice => choice.value === candidate);
+          const choice = this.titleFieldChoices.find(choice => choice.value === candidate);
           if (choice && choice.label) {
             candidate = choice.label;
           }
@@ -392,29 +393,10 @@ export default {
     },
     async getTitleFieldChoices() {
       // If the titleField references a select input, get it's choices
+      // to use as labels for the slat UI
 
       let choices = null;
-      
       const titleField = this.schema.find(field => field.name === this.field.titleField);
-
-      // // If field is a select, use the choice label as the slat title
-      //   if (candidate && titleField.type === 'select') {
-
-      //     // Choices are a normal, hardcoded array
-      //     if (Array.isArray(titleField.choices)) {
-      //       choice = titleField.choices?.find(choice => choice.value === candidate);
-      //       if (choice && choice.label) {
-      //         candidate = choice.label;
-      //       }
-
-      //     // Choices are provided by a method
-      //     } else if (typeof titleField.choices === 'string') {
-      //       choice = this.methodTitleFieldChoices?.find(choice => choice.value === candidate);
-      //       if (choice && choice.label) {
-      //         candidate = choice.label;
-      //       }
-      //     }
-      //   }
 
       // The titleField is a select
       if (titleField?.choices) {
