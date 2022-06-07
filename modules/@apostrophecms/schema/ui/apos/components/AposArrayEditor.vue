@@ -121,7 +121,8 @@ export default {
         type: 'overlay',
         showModal: false
       },
-      methodTitleFieldChoices: null,
+      titleFieldChoices: null,
+      // methodTitleFieldChoices: null,
       // If we don't clone, then we're making
       // permanent modifications whether the user
       // clicks save or not
@@ -211,7 +212,7 @@ export default {
       await this.nextTick();
       aposSchema.scrollFieldIntoView(name);
     }
-    this.methodTitleFieldChoices = await this.getTitleFieldChoicesFromMethod();
+    this.titleFieldChoices = await this.getTitleFieldChoices();
 
   },
   methods: {
@@ -356,31 +357,19 @@ export default {
     },
     label(item) {
       let candidate;
-      let choice;
+      // let choice;
       if (this.field.titleField) {
 
         // Initial field value
         candidate = get(item, this.field.titleField);
-        const titleField = this.schema.find(field => field.name === this.field.titleField);
 
-        // If field is a select, use the choice label as the slat title
-        if (candidate && titleField.type === 'select') {
-
-          // Choices are a normal, hardcoded array
-          if (Array.isArray(titleField.choices)) {
-            choice = titleField.choices?.find(choice => choice.value === candidate);
-            if (choice && choice.label) {
-              candidate = choice.label;
-            }
-
-          // Choices are provided by a method
-          } else if (typeof titleField.choices === 'string') {
-            choice = this.methodTitleFieldChoices?.find(choice => choice.value === candidate);
-            if (choice && choice.label) {
-              candidate = choice.label;
-            }
+        if (this.titleFieldChoices) {
+          const choice = this.titleFieldChoices?.find(choice => choice.value === candidate);
+          if (choice && choice.label) {
+            candidate = choice.label;
           }
         }
+
       } else if (this.schema.find(field => field.name === 'title') && (item.title !== undefined)) {
         candidate = item.title;
       }
@@ -401,32 +390,59 @@ export default {
       }));
       return result;
     },
-    async getTitleFieldChoicesFromMethod() {
-      // If the titleField for this array is provided by a method,
-      // go get the choices so we can use their labels as slat labels
+    async getTitleFieldChoices() {
+      // If the titleField references a select input, get it's choices
 
       let choices = null;
-      const action = `${this.moduleOptions.action}/choices`;
+      
       const titleField = this.schema.find(field => field.name === this.field.titleField);
 
-      if (titleField?.choices && typeof titleField.choices === 'string') {
-        try {
-          const result = await apos.http.get(
-            action,
-            {
-              qs: {
-                fieldId: titleField._id
+      // // If field is a select, use the choice label as the slat title
+      //   if (candidate && titleField.type === 'select') {
+
+      //     // Choices are a normal, hardcoded array
+      //     if (Array.isArray(titleField.choices)) {
+      //       choice = titleField.choices?.find(choice => choice.value === candidate);
+      //       if (choice && choice.label) {
+      //         candidate = choice.label;
+      //       }
+
+      //     // Choices are provided by a method
+      //     } else if (typeof titleField.choices === 'string') {
+      //       choice = this.methodTitleFieldChoices?.find(choice => choice.value === candidate);
+      //       if (choice && choice.label) {
+      //         candidate = choice.label;
+      //       }
+      //     }
+      //   }
+
+      // The titleField is a select
+      if (titleField?.choices) {
+
+        // Choices are provided by a method
+        if (typeof titleField.choices === 'string') {
+          const action = `${this.moduleOptions.action}/choices`;
+          try {
+            const result = await apos.http.get(
+              action,
+              {
+                qs: {
+                  fieldId: titleField._id
+                }
               }
+            );
+            if (result && result.choices) {
+              choices = result.choices;
             }
-          );
-          if (result && result.choices) {
-            choices = result.choices;
+          } catch (e) {
+            console.error(this.$t('apostrophe:errorFetchingTitleFieldChoicesByMethod', { name: titleField.name }));
           }
-        } catch (e) {
-          console.error(this.$t('apostrophe:errorFetchingTitleFieldChoicesByMethod', { name: titleField.name }));
+
+        // Choices are a normal, hardcoded array
+        } else if (Array.isArray(titleField.choices)) {
+          choices = titleField.choices;
         }
       }
-
       return choices;
     }
   }

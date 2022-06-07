@@ -10,7 +10,7 @@
 
 ### Changes
 
-* If an array field's titleField option is set to a select field, use the select's label as the slat label, rather than the select's value.
+* If an array field's titleField option is set to a select field, use the selected option's label as the slat label rather it's value.
 
 ## 3.21.1 (2022-06-04)
 
