@@ -1260,7 +1260,6 @@ describe('Assets', function() {
   });
 
   it('should be able to setup the debounce time', async function() {
-    await t.destroy(apos);
 
     apos = await t.create({
       root: module,
@@ -1349,11 +1348,11 @@ describe('Assets', function() {
     });
     assert(!apos.asset.buildWatcher);
     process.env.NODE_ENV = 'development';
+
+    await t.destroy(apos);
   });
 
   it('should pass the right options to webpack extensions from all modules', async function() {
-    await t.destroy(apos);
-
     const { extConfig1, extConfig2 } = getWebpackConfigsForExtensionOptions();
 
     apos = await t.create({
@@ -1379,11 +1378,11 @@ describe('Assets', function() {
     });
 
     assertWebpackExtensionOptions(extensions, extensionOptions);
+
+    await t.destroy(apos);
   });
 
   it('should allow two modules extending each others to pass options to the same webpack extension', async function() {
-    await t.destroy(apos);
-
     const { extConfig1, extConfig2 } = getWebpackConfigsForExtensionOptions();
 
     apos = await t.create({
