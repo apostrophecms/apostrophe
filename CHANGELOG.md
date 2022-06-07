@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.221.0 (2022-06-07)
+
+## Adds
+
+Passing the new `fastMinify: true` option to the `apostrophe-assets` module yields an `apostrophe:generation` speedup of 50% or more, depending on the amount of project-level code, in exchange for a 2% increase in the JavaScript bundle size that reaches the browser.
+
 ## 2.220.10 (2022-03-18)
 
 ## Fixes
