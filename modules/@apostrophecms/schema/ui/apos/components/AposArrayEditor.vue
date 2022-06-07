@@ -122,7 +122,6 @@ export default {
         showModal: false
       },
       titleFieldChoices: null,
-      // methodTitleFieldChoices: null,
       // If we don't clone, then we're making
       // permanent modifications whether the user
       // clicks save or not
