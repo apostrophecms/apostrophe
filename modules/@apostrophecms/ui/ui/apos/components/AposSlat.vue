@@ -271,6 +271,9 @@ export default {
     &:hover {
       background-color: var(--a-primary-dark-10);
     }
+    .apos-slat__label {
+      color: var(--a-white);
+    }
   }
 
   .apos-slat-list__item--disabled {
@@ -283,6 +286,7 @@ export default {
   .apos-slat__main {
     display: flex;
     align-items: center;
+    max-width: 75%;
     & ::v-deep .trigger {
       /* This gets inline positioned and has doesn't provide an extra class to beef up, sorry */
       /* stylelint-disable-next-line declaration-no-important */
@@ -294,7 +298,6 @@ export default {
     @include type-small;
     overflow: hidden;
     margin-left: 5px;
-    max-width: 220px;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
