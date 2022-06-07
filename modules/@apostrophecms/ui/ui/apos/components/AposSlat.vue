@@ -8,7 +8,8 @@
       :class="{
         'apos-is-engaged': engaged,
         'apos-is-only-child': slatCount === 1,
-        'apos-is-selected': selected
+        'apos-is-selected': selected,
+        'apos-is-disabled': disabled,
       }"
       @keydown.prevent.space="toggleEngage"
       @keydown.prevent.enter="toggleEngage"
@@ -33,6 +34,7 @@
           @item-clicked="$emit('item-clicked', item)"
           menu-placement="bottom-start"
           menu-offset="40, 10"
+          disabled="disabled"
         />
         <AposButton
           class="apos-slat__editor-btn"
@@ -46,6 +48,7 @@
           :icon-only="true"
           :modifiers="['inline']"
           @click="$emit('item-clicked', item)"
+          disabled="disabled"
         />
         <a
           class="apos-slat__control apos-slat__control--view"
@@ -221,6 +224,12 @@ export default {
     background-color: var(--a-base-9);
     color: var(--a-text-primary);
     @include apos-transition();
+
+    &.apos-is-disabled {
+      .apos-slat__control--view {
+        pointer-events: none;
+      }
+    }
 
     &:hover {
       cursor: grab;

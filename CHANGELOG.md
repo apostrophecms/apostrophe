@@ -11,6 +11,9 @@
 ### Changes
 
 * If an array field's titleField option is set to a select field, use the selected option's label as the slat label rather it's value.
+* Disable the slat controls of the attachment component while uploading.
+* Fixes bug when re-attaching the same file won't trigger an upload.
+* AposSlat now fully respects the disabled state.
 
 ## 3.21.1 (2022-06-04)
 
