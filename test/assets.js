@@ -177,23 +177,6 @@ describe('Assets', function() {
     });
   });
 
-  it('should pass the right options to webpack extensions from all modules', async function() {
-    const {
-      extensions, extensionOptions
-    } = await getWebpackExtensions({
-      name: 'src',
-      getMetadata: apos.synth.getMetadata,
-      modulesToInstantiate: apos.modulesToBeInstantiated()
-    });
-
-    assert(extensions.ext1.mode === 'production');
-    assert(extensions.ext1.resolve.alias.testAlias === 'test-path');
-    assert(extensions.ext1.resolve.alias.ext1Overriden === 'bar-path');
-
-    assert(extensionOptions.ext1.mode === 'production');
-    assert(extensionOptions.ext1.alias.testAlias === 'test-path');
-  });
-
   it('should build the right bundles in dev and prod modes', async function () {
     process.env.NODE_ENV = 'production';
 
@@ -485,8 +468,8 @@ describe('Assets', function() {
 
     const { meta, folders } = getCacheMeta();
 
-    assert.equal(folders.length, 12);
-    assert.equal(Object.keys(meta).length, 12);
+    assert.equal(folders.length, 11);
+    assert.equal(Object.keys(meta).length, 11);
     assert(!meta['default:apos_3']);
     assert(meta['default:src_3']);
     assert(meta['default:src-es5_3']);
@@ -1368,13 +1351,101 @@ describe('Assets', function() {
     process.env.NODE_ENV = 'development';
   });
 
-  it('should allows passing options from any module to a webpack extension', async function() {
+  it('should pass the right options to webpack extensions from all modules', async function() {
     await t.destroy(apos);
 
     apos = await t.create({
       root: module,
-      autoBuild: true
+      autoBuild: true,
+      modules: {
+        'test-widget': {
+          extend: '@apostrophecms/widget-type',
+          webpack: {
+            extensions: {
+              ext1 ({ mode, alias = {} }) {
+                return {
+                  mode,
+                  resolve: {
+                    alias: {
+                      ext1: 'ext1-path',
+                      ...alias
+                    }
+                  }
+                };
+              },
+              ext2 ({ alias = {} }) {
+                return {
+                  resolve: {
+                    alias: {
+                      ext2: 'ext2-path',
+                      ...alias
+                    }
+                  }
+                };
+              }
+            },
+            extensionOptions: {
+              ext1: {
+                mode: 'production'
+              },
+              ext2 (options) {
+                return {
+                  alias: {
+                    newAlias1: 'new-path1',
+                    ...options.alias || {}
+                  }
+                };
+              }
+            }
+          }
+        },
+        test: {
+          extend: '@apostrophecms/piece-type',
+          webpack: {
+            extensionOptions: {
+              ext1(options) {
+                return {
+                  alias: {
+                    ...options.alias || {},
+                    testAlias: 'test-path'
+                  }
+                };
+              },
+              ext2 (options) {
+                return {
+                  alias: {
+                    newAlias2: 'new-path2',
+                    ...options.alias || {}
+                  }
+                };
+              }
+            }
+          }
+        }
+      }
     });
+
+    const {
+      extensions, extensionOptions
+    } = await getWebpackExtensions({
+      name: 'src',
+      getMetadata: apos.synth.getMetadata,
+      modulesToInstantiate: apos.modulesToBeInstantiated()
+    });
+
+    assert(extensions.ext1.mode === 'production');
+    assert(extensions.ext1.resolve.alias.testAlias === 'test-path');
+    assert(extensions.ext1.resolve.alias.ext1 === 'ext1-path');
+
+    assert(extensions.ext2.resolve.alias.ext2 === 'ext2-path');
+    assert(extensions.ext2.resolve.alias.newAlias1 === 'new-path1');
+    assert(extensions.ext2.resolve.alias.newAlias2 === 'new-path2');
+
+    assert(extensionOptions.ext1.mode === 'production');
+    assert(extensionOptions.ext1.alias.testAlias === 'test-path');
+
+    assert(extensionOptions.ext2.alias.newAlias1 === 'new-path1');
+    assert(extensionOptions.ext2.alias.newAlias2 === 'new-path2');
   });
 });
 
