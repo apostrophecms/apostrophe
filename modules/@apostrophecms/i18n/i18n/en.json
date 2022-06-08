@@ -359,6 +359,7 @@
   "shareDraftDescription": "Enabling draft sharing will allow anyone with this link to view the current draft",
   "shareDraftEnable": "Enable draft sharing",
   "shareDraftHeader": "Share this page",
+  "shareDraftError": "This document cannot be shared at this time",
   "visibilityHelp": "Select whether this content is public or private",
   "slug": "Slug",
   "slugInUse": "Slug already in use",
