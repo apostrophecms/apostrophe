@@ -120,6 +120,7 @@ export default {
   left: auto;
   max-width: 700px;
   height: auto;
+  border-radius: 15px;
 }
 
 ::v-deep .apos-modal__overlay {
@@ -186,11 +187,13 @@ export default {
 }
 
 .apos-share-draft__url {
+  @include type-base;
   width: 100%;
   padding: 5px;
   border-radius: 5px;
   border-width: 1px;
-  background-color: var(--a-base-10);
+  background-color: var(--a-base-9);
+  border: 1px solid var(--a-base-8);
   box-sizing: border-box;
 }
 
