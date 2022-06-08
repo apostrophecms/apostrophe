@@ -473,6 +473,12 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.revertPublishedToPrevious(req, published);
+        },
+        ':_id/share': async (req) => {
+
+        },
+        ':_id/unshare': async (req) => {
+
         }
       },
       get: {
