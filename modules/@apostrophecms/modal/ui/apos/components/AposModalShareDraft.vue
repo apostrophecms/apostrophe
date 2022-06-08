@@ -37,7 +37,7 @@
             </p>
             <input
               type="text"
-              value="https://dummy-url.com/wefe3456wfewuidfki9wefe3456wf554ewfki9"
+              :value="shareUrl"
               disabled
               class="apos-share-draft__url"
             >
@@ -69,6 +69,12 @@ export default {
     Close,
     LinkVariant
   },
+  props: {
+    doc: {
+      type: Object,
+      required: true
+    }
+  },
   emits: [ 'safe-close' ],
   data() {
     return {
@@ -79,22 +85,75 @@ export default {
         disableHeader: true,
         trapFocus: true
       },
-      disabled: false
+      shareUrl: '',
+      disabled: true
     };
   },
   async mounted() {
     this.modal.active = true;
+    this.checkUrlprop();
   },
   methods: {
-    copy() {
+    async copy() {
       console.log('copy');
+      await navigator.clipboard.writeText(this.shareUrl);
     },
-    toggle() {
-      console.log('toggle');
+    async toggle() {
       this.disabled = !this.disabled;
+
+      await this.setShareUrl();
+    },
+    async setShareUrl() {
+      const routeToCall = this.disabled ? 'unshare' : 'share';
+
+      try {
+        const { aposShareKey } = await apos.http.post(
+          `${apos.modules[this.doc.type].action}/${this.doc._id}/${routeToCall}`, {
+            busy: true,
+            draft: true
+          }
+        );
+
+        if (this.disabled) {
+          this.shareUrl = '';
+          return;
+        }
+
+        if (!aposShareKey) {
+          return this.errorNotif();
+        }
+
+        this.shareUrl = aposShareKey;
+
+      } catch (err) {
+        if (routeToCall === 'share') {
+          this.errorNotif();
+        } else {
+          this.shareUrl = '';
+        }
+      }
     },
     close() {
       this.modal.showModal = false;
+    },
+    async checkUrlprop() {
+      if (!this.doc._url) {
+        await this.errorNotif();
+      } else if (this.doc.aposShareKey) {
+        this.disabled = false;
+        this.shareUrl = this.doc.aposShareKey;
+      }
+    },
+    async errorNotif() {
+      await apos.notify('apostrophe:shareDraftError', {
+        type: 'danger',
+        icon: 'alert-circle-icon',
+        dismiss: true
+      });
+
+      setTimeout(() => {
+        this.close();
+      }, 500);
     }
   }
 };
