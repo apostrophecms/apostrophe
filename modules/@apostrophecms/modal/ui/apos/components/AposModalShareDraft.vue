@@ -36,8 +36,8 @@
               {{ $t('apostrophe:shareDraftDescription') }}
             </p>
             <input
+              v-model="shareUrl"
               type="text"
-              :value="shareUrl"
               disabled
               class="apos-share-draft__url"
             >
