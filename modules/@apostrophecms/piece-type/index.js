@@ -440,10 +440,19 @@ module.exports = {
           return self.revertPublishedToPrevious(req, published);
         },
         ':_id/share': async (req) => {
+          const draft = await self.getDraftToShare(req);
+
+          const shared = await self.share(req, draft);
+
+          return shared;
 
         },
         ':_id/unshare': async (req) => {
+          const draft = await self.getDraftToShare(req);
 
+          const unshared = await self.unshare(req, draft);
+
+          return unshared;
         }
       }
     };
@@ -944,6 +953,28 @@ module.exports = {
             throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
           }
         }
+      },
+
+      async getDraftToShare(req) {
+        const { _id } = req.params;
+
+        if (!_id) {
+          throw self.apos.error('invalid');
+        }
+
+        const piece = await self.findOneForEditing(req, {
+          _id
+        });
+
+        if (!piece) {
+          throw self.apos.error('notfound');
+        }
+
+        if (piece.aposMode !== 'draft') {
+          throw self.apos.error('invalid');
+        }
+
+        return piece;
       }
     };
   },
