@@ -321,6 +321,7 @@
   "selectManyLabel": "Selecionar {{ typeLabel }}",
   "selectLocales": "Selecionar Localidades",
   "sentenceJoiner": " ",
+  "shareDraft": "Compartilhar rascunho",
   "visibilityHelp": "Selecione se este conteúdo é público ou privado",
   "slug": "Slug",
   "slugInUse": "Este slug já está em uso",
