@@ -339,6 +339,7 @@
   "selectManyLabel": "Sélectionner {{ typeLabel }}",
   "selectLocales": "Sélectionner les langues",
   "sentenceJoiner": " ",
+  "shareDraft": "Partager le brouillon",
   "visibilityHelp": "Choisissez si ce contenu est public ou privé",
   "slug": "Slug",
   "slugInUse": "Slug déjà utilisé",
