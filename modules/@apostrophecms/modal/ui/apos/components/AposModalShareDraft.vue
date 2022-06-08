@@ -123,7 +123,7 @@ export default {
           return this.errorNotif();
         }
 
-        this.shareUrl = aposShareKey;
+        this.shareUrl = this.generateShareUrl();
 
       } catch (err) {
         if (routeToCall === 'share') {
@@ -154,6 +154,13 @@ export default {
       setTimeout(() => {
         this.close();
       }, 500);
+    },
+    generateShareUrl(aposShareKey) {
+      return apos.http.addQueryToUrl(this.doc._url, {
+        ...apos.http.parseQuery(this.doc._url),
+        aposShareKey,
+        aposShareId: this.doc._id
+      });
     }
   }
 };
