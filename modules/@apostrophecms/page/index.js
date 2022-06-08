@@ -1340,6 +1340,18 @@ database.`);
         return manager.unpublish(req, page);
       },
 
+      // Share a draft
+      async share(req, draft) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.share(req, draft);
+      },
+
+      // Unshare a draft
+      async unshare(req, draft) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.unshare(req, draft);
+      },
+
       // Localize the draft, i.e. copy it to another locale, creating
       // that locale's draft for the first time if necessary. By default
       // existing documents are not updated

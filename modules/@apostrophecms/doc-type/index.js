@@ -1199,6 +1199,14 @@ module.exports = {
             delete $set[name];
           }
         }
+      },
+
+      async share(req, doc) {
+        return doc;
+      },
+
+      async unshare(req, doc) {
+        return doc;
       }
     };
   },
