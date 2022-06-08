@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.22.0 (2022-06-08)
 
 ### Adds
 
@@ -10,12 +10,9 @@
 
 * Fix a Webpack cache issue leading to modules symlinked in `node_modules` not being rebuilt. 
 * Fixes login maximum attempts error message that wasn't showing the plural when lockoutMinutes is more than 1.
-* Fixes the text color of the current array item's slat label in the array editor modal 
-* Fixes the maximum width of an array item's slat label so as to not obscure the Remove button in narrow viewports
-
-### Changes
-
-* If an array field's titleField option is set to a select field, use the selected option's label as the slat label rather it's value.
+* Fixes the text color of the current array item's slat label in the array editor modal.
+* Fixes the maximum width of an array item's slat label so as to not obscure the Remove button in narrow viewports.
+* If an array field's titleField option is set to a select field, use the selected option's label as the slat label rather its value.
 * Disable the slat controls of the attachment component while uploading.
 * Fixes bug when re-attaching the same file won't trigger an upload.
 * AposSlat now fully respects the disabled state.
