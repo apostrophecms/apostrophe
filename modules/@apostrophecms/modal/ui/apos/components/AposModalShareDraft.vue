@@ -96,7 +96,6 @@ export default {
   },
   methods: {
     async copy() {
-      console.log('copy');
       await navigator.clipboard.writeText(this.shareUrl);
     },
     async toggle() {
@@ -128,10 +127,10 @@ export default {
         this.shareUrl = this.generateShareUrl(aposShareKey);
 
       } catch (err) {
-        if (!this.disabled) {
-          this.errorNotif();
-        } else {
+        if (this.disabled) {
           this.shareUrl = '';
+        } else {
+          this.errorNotif();
         }
       }
     },
