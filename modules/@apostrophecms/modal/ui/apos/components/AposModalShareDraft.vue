@@ -141,7 +141,7 @@ export default {
         await this.errorNotif();
       } else if (this.doc.aposShareKey) {
         this.disabled = false;
-        this.shareUrl = this.doc.aposShareKey;
+        this.shareUrl = this.generateShareUrl(this.doc.aposShareKey);
       }
     },
     async errorNotif() {
@@ -156,11 +156,13 @@ export default {
       }, 500);
     },
     generateShareUrl(aposShareKey) {
-      return apos.http.addQueryToUrl(this.doc._url, {
+      const slug = apos.http.addQueryToUrl(this.doc._url, {
         ...apos.http.parseQuery(this.doc._url),
         aposShareKey,
         aposShareId: this.doc._id
       });
+
+      return location.origin + slug;
     }
   }
 };
