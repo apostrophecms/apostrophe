@@ -191,7 +191,6 @@ export default {
   width: 100%;
   padding: 5px;
   border-radius: 5px;
-  border-width: 1px;
   background-color: var(--a-base-9);
   border: 1px solid var(--a-base-8);
   box-sizing: border-box;
