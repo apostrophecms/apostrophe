@@ -104,12 +104,13 @@ export default {
       await this.setShareUrl();
     },
     async setShareUrl() {
-      const routeToCall = this.disabled ? 'unshare' : 'share';
-
       try {
         const { aposShareKey } = await apos.http.post(
-          `${apos.modules[this.doc.type].action}/${this.doc._id}/${routeToCall}`, {
+          `${apos.modules[this.doc.type].action}/${this.doc._id}/share`, {
             busy: true,
+            body: {
+              share: !this.disabled
+            },
             draft: true
           }
         );
@@ -123,10 +124,10 @@ export default {
           return this.errorNotif();
         }
 
-        this.shareUrl = this.generateShareUrl();
+        this.shareUrl = this.generateShareUrl(aposShareKey);
 
       } catch (err) {
-        if (routeToCall === 'share') {
+        if (!this.disabled) {
           this.errorNotif();
         } else {
           this.shareUrl = '';
@@ -156,8 +157,8 @@ export default {
       }, 500);
     },
     generateShareUrl(aposShareKey) {
+      // ...apos.http.parseQuery(this.doc._url),
       const slug = apos.http.addQueryToUrl(this.doc._url, {
-        ...apos.http.parseQuery(this.doc._url),
         aposShareKey,
         aposShareId: this.doc._id
       });
