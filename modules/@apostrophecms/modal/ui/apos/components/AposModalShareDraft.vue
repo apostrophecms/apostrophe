@@ -35,25 +35,34 @@
             <p class="apos-share-draft__description">
               {{ $t('apostrophe:shareDraftDescription') }}
             </p>
-            <input
-              v-model="shareUrl"
-              type="text"
-              disabled
-              class="apos-share-draft__url"
+            <transition
+              name="collapse"
+              :duration="200"
             >
-            <a
-              v-if="shareUrl"
-              href=""
-              class="apos-share-draft__link-copy"
-              @click.prevent="copy"
-            >
-              <LinkVariant
-                class="apos-share-draft__link-icon"
-                :title="$t('apostrophe:shareDraftCopyLink')"
-                :size="16"
-              />
-              &nbsp;{{ $t('apostrophe:shareDraftCopyLink') }}
-            </a>
+              <div
+                class="apos-share-draft__url-block"
+                v-show="!disabled"
+              >
+                <input
+                  v-model="shareUrl"
+                  type="text"
+                  disabled
+                  class="apos-share-draft__url"
+                >
+                <a
+                  href=""
+                  class="apos-share-draft__link-copy"
+                  @click.prevent="copy"
+                >
+                  <LinkVariant
+                    class="apos-share-draft__link-icon"
+                    :title="$t('apostrophe:shareDraftCopyLink')"
+                    :size="16"
+                  />
+                  &nbsp;{{ $t('apostrophe:shareDraftCopyLink') }}
+                </a>
+              </div>
+            </transition>
           </div>
         </template>
       </AposModalBody>
@@ -92,7 +101,8 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-    this.checkUrlprop();
+    await this.checkUrlprop();
+    this.getAposShareKey();
   },
   methods: {
     async copy() {
@@ -116,14 +126,15 @@ export default {
         );
 
         if (this.disabled) {
-          this.shareUrl = '';
+          setTimeout(() => {
+            this.shareUrl = '';
+          }, 200);
           return;
         }
 
         if (!aposShareKey) {
           return this.errorNotif();
         }
-
         this.shareUrl = this.generateShareUrl(aposShareKey);
 
       } catch (err) {
@@ -140,9 +151,16 @@ export default {
     async checkUrlprop() {
       if (!this.doc._url) {
         await this.errorNotif();
-      } else if (this.doc.aposShareKey) {
+      }
+    },
+    async getAposShareKey() {
+      const { aposShareKey } = await apos.http.get(
+        `${apos.modules[this.doc.type].action}/${this.doc._id}`, {}
+      );
+
+      if (aposShareKey) {
         this.disabled = false;
-        this.shareUrl = this.generateShareUrl(this.doc.aposShareKey);
+        this.shareUrl = this.generateShareUrl(aposShareKey);
       }
     },
     async errorNotif() {
@@ -258,6 +276,16 @@ export default {
   line-height: var(--a-line-tall);
   max-width: 355px;
   color: var(--a-base-2);
+}
+
+.apos-share-draft__url-block {
+  height: 63px;
+  transition: height 200ms linear;
+  overflow: hidden;
+
+  &.collapse-enter, &.collapse-leave-to {
+    height: 0;
+  }
 }
 
 .apos-share-draft__url {
