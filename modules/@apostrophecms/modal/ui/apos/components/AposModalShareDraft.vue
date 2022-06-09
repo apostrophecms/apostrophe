@@ -42,6 +42,7 @@
               class="apos-share-draft__url"
             >
             <a
+              v-if="shareUrl"
               href=""
               class="apos-share-draft__link-copy"
               @click.prevent="copy"
