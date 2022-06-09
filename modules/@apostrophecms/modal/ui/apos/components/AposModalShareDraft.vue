@@ -170,9 +170,7 @@ export default {
         dismiss: true
       });
 
-      setTimeout(() => {
-        this.close();
-      }, 500);
+      setTimeout(this.close, 500);
     },
     generateShareUrl(aposShareKey) {
       const qs = Object.fromEntries(
@@ -186,7 +184,7 @@ export default {
         aposShareId: this.doc._id
       });
 
-      return location.origin + slug;
+      return `${location.origin}${slug}`;
     }
   }
 };
