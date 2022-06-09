@@ -140,7 +140,9 @@ module.exports = {
               }
             };
           } else {
-            return {
+            const { aposShareId, aposShareKey } = req.query;
+
+            const query = {
               aposMode: {
                 $in: [ null, 'published' ]
               },
@@ -149,6 +151,24 @@ module.exports = {
                 $nin: restrictedViewTypes
               }
             };
+
+            if (typeof aposShareId === 'string' && typeof aposShareKey === 'string') {
+              const { aposMode, ...rest } = query;
+
+              return {
+                $or: [
+                  { aposMode },
+                  {
+                    aposMode: 'draft',
+                    _id: aposShareId,
+                    aposShareKey: aposShareKey
+                  }
+                ],
+                ...rest
+              };
+            }
+
+            return query;
           }
         } else if (action === 'edit') {
           if (role === 'contributor') {
