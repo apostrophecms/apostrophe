@@ -2295,12 +2295,8 @@ database.`);
           _id
         });
 
-        if (!piece) {
+        if (!piece || piece.aposMode !== 'draft') {
           throw self.apos.error('notfound');
-        }
-
-        if (piece.aposMode !== 'draft') {
-          throw self.apos.error('invalid');
         }
 
         return piece;
