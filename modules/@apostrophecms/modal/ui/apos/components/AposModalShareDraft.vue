@@ -157,8 +157,13 @@ export default {
       }, 500);
     },
     generateShareUrl(aposShareKey) {
-      // ...apos.http.parseQuery(this.doc._url),
+      const qs = Object.fromEntries(
+        Object.entries(apos.http.parseQuery(this.doc._url))
+          .filter(([ _, val ]) => val)
+      );
+
       const slug = apos.http.addQueryToUrl(this.doc._url, {
+        ...qs,
         aposShareKey,
         aposShareId: this.doc._id
       });
