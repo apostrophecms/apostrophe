@@ -462,10 +462,10 @@ export default {
     focusNextError() {
       let field;
       for (const key in this.fieldErrors) {
-        for (const tabKey in this.fieldErrors[key]) {
-          if (this.fieldErrors[key][tabKey] && !field) {
+        for (const errKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][errKey] && !field) {
             field = this.schema.filter(item => {
-              return item.name === tabKey;
+              return item.name === errKey;
             })[0];
 
             if (field.group.name !== 'utility') {

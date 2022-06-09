@@ -33,8 +33,8 @@ export default {
     updateErrorCount() {
       let count = 0;
       for (const key in this.fieldErrors) {
-        for (const tabKey in this.fieldErrors[key]) {
-          if (this.fieldErrors[key][tabKey]) {
+        for (const errKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][errKey]) {
             count++;
           }
         }
