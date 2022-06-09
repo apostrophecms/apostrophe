@@ -112,7 +112,7 @@ import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
-import AposDocsErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsErrorsMixin';
+import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
@@ -124,7 +124,7 @@ export default {
     AposPublishMixin,
     AposAdvisoryLockMixin,
     AposArchiveMixin,
-    AposDocsErrorsMixin
+    AposDocErrorsMixin
   ],
   provide () {
     return {

@@ -57,7 +57,7 @@
 import { klona } from 'klona';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
-import AposDocsErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsErrorsMixin';
+import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
@@ -66,7 +66,7 @@ export default {
   mixins: [
     AposModifiedMixin,
     AposModalTabsMixin,
-    AposDocsErrorsMixin
+    AposDocErrorsMixin
   ],
   props: {
     schema: {
