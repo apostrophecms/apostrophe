@@ -277,9 +277,9 @@ export default {
 }
 
 .apos-share-draft__url-block {
+  overflow: hidden;
   height: 63px;
   transition: height 200ms linear;
-  overflow: hidden;
 
   &.collapse-enter, &.collapse-leave-to {
     height: 0;
