@@ -14,14 +14,15 @@ async function destroy(apos) {
     return;
   }
   await apos.destroy();
+  const { uri } = apos.modules['@apostrophecms/db'];
   const dbName = apos.db && apos.db.databaseName;
   // TODO at some point accommodate nonsense like testing remote databases
   // that won't let us use dropDatabase, no shell available etc., but the
   // important principle here is that we should not have to have an apos
   // object to clean up the database, otherwise we have to get hold of one
   // when initialization failed and that's really not apostrophe's concern
-  if (dbName) {
-    const client = await mongodbConnect(`mongodb://localhost:27017/${dbName}`);
+  if (dbName && uri) {
+    const client = await mongodbConnect(`${uri}${dbName}`);
     const db = client.db(dbName);
     await db.dropDatabase();
     await client.close();

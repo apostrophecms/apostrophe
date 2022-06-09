@@ -1675,4 +1675,62 @@ describe('Pieces', function() {
       assert(draft.lastPublishedAt === null);
     });
   });
+
+  describe('share/unshare', function() {
+    const product = {
+      aposDocId: 'some-product',
+      type: 'product',
+      slug: '/some-product',
+      visibility: 'public'
+    };
+
+    it('should have a "share" method that returns a draft with aposShareKey', async function() {
+      assert(apos.modules.thing.share);
+
+      const previousPublished = await apos.modules.thing.insert(apos.task.getReq(), product);
+      const previousDraft = await apos.modules.thing.findOneForEditing(apos.task.getReq({ mode: 'draft' }), { _id: 'some-product:en:draft' });
+
+      const response = await apos.modules.thing.share(apos.task.getReq(), previousDraft);
+      const draft = await apos.doc.db.findOne({
+        _id: `${previousDraft.aposDocId}:en:draft`
+      });
+      const published = await apos.doc.db.findOne({
+        _id: `${previousDraft.aposDocId}:en:published`
+      });
+
+      assert(!Object.prototype.hasOwnProperty.call(previousPublished, 'aposShareKey'));
+      assert(!Object.prototype.hasOwnProperty.call(previousDraft, 'aposShareKey'));
+      assert(!Object.prototype.hasOwnProperty.call(published, 'aposShareKey'));
+      assert(response.aposShareKey);
+      assert(draft.aposShareKey);
+      assert(response.aposShareKey === draft.aposShareKey);
+
+      await apos.modules.thing.delete(apos.task.getReq(), published);
+      await apos.modules.thing.delete(apos.task.getReq(), draft);
+    });
+
+    it('should have a "unshare" method that returns a draft without aposShareKey', async function() {
+      assert(apos.modules.thing.share);
+
+      const previousPublished = await apos.modules.thing.insert(apos.task.getReq(), product);
+      const previousDraft = await apos.modules.thing.findOneForEditing(apos.task.getReq({ mode: 'draft' }), { _id: 'some-product:en:draft' });
+
+      await apos.modules.thing.share(apos.task.getReq(), previousDraft);
+      const response = await apos.modules.thing.unshare(apos.task.getReq(), previousDraft);
+      const draft = await apos.doc.db.findOne({
+        _id: `${previousDraft.aposDocId}:en:draft`
+      });
+      const published = await apos.doc.db.findOne({
+        _id: `${previousDraft.aposDocId}:en:published`
+      });
+
+      assert(!Object.prototype.hasOwnProperty.call(previousPublished, 'aposShareKey'));
+      assert(!Object.prototype.hasOwnProperty.call(previousDraft, 'aposShareKey'));
+      assert(!Object.prototype.hasOwnProperty.call(published, 'aposShareKey'));
+      assert(!Object.prototype.hasOwnProperty.call(response, 'aposShareKey'));
+      assert(!Object.prototype.hasOwnProperty.call(draft, 'aposShareKey'));
+
+      await apos.modules.thing.delete(apos.task.getReq(), published);
+    });
+  });
 });

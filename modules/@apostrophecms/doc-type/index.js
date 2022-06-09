@@ -1210,6 +1210,54 @@ module.exports = {
             delete $set[name];
           }
         }
+      },
+
+      async share(req, doc) {
+        if (doc._edit !== true) {
+          throw self.apos.error('notfound');
+        }
+
+        if (!doc._url) {
+          return doc;
+        }
+
+        const { aposShareKey: _aposShareKey, ...draft } = doc;
+        const aposShareKey = doc.aposShareKey || self.apos.util.generateId();
+
+        await self.apos.doc.db.updateOne({
+          _id: doc._id
+        }, {
+          $set: {
+            aposShareKey
+          }
+        });
+
+        return {
+          ...draft,
+          aposShareKey
+        };
+      },
+
+      async unshare(req, doc) {
+        if (doc._edit !== true) {
+          throw self.apos.error('notfound');
+        }
+
+        if (!doc._url) {
+          return doc;
+        }
+
+        const { aposShareKey: _aposShareKey, ...draft } = doc;
+
+        await self.apos.doc.db.updateOne({
+          _id: doc._id
+        }, {
+          $unset: {
+            aposShareKey: 1
+          }
+        });
+
+        return draft;
       }
     };
   },
