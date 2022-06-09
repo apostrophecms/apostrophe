@@ -441,7 +441,7 @@ module.exports = {
         },
         ':_id/share': async (req) => {
           const { _id } = req.params;
-          const share = self.apos.boolean(req.body.share);
+          const share = self.apos.launder.boolean(req.body.share);
 
           if (!_id) {
             throw self.apos.error('invalid');
