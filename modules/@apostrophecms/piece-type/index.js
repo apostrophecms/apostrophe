@@ -440,19 +440,26 @@ module.exports = {
           return self.revertPublishedToPrevious(req, published);
         },
         ':_id/share': async (req) => {
-          const draft = await self.getDraftToShare(req);
+          const { _id } = req.params;
+          const share = self.apos.launder(req.body.share);
 
-          const shared = await self.share(req, draft);
+          if (!_id) {
+            throw self.apos.error('invalid');
+          }
 
-          return shared;
+          const draft = await self.findOneForEditing(req, {
+            _id
+          });
 
-        },
-        ':_id/unshare': async (req) => {
-          const draft = await self.getDraftToShare(req);
+          if (!draft || draft.aposMode !== 'draft') {
+            throw self.apos.error('notfound');
+          }
 
-          const unshared = await self.unshare(req, draft);
+          const sharedDoc = share
+            ? await self.share(req, draft)
+            : await self.unshare(req, draft);
 
-          return unshared;
+          return sharedDoc;
         }
       }
     };
@@ -953,28 +960,6 @@ module.exports = {
             throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
           }
         }
-      },
-
-      async getDraftToShare(req) {
-        const { _id } = req.params;
-
-        if (!_id) {
-          throw self.apos.error('invalid');
-        }
-
-        const piece = await self.findOneForEditing(req, {
-          _id
-        });
-
-        if (!piece) {
-          throw self.apos.error('notfound');
-        }
-
-        if (piece.aposMode !== 'draft') {
-          throw self.apos.error('invalid');
-        }
-
-        return piece;
       }
     };
   },
