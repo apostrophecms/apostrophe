@@ -475,18 +475,26 @@ module.exports = {
           return self.revertPublishedToPrevious(req, published);
         },
         ':_id/share': async (req) => {
-          const draft = await self.getDraftToShare(req);
+          const { _id } = req.params;
+          const share = self.apos.launder(req.body.share);
 
-          const shared = await self.share(req, draft);
+          if (!_id) {
+            throw self.apos.error('invalid');
+          }
 
-          return shared;
-        },
-        ':_id/unshare': async (req) => {
-          const draft = await self.getDraftToShare(req);
+          const draft = await self.findOneForEditing(req, {
+            _id
+          });
 
-          const unshared = await self.unshare(req, draft);
+          if (!draft || draft.aposMode !== 'draft') {
+            throw self.apos.error('notfound');
+          }
 
-          return unshared;
+          const sharedDoc = share
+            ? await self.share(req, draft)
+            : await self.unshare(req, draft);
+
+          return sharedDoc;
         }
       },
       get: {
@@ -2283,23 +2291,6 @@ database.`);
             }
           }
         });
-      },
-      async getDraftToShare(req) {
-        const { _id } = req.params;
-
-        if (!_id) {
-          throw self.apos.error('invalid');
-        }
-
-        const piece = await self.findOneForEditing(req, {
-          _id
-        });
-
-        if (!piece || piece.aposMode !== 'draft') {
-          throw self.apos.error('notfound');
-        }
-
-        return piece;
       }
     };
   },
