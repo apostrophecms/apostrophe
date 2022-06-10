@@ -1222,7 +1222,7 @@ module.exports = {
         }
 
         const { aposShareKey: _aposShareKey, ...draft } = doc;
-        const aposShareKey = doc.aposShareKey || self.apos.util.generateId();
+        const aposShareKey = _aposShareKey || self.apos.util.generateId();
 
         await self.apos.doc.db.updateOne({
           _id: doc._id
@@ -1291,6 +1291,27 @@ module.exports = {
   queries(self, query) {
     return {
       builders: {
+        // TODO: rename, comment, refactor
+        draftSharing: {
+          after(results) {
+            const { aposShareId, aposShareKey } = query.req.query;
+
+            if (
+              typeof aposShareId === 'string' && aposShareId.length &&
+              typeof aposShareKey === 'string' && aposShareKey.length
+            ) {
+              results.forEach(result => {
+                if (result._id !== aposShareId || result.aposShareKey !== aposShareKey) {
+                  return;
+                }
+                result._id = result._id.replace(/:draft$/, ':published');
+                result.aposLocale = result.aposLocale.replace(/:draft$/, ':published');
+                result.aposMode = 'published';
+              });
+            }
+            console.log('builder after', results.filter(result => result.title && result.title.includes('article 1')));
+          }
+        },
         // `.criteria({...})` Sets the MongoDB criteria, discarding
         // criteria previously added using this
         // method or the `and` method. For this reason,
@@ -2120,10 +2141,18 @@ module.exports = {
               queryLocale = `${query.req.locale}:${query.req.mode}`;
             }
             if (queryLocale) {
+              const { aposShareId, aposShareKey } = query.req.query;
+
+              const _queryLocale = (typeof aposShareId === 'string' && typeof aposShareKey === 'string')
+                ? queryLocale.replace(/:published$/, ':draft')
+                : queryLocale;
+
+              console.log('_queryLocale', _queryLocale);
+
               query.and({
                 $or: [
                   {
-                    aposLocale: queryLocale
+                    aposLocale: _queryLocale
                   },
                   {
                     aposLocale: null
@@ -2414,6 +2443,7 @@ module.exports = {
           await query.finalize();
           const criteria = query.get('criteria');
           const lateCriteria = query.get('lateCriteria');
+          // console.log(require('util').inspect(criteria, { depth: 5, colors: true }));
           if (lateCriteria) {
             _.assign(criteria, lateCriteria);
           }
