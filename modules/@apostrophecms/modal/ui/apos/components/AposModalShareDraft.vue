@@ -35,24 +35,34 @@
             <p class="apos-share-draft__description">
               {{ $t('apostrophe:shareDraftDescription') }}
             </p>
-            <input
-              type="text"
-              value="https://dummy-url.com/wefe3456wfewuidfki9wefe3456wf554ewfki9"
-              disabled
-              class="apos-share-draft__url"
+            <transition
+              name="collapse"
+              :duration="200"
             >
-            <a
-              href=""
-              class="apos-share-draft__link-copy"
-              @click.prevent="copy"
-            >
-              <LinkVariant
-                class="apos-share-draft__link-icon"
-                :title="$t('apostrophe:shareDraftCopyLink')"
-                :size="16"
-              />
-              &nbsp;{{ $t('apostrophe:shareDraftCopyLink') }}
-            </a>
+              <div
+                class="apos-share-draft__url-block"
+                v-show="!disabled"
+              >
+                <input
+                  v-model="shareUrl"
+                  type="text"
+                  disabled
+                  class="apos-share-draft__url"
+                >
+                <a
+                  href=""
+                  class="apos-share-draft__link-copy"
+                  @click.prevent="copy"
+                >
+                  <LinkVariant
+                    class="apos-share-draft__link-icon"
+                    :title="$t('apostrophe:shareDraftCopyLink')"
+                    :size="16"
+                  />
+                  &nbsp;{{ $t('apostrophe:shareDraftCopyLink') }}
+                </a>
+              </div>
+            </transition>
           </div>
         </template>
       </AposModalBody>
@@ -69,6 +79,12 @@ export default {
     Close,
     LinkVariant
   },
+  props: {
+    doc: {
+      type: Object,
+      required: true
+    }
+  },
   emits: [ 'safe-close' ],
   data() {
     return {
@@ -79,22 +95,95 @@ export default {
         disableHeader: true,
         trapFocus: true
       },
-      disabled: false
+      shareUrl: '',
+      disabled: true
     };
   },
   async mounted() {
     this.modal.active = true;
+    await this.checkUrlprop();
+    await this.getAposShareKey();
   },
   methods: {
-    copy() {
-      console.log('copy');
+    async copy() {
+      await navigator.clipboard.writeText(this.shareUrl);
     },
-    toggle() {
-      console.log('toggle');
+    async toggle() {
       this.disabled = !this.disabled;
+
+      await this.setShareUrl();
+    },
+    async setShareUrl() {
+      try {
+        const { aposShareKey } = await apos.http.post(
+          `${apos.modules[this.doc.type].action}/${this.doc._id}/share`, {
+            busy: true,
+            body: {
+              share: !this.disabled
+            },
+            draft: true
+          }
+        );
+
+        if (this.disabled) {
+          setTimeout(() => {
+            this.shareUrl = '';
+          }, 200);
+          return;
+        }
+
+        if (!aposShareKey) {
+          return this.errorNotif();
+        }
+
+        this.shareUrl = this.generateShareUrl(aposShareKey);
+      } catch {
+        if (this.disabled) {
+          this.shareUrl = '';
+          return;
+        }
+        await this.errorNotif();
+      }
     },
     close() {
       this.modal.showModal = false;
+    },
+    async checkUrlprop() {
+      if (!this.doc._url) {
+        await this.errorNotif();
+      }
+    },
+    async getAposShareKey() {
+      try {
+        const { aposShareKey } = await apos.http.get(
+          `${apos.modules[this.doc.type].action}/${this.doc._id}`, {}
+        );
+
+        if (aposShareKey) {
+          this.disabled = false;
+          this.shareUrl = this.generateShareUrl(aposShareKey);
+        }
+      } catch {
+        await this.errorNotif();
+      }
+    },
+    async errorNotif() {
+      await apos.notify('apostrophe:shareDraftError', {
+        type: 'danger',
+        icon: 'alert-circle-icon',
+        dismiss: true
+      });
+    },
+    generateShareUrl(aposShareKey) {
+      const url = new URL(`${location.origin}${this.doc._url}`);
+
+      const slug = apos.http.addQueryToUrl(this.doc._url, {
+        ...apos.http.parseQuery(url.search),
+        aposShareKey,
+        aposShareId: this.doc._id
+      });
+
+      return `${location.origin}${slug}`;
     }
   }
 };
@@ -184,6 +273,17 @@ export default {
   line-height: var(--a-line-tall);
   max-width: 355px;
   color: var(--a-base-2);
+}
+
+.apos-share-draft__url-block {
+  overflow: hidden;
+  height: 63px;
+  transition: height 200ms linear;
+
+  &.collapse-enter,
+  &.collapse-leave-to {
+    height: 0;
+  }
 }
 
 .apos-share-draft__url {

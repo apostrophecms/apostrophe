@@ -326,6 +326,7 @@
   "shareDraftDescription": "Ativar o compartilhamento de rascunho permitirá que qualquer pessoa com este link visualize o rascunho atual",
   "shareDraftEnable": "Ativar compartilhamento de rascunho",
   "shareDraftHeader": "Compartilhe esta página",
+  "shareDraftError": "Este documento não pode ser compartilhado no momento",
   "visibilityHelp": "Selecione se este conteúdo é público ou privado",
   "slug": "Slug",
   "slugInUse": "Este slug já está em uso",
