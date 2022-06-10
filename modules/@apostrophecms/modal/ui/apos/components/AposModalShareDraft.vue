@@ -102,7 +102,7 @@ export default {
   async mounted() {
     this.modal.active = true;
     await this.checkUrlprop();
-    this.getAposShareKey();
+    await this.getAposShareKey();
   },
   methods: {
     async copy() {
@@ -135,14 +135,14 @@ export default {
         if (!aposShareKey) {
           return this.errorNotif();
         }
-        this.shareUrl = this.generateShareUrl(aposShareKey);
 
-      } catch (err) {
+        this.shareUrl = this.generateShareUrl(aposShareKey);
+      } catch {
         if (this.disabled) {
           this.shareUrl = '';
-        } else {
-          this.errorNotif();
+          return;
         }
+        await this.errorNotif();
       }
     },
     close() {
@@ -154,13 +154,17 @@ export default {
       }
     },
     async getAposShareKey() {
-      const { aposShareKey } = await apos.http.get(
-        `${apos.modules[this.doc.type].action}/${this.doc._id}`, {}
-      );
+      try {
+        const { aposShareKey } = await apos.http.get(
+          `${apos.modules[this.doc.type].action}/${this.doc._id}`, {}
+        );
 
-      if (aposShareKey) {
-        this.disabled = false;
-        this.shareUrl = this.generateShareUrl(aposShareKey);
+        if (aposShareKey) {
+          this.disabled = false;
+          this.shareUrl = this.generateShareUrl(aposShareKey);
+        }
+      } catch {
+       await this.errorNotif();
       }
     },
     async errorNotif() {
@@ -169,8 +173,6 @@ export default {
         icon: 'alert-circle-icon',
         dismiss: true
       });
-
-      setTimeout(this.close, 500);
     },
     generateShareUrl(aposShareKey) {
       const qs = Object.fromEntries(
