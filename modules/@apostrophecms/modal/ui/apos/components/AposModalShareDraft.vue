@@ -175,7 +175,7 @@ export default {
       });
     },
     generateShareUrl(aposShareKey) {
-      const url = new URL(`${location.origin}${this.doc._url}`);
+      const url = new URL(`${apos.baseUrl}${this.doc._url}`);
 
       const slug = apos.http.addQueryToUrl(this.doc._url, {
         ...apos.http.parseQuery(url.search),
@@ -183,7 +183,7 @@ export default {
         aposShareId: this.doc._id
       });
 
-      return `${location.origin}${slug}`;
+      return `${apos.baseUrl}${slug}`;
     }
   }
 };
