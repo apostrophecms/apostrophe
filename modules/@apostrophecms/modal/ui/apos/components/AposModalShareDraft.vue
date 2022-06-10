@@ -164,7 +164,7 @@ export default {
           this.shareUrl = this.generateShareUrl(aposShareKey);
         }
       } catch {
-       await this.errorNotif();
+        await this.errorNotif();
       }
     },
     async errorNotif() {
