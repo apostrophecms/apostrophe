@@ -175,13 +175,10 @@ export default {
       });
     },
     generateShareUrl(aposShareKey) {
-      const qs = Object.fromEntries(
-        Object.entries(apos.http.parseQuery(this.doc._url))
-          .filter(([ _, val ]) => val)
-      );
+      const url = new URL(`${location.origin}${this.doc._url}`);
 
       const slug = apos.http.addQueryToUrl(this.doc._url, {
-        ...qs,
+        ...apos.http.parseQuery(url.search),
         aposShareKey,
         aposShareId: this.doc._id
       });
@@ -283,7 +280,8 @@ export default {
   height: 63px;
   transition: height 200ms linear;
 
-  &.collapse-enter, &.collapse-leave-to {
+  &.collapse-enter,
+  &.collapse-leave-to {
     height: 0;
   }
 }
