@@ -81,7 +81,21 @@ describe('Soft Redirects', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 302);
       // Are we going to be redirected to our page?
-      assert.equal(response.headers['location'], '/child-moved');
+      assert.equal(response.headers.location, '/child-moved');
+      return done();
+    });
+  });
+
+  it('should be able to serve the page at its old URL too, via redirect, with query params', function(done) {
+    return request({
+      url: 'http://localhost:7900/child?a-query-param=foo&bar[]=a&bar[]=b&another',
+      followRedirect: false
+    }, function(err, response, body) {
+      assert(!err);
+      // Is our status code good?
+      assert.equal(response.statusCode, 302);
+      // Are we going to be redirected to our page?
+      assert.equal(response.headers.location, '/child-moved?a-query-param=foo&bar%5B0%5D=a&bar%5B1%5D=b&another=');
       return done();
     });
   });
@@ -158,9 +172,8 @@ describe('Soft Redirects - with `statusCode` option', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 301);
       // Are we going to be redirected to our page?
-      assert.equal(response.headers['location'], '/child-moved');
+      assert.equal(response.headers.location, '/child-moved');
       return done();
     });
   });
-
 });
