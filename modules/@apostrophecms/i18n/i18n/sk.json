@@ -349,6 +349,7 @@
   "shareDraftDescription": "Povolenie zdieľania konceptu umožní komukoľvek s týmto odkazom zobraziť aktuálny koncept",
   "shareDraftEnable": "Povoliť zdieľanie konceptov",
   "shareDraftHeader": "Zdieľajte túto stránku",
+  "shareDraftError": "Tento dokument momentálne nie je možné zdieľať",
   "visibilityHelp": "Vyberte, či je tento obsah verejný alebo súkromný",
   "slug": "Pochopiteľný text URL",
   "slugInUse": "Pochopiteľný text URL sa už používa",
