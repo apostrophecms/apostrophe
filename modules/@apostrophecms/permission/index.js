@@ -168,6 +168,9 @@ module.exports = {
                     aposShareKey: aposShareKey
                   }
                 ],
+                // We do not want the published version of the document
+                // in the case where we want to access the draft with a
+                // public URL:
                 $and: [
                   {
                     _id: {

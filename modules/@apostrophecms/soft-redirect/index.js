@@ -38,11 +38,8 @@ module.exports = {
       '@apostrophecms/page:notFound': {
         async notFoundRedirect(req) {
           const url = new URL(`${req.baseUrl}${req.url}`);
+
           const doc = await self.apos.doc.find(req, { historicUrls: { $in: [ url.pathname ] } }).sort({ updatedAt: -1 }).toObject();
-          console.log('-----------------------------');
-          console.log(doc);
-          console.log('-----------------------------');
-          // TODO: handle the fact that doc._url is not defined
           if (!(doc && doc._url)) {
             return;
           }

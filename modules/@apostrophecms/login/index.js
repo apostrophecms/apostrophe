@@ -811,6 +811,7 @@ module.exports = {
         middleware(req, res, next) {
           const { aposShareId, aposShareKey } = req.query;
 
+          // Remove user to hide the admin UI, in order to simulate a logged-out page view
           if (
             typeof aposShareId === 'string' && aposShareId.length &&
             typeof aposShareKey === 'string' && aposShareKey.length

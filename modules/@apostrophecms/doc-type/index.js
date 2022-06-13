@@ -2456,7 +2456,6 @@ module.exports = {
           await query.finalize();
           const criteria = query.get('criteria');
           const lateCriteria = query.get('lateCriteria');
-          // console.log(require('util').inspect(criteria, { depth: 5, colors: true }));
           if (lateCriteria) {
             _.assign(criteria, lateCriteria);
           }
