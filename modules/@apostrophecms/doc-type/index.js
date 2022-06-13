@@ -1291,25 +1291,33 @@ module.exports = {
   queries(self, query) {
     return {
       builders: {
-        // TODO: rename, comment, refactor
-        draftSharing: {
+        transformDraftForSharing: {
           after(results) {
             const { aposShareId, aposShareKey } = query.req.query;
 
             if (
-              typeof aposShareId === 'string' && aposShareId.length &&
-              typeof aposShareKey === 'string' && aposShareKey.length
+              typeof aposShareId !== 'string' || !aposShareId.length ||
+              typeof aposShareKey !== 'string' || !aposShareKey.length
             ) {
-              results.forEach(result => {
-                if (result._id !== aposShareId || result.aposShareKey !== aposShareKey) {
-                  return;
-                }
-                result._id = result._id.replace(/:draft$/, ':published');
-                result.aposLocale = result.aposLocale.replace(/:draft$/, ':published');
-                result.aposMode = 'published';
-              });
+              return;
             }
-            console.log('builder after', results.filter(result => result.title && result.title.includes('article 1')));
+
+            results.forEach(transformDraftToPublished);
+
+            /**
+             * Change drafts values to make it
+             * pass for a published document.
+             * @param {Object[]} result
+             */
+            function transformDraftToPublished (result) {
+              if (result._id === aposShareId && result.aposShareKey === aposShareKey) {
+                const changeToPublished = string => string.replace(':draft', ':published');
+
+                result._id = changeToPublished(result._id);
+                result.aposLocale = changeToPublished(result.aposLocale);
+                result.aposMode = 'published';
+              }
+            }
           }
         },
         // `.criteria({...})` Sets the MongoDB criteria, discarding
@@ -2143,22 +2151,24 @@ module.exports = {
             if (queryLocale) {
               const { aposShareId, aposShareKey } = query.req.query;
 
-              const _queryLocale = (typeof aposShareId === 'string' && typeof aposShareKey === 'string')
-                ? queryLocale.replace(/:published$/, ':draft')
-                : queryLocale;
+              const $or = [
+                {
+                  aposLocale: queryLocale
+                },
+                {
+                  aposLocale: null
+                }
+              ];
 
-              console.log('_queryLocale', _queryLocale);
+              if (typeof aposShareId === 'string' && typeof aposShareKey === 'string') {
+                $or.push({
+                  _id: aposShareId,
+                  aposShareKey,
+                  aposLocale: queryLocale.replace(':published', ':draft')
+                });
+              }
 
-              query.and({
-                $or: [
-                  {
-                    aposLocale: _queryLocale
-                  },
-                  {
-                    aposLocale: null
-                  }
-                ]
-              });
+              query.and({ $or });
             }
           }
         }
