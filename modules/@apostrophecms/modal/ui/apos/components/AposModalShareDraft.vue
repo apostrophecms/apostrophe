@@ -177,7 +177,11 @@ export default {
     generateShareUrl(aposShareKey) {
       const url = new URL(this.doc._url);
 
-      const slug = apos.http.addQueryToUrl(this.doc._url, {
+      const urlInfo = {
+        url: url.href
+      };
+
+      const slug = apos.http.addQueryToUrl(urlInfo.url, {
         ...apos.http.parseQuery(url.search),
         aposShareKey,
         aposShareId: this.doc._id
