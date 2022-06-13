@@ -152,7 +152,10 @@ module.exports = {
               }
             };
 
-            if (typeof aposShareId === 'string' && typeof aposShareKey === 'string') {
+            if (
+              typeof aposShareId === 'string' && aposShareId.length &&
+              typeof aposShareKey === 'string' && aposShareKey.length
+            ) {
               const { aposMode, ...rest } = query;
 
               return {

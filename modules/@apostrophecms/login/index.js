@@ -811,7 +811,10 @@ module.exports = {
         middleware(req, res, next) {
           const { aposShareId, aposShareKey } = req.query;
 
-          if (typeof aposShareId === 'string' && typeof aposShareKey === 'string') {
+          if (
+            typeof aposShareId === 'string' && aposShareId.length &&
+            typeof aposShareKey === 'string' && aposShareKey.length
+          ) {
             delete req.user;
           }
           return next();
