@@ -2084,13 +2084,6 @@ database.`);
           : (self.apos.baseUrl || req.baseUrl || '');
       },
 
-      // This method should stay untouched except if you have different urls
-      // between your logged in and public site.
-      // It must return the base url for the public version of your site
-      getPublicBaseUrl(req) {
-        return self.getBaseUrl(req);
-      },
-
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation,
       // and an async function that accepts (req, page, data) and
