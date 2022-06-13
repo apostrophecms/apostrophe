@@ -809,7 +809,9 @@ module.exports = {
       removeUserForDraftSharing: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          if (req.query.aposShareId || req.query.aposShareKey) {
+          const { aposShareId, aposShareKey } = req.query;
+
+          if (typeof aposShareId === 'string' && typeof aposShareKey === 'string') {
             delete req.user;
           }
           return next();
