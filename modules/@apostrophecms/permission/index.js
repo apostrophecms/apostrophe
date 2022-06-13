@@ -156,6 +156,7 @@ module.exports = {
               const { aposMode, ...rest } = query;
 
               return {
+                ...rest,
                 $or: [
                   { aposMode },
                   {
@@ -164,7 +165,13 @@ module.exports = {
                     aposShareKey: aposShareKey
                   }
                 ],
-                ...rest
+                $and: [
+                  {
+                    _id: {
+                      $ne: aposShareId.replace(':draft', ':published')
+                    }
+                  }
+                ]
               };
             }
 
