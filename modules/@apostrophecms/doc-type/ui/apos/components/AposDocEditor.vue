@@ -459,24 +459,6 @@ export default {
       }
       window.location = this.original._url;
     },
-    focusNextError() {
-      let field;
-      for (const key in this.fieldErrors) {
-        for (const errKey in this.fieldErrors[key]) {
-          if (this.fieldErrors[key][errKey] && !field) {
-            field = this.schema.filter(item => {
-              return item.name === errKey;
-            })[0];
-
-            if (field.group.name !== 'utility') {
-              this.switchPane(field.group.name);
-            }
-
-            this.getAposSchema(field).scrollFieldIntoView(field.name);
-          }
-        }
-      }
-    },
     // Implementing a method expected by the advisory lock mixin
     lockNotAvailable() {
       this.modal.showModal = false;

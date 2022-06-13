@@ -13,7 +13,8 @@
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="apostrophe:save"
+        type="primary"
+        label="apostrophe:save"
         :disabled="!!errorCount"
         :tooltip="errorTooltip"
         @click="submit"
@@ -43,6 +44,8 @@
                 :schema="groups[tab.name].schema"
                 :current-fields="groups[tab.name].fields"
                 :value="docFields"
+                :trigger-validation="triggerValidation"
+                :ref="tab.name"
                 @input="updateDocFields"
               />
             </div>
@@ -111,7 +114,8 @@ export default {
       modalTitle: {
         key: 'apostrophe:editRelationshipFor',
         title: this.title
-      }
+      },
+      triggerValidation: false
     };
   },
   async mounted() {
@@ -120,8 +124,22 @@ export default {
   },
   methods: {
     async submit() {
-      this.$emit('modal-result', this.docFields.data);
-      this.modal.showModal = false;
+      this.triggerValidation = true;
+
+      this.$nextTick(async () => {
+        if (!this.errorCount) {
+          this.$emit('modal-result', this.docFields.data);
+          this.modal.showModal = false;
+        } else {
+          this.triggerValidation = false;
+          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+          this.focusNextError();
+        }
+      });
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);

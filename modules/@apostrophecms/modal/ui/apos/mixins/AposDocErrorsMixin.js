@@ -48,6 +48,32 @@ export default {
           [name]: {}
         };
       }, {});
+    },
+    focusNextError() {
+      let field;
+      for (const key in this.fieldErrors) {
+        for (const errKey in this.fieldErrors[key]) {
+          if (this.fieldErrors[key][errKey] && !field) {
+            field = this.schema.filter(item => {
+              return item.name === errKey;
+            })[0];
+
+            if (field.group.name !== 'utility') {
+              this.switchPane(field.group.name);
+            }
+
+            this.getAposSchema(field).scrollFieldIntoView(field.name);
+          }
+        }
+      }
+    },
+
+    getAposSchema(field) {
+      if (field.group.name === 'utility') {
+        return this.$refs.utilitySchema;
+      } else {
+        return this.$refs[field.group.name][0];
+      }
     }
   }
 };
