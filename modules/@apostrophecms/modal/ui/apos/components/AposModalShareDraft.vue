@@ -181,6 +181,8 @@ export default {
         url: url.href
       };
 
+      apos.bus.$emit('shared-draft-link', urlInfo);
+
       const slug = apos.http.addQueryToUrl(urlInfo.url, {
         ...apos.http.parseQuery(url.search),
         aposShareKey,
