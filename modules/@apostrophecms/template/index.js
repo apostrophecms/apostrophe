@@ -659,7 +659,6 @@ module.exports = {
             tabId: self.apos.util.generateId(),
             uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
             assetBaseUrl: self.apos.asset.getAssetBaseUrl(),
-            publicBaseUrl: self.apos.page.getPublicBaseUrl(req),
             scene
           };
           if (req.user) {
