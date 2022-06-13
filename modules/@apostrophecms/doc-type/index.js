@@ -1304,11 +1304,7 @@ module.exports = {
 
             results.forEach(transformDraftToPublished);
 
-            /**
-             * Change drafts values to make it
-             * pass for a published document.
-             * @param {Object[]} result
-             */
+            // Change drafts values to make it pass for a published document.
             function transformDraftToPublished (result) {
               if (result._id === aposShareId && result.aposShareKey === aposShareKey) {
                 const changeToPublished = string => string.replace(':draft', ':published');
