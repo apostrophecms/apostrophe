@@ -2078,12 +2078,19 @@ database.`);
       // consult this method.
       getBaseUrl(req) {
         const hostname = self.apos.i18n.locales[req.locale].hostname;
-        if (hostname) {
-          return `${req.protocol}://${hostname}`;
-        } else {
-          return self.apos.baseUrl || '';
-        }
+
+        return hostname
+          ? `${req.protocol}://${hostname}`
+          : (self.apos.baseUrl || req.baseUrl || '');
       },
+
+      // This method should stay untouched except if you have different urls
+      // between your logged in and public site.
+      // It must return the base url for the public version of your site
+      getPublicBaseUrl(req) {
+        return self.getBaseUrl(req);
+      },
+
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation,
       // and an async function that accepts (req, page, data) and
