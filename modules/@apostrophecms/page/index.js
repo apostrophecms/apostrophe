@@ -2081,7 +2081,7 @@ database.`);
 
         return hostname
           ? `${req.protocol}://${hostname}`
-          : (self.apos.baseUrl || req.baseUrl || '');
+          : (self.apos.baseUrl || '');
       },
 
       // Implements a simple batch operation like publish or unpublish.
