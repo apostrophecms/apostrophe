@@ -1764,6 +1764,18 @@ describe('Pieces', function() {
         assert(publicResponse.body.includes('Some Product EDITED'));
       });
 
+      it('should grant public access to a draft without admin UI, even when logged-in', async function() {
+        const publicUrl = generatePublicUrl(shareResponse);
+        const publicResponse = await apos.http.get(publicUrl, {
+          fullResponse: true,
+          jar
+        });
+
+        assert(publicResponse.status === 200);
+        assert(publicResponse.body.includes('Some Product EDITED'));
+        assert(!publicResponse.body.includes('apos-admin-bar'));
+      });
+
       it('should grant public access to a draft after having re-enabled draft sharing', async function() {
         await apos.modules.product.unshare(req, previousDraft);
 

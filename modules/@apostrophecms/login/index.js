@@ -816,7 +816,6 @@ module.exports = {
             typeof aposShareId === 'string' && aposShareId.length &&
             typeof aposShareKey === 'string' && aposShareKey.length
           ) {
-            // TODO: test when connected that UI is removed
             delete req.user;
           }
           return next();
