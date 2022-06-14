@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add `Localize` option to `@apostrophecms/image`. In Edit mode the context bar menu includes a "Localize" option to start cloning this image into other locales.
+
 ### Fixes
 
 * Update `sass` to [`1.52.3`+](https://github.com/sass/dart-sass/pull/1713) to prevent the error `RangeError: Invalid value: Not in inclusive range 0..145: -1`. You can now fix that by upgrading with `npm update`. If it does not immediately clear up the issue in development, try `node app @apostrophecms/asset:clear-cache`.

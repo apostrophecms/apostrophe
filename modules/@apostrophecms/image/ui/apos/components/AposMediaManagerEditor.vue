@@ -100,6 +100,7 @@
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
+import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import dayjs from 'dayjs';
@@ -110,7 +111,7 @@ import cuid from 'cuid';
 dayjs.extend(advancedFormat);
 
 export default {
-  mixins: [ AposEditorMixin, AposAdvisoryLockMixin ],
+  mixins: [ AposEditorMixin, AposAdvisoryLockMixin, AposModifiedMixin ],
   props: {
     media: {
       type: Object,
@@ -122,6 +123,12 @@ export default {
       type: Array,
       default() {
         return [];
+      }
+    },
+    isModified: {
+      type: Boolean,
+      default() {
+        return false;
       }
     },
     moduleLabels: {
@@ -152,11 +159,20 @@ export default {
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
     },
+    canLocalize() {
+      return (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized && this.activeMedia._id;
+    },
     moreMenu() {
       const menu = [ {
         label: 'apostrophe:discardChanges',
         action: 'cancel'
       } ];
+      if (this.canLocalize) {
+        menu.push({
+          label: 'apostrophe:localize',
+          action: 'localize'
+        });
+      }
       if (this.activeMedia._id && !this.restoreOnly) {
         menu.push({
           label: 'apostrophe:archiveImage',
@@ -338,6 +354,28 @@ export default {
     },
     viewMedia () {
       window.open(this.activeMedia.attachment._urls.original, '_blank');
+    },
+    async localize(media) {
+      // If there are changes warn the user before discarding them before
+      // the localize operation
+      if (this.isModified) {
+        if (!await this.confirmAndCancel()) {
+          return;
+        } else {
+          await this.cancel();
+          console.log(this.activeMedia.attachment)
+          this.updateActiveDoc(this.activeMedia);
+        }
+      }
+      apos.bus.$emit('admin-menu-click', {
+        itemName: '@apostrophecms/i18n:localize',
+        props: {
+          doc: this.activeMedia
+        }
+      });
+    },
+    async close() {
+      await this.cancel();
     }
   }
 };
