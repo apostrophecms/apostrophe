@@ -2,6 +2,7 @@
   <AposModal
     :modal="modal"
     class="apos-share-draft"
+    data-apos-test="share-draft-modal"
     v-on="{ esc: close }"
     @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
