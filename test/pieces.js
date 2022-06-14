@@ -1719,6 +1719,10 @@ describe('Pieces', function() {
         apos.task.getReq({ mode: 'draft' }),
         { _id: 'some-product:en:draft' }
       );
+      await apos.modules.product.update(req, {
+        ...previousDraft,
+        title: 'Some Product EDITED'
+      });
     });
 
     this.afterEach(async function() {
@@ -1727,10 +1731,6 @@ describe('Pieces', function() {
 
     describe('share', function() {
       this.beforeEach(async function() {
-        await apos.modules.product.update(req, {
-          ...previousDraft,
-          title: 'Some Product EDITED'
-        });
         shareResponse = await apos.modules.product.share(req, previousDraft);
       });
 
@@ -1791,10 +1791,6 @@ describe('Pieces', function() {
 
     describe('unshare', function() {
       this.beforeEach(async function() {
-        await apos.modules.product.update(req, {
-          ...previousDraft,
-          title: 'Some Product EDITED'
-        });
         shareResponse = await apos.modules.product.share(req, previousDraft);
       });
 
