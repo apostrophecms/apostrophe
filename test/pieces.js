@@ -1763,6 +1763,18 @@ describe('Pieces', function() {
         assert(publicResponse.status === 200);
         assert(publicResponse.body.includes('Some Product EDITED'));
       });
+
+      it('should grant public access to a draft after having re-enabled draft sharing', async function() {
+        await apos.modules.product.unshare(req, previousDraft);
+
+        const shareResponse = await apos.modules.product.share(req, previousDraft);
+        const publicUrl = generatePublicUrl(shareResponse);
+
+        const publicResponse = await apos.http.get(publicUrl, { fullResponse: true });
+
+        assert(publicResponse.status === 200);
+        assert(publicResponse.body.includes('Some Product EDITED'));
+      });
     });
 
     describe('unshare', function() {
