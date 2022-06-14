@@ -346,7 +346,7 @@ export default {
       this.$emit('back');
     },
     lockNotAvailable() {
-      this.isModified = false;
+      this.$emit('modified', false);
       this.cancel();
     },
     updateActiveAttachment(attachment) {
@@ -363,7 +363,6 @@ export default {
           return;
         } else {
           await this.cancel();
-          console.log(this.activeMedia.attachment)
           this.updateActiveDoc(this.activeMedia);
         }
       }
