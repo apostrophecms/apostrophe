@@ -357,7 +357,7 @@
   "switchLocalesAndLocalizePage": "Prepnúť jazyk a preložiť stránku na {{ label }}?",
   "tags": "Značky",
   "tagYourImages": "Označte svoje obrázky, aby ste uľahčili vyhľadávanie a filtrovanie médií",
-  "takeActionAndCreateNew": "{{ saveLabel }} a zobraziť",
+  "takeActionAndCreateNew": "{{ saveLabel }} a vytvoriť nové",
   "takeActionAndView": "{{ saveLabel }} a zobraziť",
   "takeControlFromOther": "{{ who }} upravuje tento dokument. Chcete prevziať kontrolu?",
   "takeControlFromSelf": "Tento dokument upravujete na inej karte alebo v inom okne. Chcete na tejto karte prevziať kontrolu?",
