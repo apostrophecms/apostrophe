@@ -354,7 +354,7 @@
   "selectManyLabel": "Select {{ typeLabel }}",
   "selectLocales": "Select Locales",
   "sentenceJoiner": " ",
-  "shareDraft": "Share draft",
+  "shareDraft": "Share Draft",
   "shareDraftCopyLink": "Copy draft link",
   "shareDraftDescription": "Enabling draft sharing will allow anyone with this link to view the current draft",
   "shareDraftEnable": "Enable draft sharing",
