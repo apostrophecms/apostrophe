@@ -176,15 +176,24 @@ export default {
       });
     },
     generateShareUrl(aposShareKey) {
-      const url = new URL(`${location.origin}${this.doc._url}`);
+      const regex = /^https?:\/\//;
+      const docUrl = regex.test(this.doc._url)
+        ? this.doc._url
+        : `${location.origin}${this.doc._url}`;
 
-      const slug = apos.http.addQueryToUrl(this.doc._url, {
+      const url = new URL(docUrl);
+
+      const urlInfo = {
+        url: url.href
+      };
+
+      apos.bus.$emit('shared-draft-link', urlInfo);
+
+      return apos.http.addQueryToUrl(urlInfo.url, {
         ...apos.http.parseQuery(url.search),
         aposShareKey,
         aposShareId: this.doc._id
       });
-
-      return `${location.origin}${slug}`;
     }
   }
 };
