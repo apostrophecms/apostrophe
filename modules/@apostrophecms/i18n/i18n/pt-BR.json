@@ -334,7 +334,7 @@
   "switchLocalesAndLocalizePage": "Mudar de localidade e localizar página para {{ label }}?",
   "tags": "Tags",
   "tagYourImages": "Adicione tags nas suas imagens para facilitar a pesquisa e a filtragem do gerenciador de mídia",
-  "takeActionAndCreateNew": "{{ saveLabel }} e Vizualizar",
+  "takeActionAndCreateNew": "{{ saveLabel }} e Criar Novo",
   "takeActionAndView": "{{ saveLabel }} e Vizualizar",
   "takeControlFromOther": "{{ who }} está editando esse documento. Você quer assumir o controle?",
   "takeControlFromSelf": "Você está editando esse documento em outra guia ou janela. Você deseja assumir o controle nesta guia?",

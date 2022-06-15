@@ -352,7 +352,7 @@
   "switchLocalesAndLocalizePage": "Changer la langue et basculer la page vers {{ label }} ?",
   "tags": "Tags",
   "tagYourImages": "Taguez vos images pour faciliter la recherche et le filtrage du gestionnaire de médias",
-  "takeActionAndCreateNew": "{{ saveLabel }} et voir",
+  "takeActionAndCreateNew": "{{ saveLabel }} et en créer de nouveau",
   "takeActionAndView": "{{ saveLabel }} et voir",
   "takeControlFromOther": "{{ who }} est en train de modifier ce document. Voulez-vous prendre le contrôle ?",
   "takeControlFromSelf": "Vous modifiez ce document dans un autre onglet ou une autre fenêtre. Voulez-vous prendre le contrôle dans cet onglet ?",
