@@ -190,7 +190,7 @@ export default {
       apos.bus.$emit('shared-draft-link', urlInfo);
 
       return apos.http.addQueryToUrl(urlInfo.url, {
-        ...apos.http.parseQuery(url.search),
+        ...(url.search ? apos.http.parseQuery(url.search) : {}),
         aposShareKey,
         aposShareId: this.doc._id
       });
