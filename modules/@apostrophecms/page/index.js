@@ -2078,12 +2078,12 @@ database.`);
       // consult this method.
       getBaseUrl(req) {
         const hostname = self.apos.i18n.locales[req.locale].hostname;
-        if (hostname) {
-          return `${req.protocol}://${hostname}`;
-        } else {
-          return self.apos.baseUrl || '';
-        }
+
+        return hostname
+          ? `${req.protocol}://${hostname}`
+          : (self.apos.baseUrl || '');
       },
+
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation,
       // and an async function that accepts (req, page, data) and
