@@ -368,7 +368,7 @@
   "switchLocalesAndLocalizePage": "Switch locales and localize page to {{ label }}?",
   "tags": "Tags",
   "tagYourImages": "Tag your images to make searching and filtering the media manager easier",
-  "takeActionAndCreateNew": "{{ saveLabel }} and View",
+  "takeActionAndCreateNew": "{{ saveLabel }} and Create New",
   "takeActionAndView": "{{ saveLabel }} and View",
   "takeControlFromOther": "{{ who }} is editing that document. Do you want to take control?",
   "takeControlFromSelf": "You are editing that document in another tab or window. Do you want to take control in this tab?",
