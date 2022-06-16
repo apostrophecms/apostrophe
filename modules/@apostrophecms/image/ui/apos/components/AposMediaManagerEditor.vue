@@ -127,9 +127,7 @@ export default {
     },
     isModified: {
       type: Boolean,
-      default() {
-        return false;
-      }
+      default: false;
     },
     moduleLabels: {
       type: Object,
@@ -361,10 +359,10 @@ export default {
       if (this.isModified) {
         if (!await this.confirmAndCancel()) {
           return;
-        } else {
-          await this.cancel();
-          this.updateActiveDoc(this.activeMedia);
         }
+
+        await this.cancel();
+        this.updateActiveDoc(this.activeMedia);
       }
       apos.bus.$emit('admin-menu-click', {
         itemName: '@apostrophecms/i18n:localize',
