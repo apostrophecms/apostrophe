@@ -127,7 +127,7 @@ export default {
     },
     isModified: {
       type: Boolean,
-      default: false;
+      default: false
     },
     moduleLabels: {
       type: Object,
