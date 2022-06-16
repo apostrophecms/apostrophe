@@ -39,7 +39,14 @@ module.exports = {
         async notFoundRedirect(req) {
           const url = new URL(`${req.baseUrl}${req.url}`);
 
-          const doc = await self.apos.doc.find(req, { historicUrls: { $in: [ url.pathname ] } }).sort({ updatedAt: -1 }).toObject();
+          const doc = await self.apos.doc
+            .find(req, {
+              historicUrls: {
+                $in: [ url.pathname ]
+              }
+            })
+            .sort({ updatedAt: -1 })
+            .toObject();
           if (!(doc && doc._url)) {
             return;
           }
