@@ -1222,7 +1222,7 @@ module.exports = {
         }
 
         const { aposShareKey: _aposShareKey, ...draft } = doc;
-        const aposShareKey = _aposShareKey || self.apos.util.generateId();
+        const aposShareKey = doc.aposShareKey || self.apos.util.generateId();
 
         await self.apos.doc.db.updateOne({
           _id: doc._id
