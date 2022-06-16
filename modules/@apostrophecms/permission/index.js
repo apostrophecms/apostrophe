@@ -167,13 +167,9 @@ module.exports = {
                 // We do not want the published version of the document
                 // in the case where we want to access the draft with a
                 // public URL:
-                $and: [
-                  {
-                    _id: {
-                      $ne: aposShareId.replace(':draft', ':published')
-                    }
-                  }
-                ]
+                _id: {
+                  $ne: aposShareId.replace(':draft', ':published')
+                }
               };
             }
 
