@@ -140,8 +140,6 @@ module.exports = {
               }
             };
           } else {
-            const { aposShareId, aposShareKey } = req.query;
-
             const query = {
               aposMode: {
                 $in: [ null, 'published' ]
@@ -152,10 +150,8 @@ module.exports = {
               }
             };
 
-            if (
-              typeof aposShareId === 'string' && aposShareId.length &&
-              typeof aposShareKey === 'string' && aposShareKey.length
-            ) {
+            if (self.isShareDraftRequest(req)) {
+              const { aposShareId, aposShareKey } = req.query;
               const { aposMode, ...rest } = query;
 
               return {
@@ -163,9 +159,9 @@ module.exports = {
                 $or: [
                   { aposMode },
                   {
-                    aposMode: 'draft',
                     _id: aposShareId,
-                    aposShareKey: aposShareKey
+                    aposShareKey,
+                    aposMode: 'draft'
                   }
                 ],
                 // We do not want the published version of the document

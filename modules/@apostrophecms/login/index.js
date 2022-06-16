@@ -809,13 +809,8 @@ module.exports = {
       removeUserForDraftSharing: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          const { aposShareId, aposShareKey } = req.query;
-
           // Remove user to hide the admin UI, in order to simulate a logged-out page view
-          if (
-            typeof aposShareId === 'string' && aposShareId.length &&
-            typeof aposShareKey === 'string' && aposShareKey.length
-          ) {
+          if (self.isShareDraftRequest(req)) {
             delete req.user;
           }
           return next();

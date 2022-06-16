@@ -1293,18 +1293,15 @@ module.exports = {
       builders: {
         transformDraftForSharing: {
           after(results) {
-            const { aposShareId, aposShareKey } = query.req.query;
-
-            if (
-              typeof aposShareId !== 'string' || !aposShareId.length ||
-              typeof aposShareKey !== 'string' || !aposShareKey.length
-            ) {
+            if (!self.isShareDraftRequest(query.req)) {
               return;
             }
 
+            const { aposShareId, aposShareKey } = query.req.query;
+
+            // Change drafts values to make it pass for a published document
             results.forEach(transformDraftToPublished);
 
-            // Change drafts values to make it pass for a published document.
             function transformDraftToPublished (result) {
               if (result._id === aposShareId && result.aposShareKey === aposShareKey) {
                 const changeToPublished = string => string.replace(':draft', ':published');
@@ -2145,8 +2142,6 @@ module.exports = {
               queryLocale = `${query.req.locale}:${query.req.mode}`;
             }
             if (queryLocale) {
-              const { aposShareId, aposShareKey } = query.req.query;
-
               const $or = [
                 {
                   aposLocale: queryLocale
@@ -2156,10 +2151,9 @@ module.exports = {
                 }
               ];
 
-              if (
-                typeof aposShareId === 'string' && aposShareId.length &&
-                typeof aposShareKey === 'string' && aposShareKey.length
-              ) {
+              if (self.isShareDraftRequest(query.req)) {
+                const { aposShareId, aposShareKey } = query.req.query;
+
                 $or.push({
                   _id: aposShareId,
                   aposShareKey,
