@@ -746,6 +746,17 @@ module.exports = {
         }
       },
 
+      isShareDraftRequest(req) {
+        const { aposShareId, aposShareKey } = req.query;
+
+        return (
+          typeof aposShareId === 'string' &&
+          aposShareId.length &&
+          typeof aposShareKey === 'string' &&
+          aposShareKey.length
+        );
+      },
+
       // Merge in the event emitter / responder capabilities
       ...require('./lib/events.js')(self)
     };

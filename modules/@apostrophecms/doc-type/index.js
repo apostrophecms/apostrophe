@@ -1291,6 +1291,28 @@ module.exports = {
   queries(self, query) {
     return {
       builders: {
+        transformDraftForSharing: {
+          after(results) {
+            if (!self.isShareDraftRequest(query.req)) {
+              return;
+            }
+
+            const { aposShareId, aposShareKey } = query.req.query;
+
+            // Change drafts values to make it pass for a published document
+            results.forEach(transformDraftToPublished);
+
+            function transformDraftToPublished (result) {
+              if (result._id === aposShareId && result.aposShareKey === aposShareKey) {
+                const changeToPublished = string => string.replace(':draft', ':published');
+
+                result._id = changeToPublished(result._id);
+                result.aposLocale = changeToPublished(result.aposLocale);
+                result.aposMode = 'published';
+              }
+            }
+          }
+        },
         // `.criteria({...})` Sets the MongoDB criteria, discarding
         // criteria previously added using this
         // method or the `and` method. For this reason,
@@ -2120,16 +2142,26 @@ module.exports = {
               queryLocale = `${query.req.locale}:${query.req.mode}`;
             }
             if (queryLocale) {
-              query.and({
-                $or: [
-                  {
-                    aposLocale: queryLocale
-                  },
-                  {
-                    aposLocale: null
-                  }
-                ]
-              });
+              const $or = [
+                {
+                  aposLocale: queryLocale
+                },
+                {
+                  aposLocale: null
+                }
+              ];
+
+              if (self.isShareDraftRequest(query.req)) {
+                const { aposShareId, aposShareKey } = query.req.query;
+
+                $or.push({
+                  _id: aposShareId,
+                  aposShareKey,
+                  aposLocale: queryLocale.replace(':published', ':draft')
+                });
+              }
+
+              query.and({ $or });
             }
           }
         }
