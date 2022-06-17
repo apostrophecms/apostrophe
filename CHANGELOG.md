@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.22.1 (2022-06-17)
+
+* Hotfix: temporarily pin versions of tiptap modules to work around packaging error that breaks import of the most recent releases. We will unpin as soon as this is fixed upstream. Fixes a bug where `npm update` would fail for A3 projects.
+
 ## 3.22.0 (2022-06-08)
 
 ### Adds
