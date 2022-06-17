@@ -337,7 +337,7 @@
   "switchLocalesAndLocalizePage": "¿Cambiar de configuracion regional y traducir la página a la configuracion regional {{ label }}?",
   "tags": "Etiquetas",
   "tagYourImages": "Etiquete sus imágenes para facilitar la busqueda y filtrado en el gestor multimedia",
-  "takeActionAndCreateNew": "{{ saveLabel }} y Mirar",
+  "takeActionAndCreateNew": "{{ saveLabel }} y Crear Nuevo",
   "takeActionAndView": "{{ saveLabel }} y Mirar",
   "takeControlFromOther": "{{ who }} está editando ese documento. ¿Quiere tomar el control?",
   "takeControlFromSelf": "Está editando ese documento en otra pestaña o ventana. ¿Quiere tomar control en esta pestaña?",

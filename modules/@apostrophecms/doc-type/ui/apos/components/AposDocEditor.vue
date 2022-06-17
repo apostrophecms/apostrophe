@@ -26,14 +26,14 @@
         type="primary" :label="saveLabel"
         :disabled="saveDisabled"
         @click="onRestore"
-        :tooltip="tooltip"
+        :tooltip="errorTooltip"
       />
       <AposButtonSplit
         v-else-if="saveMenu"
         :menu="saveMenu"
         menu-label="Select Save Method"
         :disabled="saveDisabled"
-        :tooltip="tooltip"
+        :tooltip="errorTooltip"
         :selected="savePreference"
         @click="saveHandler($event)"
       />
@@ -42,7 +42,7 @@
       <AposModalRail>
         <AposModalTabs
           :key="tabKey"
-          v-if="tabs.length > 0"
+          v-if="tabs.length"
           :current="currentTab"
           :tabs="tabs"
           :errors="fieldErrors"
@@ -105,15 +105,15 @@
 </template>
 
 <script>
+import { klona } from 'klona';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
+import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { klona } from 'klona';
-import cuid from 'cuid';
 
 export default {
   name: 'AposDocEditor',
@@ -123,7 +123,8 @@ export default {
     AposEditorMixin,
     AposPublishMixin,
     AposAdvisoryLockMixin,
-    AposArchiveMixin
+    AposArchiveMixin,
+    AposDocErrorsMixin
   ],
   provide () {
     return {
@@ -147,7 +148,6 @@ export default {
   emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
-      tabKey: cuid(),
       docType: this.moduleName,
       docReady: false,
       fieldErrors: {},
@@ -162,7 +162,6 @@ export default {
         ref: null
       },
       published: null,
-      errorCount: 0,
       restoreOnly: false,
       saveMenu: null,
       generation: 0
@@ -171,16 +170,6 @@ export default {
   computed: {
     getOnePath() {
       return `${this.moduleAction}/${this.docId}`;
-    },
-    tooltip() {
-      let msg;
-      if (this.errorCount) {
-        msg = {
-          key: 'apostrophe:errorCount',
-          count: this.errorCount
-        };
-      }
-      return msg;
     },
     followingUtils() {
       return this.followingValues('utility');
@@ -238,51 +227,12 @@ export default {
       // `@apostrophecms/page` module action.
       return (window.apos.modules[this.moduleName] || {}).action;
     },
-    groups() {
-      const groupSet = {};
-
-      this.schema.forEach(field => {
-        if (!this.filterOutParkedFields([ field.name ]).length) {
-          return;
-        }
-        if (field.group && !groupSet[field.group.name]) {
-          groupSet[field.group.name] = {
-            label: field.group.label,
-            fields: [ field.name ],
-            schema: [ field ]
-          };
-        } else if (field.group) {
-          groupSet[field.group.name].fields.push(field.name);
-          groupSet[field.group.name].schema.push(field);
-        }
-      });
-      if (!groupSet.utility) {
-        groupSet.utility = {
-          label: 'apostrophe:utility',
-          fields: [],
-          schema: []
-        };
-      }
-      return groupSet;
-    },
     utilityFields() {
       let fields = [];
       if (this.groups.utility && this.groups.utility.fields) {
         fields = this.groups.utility.fields;
       }
       return this.filterOutParkedFields(fields);
-    },
-    tabs() {
-      const tabs = [];
-      for (const key in this.groups) {
-        if (key !== 'utility') {
-          tabs.push({
-            name: key,
-            label: this.groups[key].label
-          });
-        }
-      };
-      return tabs;
     },
     modalTitle() {
       if (this.docId) {
@@ -374,13 +324,7 @@ export default {
     original(newVal) {
       this.originalDoc.ref = newVal;
       this.saveMenu = this.computeSaveMenu();
-    },
-    tabs() {
-      if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
-        this.currentTab = this.tabs[0] && this.tabs[0].name;
-      }
     }
-
   },
   async mounted() {
     this.modal.active = true;
@@ -514,51 +458,6 @@ export default {
         return;
       }
       window.location = this.original._url;
-    },
-    updateFieldState(fieldState) {
-      this.tabKey = cuid();
-      for (const key in this.groups) {
-        this.groups[key].fields.forEach(field => {
-          if (fieldState[field]) {
-            this.fieldErrors[key][field] = fieldState[field].error;
-          }
-        });
-      }
-      this.updateErrorCount();
-    },
-    updateErrorCount() {
-      let count = 0;
-      for (const key in this.fieldErrors) {
-        for (const tabKey in this.fieldErrors[key]) {
-          if (this.fieldErrors[key][tabKey]) {
-            count++;
-          }
-        }
-      }
-      this.errorCount = count;
-    },
-    focusNextError() {
-      let field;
-      for (const key in this.fieldErrors) {
-        for (const tabKey in this.fieldErrors[key]) {
-          if (this.fieldErrors[key][tabKey] && !field) {
-            field = this.schema.filter(item => {
-              return item.name === tabKey;
-            })[0];
-
-            if (field.group.name !== 'utility') {
-              this.switchPane(field.group.name);
-            }
-
-            this.getAposSchema(field).scrollFieldIntoView(field.name);
-          }
-        }
-      }
-    },
-    prepErrors() {
-      for (const name in this.groups) {
-        this.fieldErrors[name] = {};
-      }
     },
     // Implementing a method expected by the advisory lock mixin
     lockNotAvailable() {
@@ -729,7 +628,7 @@ export default {
       });
     },
     updateDocFields(value) {
-      this.updateFieldState(value.fieldState);
+      this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data

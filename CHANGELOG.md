@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Update `sass` to [`1.52.3`+](https://github.com/sass/dart-sass/pull/1713) to prevent the error `RangeError: Invalid value: Not in inclusive range 0..145: -1`. You can now fix that by upgrading with `npm update`. If it does not immediately clear up the issue in development, try `node app @apostrophecms/asset:clear-cache`.
+
 ## 3.22.1 (2022-06-17)
 
 * Hotfix: temporarily pin versions of tiptap modules to work around packaging error that breaks import of the most recent releases. We will unpin as soon as this is fixed upstream. Fixes a bug where `npm update` would fail for A3 projects.
@@ -34,6 +40,7 @@
 * Trigger only the relevant build when in a watch mode (development). The build paths should not contain comma (`,`).
 * Adds an `unpublish` method, available for any doc-type.  
 An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
+* Allows developers to group fields in relationships the same way it's done for normal schemas.
 
 ### Fixes
 
