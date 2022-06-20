@@ -5,6 +5,7 @@
 ### Adds
 
 * Add `Localize` option to `@apostrophecms/image`. In Edit mode the context bar menu includes a "Localize" option to start cloning this image into other locales.
+* Give the possibility to share a draft by generating a link which can be used by anyone who has it to preview the draft version of page or a piece `show` page.
 
 ### Fixes
 
