@@ -1200,12 +1200,6 @@ module.exports = {
             label: 'apostrophe:ie11Build',
             // Load index.js and index.scss from each module
             index: true,
-            // The polyfills babel will be expecting
-            prologue: stripIndent`
-              import "core-js/stable";
-              import "regenerator-runtime/runtime";
-              ${srcPrologue}
-            `,
             // Load only in browsers that do not support ES6 modules
             condition: 'nomodule'
           },
