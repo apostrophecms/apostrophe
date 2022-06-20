@@ -568,6 +568,12 @@ module.exports = {
             label: 'English'
           }
         };
+        self.verifyLocales(locales);
+        return locales;
+      },
+      // Make sure they are adequately distinguished by
+      // hostname and prefix
+      verifyLocales(locales) {
         const taken = {};
         let hostnamesCount = 0;
         for (const [ name, options ] of Object.entries(locales)) {
@@ -594,9 +600,6 @@ module.exports = {
             to a real base URL for the site.
           `);
         }
-        // Make sure they are adequately distinguished by
-        // hostname and prefix
-        return locales;
       },
       sanitizeLocaleName(locale) {
         locale = self.apos.launder.string(locale);
