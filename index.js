@@ -371,7 +371,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     if (!options.nestedModuleSubdirs) {
       return;
     }
-    const configs = glob.sync(self.localModules + '/**/modules.js');
+    const configs = glob.sync(self.localModules + '/**/modules.js', { follow: true });
     _.each(configs, function(config) {
       try {
         _.merge(self.options.modules, require(config));
