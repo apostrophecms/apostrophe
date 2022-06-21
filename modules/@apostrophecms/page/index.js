@@ -473,6 +473,28 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.revertPublishedToPrevious(req, published);
+        },
+        ':_id/share': async (req) => {
+          const { _id } = req.params;
+          const share = self.apos.launder.boolean(req.body.share);
+
+          if (!_id) {
+            throw self.apos.error('invalid');
+          }
+
+          const draft = await self.findOneForEditing(req, {
+            _id
+          });
+
+          if (!draft || draft.aposMode !== 'draft') {
+            throw self.apos.error('notfound');
+          }
+
+          const sharedDoc = share
+            ? await self.share(req, draft)
+            : await self.unshare(req, draft);
+
+          return sharedDoc;
         }
       },
       get: {
@@ -1340,6 +1362,18 @@ database.`);
         return manager.unpublish(req, page);
       },
 
+      // Share a draft
+      async share(req, draft) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.share(req, draft);
+      },
+
+      // Unshare a draft
+      async unshare(req, draft) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.unshare(req, draft);
+      },
+
       // Localize the draft, i.e. copy it to another locale, creating
       // that locale's draft for the first time if necessary. By default
       // existing documents are not updated
@@ -2044,12 +2078,12 @@ database.`);
       // consult this method.
       getBaseUrl(req) {
         const hostname = self.apos.i18n.locales[req.locale].hostname;
-        if (hostname) {
-          return `${req.protocol}://${hostname}`;
-        } else {
-          return self.apos.baseUrl || '';
-        }
+
+        return hostname
+          ? `${req.protocol}://${hostname}`
+          : (self.apos.baseUrl || '');
       },
+
       // Implements a simple batch operation like publish or unpublish.
       // Pass `req`, the `name` of a configured batch operation,
       // and an async function that accepts (req, page, data) and

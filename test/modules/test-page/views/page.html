@@ -1,8 +1,13 @@
-<h3>Sing to me, Oh Muse.</h3>
+{% extends data.outerLayout %}
 
+{% block main %}
+  <title>{{ data.page.title }}</title>
 
-<a href="{{ data.home._url }}">Home: {{ data.home.slug }}</a>
+  <h3>Sing to me, Oh Muse.</h3>
 
-{% for tab in data.home._children %}
-  <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
-{% endfor %}
+  <a href="{{ data.home._url }}">Home: {{ data.home.slug }}</a>
+
+  {% for tab in data.home._children %}
+    <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
+  {% endfor %}
+{% endblock %}

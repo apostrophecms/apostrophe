@@ -876,7 +876,6 @@ module.exports = {
         self.insertions[key] = self.insertions[key] || [];
         self.insertions[key].push(componentName);
       }
-
     };
   }
 };

@@ -806,6 +806,16 @@ module.exports = {
           return (req, res, next) => req.user ? next() : passportSession(req, res, next);
         })()
       },
+      removeUserForDraftSharing: {
+        before: '@apostrophecms/i18n',
+        middleware(req, res, next) {
+          // Remove user to hide the admin UI, in order to simulate a logged-out page view
+          if (self.isShareDraftRequest(req)) {
+            delete req.user;
+          }
+          return next();
+        }
+      },
       honorLoginInvalidBefore: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
