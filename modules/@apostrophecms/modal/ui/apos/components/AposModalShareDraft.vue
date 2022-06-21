@@ -102,7 +102,7 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-    await this.checkUrlprop();
+    await this.checkUrlProp();
     await this.getAposShareKey();
   },
   methods: {
@@ -134,7 +134,7 @@ export default {
         }
 
         if (!aposShareKey) {
-          return this.errorNotif();
+          return this.showError();
         }
 
         this.shareUrl = this.generateShareUrl(aposShareKey);
@@ -143,15 +143,15 @@ export default {
           this.shareUrl = '';
           return;
         }
-        await this.errorNotif();
+        await this.showError();
       }
     },
     close() {
       this.modal.showModal = false;
     },
-    async checkUrlprop() {
+    async checkUrlProp() {
       if (!this.doc._url) {
-        await this.errorNotif();
+        await this.showError();
       }
     },
     async getAposShareKey() {
@@ -165,10 +165,10 @@ export default {
           this.shareUrl = this.generateShareUrl(aposShareKey);
         }
       } catch {
-        await this.errorNotif();
+        await this.showError();
       }
     },
-    async errorNotif() {
+    async showError() {
       await apos.notify('apostrophe:shareDraftError', {
         type: 'danger',
         icon: 'alert-circle-icon',
