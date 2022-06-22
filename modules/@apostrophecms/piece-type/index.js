@@ -438,6 +438,28 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.revertPublishedToPrevious(req, published);
+        },
+        ':_id/share': async (req) => {
+          const { _id } = req.params;
+          const share = self.apos.launder.boolean(req.body.share);
+
+          if (!_id) {
+            throw self.apos.error('invalid');
+          }
+
+          const draft = await self.findOneForEditing(req, {
+            _id
+          });
+
+          if (!draft || draft.aposMode !== 'draft') {
+            throw self.apos.error('notfound');
+          }
+
+          const sharedDoc = share
+            ? await self.share(req, draft)
+            : await self.unshare(req, draft);
+
+          return sharedDoc;
         }
       }
     };

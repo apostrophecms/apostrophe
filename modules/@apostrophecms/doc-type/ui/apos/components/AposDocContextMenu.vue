@@ -125,7 +125,7 @@ export default {
             action: 'edit'
           }
         ] : []),
-        ...((this.showPreview && this.context._url) ? [
+        ...((this.showPreview && this.hasUrl) ? [
           {
             label: 'apostrophe:preview',
             action: 'preview'
@@ -192,13 +192,14 @@ export default {
     },
     customOperationsByContext() {
       return this.customOperations.filter(op => {
-        if (op.context === 'update' && this.isUpdateOperation) {
-          if (typeof op.manuallyPublished === 'boolean') {
-            return op.manuallyPublished === this.manuallyPublished;
-          }
-          return true;
+        if (typeof op.manuallyPublished === 'boolean' && op.manuallyPublished !== this.manuallyPublished) {
+          return false;
         }
-        return false;
+        if (typeof op.hasUrl === 'boolean' && op.hasUrl !== this.hasUrl) {
+          return false;
+        }
+
+        return op.context === 'update' && this.isUpdateOperation;
       });
     },
     moduleName() {
@@ -213,6 +214,9 @@ export default {
     },
     isUpdateOperation() {
       return !!this.context._id;
+    },
+    hasUrl() {
+      return !!this.context._url;
     },
     canPublish() {
       if (this.context._id) {

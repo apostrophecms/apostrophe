@@ -1,17 +1,34 @@
 # Changelog
 
-## UNRELEASED
+## 3.23.0 (2022-06-22)
+
+### Adds
+
+* Shared Drafts: gives the possibility to share a link which can be used to preview the draft version of page, or a piece `show` page.
+* Add `Localize` option to `@apostrophecms/image`. In Edit mode the context bar menu includes a "Localize" option to start cloning this image into other locales.
+
+### Fixes
+
+* Update `sass` to [`1.52.3`+](https://github.com/sass/dart-sass/pull/1713) to prevent the error `RangeError: Invalid value: Not in inclusive range 0..145: -1`. You can now fix that by upgrading with `npm update`. If it does not immediately clear up the issue in development, try `node app @apostrophecms/asset:clear-cache`.
+* Fix a potential issue when URLs have a query string, in the `'@apostrophecms/page:notFound'` handler of the `soft-redirect` module.
+
+## 3.22.1 (2022-06-17)
+
+* Hotfix: temporarily pin versions of tiptap modules to work around packaging error that breaks import of the most recent releases. We will unpin as soon as this is fixed upstream. Fixes a bug where `npm update` would fail for A3 projects.
+
+## 3.22.0 (2022-06-08)
+
+### Adds
+
+* Possibility to pass options to webpack extensions from any module.
 
 ### Fixes
 
 * Fix a Webpack cache issue leading to modules symlinked in `node_modules` not being rebuilt. 
 * Fixes login maximum attempts error message that wasn't showing the plural when lockoutMinutes is more than 1.
-* Fixes the text color of the current array item's slat label in the array editor modal 
-* Fixes the maximum width of an array item's slat label so as to not obscure the Remove button in narrow viewports
-
-### Changes
-
-* If an array field's titleField option is set to a select field, use the selected option's label as the slat label rather it's value.
+* Fixes the text color of the current array item's slat label in the array editor modal.
+* Fixes the maximum width of an array item's slat label so as to not obscure the Remove button in narrow viewports.
+* If an array field's titleField option is set to a select field, use the selected option's label as the slat label rather its value.
 * Disable the slat controls of the attachment component while uploading.
 * Fixes bug when re-attaching the same file won't trigger an upload.
 * AposSlat now fully respects the disabled state.
@@ -29,6 +46,7 @@
 * Trigger only the relevant build when in a watch mode (development). The build paths should not contain comma (`,`).
 * Adds an `unpublish` method, available for any doc-type.  
 An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
+* Allows developers to group fields in relationships the same way it's done for normal schemas.
 
 ### Fixes
 

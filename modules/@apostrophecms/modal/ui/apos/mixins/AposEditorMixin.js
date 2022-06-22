@@ -73,7 +73,8 @@ export default {
     getFieldsByCategory(followedByCategory) {
       if (followedByCategory) {
         return (followedByCategory === 'other')
-          ? this.schema.filter(field => !this.utilityFields.includes(field.name)) : this.schema.filter(field => this.utilityFields.includes(field.name));
+          ? this.schema.filter(field => !this.utilityFields.includes(field.name))
+          : this.schema.filter(field => this.utilityFields.includes(field.name));
       } else {
         return this.schema;
       }

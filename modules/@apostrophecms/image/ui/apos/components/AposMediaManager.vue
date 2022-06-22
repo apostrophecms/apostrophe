@@ -90,7 +90,9 @@
         >
           <AposMediaManagerEditor
             v-show="editing"
-            :media="editing" :selected="selected"
+            :media="editing"
+            :selected="selected"
+            :is-modified="isModified"
             :module-labels="moduleLabels"
             @back="updateEditing(null)" @saved="updateMedia"
             @modified="editorModified"

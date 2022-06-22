@@ -140,7 +140,7 @@ module.exports = {
               }
             };
           } else {
-            return {
+            const query = {
               aposMode: {
                 $in: [ null, 'published' ]
               },
@@ -149,6 +149,31 @@ module.exports = {
                 $nin: restrictedViewTypes
               }
             };
+
+            if (self.isShareDraftRequest(req)) {
+              const { aposShareId, aposShareKey } = req.query;
+              const { aposMode, ...rest } = query;
+
+              return {
+                ...rest,
+                $or: [
+                  { aposMode },
+                  {
+                    _id: aposShareId,
+                    aposShareKey,
+                    aposMode: 'draft'
+                  }
+                ],
+                // We do not want the published version of the document
+                // in the case where we want to access the draft with a
+                // public URL:
+                _id: {
+                  $ne: aposShareId.replace(':draft', ':published')
+                }
+              };
+            }
+
+            return query;
           }
         } else if (action === 'edit') {
           if (role === 'contributor') {

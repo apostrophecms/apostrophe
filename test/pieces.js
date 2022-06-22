@@ -217,6 +217,27 @@ describe('Pieces', function() {
               }
             }
           }
+        },
+        'product-page': {
+          extend: '@apostrophecms/piece-page-type',
+          options: {
+            name: 'productPage',
+            label: 'Products',
+            alias: 'productPage',
+            perPage: 10
+          }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                title: 'Products',
+                type: 'productPage',
+                slug: '/products',
+                parkedId: 'products'
+              }
+            ]
+          }
         }
       }
     });
@@ -1673,6 +1694,135 @@ describe('Pieces', function() {
       assert(draft._id === draftItem._id);
       assert(draft.modified === true);
       assert(draft.lastPublishedAt === null);
+    });
+  });
+
+  describe('draft sharing', function() {
+    const product = {
+      _id: 'some-product:en:published',
+      aposDocId: 'some-product',
+      title: 'Some Product'
+    };
+
+    let req;
+    let previousDraft;
+    let previousPublished;
+    let shareResponse;
+
+    const generatePublicUrl = shareResponse =>
+      `${shareResponse._url}?aposShareKey=${encodeURIComponent(shareResponse.aposShareKey)}&aposShareId=${encodeURIComponent(shareResponse._id)}`;
+
+    this.beforeEach(async function() {
+      req = apos.task.getReq();
+      previousPublished = await apos.modules.product.insert(req, product);
+      previousDraft = await apos.modules.product.findOneForEditing(
+        apos.task.getReq({ mode: 'draft' }),
+        { _id: 'some-product:en:draft' }
+      );
+      await apos.modules.product.update(req, {
+        ...previousDraft,
+        title: 'Some Product EDITED'
+      });
+    });
+
+    this.afterEach(async function() {
+      await apos.doc.db.deleteMany({ aposDocId: product.aposDocId });
+    });
+
+    describe('share', function() {
+      this.beforeEach(async function() {
+        shareResponse = await apos.modules.product.share(req, previousDraft);
+      });
+
+      it('should have a "share" method that returns a draft with aposShareKey', async function() {
+        const draft = await apos.doc.db.findOne({
+          _id: `${previousDraft.aposDocId}:en:draft`
+        });
+        const published = await apos.doc.db.findOne({
+          _id: `${previousDraft.aposDocId}:en:published`
+        });
+
+        assert(apos.modules.product.share);
+        assert(!Object.prototype.hasOwnProperty.call(published, 'aposShareKey'));
+        assert(!Object.prototype.hasOwnProperty.call(previousDraft, 'aposShareKey'));
+        assert(shareResponse.aposShareKey);
+        assert(draft.aposShareKey);
+        assert(shareResponse.aposShareKey === draft.aposShareKey);
+      });
+
+      it('should grant public access to a draft after having enabled draft sharing', async function() {
+        const publicUrl = generatePublicUrl(shareResponse);
+
+        const response = await apos.http.get(shareResponse._url, { fullResponse: true });
+        const publicResponse = await apos.http.get(publicUrl, { fullResponse: true });
+
+        assert(response.status === 200);
+        assert(response.body.includes('Some Product'));
+        assert(!response.body.includes('Some Product EDITED'));
+
+        assert(publicResponse.status === 200);
+        assert(publicResponse.body.includes('Some Product EDITED'));
+      });
+
+      it('should grant public access to a draft without admin UI, even when logged-in', async function() {
+        const publicUrl = generatePublicUrl(shareResponse);
+        const publicResponse = await apos.http.get(publicUrl, {
+          fullResponse: true,
+          jar
+        });
+
+        assert(publicResponse.status === 200);
+        assert(publicResponse.body.includes('Some Product EDITED'));
+        assert(!publicResponse.body.includes('apos-admin-bar'));
+      });
+
+      it('should grant public access to a draft after having re-enabled draft sharing', async function() {
+        await apos.modules.product.unshare(req, previousDraft);
+
+        const shareResponse = await apos.modules.product.share(req, previousDraft);
+        const publicUrl = generatePublicUrl(shareResponse);
+
+        const publicResponse = await apos.http.get(publicUrl, { fullResponse: true });
+
+        assert(publicResponse.status === 200);
+        assert(publicResponse.body.includes('Some Product EDITED'));
+      });
+    });
+
+    describe('unshare', function() {
+      this.beforeEach(async function() {
+        shareResponse = await apos.modules.product.share(req, previousDraft);
+      });
+
+      it('should have a "unshare" method that returns a draft without aposShareKey', async function() {
+        const unshareResponse = await apos.modules.product.unshare(req, previousDraft);
+
+        const draft = await apos.doc.db.findOne({
+          _id: `${previousDraft.aposDocId}:en:draft`
+        });
+        const published = await apos.doc.db.findOne({
+          _id: `${previousDraft.aposDocId}:en:published`
+        });
+
+        assert(apos.modules.product.unshare);
+        assert(!Object.prototype.hasOwnProperty.call(previousPublished, 'aposShareKey'));
+        assert(!Object.prototype.hasOwnProperty.call(previousDraft, 'aposShareKey'));
+        assert(!Object.prototype.hasOwnProperty.call(published, 'aposShareKey'));
+        assert(!Object.prototype.hasOwnProperty.call(draft, 'aposShareKey'));
+        assert(!Object.prototype.hasOwnProperty.call(unshareResponse, 'aposShareKey'));
+      });
+
+      it('should remove public access to a draft after having disabled draft sharing', async function() {
+        await apos.modules.product.unshare(req, previousDraft);
+
+        try {
+          const publicUrl = generatePublicUrl(shareResponse);
+          await apos.http.get(publicUrl, { fullResponse: true });
+          throw new Error('should have thrown 404 error');
+        } catch (error) {
+          assert(error.status === 404);
+        }
+      });
     });
   });
 });
