@@ -1,7 +1,7 @@
 <template>
   <AposModal
     class="apos-array-editor" :modal="modal"
-    :modal-title="`Edit ${field.label}`"
+    :modal-title="modalTitle"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
@@ -120,6 +120,10 @@ export default {
         active: false,
         type: 'overlay',
         showModal: false
+      },
+      modalTitle: {
+        key: 'apostrophe:editType',
+        type: this.$t(this.field.label)
       },
       titleFieldChoices: null,
       // If we don't clone, then we're making
