@@ -1,11 +1,11 @@
 # Changelog
 
-## UNRELEASED
+## 3.23.0
 
 ### Adds
 
+* Shared Drafts: gives the possibility to share a link which can be used to preview the draft version of page, or a piece `show` page.
 * Add `Localize` option to `@apostrophecms/image`. In Edit mode the context bar menu includes a "Localize" option to start cloning this image into other locales.
-* Gives the possibility to share a link which can be used to preview the draft version of page or a piece `show` page.
 
 ### Fixes
 
