@@ -303,4 +303,14 @@ describe('Templates', function() {
     assert(result.includes('Modify / Delete'));
   });
 
+  it('should has global __t() available in macros', async function() {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'i18n');
+
+    const data = parseOutput(result, 'i18n_macro');
+    assert.deepStrictEqual(data, [
+      'Modify / Delete'
+    ]);
+  });
+
 });

@@ -1,3 +1,7 @@
 {% macro print(text) %}
   {{ text }}
 {% endmacro %}
+
+{% macro i18nTest() %}
+  {{ __t('apostrophe:modifyOrDelete') }}
+{% endmacro %}

@@ -346,6 +346,8 @@ module.exports = {
           // no guarantee newEnv will be called for every req
           self.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
         }
+        // i18n is available per request
+        self.envs[name].addGlobal('__t', req.t);
         return self.envs[name];
       },
 
