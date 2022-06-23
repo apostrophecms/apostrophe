@@ -5,6 +5,7 @@
 ### Fixes
 
 * Fix missing title translation in the "Array Editor" component.
+* Bring back support for i18n inside macros (`__t()` can be used inside macros again).
 
 ## 3.23.0 (2022-06-22)
 
