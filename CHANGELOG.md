@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Fix missing title translation in the "Array Editor" component.
+
 ## 3.23.0 (2022-06-22)
 
 ### Adds
