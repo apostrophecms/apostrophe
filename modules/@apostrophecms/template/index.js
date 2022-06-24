@@ -256,6 +256,10 @@ module.exports = {
         const args = self.getRenderArgs(req, data, module);
 
         const env = self.getEnv(req, module);
+        // i18n is globally available per request.
+        // We consider this a "render entry point", all context based
+        // code gets access to the arguments bellow as global context.
+        env.addGlobal('__t', args.__t);
 
         if (type === 'file') {
           let finalName = s;
@@ -346,8 +350,7 @@ module.exports = {
           // no guarantee newEnv will be called for every req
           self.envs[name] = self.newEnv(req, name, self.getViewFolders(module));
         }
-        // i18n is available per request
-        self.envs[name].addGlobal('__t', req.t);
+
         return self.envs[name];
       },
 
