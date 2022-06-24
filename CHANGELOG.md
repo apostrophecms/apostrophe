@@ -5,6 +5,7 @@
 ### Fixes
 
 * Fix missing title translation in the "Array Editor" component.
+* Add `follow: true` flag to `glob` functions (with `**` pattern) to allow registering symlink files and folders for nested modules
 
 ## 3.23.0 (2022-06-22)
 
