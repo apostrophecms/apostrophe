@@ -11,6 +11,7 @@ const _ = require('lodash');
 const { stripIndent } = require('common-tags');
 const ExpressSessionCookie = require('express-session/session/cookie');
 const path = require('path');
+const { verifyLocales } = require('../../../lib/locales');
 
 const apostropheI18nDebugPlugin = {
   type: 'postProcessor',
@@ -568,34 +569,7 @@ module.exports = {
             label: 'English'
           }
         };
-        const taken = {};
-        let hostnamesCount = 0;
-        for (const [ name, options ] of Object.entries(locales)) {
-          const key = (options.hostname || '__none') + ':' + (options.prefix || '__none');
-          hostnamesCount += (options.hostname ? 1 : 0);
-          if (taken[key]) {
-            throw new Error(stripIndent`
-              @apostrophecms/i18n: the locale ${name} cannot be distinguished from
-              earlier locales. Make sure it is uniquely distinguished by its hostname
-              option, prefix option or a combination of the two. One locale per site
-              may be a default with neither hostname nor prefix, and one locale per
-              hostname may be a default for that hostname without a prefix.
-            `);
-          }
-          taken[key] = true;
-        }
-        if ((hostnamesCount > 0) && (hostnamesCount < Object.keys(locales).length) && (!self.apos.options.baseUrl)) {
-          throw new Error(stripIndent`
-            If some of your locales have hostnames, then they all must have
-            hostnames, or your top-level baseUrl option must be set.
-
-            In development, you can set baseUrl to http://localhost:3000
-            for testing purposes. In production it should always be set
-            to a real base URL for the site.
-          `);
-        }
-        // Make sure they are adequately distinguished by
-        // hostname and prefix
+        verifyLocales(locales, self.apos.options.baseUrl);
         return locales;
       },
       sanitizeLocaleName(locale) {
