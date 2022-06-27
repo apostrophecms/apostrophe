@@ -21,6 +21,10 @@ describe('static i18n', function() {
               en: {},
               fr: {
                 prefix: '/fr'
+              },
+              es: {
+                prefix: '/es',
+                private: true
               }
             }
           }
@@ -86,6 +90,16 @@ describe('static i18n', function() {
   it('should honor the browser: true flag in the i18n section of an index.js file', function() {
     const browserData = apos.i18n.getBrowserData(apos.task.getReq());
     assert.strictEqual(browserData.i18n.en.custom.customTestOne, 'Custom Test One From Subtype');
+  });
+
+  it('should return a 404 HTTP error code when a logged out user tries to access to a private locale', async function() {
+    try {
+      await apos.http.get('/es');
+    } catch (error) {
+      assert(error.status === 404);
+      return;
+    }
+    throw new Error('should have thrown 404 error');
   });
 
 });

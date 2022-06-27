@@ -1818,10 +1818,11 @@ describe('Pieces', function() {
         try {
           const publicUrl = generatePublicUrl(shareResponse);
           await apos.http.get(publicUrl, { fullResponse: true });
-          throw new Error('should have thrown 404 error');
         } catch (error) {
           assert(error.status === 404);
+          return;
         }
+        throw new Error('should have thrown 404 error');
       });
     });
   });
