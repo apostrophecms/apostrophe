@@ -92,7 +92,7 @@ describe('static i18n', function() {
     assert.strictEqual(browserData.i18n.en.custom.customTestOne, 'Custom Test One From Subtype');
   });
 
-  it('should return a 404 HTTP error code when a logged out user tries to access to a private locale', async function() {
+  it('should return a 404 HTTP error code when a logged out user tries to access to a content in a private locale', async function() {
     try {
       await apos.http.get('/es');
     } catch (error) {
