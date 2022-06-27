@@ -219,7 +219,8 @@ module.exports = {
         } else {
           locale = self.matchLocale(req);
         }
-        const localeOptions = self.locales[locale];
+        const locales = self.filterPrivateLocales(req, self.locales);
+        const localeOptions = locales[locale];
         if (localeOptions.prefix) {
           // Remove locale prefix so URL parsing can proceed normally from here
           if (req.path === localeOptions.prefix) {
@@ -465,8 +466,9 @@ module.exports = {
       // possible the default locale is returned.
       matchLocale(req) {
         const hostname = req.hostname;
+        const locales = self.filterPrivateLocales(req, self.locales);
         let best = false;
-        for (const [ name, options ] of Object.entries(self.locales)) {
+        for (const [ name, options ] of Object.entries(locales)) {
           const matchedHostname = options.hostname
             ? (hostname === options.hostname.split(':')[0]) : null;
           const matchedPrefix = options.prefix
@@ -630,6 +632,17 @@ module.exports = {
           }
           return res.redirect(corresponding._url);
         };
+      },
+      // Exclude private locales when logged out
+      filterPrivateLocales(req, locales) {
+        return req.user
+          ? locales
+          : Object.entries(locales)
+            .filter(([ name, options ]) => options.private !== true)
+            .reduce((memo, [ name, options ]) => ({
+              ...memo,
+              [name]: options
+            }), {});
       }
     };
   }
