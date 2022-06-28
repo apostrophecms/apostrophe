@@ -638,9 +638,9 @@ module.exports = {
         return req.user
           ? locales
           : Object.fromEntries(
-            Object.entries(locales)
+            Object
+              .entries(locales)
               .filter(([ name, options ]) => options.private !== true)
-              .map(([ name, options ]) => [ name, options ])
           );
       }
     };
