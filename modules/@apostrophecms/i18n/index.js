@@ -637,12 +637,11 @@ module.exports = {
       filterPrivateLocales(req, locales) {
         return req.user
           ? locales
-          : Object.entries(locales)
-            .filter(([ name, options ]) => options.private !== true)
-            .reduce((memo, [ name, options ]) => ({
-              ...memo,
-              [name]: options
-            }), {});
+          : Object.fromEntries(
+            Object.entries(locales)
+              .filter(([ name, options ]) => options.private !== true)
+              .map(([ name, options ]) => [ name, options ])
+          );
       }
     };
   }
