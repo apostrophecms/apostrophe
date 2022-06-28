@@ -34,7 +34,7 @@
           @item-clicked="$emit('item-clicked', item)"
           menu-placement="bottom-start"
           menu-offset="40, 10"
-          disabled="disabled"
+          :disabled="disabled"
         />
         <AposButton
           class="apos-slat__editor-btn"
@@ -48,7 +48,7 @@
           :icon-only="true"
           :modifiers="['inline']"
           @click="$emit('item-clicked', item)"
-          disabled="disabled"
+          :disabled="disabled"
         />
         <a
           class="apos-slat__control apos-slat__control--view"
@@ -169,7 +169,7 @@ export default {
   },
   computed: {
     itemSize() {
-      const size = this.item.length.size;
+      const size = this.item.length?.size;
       if (size < 1000000) {
         return `${(size / 1000).toFixed(0)}KB`;
       } else {
