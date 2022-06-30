@@ -4,7 +4,7 @@
 
 ## Adds
 
-* Add `showPermissions` options set to false to `polymorphic` module.
+* Add `showPermissions` options set to false to the `polymorphic` module.
 
 ### Fixes
 
