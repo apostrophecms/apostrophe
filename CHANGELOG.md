@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## Adds
+### Adds
 
 * Add `showPermissions` options set to false to the `polymorphic` module.
 
