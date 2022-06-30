@@ -2,7 +2,10 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
-  options: { name: '@apostrophecms/polymorphic' },
+  options: {
+    name: '@apostrophecms/polymorphic',
+    showPermissions: false
+  },
   routes(self) {
     return {
       post: {
