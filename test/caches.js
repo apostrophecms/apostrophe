@@ -22,6 +22,11 @@ describe('Caches', function() {
   it('should allow us to store capuchin', async function() {
     await apos.cache.set('test', 'capuchin', { message: 'eek eek' });
   });
+  it('second cache can contain capuchin with a different value', async function() {
+    await apos.cache.set('test2', 'capuchin', { message: 'ook ook' });
+    assert.strictEqual((await apos.cache.get('test', 'capuchin')).message, 'eek eek');
+    assert.strictEqual((await apos.cache.get('test2', 'capuchin')).message, 'ook ook');
+  });
   it('should now contain capuchin', async function() {
     const monkey = await apos.cache.get('test', 'capuchin');
     assert(monkey);
@@ -32,5 +37,8 @@ describe('Caches', function() {
   });
   it('should not contain capuchin anymore', async function() {
     assert(!(await apos.cache.get('test', 'capuchin')));
+  });
+  it('but test2 cache still does contain capuchin', async function() {
+    assert.strictEqual((await apos.cache.get('test2', 'capuchin')).message, 'ook ook');
   });
 });
