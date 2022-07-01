@@ -41,4 +41,16 @@ describe('Caches', function() {
   it('but test2 cache still does contain capuchin', async function() {
     assert.strictEqual((await apos.cache.get('test2', 'capuchin')).message, 'ook ook');
   });
+  it('unique key index does block double insert in same namespace', async function() {
+    try {
+      await apos.cache.cacheCollection.insert({
+        name: 'test2',
+        key: 'capuchin'
+      });
+      // That's bad, we should be blocked
+      assert(false);
+    } catch (e) {
+      // That's good, we were blocked
+    }
+  });
 });
