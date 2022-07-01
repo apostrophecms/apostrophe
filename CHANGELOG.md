@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+## Fixes
+
+* Previously, cache objects returned by `apos.caches.get` shared an incorrectly configured unique key index that prevented the same key from existing in two caches. This did not lead to any data integrity problems, because it was too strict rather than not strict enough. In this release the offending index is replaced with a correct one, which must be unique only on a combination of `name` (the cache name) and `key`, and unit test coverage is added to prevent a recurrence.
+
 ## 2.221.1 (2022-06-22)
 
 ## Fixes

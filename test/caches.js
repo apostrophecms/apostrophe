@@ -11,6 +11,8 @@ describe('Caches', function() {
 
   var apos;
   var cache;
+  let cache2;
+
   it('should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
@@ -116,5 +118,32 @@ describe('Caches', function() {
         assert(!monkey);
         return true;
       });
+  });
+  it('should give us a second, independent cache object', function() {
+    cache2 = apos.caches.get('testMonkeys2');
+  });
+  it('cache 1 should allow us to store capuchin', function() {
+    return cache.set('capuchin', { message: 'eek eek' });
+  });
+  it('cache 2 should allow us to store capuchin with another message', function() {
+    return cache2.set('capuchin', { message: 'ook ook' });
+  });
+  it('cache 1 should contain its unique message', async function() {
+    assert.strictEqual((await cache.get('capuchin')).message, 'eek eek');
+  });
+  it('cache 2 should contain its unique message', async function() {
+    assert.strictEqual((await cache2.get('capuchin')).message, 'ook ook');
+  });
+  it('unique index still prevents double insert of key within a namespace', async function() {
+    try {
+      await apos.caches.cacheCollection.insert({
+        key: 'capuchin',
+        name: 'testMonkeys'
+      });
+      // That's bad, unique index should have stopped us
+      assert(false);
+    } catch (e) {
+      // This is what we wanted to happen
+    }
   });
 });
