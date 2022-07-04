@@ -113,6 +113,12 @@ export default {
   },
   emits: [ 'modal-result', 'safe-close' ],
   data() {
+    // Automatically add `_id` to default items
+    const items = this.items.map(item => ({
+      ...item,
+      _id: item._id || cuid()
+    }));
+
     return {
       currentId: null,
       currentDoc: null,
@@ -129,8 +135,8 @@ export default {
       // If we don't clone, then we're making
       // permanent modifications whether the user
       // clicks save or not
-      next: klona(this.items),
-      original: klona(this.items),
+      next: klona(items),
+      original: klona(items),
       triggerValidation: false,
       minError: false,
       maxError: false,

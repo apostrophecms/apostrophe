@@ -13,6 +13,7 @@
 * Add `follow: true` flag to `glob` functions (with `**` pattern) to allow registering symlink files and folders for nested modules
 * Fix disabled context menu for relationship fields editing ([#3820](https://github.com/apostrophecms/apostrophe/issues/3820))
 * In getReq method form the task module, extract the right `role` property from the options object.
+* Fix `def:` option in `array` fields, in order to be able to see the default items in the array editor modal
 
 ## 3.23.0 (2022-06-22)
 
