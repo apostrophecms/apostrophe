@@ -2,11 +2,16 @@
 
 ## Unreleased
 
+### Adds
+
+* Add `showPermissions` options set to false to the `polymorphic` module.
+
 ### Fixes
 
 * Fix missing title translation in the "Array Editor" component.
 * Add `follow: true` flag to `glob` functions (with `**` pattern) to allow registering symlink files and folders for nested modules
 * Fix disabled context menu for relationship fields editing ([#3820](https://github.com/apostrophecms/apostrophe/issues/3820))
+* In getReq method form the task module, extract the right `role` property from the options object.
 
 ## 3.23.0 (2022-06-22)
 
