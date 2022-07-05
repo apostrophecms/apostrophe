@@ -11,10 +11,9 @@
     >
       <ul class="apos-area-menu__wrapper">
         <li
-          class="apos-area-menu__item"
+          :class="[item.type ? 'apos-area-menu__item--separated' : 'apos-area-menu__item', item.items ? 'apos-has-group' : '']"
           v-for="(item, itemIndex) in myMenu"
           :key="item.type ? `${item.type}_${item.label}` : item.label"
-          :class="{'apos-has-group': item.items}"
           :ref="`item-${itemIndex}`"
         >
           <dl v-if="item.items" class="apos-area-menu__group">
@@ -296,6 +295,9 @@ export default {
 
 .apos-area-menu__wrapper {
   min-width: 250px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
 }
 
 .apos-area-menu__button {
@@ -368,6 +370,11 @@ export default {
 .apos-area-menu__item:last-child.apos-has-group .apos-area-menu__group {
   border-bottom: none;
   margin-bottom: 0;
+}
+
+.apos-area-menu__item--separated {
+  grid-row: 1 / -1;
+  border-right: 1px solid var(--a-base-9);
 }
 
 .apos-area-menu__items--accordion {
