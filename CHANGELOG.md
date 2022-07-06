@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array, like selects currently support.
 
 ### Adds
 

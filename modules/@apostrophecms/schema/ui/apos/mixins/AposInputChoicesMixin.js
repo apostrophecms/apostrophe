@@ -1,7 +1,7 @@
 /*
- * Provides prep work for fetching choices from the server or defaulting
- * to the choices provided with the field.
- */
+* Provides prep work for fetching choices from the server
+* or defaulting to the choices provided with the field.
+*/
 
 export default {
   data() {
