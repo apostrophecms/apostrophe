@@ -1,10 +1,9 @@
 # Changelog
 
-## Unreleased
+## 3.24.0 (2022-07-06)
 
 ### Adds
 
-* Add `showPermissions` options set to false to the `polymorphic` module.
 * Handle `private: true` locale option in i18n module, preventing logged out users from accessing the content of a private locale.
 
 ### Fixes
