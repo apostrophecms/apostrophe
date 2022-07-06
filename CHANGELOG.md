@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 2.221.2 (2022-07-06)
 
 ## Fixes
 
