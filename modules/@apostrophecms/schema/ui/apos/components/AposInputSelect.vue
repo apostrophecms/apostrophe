@@ -20,10 +20,11 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposInputChoicesMixin from 'Modules/@apostrophecms/schema/mixins/AposInputChoicesMixin';
 
 export default {
   name: 'AposInputSelect',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposInputChoicesMixin ],
   props: {
     icon: {
       type: String,
@@ -37,34 +38,16 @@ export default {
     };
   },
   async mounted() {
-    let choices;
-    if (typeof this.field.choices === 'string') {
-      const action = this.options.action;
-      const response = await apos.http.get(
-        `${action}/choices`,
-        {
-          qs: {
-            fieldId: this.field._id
-          },
-          busy: true
-        }
-      );
-      if (response.choices) {
-        choices = response.choices;
-      }
-    } else {
-      choices = this.field.choices;
-    }
     // Add an null option if there isn't one already
-    if (!this.field.required && !choices.find(choice => {
+    if (!this.field.required && !this.choices.find(choice => {
       return choice.value === null;
     })) {
-      this.choices.push({
+      this.choices.unshift({
         label: '',
         value: null
       });
     }
-    this.choices = this.choices.concat(choices);
+    // this.choices = this.choices.concat(choices);
     this.$nextTick(() => {
       // this has to happen on nextTick to avoid emitting before schemaReady is
       // set in AposSchema
