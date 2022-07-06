@@ -47,7 +47,6 @@ export default {
         value: null
       });
     }
-    // this.choices = this.choices.concat(choices);
     this.$nextTick(() => {
       // this has to happen on nextTick to avoid emitting before schemaReady is
       // set in AposSchema
