@@ -2,7 +2,14 @@
 
 ## Unreleased
 * Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array, like selects currently support.
+
 ## 3.24.0 (2022-07-06)`
+### Fixes
+
+* Unpinned tiptap as the tiptap team has made releases that resolve the packaging errors that caused us to pin it in 3.22.1.<F2>
+* Pinned `vue-loader` to the `15.9.x` minor release series for now. The `15.10.0` release breaks support for using `npm link` to develop the `apostrophe` module itself.
+
+## 3.24.0 (2022-07-06)
 
 ### Adds
 
