@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-* Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array, like selects currently support.
+* Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array dynamically, like select supports. Future fields can opt into this functionality with the field flag `dynamicChoices`.
 
 ## 3.24.0 (2022-07-06)`
 ### Fixes

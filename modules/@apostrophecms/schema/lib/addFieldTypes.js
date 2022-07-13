@@ -231,6 +231,7 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'checkboxes',
+    dynamicChoices: true,
     async convert(req, field, data, destination) {
       const choices = await getChoices(req, field);
       if (typeof data[field.name] === 'string') {
@@ -304,6 +305,7 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'select',
+    dynamicChoices: true,
     async convert(req, field, data, destination) {
       const choices = await getChoices(req, field);
       destination[field.name] = self.apos.launder.select(data[field.name], choices, field.def);

@@ -1466,9 +1466,7 @@ module.exports = {
           let choices = [];
           if (
             !field ||
-            !(field.type !== 'select' ||
-            field.type !== 'checkboxes' ||
-            field.type !== 'radio') ||
+            !self.fieldTypes[field.type].dynamicChoices ||
             !(field.choices && typeof field.choices === 'string')
           ) {
             throw self.apos.error('invalid');
