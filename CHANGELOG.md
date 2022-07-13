@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.221.3 (2022-07-06)
+
+## Fixes
+
+* Patch bug fix on `findTestModule()` inside `index.js` . The fix is compatible to latest Mocha@10.0.0 npm package.
+
 ## 2.221.2 (2022-07-06)
 
 ## Fixes
