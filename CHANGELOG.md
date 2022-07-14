@@ -4,7 +4,7 @@
 
 ## Fixes
 
-* Patch bug fix on `findTestModule()` inside `index.js` . The fix is compatible to latest Mocha@10.0.0 npm package.
+* `testModule: true` is now compatible with mocha 10.x
 
 ## 2.221.2 (2022-07-06)
 
