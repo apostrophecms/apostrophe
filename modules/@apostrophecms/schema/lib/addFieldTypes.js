@@ -233,7 +233,7 @@ module.exports = (self) => {
     name: 'checkboxes',
     dynamicChoices: true,
     async convert(req, field, data, destination) {
-      const choices = await getChoices(req, field);
+      const choices = await self.getChoices(req, field);
       if (typeof data[field.name] === 'string') {
         data[field.name] = self.apos.launder.string(data[field.name]).split(',');
 
@@ -307,7 +307,7 @@ module.exports = (self) => {
     name: 'select',
     dynamicChoices: true,
     async convert(req, field, data, destination) {
-      const choices = await getChoices(req, field);
+      const choices = await self.getChoices(req, field);
       destination[field.name] = self.apos.launder.select(data[field.name], choices, field.def);
     },
     index: function (value, field, texts) {
@@ -1133,15 +1133,5 @@ module.exports = (self) => {
       return 'none';
     }
     return undefined;
-  }
-
-  async function getChoices(req, field) {
-    let choices;
-    if ((typeof field.choices) === 'string') {
-      choices = await self.apos.modules[field.moduleName][field.choices](req);
-    } else {
-      choices = field.choices;
-    }
-    return choices;
   }
 };
