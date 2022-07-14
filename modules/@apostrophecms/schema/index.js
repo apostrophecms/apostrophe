@@ -1453,6 +1453,12 @@ module.exports = {
         _.each(self.apos.area.widgetManagers, function (manager, type) {
           self.register('widget', type, manager.schema);
         });
+      },
+
+      async getChoices(req, field) {
+        return typeof field.choices === 'string'
+          ? self.apos.modules[field.moduleName][field.choices](req)
+          : field.choices;
       }
 
     };
@@ -1466,7 +1472,7 @@ module.exports = {
           let choices = [];
           if (
             !field ||
-            field.type !== 'select' ||
+            !self.fieldTypes[field.type].dynamicChoices ||
             !(field.choices && typeof field.choices === 'string')
           ) {
             throw self.apos.error('invalid');

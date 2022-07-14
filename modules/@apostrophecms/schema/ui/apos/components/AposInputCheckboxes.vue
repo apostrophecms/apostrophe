@@ -8,7 +8,7 @@
     <template #body>
       <AposCheckbox
         :for="getChoiceId(uid, choice.value)"
-        v-for="choice in field.choices"
+        v-for="choice in choices"
         :key="choice.value"
         :id="getChoiceId(uid, choice.value)"
         :choice="choice"
@@ -21,10 +21,11 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposInputChoicesMixin from 'Modules/@apostrophecms/schema/mixins/AposInputChoicesMixin';
 
 export default {
   name: 'AposInputCheckboxes',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposInputChoicesMixin ],
   beforeMount: function () {
     this.value.data = Array.isArray(this.value.data) ? this.value.data : [];
   },
@@ -38,7 +39,7 @@ export default {
     },
     validate(values) {
       // The choices and values should always be arrays.
-      if (!Array.isArray(this.field.choices) || !Array.isArray(values)) {
+      if (!Array.isArray(this.choices) || !Array.isArray(values)) {
         return 'malformed';
       }
 
@@ -48,7 +49,7 @@ export default {
 
       if (Array.isArray(values)) {
         values.forEach(chosen => {
-          if (!this.field.choices.map(choice => {
+          if (!this.choices.map(choice => {
             return choice.value;
           }).includes(chosen)) {
             return 'invalid';

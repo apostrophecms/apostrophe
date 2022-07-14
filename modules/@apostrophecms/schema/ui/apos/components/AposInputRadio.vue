@@ -8,7 +8,7 @@
     <template #body>
       <label
         class="apos-choice-label" :for="getChoiceId(uid, choice.value)"
-        v-for="choice in field.choices" :key="choice.value"
+        v-for="choice in choices" :key="choice.value"
         :class="{'apos-choice-label--disabled': field.readOnly}"
       >
         <input
@@ -43,12 +43,13 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposInputChoicesMixin from 'Modules/@apostrophecms/schema/mixins/AposInputChoicesMixin';
 import InformationIcon from 'vue-material-design-icons/Information.vue';
 
 export default {
   name: 'AposInputRadio',
   components: { InformationIcon },
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposInputChoicesMixin ],
   methods: {
     getChoiceId(uid, value) {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
@@ -58,7 +59,7 @@ export default {
         return 'required';
       }
 
-      if (value && !this.field.choices.find(choice => choice.value === value)) {
+      if (value && !this.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
 
@@ -66,7 +67,7 @@ export default {
     },
     change(value) {
       // Allows expression of non-string values
-      this.next = this.field.choices.find(choice => choice.value === JSON.parse(value)).value;
+      this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
     }
   }
 };

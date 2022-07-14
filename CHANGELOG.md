@@ -1,7 +1,9 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
+* Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array dynamically, like select supports. Future fields can opt into this functionality with the field flag `dynamicChoices`.
 
+## 3.24.0 (2022-07-06)`
 ### Fixes
 
 * Unpinned tiptap as the tiptap team has made releases that resolve the packaging errors that caused us to pin it in 3.22.1.<F2>
