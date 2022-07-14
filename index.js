@@ -256,7 +256,7 @@ module.exports = function(options) {
     while (m.parent) {
       // The test file is the root as far as we are concerned,
       // not mocha itself
-      if (m.parent.filename.match(new RegExp(path.sep + "node_modules" + path.sep + "mocha" + path.sep))) {
+      if (m.parent.filename.match(new RegExp(`${path.sep}node_modules${path.sep}mocha${path.sep}`))) {
         return m;
       }
       m = m.parent;
