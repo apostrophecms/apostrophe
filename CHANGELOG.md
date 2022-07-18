@@ -1,6 +1,13 @@
 # Changelog
 
 ## Unreleased
+
+### Fixes
+
+* `AposSelect` now emits values on `change` event as they were originally given. Their values "just work" so you do not have to think about JSON anymore when you receive it.
+
+### Adds
+
 * Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array dynamically, like select supports. Future fields can opt into this functionality with the field flag `dynamicChoices`.
 
 ## 3.24.0 (2022-07-06)`

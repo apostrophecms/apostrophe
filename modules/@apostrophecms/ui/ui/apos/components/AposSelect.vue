@@ -48,7 +48,7 @@ export default {
   emits: [ 'change' ],
   methods: {
     change(value) {
-      this.$emit('change', value);
+      this.$emit('change', JSON.parse(value));
     }
   }
 };
