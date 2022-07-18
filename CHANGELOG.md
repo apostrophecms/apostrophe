@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.221.3 (2022-07-06)
+
+## Fixes
+
+* `testModule: true` is now compatible with mocha 10.x
+
 ## 2.221.2 (2022-07-06)
 
 ## Fixes
