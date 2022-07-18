@@ -1,10 +1,10 @@
 # Changelog
 
-## 2.221.3 (2022-07-06)
+## UNANNOUNCED
 
 ## Fixes
 
-* `testModule: true` is now compatible with mocha 10.x
+* `testModule: true` is now compatible with `mocha` 10.x as well as previously supported versions of `mocha`. Thanks to [Amin Shazrin](https://github.com/ammein) for this contribution.
 
 ## 2.221.2 (2022-07-06)
 
