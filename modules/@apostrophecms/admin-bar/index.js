@@ -41,8 +41,8 @@ module.exports = {
       // on the case, such as `@apostrophecms/global:editor` or
       // `@apostrophecms/page:manager`.
       //
-      // Alternatively, an `href` option may be set to an ordinary URL in
-      // `options`. This creates a basic link in the admin menu.
+      // TODO: Alternatively, an `href` option may be set to an ordinary
+      // URL in `options`. This creates a basic link in the admin menu.
       //
       // `permission` should be an object with `action` and `type`
       // properties. This determines visibility of the option, securing
@@ -62,7 +62,7 @@ module.exports = {
       // If `options.contextUtility` is true the item will be displayed in a tray of
       // icons just to the left of the page settings gear. If `options.toggle` is also true,
       // then the button will have the `active` state until toggled
-      // off again. `options.openTooltip` and `options.closeTooltip` may be
+      // off again. `options.tooltip.active` and `options.tooltip.deactive` may be
       // provided to offer a different tooltip during the active state. Otherwise
       // `options.tooltip` is used. The regular label is also present for
       // screenreaders only. The contextUtility functionality is typically used for
