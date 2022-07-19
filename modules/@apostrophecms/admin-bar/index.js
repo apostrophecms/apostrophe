@@ -59,12 +59,12 @@ module.exports = {
       // wish to implement a custom admin bar item not powered by
       // the `AposModals` app.
       //
-      // If `options.contextUtility` is true the item will be displayed in a tray of
+      // If `options.contextUtility` is true, the item will be displayed in a tray of
       // icons just to the left of the page settings gear. If `options.toggle` is also true,
       // then the button will have the `active` state until toggled
       // off again. `options.tooltip.deactive` and `options.tooltip.active` may be
       // provided to offer a different tooltip during the inactivate versus active states,
-      //respectively. Otherwise `options.tooltip` is used. The regular label is also present
+      //respectively. Otherwise, `options.tooltip` is used. The regular label is also present
       //for screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
       //
