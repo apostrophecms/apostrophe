@@ -7,26 +7,15 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-input-wrapper apos-input__role">
-        <select
-          class="apos-input apos-input--select apos-input--role" :id="uid"
-          @change="change($event.target.value)"
-          :disabled="field.readOnly"
-        >
-          <option
-            v-for="choice in choices" :key="JSON.stringify(choice.value)"
-            :value="JSON.stringify(choice.value)"
-            :selected="choice.value === value.data"
-          >
-            {{ $t(choice.label) }}
-          </option>
-        </select>
-        <AposIndicator
-          icon="menu-down-icon"
-          class="apos-input-icon"
-          :icon-size="20"
-        />
-      </div>
+      <AposSelect
+        :choices="choices"
+        :disabled="field.readOnly"
+        :selected="value.data"
+        :id="uid"
+        :classes="[ 'apos-input__role' ]"
+        :wrapper-classes="[ 'apos-input__role' ]"
+        @change="change"
+      />
       <div class="apos-input__role__permission-grid">
         <div
           v-for="permissionSet in permissionSets"
@@ -152,7 +141,7 @@ export default {
     },
     change(value) {
       // Allows expression of non-string values
-      this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
+      this.next = this.choices.find(choice => choice.value === value).value;
     },
     async getPermissionSets(role) {
       return (await apos.http.get(`${apos.permission.action}/grid`, {
