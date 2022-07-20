@@ -5,6 +5,7 @@
 ## Fixes
 
 * `testModule: true` is now compatible with `mocha` 10.x as well as previously supported versions of `mocha`. Thanks to [Amin Shazrin](https://github.com/ammein) for this contribution.
+* `sanitize-html` dependency bumped to ensure a potential denial-of-service vector is closed.
 
 ## 2.221.2 (2022-07-06)
 
