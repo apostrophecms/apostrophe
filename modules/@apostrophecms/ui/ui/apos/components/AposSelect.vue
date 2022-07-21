@@ -1,7 +1,9 @@
 <template>
-  <div class="apos-input-wrapper">
+  <div class="apos-input-wrapper" :class="wrapperClasses">
     <select
       class="apos-input apos-input--select"
+      :class="classes"
+      :uid="uid"
       :disabled="disabled"
       @change="change($event.target.value)"
     >
@@ -30,6 +32,22 @@ export default {
       type: String,
       default: 'menu-down-icon'
     },
+    uid: {
+      type: Number,
+      default: null
+    },
+    classes: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
+    wrapperClasses: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
     choices: {
       type: Array,
       default() {
@@ -48,7 +66,7 @@ export default {
   emits: [ 'change' ],
   methods: {
     change(value) {
-      this.$emit('change', value);
+      this.$emit('change', JSON.parse(value));
     }
   }
 };

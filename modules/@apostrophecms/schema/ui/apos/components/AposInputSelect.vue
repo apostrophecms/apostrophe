@@ -69,7 +69,7 @@ export default {
     },
     change(value) {
       // Allows expression of non-string values
-      this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
+      this.next = this.choices.find(choice => choice.value === value).value;
     }
   }
 };

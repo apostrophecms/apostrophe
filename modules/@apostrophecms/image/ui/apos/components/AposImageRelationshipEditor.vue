@@ -396,7 +396,7 @@ export default {
         };
     },
     updateAspectRatio(value) {
-      this.aspectRatio = parseFloat(value);
+      this.aspectRatio = value;
       this.computeMaxSizes();
       this.computeMinSizes();
     },
