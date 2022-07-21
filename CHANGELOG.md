@@ -1,16 +1,17 @@
 # Changelog
 
-## Unreleased
+## 3.25.0 (2022-07-20)
 
 ### Adds
 
-* Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array dynamically, like select supports. Future fields can opt into this functionality with the field flag `dynamicChoices`.
+* `radio` and `checkboxes` input field types now support a server side `choices` function for supplying their `choices` array dynamically, just like `select` fields do. Future custom field types can opt into this functionality with the field type flag `dynamicChoices: true`.
 
 ### Fixes
 
 * `AposSelect` now emits values on `change` event as they were originally given. Their values "just work" so you do not have to think about JSON anymore when you receive it.
-* Unpinned tiptap as the tiptap team has made releases that resolve the packaging errors that caused us to pin it in 3.22.1.<F2>
+* Unpinned tiptap as the tiptap team has made releases that resolve the packaging errors that caused us to pin it in 3.22.1.
 * Pinned `vue-loader` to the `15.9.x` minor release series for now. The `15.10.0` release breaks support for using `npm link` to develop the `apostrophe` module itself.
+* Minimum version of `sanitize-html` bumped to ensure a potential denial-of-service vector is closed.
 
 ## 3.24.0 (2022-07-06)
 
