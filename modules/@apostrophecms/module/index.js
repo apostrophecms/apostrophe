@@ -705,8 +705,12 @@ module.exports = {
       },
 
       async executeAfterModuleInitTask() {
+        return self.executeAfterModuleTask('afterModuleInit');
+      },
+
+      async executeAfterModuleTask(when) {
         for (const [ name, info ] of Object.entries(self.tasks || {})) {
-          if (info.afterModuleInit) {
+          if (info[when]) {
             // Execute a task like @apostrophecms/asset:build or
             // @apostrophecms/db:reset which
             // must run before most modules are awake
@@ -764,6 +768,11 @@ module.exports = {
 
   handlers(self) {
     return {
+      moduleReady: {
+        executeAfterModuleReadyTask() {
+          return self.executeAfterModuleTask('afterModuleReady');
+        }
+      },
       'apostrophe:modulesRegistered': {
         addHelpers() {
           // We check this just to allow init in bootstrap tests that

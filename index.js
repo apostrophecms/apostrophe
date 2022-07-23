@@ -562,7 +562,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.modules = {};
     for (const item of modulesToBeInstantiated()) {
       // module registers itself in self.modules
-      await self.synth.create(item, { apos: self });
+      const module = await self.synth.create(item, { apos: self });
+      await module.emit('moduleReady');
     }
   }
 
