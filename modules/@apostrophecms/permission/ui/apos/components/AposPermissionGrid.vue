@@ -57,16 +57,21 @@ export default {
 
         const ROLE = 'role';
         const ROLES_BY_TYPE = 'rolesByType';
+        const GROUPS = '_groups';
+
         const keys = Object.keys(value);
         const [ key ] = keys;
 
-        if (keys.length > 1 || (key !== ROLE && key !== ROLES_BY_TYPE)) {
+        if (keys.length > 1 || ![ ROLE, ROLES_BY_TYPE, GROUPS ].includes(key)) {
           return false;
         }
         if (value[ROLE] && typeof value[ROLE] !== 'string') {
           return false;
         }
         if (value[ROLES_BY_TYPE] && !Array.isArray(value[ROLES_BY_TYPE])) {
+          return false;
+        }
+        if (value[GROUPS] && !Array.isArray(value[GROUPS])) {
           return false;
         }
         return true;
