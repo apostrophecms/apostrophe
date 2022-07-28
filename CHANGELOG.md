@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* `getObjectManager` is now implemented for `Object` field types.
+
 ## 3.25.0 (2022-07-20)
 
 ### Adds
