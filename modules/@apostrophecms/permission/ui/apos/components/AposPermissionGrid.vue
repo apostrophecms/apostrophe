@@ -87,7 +87,6 @@ export default {
     apiParams: {
       async handler() {
         this.permissionSets = await this.getPermissionSets();
-        console.log('WATCHED - this.permissionSets', this.permissionSets);
       },
       deep: true
     }
@@ -95,7 +94,6 @@ export default {
   async mounted() {
     if (this.next) {
       this.permissionSets = await this.getPermissionSets();
-      console.log('MOUNTED - this.permissionSets', this.permissionSets);
     }
   },
   methods: {
@@ -122,7 +120,6 @@ export default {
       };
     },
     async getPermissionSets() {
-      console.log('this.apiParams', this.apiParams);
       const { permissionSets } = await apos.http.post(`${apos.permission.action}/grid`, {
         body: this.apiParams,
         busy: true
