@@ -4,7 +4,11 @@
 
 ### Adds
 
-* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one.
+* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one, to improve extensibility.
+
+### Fixes
+
+* `getObjectManager` is now implemented for `Object` field types, fixing a bug that prevented the use of areas found in `object` schema fields within templates. Thanks to [James R T](https://github.com/jamestiotio).
 
 ## 3.25.0 (2022-07-20)
 
