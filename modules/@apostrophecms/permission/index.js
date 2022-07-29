@@ -302,6 +302,29 @@ module.exports = {
         const manager = self.apos.doc.getManager(permissionSet.name);
         return manager.options.showPermissions;
       },
+      grid(req, role) {
+        if (!self.can(req, 'edit', '@apostrophecms/user')) {
+          throw self.apos.error('forbidden');
+        }
+        const permissionSets = [];
+        const effectiveRole = self.apos.launder.select(role, [ 'guest', 'contributor', 'editor', 'admin' ]);
+        if (!effectiveRole) {
+          throw self.apos.error('invalid', { role: effectiveRole });
+        }
+        const _req = self.apos.task.getReq({
+          role: effectiveRole,
+          mode: 'draft'
+        });
+        for (const module of Object.values(self.apos.modules)) {
+          if (self.apos.synth.instanceOf(module, '@apostrophecms/piece-type')) {
+            permissionSets.push(self.describePermissionSet(_req, module, { piece: true }));
+          }
+        }
+        permissionSets.push(self.describePermissionSet(_req, self.apos.modules['@apostrophecms/any-page-type']));
+        return {
+          permissionSets: self.presentPermissionSets(permissionSets)
+        };
+      },
       ...require('./lib/legacy-migrations')(self)
     };
   },
@@ -309,27 +332,12 @@ module.exports = {
     return {
       get: {
         async grid(req) {
-          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/user')) {
-            throw self.apos.error('forbidden');
-          }
-          const permissionSets = [];
-          const effectiveRole = self.apos.launder.select(req.query.role, [ 'guest', 'contributor', 'editor', 'admin' ]);
-          if (!effectiveRole) {
-            throw self.apos.error('invalid', { role: effectiveRole });
-          }
-          const _req = self.apos.task.getReq({
-            role: effectiveRole,
-            mode: 'draft'
-          });
-          for (const module of Object.values(self.apos.modules)) {
-            if (self.apos.synth.instanceOf(module, '@apostrophecms/piece-type')) {
-              permissionSets.push(self.describePermissionSet(_req, module, { piece: true }));
-            }
-          }
-          permissionSets.push(self.describePermissionSet(_req, self.apos.modules['@apostrophecms/any-page-type']));
-          return {
-            permissionSets: self.presentPermissionSets(permissionSets)
-          };
+          return self.grid(req, req.query.role);
+        }
+      },
+      post: {
+        async grid(req) {
+          return self.grid(req, req.body.role);
         }
       }
     };

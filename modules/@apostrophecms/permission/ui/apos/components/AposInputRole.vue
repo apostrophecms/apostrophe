@@ -144,12 +144,14 @@ export default {
       this.next = this.choices.find(choice => choice.value === value).value;
     },
     async getPermissionSets(role) {
-      return (await apos.http.get(`${apos.permission.action}/grid`, {
-        qs: {
+      const { permissionSets } = await apos.http.post(`${apos.permission.action}/grid`, {
+        body: {
           role
         },
         busy: true
-      })).permissionSets;
+      });
+
+      return permissionSets;
     }
   }
 };
