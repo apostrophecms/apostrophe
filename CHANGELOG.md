@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one.
+
 ## 3.25.0 (2022-07-20)
 
 ### Adds
