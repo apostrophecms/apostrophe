@@ -1,7 +1,6 @@
 const path = require('path');
 const merge = require('webpack-merge').merge;
 const scssTask = require('./webpack.scss');
-const { stripIndent } = require('common-tags');
 const srcBuildNames = [ 'src-build', 'src-es5-build' ];
 
 let BundleAnalyzerPlugin;

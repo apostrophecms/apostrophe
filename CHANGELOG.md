@@ -10,6 +10,10 @@
 
 * Since Microsoft has ended support for IE11 and support for ES5 builds is responsible for a significant chunk of Apostrophe's installation time, the `es5: true` option now requires that the optional [@apostrophecms/asset-es5](https://github.com/apostrophecms/asset-es5) module also be installed by those who really need it. However, for backwards compatibility, if the option is enabled without the additional module a warning will be printed and the asset build will succeed normally without IE11 support.
 
+### Fixes
+
+* `testModule: true` works in unit tests of external Apostrophe modules again even with modern versions of `mocha`, thanks to [Amin Shazrin](https://github.com/ammein).
+
 ## 3.25.0 (2022-07-20)
 
 ### Adds
