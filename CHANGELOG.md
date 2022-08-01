@@ -5,6 +5,7 @@
 ### Adds
 
 * Tasks can now be registered with the `afterModuleReady` flag, which is more useful than `afterModuleInit` because it waits for the module to be more fully initialized, including all "improvements" loaded via npm. The original `afterModuleInit` flag is still supported in case someone was counting on its behavior.
+* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one, to improve extensibility.
 
 ### Changes
 
@@ -13,6 +14,7 @@
 ### Fixes
 
 * `testModule: true` works in unit tests of external Apostrophe modules again even with modern versions of `mocha`, thanks to [Amin Shazrin](https://github.com/ammein).
+* `getObjectManager` is now implemented for `Object` field types, fixing a bug that prevented the use of areas found in `object` schema fields within templates. Thanks to [James R T](https://github.com/jamestiotio).
 
 ## 3.25.0 (2022-07-20)
 

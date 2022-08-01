@@ -1405,6 +1405,10 @@ module.exports = {
       getArrayManager(name) {
         return self.arrayManagers[name];
       },
+      // This allows the getManagerOf method to operate on objects of type "object".
+      getObjectManager(name) {
+        return self.objectManagers[name];
+      },
       // Regenerate all array item, area and widget ids so they are considered
       // new. Useful when copying an entire doc.
       regenerateIds(req, schema, doc) {
