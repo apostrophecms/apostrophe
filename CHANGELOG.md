@@ -8,7 +8,7 @@
 
 ### Changes
 
-* Since Microsoft has ended support for IE11 and support for ES5 builds is responsible for 50% of Apostrophe's installation time, the `es5: true` option now requires that the optional [@apostrophecms/asset-es5](https://github.com/apostrophecms/asset-es5) module also be installed by those who really need it. However, for backwards compatibility, if the option is enabled without the additional module a warning will be printed and the asset build will succeed normally without IE11 support.
+* Since Microsoft has ended support for IE11 and support for ES5 builds is responsible for a significant chunk of Apostrophe's installation time, the `es5: true` option now requires that the optional [@apostrophecms/asset-es5](https://github.com/apostrophecms/asset-es5) module also be installed by those who really need it. However, for backwards compatibility, if the option is enabled without the additional module a warning will be printed and the asset build will succeed normally without IE11 support.
 
 ## 3.25.0 (2022-07-20)
 
