@@ -131,7 +131,6 @@ module.exports = {
               will not be IE11 compatible.
             `);
             self.options.es5 = false;
-            delete self.builds['src-es5'];
           }
           // The lock could become huge, cache it, see computeCacheMeta()
           let packageLockContentCached;
