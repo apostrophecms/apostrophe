@@ -267,55 +267,13 @@ describe('Assets', function() {
     await t.destroy(apos);
   });
 
-  it('should inject modules and nomodules scripts for extra bundles when es5 enabled', async function () {
-    const jar = apos.http.jar();
-
-    const es5Modules = {
-      ...modules,
-      '@apostrophecms/asset': {
-        options: {
-          es5: true
-        }
-      }
-    };
-
-    apos = await t.create({
-      root: module,
-      modules: es5Modules
-    });
-
-    const { _id: homeId } = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
-
-    await apos.doc.db.insertMany(pagesToInsert(homeId));
-
-    await apos.asset.tasks.build.task();
-
-    const bundlePage = await apos.http.get('/bundle', { jar });
-
-    assert(bundlePage.includes(getScriptMarkup('public-module-bundle', 'module')));
-    assert(bundlePage.includes(getScriptMarkup('public-nomodule-bundle', 'nomodule')));
-
-    assert(bundlePage.includes(getScriptMarkup('extra2-module-bundle', 'module')));
-    assert(bundlePage.includes(getScriptMarkup('extra2-nomodule-bundle', 'nomodule')));
-  });
-
   it('should build with cache and gain performance', async function() {
-    await t.destroy(apos);
     await removeCache();
     await removeCache(cacheFolderPath.replace('/webpack-cache', '/changed'));
 
-    const es5Modules = {
-      ...modules,
-      '@apostrophecms/asset': {
-        options: {
-          es5: true
-        }
-      }
-    };
-
     apos = await t.create({
       root: module,
-      modules: es5Modules
+      modules
     });
     assert.throws(() => fs.readdirSync(cacheFolderPath), {
       code: 'ENOENT'
@@ -330,11 +288,10 @@ describe('Assets', function() {
     });
     const execTime = Date.now() - startTime;
     const { meta, folders } = getCacheMeta();
-    assert.equal(folders.length, 3);
-    assert.equal(Object.keys(meta).length, 3);
+    assert.equal(folders.length, 2);
+    assert.equal(Object.keys(meta).length, 2);
     assert(meta['default:apos']);
     assert(meta['default:src']);
-    assert(meta['default:src-es5']);
 
     // Cache
     startTime = Date.now();
@@ -343,11 +300,10 @@ describe('Assets', function() {
     });
     const execTimeCached = Date.now() - startTime;
     const { meta: meta2, folders: folders2 } = getCacheMeta();
-    assert.equal(folders2.length, 3);
-    assert.equal(Object.keys(meta2).length, 3);
+    assert.equal(folders2.length, 2);
+    assert.equal(Object.keys(meta2).length, 2);
     assert(meta2['default:apos']);
     assert(meta2['default:src']);
-    assert(meta2['default:src-es5']);
 
     // Expect at least 40% gain, in reallity it should be 50+
     const gain = (execTime - execTimeCached) / execTime * 100;
@@ -358,8 +314,6 @@ describe('Assets', function() {
     assert(meta2['default:apos'].mdate);
     assert(meta['default:src'].mdate);
     assert(meta2['default:src'].mdate);
-    assert(meta['default:src-es5'].mdate);
-    assert(meta2['default:src-es5'].mdate);
     assert(
       new Date(meta['default:apos'].mdate) < new Date(meta2['default:apos'].mdate)
     );
@@ -374,13 +328,6 @@ describe('Assets', function() {
       new Date(meta2['default:src'].mdate).toISOString(),
       fs.statSync(meta2['default:src'].location).mtime.toISOString()
     );
-    assert(
-      new Date(meta['default:src-es5'].mdate) < new Date(meta2['default:src-es5'].mdate)
-    );
-    assert.equal(
-      new Date(meta2['default:src-es5'].mdate).toISOString(),
-      fs.statSync(meta2['default:src-es5'].location).mtime.toISOString()
-    );
   });
 
   it('should invalidate build cache when namespace changes', async function() {
@@ -389,14 +336,12 @@ describe('Assets', function() {
       'check-apos-build': false
     });
     const { meta, folders } = getCacheMeta();
-    assert.equal(folders.length, 6);
-    assert.equal(Object.keys(meta).length, 6);
+    assert.equal(folders.length, 4);
+    assert.equal(Object.keys(meta).length, 4);
     assert(meta['test:apos']);
     assert(meta['test:src']);
-    assert(meta['test:src-es5']);
     assert(meta['default:apos']);
     assert(meta['default:src']);
-    assert(meta['default:src-es5']);
     delete process.env.APOS_DEBUG_NAMESPACE;
   });
 
@@ -410,34 +355,25 @@ describe('Assets', function() {
       JSON.stringify(lock, null, '  '),
       'utf8'
     );
-    const es5Modules = {
-      ...modules,
-      '@apostrophecms/asset': {
-        options: {
-          es5: true
-        }
-      }
-    };
 
     apos = await t.create({
       root: module,
-      modules: es5Modules
+      modules
     });
     await apos.asset.tasks.build.task({
       'check-apos-build': false
     });
 
     const { meta, folders } = getCacheMeta();
-    assert.equal(folders.length, 9);
-    assert.equal(Object.keys(meta).length, 9);
+    assert.equal(folders.length, 6);
+    assert.equal(Object.keys(meta).length, 6);
     assert(meta['default:apos_2']);
     assert(meta['default:src_2']);
-    assert(meta['default:src-es5_2']);
   });
 
   it('should invalidate build cache when configuration changes', async function() {
     await t.destroy(apos);
-    const es5Modules = {
+    const customModules = {
       ...modules,
       'bundle-page': {
         webpack: {
@@ -451,16 +387,11 @@ describe('Assets', function() {
             }
           }
         }
-      },
-      '@apostrophecms/asset': {
-        options: {
-          es5: true
-        }
       }
     };
     apos = await t.create({
       root: module,
-      modules: es5Modules
+      modules: customModules
     });
     await apos.asset.tasks.build.task({
       'check-apos-build': false
@@ -468,11 +399,10 @@ describe('Assets', function() {
 
     const { meta, folders } = getCacheMeta();
 
-    assert.equal(folders.length, 11);
-    assert.equal(Object.keys(meta).length, 11);
+    assert.equal(folders.length, 7);
+    assert.equal(Object.keys(meta).length, 7);
     assert(!meta['default:apos_3']);
     assert(meta['default:src_3']);
-    assert(meta['default:src-es5_3']);
   });
 
   it('should clear build cache', async function() {
@@ -583,7 +513,7 @@ describe('Assets', function() {
     fs.writeFileSync(assetPath, assetContent, 'utf8');
   });
 
-  it('should watch and rebuild assets and reload page in development (src, src-es5)', async function() {
+  it('should watch and rebuild assets and reload page in development (src)', async function() {
     await t.destroy(apos);
     let result = {};
     const setTestResult = (obj) => {
@@ -608,9 +538,6 @@ describe('Assets', function() {
       modules: {
         'default-page': {},
         '@apostrophecms/asset': {
-          options: {
-            es5: true
-          },
           extendMethods() {
             return {
               async watchUiAndRebuild(_super) {
@@ -678,10 +605,9 @@ describe('Assets', function() {
 
     // * only src related builds were triggered
     await retryAssertTrue(
-      () => result.builds.length === 2 &&
-        result.builds.includes('src') &&
-        result.builds.includes('src-es5'),
-      'Unable to verify builds "src" and "src-es5" have been triggered',
+      () => result.builds.length === 1 &&
+        result.builds.includes('src'),
+      'Unable to verify build "src" has been triggered',
       50,
       1000
     );
@@ -733,9 +659,6 @@ describe('Assets', function() {
       modules: {
         'default-page': {},
         '@apostrophecms/asset': {
-          options: {
-            es5: true
-          },
           extendMethods() {
             return {
               async watchUiAndRebuild(_super) {
@@ -856,9 +779,6 @@ describe('Assets', function() {
           }
         },
         '@apostrophecms/asset': {
-          options: {
-            es5: true
-          },
           extendMethods() {
             return {
               async watchUiAndRebuild(_super) {
@@ -1073,9 +993,6 @@ describe('Assets', function() {
       autoBuild: true,
       modules: {
         '@apostrophecms/asset': {
-          options: {
-            es5: true
-          },
           extendMethods() {
             return {
               async watchUiAndRebuild(_super) {
@@ -1153,7 +1070,7 @@ describe('Assets', function() {
     // * no builds were triggered
     await retryAssertTrue(
       () => result.builds.length === 0,
-      'Unable to verify builds "src" and "src-es5" have NOT been triggered',
+      'Unable to verify build "src" has NOT been triggered',
       50,
       1000
     );
