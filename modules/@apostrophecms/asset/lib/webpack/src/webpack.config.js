@@ -1,7 +1,6 @@
 const path = require('path');
 const merge = require('webpack-merge').merge;
 const scssTask = require('./webpack.scss');
-const es5Task = require('./webpack.es5');
 const srcBuildNames = [ 'src-build', 'src-es5-build' ];
 
 let BundleAnalyzerPlugin;
@@ -11,14 +10,11 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename, bundles = {}, es5
+  importFile, modulesDir, outputPath, outputFilename, bundles = {}, es5, es5TaskFn
 }, apos) => {
   const mainBundleName = outputFilename.replace('.js', '');
-  const taskFns = [ scssTask ];
+  const taskFns = [ scssTask, ...(es5 ? [ es5TaskFn ] : []) ];
 
-  if (es5) {
-    taskFns.push(es5Task);
-  }
   const tasks = taskFns.map(task =>
     task(
       {

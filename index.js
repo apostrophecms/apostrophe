@@ -505,14 +505,18 @@ async function apostrophe(options, telemetry, rootSpan) {
     // and throws an exception if we don't
     function findTestModule() {
       let m = module;
+      const nodeModuleRegex = new RegExp(`node_modules${path.sep}mocha`);
+      if (!require.main.filename.match(nodeModuleRegex)) {
+        throw new Error('mocha does not seem to be running, is this really a test?');
+      }
       while (m) {
-        if (m.parent && m.parent.filename.match(/node_modules\/mocha/)) {
+        if (m.parent && m.parent.filename.match(nodeModuleRegex)) {
+          return m;
+        } else if (!m.parent) {
+          // Mocha v10 doesn't inject mocha paths inside `module`, therefore, we only detect the parent until the last parent. But we can get Mocha running using `require.main` - Amin
           return m;
         }
         m = m.parent;
-        if (!m) {
-          throw new Error('mocha does not seem to be running, is this really a test?');
-        }
       }
     }
   }
@@ -562,7 +566,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.modules = {};
     for (const item of modulesToBeInstantiated()) {
       // module registers itself in self.modules
-      await self.synth.create(item, { apos: self });
+      const module = await self.synth.create(item, { apos: self });
+      await module.emit('moduleReady');
     }
   }
 

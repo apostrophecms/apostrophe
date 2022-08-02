@@ -168,7 +168,7 @@ This database contains an Apostrophe 2.x website. Exiting to avoid content loss.
       // and start up your app, which will recreate them.
       reset: {
         usage: 'Usage: node app @apostrophecms/db:reset\n\nThis destroys ALL of your content. EVERYTHING in your database.\n',
-        afterModuleInit: true,
+        afterModuleReady: true,
         exitAfter: false,
         task: async () => {
           const argv = self.apos.argv;

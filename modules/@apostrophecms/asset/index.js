@@ -42,6 +42,7 @@ module.exports = {
   },
 
   async init(self) {
+
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
@@ -63,6 +64,7 @@ module.exports = {
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
     self.buildWatcher = null;
+
   },
   handlers (self) {
     return {
@@ -121,6 +123,15 @@ module.exports = {
         usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
         async task(argv = {}) {
+          if (self.options.es5 && !self.es5TaskFn) {
+            self.apos.util.warnDev(stripIndent`
+              es5: true is set. IE11 compatibility builds now require that you
+              install the optional @apostrophecms/asset-es5 module. Until then,
+              for backwards compatibility, your build will succeed but
+              will not be IE11 compatible.
+            `);
+            self.options.es5 = false;
+          }
           // The lock could become huge, cache it, see computeCacheMeta()
           let packageLockContentCached;
           const req = self.apos.task.getReq();
@@ -350,7 +361,11 @@ module.exports = {
                 modulesDir,
                 outputPath: bundleDir,
                 outputFilename,
-                bundles: webpackExtraBundles
+                bundles: webpackExtraBundles,
+                // Added on the fly by the
+                // @apostrophecms/asset-es5 module,
+                // if it is present
+                es5TaskFn: self.es5TaskFn
               }, self.apos);
 
               const webpackInstanceConfigMerged = self.webpackExtensions
@@ -841,7 +856,7 @@ module.exports = {
 
       'clear-cache': {
         usage: 'Clear build cache',
-        afterModuleInit: true,
+        afterModuleReady: true,
         async task(argv) {
           const cacheBaseDir = self.getCacheBasePath();
 
@@ -1161,7 +1176,7 @@ module.exports = {
       // If you are trying to enable IE11 support for ui/src, use the
       // `es5: true` option (es5 builds are disabled by default).
       configureBuilds() {
-        const srcPrologue = stripIndent`
+        self.srcPrologue = stripIndent`
           (function() {
             window.apos = window.apos || {};
             var data = document.body && document.body.getAttribute('data-apos');
@@ -1188,26 +1203,7 @@ module.exports = {
             index: true,
             // Load only in browsers that support ES6 modules
             condition: 'module',
-            prologue: srcPrologue
-          },
-          'src-es5': {
-            // An alternative build from the same sources for IE11
-            source: 'src',
-            webpack: true,
-            scenes: [ 'public', 'apos' ],
-            // The CSS from the src build is identical, do not duplicate it
-            outputs: [ 'js' ],
-            label: 'apostrophe:ie11Build',
-            // Load index.js and index.scss from each module
-            index: true,
-            // The polyfills babel will be expecting
-            prologue: stripIndent`
-              import "core-js/stable";
-              import "regenerator-runtime/runtime";
-              ${srcPrologue}
-            `,
-            // Load only in browsers that do not support ES6 modules
-            condition: 'nomodule'
+            prologue: self.srcPrologue
           },
           public: {
             scenes: [ 'public', 'apos' ],
@@ -1236,9 +1232,6 @@ module.exports = {
           // We could add an apos-ie11 bundle that just pushes a "sorry charlie" prologue,
           // if we chose
         };
-        if (!self.options.es5) {
-          delete self.builds['src-es5'];
-        }
       },
       // Filter the given css performing any necessary transformations,
       // such as support for the /modules path regardless of where
