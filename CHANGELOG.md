@@ -6,6 +6,7 @@
 
 * Tasks can now be registered with the `afterModuleReady` flag, which is more useful than `afterModuleInit` because it waits for the module to be more fully initialized, including all "improvements" loaded via npm. The original `afterModuleInit` flag is still supported in case someone was counting on its behavior.
 * Add `/grid` `POST` route in permission module, in addition to the existing `GET` one, to improve extensibility.
+* `@apostrophecms/express:list-routes` command line task added, to facilitate debugging.
 
 ### Changes
 
