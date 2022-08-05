@@ -460,9 +460,14 @@ module.exports = {
               ${(tiptap && tiptap.registerCode) || ''}
               ` +
               (app ? stripIndent`
-                setTimeout(() => {
-                  ${app.invokeCode}
-                }, 0);
+              if (document.readyState !== 'loading') {
+                setTimeout(invoke, 0);
+              } else {
+                window.addEventListener('DOMContentLoaded', invoke);
+              }
+              function invoke() {
+                ${app.invokeCode}
+              }
               ` : '') +
               // No delay on these, they expect to run early like ui/public code
               // and the first ones invoked set up expected stuff like apos.http
