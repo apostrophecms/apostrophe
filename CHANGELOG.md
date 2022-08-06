@@ -1,10 +1,10 @@
 # Changelog
 
-## UNRELEASED
+## 3.26.1
 
 ### Fixes
 
-Always waits for the DOM to be ready before initializing the Apostrophe Admin UI. `setTimeout` alone might not guarantee that every time.
+Hotfix: always waits for the DOM to be ready before initializing the Apostrophe Admin UI. `setTimeout` alone might not guarantee that every time. This issue has apparently become more frequent in the latest versions of Chrome.
 
 ## 3.26.0
 
