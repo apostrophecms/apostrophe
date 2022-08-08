@@ -133,8 +133,7 @@
     "eslint-plugin-promise": "^5.1.0",
     "stylelint": "^14.6.1",
     "stylelint-declaration-strict-value": "^1.8.0",
-    "stylelint-order": "^5.0.0",
-    "stylelint-webpack-plugin": "^3.2.0"
+    "stylelint-order": "^5.0.0"
   },
   "browserslist": [
     "ie >= 10"
