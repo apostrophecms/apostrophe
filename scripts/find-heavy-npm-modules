@@ -21,7 +21,6 @@ for (const name of Object.keys(deps[''].dependencies)) {
 }
 
 function countWeight(name) {
-  console.log(name);
   const subDeps = deps[name].dependencies || {};
   let weight = 0;
   for (const name of Object.keys(subDeps)) {
