@@ -60,10 +60,10 @@ module.exports = {
       // the `AposModals` app.
       //
       // If `options.contextUtility` is true, the item will be displayed in a tray of
-      // icons just to the left of the page settings gear. If `options.toggle` is also true,
+      // icons just to the right of the login and/or locales menu. If `options.toggle` is also true,
       // then the button will have the `active` state until toggled
       // off again. `options.tooltip.deactivate` and `options.tooltip.activate` may be
-      // provided to offer a different tooltip during the inactive versus active states,
+      // provided to offer a different tooltip during the active versus inactive states,
       // respectively. Otherwise, `options.tooltip` is used. The regular label is also present
       // for screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
