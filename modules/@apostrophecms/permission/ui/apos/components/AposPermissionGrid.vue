@@ -92,9 +92,7 @@ export default {
     }
   },
   async mounted() {
-    if (this.next) {
-      this.permissionSets = await this.getPermissionSets();
-    }
+    this.permissionSets = await this.getPermissionSets();
   },
   methods: {
     getTooltip(includes) {
