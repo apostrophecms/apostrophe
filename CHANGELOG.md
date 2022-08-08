@@ -12,6 +12,7 @@
 ### Fixes
 
 Hotfix: always waits for the DOM to be ready before initializing the Apostrophe Admin UI. `setTimeout` alone might not guarantee that every time. This issue has apparently become more frequent in the latest versions of Chrome.
+* Modifies the `login` module to return an empty object in the API session cookie response body to avoid potential invalid JSON error if `response.json()` is retrieved.
 
 ## 3.26.0
 
