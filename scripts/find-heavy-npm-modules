@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+/* eslint-disable node/no-path-concat */
+
+const fs = require('fs');
+
+const trueDeps = JSON.parse(fs.readFileSync(`${__dirname}/../package-lock.json`)).packages;
+const deps = {};
+for (let [ name, props ] of Object.entries(trueDeps)) {
+  if (props.dev) {
+    continue;
+  }
+  const lastIndex = name.lastIndexOf('node_modules/');
+  if (lastIndex !== -1) {
+    name = name.substring(lastIndex + 13);
+  }
+  deps[name] = props;
+}
+const costs = new Map();
+for (const name of Object.keys(deps[''].dependencies)) {
+  costs.set(name, countWeight(name));
+}
+
+function countWeight(name) {
+  const subDeps = deps[name].dependencies || {};
+  let weight = 0;
+  for (const name of Object.keys(subDeps)) {
+    weight += countWeight(name);
+  }
+  return weight + 1;
+}
+
+const sorted = [ ...costs.entries() ].sort((a, b) => a[1] - b[1]);
+for (const [ name, cost ] of sorted) {
+  console.log(`${name} has ${cost} sub-dependencies`);
+}
+
+const nonDevDeps = Object.keys(trueDeps).filter(name => !trueDeps[name].dev).length;
+console.log(`Total dependencies: ${nonDevDeps}`);
