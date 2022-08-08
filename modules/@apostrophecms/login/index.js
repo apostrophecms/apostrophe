@@ -648,6 +648,7 @@ module.exports = {
           if (session) {
             await self.passportLogin(req, user);
             await self.clearLoginAttempts(user.username);
+            return {};
           } else {
             const token = cuid();
             await self.bearerTokens.insert({
