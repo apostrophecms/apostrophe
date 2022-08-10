@@ -41,7 +41,10 @@ export default {
   mixins: [ AposCellMixin ],
   computed: {
     manuallyPublished() {
-      const module = apos.modules[this.item.type];
+      const module = apos.modules[this.item.type] || {
+        localized: false,
+        autopublish: false
+      };
       return module.localized && !module.autopublish;
     }
   }

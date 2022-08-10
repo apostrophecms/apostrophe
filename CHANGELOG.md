@@ -2,6 +2,10 @@
 
 ### UNRELEASED
 
+### Fixes
+
+* `AposCellLabel` tolerates the presence of document types that no longer have a corresponding module in the database.
+
 ### Adds
 
 * New utility script to help find excessively heavy npm dependencies of apostrophe core.
