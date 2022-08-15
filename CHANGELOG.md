@@ -5,6 +5,7 @@
 ### Adds
 
 * Add `/grid` `POST` route in permission module, in addition to the existing `GET` one.
+* Extract permission grid into `AposPermissionGrid` vue component.
 
 ## 3.25.0 (2022-07-20)
 
