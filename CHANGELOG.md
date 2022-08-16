@@ -1,10 +1,15 @@
 # Changelog
 
-### UNRELEASED
+## UNRELEASED
 
 ### Adds
 
+* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one.
 * New utility script to help find excessively heavy npm dependencies of apostrophe core.
+
+### Changes
+
+* Extract permission grid into `AposPermissionGrid` vue component.
 * Moved `stylelint` from `dependencies` to `devDependencies`. The benefit may be small because many projects will depend on `stylelint` at project level, but every little bit helps install speed, and it may make a bigger difference if different major versions are in use.
 
 ## 3.26.1
