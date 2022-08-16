@@ -5,7 +5,36 @@
 ### Adds
 
 * Add `/grid` `POST` route in permission module, in addition to the existing `GET` one.
+* New utility script to help find excessively heavy npm dependencies of apostrophe core.
+
+### Changes
+
 * Extract permission grid into `AposPermissionGrid` vue component.
+* Moved `stylelint` from `dependencies` to `devDependencies`. The benefit may be small because many projects will depend on `stylelint` at project level, but every little bit helps install speed, and it may make a bigger difference if different major versions are in use.
+
+## 3.26.1
+
+### Fixes
+
+Hotfix: always waits for the DOM to be ready before initializing the Apostrophe Admin UI. `setTimeout` alone might not guarantee that every time. This issue has apparently become more frequent in the latest versions of Chrome.
+* Modifies the `login` module to return an empty object in the API session cookie response body to avoid potential invalid JSON error if `response.json()` is retrieved.
+
+## 3.26.0
+
+### Adds
+
+* Tasks can now be registered with the `afterModuleReady` flag, which is more useful than `afterModuleInit` because it waits for the module to be more fully initialized, including all "improvements" loaded via npm. The original `afterModuleInit` flag is still supported in case someone was counting on its behavior.
+* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one, to improve extensibility.
+* `@apostrophecms/express:list-routes` command line task added, to facilitate debugging.
+
+### Changes
+
+* Since Microsoft has ended support for IE11 and support for ES5 builds is responsible for a significant chunk of Apostrophe's installation time, the `es5: true` option no longer produces an IE11 build. For backwards compatibility, developers will receive a warning, but their build will proceed without IE11 support. IE11 ES5 builds can be brought back by installing the optional [@apostrophecms/asset-es5](https://github.com/apostrophecms/asset-es5) module.
+
+### Fixes
+
+* `testModule: true` works in unit tests of external Apostrophe modules again even with modern versions of `mocha`, thanks to [Amin Shazrin](https://github.com/ammein).
+* `getObjectManager` is now implemented for `Object` field types, fixing a bug that prevented the use of areas found in `object` schema fields within templates. Thanks to [James R T](https://github.com/jamestiotio).
 
 ## 3.25.0 (2022-07-20)
 

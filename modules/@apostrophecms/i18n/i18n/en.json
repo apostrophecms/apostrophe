@@ -288,7 +288,6 @@
   "previousPage": "Previous Page",
   "public": "Public",
   "modernBuild": "Public-facing modern JavaScript and Sass",
-  "ie11Build": "Public-facing modern JavaScript and Sass (IE11 build)",
   "publish": "Publish",
   "publishBeforeUsingTooltip": "Publish this content before using it in a relationship",
   "published": "Published",

@@ -1,5 +1,3 @@
-const StyleLintPlugin = require('stylelint-webpack-plugin');
-
 module.exports = (options, apos) => {
   return {
     module: {
@@ -58,11 +56,6 @@ module.exports = (options, apos) => {
           ]
         }
       ]
-    },
-    plugins: [
-      new StyleLintPlugin({
-        files: [ './node_modules/apostrophe/modules/**/*.{scss,vue}' ]
-      })
-    ]
+    }
   };
 };
