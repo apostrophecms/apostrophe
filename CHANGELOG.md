@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.27.0
+## 3.27.0 (2022-08-18)
 
 ### Adds
 
@@ -12,14 +12,14 @@
 * Extract permission grid into `AposPermissionGrid` vue component.
 * Moved `stylelint` from `dependencies` to `devDependencies`. The benefit may be small because many projects will depend on `stylelint` at project level, but every little bit helps install speed, and it may make a bigger difference if different major versions are in use.
 
-## 3.26.1
+## 3.26.1 (2022-08-06)
 
 ### Fixes
 
 Hotfix: always waits for the DOM to be ready before initializing the Apostrophe Admin UI. `setTimeout` alone might not guarantee that every time. This issue has apparently become more frequent in the latest versions of Chrome.
 * Modifies the `login` module to return an empty object in the API session cookie response body to avoid potential invalid JSON error if `response.json()` is retrieved.
 
-## 3.26.0
+## 3.26.0 (2022-08-03)
 
 ### Adds
 
