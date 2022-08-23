@@ -47,6 +47,17 @@ export default {
         return 'required';
       }
 
+      if (this.field.min) {
+        if ((values != null) && (values.length < this.field.min)) {
+          return 'min';
+        }
+      }
+      if (this.field.max) {
+        if ((values != null) && (values.length > this.field.max)) {
+          return 'max';
+        }
+      }
+
       if (Array.isArray(values)) {
         values.forEach(chosen => {
           if (!this.choices.map(choice => {
