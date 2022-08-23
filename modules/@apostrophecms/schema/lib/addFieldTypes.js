@@ -309,10 +309,10 @@ module.exports = (self) => {
       });
     },
     validate: function (field, options, warn, fail) {
-      if (typeof field.max !== 'number') {
+      if (field.max && typeof field.max !== 'number') {
         fail('Property "max" must be a number');
       }
-      if (typeof field.min !== 'number') {
+      if (field.min && typeof field.min !== 'number') {
         fail('Property "min" must be a number');
       }
     }
