@@ -1,8 +1,8 @@
 <template>
   <transition
     :name="transitionType"
-    @enter="finishEnter"
-    @leave="finishExit"
+    @enter="onEnter"
+    @leave="onLeave"
     :duration="250"
   >
     <section
@@ -14,12 +14,18 @@
       ref="modalEl"
     >
       <transition :name="transitionType">
-        <div class="apos-modal__overlay" v-if="modal.showModal" />
+        <div
+          @click="close"
+          v-if="modal.showModal"
+          class="apos-modal__overlay"
+        />
       </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
         <div
-          v-if="modal.showModal" :class="innerClasses"
-          class="apos-modal__inner" data-apos-modal-inner
+          v-if="modal.showModal"
+          :class="innerClasses"
+          class="apos-modal__inner"
+          data-apos-modal-inner
         >
           <template v-if="modal.busy">
             <div class="apos-modal__busy">
@@ -180,16 +186,13 @@ export default {
     }
   },
   methods: {
-    esc (e) {
-      if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
-        return;
-      }
-      if (e.keyCode === 27) {
-        e.stopPropagation();
-        this.$emit('esc');
+    onKeydown (e) {
+      const hasPressedEsc = e.keyCode === 27;
+      if (hasPressedEsc) {
+        this.close(e);
       }
     },
-    finishEnter () {
+    onEnter () {
       this.$emit('show-modal');
       this.bindEventListeners();
       apos.modal.stack = apos.modal.stack || [];
@@ -198,7 +201,7 @@ export default {
         this.$emit('ready');
       });
     },
-    finishExit () {
+    onLeave () {
       this.removeEventListeners();
       this.$emit('no-modal');
       // pop doesn't quite suffice because of race conditions when
@@ -206,10 +209,17 @@ export default {
       apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
     },
     bindEventListeners () {
-      window.addEventListener('keydown', this.esc);
+      window.addEventListener('keydown', this.onKeydown);
     },
     removeEventListeners () {
-      window.removeEventListener('keydown', this.esc);
+      window.removeEventListener('keydown', this.onKeydown);
+    },
+    close (e) {
+      if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
+        return;
+      }
+      e.stopPropagation();
+      this.$emit('esc');
     },
     trapFocus () {
       // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
