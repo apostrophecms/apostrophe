@@ -6,6 +6,7 @@
 
 * Support for uploading `webp` files for display as images. This is supported by all current browsers now that Microsoft has removed IE11. For best results, you should run `npm update` on your project to make sure you are receiving the latest release of `uploadfs` which uses `sharp` for image processing. Thanks to [Isaac Preston](https://github.com/ixc7) for this addition.
 * Clicking outside a modal now closes it, the same way the `Escape` key does when pressed.
+* `checkboxes` fields now support `min` and `max` properties. Thanks to [Gabe Flores](https://github.com/gabeflores-appstem).
 
 ## 3.27.0 (2022-08-18)
 
