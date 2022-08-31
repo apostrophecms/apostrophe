@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.27.1 (2022-08-31)
 
 ### Fixes
 
