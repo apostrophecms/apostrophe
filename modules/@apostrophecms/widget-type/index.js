@@ -345,6 +345,10 @@ module.exports = {
         _.defaults(result, {
           name: self.name,
           label: self.label,
+          description: self.options.description,
+          icon: self.options.icon,
+          previewIcon: self.options.previewIcon,
+          previewImage: self.options.previewImage,
           action: self.action,
           schema: schema,
           contextual: self.options.contextual,

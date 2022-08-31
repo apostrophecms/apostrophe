@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.28.0 (2022-09-29)
+
+### Adds
+
+* Areas now support an `expanded: true` option to display previews for widgets. The Expanded Widget Preview Menu also supports grouping and display columns for each group.
+
 ## 3.27.0 (2022-08-18)
 
 ### Adds
