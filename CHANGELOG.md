@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.28.0 (2022-08-31)
 
 ### Fixes
 
