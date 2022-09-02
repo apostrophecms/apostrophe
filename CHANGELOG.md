@@ -4,6 +4,8 @@
 
 ### Fixes
 
+* `AposInputBoolean` can now be `required` and have the value `false`.
+* Schema fields containing boolean filters can now list both `yes` and `no` choices according to available values in the database.
 * `AposSelect` now emits values on `change` event as they were originally given. Their values "just work" so you do not have to think about JSON anymore when you receive it.
 
 ### Adds

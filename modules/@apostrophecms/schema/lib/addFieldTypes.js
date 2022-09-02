@@ -165,7 +165,7 @@ module.exports = (self) => {
       destination[field.name] = self.apos.launder.boolean(data[field.name], field.def);
     },
     isEmpty: function (field, value) {
-      return !value;
+      return !value && value !== false;
     },
     exporters: {
       string: function (req, field, object, output) {
@@ -190,7 +190,7 @@ module.exports = (self) => {
           return self.apos.launder.booleanOrNull(b);
         },
         choices: async function () {
-          const values = query.toDistinct(field.name);
+          const values = await query.toDistinct(field.name);
           const choices = [];
           if (_.includes(values, true)) {
             choices.push({
@@ -198,7 +198,7 @@ module.exports = (self) => {
               label: 'apostrophe:yes'
             });
           }
-          if (_.includes(values, true)) {
+          if (_.includes(values, false)) {
             choices.push({
               value: '0',
               label: 'apostrophe:no'
