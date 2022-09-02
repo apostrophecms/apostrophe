@@ -254,6 +254,13 @@ module.exports = (self) => {
           });
         }
       }
+
+      if ((field.min !== undefined) && (destination[field.name].length < field.min)) {
+        throw self.apos.error('min');
+      }
+      if ((field.max !== undefined) && (destination[field.name].length > field.max)) {
+        throw self.apos.error('max');
+      }
     },
     index: function (value, field, texts) {
       const silent = field.silent === undefined ? true : field.silent;
@@ -300,6 +307,14 @@ module.exports = (self) => {
           return choices;
         }
       });
+    },
+    validate: function (field, options, warn, fail) {
+      if (field.max && typeof field.max !== 'number') {
+        fail('Property "max" must be a number');
+      }
+      if (field.min && typeof field.min !== 'number') {
+        fail('Property "min" must be a number');
+      }
     }
   });
 

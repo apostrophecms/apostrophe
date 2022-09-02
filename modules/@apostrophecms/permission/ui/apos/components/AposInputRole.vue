@@ -7,68 +7,16 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-input-wrapper apos-input__role">
-        <select
-          class="apos-input apos-input--select apos-input--role" :id="uid"
-          @change="change($event.target.value)"
-          :disabled="field.readOnly"
-        >
-          <option
-            v-for="choice in choices" :key="JSON.stringify(choice.value)"
-            :value="JSON.stringify(choice.value)"
-            :selected="choice.value === value.data"
-          >
-            {{ $t(choice.label) }}
-          </option>
-        </select>
-        <AposIndicator
-          icon="menu-down-icon"
-          class="apos-input-icon"
-          :icon-size="20"
-        />
-      </div>
-      <div class="apos-input__role__permission-grid">
-        <div
-          v-for="permissionSet in permissionSets"
-          :key="permissionSet.name"
-          class="apos-input__role__permission-grid__set"
-        >
-          <h4 class="apos-input__role__permission-grid__set-name">
-            {{ $t(permissionSet.label) }}
-            <AposIndicator
-              v-if="permissionSet.includes"
-              icon="help-circle-icon"
-              class="apos-input__role__permission-grid__help"
-              :tooltip="getTooltip(permissionSet.includes)"
-              :icon-size="11"
-              icon-color="var(--a-base-4)"
-            />
-          </h4>
-          <dl class="apos-input__role__permission-grid__list">
-            <div
-              v-for="permission in permissionSet.permissions"
-              :key="permission.name"
-              class="apos-input__role__permission-grid__row"
-            >
-              <dd class="apos-input__role__permission-grid__value">
-                <AposIndicator
-                  :icon="permission.value ? 'check-bold-icon' : 'close-icon'"
-                  :icon-color="permission.value ? 'var(--a-success)' : 'var(--a-base-5)'"
-                />
-                <span v-if="permission.value" class="apos-sr-only">
-                  {{ $t('apostrophe:enabled') }}
-                </span>
-                <span v-else class="apos-sr-only">
-                  {{ $t('apostrophe:disabled') }}
-                </span>
-              </dd>
-              <dt class="apos-input__role__permission-grid__label">
-                {{ $t(permission.label) }}
-              </dt>
-            </div>
-          </dl>
-        </div>
-      </div>
+      <AposSelect
+        :choices="choices"
+        :disabled="field.readOnly"
+        :selected="value.data"
+        :id="uid"
+        :classes="[ 'apos-input__role' ]"
+        :wrapper-classes="[ 'apos-input__role' ]"
+        @change="change"
+      />
+      <AposPermissionGrid :api-params="{ role: next }" />
     </template>
   </AposInputWrapper>
 </template>
@@ -79,23 +27,11 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin'
 export default {
   name: 'AposInputRole',
   mixins: [ AposInputMixin ],
-  props: {
-    icon: {
-      type: String,
-      default: 'menu-down-icon'
-    }
-  },
   data() {
     return {
       next: (this.value.data == null) ? null : this.value.data,
-      choices: [],
-      permissionSets: []
+      choices: []
     };
-  },
-  watch: {
-    async next() {
-      this.permissionSets = await this.getPermissionSets(this.next);
-    }
   },
   async mounted() {
     // Add an null option if there isn't one already
@@ -115,32 +51,8 @@ export default {
         this.next = this.field.choices[0].value;
       }
     });
-    if (this.next) {
-      this.permissionSets = await this.getPermissionSets(this.next);
-    }
   },
   methods: {
-    getTooltip(includes) {
-      const html = document.createElement('div');
-      html.setAttribute('class', 'apos-info');
-      const list = document.createElement('ul');
-      const intro = document.createElement('p');
-      const followUp = document.createElement('p');
-      intro.appendChild(document.createTextNode(this.$t('apostrophe:piecePermissionsIntro')));
-      followUp.appendChild(document.createTextNode(this.$t('apostrophe:piecePermissionsPieceTypeList')));
-      html.appendChild(intro);
-      html.appendChild(followUp);
-      includes.forEach(item => {
-        const li = document.createElement('li');
-        li.appendChild(document.createTextNode(this.$t(item)));
-        list.appendChild(li);
-      });
-      html.appendChild(list);
-      return {
-        content: html,
-        localize: false
-      };
-    },
     validate(value) {
       if (this.field.required && !value.length) {
         return 'required';
@@ -152,59 +64,8 @@ export default {
     },
     change(value) {
       // Allows expression of non-string values
-      this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
-    },
-    async getPermissionSets(role) {
-      return (await apos.http.get(`${apos.permission.action}/grid`, {
-        qs: {
-          role
-        },
-        busy: true
-      })).permissionSets;
+      this.next = this.choices.find(choice => choice.value === value).value;
     }
   }
 };
 </script>
-
-<style lang="scss" scoped>
-  .apos-input-icon {
-    @include apos-transition();
-  }
-
-  .apos-input__role__permission-grid {
-    @include type-base;
-    display: grid;
-    margin-top: $spacing-triple;
-    grid-template-columns: repeat(auto-fit, minmax(50%, 1fr));
-  }
-
-  .apos-input__role__permission-grid__row {
-    display: flex;
-    align-items: center;
-    padding-bottom: $spacing-three-quarters;
-    margin-bottom: $spacing-three-quarters;
-    border-bottom: 1px solid var(--a-base-9);
-  }
-  .apos-input__role__permission-grid__list {
-    margin-top: 0;
-  }
-  .apos-input__role__permission-grid__set {
-    padding: 0 $spacing-base;
-    margin-bottom: $spacing-double;
-  }
-
-  .apos-input__role__permission-grid__set-name {
-    @include type-title;
-    display: inline-flex;
-    margin: 0 0 $spacing-double;
-  }
-
-  .apos-input__role__permission-grid__value {
-    display: inline-flex;
-    margin: 0 $spacing-half 0 0;
-  }
-
-  .apos-input__role__permission-grid__help {
-    margin-left: $spacing-half;
-  }
-</style>

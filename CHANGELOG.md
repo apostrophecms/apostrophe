@@ -10,10 +10,66 @@
 
 * Radio and Checkboxes schema inputs now support a server side `choices` function for supplying their choices array dynamically, like select supports. Future fields can opt into this functionality with the field flag `dynamicChoices`.
 
+## 3.28.0 (2022-08-31)
+
 ### Fixes
 
-* Unpinned tiptap as the tiptap team has made releases that resolve the packaging errors that caused us to pin it in 3.22.1.<F2>
+* Fix UI bug when creating a document via a relationship.
+
+### Adds
+
+* Support for uploading `webp` files for display as images. This is supported by all current browsers now that Microsoft has removed IE11. For best results, you should run `npm update` on your project to make sure you are receiving the latest release of `uploadfs` which uses `sharp` for image processing. Thanks to [Isaac Preston](https://github.com/ixc7) for this addition.
+* Clicking outside a modal now closes it, the same way the `Escape` key does when pressed.
+* `checkboxes` fields now support `min` and `max` properties. Thanks to [Gabe Flores](https://github.com/gabeflores-appstem).
+
+## 3.27.0 (2022-08-18)
+
+### Adds
+
+* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one.
+* New utility script to help find excessively heavy npm dependencies of apostrophe core.
+
+### Changes
+
+* Extract permission grid into `AposPermissionGrid` vue component.
+* Moved `stylelint` from `dependencies` to `devDependencies`. The benefit may be small because many projects will depend on `stylelint` at project level, but every little bit helps install speed, and it may make a bigger difference if different major versions are in use.
+
+## 3.26.1 (2022-08-06)
+
+### Fixes
+
+Hotfix: always waits for the DOM to be ready before initializing the Apostrophe Admin UI. `setTimeout` alone might not guarantee that every time. This issue has apparently become more frequent in the latest versions of Chrome.
+* Modifies the `login` module to return an empty object in the API session cookie response body to avoid potential invalid JSON error if `response.json()` is retrieved.
+
+## 3.26.0 (2022-08-03)
+
+### Adds
+
+* Tasks can now be registered with the `afterModuleReady` flag, which is more useful than `afterModuleInit` because it waits for the module to be more fully initialized, including all "improvements" loaded via npm. The original `afterModuleInit` flag is still supported in case someone was counting on its behavior.
+* Add `/grid` `POST` route in permission module, in addition to the existing `GET` one, to improve extensibility.
+* `@apostrophecms/express:list-routes` command line task added, to facilitate debugging.
+
+### Changes
+
+* Since Microsoft has ended support for IE11 and support for ES5 builds is responsible for a significant chunk of Apostrophe's installation time, the `es5: true` option no longer produces an IE11 build. For backwards compatibility, developers will receive a warning, but their build will proceed without IE11 support. IE11 ES5 builds can be brought back by installing the optional [@apostrophecms/asset-es5](https://github.com/apostrophecms/asset-es5) module.
+
+### Fixes
+
+* `testModule: true` works in unit tests of external Apostrophe modules again even with modern versions of `mocha`, thanks to [Amin Shazrin](https://github.com/ammein).
+* `getObjectManager` is now implemented for `Object` field types, fixing a bug that prevented the use of areas found in `object` schema fields within templates. Thanks to [James R T](https://github.com/jamestiotio).
+
+## 3.25.0 (2022-07-20)
+
+### Adds
+
+* `radio` and `checkboxes` input field types now support a server side `choices` function for supplying their `choices` array dynamically, just like `select` fields do. Future custom field types can opt into this functionality with the field type flag `dynamicChoices: true`.
+
+### Fixes
+
+* `AposSelect` now emits values on `change` event as they were originally given. Their values "just work" so you do not have to think about JSON anymore when you receive it.
+* Unpinned tiptap as the tiptap team has made releases that resolve the packaging errors that caused us to pin it in 3.22.1.
 * Pinned `vue-loader` to the `15.9.x` minor release series for now. The `15.10.0` release breaks support for using `npm link` to develop the `apostrophe` module itself.
+* Minimum version of `sanitize-html` bumped to ensure a potential denial-of-service vector is closed.
 
 ## 3.24.0 (2022-07-06)
 

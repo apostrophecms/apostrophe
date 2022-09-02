@@ -168,6 +168,20 @@ module.exports = {
       self.apos.util.error('When you do so other modules will also pick up on it and make URLs absolute.');
     }
   },
+  tasks(self) {
+    return {
+      'list-routes': {
+        help: 'List all Express routes registered via routes(), apiRoutes(), etc. (not directly via apos.app)',
+        async task(argv) {
+          for (const info of self.finalModuleMiddlewareAndRoutes) {
+            if (info.route) {
+              console.log(`${info.method.toUpperCase()} ${info.url}`);
+            }
+          }
+        }
+      }
+    };
+  },
   handlers(self) {
     return {
       'apostrophe:run': {

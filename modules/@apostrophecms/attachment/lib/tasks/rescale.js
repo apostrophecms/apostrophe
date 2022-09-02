@@ -12,7 +12,7 @@ module.exports = function(self) {
     const total = await self.db.count();
     let n = 0;
     await self.each({}, argv.parallel || 1, async function(file) {
-      if (!_.includes([ 'jpg', 'png', 'gif' ], file.extension)) {
+      if (!_.includes([ 'jpg', 'png', 'gif', 'webp' ], file.extension)) {
         n++;
         console.log('Skipping a non-image attachment: ' + file.name + '.' + file.extension);
         return;
