@@ -709,7 +709,7 @@ module.exports = {
                 value = _.clone(value);
                 o.attachment = value;
                 value._crop = ancestorFields.width ? _.pick(ancestorFields, 'width', 'height', 'top', 'left') : undefined;
-                value._focalPoint = ancestorFields.x ? _.pick(ancestorFields, 'x', 'y') : undefined;
+                value._focalPoint = (typeof ancestorFields.x === 'number') ? _.pick(ancestorFields, 'x', 'y') : undefined;
                 break;
               }
             }
