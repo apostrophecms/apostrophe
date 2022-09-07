@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Fix attachment `getHeight()` and `getWidth()` template helpers by changing the assignment of the `attachment._crop` property.
+* Change assignment of `attachment._focalPoint` for consistency.
+
 ## 3.28.0 (2022-08-31)
 
 ### Fixes
