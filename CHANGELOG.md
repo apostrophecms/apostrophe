@@ -6,6 +6,8 @@
 
 * `AposInputBoolean` can now be `required` and have the value `false`.
 * Schema fields containing boolean filters can now list both `yes` and `no` choices according to available values in the database.
+* Fix attachment `getHeight()` and `getWidth()` template helpers by changing the assignment of the `attachment._crop` property.
+* Change assignment of `attachment._focalPoint` for consistency.
 
 ## 3.28.0 (2022-08-31)
 
