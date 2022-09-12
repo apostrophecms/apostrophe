@@ -73,6 +73,11 @@ describe('Schema builders', function() {
                 idsStorage: 'favoriteIds',
                 label: 'Favorites',
                 withType: 'cat'
+              },
+              isACatPerson: {
+                type: 'boolean',
+                label: 'Is a cat person?',
+                required: true
               }
             }
           }
@@ -102,9 +107,11 @@ describe('Schema builders', function() {
     }
     for (i = 0; (i < people.length); i++) {
       const person = people[i];
+      person.isACatPerson = true;
       // person 10 has no favorite cat
       if (i < 10) {
         person.favoriteIds = [ cats[i].aposDocId ];
+        person.isACatPerson = false;
       }
       person.catsIds = [];
       let j;
@@ -298,6 +305,23 @@ describe('Schema builders', function() {
     assert(cats[0].value);
     assert(cats[0].label);
     assert(cats[0].slug);
+  });
+  it('can obtain choices for isACatPerson', async function() {
+    const req = apos.task.getReq();
+    const query = apos.people.find(req);
+    const isACatPerson = await query.toChoices('isACatPerson');
+    const actual = isACatPerson;
+    const expected = [
+      {
+        value: '1',
+        label: 'apostrophe:yes'
+      },
+      {
+        value: '0',
+        label: 'apostrophe:no'
+      }
+    ];
+    assert.deepEqual(actual, expected);
   });
 
   it('builder for favorite (by slug) exists', function() {
