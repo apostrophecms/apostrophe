@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.28.1 (2022-09-15)
 
 ### Fixes
 
