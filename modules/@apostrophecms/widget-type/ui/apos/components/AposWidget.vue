@@ -1,6 +1,9 @@
+<!-- eslint-disable vue/no-v-html -->
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -->
-  <div v-html="rendered" />
+  <div
+    :class="getClasses()"
+    v-html="rendered"
+  />
 </template>
 
 <script>
@@ -15,3 +18,15 @@ export default {
 };
 
 </script>
+
+<style scoped>
+/* TODO: change default placeholder style */
+.apos-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(149, 0, 0, 0.579);
+}
+</style>

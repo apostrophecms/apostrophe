@@ -9,7 +9,7 @@ module.exports = {
     icon: 'format-text-icon',
     label: 'apostrophe:richText',
     contextual: true,
-    defaultData: { content: '' },
+    defaultData: { content: '' }, // TODO: remove?
     className: false,
     minimumDefaultOptions: {
       toolbar: [

@@ -554,7 +554,8 @@ module.exports = {
         const widgetEditors = {};
         const widgetManagers = {};
         const widgetIsContextual = {};
-        const contextualWidgetDefaultData = {};
+        const widgetHasInitialModal = {};
+        const contextualWidgetDefaultData = {}; // TODO: remove?
 
         _.each(self.widgetManagers, function (manager, name) {
           const browserData = manager.getBrowserData(req);
@@ -563,7 +564,8 @@ module.exports = {
           widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
-          contextualWidgetDefaultData[name] = manager.options.defaultData;
+          widgetHasInitialModal[name] = manager.options.initialModal !== false; // TODO: use `skipInitialModal` to avoid doing `!== false`?
+          contextualWidgetDefaultData[name] = manager.options.defaultData; // TODO: remove?
         });
 
         return {
@@ -573,7 +575,8 @@ module.exports = {
             widgetEditors
           },
           widgetIsContextual,
-          contextualWidgetDefaultData,
+          widgetHasInitialModal,
+          contextualWidgetDefaultData, // TODO: remove?
           widgetManagers,
           action: self.action
         };
