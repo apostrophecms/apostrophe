@@ -14,7 +14,10 @@ module.exports = {
   options: {
     label: 'apostrophe:video',
     className: false,
-    icon: 'play-box-icon'
+    icon: 'play-box-icon',
+    initialModal: false,
+    placeholderClass: false,
+    placeholderUrl: '/modules/@apostrophecms/video-widget/placeholder.jpg'
   },
   fields: {
     add: {
