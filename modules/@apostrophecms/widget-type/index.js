@@ -161,6 +161,8 @@ module.exports = {
           ...self.getWidgetsBundles(`${widget.type}-widget`)
         };
 
+        // TODO: set placeholder values here?
+
         return self.render(req, self.template, {
           widget: widget,
           options: options,
