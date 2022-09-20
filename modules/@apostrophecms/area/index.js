@@ -54,19 +54,6 @@ module.exports = {
           widget = await sanitize(widget);
           widget._edit = true;
           widget._docId = _docId;
-
-          // TODO: do not do this if widget has been edited
-          // TODO: Placeholder properties should be checked to make sure they exist in the schema for the widget type,
-          // and that check should happen when the module is initialized, not every single time they are displayed.
-          if (widget.aposPlaceholder === true) {
-            manager.schema.forEach(field => {
-              if (field.placeholder !== undefined) {
-                // TODO: no need to clone?
-                widget[field.name] = field.placeholder;
-              }
-            });
-          }
-
           // So that carrying out relationship loading again can yield results
           // (the idsStorage must be populated as if we were saving)
           self.apos.schema.prepareForStorage(req, widget);

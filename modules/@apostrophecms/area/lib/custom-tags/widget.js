@@ -60,16 +60,6 @@ module.exports = function(self) {
         self.warnMissingWidgetType(item.type);
         return '';
       }
-
-      if (item.aposPlaceholder === true) {
-        manager.schema.forEach(field => {
-          if (field.placeholder !== undefined) {
-            // TODO: no need to clone?
-            item[field.name] = field.placeholder;
-          }
-        });
-      }
-
       return manager.output(req, item, options, contextOptions);
     }
   };

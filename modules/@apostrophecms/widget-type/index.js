@@ -161,7 +161,16 @@ module.exports = {
           ...self.getWidgetsBundles(`${widget.type}-widget`)
         };
 
-        // TODO: set placeholder values here?
+        // TODO: Placeholder properties should be checked to make sure they exist in the schema for the widget type,
+        // and that check should happen when the module is initialized, not every single time they are displayed.
+        if (widget.aposPlaceholder === true) {
+          self.schema.forEach(field => {
+            if (field.placeholder !== undefined) {
+              // TODO: no need to clone?
+              widget[field.name] = field.placeholder;
+            }
+          });
+        }
 
         return self.render(req, self.template, {
           widget: widget,
