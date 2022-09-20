@@ -27,6 +27,6 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(149, 0, 0, 0.579);
+  background: var(--a-primary-light-40);
 }
 </style>
