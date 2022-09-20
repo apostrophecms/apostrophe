@@ -7,7 +7,7 @@ module.exports = {
     dimensionAttrs: false,
     initialModal: false,
     placeholderClass: false,
-    placeholderUrl: '/modules/@apostrophecms/image-widget/images/placeholder.jpg'
+    placeholderUrl: '/modules/@apostrophecms/image-widget/placeholder.jpg'
   },
   fields: {
     add: {
