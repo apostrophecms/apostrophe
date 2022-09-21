@@ -27,14 +27,9 @@ describe('Widgets', function() {
         'args-widget': {}
       }
     });
-  });
 
-  after(function() {
-    return t.destroy(apos);
-  });
-
-  this.beforeEach(async function() {
     req = apos.task.getAnonReq();
+
     const home = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
 
     testItems = [
@@ -97,12 +92,13 @@ describe('Widgets', function() {
     await apos.doc.db.insertMany(testItems);
   });
 
-  this.afterEach(async function() {
+  after(async function() {
     await apos.doc.db.deleteMany({
       aposDocId: {
         $in: testItems.map(item => item.aposDocId)
       }
     });
+    return t.destroy(apos);
   });
 
   it('should have added test modules', function() {
