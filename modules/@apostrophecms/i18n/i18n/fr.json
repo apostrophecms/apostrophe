@@ -403,6 +403,7 @@
   "users": "Utilisateurs",
   "utility": "Utilitaire",
   "video": "Vidéo",
+  "videoPlaceholder": "Espace réservé pour la vidéo",
   "videoUrl": "URL de vidéo",
   "videoUrlHelp": "Entrez l'URL d'une source multimédia que vous souhaitez intégrer (ex : YouTube, Vimeo ou une autre URL de vidéo hébergée).",
   "view": "Voir",
