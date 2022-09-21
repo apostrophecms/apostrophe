@@ -423,7 +423,7 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            ...this.contextualWidgetDefaultData(name) // TODO: remove?
+            ...this.contextualWidgetDefaultData(name)
           },
           index
         });
@@ -454,7 +454,7 @@ export default {
       }
     },
     contextualWidgetDefaultData(type) {
-      return this.moduleOptions.contextualWidgetDefaultData[type]; // TODO: remove?
+      return this.moduleOptions.contextualWidgetDefaultData[type];
     },
     async insert({ index, widget }) {
       if (!widget._id) {
