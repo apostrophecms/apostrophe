@@ -350,7 +350,6 @@ module.exports = {
           schema: schema,
           contextual: self.options.contextual,
           placeholderClass: self.options.placeholderClass,
-          skipInitialModal: self.options.skipInitialModal, // TODO: remove? or replace with `initialModal`?
           className: self.options.className,
           components: self.options.components
         });
