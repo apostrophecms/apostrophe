@@ -17,7 +17,7 @@ module.exports = {
     icon: 'play-box-icon',
     initialModal: false,
     placeholderClass: false,
-    placeholderUrl: '/modules/@apostrophecms/video-widget/placeholder.jpg'
+    placeholderUrl: 'https://youtu.be/ukR7bD90Y0g'
   },
   fields: {
     add: {

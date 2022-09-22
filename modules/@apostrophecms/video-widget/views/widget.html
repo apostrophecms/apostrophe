@@ -1,9 +1,9 @@
 {% if data.widget.aposPlaceholder and data.manager.options.placeholderUrl %}
-  <img
-    src="{{ apos.asset.url(data.manager.options.placeholderUrl) }}"
-    alt="{{ __t('apostrophe:videoPlaceholder') }}"
-    class="video-widget-placeholder"
-  />
+  <div
+    data-apos-video-widget
+    data-apos-video-url={{ data.manager.options.placeholderUrl }}
+  >
+  </div>
 {% else %}
   {% if data.options.className %}
     {% set className = data.options.className %}
