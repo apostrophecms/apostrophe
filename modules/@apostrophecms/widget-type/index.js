@@ -161,16 +161,18 @@ module.exports = {
           ...self.getWidgetsBundles(`${widget.type}-widget`)
         };
 
+        const clonedWidget = { ...widget };
+
         if (widget.aposPlaceholder === true) {
           self.schema.forEach(field => {
             if (field.placeholder !== undefined) {
-              widget[field.name] = field.placeholder;
+              clonedWidget[field.name] = field.placeholder;
             }
           });
         }
 
         return self.render(req, self.template, {
-          widget: widget,
+          widget: clonedWidget,
           options: options,
           manager: self,
           contextOptions: _with
