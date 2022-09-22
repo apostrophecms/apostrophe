@@ -28,7 +28,10 @@
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
-    <div class="apos-rich-text-editor__editor_after" :class="editorModifiers">
+    <div
+      v-if="!placeholderText"
+      class="apos-rich-text-editor__editor_after" :class="editorModifiers"
+    >
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
   </div>
@@ -45,6 +48,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import TextStyle from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
+import Placeholder from '@tiptap/extension-placeholder';
+
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -158,6 +163,9 @@ export default {
     tiptapTypes() {
       return this.moduleOptions.tiptapTypes;
     },
+    placeholderText() {
+      return this.moduleOptions.placeholderText;
+    },
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
@@ -176,19 +184,29 @@ export default {
     }
   },
   mounted() {
+    const extensions = [
+      StarterKit,
+      TextAlign.configure({
+        types: [ 'heading', 'paragraph' ]
+      }),
+      Highlight,
+      TextStyle,
+      Underline,
+
+      // For this contextual widget, no need to check `widget.aposPlaceholder` value
+      // since `placeholderText` option is enough to decide whether to display it ot not.
+      this.placeholderText && Placeholder.configure({
+        placeholder: this.$t(this.placeholderText)
+      })
+    ]
+      .filter(Boolean)
+      .concat(this.aposTiptapExtensions);
+
     this.editor = new Editor({
       content: this.initialContent,
       autofocus: this.autofocus,
       onUpdate: this.editorUpdate,
-      extensions: [
-        StarterKit,
-        TextAlign.configure({
-          types: [ 'heading', 'paragraph' ]
-        }),
-        Highlight,
-        TextStyle,
-        Underline
-      ].concat(this.aposTiptapExtensions)
+      extensions
     });
   },
 
@@ -334,6 +352,15 @@ export default {
 
   .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
     outline: none;
+  }
+
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror p.is-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #adb5bd;
+    pointer-events: none;
+    height: 0;
+    margin-left: 5px;
   }
 
   .apos-rich-text-editor__editor {
