@@ -17,7 +17,7 @@ module.exports = {
     icon: 'play-box-icon',
     initialModal: false,
     placeholderClass: false,
-    placeholderUrl: 'https://youtu.be/ukR7bD90Y0g'
+    placeholderUrl: 'https://youtu.be/Q5UX9yexEyM'
   },
   fields: {
     add: {
