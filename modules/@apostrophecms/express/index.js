@@ -214,14 +214,23 @@ module.exports = {
           await self.findModuleMiddlewareAndRoutes();
           for (const item of self.finalModuleMiddlewareAndRoutes) {
             if (item.method) {
+              if (process.env.APOS_LOG_ALL_ROUTES) {
+                item.route._aposItem = item;
+              }
               self.apos.app[item.method](item.url, item.route);
             } else if (item.middleware) {
+              if (process.env.APOS_LOG_ALL_ROUTES) {
+                item.middleware._aposItem = item;
+              }
               if (item.url) {
                 self.apos.app.use(item.url, item.middleware);
               } else {
                 self.apos.app.use(item.middleware);
               }
             } else if ((typeof item) === 'function') {
+              if (process.env.APOS_LOG_ALL_ROUTES) {
+                item._aposItem = item;
+              }
               // Simple middleware
               self.apos.app.use(item);
             } else {
@@ -378,6 +387,38 @@ module.exports = {
             strictNullHandling: true
           });
         });
+        if (process.env.APOS_LOG_ALL_ROUTES) {
+          self.logAllRoutes();
+        }
+      },
+
+      logAllRoutes() {
+        const superUse = self.apos.app.use.bind(self.apos.app);
+        const methods = [ 'get', 'post', 'put', 'delete', 'patch', 'options', 'head', 'all' ];
+        self.apos.app.use = function (path, middleware) {
+          if (typeof path === 'function') {
+            middleware = path;
+            path = '';
+          }
+          superUse(path, (req, ...args) => {
+            const moduleName = middleware._aposItem && middleware._aposItem.moduleName;
+            const name = moduleName && middleware._aposItem.name;
+            self.apos.util.log(`${req.url} invokes middleware ${path ? `for path ${path} ` : ''}${moduleName && `found at ${moduleName}:${name}`}`);
+            return middleware(req, ...args);
+          });
+        };
+        for (const method of methods) {
+          const superMethod = self.apos.app[method].bind(self.apos.app);
+          self.apos.app[method] = (path, ...args) => {
+            const middleware = args.slice(0, args.length - 1);
+            const fn = args[args.length - 1];
+            superMethod(path, ...middleware, (req, ...args) => {
+              const moduleName = fn._aposItem && fn._aposItem.moduleName;
+              self.apos.util.log(`${req.url} invokes ${method.toUpperCase()} route for path ${path} ${moduleName && `in the module ${moduleName}`}`);
+              return fn(req, ...args);
+            });
+          };
+        }
       },
 
       // Patch Express so that all calls to `res.redirect` honor
@@ -650,6 +691,11 @@ module.exports = {
         const moduleNames = Array.from(new Set([ self.__meta.name, ...Object.keys(self.apos.modules) ]));
         for (const name of moduleNames) {
           const middleware = self.apos.modules[name].middleware || {};
+          if (process.env.APOS_LOG_ALL_ROUTES) {
+            for (const [ name, item ] of Object.entries(middleware)) {
+              item.name = name;
+            }
+          }
           labeledList.push({
             name: `middleware:${name}`,
             middleware: Object.values(middleware).filter(middleware => !middleware.before)
@@ -657,6 +703,11 @@ module.exports = {
         }
         for (const name of Object.keys(self.apos.modules)) {
           const _routes = self.apos.modules[name]._routes;
+          if (process.env.APOS_LOG_ALL_ROUTES) {
+            for (const [ name, item ] of Object.entries(_routes)) {
+              item.name = name;
+            }
+          }
           labeledList.push({
             name: `routes:${name}`,
             routes: _routes.filter(route => !route.before)
@@ -682,8 +733,12 @@ module.exports = {
               before.prepending = before.prepending || [];
               before.prepending.push(item);
             }
+            if (process.env.APOS_LOG_ALL_ROUTES) {
+              item.moduleName = name;
+            }
           }
         }
+
         self.finalModuleMiddlewareAndRoutes = labeledList.map(item => (item.prepending || []).concat(item.middleware || item.routes)).flat();
       }
     };
