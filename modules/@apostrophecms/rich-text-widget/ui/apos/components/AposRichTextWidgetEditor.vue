@@ -360,7 +360,6 @@ export default {
     pointer-events: none;
     height: 0;
     color: var(--a-base-4);
-    margin-left: 5px;
   }
 
   .apos-rich-text-editor__editor {
