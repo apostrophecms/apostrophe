@@ -357,9 +357,9 @@ export default {
   .apos-rich-text-editor__editor ::v-deep .ProseMirror p.is-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
-    color: #adb5bd;
     pointer-events: none;
     height: 0;
+    color: var(--a-base-4);
     margin-left: 5px;
   }
 
