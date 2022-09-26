@@ -232,7 +232,6 @@ export default {
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
         this.phase = 'beforeSubmit';
-        this.requirements = getRequirements();
       } finally {
         this.busy = false;
       }
@@ -257,7 +256,6 @@ export default {
         this.redirectAfterLogin();
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
-        this.requirements = getRequirements();
         this.phase = 'beforeSubmit';
       } finally {
         this.busy = false;
