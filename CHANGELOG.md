@@ -6,6 +6,11 @@
 
 * Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
 
+
+### Fixes
+
+* After a failed login attempt, no more requirements check in order not to prevent the user from submitting the login form again.
+
 ## 3.28.1 (2022-09-15)
 
 ### Fixes
