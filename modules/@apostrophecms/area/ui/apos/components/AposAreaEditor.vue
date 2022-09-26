@@ -423,7 +423,8 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            ...this.contextualWidgetDefaultData(name)
+            ...this.contextualWidgetDefaultData(name),
+            ...this.widgetAreaDefaultData(name)
           },
           index
         });
@@ -431,7 +432,8 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            aposPlaceholder: true
+            aposPlaceholder: true,
+            ...this.widgetAreaDefaultData(name)
           },
           index
         });
@@ -455,6 +457,9 @@ export default {
     },
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
+    },
+    widgetAreaDefaultData(type) {
+      return this.options.widgets[type]._def || {};
     },
     async insert({ index, widget }) {
       if (!widget._id) {
