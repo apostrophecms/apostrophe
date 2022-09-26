@@ -29,7 +29,7 @@
       <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
     <div
-      v-if="!placeholderText"
+      v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
       class="apos-rich-text-editor__editor_after" :class="editorModifiers"
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
@@ -93,7 +93,9 @@ export default {
         },
         hasErrors: false
       },
-      pending: null
+      pending: null,
+      isFocused: null,
+      showPlaceholder: null
     };
   },
   computed: {
@@ -196,7 +198,19 @@ export default {
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
       // since `placeholderText` option is enough to decide whether to display it ot not.
       this.placeholderText && Placeholder.configure({
-        placeholder: this.$t(this.placeholderText)
+        placeholder: () => {
+          // Avoid brief display of the placeholder when loading the page.
+          if (this.isFocused === null) {
+            return '';
+          }
+
+          // Display placeholder after loading the page.
+          if (this.showPlaceholder === null) {
+            return this.$t(this.placeholderText);
+          }
+
+          return this.showPlaceholder ? this.$t(this.placeholderText) : '';
+        }
       })
     ]
       .filter(Boolean)
@@ -206,7 +220,29 @@ export default {
       content: this.initialContent,
       autofocus: this.autofocus,
       onUpdate: this.editorUpdate,
-      extensions
+      extensions,
+
+      // The following events are triggered:
+      //  - before the placeholder configuration function, when loading the page
+      //  - after it, once the page is loaded and we interact with the editors
+      // To solve this issue, use another `this.showPlaceholder` variable
+      // and toggle it after the placeholder configuration function is called,
+      // thanks to textTick.
+      // The proper thing would be to call nextTick inside the placeholder
+      // function so that it can rely on the focus state set by these event
+      // listeners, but the placeholder function is called synchronously...
+      onFocus: () => {
+        this.isFocused = true;
+        this.$nextTick(() => {
+          this.showPlaceholder = false;
+        });
+      },
+      onBlur: () => {
+        this.isFocused = false;
+        this.$nextTick(() => {
+          this.showPlaceholder = true;
+        });
+      }
     });
   },
 
