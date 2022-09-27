@@ -671,6 +671,7 @@ database.`);
       // _position are present only the last such values given in the array of patches
       // are applied.
       async patch(req, _id) {
+        // FIXME: PATCH error
         return self.withLock(req, async () => {
           const input = req.body;
           const keys = Object.keys(input);

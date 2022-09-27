@@ -130,6 +130,7 @@ module.exports = {
         const choices = [];
 
         const field = self.apos.schema.getFieldById(area._fieldId);
+        console.log('field', field);
 
         const options = field.options;
         if (!options) {
@@ -152,6 +153,41 @@ module.exports = {
         });
         // Guarantee that `items` at least exists
         area.items = area.items || [];
+
+        if (field.def && !Array.isArray(field.def)) {
+          throw self.apos.error('invalid', '`def` property must be an array');
+        }
+
+        // TODO: handle widgets defined as string inside a nested widget
+        // FIXME: PATCH error
+        // TODO: be able to edit contextual widgets
+        // TODO: be able to save with and without editing default widgets
+        // TODO: refactor that, put it in another function
+        if (field.def && field.def.length && !area.items.length) {
+          for (const item of field.def) {
+            let widgetType;
+            let widgetData;
+
+            if (typeof item === 'string') {
+              widgetType = item;
+              widgetData = {};
+            } else if (typeof item === 'object') {
+              const { type, ...data } = item;
+
+              widgetType = type;
+              widgetData = data;
+            } else {
+              throw self.apos.error('invalid', 'items in `def` property must be a string or an object');
+            }
+
+            // TODO: catch potential exception
+            const manager = self.getWidgetManager(widgetType);
+            const widget = await manager.sanitize(req, widgetData);
+
+            area.items.push(widget);
+          }
+        }
+
         if (area._docId) {
           for (const item of area.items) {
             item._docId = area._docId;
@@ -163,6 +199,9 @@ module.exports = {
           // just use the helpers
           self.apos.attachment.all(area, { annotate: true });
         }
+
+        console.log('before render - area', require('util').inspect(area, { depth: 5, colors: true }));
+
         return self.render(req, 'area', {
           // TODO filter area to exclude big relationship objects, but
           // not so sloppy this time please
@@ -221,7 +260,7 @@ module.exports = {
         async function render(area, path, context, opts) {
           const preppedArea = self.prepForRender(area, context, path);
 
-          const areaRendered = await self.apos.area.renderArea(req, preppedArea, context);
+          const areaRendered = await self.renderArea(req, preppedArea, context);
 
           deep(context, `${path}._rendered`, areaRendered);
           deep(context, `${path}._fieldId`, undefined);
