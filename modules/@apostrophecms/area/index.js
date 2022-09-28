@@ -162,6 +162,7 @@ module.exports = {
         // FIXME: PATCH error
         // TODO: be able to edit contextual widgets
         // TODO: be able to save with and without editing default widgets
+        // TODO: do not show default widgets before the actual DB-saved ones (glitch)
         if (field.def && field.def.length && !area.items.length) {
           const items = field.def.map(widget =>
             (typeof widget === 'string') ? { type: widget } : widget
