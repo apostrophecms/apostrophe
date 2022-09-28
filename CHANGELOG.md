@@ -6,6 +6,12 @@
 
 * Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
 
+## 3.29.0 (2022-09-29)
+
+### Adds
+
+* Areas now support an `expanded: true` option to display previews for widgets. The Expanded Widget Preview Menu also supports grouping and display columns for each group.
+
 ## 3.28.1 (2022-09-15)
 
 ### Fixes

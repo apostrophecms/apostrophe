@@ -51,17 +51,30 @@ module.exports = (self) => {
       return _.isEqual(one[field.name], two[field.name]);
     },
     validate: function (field, options, warn, fail) {
-      if (field.options && field.options.widgets) {
-        for (const name of Object.keys(field.options.widgets)) {
-          if (!self.apos.modules[`${name}-widget`]) {
-            if (name.match(/-widget$/)) {
-              warn(stripIndents`
-                Do not include "-widget" in the name when configuring a widget in an area field.
-                Apostrophe will automatically add "-widget" when looking for the right module.
-              `);
-            } else {
-              warn(`Nonexistent widget type name ${name} in area field.`);
-            }
+      let widgets = field.options?.widgets || {};
+
+      if (field.options?.groups) {
+        for (const group of Object.keys(field.options.groups)) {
+          widgets = {
+            ...widgets,
+            ...group.widgets
+          };
+        }
+      }
+
+      for (const name of Object.keys(widgets)) {
+        check(name);
+      }
+
+      function check(name) {
+        if (!self.apos.modules[`${name}-widget`]) {
+          if (name.match(/-widget$/)) {
+            warn(stripIndents`
+              Do not include "-widget" in the name when configuring a widget in an area field.
+              Apostrophe will automatically add "-widget" when looking for the right module.
+            `);
+          } else {
+            warn(`Nonexistent widget type name ${name} in area field.`);
           }
         }
       }
