@@ -162,30 +162,12 @@ module.exports = {
         // FIXME: PATCH error
         // TODO: be able to edit contextual widgets
         // TODO: be able to save with and without editing default widgets
-        // TODO: refactor that, put it in another function
         if (field.def && field.def.length && !area.items.length) {
-          for (const item of field.def) {
-            let widgetType;
-            let widgetData;
-
-            if (typeof item === 'string') {
-              widgetType = item;
-              widgetData = {};
-            } else if (typeof item === 'object') {
-              const { type, ...data } = item;
-
-              widgetType = type;
-              widgetData = data;
-            } else {
-              throw self.apos.error('invalid', 'items in `def` property must be a string or an object');
-            }
-
-            // TODO: catch potential exception
-            const manager = self.getWidgetManager(widgetType);
-            const widget = await manager.sanitize(req, widgetData);
-
-            area.items.push(widget);
-          }
+          const items = field.def.map(widget =>
+            (typeof widget === 'string') ? { type: widget } : widget
+          );
+          const widgets = await self.sanitizeItems(req, items, field.options || {}, true);
+          area.items.push(...widgets);
         }
 
         if (area._docId) {
@@ -284,12 +266,15 @@ module.exports = {
       // options to sanitize against. Thus h5 can be legal
       // in one rich text widget and not in another.
       //
+      // `checkPlaceholder` is used to choose whether to render the widgets
+      // with their placeholder or not, depending on their manager options.
+      //
       // If any errors occur sanitizing the individual widgets,
       // an array of errors with `path` and `error` properties
       // is thrown.
       //
       // Returns a new array of sanitized items.
-      async sanitizeItems(req, items, options) {
+      async sanitizeItems(req, items, options, checkPlaceholder = false) {
         options = options || {};
         const result = [];
         const errors = [];
@@ -309,9 +294,19 @@ module.exports = {
             // This widget is not specified for this area at all
             continue;
           }
+
+          const additionalData = {};
+
+          if (checkPlaceholder && manager.options.initialModal === false) {
+            additionalData.aposPlaceholder = true;
+          }
+
           let newItem;
           try {
-            newItem = await manager.sanitize(req, item, widgetOptions);
+            newItem = await manager.sanitize(req, {
+              ...item,
+              ...additionalData
+            }, widgetOptions);
             newItem._id = self.apos.launder.id(item._id) || self.apos.util.generateId();
           } catch (e) {
             if (Array.isArray(e)) {
