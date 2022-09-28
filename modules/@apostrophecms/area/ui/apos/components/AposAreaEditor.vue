@@ -422,9 +422,16 @@ export default {
       } else if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
-            _id: cuid(),
             type: name,
             ...this.contextualWidgetDefaultData(name)
+          },
+          index
+        });
+      } else if (!this.widgetHasInitialModal(name)) {
+        return this.insert({
+          widget: {
+            type: name,
+            aposPlaceholder: true
           },
           index
         });
@@ -477,6 +484,9 @@ export default {
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
+    },
+    widgetHasInitialModal(type) {
+      return this.moduleOptions.widgetHasInitialModal[type];
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
