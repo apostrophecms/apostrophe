@@ -165,7 +165,7 @@ module.exports = {
 
         if (widget.aposPlaceholder === true) {
           self.schema.forEach(field => {
-            if (field.placeholder !== undefined) {
+            if (!widget[field.name] && field.placeholder !== undefined) {
               clonedWidget[field.name] = field.placeholder;
             }
           });

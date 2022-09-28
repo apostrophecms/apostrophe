@@ -142,6 +142,18 @@ describe('Widgets', function() {
     let result;
 
     before(async function() {
+      const widgetBaseData = {
+        metaType: 'widget',
+        type: 'placeholder'
+      };
+      const widgetData = {
+        ...widgetBaseData,
+        string: 'Some string',
+        integer: 2,
+        float: 2.2,
+        date: '2022-09-21',
+        time: '15:39:12'
+      };
       testItems = [
         {
           _id: 'placeholder-page:en:published',
@@ -159,30 +171,26 @@ describe('Widgets', function() {
             items: [
               {
                 _id: 'widget1',
-                metaType: 'widget',
-                type: 'placeholder',
+                ...widgetBaseData,
                 aposPlaceholder: true
               },
               {
                 _id: 'widget2',
-                metaType: 'widget',
-                type: 'placeholder',
+                ...widgetBaseData,
                 aposPlaceholder: false
               },
               {
                 _id: 'widget3',
-                metaType: 'widget',
-                type: 'placeholder'
+                ...widgetBaseData
               },
               {
                 _id: 'widget4',
-                type: 'placeholder',
-                string: 'Some string',
-                integer: 2,
-                float: 2.2,
-                date: '2022-09-21',
-                time: '15:39:12',
-                metaType: 'widget'
+                ...widgetData
+              },
+              {
+                _id: 'widget5',
+                ...widgetData,
+                aposPlaceholder: true
               }
             ],
             metaType: 'area'
@@ -212,7 +220,7 @@ describe('Widgets', function() {
       });
     });
 
-    it('should render the placeholders when widget\'s `aposPlaceholder` doc field is `true`', async function() {
+    it('should render the placeholders when widget\'s `aposPlaceholder` doc field is `true`', function() {
       assert(result.includes('<li>widget1 - aposPlaceholder: true</li>'));
       assert(result.includes('<li>widget1 - string: String PLACEHOLDER</li>'));
       assert(result.includes('<li>widget1 - integer: 0</li>'));
@@ -221,7 +229,7 @@ describe('Widgets', function() {
       assert(result.includes('<li>widget1 - time: HH:MM:SS</li>'));
     });
 
-    it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is `false`', async function() {
+    it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is `false`', function() {
       assert(result.includes('<li>widget2 - aposPlaceholder: false</li>'));
       assert(!result.includes('<li>widget2 - string: String PLACEHOLDER</li>'));
       assert(!result.includes('<li>widget2 - integer: 0</li>'));
@@ -230,20 +238,26 @@ describe('Widgets', function() {
       assert(!result.includes('<li>widget2 - time: HH:MM:SS</li>'));
     });
 
-    it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is not defined', async function() {
-      assert(!result.includes('<li>widget3 - aposPlaceholder</li>'));
+    it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is not defined', function() {
       assert(!result.includes('<li>widget3 - string: String PLACEHOLDER</li>'));
       assert(!result.includes('<li>widget3 - integer: 0</li>'));
       assert(!result.includes('<li>widget3 - float: 0.1</li>'));
       assert(!result.includes('<li>widget3 - date: YYYY-MM-DD</li>'));
       assert(!result.includes('<li>widget3 - time: HH:MM:SS</li>'));
 
-      assert(!result.includes('<li>widget4 - aposPlaceholder</li>'));
       assert(result.includes('<li>widget4 - string: Some string</li>'));
       assert(result.includes('<li>widget4 - integer: 2</li>'));
       assert(result.includes('<li>widget4 - float: 2.2</li>'));
       assert(result.includes('<li>widget4 - date: 2022-09-21</li>'));
       assert(result.includes('<li>widget4 - time: 15:39:12</li>'));
+    });
+
+    it('should not render the placeholders when widget\'s fields are defined', function() {
+      assert(result.includes('<li>widget5 - string: Some string</li>'));
+      assert(result.includes('<li>widget5 - integer: 2</li>'));
+      assert(result.includes('<li>widget5 - float: 2.2</li>'));
+      assert(result.includes('<li>widget5 - date: 2022-09-21</li>'));
+      assert(result.includes('<li>widget5 - time: 15:39:12</li>'));
     });
   });
 });
