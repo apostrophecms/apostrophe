@@ -178,7 +178,7 @@ module.exports = (self) => {
       destination[field.name] = self.apos.launder.boolean(data[field.name], field.def);
     },
     isEmpty: function (field, value) {
-      return !value;
+      return !value && value !== false;
     },
     exporters: {
       string: function (req, field, object, output) {
@@ -203,7 +203,7 @@ module.exports = (self) => {
           return self.apos.launder.booleanOrNull(b);
         },
         choices: async function () {
-          const values = query.toDistinct(field.name);
+          const values = await query.toDistinct(field.name);
           const choices = [];
           if (_.includes(values, true)) {
             choices.push({
@@ -211,7 +211,7 @@ module.exports = (self) => {
               label: 'apostrophe:yes'
             });
           }
-          if (_.includes(values, true)) {
+          if (_.includes(values, false)) {
             choices.push({
               value: '0',
               label: 'apostrophe:no'
@@ -267,6 +267,13 @@ module.exports = (self) => {
           });
         }
       }
+
+      if ((field.min !== undefined) && (destination[field.name].length < field.min)) {
+        throw self.apos.error('min');
+      }
+      if ((field.max !== undefined) && (destination[field.name].length > field.max)) {
+        throw self.apos.error('max');
+      }
     },
     index: function (value, field, texts) {
       const silent = field.silent === undefined ? true : field.silent;
@@ -313,6 +320,14 @@ module.exports = (self) => {
           return choices;
         }
       });
+    },
+    validate: function (field, options, warn, fail) {
+      if (field.max && typeof field.max !== 'number') {
+        fail('Property "max" must be a number');
+      }
+      if (field.min && typeof field.min !== 'number') {
+        fail('Property "min" must be a number');
+      }
     }
   });
 

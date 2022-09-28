@@ -104,6 +104,13 @@ module.exports = {
       filterByIndexPage(query, page) {
       },
 
+      // Extend this method for your piece type to call additional
+      // query builders by default.
+
+      showQuery(req) {
+        return self.pieces.find(req, { slug: req.params.slug });
+      },
+
       // Invoked to display a piece by itself, a "show page." Renders
       // the `show.html` template after setting `data.piece`.
 
@@ -131,7 +138,7 @@ module.exports = {
         await self.beforeShow(req);
 
         async function findAsReader() {
-          const query = self.pieces.find(req, { slug: req.params.slug });
+          const query = self.showQuery(req);
           doc = await query.toObject();
         }
 

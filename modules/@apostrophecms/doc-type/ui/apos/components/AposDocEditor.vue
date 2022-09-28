@@ -727,6 +727,9 @@ export default {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
     onContentChanged(e) {
+      if (this.original?._id !== e.doc._id) {
+        return;
+      }
       if (e.doc.type !== this.docType) {
         this.docType = e.doc.type;
       }

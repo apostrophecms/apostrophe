@@ -373,10 +373,28 @@ describe('Areas', function() {
       }, true)
     );
     assert(
-      apos.schema.fieldTypes.boolean.isEmpty({
+      !apos.schema.fieldTypes.boolean.isEmpty({
         type: 'boolean',
         name: 'test'
       }, false)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, null)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, undefined)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, 0)
     );
     assert(
       !apos.schema.fieldTypes.boolean.empty({
@@ -385,10 +403,28 @@ describe('Areas', function() {
       }, true)
     );
     assert(
-      apos.schema.fieldTypes.boolean.empty({
+      !apos.schema.fieldTypes.boolean.empty({
         type: 'boolean',
         name: 'test'
       }, false)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, null)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, undefined)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, 0)
     );
   });
 });

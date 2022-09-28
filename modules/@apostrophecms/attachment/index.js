@@ -54,7 +54,8 @@ module.exports = {
           'gif',
           'jpg',
           'png',
-          'svg'
+          'svg',
+          'webp'
         ],
         extensionMaps: { jpeg: 'jpg' },
         // uploadfs should treat this as an image and create scaled versions
@@ -90,14 +91,16 @@ module.exports = {
     self.croppable = {
       gif: true,
       jpg: true,
-      png: true
+      png: true,
+      webp: true
     };
 
     // Do NOT add keys here unless they have the value `true`
     self.sized = {
       gif: true,
       jpg: true,
-      png: true
+      png: true,
+      webp: true
     };
 
     self.sizeAvailableInArchive = self.options.sizeAvailableInArchive || 'one-sixth';
@@ -705,8 +708,8 @@ module.exports = {
               if (ancestorFields) {
                 value = _.clone(value);
                 o.attachment = value;
-                value._crop = _.pick(ancestorFields, 'width', 'height', 'top', 'left');
-                value._focalPoint = _.pick(ancestorFields, 'x', 'y');
+                value._crop = ancestorFields.width ? _.pick(ancestorFields, 'width', 'height', 'top', 'left') : undefined;
+                value._focalPoint = (typeof ancestorFields.x === 'number') ? _.pick(ancestorFields, 'x', 'y') : undefined;
                 break;
               }
             }
@@ -1018,7 +1021,7 @@ module.exports = {
             return;
           }
           let sizes;
-          if (![ 'gif', 'jpg', 'png' ].includes(self.resolveExtension(attachment.extension))) {
+          if (![ 'gif', 'jpg', 'png', 'webp' ].includes(self.resolveExtension(attachment.extension))) {
             sizes = [ { name: 'original' } ];
           } else {
             sizes = self.imageSizes.concat([ { name: 'original' } ]);

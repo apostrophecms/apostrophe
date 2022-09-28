@@ -753,7 +753,7 @@ module.exports = {
       isShareDraftRequest(req) {
         const { aposShareId, aposShareKey } = req.query;
 
-        return (
+        return Boolean(
           typeof aposShareId === 'string' &&
           aposShareId.length &&
           typeof aposShareKey === 'string' &&
