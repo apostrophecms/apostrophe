@@ -435,7 +435,8 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            ...this.contextualWidgetDefaultData(name)
+            ...this.contextualWidgetDefaultData(name),
+            ...this.widgetAreaDefaultData(name)
           },
           index
         });
@@ -443,7 +444,8 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            aposPlaceholder: true
+            aposPlaceholder: true,
+            ...this.widgetAreaDefaultData(name)
           },
           index
         });
@@ -451,7 +453,7 @@ export default {
         const componentName = this.widgetEditorComponent(name);
         apos.area.activeEditor = this;
         const widget = await apos.modal.execute(componentName, {
-          value: null,
+          value: this.widgetAreaDefaultData(name),
           options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId
@@ -479,6 +481,9 @@ export default {
     },
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
+    },
+    widgetAreaDefaultData(type) {
+      return this.options.widgets[type]._def || null;
     },
     async insert({ index, widget }) {
       if (!widget._id) {
