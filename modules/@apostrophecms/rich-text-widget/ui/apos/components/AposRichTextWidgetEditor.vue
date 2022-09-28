@@ -196,7 +196,7 @@ export default {
       Underline,
 
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
-      // since `placeholderText` option is enough to decide whether to display it ot not.
+      // since `placeholderText` option is enough to decide whether to display it or not.
       this.placeholderText && Placeholder.configure({
         placeholder: () => {
           // Avoid brief display of the placeholder when loading the page.
@@ -227,7 +227,7 @@ export default {
       //  - after it, once the page is loaded and we interact with the editors
       // To solve this issue, use another `this.showPlaceholder` variable
       // and toggle it after the placeholder configuration function is called,
-      // thanks to textTick.
+      // thanks to nextTick.
       // The proper thing would be to call nextTick inside the placeholder
       // function so that it can rely on the focus state set by these event
       // listeners, but the placeholder function is called synchronously...
