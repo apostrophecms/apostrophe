@@ -281,6 +281,7 @@ module.exports = {
         await self.apos.schema.convert(req, schema, input, output);
         output.metaType = 'widget';
         output.type = self.name;
+        output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
         return output;
       },
 
@@ -352,7 +353,7 @@ module.exports = {
           action: self.action,
           schema: schema,
           contextual: self.options.contextual,
-          skipInitialModal: self.options.skipInitialModal,
+          placeholderClass: self.options.placeholderClass,
           className: self.options.className,
           components: self.options.components
         });
