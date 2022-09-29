@@ -11,7 +11,8 @@ module.exports = {
         options: {
           widgets: {
             placeholder: {},
-            '@apostrophecms/image': {}
+            '@apostrophecms/image': {},
+            '@apostrophecms/video': {}
           }
         }
       }

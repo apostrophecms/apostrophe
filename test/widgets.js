@@ -268,93 +268,187 @@ describe('Widgets', function() {
       });
     });
 
-    describe('image widget', function() {
-      const widgetBaseData = {
-        metaType: 'widget',
-        type: '@apostrophecms/image'
-      };
-      const widgets = [
-        {
-          _id: 'widget1',
-          ...widgetBaseData,
-          aposPlaceholder: true
+    const mediaWidgetTypeToAssertion = {
+      image: {
+        placeholderUrlOverride: '/modules/@apostrophecms/my-image-widget/placeholder.webp',
+        assertAposPlaceholderTrue(document) {
+          const imgNodes = document.querySelectorAll('img');
+
+          assert(imgNodes.length === 1);
+          assert(imgNodes[0].classList.contains('image-widget-placeholder'));
+          assert(imgNodes[0].alt === 'Image placeholder');
+          assert(imgNodes[0].src === '/apos-frontend/default/modules/@apostrophecms/image-widget/placeholder.jpg');
         },
-        {
-          _id: 'widget2',
-          ...widgetBaseData,
-          aposPlaceholder: false
-        },
-        {
-          _id: 'widget3',
-          ...widgetBaseData
-        }
-      ];
-
-      let page;
-      let result;
-
-      before(async function() {
-        await insertPage(apos, homePath, widgets);
-        page = await apos.page.find(req, { slug: '/placeholder-page' }).toObject();
-
-        const args = getRenderArgs(req, page);
-        result = await apos.modules['placeholder-page'].render(req, 'page', args);
-      });
-
-      after(async function() {
-        await deletePage(apos, page);
-      });
-
-      it('should render the image placeholder only when widget\'s `aposPlaceholder` doc field is `true`', function() {
-        const { document } = new JSDOM(result).window;
-        const imgNodes = document.querySelectorAll('img');
-
-        assert(imgNodes.length === 1);
-        assert(imgNodes[0].classList.contains('image-widget-placeholder'));
-        assert(imgNodes[0].alt === 'Image placeholder');
-        assert(imgNodes[0].src === '/apos-frontend/default/modules/@apostrophecms/image-widget/placeholder.jpg');
-      });
-
-      describe('image widget - other module option', function() {
-        let _apos;
-        let _page;
-        let _result;
-
-        before(async function() {
-          // Recreate local apos instance with falsy `placeholderUrl` option set to image widget module
-          _apos = await t.create({
-            root: module,
-            modules: {
-              'placeholder-page': {},
-              '@apostrophecms/image-widget': {
-                options: {
-                  placeholderUrl: null
-                }
-              }
-            }
-          });
-          const _req = _apos.task.getAnonReq();
-
-          const home = await _apos.page.find(_apos.task.getAnonReq(), { level: 0 }).toObject();
-          const _homePath = home._id.replace(':en:published', '');
-
-          await insertPage(_apos, _homePath, widgets);
-          _page = await _apos.page.find(_req, { slug: '/placeholder-page' }).toObject();
-
-          const args = getRenderArgs(_req, _page);
-          _result = await _apos.modules['placeholder-page'].render(_req, 'page', args);
-        });
-
-        after(async function() {
-          await deletePage(_apos, _page);
-          await t.destroy(_apos);
-        });
-
-        it('should not render the image placeholder when widget\'s module `placeholderUrl` option is falsy', function() {
-          const { document } = new JSDOM(_result).window;
+        assertFalsyPlaceholderUrl(document) {
           const imgNodes = document.querySelectorAll('img');
 
           assert(imgNodes.length === 0);
+        },
+        assertPlaceholderUrlOverride(document) {
+          const imgNodes = document.querySelectorAll('img');
+
+          assert(imgNodes.length === 1);
+          assert(imgNodes[0].classList.contains('image-widget-placeholder'));
+          assert(imgNodes[0].alt === 'Image placeholder');
+          assert(imgNodes[0].src === '/apos-frontend/default/modules/@apostrophecms/my-image-widget/placeholder.webp');
+        }
+      },
+      video: {
+        placeholderUrlOverride: 'https://vimeo.com/57946935',
+        assertAposPlaceholderTrue(document) {
+          const videoWrapperNodes = document.querySelectorAll('[data-apos-video-widget]');
+
+          assert(videoWrapperNodes.length === 1);
+          assert(videoWrapperNodes[0].dataset.aposVideoUrl === 'https://youtu.be/Q5UX9yexEyM');
+        },
+        assertFalsyPlaceholderUrl(document) {
+          const videoWrapperNodes = document.querySelectorAll('[data-apos-video-widget]');
+
+          assert(videoWrapperNodes.length === 0);
+        },
+        assertPlaceholderUrlOverride(document) {
+          const videoWrapperNodes = document.querySelectorAll('[data-apos-video-widget]');
+
+          assert(videoWrapperNodes.length === 1);
+          assert(videoWrapperNodes[0].dataset.aposVideoUrl === 'https://vimeo.com/57946935');
+        }
+      }
+    };
+
+    Object.entries(mediaWidgetTypeToAssertion).forEach(([
+      type,
+      {
+        placeholderUrlOverride,
+        assertAposPlaceholderTrue,
+        assertFalsyPlaceholderUrl,
+        assertPlaceholderUrlOverride
+      }
+    ]) => {
+      describe(`${type} widget`, function() {
+        const widgetBaseData = {
+          metaType: 'widget',
+          type: `@apostrophecms/${type}`
+        };
+        const widgets = [
+          {
+            _id: 'widget1',
+            ...widgetBaseData,
+            aposPlaceholder: true
+          },
+          {
+            _id: 'widget2',
+            ...widgetBaseData,
+            aposPlaceholder: false
+          },
+          {
+            _id: 'widget3',
+            ...widgetBaseData
+          }
+        ];
+
+        let page;
+        let result;
+
+        before(async function() {
+          await insertPage(apos, homePath, widgets);
+          page = await apos.page.find(req, { slug: '/placeholder-page' }).toObject();
+
+          const args = getRenderArgs(req, page);
+          result = await apos.modules['placeholder-page'].render(req, 'page', args);
+        });
+
+        after(async function() {
+          await deletePage(apos, page);
+        });
+
+        it(`should render the ${type} placeholder only when widget's \`aposPlaceholder\` doc field is \`true\``, function() {
+          const { document } = new JSDOM(result).window;
+
+          assertAposPlaceholderTrue(document);
+        });
+
+        describe(`${type} widget - falsy placeholderUrl`, function() {
+          let _apos;
+          let _page;
+          let _result;
+
+          before(async function() {
+            // Recreate local apos instance with falsy `placeholderUrl` option set to widget module
+            _apos = await t.create({
+              root: module,
+              modules: {
+                'placeholder-page': {},
+                [`@apostrophecms/${type}-widget`]: {
+                  options: {
+                    placeholderUrl: null
+                  }
+                }
+              }
+            });
+            const _req = _apos.task.getAnonReq();
+
+            const home = await _apos.page.find(_apos.task.getAnonReq(), { level: 0 }).toObject();
+            const _homePath = home._id.replace(':en:published', '');
+
+            await insertPage(_apos, _homePath, widgets);
+            _page = await _apos.page.find(_req, { slug: '/placeholder-page' }).toObject();
+
+            const args = getRenderArgs(_req, _page);
+            _result = await _apos.modules['placeholder-page'].render(_req, 'page', args);
+          });
+
+          after(async function() {
+            await deletePage(_apos, _page);
+            await t.destroy(_apos);
+          });
+
+          it(`should not render the ${type} placeholder when widget's module \`placeholderUrl\` option is falsy`, function() {
+            const { document } = new JSDOM(_result).window;
+
+            assertFalsyPlaceholderUrl(document);
+          });
+        });
+
+        describe(`${type} widget - placeholderUrl override`, function() {
+          let _apos;
+          let _page;
+          let _result;
+
+          before(async function() {
+            // Recreate local apos instance with falsy `placeholderUrl` option set to widget module
+            _apos = await t.create({
+              root: module,
+              modules: {
+                'placeholder-page': {},
+                [`@apostrophecms/${type}-widget`]: {
+                  options: {
+                    placeholderUrl: placeholderUrlOverride
+                  }
+                }
+              }
+            });
+            const _req = _apos.task.getAnonReq();
+
+            const home = await _apos.page.find(_apos.task.getAnonReq(), { level: 0 }).toObject();
+            const _homePath = home._id.replace(':en:published', '');
+
+            await insertPage(_apos, _homePath, widgets);
+            _page = await _apos.page.find(_req, { slug: '/placeholder-page' }).toObject();
+
+            const args = getRenderArgs(_req, _page);
+            _result = await _apos.modules['placeholder-page'].render(_req, 'page', args);
+          });
+
+          after(async function() {
+            await deletePage(_apos, _page);
+            await t.destroy(_apos);
+          });
+
+          it(`should render the ${type} placeholder set to the widget's module \`placeholderUrl\` override`, function() {
+            const { document } = new JSDOM(_result).window;
+
+            assertPlaceholderUrlOverride(document);
+          });
         });
       });
     });
