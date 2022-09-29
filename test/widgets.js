@@ -1,5 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+const { JSDOM } = require('jsdom');
 
 describe('Widgets', function() {
   const getRenderArgs = (req, page) => ({
@@ -138,10 +139,40 @@ describe('Widgets', function() {
   });
 
   describe('placeholders', function() {
-    let testItems = [];
-    let result;
+    const insertPage = async (apos, homePath, widgets) => {
+      const page = {
+        _id: 'placeholder-page:en:published',
+        aposLocale: 'en:published',
+        aposDocId: 'placeholder-page',
+        type: 'placeholder-page',
+        slug: '/placeholder-page',
+        visibility: 'public',
+        path: `${homePath}/placeholder-page`,
+        level: 1,
+        rank: 0,
+        metaType: 'doc',
+        main: {
+          _id: 'area1',
+          items: widgets,
+          metaType: 'area'
+        }
+      };
 
-    before(async function() {
+      await apos.doc.db.insertOne(page);
+      await apos.doc.db.insertOne({
+        ...page,
+        aposLocale: page.aposLocale.replace(':published', ':draft'),
+        _id: page._id.replace(':published', ':draft')
+      });
+    };
+
+    const deletePage = async (apos, page) => {
+      await apos.doc.db.deleteMany({
+        aposDocId: page.aposDocId
+      });
+    };
+
+    describe('custom widget', function() {
       const widgetBaseData = {
         metaType: 'widget',
         type: 'placeholder'
@@ -154,110 +185,178 @@ describe('Widgets', function() {
         date: '2022-09-21',
         time: '15:39:12'
       };
-      testItems = [
-        {
-          _id: 'placeholder-page:en:published',
-          aposLocale: 'en:published',
-          aposDocId: 'placeholder-page',
-          type: 'placeholder-page',
-          slug: '/placeholder-page',
-          visibility: 'public',
-          path: `${homePath}/placeholder-page`,
-          level: 1,
-          rank: 0,
-          metaType: 'doc',
-          main: {
-            _id: 'area1',
-            items: [
-              {
-                _id: 'widget1',
-                ...widgetBaseData,
-                aposPlaceholder: true
-              },
-              {
-                _id: 'widget2',
-                ...widgetBaseData,
-                aposPlaceholder: false
-              },
-              {
-                _id: 'widget3',
-                ...widgetBaseData
-              },
-              {
-                _id: 'widget4',
-                ...widgetData
-              },
-              {
-                _id: 'widget5',
-                ...widgetData,
-                aposPlaceholder: true
-              }
-            ],
-            metaType: 'area'
+
+      let page;
+      let result;
+
+      before(async function() {
+        const widgets = [
+          {
+            _id: 'widget1',
+            ...widgetBaseData,
+            aposPlaceholder: true
+          },
+          {
+            _id: 'widget2',
+            ...widgetBaseData,
+            aposPlaceholder: false
+          },
+          {
+            _id: 'widget3',
+            ...widgetBaseData
+          },
+          {
+            _id: 'widget4',
+            ...widgetData
+          },
+          {
+            _id: 'widget5',
+            ...widgetData,
+            aposPlaceholder: true
           }
-        }
-      ];
+        ];
 
-      await apos.doc.db.insertMany(testItems.map(item => ({
-        ...item,
-        aposLocale: item.aposLocale.replace(':published', ':draft'),
-        _id: item._id.replace(':published', ':draft')
-      })));
+        await insertPage(apos, homePath, widgets);
+        page = await apos.page.find(req, { slug: '/placeholder-page' }).toObject();
 
-      await apos.doc.db.insertMany(testItems);
+        const args = getRenderArgs(req, page);
+        result = await apos.modules['placeholder-page'].render(req, 'page', args);
+      });
 
-      const page = await apos.page.find(req, { slug: '/placeholder-page' }).toObject();
+      after(async function() {
+        await deletePage(apos, page);
+      });
 
-      const args = getRenderArgs(req, page);
-      result = await apos.modules['placeholder-page'].render(req, 'page', args);
-    });
+      it('should render the placeholders when widget\'s `aposPlaceholder` doc field is `true`', function() {
+        assert(result.includes('<li>widget1 - aposPlaceholder: true</li>'));
+        assert(result.includes('<li>widget1 - string: String PLACEHOLDER</li>'));
+        assert(result.includes('<li>widget1 - integer: 0</li>'));
+        assert(result.includes('<li>widget1 - float: 0.1</li>'));
+        assert(result.includes('<li>widget1 - date: YYYY-MM-DD</li>'));
+        assert(result.includes('<li>widget1 - time: HH:MM:SS</li>'));
+      });
 
-    after(async function() {
-      await apos.doc.db.deleteMany({
-        aposDocId: {
-          $in: testItems.map(item => item.aposDocId)
-        }
+      it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is `false`', function() {
+        assert(result.includes('<li>widget2 - aposPlaceholder: false</li>'));
+        assert(!result.includes('<li>widget2 - string: String PLACEHOLDER</li>'));
+        assert(!result.includes('<li>widget2 - integer: 0</li>'));
+        assert(!result.includes('<li>widget2 - float: 0.1</li>'));
+        assert(!result.includes('<li>widget2 - date: YYYY-MM-DD</li>'));
+        assert(!result.includes('<li>widget2 - time: HH:MM:SS</li>'));
+      });
+
+      it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is not defined', function() {
+        assert(!result.includes('<li>widget3 - string: String PLACEHOLDER</li>'));
+        assert(!result.includes('<li>widget3 - integer: 0</li>'));
+        assert(!result.includes('<li>widget3 - float: 0.1</li>'));
+        assert(!result.includes('<li>widget3 - date: YYYY-MM-DD</li>'));
+        assert(!result.includes('<li>widget3 - time: HH:MM:SS</li>'));
+
+        assert(result.includes('<li>widget4 - string: Some string</li>'));
+        assert(result.includes('<li>widget4 - integer: 2</li>'));
+        assert(result.includes('<li>widget4 - float: 2.2</li>'));
+        assert(result.includes('<li>widget4 - date: 2022-09-21</li>'));
+        assert(result.includes('<li>widget4 - time: 15:39:12</li>'));
+      });
+
+      it('should not render the placeholders when widget\'s fields are defined', function() {
+        assert(result.includes('<li>widget5 - string: Some string</li>'));
+        assert(result.includes('<li>widget5 - integer: 2</li>'));
+        assert(result.includes('<li>widget5 - float: 2.2</li>'));
+        assert(result.includes('<li>widget5 - date: 2022-09-21</li>'));
+        assert(result.includes('<li>widget5 - time: 15:39:12</li>'));
       });
     });
 
-    it('should render the placeholders when widget\'s `aposPlaceholder` doc field is `true`', function() {
-      assert(result.includes('<li>widget1 - aposPlaceholder: true</li>'));
-      assert(result.includes('<li>widget1 - string: String PLACEHOLDER</li>'));
-      assert(result.includes('<li>widget1 - integer: 0</li>'));
-      assert(result.includes('<li>widget1 - float: 0.1</li>'));
-      assert(result.includes('<li>widget1 - date: YYYY-MM-DD</li>'));
-      assert(result.includes('<li>widget1 - time: HH:MM:SS</li>'));
-    });
+    describe('image widget', function() {
+      const widgetBaseData = {
+        metaType: 'widget',
+        type: '@apostrophecms/image'
+      };
+      const widgets = [
+        {
+          _id: 'widget1',
+          ...widgetBaseData,
+          aposPlaceholder: true
+        },
+        {
+          _id: 'widget2',
+          ...widgetBaseData,
+          aposPlaceholder: false
+        },
+        {
+          _id: 'widget3',
+          ...widgetBaseData
+        }
+      ];
 
-    it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is `false`', function() {
-      assert(result.includes('<li>widget2 - aposPlaceholder: false</li>'));
-      assert(!result.includes('<li>widget2 - string: String PLACEHOLDER</li>'));
-      assert(!result.includes('<li>widget2 - integer: 0</li>'));
-      assert(!result.includes('<li>widget2 - float: 0.1</li>'));
-      assert(!result.includes('<li>widget2 - date: YYYY-MM-DD</li>'));
-      assert(!result.includes('<li>widget2 - time: HH:MM:SS</li>'));
-    });
+      let page;
+      let result;
 
-    it('should not render the placeholders when widget\'s `aposPlaceholder` doc field is not defined', function() {
-      assert(!result.includes('<li>widget3 - string: String PLACEHOLDER</li>'));
-      assert(!result.includes('<li>widget3 - integer: 0</li>'));
-      assert(!result.includes('<li>widget3 - float: 0.1</li>'));
-      assert(!result.includes('<li>widget3 - date: YYYY-MM-DD</li>'));
-      assert(!result.includes('<li>widget3 - time: HH:MM:SS</li>'));
+      before(async function() {
+        await insertPage(apos, homePath, widgets);
+        page = await apos.page.find(req, { slug: '/placeholder-page' }).toObject();
 
-      assert(result.includes('<li>widget4 - string: Some string</li>'));
-      assert(result.includes('<li>widget4 - integer: 2</li>'));
-      assert(result.includes('<li>widget4 - float: 2.2</li>'));
-      assert(result.includes('<li>widget4 - date: 2022-09-21</li>'));
-      assert(result.includes('<li>widget4 - time: 15:39:12</li>'));
-    });
+        const args = getRenderArgs(req, page);
+        result = await apos.modules['placeholder-page'].render(req, 'page', args);
+      });
 
-    it('should not render the placeholders when widget\'s fields are defined', function() {
-      assert(result.includes('<li>widget5 - string: Some string</li>'));
-      assert(result.includes('<li>widget5 - integer: 2</li>'));
-      assert(result.includes('<li>widget5 - float: 2.2</li>'));
-      assert(result.includes('<li>widget5 - date: 2022-09-21</li>'));
-      assert(result.includes('<li>widget5 - time: 15:39:12</li>'));
+      after(async function() {
+        await deletePage(apos, page);
+      });
+
+      it('should render the image placeholder only when widget\'s `aposPlaceholder` doc field is `true`', function() {
+        const { document } = new JSDOM(result).window;
+        const imgNodes = document.querySelectorAll('img');
+
+        assert(imgNodes.length === 1);
+        assert(imgNodes[0].classList.contains('image-widget-placeholder'));
+        assert(imgNodes[0].alt === 'Image placeholder');
+        assert(imgNodes[0].src === '/apos-frontend/default/modules/@apostrophecms/image-widget/placeholder.jpg');
+      });
+
+      describe('image widget - other module option', function() {
+        let _apos;
+        let _page;
+        let _result;
+
+        before(async function() {
+          // Recreate local apos instance with falsy `placeholderUrl` option set to image widget module
+          _apos = await t.create({
+            root: module,
+            modules: {
+              'placeholder-page': {},
+              '@apostrophecms/image-widget': {
+                options: {
+                  placeholderUrl: null
+                }
+              }
+            }
+          });
+          const _req = _apos.task.getAnonReq();
+
+          const home = await _apos.page.find(_apos.task.getAnonReq(), { level: 0 }).toObject();
+          const _homePath = home._id.replace(':en:published', '');
+
+          await insertPage(_apos, _homePath, widgets);
+          _page = await _apos.page.find(_req, { slug: '/placeholder-page' }).toObject();
+
+          const args = getRenderArgs(_req, _page);
+          _result = await _apos.modules['placeholder-page'].render(_req, 'page', args);
+        });
+
+        after(async function() {
+          await deletePage(_apos, _page);
+          await t.destroy(_apos);
+        });
+
+        it('should not render the image placeholder when widget\'s module `placeholderUrl` option is falsy', function() {
+          const { document } = new JSDOM(_result).window;
+          const imgNodes = document.querySelectorAll('img');
+
+          assert(imgNodes.length === 0);
+        });
+      });
     });
   });
 });
