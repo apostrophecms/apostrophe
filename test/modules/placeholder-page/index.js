@@ -10,7 +10,8 @@ module.exports = {
         label: 'Main',
         options: {
           widgets: {
-            placeholder: {}
+            placeholder: {},
+            '@apostrophecms/image': {}
           }
         }
       }
