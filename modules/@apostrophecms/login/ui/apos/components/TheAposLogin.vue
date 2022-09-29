@@ -237,10 +237,12 @@ export default {
       }
     },
     getInitialSubmitRequirementsData() {
-      return Object.fromEntries(this.requirements.filter(r => r.phase !== 'afterPasswordVerified').map(r => ([
-        r.name,
-        r.value
-      ])));
+      return Object.fromEntries(this.requirements
+        .filter(r => r.phase !== 'afterPasswordVerified' || !r.done)
+        .map(r => ([
+          r.name,
+          r.value
+        ])));
     },
     async invokeFinalLoginApi() {
       try {

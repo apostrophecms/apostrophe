@@ -9,7 +9,7 @@
 
 ### Fixes
 
-* After a failed login attempt, no more requirements check in order not to prevent the user from submitting the login form again.
+* Resolved a bug in which users making a password error in the presence of pre-login checks such as a CAPTCHA were unable to try again until they refreshed the page.
 
 ## 3.28.1 (2022-09-15)
 
