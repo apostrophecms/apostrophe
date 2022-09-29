@@ -26,9 +26,10 @@
           :context-menu-options="contextMenuOptions"
           :empty="true"
           :index="0"
-          :widget-options="options.widgets"
+          :options="options"
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
+          :widget-options="options.widgets"
         />
       </template>
     </div>
@@ -138,7 +139,8 @@ export default {
       contextMenuOptions: {
         menu: this.choices
       },
-      edited: {}
+      edited: {},
+      widgets: {}
     };
   },
   computed: {
@@ -164,7 +166,7 @@ export default {
       return window.apos.area;
     },
     types() {
-      return Object.keys(this.options.widgets);
+      return Object.keys(this.widgets);
     },
     maxReached() {
       return this.options.max && this.next.length >= this.options.max;
@@ -193,6 +195,16 @@ export default {
     },
     generation() {
       this.next = this.getValidItems();
+    }
+  },
+  created() {
+    if (this.options.groups) {
+      for (const group of Object.keys(this.options.groups)) {
+        this.widgets = {
+          ...this.options.groups[group].widgets,
+          ...this.widgets
+        };
+      }
     }
   },
   mounted() {
