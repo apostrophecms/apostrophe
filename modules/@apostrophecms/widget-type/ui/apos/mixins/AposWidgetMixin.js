@@ -70,9 +70,7 @@ export default {
         return {};
       }
 
-      const className = typeof placeholderClass === 'string' && placeholderClass.length
-        ? placeholderClass
-        : 'apos-placeholder';
+      const className = placeholderClass || 'apos-placeholder';
 
       return {
         [className]: this.value.aposPlaceholder === true
