@@ -66,14 +66,12 @@ export default {
     getClasses() {
       const { placeholderClass } = this.moduleOptions;
 
-      if (placeholderClass === false) {
+      if (!placeholderClass) {
         return {};
       }
 
-      const className = placeholderClass || 'apos-placeholder';
-
       return {
-        [className]: this.value.aposPlaceholder === true
+        [placeholderClass]: this.value.aposPlaceholder === true
       };
     }
   }

@@ -5,7 +5,6 @@ module.exports = {
     className: false,
     icon: 'image-icon',
     dimensionAttrs: false,
-    initialModal: false,
     placeholder: true,
     placeholderClass: false,
     placeholderUrl: '/modules/@apostrophecms/image-widget/placeholder.jpg'
