@@ -16,6 +16,7 @@ module.exports = {
     className: false,
     icon: 'play-box-icon',
     initialModal: false,
+    placeholder: true,
     placeholderClass: false,
     placeholderUrl: 'https://youtu.be/Q5UX9yexEyM'
   },
