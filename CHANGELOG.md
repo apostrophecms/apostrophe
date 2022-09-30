@@ -6,6 +6,10 @@
 
 * Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
 
+### Fixes
+
+* Fix `cache` module `clear-cache` CLI task message
+
 ## 3.29.0 (2022-09-29)
 
 ### Adds
