@@ -6,6 +6,8 @@
 
 * Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
 
+### Fixes
+
 * Fixes help message for 'express' module `list-routes` CLI task
 
 ## 3.29.0 (2022-09-29)
