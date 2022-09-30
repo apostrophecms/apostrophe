@@ -441,11 +441,15 @@ export default {
           index
         });
       } else if (!this.widgetHasInitialModal(name)) {
+        const widgetAreaDefaultData = this.widgetAreaDefaultData(name);
+
+        // If a widget has area-specific default values,
+        // then we set aposPlaceholder to false:
         return this.insert({
           widget: {
             type: name,
-            aposPlaceholder: true,
-            ...this.widgetAreaDefaultData(name)
+            aposPlaceholder: !widgetAreaDefaultData,
+            ...widgetAreaDefaultData
           },
           index
         });
@@ -483,7 +487,11 @@ export default {
       return this.moduleOptions.contextualWidgetDefaultData[type];
     },
     widgetAreaDefaultData(type) {
-      return this.options.widgets[type]._def || null;
+      const defaults = this.options.widgets[type]._def;
+
+      return defaults && Object.keys(defaults).length
+        ? defaults
+        : null;
     },
     async insert({ index, widget }) {
       if (!widget._id) {
