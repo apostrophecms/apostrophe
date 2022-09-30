@@ -8,7 +8,7 @@
 
 ### Fixes
 
-* Fixes help message for 'express' module `list-routes` CLI task
+* Fixes help message for `express` module `list-routes` CLI task
 
 ## 3.29.0 (2022-09-29)
 
