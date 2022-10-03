@@ -410,11 +410,15 @@ module.exports = {
         for (const method of methods) {
           const superMethod = self.apos.app[method].bind(self.apos.app);
           self.apos.app[method] = (path, ...args) => {
+            if ((method === 'get') && (!args.length)) {
+              // Handle app.get in its configuration getter form
+              return superMethod(path);
+            }
             const middleware = args.slice(0, args.length - 1);
             const fn = args[args.length - 1];
             superMethod(path, ...middleware, (req, ...args) => {
-              const moduleName = fn._aposItem && fn._aposItem.moduleName;
-              self.apos.util.log(`${req.url} invokes ${method.toUpperCase()} route for path ${path} ${moduleName && `in the module ${moduleName}`}`);
+              const moduleName = (fn === self.apos.page.serve) ? '@apostrophecms/page' : (fn._aposItem && fn._aposItem.moduleName);
+              self.apos.util.log(`${req.url} invokes ${method.toUpperCase()} route for path ${path} ${moduleName ? `in the module ${moduleName}` : ''}`);
               return fn(req, ...args);
             });
           };
