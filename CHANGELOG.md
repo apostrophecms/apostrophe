@@ -1,8 +1,14 @@
 # Changelog
 
-## UNRELEASE
+## UNRELEASED
 
 * Fixes `cache` module `clear-cache` CLI task message
+
+## 3.29.1 (2022-10-03)
+
+### Fixes
+
+* Hotfix to restore Node 14 support. Of course Node 16 is also supported.
 
 ## 3.29.0 (2022-10-03)
 

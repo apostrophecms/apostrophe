@@ -51,9 +51,9 @@ module.exports = (self) => {
       return _.isEqual(one[field.name], two[field.name]);
     },
     validate: function (field, options, warn, fail) {
-      let widgets = field.options?.widgets || {};
+      let widgets = (field.options && field.options.widgets) || {};
 
-      if (field.options?.groups) {
+      if (field.options && field.options.groups) {
         for (const group of Object.keys(field.options.groups)) {
           widgets = {
             ...widgets,
