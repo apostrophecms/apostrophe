@@ -5,6 +5,24 @@
 ### Adds
 
 * New `APOS_LOG_ALL_ROUTES` environment variable. If set, Apostrophe logs information about all middleware functions and routes that are executed on behalf of a particular URL.
+* Fixes `cache` module `clear-cache` CLI task message
+
+## 3.29.1 (2022-10-03)
+
+### Fixes
+
+* Hotfix to restore Node 14 support. Of course Node 16 is also supported.
+
+## 3.29.0 (2022-10-03)
+
+### Adds
+
+* Areas now support an `expanded: true` option to display previews for widgets. The Expanded Widget Preview Menu also supports grouping and display columns for each group.
+* Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
+
+### Fixes
+
+* Resolved a bug in which users making a password error in the presence of pre-login checks such as a CAPTCHA were unable to try again until they refreshed the page.
 
 ## 3.28.1 (2022-09-15)
 
@@ -114,7 +132,7 @@ Hotfix: always waits for the DOM to be ready before initializing the Apostrophe 
 
 ### Fixes
 
-* Fix a Webpack cache issue leading to modules symlinked in `node_modules` not being rebuilt. 
+* Fix a Webpack cache issue leading to modules symlinked in `node_modules` not being rebuilt.
 * Fixes login maximum attempts error message that wasn't showing the plural when lockoutMinutes is more than 1.
 * Fixes the text color of the current array item's slat label in the array editor modal.
 * Fixes the maximum width of an array item's slat label so as to not obscure the Remove button in narrow viewports.
@@ -128,13 +146,13 @@ Hotfix: always waits for the DOM to be ready before initializing the Apostrophe 
 ### Fixes
 
 * Work around backwards compatibility break in `sass` module by pinning to `sass` `1.50.x` while we investigate. If you saw the error `RangeError: Invalid value: Not in inclusive range 0..145: -1` you can now fix that by upgrading with `npm update`. If it does not immediately clear up the issue in development, try `node app @apostrophecms/asset:clear-cache`.
- 
+
 ## 3.21.0 (2022-05-25)
 
 ### Adds
 
 * Trigger only the relevant build when in a watch mode (development). The build paths should not contain comma (`,`).
-* Adds an `unpublish` method, available for any doc-type.  
+* Adds an `unpublish` method, available for any doc-type.
 An _Unpublish_ option has also been added to the context menu of the modal when editing a piece or a page.
 * Allows developers to group fields in relationships the same way it's done for normal schemas.
 
@@ -211,9 +229,9 @@ An _Unpublish_ option has also been added to the context menu of the modal when 
 * Adds possibility for modules to [add extra frontend bundles for scss and js](https://v3.docs.apostrophecms.org/guide/webpack.html). This is useful when the `ui/src` build would otherwise be very large due to code used on rarely accessed pages.
 * Loads the right bundles on the right pages depending on the page template and the loaded widgets. Logged-in users have all the bundles on every page, because they might introduce widgets at any time.
 * Fixes deprecation warnings displayed after running `npm install`, for dependencies that are directly included by this package.
-* Implement custom ETags emission when `etags` cache option is enabled. [See the documentation for more information](https://v3.docs.apostrophecms.org/guide/caching.html).  
-It allows caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) document updates, thanks to backlinks mentioned above.  
-Note that for now, only single pages and pieces benefit from the ETags caching system (pages' and pieces' `getOne` REST API route, and regular served pages).  
+* Implement custom ETags emission when `etags` cache option is enabled. [See the documentation for more information](https://v3.docs.apostrophecms.org/guide/caching.html).
+It allows caching of pages and pieces, using a cache invalidation mechanism that takes into account related (and reverse related) document updates, thanks to backlinks mentioned above.
+Note that for now, only single pages and pieces benefit from the ETags caching system (pages' and pieces' `getOne` REST API route, and regular served pages).
 The cache of an index page corresponding to the type of a piece that was just saved will automatically be invalidated. However, please consider that it won't be effective when a related piece is saved, therefore the cache will automatically be invalidated _after_ the cache lifetime set in `maxAge` cache option.
 
 ### Fixes
