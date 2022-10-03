@@ -39,6 +39,8 @@ module.exports = {
           const _docId = self.apos.launder.id(req.body._docId);
           const field = self.apos.schema.getFieldById(areaFieldId);
 
+          // console.log('field', field);
+
           if (!field) {
             throw self.apos.error('invalid');
           }
@@ -130,7 +132,7 @@ module.exports = {
         const choices = [];
 
         const field = self.apos.schema.getFieldById(area._fieldId);
-        console.log('field', field);
+        // console.log('field', field);
 
         const options = field.options;
         if (!options) {
@@ -158,16 +160,37 @@ module.exports = {
           throw self.apos.error('invalid', '`def` property must be an array');
         }
 
-        // TODO: handle widgets defined as string inside a nested widget
         // FIXME: PATCH error
         // TODO: be able to edit contextual widgets
         // TODO: be able to save with and without editing default widgets
         // TODO: do not show default widgets before the actual DB-saved ones (glitch)
         if (field.def && field.def.length && !area.items.length) {
-          const items = field.def.map(widget =>
-            (typeof widget === 'string') ? { type: widget } : widget
-          );
+          const format = widget => {
+            if (typeof widget === 'string') {
+              return {
+                type: widget
+              };
+            }
+            for (const key in widget) {
+              if (Array.isArray(widget[key])) {
+                widget[key] = widget[key].map(format);
+              }
+            }
+
+            return widget;
+          };
+
+          const items = field.def.map(format);
+          // console.log('items');
+          // console.log(require('util').inspect(items, { depth: 5, colors: true, showHidden: false }));
           const widgets = await self.sanitizeItems(req, items, field.options || {}, true);
+
+          // widgets.forEach(widget => {
+          //   self.apos.doc.walkByMetaType(widget);
+          // });
+          // console.log('widgets');
+          // console.log(require('util').inspect(widgets, { depth: 5, colors: true, showHidden: false }));
+
           area.items.push(...widgets);
         }
 
@@ -177,13 +200,13 @@ module.exports = {
           }
         }
         const canEdit = area._edit && (options.edit !== false) && req.query.aposEdit;
+        // console.log('canEdit', canEdit);
         if (canEdit) {
           // Ease of access to image URLs. When not editing we
           // just use the helpers
           self.apos.attachment.all(area, { annotate: true });
+          // console.log('before render - area', require('util').inspect(area, { depth: 5, colors: true }));
         }
-
-        console.log('before render - area', require('util').inspect(area, { depth: 5, colors: true }));
 
         return self.render(req, 'area', {
           // TODO filter area to exclude big relationship objects, but
@@ -267,7 +290,7 @@ module.exports = {
       // options to sanitize against. Thus h5 can be legal
       // in one rich text widget and not in another.
       //
-      // `checkPlaceholder` is used to choose whether to render the widgets
+      // `forcePlaceholder` is used to choose whether to render the widgets
       // with their placeholder or not, depending on their manager options.
       //
       // If any errors occur sanitizing the individual widgets,
@@ -275,7 +298,7 @@ module.exports = {
       // is thrown.
       //
       // Returns a new array of sanitized items.
-      async sanitizeItems(req, items, options, checkPlaceholder = false) {
+      async sanitizeItems(req, items, options, forcePlaceholder = false) {
         options = options || {};
         const result = [];
         const errors = [];
@@ -296,18 +319,21 @@ module.exports = {
             continue;
           }
 
-          const additionalData = {};
+          if (forcePlaceholder && manager.options.placeholder) {
+            item.aposPlaceholder = true;
+          }
 
-          if (checkPlaceholder && manager.options.initialModal === false) {
-            additionalData.aposPlaceholder = true;
+          if (!forcePlaceholder) {
+            console.trace();
           }
 
           let newItem;
           try {
-            newItem = await manager.sanitize(req, {
-              ...item,
-              ...additionalData
-            }, widgetOptions);
+            console.log('item', forcePlaceholder);
+            console.log(require('util').inspect(item, { depth: 5, colors: true, showHidden: false }));
+            newItem = await manager.sanitize(req, item, widgetOptions, forcePlaceholder);
+            console.log('newItem');
+            console.log(require('util').inspect(newItem, { depth: 5, colors: true, showHidden: false }));
             newItem._id = self.apos.launder.id(item._id) || self.apos.util.generateId();
           } catch (e) {
             if (Array.isArray(e)) {

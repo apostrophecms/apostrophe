@@ -278,7 +278,7 @@ module.exports = {
       //
       // Returns a new, sanitized widget object.
 
-      async sanitize(req, input, options) {
+      async sanitize(req, input, options, forcePlaceholder = false) {
         if (!input || typeof input !== 'object') {
           // Do not crash
           input = {};
@@ -288,7 +288,7 @@ module.exports = {
         const output = self.apos.schema.newInstance(self.schema);
         const schema = self.allowedSchema(req);
         output._id = self.apos.launder.id(input._id) || self.apos.util.generateId();
-        await self.apos.schema.convert(req, schema, input, output);
+        await self.apos.schema.convert(req, schema, input, output, forcePlaceholder);
         output.metaType = 'widget';
         output.type = self.name;
         output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
