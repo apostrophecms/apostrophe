@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+* Fixes `cache` module `clear-cache` CLI task message
+
 ## 3.29.1 (2022-10-03)
 
 ### Fixes
