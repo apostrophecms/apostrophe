@@ -164,6 +164,11 @@ module.exports = {
         const clonedWidget = { ...widget };
 
         if (widget.aposPlaceholder === true) {
+          // Do not render widget on preview mode:
+          if (req.query.aposEdit !== '1') {
+            return '';
+          }
+
           self.schema.forEach(field => {
             if (!widget[field.name] && field.placeholder !== undefined) {
               clonedWidget[field.name] = field.placeholder;

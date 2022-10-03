@@ -30,9 +30,13 @@ describe('Widgets', function() {
       }
     });
 
-    req = apos.task.getAnonReq();
+    req = apos.task.getAnonReq({
+      query: {
+        aposEdit: '1'
+      }
+    });
 
-    const home = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
+    const home = await apos.page.find(req, { level: 0 }).toObject();
     homePath = home._id.replace(':en:published', '');
   });
 
@@ -266,6 +270,19 @@ describe('Widgets', function() {
         assert(result.includes('<li>widget5 - date: 2022-09-21</li>'));
         assert(result.includes('<li>widget5 - time: 15:39:12</li>'));
       });
+
+      it('should not render the placeholders on preview mode', async function() {
+        // eslint-disable-next-line no-unused-vars
+        const { aposEdit, ...query } = req.query;
+        const _nonEditingReq = {
+          ...req,
+          query
+        };
+        const args = getRenderArgs(_nonEditingReq, page);
+        const _result = await apos.modules['placeholder-page'].render(_nonEditingReq, 'page', args);
+
+        assert(!_result.includes('widget1'));
+      });
     });
 
     const mediaWidgetTypeToAssertion = {
@@ -278,6 +295,11 @@ describe('Widgets', function() {
           assert(imgNodes[0].classList.contains('image-widget-placeholder'));
           assert(imgNodes[0].alt === 'Image placeholder');
           assert(imgNodes[0].src === '/apos-frontend/default/modules/@apostrophecms/image-widget/placeholder.jpg');
+        },
+        assertPreviewMode(document) {
+          const imgNodes = document.querySelectorAll('img');
+
+          assert(imgNodes.length === 0);
         },
         assertFalsyPlaceholderUrl(document) {
           const imgNodes = document.querySelectorAll('img');
@@ -301,6 +323,11 @@ describe('Widgets', function() {
           assert(videoWrapperNodes.length === 1);
           assert(videoWrapperNodes[0].dataset.aposVideoUrl === 'https://youtu.be/Q5UX9yexEyM');
         },
+        assertPreviewMode(document) {
+          const videoWrapperNodes = document.querySelectorAll('[data-apos-video-widget]');
+
+          assert(videoWrapperNodes.length === 0);
+        },
         assertFalsyPlaceholderUrl(document) {
           const videoWrapperNodes = document.querySelectorAll('[data-apos-video-widget]');
 
@@ -320,6 +347,7 @@ describe('Widgets', function() {
       {
         placeholderUrlOverride,
         assertAposPlaceholderTrue,
+        assertPreviewMode,
         assertFalsyPlaceholderUrl,
         assertPlaceholderUrlOverride
       }
@@ -361,13 +389,27 @@ describe('Widgets', function() {
           await deletePage(apos, page);
         });
 
-        it(`should render the ${type} placeholder only when widget's \`aposPlaceholder\` doc field is \`true\``, function() {
+        it('should render the placeholder only when widget\'s `aposPlaceholder` doc field is `true`', function() {
           const { document } = new JSDOM(result).window;
 
           assertAposPlaceholderTrue(document);
         });
 
-        describe(`${type} widget - falsy placeholderUrl`, function() {
+        it('should not render the placeholders on preview mode', async function() {
+          // eslint-disable-next-line no-unused-vars
+          const { aposEdit, ...query } = req.query;
+          const _nonEditingReq = {
+            ...req,
+            query
+          };
+          const args = getRenderArgs(_nonEditingReq, page);
+          const _result = await apos.modules['placeholder-page'].render(_nonEditingReq, 'page', args);
+
+          const { document } = new JSDOM(_result).window;
+          assertPreviewMode(document);
+        });
+
+        describe('placeholderUrl - falsy', function() {
           let _apos;
           let _page;
           let _result;
@@ -385,9 +427,13 @@ describe('Widgets', function() {
                 }
               }
             });
-            const _req = _apos.task.getAnonReq();
+            const _req = _apos.task.getAnonReq({
+              query: {
+                aposEdit: '1'
+              }
+            });
 
-            const home = await _apos.page.find(_apos.task.getAnonReq(), { level: 0 }).toObject();
+            const home = await _apos.page.find(_req, { level: 0 }).toObject();
             const _homePath = home._id.replace(':en:published', '');
 
             await insertPage(_apos, _homePath, widgets);
@@ -402,14 +448,14 @@ describe('Widgets', function() {
             await t.destroy(_apos);
           });
 
-          it(`should not render the ${type} placeholder when widget's module \`placeholderUrl\` option is falsy`, function() {
+          it('should not render the placeholder when widget\'s module `placeholderUrl` option is falsy', function() {
             const { document } = new JSDOM(_result).window;
 
             assertFalsyPlaceholderUrl(document);
           });
         });
 
-        describe(`${type} widget - placeholderUrl override`, function() {
+        describe('placeholderUrl - override', function() {
           let _apos;
           let _page;
           let _result;
@@ -427,9 +473,13 @@ describe('Widgets', function() {
                 }
               }
             });
-            const _req = _apos.task.getAnonReq();
+            const _req = _apos.task.getAnonReq({
+              query: {
+                aposEdit: '1'
+              }
+            });
 
-            const home = await _apos.page.find(_apos.task.getAnonReq(), { level: 0 }).toObject();
+            const home = await _apos.page.find(_req, { level: 0 }).toObject();
             const _homePath = home._id.replace(':en:published', '');
 
             await insertPage(_apos, _homePath, widgets);
@@ -444,7 +494,7 @@ describe('Widgets', function() {
             await t.destroy(_apos);
           });
 
-          it(`should render the ${type} placeholder set to the widget's module \`placeholderUrl\` override`, function() {
+          it('should render the placeholder set to the widget\'s module `placeholderUrl` override', function() {
             const { document } = new JSDOM(_result).window;
 
             assertPlaceholderUrlOverride(document);
