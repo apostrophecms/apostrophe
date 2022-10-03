@@ -1,20 +1,15 @@
 # Changelog
 
-## UNRELEASED
+## 3.29.0 (2022-10-03)
 
 ### Adds
 
+* Areas now support an `expanded: true` option to display previews for widgets. The Expanded Widget Preview Menu also supports grouping and display columns for each group.
 * Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
 
 ### Fixes
 
 * Resolved a bug in which users making a password error in the presence of pre-login checks such as a CAPTCHA were unable to try again until they refreshed the page.
-
-## 3.29.0 (2022-09-29)
-
-### Adds
-
-* Areas now support an `expanded: true` option to display previews for widgets. The Expanded Widget Preview Menu also supports grouping and display columns for each group.
 
 ## 3.28.1 (2022-09-15)
 
