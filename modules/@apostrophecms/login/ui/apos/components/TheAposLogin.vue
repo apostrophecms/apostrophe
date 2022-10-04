@@ -232,16 +232,17 @@ export default {
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
         this.phase = 'beforeSubmit';
-        this.requirements = getRequirements();
       } finally {
         this.busy = false;
       }
     },
     getInitialSubmitRequirementsData() {
-      return Object.fromEntries(this.requirements.filter(r => r.phase !== 'afterPasswordVerified').map(r => ([
-        r.name,
-        r.value
-      ])));
+      return Object.fromEntries(this.requirements
+        .filter(r => r.phase !== 'afterPasswordVerified' || !r.done)
+        .map(r => ([
+          r.name,
+          r.value
+        ])));
     },
     async invokeFinalLoginApi() {
       try {
@@ -257,7 +258,6 @@ export default {
         this.redirectAfterLogin();
       } catch (e) {
         this.error = e.message || 'An error occurred. Please try again.';
-        this.requirements = getRequirements();
         this.phase = 'beforeSubmit';
       } finally {
         this.busy = false;

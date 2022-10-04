@@ -445,7 +445,7 @@ export default {
         apos.area.activeEditor = this;
         const widget = await apos.modal.execute(componentName, {
           value: null,
-          options: this.options.widgets[name],
+          options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId
         });
@@ -457,6 +457,18 @@ export default {
           });
         }
       }
+    },
+    widgetOptionsByType(name) {
+      if (this.options.widgets) {
+        return this.options.widgets[name];
+      } else if (this.options.expanded) {
+        for (const info of Object.values(this.options.groups || {})) {
+          if (info?.widgets?.[name]) {
+            return info.widgets[name];
+          }
+        }
+      }
+      return null;
     },
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];

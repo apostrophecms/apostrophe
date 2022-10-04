@@ -97,7 +97,7 @@ module.exports = {
   tasks(self) {
     return {
       'clear-cache': {
-        help: 'Usage: node app @apostrophecms/cache:clear namespace1 namespace2...\n\nClears all values stored in a given namespace or namespaces. If you are using apos.cache in your own code you will\nknow the namespace name. Standard caches include "@apostrophecms/oembed". Normally it is not necessary to clear them.',
+        usage: 'usage: node app @apostrophecms/cache:clear-cache namespace1 namespace2...\n\nClears all values stored in a given namespace or namespaces. If you are using apos.cache in your own code you will\nknow the namespace name. Standard caches include "@apostrophecms/oembed". Normally it is not necessary to clear them.',
         task: async (argv) => {
           const namespaces = argv._.slice(1);
           if (!namespaces.length) {
