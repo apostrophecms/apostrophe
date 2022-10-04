@@ -5,6 +5,9 @@
 ### Adds
 
 * New `APOS_LOG_ALL_ROUTES` environment variable. If set, Apostrophe logs information about all middleware functions and routes that are executed on behalf of a particular URL.
+
+### Fixes
+
 * Fixes `cache` module `clear-cache` CLI task message
 
 ## 3.29.1 (2022-10-03)
