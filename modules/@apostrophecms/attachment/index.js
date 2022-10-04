@@ -90,12 +90,15 @@ module.exports = {
     if (self.options.addFileGroups) {
       self.options.addFileGroups.forEach(newGroup => {
         if (self.fileGroups.some(existingGroup => existingGroup.name === newGroup.name)) {
-          let existingGroup = self.fileGroups.find(existingGroup => existingGroup.name === newGroup.name);
+          const existingGroup = self.fileGroups.find(existingGroup => existingGroup.name === newGroup.name);
           if (newGroup.extensions) {
-            existingGroup.extensions = [...existingGroup.extensions, ...newGroup.extensions];
+            existingGroup.extensions = [ ...existingGroup.extensions, ...newGroup.extensions ];
           };
           if (newGroup.extensionMaps) {
-            existingGroup.extensionMaps = {...existingGroup.extensionMaps, ...newGroup.extensionMaps};
+            existingGroup.extensionMaps = {
+              ...existingGroup.extensionMaps,
+              ...newGroup.extensionMaps
+            };
           }
           const groupIndex = self.fileGroups.findIndex(existingGroup => existingGroup.name === newGroup.name);
           self.fileGroups.splice(groupIndex, 1);
@@ -103,7 +106,7 @@ module.exports = {
         } else {
           self.fileGroups.push(newGroup);
         }
-      })
+      });
     };
 
     // Do NOT add keys here unless they have the value `true`
