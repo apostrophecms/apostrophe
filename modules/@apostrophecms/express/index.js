@@ -171,7 +171,7 @@ module.exports = {
   tasks(self) {
     return {
       'list-routes': {
-        help: 'List all Express routes registered via routes(), apiRoutes(), etc. (not directly via apos.app)',
+        usage: 'Usage: node app @apostrophecms/express:list-routes \n\n List all Express routes registered via routes(), apiRoutes(), etc. (not directly via apos.app)',
         async task(argv) {
           for (const info of self.finalModuleMiddlewareAndRoutes) {
             if (info.route) {
