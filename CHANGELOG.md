@@ -4,13 +4,31 @@
 
 ### Adds
 
-* Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
+* New `APOS_LOG_ALL_ROUTES` environment variable. If set, Apostrophe logs information about all middleware functions and routes that are executed on behalf of a particular URL.
+* Adds the `addFileGroups` option to the `attachments` module. This allows easier addition of new file groups or extension of the existing groups.
 
-## 3.29.0 (2022-09-29)
+### Fixes
+
+* Fixes `cache` module `clear-cache` CLI task message
+* Fixes help message for `express` module `list-routes` CLI task
+
+## 3.29.1 (2022-10-03)
+
+### Fixes
+
+* Hotfix to restore Node 14 support. Of course Node 16 is also supported.
+
+
+## 3.29.0 (2022-10-03)
 
 ### Adds
 
 * Areas now support an `expanded: true` option to display previews for widgets. The Expanded Widget Preview Menu also supports grouping and display columns for each group.
+* Add "showQuery" in piece-page-type in order to override the query for the "show" page as "indexQuery" does it for the index page
+
+### Fixes
+
+* Resolved a bug in which users making a password error in the presence of pre-login checks such as a CAPTCHA were unable to try again until they refreshed the page.
 
 ## 3.28.1 (2022-09-15)
 
