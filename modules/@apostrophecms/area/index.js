@@ -160,6 +160,8 @@ module.exports = {
           throw self.apos.error('invalid', '`def` property must be an array');
         }
 
+        console.log('area.items', area.items);
+
         // FIXME: PATCH error
         // TODO: be able to edit contextual widgets
         // TODO: be able to save with and without editing default widgets
@@ -167,31 +169,36 @@ module.exports = {
         if (field.def && field.def.length && !area.items.length) {
           const format = widget => {
             if (typeof widget === 'string') {
-              return {
-                type: widget
-              };
+              return { type: widget };
             }
             for (const key in widget) {
               if (Array.isArray(widget[key])) {
                 widget[key] = widget[key].map(format);
               }
             }
-
             return widget;
           };
 
           const items = field.def.map(format);
-          // console.log('items');
-          // console.log(require('util').inspect(items, { depth: 5, colors: true, showHidden: false }));
           const widgets = await self.sanitizeItems(req, items, field.options || {}, true);
 
-          // widgets.forEach(widget => {
-          //   self.apos.doc.walkByMetaType(widget);
-          // });
-          // console.log('widgets');
-          // console.log(require('util').inspect(widgets, { depth: 5, colors: true, showHidden: false }));
-
+          // Useful?
+          // const addEditAttribute = widget => {
+          //   for (const key in widget) {
+          //     if (Array.isArray(widget[key])) {
+          //       widget[key] = widget[key].map(addEditAttribute);
+          //     }
+          //   }
+          //   return {
+          //     ...widget,
+          //     _edit: true
+          //   };
+          // };
+          // const widgetsWithEdit = widgets.map(addEditAttribute);
           area.items.push(...widgets);
+
+          // TODO: save area somewhere, before, not here
+          // self.saveArea(req, area._docId, 'main', widgets);
         }
 
         if (area._docId) {
@@ -200,13 +207,12 @@ module.exports = {
           }
         }
         const canEdit = area._edit && (options.edit !== false) && req.query.aposEdit;
-        // console.log('canEdit', canEdit);
         if (canEdit) {
           // Ease of access to image URLs. When not editing we
           // just use the helpers
           self.apos.attachment.all(area, { annotate: true });
-          // console.log('before render - area', require('util').inspect(area, { depth: 5, colors: true }));
         }
+        console.log('before render - area', require('util').inspect(area, { depth: 5, colors: true }));
 
         return self.render(req, 'area', {
           // TODO filter area to exclude big relationship objects, but
@@ -323,17 +329,13 @@ module.exports = {
             item.aposPlaceholder = true;
           }
 
-          if (!forcePlaceholder) {
-            console.trace();
-          }
-
           let newItem;
           try {
-            console.log('item', forcePlaceholder);
-            console.log(require('util').inspect(item, { depth: 5, colors: true, showHidden: false }));
+            // console.log('item', forcePlaceholder);
+            // console.log(require('util').inspect(item, { depth: 5, colors: true, showHidden: false }));
             newItem = await manager.sanitize(req, item, widgetOptions, forcePlaceholder);
-            console.log('newItem');
-            console.log(require('util').inspect(newItem, { depth: 5, colors: true, showHidden: false }));
+            // console.log('newItem');
+            // console.log(require('util').inspect(newItem, { depth: 5, colors: true, showHidden: false }));
             newItem._id = self.apos.launder.id(item._id) || self.apos.util.generateId();
           } catch (e) {
             if (Array.isArray(e)) {

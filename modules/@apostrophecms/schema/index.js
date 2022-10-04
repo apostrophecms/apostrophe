@@ -1244,6 +1244,8 @@ module.exports = {
             }
           });
         }
+        console.log('patch');
+        console.log(require('util').inspect(patch, { depth: 10, colors: true, showHidden: false }));
         _.each(patch, function(val, key) {
           if (key.charAt(0) !== '$') {
             let atReference = false;
