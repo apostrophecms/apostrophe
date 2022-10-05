@@ -5,7 +5,7 @@
 ### Adds
 
 * New `APOS_LOG_ALL_ROUTES` environment variable. If set, Apostrophe logs information about all middleware functions and routes that are executed on behalf of a particular URL.
-* Adds the `addFileGroups` option to the `attachment` module. This allows easier addition of new file groups or extension of the existing groups.
+* Adds the `addFileGroups` option to the `attachment` module. Additionally it exposes a new method, `addFileGroup(group)`. These allow easier addition of new file groups or extension of the existing groups.
 
 ### Fixes
 
