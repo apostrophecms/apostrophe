@@ -90,19 +90,7 @@ module.exports = {
     if (self.options.addFileGroups) {
       self.options.addFileGroups.forEach(newGroup => {
         if (self.fileGroups.some(existingGroup => existingGroup.name === newGroup.name)) {
-          const existingGroup = self.fileGroups.find(existingGroup => existingGroup.name === newGroup.name);
-          if (newGroup.extensions) {
-            existingGroup.extensions = [ ...existingGroup.extensions, ...newGroup.extensions ];
-          };
-          if (newGroup.extensionMaps) {
-            existingGroup.extensionMaps = {
-              ...existingGroup.extensionMaps,
-              ...newGroup.extensionMaps
-            };
-          }
-          const groupIndex = self.fileGroups.findIndex(existingGroup => existingGroup.name === newGroup.name);
-          self.fileGroups.splice(groupIndex, 1);
-          self.fileGroups.push(existingGroup);
+          self.addFileGroup(newGroup);
         } else {
           self.fileGroups.push(newGroup);
         }
@@ -1204,6 +1192,19 @@ module.exports = {
             }
           });
         });
+      },
+
+      addFileGroup(newGroup) {
+        const existingGroup = self.fileGroups.find(existingGroup => existingGroup.name === newGroup.name);
+        if (newGroup.extensions) {
+          existingGroup.extensions = [ ...existingGroup.extensions, ...newGroup.extensions ];
+        };
+        if (newGroup.extensionMaps) {
+          existingGroup.extensionMaps = {
+            ...existingGroup.extensionMaps,
+            ...newGroup.extensionMaps
+          };
+        }
       },
       ...require('./lib/legacy-migrations')(self)
     };
