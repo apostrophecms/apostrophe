@@ -80,6 +80,75 @@ describe('Attachment', function() {
       assert(good);
     });
 
+    it('should allow upload if extension has been added to the current fileGroups', async function() {
+      let apos;
+      let good = true;
+      try {
+        apos = await t.create({
+          root: module,
+          modules: {
+            '@apostrophecms/attachment': {
+              options: {
+                addFileGroups: [
+                  {
+                    name: 'images',
+                    extensions: [
+                      'mp4'
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        });
+        const filename = 'tiny.mp4';
+        await apos.attachment.insert(apos.task.getReq(), {
+          name: filename,
+          path: uploadSource + filename
+        });
+      } catch (e) {
+        good = false;
+      } finally {
+        assert(good);
+        t.destroy(apos);
+      }
+    });
+
+    it('should allow upload if extension has been added in a new fileGroup', async function() {
+      let apos;
+      let good = true;
+      try {
+        apos = await t.create({
+          root: module,
+          modules: {
+            '@apostrophecms/attachment': {
+              options: {
+                addFileGroups: [
+                  {
+                    name: 'testGroup',
+                    extensions: [
+                      'mp4'
+                    ],
+                    extensionMaps: {}
+                  }
+                ]
+              }
+            }
+          }
+        });
+        const filename = 'tiny.mp4';
+        await apos.attachment.insert(apos.task.getReq(), {
+          name: filename,
+          path: uploadSource + filename
+        });
+      } catch (e) {
+        good = false;
+      } finally {
+        assert(good);
+        t.destroy(apos);
+      }
+    });
+
     it('should crop an image file when requested', async function() {
       let result = await insert('crop_image.png');
       const crop = {
