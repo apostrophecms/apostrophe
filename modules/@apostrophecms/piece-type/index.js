@@ -238,7 +238,7 @@ module.exports = {
       async post(req) {
         self.publicApiCheck(req);
         if (req.body._newInstance) {
-          const newInstance = self.newInstance();
+          const newInstance = await self.newInstance(req);
           newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
           delete newInstance._url;
           return newInstance;
@@ -747,7 +747,7 @@ module.exports = {
       // before inserting the piece.
 
       async convertInsertAndRefresh(req, input, options) {
-        const piece = self.newInstance();
+        const piece = await self.newInstance(req);
         const copyingId = self.apos.launder.id(input._copyingId);
         await self.convert(req, input, piece, {
           onlyPresentFields: true,
@@ -915,8 +915,8 @@ module.exports = {
       // is used to distinguish it from other samples. Useful
       // for things like testing pagination, see the
       // `your-piece-type:generate` task.
-      generate(i) {
-        const piece = self.newInstance();
+      async generate(req, i) {
+        const piece = await self.newInstance(req);
         piece.title = 'Generated #' + (i + 1);
         return piece;
       },
@@ -1010,7 +1010,7 @@ module.exports = {
             const total = argv.total || 10;
             const req = self.apos.task.getReq();
             for (let i = 0; i < total; i++) {
-              const piece = self.generate(i);
+              const piece = await self.generate(req, i);
               piece.aposSampleData = true;
               await self.insert(req, piece);
             }

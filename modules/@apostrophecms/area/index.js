@@ -251,6 +251,7 @@ module.exports = {
       //
       // Returns a new array of sanitized items.
       async sanitizeItems(req, items, options) {
+        console.log(require('util').inspect(items, { depth: 9, colors: true, showHidden: false }));
         options = options || {};
         const result = [];
         const errors = [];

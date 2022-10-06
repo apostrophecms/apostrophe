@@ -293,7 +293,7 @@ module.exports = {
         }
         // Make sure we get default values for contextual fields so
         // `by` doesn't go missing for `@apostrophecms/image-widget`
-        const output = self.apos.schema.newInstance(self.schema);
+        const output = await self.apos.schema.newInstance(req, self.schema);
         const schema = self.allowedSchema(req);
         output._id = self.apos.launder.id(input._id) || self.apos.util.generateId();
         await self.apos.schema.convert(req, schema, input, output);

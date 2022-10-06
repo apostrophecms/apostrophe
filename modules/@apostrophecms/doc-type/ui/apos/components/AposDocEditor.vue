@@ -605,6 +605,7 @@ export default {
     async loadNewInstance () {
       this.docReady = false;
       const newInstance = await this.getNewInstance();
+      console.log('🚀 ~ file: AposDocEditor.vue ~ line 610 ~ loadNewInstance ~ newInstance', newInstance);
       this.original = newInstance;
       if (newInstance && newInstance.type !== this.docType) {
         this.docType = newInstance.type;

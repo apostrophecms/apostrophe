@@ -186,6 +186,9 @@ module.exports = {
               res.status(200);
               res.send(result);
             } catch (err) {
+              console.log('------------------ ERR ----------------------');
+              console.error(err);
+              console.log('------------------ END ERR ----------------------');
               return self.routeSendError(req, err);
             }
           };

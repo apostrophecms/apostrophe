@@ -365,15 +365,40 @@ module.exports = {
 
       // Return a new object with all default settings
       // defined in the schema
-      newInstance(schema) {
+      async newInstance(req, schema) {
         const instance = {};
-        for (const field of schema) {
-          if (field.def !== undefined) {
-            instance[field.name] = klona(field.def);
-          } else {
-            // All fields should have an initial value in the database
-            instance[field.name] = null;
+        const format = item => {
+          if (typeof item === 'string') {
+            return { type: item };
           }
+          for (const key in item) {
+            if (Array.isArray(item[key])) {
+              item[key] = item[key].map(format);
+            }
+          }
+          return item;
+        };
+
+        for (const field of schema) {
+          if (field.def === undefined) {
+            instance[field.name] = null;
+            continue;
+          }
+          if (field.type !== 'area') {
+            instance[field.name] = klona(field.def);
+            continue;
+          }
+
+          const items = field.def.map(format);
+          const sanitizedItems = await self.apos.area.sanitizeItems(req, items, field.options);
+
+          instance[field.name] = {
+            _id: self.apos.util.generateId(),
+            items: sanitizedItems,
+            metaType: 'area'
+          };
+
+          console.log(require('util').inspect(instance[field.name], { depth: 9, colors: true, showHidden: false }));
         }
         return instance;
       },

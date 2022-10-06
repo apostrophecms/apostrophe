@@ -235,7 +235,7 @@ module.exports = {
           // simply get a new page doc and return it
           const parentPage = await self.findForEditing(req, { _id: targetId })
             .permission('edit', '@apostrophecms/any-page-type').toObject();
-          const newChild = self.newChild(parentPage);
+          const newChild = self.newChild(req, parentPage);
           newChild._previewable = true;
           return newChild;
         }
@@ -252,13 +252,13 @@ module.exports = {
           }
           let page;
           if ((position === 'firstChild') || (position === 'lastChild')) {
-            page = self.newChild(targetPage);
+            page = self.newChild(req, targetPage);
           } else {
             const parentPage = targetPage._ancestors[targetPage._ancestors.length - 1];
             if (!parentPage) {
               throw self.apos.error('notfound');
             }
-            page = self.newChild(parentPage);
+            page = self.newChild(req, parentPage);
           }
           await manager.convert(req, input, page, {
             onlyPresentFields: true,
@@ -963,7 +963,7 @@ database.`);
       // such that no child page types are permitted, this method
       // returns null. Visibility settings are inherited from the
       // parent page.
-      newChild(parentPage) {
+      async newChild(req, parentPage) {
         const pageType = self.allowedChildTypes(parentPage)[0];
         if (!pageType) {
           self.apos.util.warn('No allowed Page types are specified.');
@@ -977,7 +977,7 @@ database.`);
             throw self.apos.error('error', `The page type module ${pageType} does not exist in the project.`);
           }
         }
-        const page = manager.newInstance();
+        const page = await manager.newInstance(req);
         _.extend(page, {
           title: 'New Page',
           slug: self.apos.util.addSlashIfNeeded(parentPage.slug) + 'new-page',
@@ -1883,14 +1883,14 @@ database.`);
           delete cloned._defaults;
           let ordinaryDefaults;
           if (parent) {
-            ordinaryDefaults = self.newChild(parent);
+            ordinaryDefaults = self.newChild(req, parent);
           } else {
             // The home page is being parked
             const type = item.type || parkedDefaults.type;
             if (!type) {
               throw new Error('Parked home page must have an explicit page type:\n\n' + JSON.stringify(item, null, '  '));
             }
-            ordinaryDefaults = self.apos.doc.getManager(type).newInstance();
+            ordinaryDefaults = await self.apos.doc.getManager(type).newInstance(req);
           }
           const _item = {
             ...ordinaryDefaults,

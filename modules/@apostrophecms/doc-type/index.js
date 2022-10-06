@@ -368,8 +368,8 @@ module.exports = {
       },
       // Returns a new instance of the doc type, with the appropriate default
       // values for each schema field.
-      newInstance() {
-        const doc = self.apos.schema.newInstance(self.schema);
+      async newInstance(req) {
+        const doc = await self.apos.schema.newInstance(req, self.schema);
         doc.type = self.name;
         return doc;
       },

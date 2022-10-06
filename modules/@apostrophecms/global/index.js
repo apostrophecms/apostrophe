@@ -82,7 +82,7 @@ module.exports = {
         const req = self.apos.task.getReq();
         const existing = await self.apos.doc.db.findOne({ slug: self.slug });
         if (!existing) {
-          const _new = self.newInstance();
+          const _new = await self.newInstance(req);
           Object.assign(_new, {
             slug: self.slug,
             type: self.name
