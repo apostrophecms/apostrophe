@@ -357,11 +357,55 @@ export default {
     },
     newInstance() {
       const instance = {};
-      for (const field of this.schema) {
-        if (field.def !== undefined) {
-          instance[field.name] = klona(field.def);
+      // TODO: pseudo code:
+      // CALL /api/v1/@apostrophecms/schema/new-array-item { scopedArrayName: field.scopedArrayName }
+      // IN BACK-END
+      // const schema = self.getArrayManager(scopedArrayName).schema;
+      // newInstance(req) {
+      //   if (req) {
+      //     return body();
+      //   } else {
+      //     return legacy();
+      //   }
+      //   async function body() { ... }
+      // }
+      const format = item => {
+        if (typeof item === 'string') {
+          return {
+            _id: cuid(),
+            type: item,
+            metaType: 'widget'
+          };
         }
+        for (const key in item) {
+          if (Array.isArray(item[key])) {
+            item[key] = item[key].map(format);
+          }
+        }
+        return {
+          _id: cuid(),
+          ...item,
+          metaType: 'widget'
+        };
+      };
+
+      for (const field of this.schema) {
+        if (field.def === undefined) {
+          instance[field.name] = null;
+          continue;
+        }
+        if (field.type !== 'area') {
+          instance[field.name] = klona(field.def);
+          continue;
+        }
+
+        instance[field.name] = {
+          _id: cuid(),
+          items: field.def.map(format),
+          metaType: 'area'
+        };
       }
+      console.log('instance', instance);
       return instance;
     },
     label(item) {
