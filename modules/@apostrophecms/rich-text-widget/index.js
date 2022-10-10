@@ -9,6 +9,7 @@ module.exports = {
     icon: 'format-text-icon',
     label: 'apostrophe:richText',
     contextual: true,
+    placeholder: true,
     placeholderText: 'apostrophe:richTextPlaceholder',
     defaultData: { content: '' },
     className: false,
@@ -419,7 +420,7 @@ module.exports = {
           defaultOptions: self.options.defaultOptions,
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
-          placeholderText: self.options.placeholderText
+          placeholderText: self.options.placeholder && self.options.placeholderText
         };
         return finalData;
       }
