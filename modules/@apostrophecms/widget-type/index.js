@@ -97,7 +97,10 @@ const _ = require('lodash');
 module.exports = {
   cascades: [ 'fields' ],
   options: {
-    neverLoadSelf: true
+    neverLoadSelf: true,
+    initialModal: true,
+    placeholder: false,
+    placeholderClass: 'apos-placeholder'
   },
   init(self) {
 

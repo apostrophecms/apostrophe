@@ -2,7 +2,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'Placeholder Test Widget',
-    initialModal: false
+    placeholder: true
   },
   fields: {
     add: {
