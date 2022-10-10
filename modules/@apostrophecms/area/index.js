@@ -245,13 +245,15 @@ module.exports = {
       // options to sanitize against. Thus h5 can be legal
       // in one rich text widget and not in another.
       //
+      // `forcePlaceholder` is used to choose whether to render the widgets
+      // with their placeholder or not, depending on their manager options.
+      //
       // If any errors occur sanitizing the individual widgets,
       // an array of errors with `path` and `error` properties
       // is thrown.
       //
       // Returns a new array of sanitized items.
-      async sanitizeItems(req, items, options) {
-        console.log(require('util').inspect(items, { depth: 9, colors: true, showHidden: false }));
+      async sanitizeItems(req, items, options, forcePlaceholder = false) {
         options = options || {};
         const result = [];
         const errors = [];
@@ -266,6 +268,11 @@ module.exports = {
             self.warnMissingWidgetType(item.type);
             continue;
           }
+
+          if (forcePlaceholder && manager.options.placeholder) {
+            item.aposPlaceholder = true;
+          }
+
           const widgetOptions = widgetsOptions[item.type];
           if (!widgetOptions) {
             // This widget is not specified for this area at all
@@ -273,7 +280,7 @@ module.exports = {
           }
           let newItem;
           try {
-            newItem = await manager.sanitize(req, item, widgetOptions);
+            newItem = await manager.sanitize(req, item, widgetOptions, forcePlaceholder);
             newItem._id = self.apos.launder.id(item._id) || self.apos.util.generateId();
           } catch (e) {
             if (Array.isArray(e)) {

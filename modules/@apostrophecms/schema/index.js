@@ -367,6 +367,7 @@ module.exports = {
       // defined in the schema
       async newInstance(req, schema) {
         const instance = {};
+        const forcePlaceholder = true;
         const format = item => {
           if (typeof item === 'string') {
             return { type: item };
@@ -390,7 +391,7 @@ module.exports = {
           }
 
           const items = field.def.map(format);
-          const sanitizedItems = await self.apos.area.sanitizeItems(req, items, field.options);
+          const sanitizedItems = await self.apos.area.sanitizeItems(req, items, field.options, forcePlaceholder);
 
           instance[field.name] = {
             _id: self.apos.util.generateId(),
@@ -507,7 +508,7 @@ module.exports = {
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
 
-      async convert(req, schema, data, destination) {
+      async convert(req, schema, data, destination, forcePlaceholder) {
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
@@ -526,7 +527,7 @@ module.exports = {
           const convert = self.fieldTypes[field.type].convert;
           if (convert) {
             try {
-              await convert(req, field, data, destination);
+              await convert(req, field, data, destination, forcePlaceholder);
             } catch (e) {
               if (Array.isArray(e)) {
                 const invalid = self.apos.error('invalid', {
