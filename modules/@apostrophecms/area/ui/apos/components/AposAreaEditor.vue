@@ -435,19 +435,15 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            ...this.contextualWidgetDefaultData(name),
-            ...this.widgetAreaDefaultData(name)
+            ...this.contextualWidgetDefaultData(name)
           },
           index
         });
       } else if (!this.widgetHasInitialModal(name)) {
-        const widgetAreaDefaultData = this.widgetAreaDefaultData(name);
-        const aposPlaceholder = this.widgetHasPlaceholder(name) && !widgetAreaDefaultData;
         return this.insert({
           widget: {
             type: name,
-            ...widgetAreaDefaultData,
-            aposPlaceholder
+            aposPlaceholder: true
           },
           index
         });
@@ -455,7 +451,7 @@ export default {
         const componentName = this.widgetEditorComponent(name);
         apos.area.activeEditor = this;
         const widget = await apos.modal.execute(componentName, {
-          value: this.widgetAreaDefaultData(name),
+          value: null,
           options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId
@@ -483,13 +479,6 @@ export default {
     },
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
-    },
-    widgetAreaDefaultData(type) {
-      const defaults = this.options.widgets[type]._def;
-
-      return defaults && Object.keys(defaults).length
-        ? defaults
-        : null;
     },
     async insert({ index, widget }) {
       if (!widget._id) {
