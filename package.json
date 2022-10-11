@@ -109,7 +109,7 @@
     "vue": "^2.6.14",
     "vue-advanced-cropper": "^1.10.1",
     "vue-click-outside-element": "^1.0.15",
-    "vue-loader": "~15.9.8",
+    "vue-loader": "^15.10.0",
     "vue-material-design-icons": "~4.12.1",
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.6.14",
