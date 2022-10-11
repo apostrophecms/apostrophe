@@ -587,7 +587,7 @@ module.exports = {
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
           widgetHasPlaceholder[name] = manager.options.placeholder;
-          widgetHasInitialModal[name] = !widgetHasPlaceholder[name] && manager.options.initialModal !== false;
+          widgetHasInitialModal[name] = !manager.options.placeholder && manager.options.initialModal !== false;
           contextualWidgetDefaultData[name] = manager.options.defaultData;
         });
 

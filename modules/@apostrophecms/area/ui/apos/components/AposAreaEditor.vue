@@ -404,6 +404,8 @@ export default {
       }
     },
     async update(widget) {
+      widget.aposPlaceholder = false;
+
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
           [`@${widget._id}`]: widget
@@ -435,7 +437,8 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            ...this.contextualWidgetDefaultData(name)
+            ...this.contextualWidgetDefaultData(name),
+            aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
         });
@@ -443,7 +446,7 @@ export default {
         return this.insert({
           widget: {
             type: name,
-            aposPlaceholder: true
+            aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
         });
