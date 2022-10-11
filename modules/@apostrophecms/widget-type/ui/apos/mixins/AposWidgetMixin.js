@@ -26,6 +26,7 @@ export default {
     };
   },
   mounted() {
+    console.log('AposWidgetMixin');
     this.renderContent();
   },
   computed: {

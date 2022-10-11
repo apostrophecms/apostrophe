@@ -132,6 +132,7 @@ export default {
     }
   },
   async mounted() {
+    console.log('AposWidgetEditor');
     apos.area.widgetOptions = [
       klona(this.options),
       ...apos.area.widgetOptions

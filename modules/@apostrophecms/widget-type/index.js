@@ -159,6 +159,7 @@ module.exports = {
       // async, as are all functions that invoke a nunjucks render in
       // Apostrophe 3.x.
       async output(req, widget, options, _with) {
+        console.log('🚀 ~ file: index.js ~ line 162 ~ output ~ widget', widget);
         req.widgetsBundles = {
           ...req.widgetsBundles || {},
           ...self.getWidgetsBundles(`${widget.type}-widget`)
@@ -178,6 +179,7 @@ module.exports = {
             }
           });
         }
+        console.log('🚀 ~ file: index.js ~ line 179 ~ output ~ clonedWidget', clonedWidget);
 
         return self.render(req, self.template, {
           widget: clonedWidget,

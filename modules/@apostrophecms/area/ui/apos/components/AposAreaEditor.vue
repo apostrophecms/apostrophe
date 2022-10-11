@@ -356,6 +356,7 @@ export default {
       const widget = this.next[i];
 
       if (!this.widgetIsContextual(widget.type)) {
+        console.log('EDIT - IF not contextual');
         const componentName = this.widgetEditorComponent(widget.type);
         apos.area.activeEditor = this;
         const result = await apos.modal.execute(componentName, {
@@ -368,6 +369,9 @@ export default {
         if (result) {
           return this.update(result);
         }
+      } else {
+        // console.log('EDIT - ELSE contextual');
+        this.setPlaceholders(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
       }
     },
     clone(index) {
@@ -403,6 +407,20 @@ export default {
         // actual files, and the reference count will update automatically
       }
     },
+    setPlaceholders(schema, widget) {
+      if (!widget.aposPlaceholder) {
+        return;
+      }
+
+      const placeholders = schema
+        .filter(field => field.placeholder)
+        .reduce((memo, field) => ({
+          ...memo,
+          [field.name]: field.placeholder
+        }), {});
+
+      Object.assign(widget, placeholders);
+    },
     async update(widget) {
       widget.aposPlaceholder = false;
 
@@ -434,6 +452,8 @@ export default {
           index
         });
       } else if (this.widgetIsContextual(name)) {
+        console.log('widgetIsContextual');
+
         return this.insert({
           widget: {
             type: name,
@@ -443,6 +463,7 @@ export default {
           index
         });
       } else if (!this.widgetHasInitialModal(name)) {
+        console.log('!widgetHasInitialModal');
         return this.insert({
           widget: {
             type: name,
@@ -484,6 +505,7 @@ export default {
       return this.moduleOptions.contextualWidgetDefaultData[type];
     },
     async insert({ index, widget }) {
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 484 ~ insert ~ widget', widget);
       if (!widget._id) {
         widget._id = cuid();
       }
@@ -545,9 +567,15 @@ export default {
       }
     },
     rendering(widget) {
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 547 ~ rendering ~ widget', widget, this.edited[widget._id]);
+
       if (this.edited[widget._id]) {
         return null;
       } else {
+        if (widget.aposPlaceholder) {
+          this.setPlaceholders(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
+        }
+        // console.log('🚀 ~ file: AposAreaEditor.vue ~ line 553 ~ rendering ~ this.renderings[widget._id]', this.renderings[widget._id]);
         return this.renderings[widget._id];
       }
     },
