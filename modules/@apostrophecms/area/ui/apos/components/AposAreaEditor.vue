@@ -133,7 +133,8 @@ export default {
       addWidgetOptions: null,
       addWidgetType: null,
       areaId: cuid(),
-      next: this.getValidItems(),
+      // Set placeholders via `this.getItems()`:
+      next: this.getItems(),
       hoveredWidget: null,
       focusedWidget: null,
       contextMenuOptions: {
@@ -181,10 +182,21 @@ export default {
       if (!this.docId) {
         // For the benefit of AposInputArea which is the
         // direct parent when we are not editing on-page
+
+        console.log('this.$emit changed');
+
+        // Here, setting the widget with default data (i.e removing placeholders)
+        // will avoid saving placeholders into the DB. Which is what we want.
+        // But next() is also called when after adding the widget, resulting in
+        // NOT having the placeholder that were added in the `insert` function...
+        // this.$emit('changed', {
+        //   items: this.getWidgetsWithoutPlaceholders(this.next)
+        // });
         this.$emit('changed', {
           items: this.next
         });
       }
+      console.log('this.$emit area-updated');
       // For the benefit of all other area editors on-page
       // which may have this one as a sub-area in some way, and
       // mistakenly think they know its contents have not changed
@@ -194,6 +206,8 @@ export default {
       });
     },
     generation() {
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 209 ~ generation ~ generation');
+      // Set placeholders via `this.getItems()` here as well?
       this.next = this.getValidItems();
     }
   },
@@ -354,9 +368,9 @@ export default {
       }
 
       const widget = this.next[i];
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 371 ~ edit ~ widget', widget);
 
       if (!this.widgetIsContextual(widget.type)) {
-        console.log('EDIT - IF not contextual');
         const componentName = this.widgetEditorComponent(widget.type);
         apos.area.activeEditor = this;
         const result = await apos.modal.execute(componentName, {
@@ -370,8 +384,7 @@ export default {
           return this.update(result);
         }
       } else {
-        // console.log('EDIT - ELSE contextual');
-        this.setPlaceholders(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
+        // this.setPlaceholders(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
       }
     },
     clone(index) {
@@ -407,21 +420,22 @@ export default {
         // actual files, and the reference count will update automatically
       }
     },
-    setPlaceholders(schema, widget) {
-      if (!widget.aposPlaceholder) {
-        return;
-      }
+    // setPlaceholders(schema, widget) {
+    //   if (!widget.aposPlaceholder) {
+    //     return;
+    //   }
 
-      const placeholders = schema
-        .filter(field => field.placeholder)
-        .reduce((memo, field) => ({
-          ...memo,
-          [field.name]: field.placeholder
-        }), {});
+    //   const placeholders = schema
+    //     .filter(field => field.placeholder)
+    //     .reduce((memo, field) => ({
+    //       ...memo,
+    //       [field.name]: field.placeholder
+    //     }), {});
 
-      Object.assign(widget, placeholders);
-    },
+    //   Object.assign(widget, placeholders);
+    // },
     async update(widget) {
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 425 ~ update ~ widget', widget);
       widget.aposPlaceholder = false;
 
       if (this.docId === window.apos.adminBar.contextId) {
@@ -452,8 +466,6 @@ export default {
           index
         });
       } else if (this.widgetIsContextual(name)) {
-        console.log('widgetIsContextual');
-
         return this.insert({
           widget: {
             type: name,
@@ -463,7 +475,6 @@ export default {
           index
         });
       } else if (!this.widgetHasInitialModal(name)) {
-        console.log('!widgetHasInitialModal');
         return this.insert({
           widget: {
             type: name,
@@ -522,14 +533,24 @@ export default {
           }
         });
       }
+
+      // Set placeholders for a newly-added contextual widget:
+      if (this.widgetIsContextual(widget.type)) {
+        this.next = [
+          ...this.next.slice(0, index),
+          this.getWidgetWithPlaceholders(widget),
+          ...this.next.slice(index)
+        ];
+        this.edit(index);
+
+        return;
+      }
+
       this.next = [
         ...this.next.slice(0, index),
         widget,
         ...this.next.slice(index)
       ];
-      if (this.widgetIsContextual(widget.type)) {
-        this.edit(index);
-      }
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
@@ -567,25 +588,78 @@ export default {
       }
     },
     rendering(widget) {
-      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 547 ~ rendering ~ widget', widget, this.edited[widget._id]);
+      // console.log('🚀 ~ file: AposAreaEditor.vue ~ line 547 ~ rendering ~ widget', widget, this.edited[widget._id], this.renderings[widget._id]);
 
       if (this.edited[widget._id]) {
         return null;
       } else {
-        if (widget.aposPlaceholder) {
-          this.setPlaceholders(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
-        }
-        // console.log('🚀 ~ file: AposAreaEditor.vue ~ line 553 ~ rendering ~ this.renderings[widget._id]', this.renderings[widget._id]);
+        // if (widget.aposPlaceholder) {
+        //   this.setPlaceholders(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
+        // }
         return this.renderings[widget._id];
       }
     },
     getValidItems() {
-      return this.items.filter(item => {
+      const items = this.items.filter(item => {
         if (!window.apos.modules[`${item.type}-widget`]) {
           console.warn(`The widget type ${item.type} exists in the content but is not configured.`);
         }
         return window.apos.modules[`${item.type}-widget`];
       });
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 611 ~ items ~ items', items);
+
+      return items;
+    },
+    getItems() {
+      const items = this.getValidItems();
+
+      return this.getWidgetsWithPlaceholders(items);
+    },
+    getWidgetsWithPlaceholders(widgets) {
+      return widgets.map(this.getWidgetWithPlaceholders);
+    },
+    getWidgetsWithoutPlaceholders(widgets) {
+      return widgets.map(this.getWidgetWithoutPlaceholders);
+    },
+    getWidgetWithPlaceholders(widget) {
+      if (!widget.aposPlaceholder) {
+        return widget;
+      }
+
+      const { schema } = apos.modules[apos.area.widgetManagers[widget.type]];
+
+      const widgetWithPlaceholders = schema
+        .filter(field => field.placeholder)
+        .reduce((memo, field) => ({
+          ...memo,
+          [field.name]: field.placeholder
+        }), widget);
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 637 ~ getWidgetWithPlaceholders ~ widgetWithPlaceholders', widgetWithPlaceholders);
+
+      return widgetWithPlaceholders;
+    },
+    getWidgetWithoutPlaceholders(widget) {
+      if (!widget.aposPlaceholder) {
+        return widget;
+      }
+
+      const { schema } = apos.modules[apos.area.widgetManagers[widget.type]];
+
+      const widgetWithoutPlaceholders = schema
+        .filter(field => field.placeholder)
+        .reduce((memo, field) => {
+          // TODO: is def always defined?
+          if (!field.def) {
+            delete memo[field.name];
+          }
+          return {
+            ...memo,
+            [field.name]: field.def
+          };
+        }, widget);
+      console.log('🚀 ~ file: AposAreaEditor.vue ~ line 660 ~ getWidgetWithoutPlaceholders ~ widgetWithoutPlaceholders', widgetWithoutPlaceholders);
+
+      return widgetWithoutPlaceholders;
     }
   }
 };
