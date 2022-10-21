@@ -11,30 +11,48 @@
       />
     </template>
     <template #body>
-      <div v-if="field.inline" class="apos-input-array-inline">
-        <div v-for="item in items" :key="item._id">
-          <AposSchema
-            :schema="field.schema"
-            v-model="item.schemaInput"
-            :trigger-validation="triggerValidation"
-            :utility-rail="false"
-            :generation="generation"
-          />
-          <div>
-            <button @click="moveUp(item._id)" :disabled="disableMoveUp(item._id)">
-              Up
-            </button>
-            <button @click="moveDown(item._id)" :disabled="disableMoveDown(item._id)">
-              Down
-            </button>
-            <button @click="remove(item._id)">
-              Trash
-            </button>
+      <div v-if="field.inline">
+        <draggable
+          v-if="field.inline"
+          class="apos-input-array-inline"
+          tag="div"
+          role="list"
+          :list="items"
+          v-bind="dragOptions"
+          :id="listId"
+        >
+          <div v-for="item in items" :key="item._id" class="apos-input-array-inline-item">
+            <div class="apos-input-array-inline-controls">
+              <AposIndicator
+                icon="drag-icon"
+                class="apos-drag-handle"
+              />
+              <AposButton
+                label="apostrophe:removeItem"
+                icon="close-icon"
+                type="subtle"
+                :modifiers="['small', 'no-motion']"
+                :icon-only="true"
+                @click="remove(item._id)"
+              />
+            </div>
+            <div class="apos-input-array-inline-schema-wrapper">
+              <AposSchema
+                :schema="field.schema"
+                v-model="item.schemaInput"
+                :trigger-validation="triggerValidation"
+                :utility-rail="false"
+                :generation="generation"
+                :modifiers="schemaModifiers"
+              />
+            </div>
           </div>
-        </div>
+        </draggable>
         <AposButton
           type="button"
-          label="+"
+          label="apostrophe:addItem"
+          :icon-only="true"
+          icon="plus-icon"
           :disabled="disableAdd()"
           @click="add"
         />
@@ -57,9 +75,11 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import cuid from 'cuid';
 import { klona } from 'klona';
+import draggable from 'vuedraggable';
 
 export default {
   name: 'AposInputArray',
+  components: { draggable },
   mixins: [ AposInputMixin ],
   props: {
     generation: {
@@ -72,17 +92,32 @@ export default {
   },
   data () {
     const next = this.getNext();
-    return {
+    const data = {
       next,
       items: expandItems(next)
     };
+    console.log(JSON.stringify(data, null, '  '));
+    return data;
   },
   computed: {
-    editLabel () {
+    listId() {
+      return `sortableList-${(Math.floor(Math.random() * Math.floor(10000)))}`;
+    },
+    dragOptions() {
+      return {
+        disabled: this.field.readOnly || this.next.length <= 1,
+        ghostClass: 'apos-is-dragging',
+        handle: '.apos-drag-handle'
+      };
+    },
+    editLabel() {
       return {
         key: 'apostrophe:editType',
         type: this.$t(this.field.label)
       };
+    },
+    schemaModifiers() {
+      return (this.schema.length === 1) ? [ 'hide-label' ] : [];
     }
   },
   watch: {
@@ -94,10 +129,17 @@ export default {
       deep: true,
       handler() {
         if (!this.items.find(item => item.schemaInput.hasErrors)) {
-          this.next = this.items.map(item => ({
-            ...item.data,
-            _id: item._id
+          const next = this.items.map(item => ({
+            ...item.schemaInput.data,
+            _id: item._id,
+            metaType: 'arrayItem',
+            scopedArrayName: this.field.scopedArrayName
           }));
+          console.log(JSON.stringify({
+            items: this.items,
+            next
+          }, null, '  '));
+          this.next = next;
         }
       }
     }
@@ -136,34 +178,8 @@ export default {
       return (this.value && Array.isArray(this.value.data))
         ? this.value.data : (this.field.def || []);
     },
-    disableMoveUp(_id) {
-      const index = this.items.findIndex(color => color._id === _id);
-      return index === 0;
-    },
-    disableMoveDown(_id) {
-      const index = this.items.findIndex(color => color._id === _id);
-      return (index + 1) === this.items.length;
-    },
     disableAdd() {
       return this.field.max && (this.items.length >= this.field.max);
-    },
-    moveUp(_id) {
-      const index = this.items.findIndex(color => color._id === _id);
-      this.items = [
-        ...this.items.slice(0, index - 1),
-        this.items[index],
-        this.items[index - 1],
-        ...this.items.slice(index + 1)
-      ];
-    },
-    moveDown(_id) {
-      const index = this.items.findIndex(color => color._id === _id);
-      this.items = [
-        ...this.items.slice(0, index),
-        this.items[index + 1],
-        this.items[index],
-        ...this.items.slice(index + 2)
-      ];
     },
     remove(_id) {
       this.items = this.items.filter(color => color._id !== _id);
@@ -192,10 +208,17 @@ function expandItems(items) {
   return items.map(item => ({
     _id: item._id || cuid(),
     schemaInput: {
-      data: {
-        item
-      }
+      data: item
     }
   }));
 }
 </script>
+<style>
+  .apos-is-dragging {
+    opacity: 0.5;
+    background: var(--a-base-4);
+  }
+  .apos-input-array-inline-schema-wrapper {
+    margin: 8px 0 0 24px;
+  }
+</style>
