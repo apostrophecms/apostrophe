@@ -21,12 +21,27 @@
           v-bind="dragOptions"
           :id="listId"
         >
-          <div v-for="item in items" :key="item._id" class="apos-input-array-inline-item">
-            <div class="apos-input-array-inline-controls">
+          <div
+            v-for="item in items"
+            :key="item._id"
+            class="apos-input-array-inline-item">
+            <div class="apos-input-array-inline-item-controls">
               <AposIndicator
                 icon="drag-icon"
                 class="apos-drag-handle"
               />
+            </div>
+            <div class="apos-input-array-inline-schema-wrapper">
+              <AposSchema
+                :schema="effectiveSchema"
+                v-model="item.schemaInput"
+                :trigger-validation="triggerValidation"
+                :utility-rail="false"
+                :generation="generation"
+                :modifiers="[ 'margin-none' ]"
+              />
+            </div>
+            <div class="apos-input-array-inline-item-controls">
               <AposButton
                 label="apostrophe:removeItem"
                 icon="close-icon"
@@ -34,16 +49,6 @@
                 :modifiers="['small', 'no-motion']"
                 :icon-only="true"
                 @click="remove(item._id)"
-              />
-            </div>
-            <div class="apos-input-array-inline-schema-wrapper">
-              <AposSchema
-                :schema="field.schema"
-                v-model="item.schemaInput"
-                :trigger-validation="triggerValidation"
-                :utility-rail="false"
-                :generation="generation"
-                :modifiers="schemaModifiers"
               />
             </div>
           </div>
@@ -96,7 +101,6 @@ export default {
       next,
       items: expandItems(next)
     };
-    console.log(JSON.stringify(data, null, '  '));
     return data;
   },
   computed: {
@@ -116,8 +120,28 @@ export default {
         type: this.$t(this.field.label)
       };
     },
-    schemaModifiers() {
-      return (this.schema.length === 1) ? [ 'hide-label' ] : [];
+    effectiveSchema() {
+      if (this.field.schema.length === 1) {
+        return [
+          {
+            ...this.field.schema[0],
+            hideLabel: true
+          }
+        ];
+      } else {
+        return this.field.schema;
+      }
+    },
+    effectiveError() {
+      const error = this.error || this.serverError;
+      // Server-side errors behave differently
+      const name = error?.name || error;
+      if (name === 'invalid') {
+        // Always due to a subproperty which will display its own error,
+        // don't confuse the user
+        return false;
+      }
+      return error;
     }
   },
   watch: {
@@ -135,17 +159,19 @@ export default {
             metaType: 'arrayItem',
             scopedArrayName: this.field.scopedArrayName
           }));
-          console.log(JSON.stringify({
-            items: this.items,
-            next
-          }, null, '  '));
           this.next = next;
+        }
+        // Our validate method was called first before that of
+        // the subfields, so remedy that by calling again on any
+        // change to the subfield state during validation
+        if (this.triggerValidation) {
+          this.validateAndEmit();
         }
       }
     }
   },
   methods: {
-    validate (value) {
+    validate(value) {
       if (this.items.find(item => item.schemaInput.hasErrors)) {
         return 'invalid';
       }
@@ -160,10 +186,7 @@ export default {
       }
       return false;
     },
-    update (items) {
-      this.next = items;
-    },
-    async edit () {
+    async edit() {
       const result = await apos.modal.execute('AposArrayEditor', {
         field: this.field,
         items: this.next,
@@ -213,12 +236,26 @@ function expandItems(items) {
   }));
 }
 </script>
-<style>
+<style lang="scss" scoped>
   .apos-is-dragging {
     opacity: 0.5;
     background: var(--a-base-4);
   }
+  .apos-input-array-inline-item {
+    display: flex;
+    margin-bottom: 20px;
+    border-left: 1px solid var(--a-base-9);
+  }
+  .apos-input-array-inline-item-controls {
+    // align-self: stretch seems like the answer, but looks bad
+    // once the field adds additional height to itself for an error.
+    // 15px - 7.5px (padding of icons) = 7.5px
+    padding-top: 7.5px;
+  }
   .apos-input-array-inline-schema-wrapper {
-    margin: 8px 0 0 24px;
+    flex-grow: 1.0;
+  }
+  .apos-drag-handle {
+    padding: 7.5px;
   }
 </style>

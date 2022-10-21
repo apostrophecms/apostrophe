@@ -330,6 +330,9 @@ export default {
       &.apos-field--margin-micro {
         margin-bottom: $spacing-double;
       }
+      &.apos-field--margin-none {
+        margin-bottom: 0;
+      }
     }
 
     .apos-schema ::v-deep .apos-toolbar & {
