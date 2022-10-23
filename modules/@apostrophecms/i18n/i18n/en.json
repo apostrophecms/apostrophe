@@ -188,6 +188,7 @@
   "loginPageBadCredentials": "Your credentials are incorrect, or there is no such user",
   "loginPageTitle": "Login",
   "loginRequired": "Login Required",
+  "loginResetPassword": "Reset Password",
   "logOut": "Log Out",
   "logOutNotLoggedIn": "You were not logged in.",
   "manageDocType": "Manage {{ type }}",
