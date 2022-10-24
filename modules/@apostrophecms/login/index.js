@@ -249,7 +249,7 @@ module.exports = {
         },
         ...(self.isPasswordResetEnabled() ? {
           async resetRequest(req) {
-            const wait = (t = 2000) => new Promise((resolve) => setTimeout(resolve, t));
+            const wait = (t = 2000) => Promise.delay(t);
             const site = (req.headers.host || '').replace(/:\d+$/, '');
             const email = self.apos.launder.string(req.body.email);
             if (!email.length) {
@@ -293,7 +293,7 @@ module.exports = {
                 ? undefined
                 : `${req.protocol}://${req.hostname}${port}${self.apos.prefix}`
             );
-            parsed.pathname = '/login';
+            parsed.pathname = self.login();
             parsed.search = '?';
             parsed.searchParams.append('reset', reset);
             parsed.searchParams.append('email', user.email);

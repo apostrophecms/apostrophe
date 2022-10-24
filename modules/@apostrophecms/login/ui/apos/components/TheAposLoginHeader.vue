@@ -64,7 +64,6 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
-
 .apos-login {
   $this: &;
 

@@ -58,7 +58,6 @@
 
 <script>
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
-import AposLoginPasswordResetEnabledMixin from 'Modules/@apostrophecms/login/mixins/AposLoginPasswordResetEnabledMixin';
 
 const STAGES = [
   'login',
@@ -68,7 +67,7 @@ const STAGES = [
 
 export default {
   name: 'TheAposLogin',
-  mixins: [ AposThemeMixin, AposLoginPasswordResetEnabledMixin ],
+  mixins: [ AposThemeMixin ],
   data() {
     return {
       stage: STAGES[0],
@@ -137,10 +136,10 @@ export default {
       this.stage = STAGES[0];
     },
     forgotPasswordEnabled() {
-      return this.passwordResetEnabled;
+      return apos.login.passwordResetEnabled;
     },
     resetPasswordEnabled() {
-      return this.passwordResetEnabled;
+      return apos.login.passwordResetEnabled;
     },
     onRedirect(loc) {
       window.sessionStorage.setItem('aposStateChange', Date.now());
@@ -158,152 +157,152 @@ export default {
 </style>
 
 <style lang="scss" scoped>
-$login-container: 330px;
+  $login-container: 330px;
 
-.apos-login__logo {
-  width: 100%;
-  max-width: 150px;
-}
-
-.fade-stage-enter-active {
-  transition: opacity 0.2s linear;
-  transition-delay: 0.3s;
-}
-
-.fade-stage-enter-to,
-.fade-body-enter-to,
-.fade-outer-enter-to,
-.fade-body-leave {
-  opacity: 1;
-}
-
-.fade-stage-enter,
-.fade-body-enter,
-.fade-outer-enter,
-.fade-body-leave-to {
-  opacity: 0;
-}
-
-.fade-body-enter-active {
-  transition: all 0.25s linear;
-  transition-delay: 0.6s;
-}
-
-.fade-body-leave-active {
-  transition: all 0.25s linear;
-}
-
-.fade-body-enter-to, .fade-body-leave {
-  transform: translateY(0);
-}
-
-.fade-body-enter, .fade-body-leave-to {
-  transform: translateY(4px);
-}
-
-.fade-outer-enter-active {
-  transition: opacity 0.4s linear;
-  transition-delay: 1s;
-}
-
-.apos-login {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 100vh;
-  background-color: var(--a-background-primary);
-
-  &__nav {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: $spacing-triple;
-  }
-
-  &__link {
-    @include type-large;
-    display: inline-block;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-
-    &:hover,
-    &:focus,
-    &:active {
-      color: var(--a-text-primary);
-    }
-  }
-
-  &--arrow-left,
-  &--arrow-right {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: $spacing-half;
-  }
-
-  &--arrow-left::before,
-  &--arrow-right::after {
-    content: '';
-    width: 3px;
-    height: 3px;
-    border: solid var(--a-text-primary);
-    border-width: 3px 3px 0 0;
-  }
-
-  &--arrow-right::after {
-    transform: rotate(45deg);
-  }
-
-  &--arrow-left::before {
-    transform: rotate(-135deg);
-  }
-
-  &__wrapper {
+  .apos-login__logo {
     width: 100%;
-    max-width: $login-container;
-    margin: 0 auto;
+    max-width: 150px;
   }
 
-  &__loader {
+  .fade-stage-enter-active {
+    transition: opacity 0.2s linear;
+    transition-delay: 0.3s;
+  }
+
+  .fade-stage-enter-to,
+  .fade-body-enter-to,
+  .fade-outer-enter-to,
+  .fade-body-leave {
+    opacity: 1;
+  }
+
+  .fade-stage-enter,
+  .fade-body-enter,
+  .fade-outer-enter,
+  .fade-body-leave-to {
+    opacity: 0;
+  }
+
+  .fade-body-enter-active {
+    transition: all 0.25s linear;
+    transition-delay: 0.6s;
+  }
+
+  .fade-body-leave-active {
+    transition: all 0.25s linear;
+  }
+
+  .fade-body-enter-to, .fade-body-leave {
+    transform: translateY(0);
+  }
+
+  .fade-body-enter, .fade-body-leave-to {
+    transform: translateY(4px);
+  }
+
+  .fade-outer-enter-active {
+    transition: opacity 0.4s linear;
+    transition-delay: 1s;
+  }
+
+  .apos-login {
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    width: 100vw;
     height: 100vh;
+    background-color: var(--a-background-primary);
 
-    .apos-spinner {
-      width: 38px;
-      height: 38px;
-      margin-top: 20px;
+    &__nav {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: $spacing-triple;
+    }
+
+    &__link {
+      @include type-large;
+      display: inline-block;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+
+      &:hover,
+      &:focus,
+      &:active {
+        color: var(--a-text-primary);
+      }
+    }
+
+    &--arrow-left,
+    &--arrow-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-half;
+    }
+
+    &--arrow-left::before,
+    &--arrow-right::after {
+      content: '';
+      width: 3px;
+      height: 3px;
+      border: solid var(--a-text-primary);
+      border-width: 3px 3px 0 0;
+    }
+
+    &--arrow-right::after {
+      transform: rotate(45deg);
+    }
+
+    &--arrow-left::before {
+      transform: rotate(-135deg);
+    }
+
+    &__wrapper {
+      width: 100%;
+      max-width: $login-container;
+      margin: 0 auto;
+    }
+
+    &__loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+
+      .apos-spinner {
+        width: 38px;
+        height: 38px;
+        margin-top: 20px;
+      }
+    }
+
+    &__footer {
+      @include type-base;
+      position: absolute;
+      right: 0;
+      bottom: 32px;
+      left: 0;
+      display: flex;
+      width: 100%;
+      max-width: $login-container;
+      margin: auto;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    &__project-version {
+      overflow: hidden;
+      text-overflow: clip;
+      white-space: nowrap;
+      color: var(--a-base-5);
+      margin-right: 0;
+      margin-left: auto;
     }
   }
-
-  &__footer {
-    @include type-base;
-    position: absolute;
-    right: 0;
-    bottom: 32px;
-    left: 0;
-    display: flex;
-    width: 100%;
-    max-width: $login-container;
-    margin: auto;
-    align-items: center;
-    justify-content: flex-start;
-  }
-
-  &__project-version {
-    overflow: hidden;
-    text-overflow: clip;
-    white-space: nowrap;
-    color: var(--a-base-5);
-    margin-right: 0;
-    margin-left: auto;
-  }
-}
 </style>

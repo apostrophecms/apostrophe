@@ -44,11 +44,8 @@
 </template>
 
 <script>
-import AposLoginPasswordResetEnabledMixin from 'Modules/@apostrophecms/login/mixins/AposLoginPasswordResetEnabledMixin';
-
 export default {
   name: 'AposForgotPasswordForm',
-  mixins: [ AposLoginPasswordResetEnabledMixin ],
   props: {
     contextError: {
       type: String,
@@ -86,6 +83,9 @@ export default {
   computed: {
     disabled() {
       return this.doc.hasErrors;
+    },
+    passwordResetEnabled() {
+      return apos.login.passwordResetEnabled;
     },
     help() {
       if (this.done) {

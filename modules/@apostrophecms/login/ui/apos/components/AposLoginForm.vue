@@ -70,11 +70,8 @@
 </template>
 
 <script>
-import AposLoginPasswordResetEnabledMixin from 'Modules/@apostrophecms/login/mixins/AposLoginPasswordResetEnabledMixin';
-
 export default {
   name: 'AposLoginForm',
-  mixins: [ AposLoginPasswordResetEnabledMixin ],
   props: {
     contextError: {
       type: String,
@@ -123,6 +120,9 @@ export default {
     disabled() {
       return this.doc.hasErrors ||
         !!this.beforeSubmitRequirements.find(requirement => !requirement.done);
+    },
+    passwordResetEnabled() {
+      return apos.login.passwordResetEnabled;
     },
     beforeSubmitRequirements() {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
