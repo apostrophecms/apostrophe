@@ -4,12 +4,8 @@
 
 ### Adds
 
-* Adds the widgets placeholder feature.  
-Non-contextual widgets now take the `placeholder` option. Those having this option set to `true` that are added to an area will be inserted directly on the page with the `placeholder` attribute from their fields as rendered data, without having the initial edit modal displayed.  
-A default `.apos-placeholder` class is added to their wrapper, showing that they are rendered with their placeholder data. This class can be overridden with the `placeholderClass` widget option, in order to apply a custom style on a particular project.  
-Image, Video and Rich Text widgets have the `placeholder` option enabled by default, which can be disabled on project side. Their default placeholder can be overridden thanks to the `placeholderUrl` option (for Image & Video widgets) and `placeholderText` (for Rich Text widget).  
-Placeholders are _never saved_ into the database, and are only rendered on edit mode. When a widget with placeholder(s) is edited, the actual data is saved and replaces the placeholder(s).  
-See Widgets Placeholder documentation for more detail.
+TODO: set documentation link once created:
+* Adds the widget placeholders feature. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/) for more detail. 
 
 ## 3.30.0 (2022-10-12)
 
