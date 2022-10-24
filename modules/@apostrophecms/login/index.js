@@ -52,6 +52,8 @@ module.exports = {
   options: {
     alias: 'login',
     localLogin: true,
+    passwordReset: false,
+    passwordResetHours: 48,
     scene: 'apos',
     csrfExceptions: [
       'login'
@@ -467,9 +469,14 @@ module.exports = {
         return 1000 * 60 * 60 * (self.options.passwordResetHours || 48);
       },
 
+      isPasswordResetEnabled() {
+        return self.options.localLogin && self.options.passwordReset;
+      },
+
       getBrowserData(req) {
         return {
           action: self.action,
+          passwordResetEnabled: self.isPasswordResetEnabled(),
           ...(req.user ? {
             user: {
               _id: req.user._id,
