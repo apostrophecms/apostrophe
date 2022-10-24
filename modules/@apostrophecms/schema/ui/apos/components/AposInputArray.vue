@@ -253,7 +253,7 @@ function expandItems(items) {
     padding-top: 7.5px;
   }
   .apos-input-array-inline-schema-wrapper {
-    flex-grow: 1.0;
+    flex-grow: 1;
   }
   .apos-drag-handle {
     padding: 7.5px;
