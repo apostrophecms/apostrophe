@@ -18,15 +18,3 @@ export default {
 };
 
 </script>
-
-<style scoped>
-/* TODO: change default placeholder style */
-.apos-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--a-primary-light-40);
-}
-</style>
