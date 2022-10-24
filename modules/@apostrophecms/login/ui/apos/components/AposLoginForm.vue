@@ -6,7 +6,7 @@
   >
     <TheAposLoginHeader
       :env="context.env"
-      :name="context.name"
+      :title="context.name"
       :error="$t(error)"
     />
 
@@ -51,7 +51,7 @@
   >
     <TheAposLoginHeader
       :env="context.env"
-      :name="context.name"
+      :title="context.name"
       :error="$t(error)"
       :tiny="true"
     />
@@ -70,9 +70,11 @@
 </template>
 
 <script>
+import AposLoginPasswordResetEnabledMixin from 'Modules/@apostrophecms/login/mixins/AposLoginPasswordResetEnabledMixin';
 
 export default {
   name: 'AposLoginForm',
+  mixins: [ AposLoginPasswordResetEnabledMixin ],
   props: {
     contextError: {
       type: String,
@@ -121,9 +123,6 @@ export default {
     disabled() {
       return this.doc.hasErrors ||
         !!this.beforeSubmitRequirements.find(requirement => !requirement.done);
-    },
-    passwordResetEnabled() {
-      return apos.login.passwordResetEnabled;
     },
     beforeSubmitRequirements() {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
@@ -355,19 +354,15 @@ function getRequirements() {
       // AposSchema adds $spacing-quadruple margin bottom
       top: -$spacing-triple;
       display: block;
-      color: var(--a-text-primary);
       text-align: right;
       text-decoration: underline;
       text-underline-offset: 2px;
-    }
 
-    &__link:hover,
-    &__link:focus {
-      color: var(--a-text-primary);
-    }
-
-    &__link:active {
-      color: var(--a-text-primary);
+      &:hover,
+      &:focus,
+      &:active {
+        color: var(--a-text-primary);
+      }
     }
   }
 

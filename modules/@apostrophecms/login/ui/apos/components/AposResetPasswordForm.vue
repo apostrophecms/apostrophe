@@ -5,7 +5,11 @@
 </template>
 
 <script>
+import AposLoginPasswordResetEnabledMixin from 'Modules/@apostrophecms/login/mixins/AposLoginPasswordResetEnabledMixin';
+
 export default {
-  name: 'AposResetPasswordForm'
+  name: 'AposResetPasswordForm',
+  mixins: [ AposLoginPasswordResetEnabledMixin ],
+  emits: [ 'set-stage' ]
 };
 </script>

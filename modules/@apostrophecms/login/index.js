@@ -247,29 +247,53 @@ module.exports = {
         async context(req) {
           return self.getContext(req);
         },
-        ...(self.options.passwordReset ? {
+        ...(self.isPasswordResetEnabled() ? {
           async resetRequest(req) {
+            const wait = (t = 2000) => new Promise((resolve) => setTimeout(resolve, t));
             const site = (req.headers.host || '').replace(/:\d+$/, '');
-            const username = self.apos.launder.string(req.body.username);
-            if (!username.length) {
+            const email = self.apos.launder.string(req.body.email);
+            if (!email.length) {
               throw self.apos.error('invalid');
             }
             const clauses = [];
-            clauses.push({ username: username });
-            clauses.push({ email: username });
-            const user = await self.apos.user.find(req, { $or: clauses }).permission(false).toObject();
+            clauses.push({ username: email });
+            clauses.push({ email });
+            const user = await self.apos.user
+              .find(req, { $or: clauses })
+              .permission(false)
+              .toObject();
             if (!user) {
-              throw self.apos.error('notfound');
+              await wait();
+              self.apos.util.error(
+                `Reset password request error - the user ${email} doesn\`t exist.`
+              );
+              return;
             }
             if (!user.email) {
-              throw self.apos.error('invalid');
+              await wait();
+              self.apos.util.error(
+                `Reset password request error - the user ${user.username} doesn\`t have an email.`
+              );
+              return;
             }
             const reset = self.apos.util.generateId();
             user.passwordReset = reset;
             user.passwordResetAt = new Date();
             await self.apos.user.update(req, user, { permissions: false });
-            const parsed = new URL(req.absoluteUrl);
-            parsed.pathname = '/password-reset';
+            // Fix - missing host in the absoluteURl results in a panic.
+            let port = (req.headers.host || '').split(':')[1];
+            if (!port || [ '80', '443' ].includes(port)) {
+              port = '';
+            } else {
+              port = `:${port}`;
+            }
+            const parsed = new URL(
+              req.absoluteUrl,
+              self.apos.baseUrl
+                ? undefined
+                : `${req.protocol}://${req.hostname}${port}${self.apos.prefix}`
+            );
+            parsed.pathname = '/login';
             parsed.search = '?';
             parsed.searchParams.append('reset', reset);
             parsed.searchParams.append('email', user.email);
@@ -283,7 +307,7 @@ module.exports = {
                 subject: req.t('apostrophe:passwordResetRequest', { site })
               });
             } catch (err) {
-              throw self.apos.error('email');
+              self.apos.util.error(`Error while sending email to ${user.email}`, err);
             }
           },
 
