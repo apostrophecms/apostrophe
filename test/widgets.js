@@ -212,11 +212,6 @@ describe('Widgets', function() {
           {
             _id: 'widget4',
             ...widgetData
-          },
-          {
-            _id: 'widget5',
-            ...widgetData,
-            aposPlaceholder: true
           }
         ];
 
@@ -261,14 +256,6 @@ describe('Widgets', function() {
         assert(result.includes('<li>widget4 - float: 2.2</li>'));
         assert(result.includes('<li>widget4 - date: 2022-09-21</li>'));
         assert(result.includes('<li>widget4 - time: 15:39:12</li>'));
-      });
-
-      it('should not render the placeholders when widget\'s fields are defined', function() {
-        assert(result.includes('<li>widget5 - string: Some string</li>'));
-        assert(result.includes('<li>widget5 - integer: 2</li>'));
-        assert(result.includes('<li>widget5 - float: 2.2</li>'));
-        assert(result.includes('<li>widget5 - date: 2022-09-21</li>'));
-        assert(result.includes('<li>widget5 - time: 15:39:12</li>'));
       });
 
       it('should not render the placeholders on preview mode', async function() {
