@@ -2,12 +2,13 @@
 
 ## Unreleased
 
-Fixes
+###  Fixes
 
-- Query builders for regular select fields have always accepted null to mean "do not filter on this property." Now this also works for dynamic select fields.
-- The i18n UI state management now doesn't allow actions while it's busy.
-- Fixed various localization bugs in the text of the "Update" dropdown menu.
-- The `singleton: true` option for piece types now automatically implies `showCreate: false`.
+* Query builders for regular select fields have always accepted null to mean "do not filter on this property." Now this also works for dynamic select fields.
+* The i18n UI state management now doesn't allow actions while it's busy.
+* Fixed various localization bugs in the text of the "Update" dropdown menu.
+* The `singleton: true` option for piece types now automatically implies `showCreate: false`.
+* Remove browser console warnings by handling Tiptap Editor's breaking changes and duplicated plugins.
 
 ## 3.31.0 (2022-10-27)
 
