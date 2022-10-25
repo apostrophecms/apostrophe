@@ -5,7 +5,9 @@
 </template>
 
 <script>
+
 export default {
-  name: 'AposResetPasswordForm'
+  name: 'AposResetPasswordForm',
+  emits: [ 'set-stage' ]
 };
 </script>

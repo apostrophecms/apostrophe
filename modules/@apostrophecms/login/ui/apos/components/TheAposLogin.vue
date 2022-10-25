@@ -6,6 +6,19 @@
       v-show="loaded"
       :class="themeClass"
     >
+      <transition name="fade-outer">
+        <div v-if="showNav" class="apos-login__nav">
+          <a
+            href="#"
+            class="apos-login__link apos-login--arrow-left"
+            @click.prevent="setStage('login')"
+          >{{ $t('apostrophe:loginBack') }}</a>
+          <a
+            :href="homeUrl"
+            class="apos-login__link apos-login--arrow-right"
+          >{{ $t('apostrophe:loginHome') }}</a>
+        </div>
+      </transition>
       <div class="apos-login__wrapper">
         <transition name="fade-body" mode="out-in">
           <AposForgotPasswordForm
@@ -31,7 +44,7 @@
           />
         </transition>
       </div>
-      <transition name="fade-footer">
+      <transition name="fade-outer">
         <div class="apos-login__footer" v-show="loaded">
           <AposLogo class="apos-login__logo" />
           <label class="apos-login__project-version">
@@ -68,8 +81,11 @@ export default {
     loaded() {
       return this.mounted && this.beforeCreateFinished;
     },
-    passwordResetEnabled() {
-      return apos.login.passwordResetEnabled;
+    showNav() {
+      return this.stage !== STAGES[0];
+    },
+    homeUrl() {
+      return `${apos.prefix}/`;
     }
   },
   // We need it here and not in the login form because the version used in the footer.
@@ -120,10 +136,10 @@ export default {
       this.stage = STAGES[0];
     },
     forgotPasswordEnabled() {
-      return this.passwordResetEnabled;
+      return apos.login.passwordResetEnabled;
     },
     resetPasswordEnabled() {
-      return this.passwordResetEnabled;
+      return apos.login.passwordResetEnabled;
     },
     onRedirect(loc) {
       window.sessionStorage.setItem('aposStateChange', Date.now());
@@ -155,14 +171,14 @@ export default {
 
   .fade-stage-enter-to,
   .fade-body-enter-to,
-  .fade-footer-enter-to,
+  .fade-outer-enter-to,
   .fade-body-leave {
     opacity: 1;
   }
 
   .fade-stage-enter,
   .fade-body-enter,
-  .fade-footer-enter,
+  .fade-outer-enter,
   .fade-body-leave-to {
     opacity: 0;
   }
@@ -184,7 +200,7 @@ export default {
     transform: translateY(4px);
   }
 
-  .fade-footer-enter-active {
+  .fade-outer-enter-active {
     transition: opacity 0.4s linear;
     transition-delay: 1s;
   }
@@ -195,6 +211,55 @@ export default {
     justify-content: center;
     height: 100vh;
     background-color: var(--a-background-primary);
+
+    &__nav {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: $spacing-triple;
+    }
+
+    &__link {
+      @include type-large;
+      display: inline-block;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+
+      &:hover,
+      &:focus,
+      &:active {
+        color: var(--a-text-primary);
+      }
+    }
+
+    &--arrow-left,
+    &--arrow-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-half;
+    }
+
+    &--arrow-left::before,
+    &--arrow-right::after {
+      content: '';
+      width: 3px;
+      height: 3px;
+      border: solid var(--a-text-primary);
+      border-width: 3px 3px 0 0;
+    }
+
+    &--arrow-right::after {
+      transform: rotate(45deg);
+    }
+
+    &--arrow-left::before {
+      transform: rotate(-135deg);
+    }
 
     &__wrapper {
       width: 100%;

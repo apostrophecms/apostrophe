@@ -1,16 +1,30 @@
 <template>
   <div
     class="apos-login__header"
-    :class="{'apos-login__header--tiny': tiny}"
+    :class="{'apos-login__header--tiny': tiny, 'apos-login__header--center': !!subtitle}"
   >
-    <label
-      class="apos-login__project apos-login__project-env"
-      :class="[`apos-login__project-env--${env}`]"
-    >
-      {{ env }}
-    </label>
+    <div class="apos-login__project-header">
+      <label
+        class="apos-login__project apos-login__project-env"
+        :class="[`apos-login__project-env--${env}`]"
+      >
+        {{ env }}
+      </label>
+      <label
+        v-if="subtitle"
+        class="apos-login__project apos-login__project-subtitle"
+      >
+        {{ subtitle }}
+      </label>
+    </div>
     <label class="apos-login__project apos-login__project-name">
-      {{ name }}
+      {{ title }}
+    </label>
+    <label
+      v-if="help"
+      class="apos-login--help"
+    >
+      {{ help }}
     </label>
     <label class="apos-login--error">
       {{ error }}
@@ -26,24 +40,32 @@ export default {
       type: String,
       default: ''
     },
-    name: {
+    title: {
+      type: String,
+      default: ''
+    },
+    subtitle: {
+      type: String,
+      default: ''
+    },
+    help: {
+      type: String,
+      default: ''
+    },
+    error: {
       type: String,
       default: ''
     },
     tiny: {
       type: Boolean,
       default: false
-    },
-    error: {
-      type: String,
-      default: ''
     }
   }
 };
 </script>
 <style scoped lang='scss'>
-
 .apos-login {
+  $this: &;
 
   &__header {
     z-index: $z-index-manager-display;
@@ -51,7 +73,22 @@ export default {
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    width: max-content;
+  }
+
+  &__project-header {
+    display: flex;
+    gap: $spacing-base;
+    flex-wrap: nowrap;
+    margin-bottom: 15px;
+  }
+
+  &__project-subtitle {
+    @include type-title;
+    margin: 0;
+    opacity: 0.6;
+    line-height: 1;
+    text-transform: capitalize;
+    white-space: nowrap;
   }
 
   &__project-name {
@@ -68,7 +105,6 @@ export default {
     color: var(--a-white);
     background: var(--a-success);
     border-radius: 5px;
-    margin-bottom: 15px;
 
     &--development {
       background: var(--a-danger);
@@ -79,12 +115,27 @@ export default {
     }
   }
 
+  &--help {
+    @include type-label;
+    margin-top: $spacing-double;
+    text-align: center;
+    white-space: pre-line;
+  }
+
   &--error {
     @include type-help;
     color: var(--a-danger);
     min-height: 13px;
     margin-top: 20px;
     margin-bottom: 15px;
+  }
+
+  &__header--center {
+    align-items: center;
+
+    #{$this}__project-header {
+      margin-bottom: $spacing-triple;
+    }
   }
 
   &__header--tiny {
