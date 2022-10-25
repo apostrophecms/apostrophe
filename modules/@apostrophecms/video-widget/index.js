@@ -14,7 +14,10 @@ module.exports = {
   options: {
     label: 'apostrophe:video',
     className: false,
-    icon: 'play-box-icon'
+    icon: 'play-box-icon',
+    placeholder: true,
+    placeholderClass: false,
+    placeholderUrl: 'https://youtu.be/Q5UX9yexEyM'
   },
   fields: {
     add: {

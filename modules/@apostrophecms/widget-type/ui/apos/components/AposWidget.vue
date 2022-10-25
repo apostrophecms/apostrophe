@@ -1,6 +1,9 @@
+<!-- eslint-disable vue/no-v-html -->
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -->
-  <div v-html="rendered" />
+  <div
+    :class="getClasses()"
+    v-html="rendered"
+  />
 </template>
 
 <script>

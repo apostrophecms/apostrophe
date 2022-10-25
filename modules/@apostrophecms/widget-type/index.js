@@ -97,7 +97,10 @@ const _ = require('lodash');
 module.exports = {
   cascades: [ 'fields' ],
   options: {
-    neverLoadSelf: true
+    neverLoadSelf: true,
+    initialModal: true,
+    placeholder: false,
+    placeholderClass: 'apos-placeholder'
   },
   init(self) {
 
@@ -161,8 +164,23 @@ module.exports = {
           ...self.getWidgetsBundles(`${widget.type}-widget`)
         };
 
+        const clonedWidget = { ...widget };
+
+        if (widget.aposPlaceholder === true) {
+          // Do not render widget on preview mode:
+          if (req.query.aposEdit !== '1') {
+            return '';
+          }
+
+          self.schema.forEach(field => {
+            if (!widget[field.name] && field.placeholder !== undefined) {
+              clonedWidget[field.name] = field.placeholder;
+            }
+          });
+        }
+
         return self.render(req, self.template, {
-          widget: widget,
+          widget: clonedWidget,
           options: options,
           manager: self,
           contextOptions: _with
@@ -281,6 +299,7 @@ module.exports = {
         await self.apos.schema.convert(req, schema, input, output);
         output.metaType = 'widget';
         output.type = self.name;
+        output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
         return output;
       },
 
@@ -352,7 +371,7 @@ module.exports = {
           action: self.action,
           schema: schema,
           contextual: self.options.contextual,
-          skipInitialModal: self.options.skipInitialModal,
+          placeholderClass: self.options.placeholderClass,
           className: self.options.className,
           components: self.options.components
         });

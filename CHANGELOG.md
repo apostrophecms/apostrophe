@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.31.0 (UNRELEASED)
+
+### Adds
+
+TODO: set documentation link once created:
+* Adds the widget placeholders feature. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/) for more detail. 
+
 ## 3.30.0 (2022-10-12)
 
 ### Adds
