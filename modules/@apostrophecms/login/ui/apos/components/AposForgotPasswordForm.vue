@@ -108,7 +108,6 @@ export default {
   created() {
     if (!this.passwordResetEnabled) {
       this.$emit('set-stage', 'login');
-
     }
   },
   mounted() {

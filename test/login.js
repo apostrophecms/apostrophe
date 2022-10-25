@@ -1,19 +1,14 @@
 const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert').strict;
 
-let apos;
-
-describe('Login', function() {
+describe.only('Login', function() {
+  let apos;
+  let resetUserId;
+  let resetToken;
 
   this.timeout(20000);
 
-  after(function() {
-    return t.destroy(apos);
-  });
-
-  // EXISTENCE
-
-  it('should initialize', async function() {
+  before(async function () {
     apos = await t.create({
       root: module,
       modules: {
@@ -25,9 +20,24 @@ describe('Login', function() {
               }
             }
           }
+        },
+        '@apostrophecms/login': {
+          options: {
+            passwordReset: true
+          }
         }
       }
     });
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  // EXISTENCE
+
+  it('should initialize', async function() {
+    assert(apos);
 
     assert(apos.modules['@apostrophecms/login']);
     assert(apos.user.safe.remove);
@@ -227,7 +237,7 @@ describe('Login', function() {
     assert(page.match(/logged out/));
   });
 
-  it('Changing a user\'s password should invalidate sessions for that user', async function() {
+  it('changing a user\'s password should invalidate sessions for that user', async function() {
 
     const jar = apos.http.jar();
 
@@ -341,7 +351,7 @@ describe('Login', function() {
 
   });
 
-  it('Changing a user\'s password should invalidate bearer tokens for that user', async function() {
+  it('changing a user\'s password should invalidate bearer tokens for that user', async function() {
 
     // Log in
     let response = await apos.http.post('/api/v1/@apostrophecms/login/login', {
@@ -446,5 +456,324 @@ describe('Login', function() {
     assert(page2.match(/logged in/));
     assert(!page2.match(/Bob Smith/));
     assert(page2.match(/System Task/));
+  });
+
+  it('should validate POST /login/reset-request', async function() {
+    const jar = apos.http.jar();
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    await assert.rejects(() => apos.http.post(
+      '/api/v1/@apostrophecms/login/reset-request',
+      {
+        body: {
+          session: true
+        },
+        jar
+      }
+    ), {
+      status: 400
+    });
+  });
+
+  it('should hide sensitive exceptions POST /login/reset-request', async function() {
+    let log;
+    const orig = apos.util.error;
+    apos.util.error = (m) => {
+      log = m;
+    };
+    const jar = apos.http.jar();
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/reset-request',
+      {
+        body: {
+          email: 'invalidUser',
+          session: true
+        },
+        jar
+      }
+    );
+    assert.match(log, /invalidUser/);
+
+    const user = apos.user.newInstance();
+    user.title = 'noEmail';
+    user.username = 'noEmail';
+    user.password = 'secret';
+    user.role = 'guest';
+    await apos.user.insert(apos.task.getReq(), user);
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/reset-request',
+      {
+        body: {
+          email: 'noEmail',
+          session: true
+        },
+        jar
+      }
+    );
+    assert.match(log, /noEmail/);
+
+    apos.util.error = orig;
+  });
+
+  it('should reset password POST /login/reset-request (request)', async function() {
+    let args;
+    const orig = apos.login.email;
+    apos.login.email = (req, ...a) => {
+      args = a;
+    };
+    const jar = apos.http.jar();
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    let user = apos.user.newInstance();
+    user.title = 'resetUser';
+    user.email = 'resetUser@example.com';
+    user.username = 'resetUser';
+    user.password = 'secret';
+    user.role = 'guest';
+    user = await apos.user.insert(apos.task.getReq(), user);
+    resetUserId = user._id;
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/reset-request',
+      {
+        body: {
+          email: 'resetUser',
+          session: true
+        },
+        jar
+      }
+    );
+
+    {
+      assert(Array.isArray(args));
+      const [ template, data, opts ] = args;
+      assert(template);
+      assert.deepEqual(data.user._id, user._id);
+      assert(data.user.passwordResetAt);
+      assert.match(data.url, /\/login\?reset=/);
+      assert.match(data.url, /&email=/);
+      assert(data.site);
+      assert.equal(opts.to, user.email);
+      assert(opts.subject);
+    }
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/reset-request',
+      {
+        body: {
+          email: 'resetUser@example.com',
+          session: true
+        },
+        jar
+      }
+    );
+
+    {
+      assert(Array.isArray(args));
+      const [ template, data, opts ] = args;
+      assert(template);
+      assert.deepEqual(data.user._id, user._id);
+      assert(data.user.passwordResetAt);
+      assert.match(data.url, /\/login\?reset=/);
+      assert.match(data.url, /&email=/);
+      assert(data.site);
+      assert.equal(opts.to, user.email);
+      assert(opts.subject);
+
+      // Safe the token for the reset tests
+      const url = new URL(data.url);
+      resetToken = url.searchParams.get('reset');
+    }
+
+    apos.login.email = orig;
+  });
+
+  it('should reset password GET /login/reset (validate)', async function() {
+    const user = await apos.doc.db.findOne({ _id: resetUserId });
+
+    // Fail
+    await assert.rejects(() => apos.http.get(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        qs: {}
+      }
+    ), {
+      status: 400
+    });
+    await assert.rejects(() => apos.http.get(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        qs: {
+          reset: 'invalid',
+          email: user.username
+        }
+      }
+    ), {
+      status: 400
+    });
+    await assert.rejects(() => apos.http.get(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        qs: {
+          reset: resetToken,
+          email: 'invalid'
+        }
+      }
+    ), {
+      status: 400
+    });
+
+    // Success
+    await apos.http.get(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        qs: {
+          reset: resetToken,
+          email: user.username
+        }
+      }
+    );
+
+    await apos.http.get(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        qs: {
+          reset: resetToken,
+          email: user.email
+        }
+      }
+    );
+  });
+
+  it('should reset password POST /login/reset (validate & reset)', async function() {
+    const jar = apos.http.jar();
+    const user = await apos.doc.db.findOne({ _id: resetUserId });
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    // Validate
+    await assert.rejects(() => apos.http.post(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        body: {
+          session: true
+        },
+        jar
+      }
+    ), {
+      status: 400
+    });
+    await assert.rejects(() => apos.http.post(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        body: {
+          reset: 'invalid',
+          email: user.email,
+          password: 'new more secret',
+          session: true
+        },
+        jar
+      }
+    ), {
+      status: 400
+    });
+    await assert.rejects(() => apos.http.post(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        body: {
+          reset: resetToken,
+          email: 'invalid',
+          password: 'new more secret',
+          session: true
+        },
+        jar
+      }
+    ), {
+      status: 400
+    });
+    await assert.rejects(() => apos.http.post(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        body: {
+          reset: resetToken,
+          email: user.email,
+          password: '',
+          session: true
+        },
+        jar
+      }
+    ), {
+      status: 400
+    });
+    await assert.rejects(() => apos.http.post(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        body: {
+          // explicit check for boolean cheat!
+          reset: false,
+          email: user.email,
+          password: 'new more secret',
+          session: true
+        },
+        jar
+      }
+    ), {
+      status: 400
+    });
+
+    // Reset
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        body: {
+          reset: resetToken,
+          email: user.email,
+          password: 'new more secret',
+          session: true
+        },
+        jar
+      }
+    );
+
+    // Login with the new password
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        body: {
+          username: user.email,
+          password: 'new more secret',
+          session: true
+        },
+        jar
+      }
+    );
+    const page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+    assert(page.match(/logged in/));
   });
 });
