@@ -7,6 +7,10 @@
 TODO: set documentation link once created:
 * Adds the widget placeholders feature. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/) for more detail. 
 
+### Fixes
+
+* When another user is editing the document, the other user's name is now displayed correctly.
+
 ## 3.30.0 (2022-10-12)
 
 ### Adds
