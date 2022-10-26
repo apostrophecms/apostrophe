@@ -1,6 +1,6 @@
 <template>
   <div
-    class="apos-login__upper"
+    class="apos-login-form"
     v-if="passwordResetEnabled"
   >
     <TheAposLoginHeader
@@ -10,15 +10,14 @@
       :help="help"
       :error="$t(error)"
     />
-    <div class="apos-login__body">
+    <div class="apos-login-form__body">
       <AposButton
         v-if="done"
         data-apos-test="loginBack"
         :busy="busy"
-        :disabled="disabled"
         type="primary"
         label="apostrophe:loginBack"
-        class="apos-login__submit"
+        class="apos-login-form__submit"
         :modifiers="['block']"
         @click="$emit('set-stage', 'login')"
       />
@@ -34,7 +33,7 @@
           type="primary"
           label="apostrophe:loginSendEmail"
           button-type="submit"
-          class="apos-login__submit"
+          class="apos-login-form__submit"
           :modifiers="['gradient-on-hover', 'block']"
           @click="submit"
         />
@@ -44,31 +43,16 @@
 </template>
 
 <script>
+import AposLoginFormMixin from 'Modules/@apostrophecms/login/mixins/AposLoginFormMixin';
+
 export default {
   name: 'AposForgotPasswordForm',
-  props: {
-    contextError: {
-      type: String,
-      default: ''
-    },
-    context: {
-      type: Object,
-      default: function() {
-        return {};
-      }
-    }
-  },
+  mixins: [ AposLoginFormMixin ],
   emits: [ 'set-stage' ],
   data() {
     return {
       busy: false,
       done: false,
-      error: '',
-      contextErrorReceived: false,
-      doc: {
-        data: {},
-        hasErrors: false
-      },
       schema: [
         {
           name: 'email',
@@ -84,9 +68,6 @@ export default {
     disabled() {
       return this.doc.hasErrors;
     },
-    passwordResetEnabled() {
-      return apos.login.passwordResetEnabled;
-    },
     help() {
       if (this.done) {
         return this.$t('apostrophe:loginResetRequestDone', {
@@ -96,24 +77,9 @@ export default {
       return this.$t('apostrophe:loginResetPasswordRequest');
     }
   },
-  watch: {
-    contextError(newVal) {
-      // Copy it only once
-      if (!this.contextErrorReceived && newVal && !this.error) {
-        this.error = newVal;
-        this.contextErrorReceived = true;
-      }
-    }
-  },
   created() {
     if (!this.passwordResetEnabled) {
       this.$emit('set-stage', 'login');
-    }
-  },
-  mounted() {
-    this.error = this.contextError;
-    if (this.contextError) {
-      this.contextErrorReceived = true;
     }
   },
   methods: {
@@ -144,14 +110,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-login {
-    &__message {
-      @include type-label;
-      text-align: center;
+  .apos-login-form {
+    form {
+      position: relative;
+      display: flex;
+      flex-direction: column;
     }
   }
 
-  .apos-login__submit ::v-deep .apos-button {
+  .apos-login-form__submit ::v-deep .apos-button {
     height: 47px;
   }
 </style>

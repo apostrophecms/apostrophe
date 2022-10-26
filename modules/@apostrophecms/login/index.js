@@ -253,7 +253,7 @@ module.exports = {
             const site = (req.headers.host || '').replace(/:\d+$/, '');
             const email = self.apos.launder.string(req.body.email);
             if (!email.length) {
-              throw self.apos.error('invalid');
+              throw self.apos.error('invalid', req.t('apostrophe:loginResetEmailRequired'));
             }
             let user;
             try {
@@ -312,9 +312,8 @@ module.exports = {
 
           async reset(req) {
             const password = self.apos.launder.string(req.body.password);
-            console.log('RESET', password);
             if (!password.length) {
-              throw self.apos.error('invalid');
+              throw self.apos.error('invalid', req.t('apostrophe:loginResetPasswordRequired'));
             }
             let user;
             try {
@@ -326,10 +325,11 @@ module.exports = {
 
             } catch (e) {
               self.apos.util.error(e);
-              throw self.apos.error('invalid');
+              throw self.apos.error('invalid', req.t('apostrophe:loginResetInvalid'));
             }
 
             user.passwordReset = null;
+            user.passwordResetAt = new Date(0);
             user.password = password;
             await self.apos.user.update(req, user, { permissions: false });
           }
@@ -353,7 +353,7 @@ module.exports = {
 
           } catch (e) {
             self.apos.util.error(e);
-            throw self.apos.error('invalid');
+            throw self.apos.error('invalid', req.t('apostrophe:loginResetInvalid'));
           }
         }
       }

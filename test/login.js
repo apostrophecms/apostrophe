@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert').strict;
 
-describe.only('Login', function() {
+describe('Login', function() {
   let apos;
   let resetUserId;
   let resetToken;
@@ -756,6 +756,22 @@ describe.only('Login', function() {
       }
     );
 
+    // Can not reset anymore
+    await assert.rejects(() => apos.http.post(
+      '/api/v1/@apostrophecms/login/reset',
+      {
+        body: {
+          reset: resetToken,
+          email: user.email,
+          password: 'new even more secret',
+          session: true
+        },
+        jar
+      }
+    ), {
+      status: 400
+    });
+
     // Login with the new password
     await apos.http.post(
       '/api/v1/@apostrophecms/login/login',
@@ -775,5 +791,75 @@ describe.only('Login', function() {
       }
     );
     assert(page.match(/logged in/));
+  });
+
+  it('should find user by reset data', async function() {
+    let user = apos.user.newInstance();
+    user.title = 'getResetUser';
+    user.email = 'getResetUser@example.com';
+    user.username = 'getResetUser';
+    user.password = 'secret';
+    user.role = 'guest';
+    user = await apos.user.insert(apos.task.getReq(), user);
+
+    // Find by email
+    {
+      const found = await apos.login.getPasswordResetUser(user.email);
+      assert.equal(found._id, user._id);
+    }
+    // Find by username
+    {
+      const found = await apos.login.getPasswordResetUser(user.username);
+      assert.equal(found._id, user._id);
+    }
+    // Fail with no token
+    await assert.rejects(
+      () => apos.login.getPasswordResetUser(user.username, ''),
+      {
+        message: 'invalid'
+      }
+    );
+    await assert.rejects(
+      () => apos.login.getPasswordResetUser(user.username, null),
+      {
+        message: 'invalid'
+      }
+    );
+    await assert.rejects(
+      () => apos.login.getPasswordResetUser(user.username, 'invalid'),
+      {
+        message: 'notfound'
+      }
+    );
+
+    user.passwordReset = 'secret';
+    user.passwordResetAt = new Date();
+    user = await apos.user.update(apos.task.getReq(), user);
+    // Find by email and validate token
+    {
+      const found = await apos.login.getPasswordResetUser(user.email, 'secret');
+      assert.equal(found._id, user._id);
+    }
+    // // Find by username and validate token
+    {
+      const found = await apos.login.getPasswordResetUser(user.username, 'secret');
+      assert.equal(found._id, user._id);
+    }
+    await assert.rejects(
+      () => apos.login.getPasswordResetUser(user.username, 'invalid'),
+      {
+        message: 'Incorrect passwordReset'
+      }
+    );
+
+    // Expired
+    user.passwordResetAt = new Date(0);
+    user = await apos.user.update(apos.task.getReq(), user);
+    await assert.rejects(
+      () => apos.login.getPasswordResetUser(user.username, 'invalid'),
+      {
+        message: 'notfound'
+      }
+    );
   });
 });

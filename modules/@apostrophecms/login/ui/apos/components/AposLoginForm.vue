@@ -1,7 +1,7 @@
 <template>
   <div
     key="1"
-    class="apos-login__upper"
+    class="apos-login-form"
     v-if="phase === 'beforeSubmit'"
   >
     <TheAposLoginHeader
@@ -10,7 +10,7 @@
       :error="$t(error)"
     />
 
-    <div class="apos-login__body">
+    <div class="apos-login-form__body">
       <form @submit.prevent="submit">
         <AposSchema
           :schema="schema"
@@ -19,7 +19,7 @@
         <a
           href="#"
           v-if="passwordResetEnabled"
-          class="apos-login__link"
+          class="apos-login-form__link"
           @click.prevent="$emit('set-stage', 'forgotPassword')"
         >{{ $t('apostrophe:loginResetPassword') }}</a>
         <Component
@@ -37,7 +37,7 @@
           type="primary"
           label="apostrophe:login"
           button-type="submit"
-          class="apos-login__submit"
+          class="apos-login-form__submit"
           :modifiers="['gradient-on-hover', 'block']"
           @click="submit"
         />
@@ -46,7 +46,7 @@
   </div>
   <div
     key="2"
-    class="apos-login__upper"
+    class="apos-login-form"
     v-else-if="activeSoloRequirement"
   >
     <TheAposLoginHeader
@@ -55,7 +55,7 @@
       :error="$t(error)"
       :tiny="true"
     />
-    <div class="apos-login__body">
+    <div class="apos-login-form__body">
       <Component
         v-if="!fetchingRequirementProps"
         v-bind="getRequirementProps(activeSoloRequirement.name)"
@@ -70,31 +70,16 @@
 </template>
 
 <script>
+import AposLoginFormMixin from 'Modules/@apostrophecms/login/mixins/AposLoginFormMixin';
+
 export default {
   name: 'AposLoginForm',
-  props: {
-    contextError: {
-      type: String,
-      default: ''
-    },
-    context: {
-      type: Object,
-      default: function() {
-        return {};
-      }
-    }
-  },
+  mixins: [ AposLoginFormMixin ],
   emits: [ 'redirect', 'set-stage' ],
   data() {
     return {
       phase: 'beforeSubmit',
-      error: '',
-      contextErrorReceived: false,
       busy: false,
-      doc: {
-        data: {},
-        hasErrors: false
-      },
       schema: [
         {
           name: 'username',
@@ -121,9 +106,6 @@ export default {
       return this.doc.hasErrors ||
         !!this.beforeSubmitRequirements.find(requirement => !requirement.done);
     },
-    passwordResetEnabled() {
-      return apos.login.passwordResetEnabled;
-    },
     beforeSubmitRequirements() {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
     },
@@ -140,13 +122,6 @@ export default {
   watch: {
     context(newVal) {
       this.requirementProps = newVal.requirementProps;
-    },
-    contextError(newVal) {
-      // Copy it only once
-      if (!this.contextErrorReceived && newVal && !this.error) {
-        this.error = newVal;
-        this.contextErrorReceived = true;
-      }
     },
     async activeSoloRequirement(newVal) {
       if (
@@ -179,10 +154,6 @@ export default {
     }
   },
   mounted() {
-    this.error = this.contextError;
-    if (this.contextError) {
-      this.contextErrorReceived = true;
-    }
     this.requirementProps = this.context.requirementProps;
   },
   methods: {
@@ -337,15 +308,11 @@ function getRequirements() {
 </script>
 
 <style lang="scss" scoped>
-  .apos-login {
+  .apos-login-form {
     form {
       position: relative;
       display: flex;
       flex-direction: column;
-
-      button {
-        margin-top: $spacing-double;
-      }
     }
 
     &__link {
@@ -366,7 +333,7 @@ function getRequirements() {
     }
   }
 
-  .apos-login__submit ::v-deep .apos-button {
+  .apos-login-form__submit ::v-deep .apos-button {
     height: 47px;
   }
 </style>
