@@ -256,6 +256,7 @@ module.exports = {
               throw self.apos.error('invalid', req.t('apostrophe:loginResetEmailRequired'));
             }
             let user;
+            // error not reported to browser for security reasons
             try {
               user = await self.getPasswordResetUser(req.body.email);
             } catch (e) {
