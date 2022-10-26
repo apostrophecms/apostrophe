@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Adds the widget placeholders feature to the core and custom widgets. This includes toggling placeholder content, replacing default content for core widgets, and adding placeholder content for multiple schema fields.
+* Adds the widget placeholders feature to the core and custom widgets. This includes toggling placeholder content when adding widgets to an area, replacing default content for core widgets, and adding placeholder content for multiple schema fields.
 * New `initialModal` option allows disabling of editor modal opening upon widget addition to the page.
 
 ## 3.30.0 (2022-10-12)
