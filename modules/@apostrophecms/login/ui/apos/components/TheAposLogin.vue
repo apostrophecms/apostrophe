@@ -31,6 +31,7 @@
           <AposResetPasswordForm
             v-else-if="loaded && stage === 'resetPassword'"
             :context="context"
+            :data="passwordResetData"
             :context-error="error"
             @redirect="onRedirect"
             @set-stage="setStage"
@@ -74,6 +75,7 @@ export default {
       mounted: false,
       beforeCreateFinished: false,
       error: '',
+      passwordResetData: {},
       context: {}
     };
   },
@@ -111,6 +113,17 @@ export default {
       this.error = e.message || 'apostrophe:loginErrorGeneric';
     } finally {
       this.beforeCreateFinished = true;
+    }
+  },
+  created() {
+    const url = new URL(document.location);
+    const data = {
+      email: url.searchParams.get('email'),
+      reset: url.searchParams.get('reset')
+    };
+    if (data.email && data.reset) {
+      this.passwordResetData = data;
+      this.setStage('resetPassword');
     }
   },
   mounted() {
