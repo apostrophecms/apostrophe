@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Adds Reset Password feature to the login page. See the [documentation](https://v3.docs.apostrophecms.org/) for more details.
+
 ## 3.31.0 (UNRELEASED)
 
 ### Adds
