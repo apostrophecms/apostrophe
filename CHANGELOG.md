@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.31.0 (UNRELEASED)
+## 3.31.0 (2022-10-27)
 
 ### Adds
 
