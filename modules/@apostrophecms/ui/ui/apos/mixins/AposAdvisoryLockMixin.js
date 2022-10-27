@@ -47,7 +47,8 @@ export default {
         if (this.isLockedError(e)) {
           if (await apos.confirm({
             heading: e.body.data.me ? 'apostrophe:docInUseBySelf' : 'apostrophe:docInUseByAnother',
-            description: e.body.data.me ? 'apostrophe:takeControlFromSelf' : 'apostrophe:takeControlFromOther',
+            description: e.body.data.me ? 'apostrophe:takeControlFromSelf' : 'apostrophe:takeControlFromOther'
+          }, {
             interpolate: {
               who: e.body.data.title
             }
