@@ -4,7 +4,6 @@
 
 ### Adds
 
-TODO: set documentation link once created:
 * Adds `placeholder: true` and `initialModal: false` features to improve the user experience of adding widgets to the page. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/guide/areas-and-widgets.html#adding-placeholder-content-to-widgets) for more detail. 
 
 ## 3.30.0 (2022-10-12)
