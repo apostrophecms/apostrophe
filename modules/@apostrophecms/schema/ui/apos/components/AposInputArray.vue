@@ -104,7 +104,7 @@ export default {
   },
   computed: {
     listId() {
-      return `sortableList-${(Math.floor(Math.random() * Math.floor(10000)))}`;
+      return `sortableList-${cuid()}`;
     },
     dragOptions() {
       return {
