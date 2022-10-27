@@ -62,6 +62,17 @@ export default {
         this.rendered = '<p>Unable to render this widget.</p>';
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
       }
+    },
+    getClasses() {
+      const { placeholderClass } = this.moduleOptions;
+
+      if (!placeholderClass) {
+        return {};
+      }
+
+      return {
+        [placeholderClass]: this.value.aposPlaceholder === true
+      };
     }
   }
 };

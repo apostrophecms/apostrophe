@@ -97,7 +97,10 @@ const _ = require('lodash');
 module.exports = {
   cascades: [ 'fields' ],
   options: {
-    neverLoadSelf: true
+    neverLoadSelf: true,
+    initialModal: true,
+    placeholder: false,
+    placeholderClass: 'apos-placeholder'
   },
   init(self) {
 
@@ -161,8 +164,24 @@ module.exports = {
           ...self.getWidgetsBundles(`${widget.type}-widget`)
         };
 
+        let effectiveWidget = widget;
+
+        if (widget.aposPlaceholder === true) {
+          // Do not render widget on preview mode:
+          if (req.query.aposEdit !== '1') {
+            return '';
+          }
+
+          effectiveWidget = { ...widget };
+          self.schema.forEach(field => {
+            if (field.placeholder !== undefined) {
+              effectiveWidget[field.name] = field.placeholder;
+            }
+          });
+        }
+
         return self.render(req, self.template, {
-          widget: widget,
+          widget: effectiveWidget,
           options: options,
           manager: self,
           contextOptions: _with
@@ -276,11 +295,14 @@ module.exports = {
         // Make sure we get default values for contextual fields so
         // `by` doesn't go missing for `@apostrophecms/image-widget`
         const output = self.apos.schema.newInstance(self.schema);
-        const schema = self.allowedSchema(req);
         output._id = self.apos.launder.id(input._id) || self.apos.util.generateId();
-        await self.apos.schema.convert(req, schema, input, output);
         output.metaType = 'widget';
         output.type = self.name;
+        output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
+        if (!output.aposPlaceholder) {
+          const schema = self.allowedSchema(req);
+          await self.apos.schema.convert(req, schema, input, output);
+        }
         return output;
       },
 
@@ -352,7 +374,7 @@ module.exports = {
           action: self.action,
           schema: schema,
           contextual: self.options.contextual,
-          skipInitialModal: self.options.skipInitialModal,
+          placeholderClass: self.options.placeholderClass,
           className: self.options.className,
           components: self.options.components
         });

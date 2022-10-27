@@ -404,6 +404,8 @@ export default {
       }
     },
     async update(widget) {
+      widget.aposPlaceholder = false;
+
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
           [`@${widget._id}`]: widget
@@ -434,9 +436,17 @@ export default {
       } else if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
-            _id: cuid(),
             type: name,
-            ...this.contextualWidgetDefaultData(name)
+            ...this.contextualWidgetDefaultData(name),
+            aposPlaceholder: this.widgetHasPlaceholder(name)
+          },
+          index
+        });
+      } else if (!this.widgetHasInitialModal(name)) {
+        return this.insert({
+          widget: {
+            type: name,
+            aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
         });
@@ -501,6 +511,12 @@ export default {
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
+    },
+    widgetHasPlaceholder(type) {
+      return this.moduleOptions.widgetHasPlaceholder[type];
+    },
+    widgetHasInitialModal(type) {
+      return this.moduleOptions.widgetHasInitialModal[type];
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
