@@ -24,7 +24,8 @@
           <div
             v-for="item in items"
             :key="item._id"
-            class="apos-input-array-inline-item">
+            class="apos-input-array-inline-item"
+          >
             <div class="apos-input-array-inline-item-controls">
               <AposIndicator
                 icon="drag-icon"
