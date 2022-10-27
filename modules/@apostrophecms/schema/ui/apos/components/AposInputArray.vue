@@ -91,9 +91,7 @@ export default {
     generation: {
       type: Number,
       required: false,
-      default() {
-        return null;
-      }
+      default: null
     }
   },
   data () {
