@@ -368,7 +368,7 @@ module.exports = (self) => {
             });
           } else {
             value = (typeof field.choices) === 'string'
-              ? self.apos.launder.string(value)
+              ? self.apos.launder.string(value, null)
               : self.apos.launder.select(value, field.choices, null);
             if (value === null) {
               return null;
