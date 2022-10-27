@@ -1,10 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Fixes
+
+- Add `null` to select fields with a function name as choices.
+
 ## 3.31.0 (2022-10-27)
 
 ### Adds
 
-* Adds `placeholder: true` and `initialModal: false` features to improve the user experience of adding widgets to the page. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/guide/areas-and-widgets.html#adding-placeholder-content-to-widgets) for more detail. 
+* Adds `placeholder: true` and `initialModal: false` features to improve the user experience of adding widgets to the page. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/guide/areas-and-widgets.html#adding-placeholder-content-to-widgets) for more detail.
 
 ### Fixes
 
