@@ -204,7 +204,7 @@ export default {
       return this.field.max && (this.items.length >= this.field.max);
     },
     remove(_id) {
-      this.items = this.items.filter(color => color._id !== _id);
+      this.items = this.items.filter(item => item._id !== _id);
     },
     add() {
       this.items.push({
