@@ -23,6 +23,7 @@
       />
       <form
         v-else-if="!done && valid"
+        data-apos-test="pwdResetForm"
         @submit.prevent="submit"
       >
         <AposSchema

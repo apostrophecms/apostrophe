@@ -10,7 +10,7 @@
       :help="help"
       :error="$t(error)"
     />
-    <div class="apos-login-form__body">
+    <div class="apos-login-form__body" data-apos-test="pwdResetRequestForm">
       <AposButton
         v-if="done"
         data-apos-test="loginBack"
