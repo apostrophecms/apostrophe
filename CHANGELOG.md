@@ -4,7 +4,7 @@
 
 Fixes
 
-- Add `null` to select fields with a function name as choices.
+- Query builders for regular select fields have always accepted null to mean "do not filter on this property." Now this also works for dynamic select fields.
 
 ## 3.31.0 (2022-10-27)
 
