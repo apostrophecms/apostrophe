@@ -500,12 +500,10 @@ export default {
           .map(doc => [ doc.aposLocale.split(':')[0], doc ])
       );
       await this.updateRelatedDocs();
-    } catch (e) {
-      //
+    } finally {
+      this.wizard.step = this.visibleStepNames[0];
+      this.wizard.busy = false;
     }
-
-    this.wizard.step = this.visibleStepNames[0];
-    this.wizard.busy = false;
   },
   methods: {
     close() {
@@ -742,8 +740,6 @@ export default {
         });
         const filtered = docs.filter(doc => result.editable.includes(doc._id));
         return filtered;
-      } catch (e) {
-        //
       } finally {
         this.wizard.busy = status;
       }
