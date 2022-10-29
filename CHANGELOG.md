@@ -5,6 +5,7 @@
 Fixes
 
 - Query builders for regular select fields have always accepted null to mean "do not filter on this property." Now this also works for dynamic select fields.
+- The i18n UI state management now doesn't allow actions while it's busy
 
 ## 3.31.0 (2022-10-27)
 
