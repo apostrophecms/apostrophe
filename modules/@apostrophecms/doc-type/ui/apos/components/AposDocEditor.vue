@@ -650,16 +650,17 @@ export default {
       // Powers the dropdown Save menu
       // all actions expected to be methods of this component
       // Needs to be manually computed because this.saveLabel doesn't stay reactive when part of an object
-      const typeLabel = this.moduleOptions
-        ? this.moduleOptions.label.toLowerCase()
-        : 'document';
+      const typeLabel = this.$t(this.moduleOptions
+        ? this.moduleOptions.label
+        : 'document');
       const isNew = !this.docId;
       // this.original takes a moment to populate, don't crash
       const canPreview = this.original && (this.original._id ? this.original._url : this.original._previewable);
       const canNew = this.moduleOptions.showCreate;
+      const isSingleton = this.moduleOptions.singleton;
       const description = {
         saveLabel: this.$t(this.saveLabel),
-        typeLabel: this.$t(typeLabel)
+        typeLabel
       };
       const menu = [
         {
@@ -667,7 +668,8 @@ export default {
           action: 'onSave',
           description: {
             ...description,
-            key: isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn'
+            key: isSingleton ? 'apostrophe:updateSingleton'
+              : (isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn')
           },
           def: true
         }
@@ -689,7 +691,8 @@ export default {
         menu.push({
           label: {
             key: 'apostrophe:takeActionAndCreateNew',
-            saveLabel: this.$t(this.saveLabel)
+            saveLabel: this.$t(this.saveLabel),
+            typeLabel
           },
           action: 'onSaveAndNew',
           description: {
@@ -707,18 +710,25 @@ export default {
       }
       if (this.manuallyPublished && canPreview) {
         menu.push({
-          label: 'apostrophe:saveDraftAndPreview',
+          label: {
+            key: 'apostrophe:saveDraftAndPreview',
+            typeLabel
+          },
           action: 'onSaveDraftAndView',
-          description: 'apostrophe:saveDraftAndPreviewDescription',
-          typeLabel: this.$t(typeLabel)
+          description: {
+            key: 'apostrophe:saveDraftAndPreviewDescription',
+            typeLabel
+          },
         });
       };
       if (this.manuallyPublished && canNew) {
         menu.push({
           label: 'apostrophe:saveDraftAndCreateNew',
           action: 'onSaveDraftAndNew',
-          description: 'apostrophe:saveDraftAndCreateNewDescription',
-          typeLabel: this.$t(typeLabel)
+          description: {
+            key: 'apostrophe:saveDraftAndCreateNewDescription',
+            typeLabel
+          }
         });
       }
       return menu;
