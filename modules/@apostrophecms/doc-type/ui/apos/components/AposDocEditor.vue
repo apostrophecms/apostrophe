@@ -718,7 +718,7 @@ export default {
           description: {
             key: 'apostrophe:saveDraftAndPreviewDescription',
             typeLabel
-          },
+          }
         });
       };
       if (this.manuallyPublished && canNew) {
