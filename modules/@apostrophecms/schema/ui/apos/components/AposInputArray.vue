@@ -33,7 +33,7 @@
                 class="apos-drag-handle"
               />
               <AposButton
-                v-if="item.open"
+                v-if="item.open && field.titleField"
                 class="apos-input-array-inline-collapse"
                 :icon-size="20"
                 label="apostrophe:close"
@@ -47,7 +47,7 @@
             <div class="apos-input-array-inline-content-wrapper">
               <h3
                 class="apos-input-array-inline-label"
-                v-if="!item.open"
+                v-if="!item.open && field.titleField"
                 @click="openInlineItem(item._id)"
               >
                 {{ getLabel(item._id, index) }}
@@ -120,11 +120,11 @@ export default {
       default: null
     }
   },
-  data () {
+  data() {
     const next = this.getNext();
     const data = {
       next,
-      items: expandItems(next)
+      items: expandItems(next, this.field)
     };
     return data;
   },
@@ -172,12 +172,20 @@ export default {
   watch: {
     generation() {
       this.next = this.getNext();
-      this.items = expandItems(this.next);
+      this.items = expandItems(this.next, this.field);
     },
     items: {
       deep: true,
       handler() {
-        if (!this.items.find(item => item.schemaInput.hasErrors)) {
+        const erroneous = this.items.filter(item => item.schemaInput.hasErrors);
+        if (erroneous.length) {
+          erroneous.forEach(item => {
+            if (!item.open) {
+              // Make errors visible
+              item.open = true;
+            }
+          });
+        } else {
           const next = this.items.map(item => ({
             ...item.schemaInput.data,
             _id: item._id,
@@ -239,7 +247,7 @@ export default {
         schemaInput: {
           data: this.newInstance()
         },
-        open: false
+        open: !this.field.titleField
       });
       this.openInlineItem(_id);
     },
@@ -271,13 +279,13 @@ export default {
   }
 };
 
-function expandItems(items) {
+function expandItems(items, field) {
   return items.map(item => ({
     _id: item._id || cuid(),
     schemaInput: {
       data: item
     },
-    open: false
+    open: !field.titleField
   }));
 }
 </script>
