@@ -22,32 +22,58 @@
           :id="listId"
         >
           <div
-            v-for="item in items"
+            v-for="(item, index) in items"
             :key="item._id"
             class="apos-input-array-inline-item"
+            :class="item.open ? 'apos-input-array-inline-item--active' : null"
           >
             <div class="apos-input-array-inline-item-controls">
               <AposIndicator
                 icon="drag-icon"
                 class="apos-drag-handle"
               />
-            </div>
-            <div class="apos-input-array-inline-schema-wrapper">
-              <AposSchema
-                :schema="effectiveSchema"
-                v-model="item.schemaInput"
-                :trigger-validation="triggerValidation"
-                :utility-rail="false"
-                :generation="generation"
-                :modifiers="[ 'margin-none' ]"
+              <AposButton
+                v-if="item.open"
+                class="apos-input-array-inline-collapse"
+                :icon-size="20"
+                label="apostrophe:close"
+                icon="unfold-less-horizontal-icon"
+                type="subtle"
+                :modifiers="['inline', 'no-motion']"
+                :icon-only="true"
+                @click="closeInlineItem(item._id)"
               />
             </div>
-            <div class="apos-input-array-inline-item-controls">
+            <div class="apos-input-array-inline-content-wrapper">
+              <h3
+                class="apos-input-array-inline-label"
+                v-if="!item.open"
+                @click="openInlineItem(item._id)"
+              >
+                {{ getLabel(item._id, index) }}
+              </h3>
+              <transition name="collapse">
+                <div
+                  v-show="item.open"
+                  class="apos-input-array-inline-schema-wrapper"
+                >
+                  <AposSchema
+                    :schema="effectiveSchema"
+                    v-model="item.schemaInput"
+                    :trigger-validation="triggerValidation"
+                    :utility-rail="false"
+                    :generation="generation"
+                    :modifiers="['small', 'inverted']"
+                  />
+                </div>
+              </transition>
+            </div>
+            <div class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove">
               <AposButton
                 label="apostrophe:removeItem"
-                icon="close-icon"
+                icon="trash-can-outline-icon"
                 type="subtle"
-                :modifiers="['small', 'no-motion']"
+                :modifiers="['inline', 'danger', 'no-motion']"
                 :icon-only="true"
                 @click="remove(item._id)"
               />
@@ -57,9 +83,9 @@
         <AposButton
           type="button"
           label="apostrophe:addItem"
-          :icon-only="true"
           icon="plus-icon"
           :disabled="disableAdd()"
+          :modifiers="[ 'block' ]"
           @click="add"
         />
       </div>
@@ -207,12 +233,15 @@ export default {
       this.items = this.items.filter(item => item._id !== _id);
     },
     add() {
+      const _id = cuid();
       this.items.push({
-        _id: cuid(),
+        _id,
         schemaInput: {
           data: this.newInstance()
-        }
+        },
+        open: false
       });
+      this.openInlineItem(_id);
     },
     newInstance() {
       const instance = {};
@@ -222,6 +251,22 @@ export default {
         }
       }
       return instance;
+    },
+    getLabel(id, index) {
+      const titleField = this.field.titleField || null;
+      const item = this.items.find(item => item._id === id);
+      return item.schemaInput.data[titleField] || `Item ${index + 1}`;
+    },
+    openInlineItem(id) {
+      this.items.forEach(item => {
+        item.open = false;
+      });
+      const item = this.items.find(item => item._id === id);
+      item.open = true;
+    },
+    closeInlineItem(id) {
+      const item = this.items.find(item => item._id === id);
+      item.open = false;
     }
   }
 };
@@ -231,7 +276,8 @@ function expandItems(items) {
     _id: item._id || cuid(),
     schemaInput: {
       data: item
-    }
+    },
+    open: false
   }));
 }
 </script>
@@ -240,21 +286,61 @@ function expandItems(items) {
     opacity: 0.5;
     background: var(--a-base-4);
   }
+  .apos-input-array-inline-label {
+    transition: background-color 0.3s ease;
+    @include type-label;
+    margin: 0;
+    &:hover {
+      cursor: pointer;
+    }
+  }
   .apos-input-array-inline-item {
+    position: relative;
+    transition: background-color 0.3s ease;
     display: flex;
-    margin-bottom: 20px;
-    border-left: 1px solid var(--a-base-9);
+    border-bottom: 1px solid var(--a-base-9);
+    &:hover {
+      background-color: var(--a-base-10);
+    }
+  }
+  .apos-input-array-inline-collapse {
+    position: absolute;
+    top: $spacing-quadruple;
+    left: 7.5px;
+  }
+
+  .apos-input-array-inline-item--active {
+    background-color: var(--a-base-10);
+    border-bottom: 1px solid var(--a-base-6);
+    .apos-input-array-inline-content-wrapper {
+      padding-top: $spacing-base;
+      padding-bottom: $spacing-base;
+    }
   }
   .apos-input-array-inline-item-controls {
-    // align-self: stretch seems like the answer, but looks bad
-    // once the field adds additional height to itself for an error.
-    // 15px - 7.5px (padding of icons) = 7.5px
-    padding-top: 7.5px;
+    padding: $spacing-base;
   }
-  .apos-input-array-inline-schema-wrapper {
+
+  .apos-input-array-inline-label {
+    padding-top: $spacing-base;
+    padding-bottom: $spacing-base;
+  }
+
+  .apos-input-array-inline-content-wrapper {
     flex-grow: 1;
   }
-  .apos-drag-handle {
-    padding: 7.5px;
+
+  .apos-input-array-inline-schema-wrapper {
+    max-height: 999px;
+    overflow: hidden;
+    transition: max-height .5s;
+  }
+
+  .collapse-enter, .collapse-leave-to {
+    max-height: 0px;
+  }
+
+  .collapse-enter-to, .collapse-leave {
+    max-height: 999px;
   }
 </style>

@@ -512,6 +512,9 @@ export default {
     &[disabled].apos-button--busy {
       border: 1px solid var(--a-danger-button-disabled);
     }
+    &.apos-button--inline {
+      color: var(--a-danger-button-active);
+    }
     .apos-spinner__svg {
       color: var(--a-danger);
     }

@@ -326,6 +326,7 @@ export default {
   .apos-field {
     .apos-schema ::v-deep & {
       margin-bottom: $spacing-quadruple;
+      &.apos-field--small,
       &.apos-field--micro,
       &.apos-field--margin-micro {
         margin-bottom: $spacing-double;
