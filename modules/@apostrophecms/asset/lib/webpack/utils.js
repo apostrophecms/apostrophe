@@ -47,16 +47,23 @@ module.exports = {
     }
   },
 
+  // Export for testing
+  formatRebundleConfig,
+  verifyRebundleConfig,
+
   async getWebpackExtensions ({
-    getMetadata, modulesToInstantiate
+    getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
   }) {
     const modulesMeta = modulesToInstantiate
       .map((name) => getMetadata(name));
 
+    const rebundleModules = formatRebundleConfig(rebundleModulesConfig);
+
     const {
       extensions, extensionOptions, foundBundles
     } = getModulesWebpackConfigs(
-      modulesMeta
+      modulesMeta,
+      rebundleModules
     );
 
     const verifiedBundles = await verifyBundlesEntryPoints(foundBundles);
@@ -64,26 +71,36 @@ module.exports = {
     return {
       extensions,
       extensionOptions,
-      verifiedBundles
+      verifiedBundles,
+      rebundleModules
     };
   },
 
   fillExtraBundles (verifiedBundles = {}) {
-    return Object.entries(verifiedBundles).reduce((acc, [ bundleName, { js, scss } ]) => {
-      return {
-        js: [
-          ...acc.js,
-          ...(js.length && !acc.js.includes(bundleName)) ? [ bundleName ] : []
-        ],
-        css: [
-          ...acc.css,
-          ...(scss.length && !acc.css.includes(bundleName)) ? [ bundleName ] : []
-        ]
-      };
-    }, {
-      js: [],
-      css: []
-    });
+
+    const res = Object.entries(verifiedBundles).reduce(
+      (acc, [ bundleName, entry ]) => {
+        const {
+          js, scss, main
+        } = entry;
+        if (main) {
+          return acc;
+        }
+        return {
+          js: [
+            ...acc.js,
+            ...(js.length && !acc.js.includes(bundleName)) ? [ bundleName ] : []
+          ],
+          css: [
+            ...acc.css,
+            ...(scss.length && !acc.css.includes(bundleName)) ? [ bundleName ] : []
+          ]
+        };
+      }, {
+        js: [],
+        css: []
+      });
+    return res;
   },
 
   getBundlesNames (bundles, es5 = false) {
@@ -177,13 +194,17 @@ async function findSymlinks(where, sub = '') {
   return result;
 }
 
-function getModulesWebpackConfigs (modulesMeta) {
+function getModulesWebpackConfigs (modulesMeta, rebundleModules) {
   const {
     extensions, extensionOptions, bundles
   } = modulesMeta.reduce((modulesAcc, meta) => {
     const { webpack, __meta } = meta;
 
-    const configs = formatConfigs(__meta.chain, webpack);
+    const configs = formatConfigs(
+      __meta.chain,
+      webpack,
+      rebundleModules
+    );
 
     if (!configs.length) {
       return modulesAcc;
@@ -235,15 +256,41 @@ function getModulesWebpackConfigs (modulesMeta) {
 };
 
 async function verifyBundlesEntryPoints (bundles) {
-  const checkPathsPromises = bundles.map(async ({ bundleName, modulePath }) => {
+  const checkPathsPromises = bundles.map(async ({
+    bundleName, modulePath, bundleRemapping
+  }) => {
     const jsPath = `${modulePath}/ui/src/${bundleName}.js`;
     const scssPath = `${modulePath}/ui/src/${bundleName}.scss`;
+    let main = false;
 
     const jsFileExists = await fs.pathExists(jsPath);
     const scssFileExists = await fs.pathExists(scssPath);
 
+    for (const remapping of bundleRemapping) {
+      main = remapping.main;
+      // - catch all, main
+      if (remapping.main) {
+        // Bundle name here doesn't matter - it will be ignored as a bundle,
+        // we want to achieve a non-colision name. What matters is main = true.
+        // Target is 'main' by convention: `main.bundleName`
+        bundleName = `${remapping.target}.${bundleName}`;
+        break;
+      }
+      // - catch all, new bundle name
+      if (!remapping.source) {
+        bundleName = remapping.target;
+        break;
+      }
+      // - concrete bundle remapping
+      if (remapping.source === bundleName) {
+        bundleName = remapping.target;
+        break;
+      }
+    }
+
     return {
       bundleName,
+      main,
       ...jsFileExists && { jsPath },
       ...scssFileExists && { scssPath }
     };
@@ -252,7 +299,7 @@ async function verifyBundlesEntryPoints (bundles) {
   const bundlesPaths = await Promise.all(checkPathsPromises);
 
   const packedFilesByBundle = bundlesPaths.reduce((acc, {
-    bundleName, jsPath, scssPath
+    bundleName, jsPath, scssPath, main
   }) => {
     if (!jsPath && !scssPath) {
       return acc;
@@ -261,6 +308,7 @@ async function verifyBundlesEntryPoints (bundles) {
     return {
       ...acc,
       [bundleName]: {
+        main,
         js: [
           ...acc[bundleName] ? acc[bundleName].js : [],
           ...jsPath ? [ jsPath ] : []
@@ -276,7 +324,57 @@ async function verifyBundlesEntryPoints (bundles) {
   return packedFilesByBundle;
 };
 
-function formatConfigs (chain, webpackConfigs) {
+// Normalize config:
+// - from { moduleName: 'main' }
+//    to [{ main: true, name: 'moduleName', target: 'main' }]
+// - from { moduleName: bundleName }
+//    to [{ main: false, name: 'moduleName', target: bundleName }]
+// - from { 'moduleName:sourceBundle': 'main' }
+//    to [{ main: true, name: 'moduleName', source: 'sourceBundle', target: 'main' }]
+// - from { 'moduleName:sourceBundle': targetBundle }
+//    to [{ main: false, name: 'moduleName', source: 'sourceBundle', target: targetBundle }]
+function formatRebundleConfig(mappingConfig = {}) {
+  const result = Object.keys(mappingConfig).reduce((transformed, key) => {
+    const main = mappingConfig[key] === 'main';
+    const [ moduleName, sourceBundle ] = key.split(':');
+    return [
+      ...transformed,
+      {
+        name: moduleName,
+        source: sourceBundle,
+        target: mappingConfig[key],
+        main
+      }
+    ];
+  }, []);
+  // Better panic than sorry!
+  verifyRebundleConfig(result);
+  return result;
+}
+
+// Expects formatted by formatRebundleConfig() `asset.options.rebundleModules`
+function verifyRebundleConfig(config = []) {
+  const targeted = [];
+  const catchAllModules = [];
+  for (const entry of config) {
+    if (!entry.source) {
+      catchAllModules.push(entry.name);
+    } else {
+      targeted.push(entry);
+    }
+  }
+  for (const entry of targeted) {
+    if (catchAllModules.includes(entry.name)) {
+      throw new Error(
+        'Invalid apos.asset.options.rebundleModules: ' +
+        `module ${entry.name} can't have more re-bundle options when` +
+        'having a catch-all directive.'
+      );
+    }
+  }
+}
+
+function formatConfigs (chain, webpackConfigs, rebundleModules) {
   return Object.entries(webpackConfigs)
     .map(([ name, config ], i) => {
 
@@ -285,16 +383,26 @@ function formatConfigs (chain, webpackConfigs) {
       }
 
       const {
-        bundles = {}, extensions = {}, extensionOptions = {}
+        bundles = {},
+        extensions = {},
+        extensionOptions = {}
       } = config;
+      const bundleNames = Object.keys(bundles);
+
+      // Remapping only for the explicitly defined by the module bundle
+      // configurations
+      const bundleRemapping = rebundleModules
+        .filter(entry => entry.name === chain[i].name);
 
       return {
+        name: chain[i].name,
         extensions,
         extensionOptions,
         bundles: {
           [name]: {
-            bundleNames: Object.keys(bundles),
-            modulePath: chain[i].dirname
+            bundleNames,
+            modulePath: chain[i].dirname,
+            bundleRemapping
           }
         }
       };
@@ -303,11 +411,14 @@ function formatConfigs (chain, webpackConfigs) {
 
 function flattenBundles (bundles) {
   return Object.values(bundles)
-    .reduce((acc, { bundleNames, modulePath }) => {
+    .reduce((acc, {
+      bundleNames, modulePath, bundleRemapping
+    }) => {
       return [
         ...acc,
         ...bundleNames.map((bundleName) => ({
           bundleName,
+          bundleRemapping,
           modulePath
         }))
       ];

@@ -1,4 +1,5 @@
 const { stripIndent } = require('common-tags');
+const { reBundle } = require('../../../../lib/bundle-helpers');
 
 module.exports = (self) => {
   function insertBundlesMarkup({
@@ -20,7 +21,7 @@ module.exports = (self) => {
     }
 
     const { es5 } = self.apos.asset.options;
-    const { extraBundles } = self.apos.asset;
+    const { extraBundles, rebundleModules } = self.apos.asset;
 
     const jsMainBundle = renderMarkup({
       fileName: scene,
@@ -49,10 +50,21 @@ module.exports = (self) => {
     const pageModule = page.type && self.apos.modules[page.type];
     const { webpack = {} } = pageModule ? pageModule.__meta : {};
 
-    const configs = Object.values(webpack || {}).reduce((acc, config) => ({
-      ...acc,
-      ...config && config.bundles
-    }), widgetsBundles);
+    const rebundleConfigs = rebundleModules.filter(entry => {
+      const names = pageModule.__meta?.chain?.map(c => c.name) ?? [ page.type ];
+      return names.includes(entry.name);
+    });
+
+    const configs = Object.entries(webpack || {})
+      .reduce((acc, [ moduleName, config ]) => {
+        if (!config || !config.bundles) {
+          return acc;
+        }
+        return {
+          ...acc,
+          ...reBundle(moduleName, config.bundles, rebundleConfigs)
+        };
+      }, widgetsBundles);
 
     const { jsBundles, cssBundles } = Object.entries(configs)
       .reduce((acc, [ name, { templates } ]) => {

@@ -6,6 +6,8 @@ const Promise = require('bluebird');
 
 const {
   checkModulesWebpackConfig,
+  formatRebundleConfig,
+  verifyRebundleConfig,
   getWebpackExtensions,
   fillExtraBundles
 } = require('../modules/@apostrophecms/asset/lib/webpack/utils');
@@ -99,7 +101,12 @@ describe('Assets', function() {
   after(async function() {
     await deleteBuiltFolders(publicFolderPath, true);
     await removeCache();
-    return t.destroy(apos);
+    await t.destroy(apos);
+  });
+
+  afterEach(function() {
+    // Prevent hang forever if particular tests fail while testing prod.
+    process.env.NODE_ENV = 'development';
   });
 
   this.timeout(5 * 60 * 1000);
@@ -136,13 +143,16 @@ describe('Assets', function() {
 
   it('should get webpack extensions from modules and fill extra bundles', async function () {
     const expectedEntryPointsNames = {
-      js: [ 'extra', 'extra2' ],
-      css: [ 'extra' ]
+      js: [ 'company', 'main', 'extra', 'extra2' ],
+      css: [ 'company', 'main', 'extra' ]
     };
 
     apos = await t.create({
       root: module,
-      modules
+      modules: {
+        '@company/bundle': {},
+        ...modules
+      }
     });
 
     const {
@@ -158,23 +168,28 @@ describe('Assets', function() {
     assert(extensions.ext1.resolve.alias.ext1Overriden);
     assert(extensions.ext2.resolve.alias.ext2);
 
-    assert(Object.keys(verifiedBundles).length === 2);
+    assert.equal(
+      Object.keys(verifiedBundles).length,
+      Math.max(expectedEntryPointsNames.js.length, expectedEntryPointsNames.css.length)
+    );
 
-    assert(verifiedBundles.extra.js.length === 1);
-    assert(verifiedBundles.extra.scss.length === 1);
+    assert(verifiedBundles.main.js.length, 2);
+    assert(verifiedBundles.main.scss.length, 1);
 
-    assert(verifiedBundles.extra2.js.length === 1);
-    assert(verifiedBundles.extra2.scss.length === 0);
+    // The local and the npm module source
+    assert.equal(verifiedBundles.company.js.length, 2);
+    assert.equal(verifiedBundles.company.scss.length, 2);
+
+    assert.equal(verifiedBundles.extra.js.length, 1);
+    assert.equal(verifiedBundles.extra.scss.length, 1);
+
+    assert.equal(verifiedBundles.extra2.js.length, 1);
+    assert.equal(verifiedBundles.extra2.scss.length, 0);
 
     const filled = fillExtraBundles(verifiedBundles);
 
-    filled.js.forEach((name) => {
-      assert(expectedEntryPointsNames.js.includes(name));
-    });
-
-    filled.css.forEach((name) => {
-      assert(expectedEntryPointsNames.css.includes(name));
-    });
+    assert.deepEqual(filled.js, expectedEntryPointsNames.js);
+    assert.deepEqual(filled.css, expectedEntryPointsNames.css);
   });
 
   it('should build the right bundles in dev and prod modes', async function () {
@@ -214,18 +229,22 @@ describe('Assets', function() {
     const bundlePage = await apos.http.get('/bundle', { jar });
 
     assert(bundlePage.includes(getStylesheetMarkup('public-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('main-bundle')));
     assert(!bundlePage.includes(getStylesheetMarkup('extra-bundle')));
 
     assert(bundlePage.includes(getScriptMarkup('public-module-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('main-module-bundle')));
     assert(!bundlePage.includes(getScriptMarkup('extra-module-bundle')));
     assert(bundlePage.includes(getScriptMarkup('extra2-module-bundle')));
 
     const childPage = await apos.http.get('/bundle/child', { jar });
 
     assert(childPage.includes(getStylesheetMarkup('public-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('main-bundle')));
     assert(childPage.includes(getStylesheetMarkup('extra-bundle')));
 
     assert(childPage.includes(getScriptMarkup('public-module-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('main-module-bundle')));
     assert(childPage.includes(getScriptMarkup('extra-module-bundle')));
     assert(!childPage.includes(getScriptMarkup('extra2-module-bundle')));
   });
@@ -472,7 +491,7 @@ describe('Assets', function() {
     // Modify asset and rebuild
     const assetPath = path.join(process.cwd(), 'test/modules/bundle-page/ui/src/extra.js');
     const assetPathPublic = path.join(process.cwd(), 'test/public/apos-frontend/default/extra-module-bundle.js');
-    const assetContent = 'export default () => {};\n';
+    const assetContent = fs.readFileSync(assetPath, 'utf-8');
     fs.writeFileSync(
       assetPath,
       'export default () => { \'bundle-page-watcher-test-src\'; };\n',
@@ -526,8 +545,8 @@ describe('Assets', function() {
     const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
     const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
     const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
-    const assetContentJs = 'export default () => {};\n';
-    const assetContentScss = '.default-page {color:red;}\n';
+    const assetContentJs = fs.readFileSync(assetPathJs, 'utf-8');
+    const assetContentScss = fs.readFileSync(assetPathScss, 'utf-8');
     // Resurrect the default assets content if test has failed
     fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
     fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
@@ -647,8 +666,8 @@ describe('Assets', function() {
     const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
     const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
     const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
-    const assetContentJs = 'export default () => {};\n';
-    const assetContentScss = '.default-page {color:red;}\n';
+    const assetContentJs = fs.readFileSync(assetPathJs, 'utf-8');
+    const assetContentScss = fs.readFileSync(assetPathCss, 'utf-8');
     // Resurrect the default assets content if test has failed
     fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
     fs.writeFileSync(assetPathCss, assetContentScss, 'utf8');
@@ -982,8 +1001,8 @@ describe('Assets', function() {
     const assetPathPublicCss = path.join(rootPath, 'test/public/apos-frontend/default/public-bundle.css');
     const assetPathAposJs = path.join(rootPath, 'test/public/apos-frontend/default/apos-module-bundle.js');
     const assetPathAposCss = path.join(rootPath, 'test/public/apos-frontend/default/apos-bundle.css');
-    const assetContentJs = 'export default () => {};\n';
-    const assetContentScss = '.default-page {color:red;}\n';
+    const assetContentJs = fs.readFileSync(assetPathJs, 'utf-8');
+    const assetContentScss = fs.readFileSync(assetPathScss, 'utf-8');
     // Resurrect the default assets content if test has failed
     fs.writeFileSync(assetPathJs, assetContentJs, 'utf8');
     fs.writeFileSync(assetPathScss, assetContentScss, 'utf8');
@@ -1124,7 +1143,7 @@ describe('Assets', function() {
 
     const assetPath = path.join(process.cwd(), 'test/modules/bundle-page/ui/src/extra.js');
     const assetPathPublic = path.join(process.cwd(), 'test/public/apos-frontend/default/extra-module-bundle.js');
-    const assetContent = 'export default () => {};\n';
+    const assetContent = fs.readFileSync(assetPath, 'utf-8');
 
     // Modify below the debounce rate
     for (const i of [ 1, 2, 3 ]) {
@@ -1330,6 +1349,268 @@ describe('Assets', function() {
 
     assertWebpackExtensionOptions(extensions, extensionOptions);
   });
+
+  it('should verify that asset re-bundle configs are valid', async function () {
+    assert.doesNotThrow(() => verifyRebundleConfig());
+    assert.doesNotThrow(() => verifyRebundleConfig([]));
+    assert.doesNotThrow(() => formatRebundleConfig());
+    assert.doesNotThrow(() => formatRebundleConfig({}));
+
+    assert.doesNotThrow(() => formatRebundleConfig({
+      'bundle-page': 'main',
+      'bundle-page-type': 'new',
+      'bundle-widget:extra': 'widget',
+      '@company/bundle:company': 'newcompany',
+      'bundle-edge:edge': 'main'
+    }));
+
+    // too much catch-all
+    assert.throws(() => formatRebundleConfig({
+      'bundle-page': 'main',
+      'bundle-page:extra': 'new'
+    }));
+    assert.throws(() => formatRebundleConfig({
+      'bundle-page:extra': 'new',
+      'bundle-page': 'main'
+    }));
+    assert.throws(() => formatRebundleConfig({
+      'bundle-page': 'main',
+      'bundle-page:extra': 'main'
+    }));
+    assert.throws(() => formatRebundleConfig({
+      'bundle-page': 'new',
+      'bundle-page:extra': 'another'
+    }));
+    assert.throws(() => formatRebundleConfig({
+      'bundle-page:extra': 'another',
+      'bundle-page': 'new'
+    }));
+  });
+
+  it('should build and remap the right bundles in dev and prod modes', async function () {
+    await t.destroy(apos);
+    const getPath = (p) => `${publicFolderPath}/apos-frontend/` + p;
+    const checkFileExists = async (p) => fs.pathExists(getPath(p));
+    async function checkBundlesExists (folderPath, fileNames) {
+      for (const fileName of fileNames) {
+        const extraBundleExists = await checkFileExists(folderPath + fileName);
+        assert(extraBundleExists);
+      }
+    }
+    function checkBundlesContents (folderPath, bundles) {
+      for (const [ fileName, regexes ] of Object.entries(bundles)) {
+        const contents = fs.readFileSync(getPath(folderPath + fileName), 'utf-8');
+        for (const regex of regexes) {
+          assert.match(contents, new RegExp(regex), `${fileName} - ${regex}`);
+        }
+      }
+    }
+
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@company/bundle': {},
+        'bundle-edge': {},
+        ...modules,
+        '@apostrophecms/asset': {
+          options: {
+            rebundleModules: {
+              // Everything from the `bundle-page` module should
+              // go in the regular "main" bundle
+              'bundle-page': 'main',
+              // all from `bundle-page-type` should go
+              // in a new bundle 'bundle-page'
+              'bundle-page-type': 'new',
+              // 'extra2' bundle from `bundle-widget` should go
+              // in a new bundle 'widget-bundle'
+              'bundle-widget:extra2': 'widget',
+              // 'company' bundle from `@company/bundle:company` should go
+              // in a new bundle 'newcompany'. The local module contribution
+              // to the 'company' build should stay.
+              '@company/bundle:company': 'newcompany',
+              // Edge case - send "edge" bundle only to the main bundle
+              'bundle-edge:edge': 'main'
+            }
+          }
+        }
+      }
+    });
+
+    const existingBundleNames = [
+      'public-module-bundle.js',
+      'public-bundle.css',
+      'new-module-bundle.js',
+      'new-bundle.css',
+      'company-module-bundle.js',
+      'company-bundle.css',
+      'newcompany-module-bundle.js',
+      'newcompany-bundle.css',
+      'widget-module-bundle.js'
+    ];
+    const bundleContents = {
+      'public-module-bundle.js': [
+        /BUNDLE_MAIN_PAGE['"]+/g,
+        /BUNDLE_EXTRA_PAGE['"]+/g,
+        /BUNDLE_EDGE['"]+/g
+      ],
+      'public-bundle.css': [
+        /\.main-page[\s]*\{/g,
+        /\.extra-page[\s]*\{/g,
+        /\.edge[\s]*\{/g
+      ],
+      'new-module-bundle.js': [
+        /BUNDLE_MAIN_PAGE_TYPE['"]+/g
+      ],
+      'new-bundle.css': [
+        /\.main-page-type[\s]*\{/g
+      ],
+      'company-module-bundle.js': [
+        /BUNDLE_OVERRIDE_COMPANY['"]+/g
+      ],
+      'company-bundle.css': [
+        /\.override-company[\s]*\{/g
+      ],
+      'newcompany-module-bundle.js': [
+        /BUNDLE_COMPANY['"]+/g
+      ],
+      'newcompany-bundle.css': [
+        /\.company[\s]*\{/g
+      ],
+      'widget-module-bundle.js': [
+        /BUNDLE_WIDGET_EXTRA2['"]+/g
+      ]
+    };
+    const nonExistingBundleNames = [
+      'main-module-bundle.js',
+      'extra-module-bundle.js',
+      'extra2-module-bundle.js',
+      'edge-module-bundle.js',
+      'main-bundle.css',
+      'extra-bundle.css',
+      'edge-bundle.css'
+    ];
+
+    process.env.NODE_ENV = 'production';
+    await deleteBuiltFolders(publicFolderPath, true);
+    await apos.asset.tasks.build.task();
+    {
+      const [ releaseId ] = await fs.readdir(getPath('releases'));
+      const releasePath = `releases/${releaseId}/default/`;
+      await checkBundlesExists(releasePath, existingBundleNames);
+      checkBundlesContents(releasePath, bundleContents);
+      for (const file of nonExistingBundleNames) {
+        assert.throws(() => fs.readFileSync(releasePath + file), {
+          code: 'ENOENT'
+        }, file);
+      }
+    }
+
+    process.env.NODE_ENV = 'development';
+    await deleteBuiltFolders(publicFolderPath, true);
+    await apos.asset.tasks.build.task();
+    {
+      const releasePath = getPath('default/');
+      await checkBundlesExists('default/', existingBundleNames);
+      checkBundlesContents('default/', bundleContents);
+      for (const file of nonExistingBundleNames) {
+        assert.throws(() => fs.readFileSync(releasePath + file), {
+          code: 'ENOENT'
+        }, file);
+      }
+    }
+  });
+
+  it('should load the right remapped bundles inside the right page', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@company/bundle': {},
+        'bundle-edge': {},
+        ...modules,
+        '@apostrophecms/asset': {
+          options: {
+            rebundleModules: {
+              'bundle-page': 'main',
+              'bundle-page-type': 'new',
+              'bundle-widget:extra2': 'widget',
+              '@company/bundle:company': 'newcompany'
+            }
+          }
+        }
+      }
+    });
+
+    const { _id: homeId } = await apos.page
+      .find(apos.task.getAnonReq(), { level: 0 })
+      .toObject();
+    const jar = apos.http.jar();
+
+    await apos.doc.db.insertMany(pagesToInsert(homeId));
+
+    const bundlePage = await apos.http.get('/bundle', { jar });
+
+    assert(bundlePage.includes(getStylesheetMarkup('public-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('new-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('main-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('extra-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('extra2-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('newcompany-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('company-bundle')));
+
+    assert(bundlePage.includes(getScriptMarkup('public-module-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('new-module-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('widget-module-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('main-module-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('extra-module-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('extra2-module-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('newcompany-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('company-bundle')));
+
+    const childPage = await apos.http.get('/bundle/child', { jar });
+
+    assert(childPage.includes(getStylesheetMarkup('public-bundle')));
+    assert(childPage.includes(getStylesheetMarkup('new-bundle')));
+    assert(!childPage.includes(getStylesheetMarkup('main-bundle')));
+    assert(!childPage.includes(getStylesheetMarkup('extra-bundle')));
+    assert(!childPage.includes(getStylesheetMarkup('extra2-bundle')));
+
+    assert(childPage.includes(getScriptMarkup('public-module-bundle')));
+    assert(childPage.includes(getScriptMarkup('new-module-bundle')));
+    assert(!childPage.includes(getScriptMarkup('widget-module-bundle')));
+    assert(!childPage.includes(getScriptMarkup('main-module-bundle')));
+    assert(!childPage.includes(getScriptMarkup('extra-module-bundle')));
+    assert(!childPage.includes(getScriptMarkup('extra2-module-bundle')));
+  });
+
+  it('should load all the remapped bundles on all pages when the user is logged in', async function () {
+    await t.createAdmin(apos);
+    const jar = await t.getUserJar(apos);
+
+    const homePage = await apos.http.get('/', { jar });
+    assert(homePage.match(/logged in/));
+
+    const bundlePage = await apos.http.get('/bundle', { jar });
+
+    assert(bundlePage.includes(getStylesheetMarkup('apos-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('new-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('company-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('newcompany-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('public-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('main-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('extra-bundle')));
+    assert(!bundlePage.includes(getStylesheetMarkup('extra2-bundle')));
+
+    assert(bundlePage.includes(getScriptMarkup('apos-module-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('new-module-bundle')));
+    assert(bundlePage.includes(getScriptMarkup('widget-module-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('newcompany-bundle')));
+    assert(bundlePage.includes(getStylesheetMarkup('company-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('public-module-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('main-module-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('extra-module-bundle')));
+    assert(!bundlePage.includes(getScriptMarkup('extra2-module-bundle')));
+  });
 });
 
 function loadUtils () {
@@ -1346,7 +1627,15 @@ function loadUtils () {
   const getStylesheetMarkup = (file) =>
     `<link href="/apos-frontend/default/${file}.css" rel="stylesheet" />`;
 
-  const expectedBundlesNames = [ 'extra-module-bundle.js', 'extra2-module-bundle.js', 'extra-bundle.css' ];
+  const expectedBundlesNames = [
+    'main-module-bundle.js',
+    'company-module-bundle.js',
+    'extra-module-bundle.js',
+    'extra2-module-bundle.js',
+    'main-bundle.css',
+    'company-bundle.css',
+    'extra-bundle.css'
+  ];
 
   const deleteBuiltFolders = async (publicPath, deleteAposBuild = false) => {
     await fs.remove(publicPath + '/apos-frontend');
@@ -1359,9 +1648,11 @@ function loadUtils () {
 
   const allBundlesAreIncluded = (page) => {
     assert(page.includes(getStylesheetMarkup('apos-bundle')));
+    assert(page.includes(getStylesheetMarkup('main-bundle')));
     assert(page.includes(getStylesheetMarkup('extra-bundle')));
 
     assert(page.includes(getScriptMarkup('apos-module-bundle')));
+    assert(page.includes(getScriptMarkup('main-module-bundle')));
     assert(page.includes(getScriptMarkup('extra-module-bundle')));
     assert(page.includes(getScriptMarkup('extra2-module-bundle')));
   };

@@ -29,7 +29,15 @@ const packageJsonInfo = {
   }
 };
 for (const dir of dirs) {
-  packageJsonInfo.dependencies[dir] = '1.0.0';
+  // Add namespaced modules support
+  if (dir.startsWith('@')) {
+    const submodules = fs.readdirSync(path.join(extras, dir));
+    for (const submodule of submodules) {
+      packageJsonInfo.dependencies[`${dir}/${submodule}`] = '1.0.0';
+    }
+  } else {
+    packageJsonInfo.dependencies[dir] = '1.0.0';
+  }
 }
 
 fs.writeFileSync(packageJson, JSON.stringify(packageJsonInfo, null, '  '));

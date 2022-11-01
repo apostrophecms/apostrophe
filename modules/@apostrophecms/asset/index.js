@@ -51,16 +51,21 @@ module.exports = {
     self.initUploadfs();
 
     const {
-      extensions = {}, extensionOptions = {}, verifiedBundles = {}
+      extensions = {},
+      extensionOptions = {},
+      verifiedBundles = {},
+      rebundleModules = {}
     } = await getWebpackExtensions({
       getMetadata: self.apos.synth.getMetadata,
-      modulesToInstantiate: self.apos.modulesToBeInstantiated()
+      modulesToInstantiate: self.apos.modulesToBeInstantiated(),
+      rebundleModulesConfig: self.options.rebundleModules
     });
 
     self.extraBundles = fillExtraBundles(verifiedBundles);
     self.webpackExtensions = extensions;
     self.webpackExtensionOptions = extensionOptions;
     self.verifiedBundles = verifiedBundles;
+    self.rebundleModules = rebundleModules;
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
     self.buildWatcher = null;
@@ -316,11 +321,13 @@ module.exports = {
                 invokeApps: true,
                 enumerateImports: true,
                 importSuffix: 'App',
-                requireDefaultExport: true
+                requireDefaultExport: true,
+                mainModuleBundles: getMainModuleBundleFiles('js')
               });
               indexSassImports = getImports(source, 'index.scss', {
                 importSuffix: 'Stylesheet',
-                enumerateImports: true
+                enumerateImports: true,
+                mainModuleBundles: getMainModuleBundleFiles('scss')
               });
             }
 
@@ -351,7 +358,7 @@ module.exports = {
                 name,
                 buildDir,
                 mainBundleName: outputFilename.replace('.js', ''),
-                verifiedBundles: self.verifiedBundles,
+                verifiedBundles: getVerifiedBundlesInEffect(),
                 getImportFileOutput,
                 writeImportFile
               });
@@ -435,6 +442,32 @@ module.exports = {
             self.apos.util.log(req.t('apostrophe:assetTypeBuildComplete', {
               label: req.t(options.label)
             }));
+          }
+
+          function getMainModuleBundleFiles(ext) {
+            return Object.values(self.verifiedBundles)
+              .reduce((acc, entry) => {
+                if (!entry.main) {
+                  return acc;
+                };
+                return [
+                  ...acc,
+                  ...(entry[ext] || [])
+                ];
+              }, []);
+          }
+
+          function getVerifiedBundlesInEffect() {
+            return Object.entries(self.verifiedBundles)
+              .reduce((acc, [ key, entry ]) => {
+                if (entry.main) {
+                  return acc;
+                };
+                return {
+                  ...acc,
+                  [key]: entry
+                };
+              }, {});
           }
 
           function writeImportFile ({
@@ -650,6 +683,10 @@ module.exports = {
               });
               // Put the components back in their original order
               components.reverse();
+            }
+
+            if (options.mainModuleBundles) {
+              components.push(...options.mainModuleBundles);
             }
 
             return getImportFileOutput(components, options);

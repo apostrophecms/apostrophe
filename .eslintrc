@@ -3,6 +3,9 @@
     "apostrophe",
     "plugin:vue/vue3-recommended"
   ],
+  "env": {
+    "mocha": true
+  },
   "globals": {
     "apos": true
   },

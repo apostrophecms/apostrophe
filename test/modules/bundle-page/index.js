@@ -1,7 +1,8 @@
 module.exports = {
-  extend: '@apostrophecms/piece-page-type',
+  extend: 'bundle-page-type',
   webpack: {
     bundles: {
+      main: {},
       extra: {
         templates: [ 'show' ]
       }
