@@ -389,6 +389,7 @@
   "unsavedChanges": "Modifications non enregistrées",
   "update": "Mise à jour",
   "updateAndRedirect": "{{ saveLabel }} mises à jour et être redirigé vers {{ typeLabel }}.",
+  "updateSingleton": "{{ saveLabel }} {{ typeLabel }}.",
   "updateAndReturn": "{{ saveLabel }} mises à jour et retourner vers la liste {{ typeLabel }}.",
   "updateAndNew": "{{ saveLabel }} mises à jour et créer un/une autre {{ typeLabel }}.",
   "updated": "Mis à jour",
