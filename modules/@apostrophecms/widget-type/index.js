@@ -93,7 +93,6 @@
 
 const { stripIndent } = require('common-tags');
 const _ = require('lodash');
-const { reBundle } = require('../../../lib/bundle-helpers');
 
 module.exports = {
   cascades: [ 'fields' ],
@@ -210,7 +209,11 @@ module.exports = {
             }
             return {
               ...acc,
-              ...reBundle(moduleName, config.bundles, rebundleConfigs)
+              ...self.apos.asset.transformRebundledFor(
+                moduleName,
+                config.bundles,
+                rebundleConfigs
+              )
             };
           }, {});
       },

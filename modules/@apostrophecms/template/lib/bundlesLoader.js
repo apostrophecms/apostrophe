@@ -1,5 +1,4 @@
 const { stripIndent } = require('common-tags');
-const { reBundle } = require('../../../../lib/bundle-helpers');
 
 module.exports = (self) => {
   function insertBundlesMarkup({
@@ -62,7 +61,11 @@ module.exports = (self) => {
         }
         return {
           ...acc,
-          ...reBundle(moduleName, config.bundles, rebundleConfigs)
+          ...self.apos.asset.transformRebundledFor(
+            moduleName,
+            config.bundles,
+            rebundleConfigs
+          )
         };
       }, widgetsBundles);
 

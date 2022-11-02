@@ -51,6 +51,8 @@ module.exports = {
   formatRebundleConfig,
   verifyRebundleConfig,
 
+  transformRebundledFor,
+
   async getWebpackExtensions ({
     getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
   }) {
@@ -405,28 +407,76 @@ function formatRebundleConfig(mappingConfig = {}) {
   return result;
 }
 
+// This function is used to detect re-bundled and moved to the main build bundles.
+// It returns filtered configuration containing the proper bundle names.
+// See usage in `template/lib/bundlesLoader.js` and `widget-type/index.js`.
+// Expected arguments:
+// - moduleName: the module owning the bundleConfig
+// - bundleConfig: the bundle configuration ({ bundles: {...} })
+// - rebundleConfigs: the normalized output of `formatRebundleConfig(asset.options.rebundleModules)`
+function transformRebundledFor(moduleName, bundleConfigs, rebundleConfigs) {
+  const rebundle = rebundleConfigs
+    .filter(entry => entry.name === moduleName);
+  let result = { ...bundleConfigs };
+
+  for (const entry of rebundle) {
+    // 1. CatchAll to "main", already bundled in the main build - skip.
+    if (!entry.source && entry.main) {
+      result = {};
+      break;
+    }
+    // 2. CatchAll to a new bundle name, preserve merged options.
+    if (!entry.source && !entry.main) {
+      const options = Object.values(bundleConfigs)
+        .reduce((all, opts) => ({
+          ...all,
+          ...opts
+        }), {});
+      result = { [entry.target]: options };
+      break;
+    }
+    // 3. Rename a single bundle.
+    if (entry.source) {
+      // 3.1. ... but it's sent to the main build
+      if (entry.main) {
+        delete result[entry.source];
+        continue;
+      }
+      // 3.2. rename it, preserve the options
+      if (bundleConfigs[entry.source]) {
+        result[entry.target] = { ...bundleConfigs[entry.source] };
+        delete result[entry.source];
+      }
+    }
+  }
+
+  return result;
+}
+
 // Expects formatted by formatRebundleConfig() `asset.options.rebundleModules`
 function verifyRebundleConfig(config = []) {
   const targeted = [];
-  const catchAllModules = [];
+  const catchAllModules = {};
   for (const entry of config) {
     if (!entry.source) {
-      catchAllModules.push(entry.name);
+      catchAllModules[entry.name] = `${entry.name}: ${entry.target}`;
     } else {
       targeted.push(entry);
     }
   }
   for (const entry of targeted) {
-    if (catchAllModules.includes(entry.name)) {
+    if (catchAllModules[entry.name]) {
+      const conflicting = `${entry.name}${entry.source ? `:${entry.source}` : ''}: ${entry.target}`;
       throw new Error(
         'Invalid apos.asset.options.rebundleModules: ' +
-        `module ${entry.name} can't have more re-bundle options when` +
-        'having a catch-all directive.'
+        `"${catchAllModules[entry.name]}" conflicts with ` +
+        `"${conflicting}"`
       );
     }
   }
 }
 
+// Gather and transform all available webpack configs
 function formatConfigs (chain, webpackConfigs, rebundleModules) {
   return Object.entries(webpackConfigs)
     .map(([ name, config ], i) => {

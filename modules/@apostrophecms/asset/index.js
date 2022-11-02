@@ -17,7 +17,8 @@ const {
   fillExtraBundles,
   getBundlesNames,
   writeBundlesImportFiles,
-  findNodeModulesSymlinks
+  findNodeModulesSymlinks,
+  transformRebundledFor
 } = require('./lib/webpack/utils');
 
 module.exports = {
@@ -38,7 +39,10 @@ module.exports = {
     watch: true,
     // Miliseconds to wait between asset sources changes before
     // performing a build.
-    watchDebounceMs: 1000
+    watchDebounceMs: 1000,
+    // Object containing instructions for remapping existing bundles.
+    // See the modulre reference documentation for more information.
+    rebundleModules: undefined
   },
 
   async init(self) {
@@ -933,6 +937,10 @@ module.exports = {
   },
   methods(self) {
     return {
+      // Register the library function as method to be used by core modules.
+      // Open the implementation for more dev comments.
+      transformRebundledFor,
+
       async initUploadfs() {
         if (self.options.uploadfs) {
           self.uploadfs = await self.apos.modules['@apostrophecms/uploadfs'].getInstance(self.options.uploadfs);
