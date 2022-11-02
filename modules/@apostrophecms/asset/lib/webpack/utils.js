@@ -271,26 +271,32 @@ async function verifyBundlesEntryPoints (bundles) {
 
     for (const remapping of bundleRemapping) {
       main = remapping.main;
-      // - catch all, main, already verified it's unique for the given module
-      if (remapping.main) {
-        // Bundle name here doesn't matter - it will be ignored as a bundle,
-        // we want to achieve a non-colision name. What matters is main = true.
+      // - catch all to "main" or new bundle name,
+      // already verified it's unique for the given module
+      if (!remapping.source) {
+        // Bundle name for "main" "doesn't matter - it will be ignored and never built,
+        // we want to achieve a free from colision name. What matters is main = true.
         // Target is 'main' by convention: `main.bundleName`
+        bundleName = `${remapping.target}.${bundleName}`;
+        if (!remapping.main) {
+          // move "ui/src/index.*" to the bundle,
+          // verify existence later, better performance
+          withIndex = {
+            jsPath: jsIndexPath,
+            scssPath: scssIndexPath
+          };
+          bundleName = remapping.target;
+        }
+
+        break;
+      }
+      // - not a catch-all statement from this point on
+      // - "main" for a concrete bunbdle
+      if (remapping.main && remapping.source === bundleName) {
         bundleName = `${remapping.target}.${bundleName}`;
         break;
       }
-      // - catch all, new bundle name,
-      // already verified it's unique for the given module
-      if (!remapping.source) {
-        bundleName = remapping.target;
-        // verify existence later, better performance
-        withIndex = {
-          jsPath: jsIndexPath,
-          scssPath: scssIndexPath
-        };
-        break;
-      }
-      // - concrete bundle remapping
+      // - not "main", concrete bundle remapping
       if (remapping.source === bundleName) {
         bundleName = remapping.target;
         break;
