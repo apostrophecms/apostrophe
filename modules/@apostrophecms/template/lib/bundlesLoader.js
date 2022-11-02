@@ -50,7 +50,7 @@ module.exports = (self) => {
     const { webpack = {} } = pageModule ? pageModule.__meta : {};
 
     const rebundleConfigs = rebundleModules.filter(entry => {
-      const names = pageModule.__meta?.chain?.map(c => c.name) ?? [ page.type ];
+      const names = pageModule?.__meta?.chain?.map(c => c.name) ?? [ page.type ];
       return names.includes(entry.name);
     });
 
