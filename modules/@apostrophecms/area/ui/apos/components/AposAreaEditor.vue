@@ -522,7 +522,7 @@ export default {
       return this.moduleOptions.widgetIsContextual[type];
     },
     widgetHasPlaceholder(type) {
-      return this.moduleOptions.widgetHasPlaceholder[type];
+      return this.moduleOptions.widgetHasPlaceholder[type] && !this.widgetAreaDefaultData(type);
     },
     widgetHasInitialModal(type) {
       return this.moduleOptions.widgetHasInitialModal[type];
