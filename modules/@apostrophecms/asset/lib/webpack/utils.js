@@ -261,14 +261,17 @@ async function verifyBundlesEntryPoints (bundles) {
   }) => {
     const jsPath = `${modulePath}/ui/src/${bundleName}.js`;
     const scssPath = `${modulePath}/ui/src/${bundleName}.scss`;
+    const jsIndexPath = `${modulePath}/ui/src/index.js`;
+    const scssIndexPath = `${modulePath}/ui/src/index.scss`;
     let main = false;
+    let withIndex;
 
     const jsFileExists = await fs.pathExists(jsPath);
     const scssFileExists = await fs.pathExists(scssPath);
 
     for (const remapping of bundleRemapping) {
       main = remapping.main;
-      // - catch all, main
+      // - catch all, main, already verified it's unique for the given module
       if (remapping.main) {
         // Bundle name here doesn't matter - it will be ignored as a bundle,
         // we want to achieve a non-colision name. What matters is main = true.
@@ -276,9 +279,15 @@ async function verifyBundlesEntryPoints (bundles) {
         bundleName = `${remapping.target}.${bundleName}`;
         break;
       }
-      // - catch all, new bundle name
+      // - catch all, new bundle name,
+      // already verified it's unique for the given module
       if (!remapping.source) {
         bundleName = remapping.target;
+        // verify existence later, better performance
+        withIndex = {
+          jsPath: jsIndexPath,
+          scssPath: scssIndexPath
+        };
         break;
       }
       // - concrete bundle remapping
@@ -291,6 +300,7 @@ async function verifyBundlesEntryPoints (bundles) {
     return {
       bundleName,
       main,
+      withIndex,
       ...jsFileExists && { jsPath },
       ...scssFileExists && { scssPath }
     };
@@ -298,8 +308,39 @@ async function verifyBundlesEntryPoints (bundles) {
 
   const bundlesPaths = await Promise.all(checkPathsPromises);
 
-  const packedFilesByBundle = bundlesPaths.reduce((acc, {
-    bundleName, jsPath, scssPath, main
+  // Verify and squash withIndex data
+  const seen = {};
+  const bundlesPathsWithIndex = [];
+  for (const entry of bundlesPaths) {
+    if (!entry.withIndex) {
+      bundlesPathsWithIndex.push(entry);
+      continue;
+    }
+    if (seen[entry.bundleName]) {
+      delete entry.withIndex;
+      bundlesPathsWithIndex.push(entry);
+      continue;
+    }
+    seen[entry.bundleName] = true;
+    const { jsPath, scssPath } = entry.withIndex;
+    const jsFileExists = await fs.pathExists(jsPath);
+    const scssFileExists = await fs.pathExists(scssPath);
+    if (!jsFileExists && !scssFileExists) {
+      delete entry.withIndex;
+      bundlesPathsWithIndex.push(entry);
+      continue;
+    }
+    bundlesPathsWithIndex.push({
+      ...entry,
+      withIndex: {
+        ...jsFileExists && { jsPath },
+        ...scssFileExists && { scssPath }
+      }
+    });
+  }
+
+  const packedFilesByBundle = bundlesPathsWithIndex.reduce((acc, {
+    bundleName, jsPath, scssPath, main, withIndex
   }) => {
     if (!jsPath && !scssPath) {
       return acc;
@@ -309,11 +350,17 @@ async function verifyBundlesEntryPoints (bundles) {
       ...acc,
       [bundleName]: {
         main,
+        // Boolean indicating if the "main" index.js is included
+        // caused by a remapping. It's not yet used anywhere but
+        // it's an useful information that we keep.
+        withIndex: !!withIndex || acc[bundleName]?.withIndex,
         js: [
+          ...withIndex?.jsPath ? [ withIndex?.jsPath ] : [],
           ...acc[bundleName] ? acc[bundleName].js : [],
           ...jsPath ? [ jsPath ] : []
         ],
         scss: [
+          ...withIndex?.scssPath ? [ withIndex?.scssPath ] : [],
           ...acc[bundleName] ? acc[bundleName].scss : [],
           ...scssPath ? [ scssPath ] : []
         ]

@@ -317,17 +317,27 @@ module.exports = {
             }
 
             if (options.index) {
+              // Gather modules with non-main, catch-all bundles
+              const ignoreModules = self.rebundleModules
+                .filter(entry => !entry.main && !entry.source)
+                .reduce((acc, entry) => ({
+                  ...acc,
+                  [entry.name]: true
+                }), {});
+
               indexJsImports = getImports(source, 'index.js', {
                 invokeApps: true,
                 enumerateImports: true,
                 importSuffix: 'App',
                 requireDefaultExport: true,
-                mainModuleBundles: getMainModuleBundleFiles('js')
+                mainModuleBundles: getMainModuleBundleFiles('js'),
+                ignoreModules
               });
               indexSassImports = getImports(source, 'index.scss', {
                 importSuffix: 'Stylesheet',
                 enumerateImports: true,
-                mainModuleBundles: getMainModuleBundleFiles('scss')
+                mainModuleBundles: getMainModuleBundleFiles('scss'),
+                ignoreModules
               });
             }
 
@@ -658,6 +668,9 @@ module.exports = {
             for (const name of modulesToInstantiate) {
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
+                if (options.ignoreModules?.[entry.name]) {
+                  seen[entry.dirname] = true;
+                }
                 if (seen[entry.dirname]) {
                   continue;
                 }

@@ -143,7 +143,7 @@ describe('Assets', function() {
 
   it('should get webpack extensions from modules and fill extra bundles', async function () {
     const expectedEntryPointsNames = {
-      js: [ 'company', 'main', 'extra', 'extra2' ],
+      js: [ 'company', 'main', 'another', 'extra', 'extra2' ],
       css: [ 'company', 'main', 'extra' ]
     };
 
@@ -1397,11 +1397,12 @@ describe('Assets', function() {
         assert(extraBundleExists);
       }
     }
-    function checkBundlesContents (folderPath, bundles) {
+    function checkBundlesContents (folderPath, bundles, not = false) {
       for (const [ fileName, regexes ] of Object.entries(bundles)) {
         const contents = fs.readFileSync(getPath(folderPath + fileName), 'utf-8');
         for (const regex of regexes) {
-          assert.match(contents, new RegExp(regex), `${fileName} - ${regex}`);
+          const method = not ? 'doesNotMatch' : 'match';
+          assert[method](contents, new RegExp(regex), `${fileName} - ${regex}`);
         }
       }
     }
@@ -1459,9 +1460,12 @@ describe('Assets', function() {
         /\.edge[\s]*\{/g
       ],
       'new-module-bundle.js': [
+        /BUNDLE_INDEX_PAGE_TYPE['"]+/g,
+        /BUNDLE_ANOTHER_PAGE_TYPE['"]+/g,
         /BUNDLE_MAIN_PAGE_TYPE['"]+/g
       ],
       'new-bundle.css': [
+        /\.index-page-type[\s]*\{/g,
         /\.main-page-type[\s]*\{/g
       ],
       'company-module-bundle.js': [
@@ -1478,6 +1482,21 @@ describe('Assets', function() {
       ],
       'widget-module-bundle.js': [
         /BUNDLE_WIDGET_EXTRA2['"]+/g
+      ]
+    };
+    const bundleNoDuplicateContents = {
+      'public-module-bundle.js': [
+        /BUNDLE_COMPANY['"]+/g,
+        /BUNDLE_WIDGET_EXTRA2['"]+/g,
+        /BUNDLE_OVERRIDE_COMPANY['"]+/g,
+        /BUNDLE_MAIN_PAGE_TYPE['"]+/g,
+        /BUNDLE_ANOTHER_PAGE_TYPE['"]+/g,
+        /BUNDLE_INDEX_PAGE_TYPE['"]+/g
+      ],
+      'public-bundle.css': [
+        /\.main-page-type[\s]*\{/g,
+        /\.override-company[\s]*\{/g,
+        /\.company[\s]*\{/g
       ]
     };
     const nonExistingBundleNames = [
@@ -1498,6 +1517,7 @@ describe('Assets', function() {
       const releasePath = `releases/${releaseId}/default/`;
       await checkBundlesExists(releasePath, existingBundleNames);
       checkBundlesContents(releasePath, bundleContents);
+      checkBundlesContents(releasePath, bundleNoDuplicateContents, true);
       for (const file of nonExistingBundleNames) {
         assert.throws(() => fs.readFileSync(releasePath + file), {
           code: 'ENOENT'
@@ -1512,6 +1532,7 @@ describe('Assets', function() {
       const releasePath = getPath('default/');
       await checkBundlesExists('default/', existingBundleNames);
       checkBundlesContents('default/', bundleContents);
+      checkBundlesContents('default/', bundleNoDuplicateContents, true);
       for (const file of nonExistingBundleNames) {
         assert.throws(() => fs.readFileSync(releasePath + file), {
           code: 'ENOENT'
@@ -1629,6 +1650,7 @@ function loadUtils () {
 
   const expectedBundlesNames = [
     'main-module-bundle.js',
+    'another-module-bundle.js',
     'company-module-bundle.js',
     'extra-module-bundle.js',
     'extra2-module-bundle.js',
