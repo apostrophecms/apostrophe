@@ -280,7 +280,7 @@ module.exports = {
             user.passwordReset = reset;
             user.passwordResetAt = new Date();
             await self.apos.user.update(req, user, { permissions: false });
-            // Fix - missing host in the absoluteURl results in a panic.
+            // Fix - missing host in the absoluteUrl results in a panic.
             let port = (req.headers.host || '').split(':')[1];
             if (!port || [ '80', '443' ].includes(port)) {
               port = '';

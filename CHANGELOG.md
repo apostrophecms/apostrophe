@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-* Adds Reset Password feature to the login page. See the [documentation](https://v3.docs.apostrophecms.org/) for more details.
+* Adds Reset Password feature to the login page. Note that the feature must be enabled and email delivery must be properly configured. See the [documentation](https://v3.docs.apostrophecms.org/) for more details.
 
 ## 3.31.0 (2022-10-27)
 
