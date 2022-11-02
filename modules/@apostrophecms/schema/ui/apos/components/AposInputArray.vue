@@ -341,11 +341,11 @@ function expandItems(items, field) {
   .apos-input-array-inline-schema-wrapper {
     max-height: 999px;
     overflow: hidden;
-    transition: max-height .5s;
+    transition: max-height 0.5s;
   }
 
   .collapse-enter, .collapse-leave-to {
-    max-height: 0px;
+    max-height: 0;
   }
 
   .collapse-enter-to, .collapse-leave {
