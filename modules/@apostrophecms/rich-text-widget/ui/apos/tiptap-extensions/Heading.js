@@ -8,11 +8,15 @@ export default (options) => {
     ? headings.filter(heading => heading.def)[0].options.level
     : levels[0];
   return Heading.extend({
-    defaultOptions: {
-      levels
+    addOptions() {
+      return {
+        ...this.parent?.(),
+        levels
+      };
     },
     addAttributes() {
       return {
+        ...this.parent?.(),
         level: {
           default: defaultLevel,
           rendered: false
