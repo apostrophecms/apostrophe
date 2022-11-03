@@ -373,6 +373,7 @@
   "unsavedChanges": "Cambios no Guardados",
   "update": "Actualizar",
   "updateAndRedirect": "{{ saveLabel }} actualizaciones y navegar a {{ typeLabel }}.",
+  "updateSingleton": "{{ saveLabel }} {{ typeLabel }}.",
   "updateAndReturn": "{{ saveLabel }} actualizaciones y regresar al listado de {{ typeLabel }}.",
   "updateAndNew": "{{ saveLabel }} actualizaciones y crear nuevo {{ typeLabel }}.",
   "updated": "Actualizado",

@@ -6,11 +6,23 @@
 
 * You can now set `inline: true` on schema fields of type `array`. This displays a simple editing interface in the context of the main dialog box for the document in question, avoiding the need to open an additional dialog box. Usually best for cases with just one field or just a few. If your array field has a large number of subfields the default behavior (`inline: false`) is more suitable for your needs.
 
+###  Fixes
+
+* Query builders for regular select fields have always accepted null to mean "do not filter on this property." Now this also works for dynamic select fields.
+* The i18n UI state management now doesn't allow actions while it's busy.
+* Fixed various localization bugs in the text of the "Update" dropdown menu.
+* The `singleton: true` option for piece types now automatically implies `showCreate: false`.
+* Remove browser console warnings by handling Tiptap Editor's breaking changes and duplicated plugins.
+
 ## 3.31.0 (2022-10-27)
 
 ### Adds
 
-* Adds `placeholder: true` and `initialModal: false` features to improve the user experience of adding widgets to the page. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/guide/areas-and-widgets.html#adding-placeholder-content-to-widgets) for more detail. 
+* Adds `placeholder: true` and `initialModal: false` features to improve the user experience of adding widgets to the page. Checkout the [Widget Placeholders documentation](https://v3.docs.apostrophecms.org/guide/areas-and-widgets.html#adding-placeholder-content-to-widgets) for more detail.
+
+### Fixes
+
+* When another user is editing the document, the other user's name is now displayed correctly.
 
 ## 3.30.0 (2022-10-12)
 
