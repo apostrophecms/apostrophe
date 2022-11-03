@@ -275,7 +275,7 @@ export default {
     },
     closeInlineItem(id) {
       this.items.forEach(item => {
-        item.open = (item._id !== id) || this.alwaysExpand;
+        item.open = this.alwaysExpand;
       });
     }
   }
