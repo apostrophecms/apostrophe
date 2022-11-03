@@ -33,7 +33,7 @@
                 class="apos-drag-handle"
               />
               <AposButton
-                v-if="item.open"
+                v-if="item.open && !alwaysExpand"
                 class="apos-input-array-inline-collapse"
                 :icon-size="20"
                 label="apostrophe:close"
@@ -47,7 +47,7 @@
             <div class="apos-input-array-inline-content-wrapper">
               <h3
                 class="apos-input-array-inline-label"
-                v-if="!item.open"
+                v-if="!item.open && !alwaysExpand"
                 @click="openInlineItem(item._id)"
               >
                 {{ getLabel(item._id, index) }}
@@ -58,7 +58,7 @@
                   class="apos-input-array-inline-schema-wrapper"
                 >
                   <AposSchema
-                    :schema="effectiveSchema"
+                    :schema="field.schema"
                     v-model="item.schemaInput"
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
@@ -120,15 +120,18 @@ export default {
       default: null
     }
   },
-  data () {
+  data() {
     const next = this.getNext();
     const data = {
       next,
-      items: expandItems(next)
+      items: modelItems(next, this.field)
     };
     return data;
   },
   computed: {
+    alwaysExpand() {
+      return alwaysExpand(this.field);
+    },
     listId() {
       return `sortableList-${cuid()}`;
     },
@@ -145,18 +148,6 @@ export default {
         type: this.$t(this.field.label)
       };
     },
-    effectiveSchema() {
-      if (this.field.schema.length === 1) {
-        return [
-          {
-            ...this.field.schema[0],
-            hideLabel: true
-          }
-        ];
-      } else {
-        return this.field.schema;
-      }
-    },
     effectiveError() {
       const error = this.error || this.serverError;
       // Server-side errors behave differently
@@ -172,12 +163,20 @@ export default {
   watch: {
     generation() {
       this.next = this.getNext();
-      this.items = expandItems(this.next);
+      this.items = modelItems(this.next, this.field);
     },
     items: {
       deep: true,
       handler() {
-        if (!this.items.find(item => item.schemaInput.hasErrors)) {
+        const erroneous = this.items.filter(item => item.schemaInput.hasErrors);
+        if (erroneous.length) {
+          erroneous.forEach(item => {
+            if (!item.open) {
+              // Make errors visible
+              item.open = true;
+            }
+          });
+        } else {
           const next = this.items.map(item => ({
             ...item.schemaInput.data,
             _id: item._id,
@@ -239,7 +238,7 @@ export default {
         schemaInput: {
           data: this.newInstance()
         },
-        open: false
+        open: alwaysExpand(this.field)
       });
       this.openInlineItem(_id);
     },
@@ -259,26 +258,38 @@ export default {
     },
     openInlineItem(id) {
       this.items.forEach(item => {
-        item.open = false;
+        item.open = (item._id === id) || this.alwaysExpand;
       });
-      const item = this.items.find(item => item._id === id);
-      item.open = true;
     },
     closeInlineItem(id) {
-      const item = this.items.find(item => item._id === id);
-      item.open = false;
+      this.items.forEach(item => {
+        item.open = this.alwaysExpand;
+      });
     }
   }
 };
 
-function expandItems(items) {
-  return items.map(item => ({
-    _id: item._id || cuid(),
-    schemaInput: {
-      data: item
-    },
-    open: false
-  }));
+function modelItems(items, field) {
+  return items.map(item => {
+    const open = alwaysExpand(field);
+    return {
+      _id: item._id || cuid(),
+      schemaInput: {
+        data: item
+      },
+      open
+    };
+  });
+}
+
+function alwaysExpand(field) {
+  if (!field.inline) {
+    return false;
+  }
+  if (field.inline.alwaysExpand === undefined) {
+    return field.schema.length < 3;
+  }
+  return field.inline.alwaysExpand;
 }
 </script>
 <style lang="scss" scoped>
