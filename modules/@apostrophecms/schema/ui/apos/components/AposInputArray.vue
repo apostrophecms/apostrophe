@@ -58,7 +58,7 @@
                   class="apos-input-array-inline-schema-wrapper"
                 >
                   <AposSchema
-                    :schema="effectiveSchema"
+                    :schema="field.schema"
                     v-model="item.schemaInput"
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
@@ -147,18 +147,6 @@ export default {
         key: 'apostrophe:editType',
         type: this.$t(this.field.label)
       };
-    },
-    effectiveSchema() {
-      if (this.field.schema.length === 1) {
-        return [
-          {
-            ...this.field.schema[0],
-            hideLabel: true
-          }
-        ];
-      } else {
-        return this.field.schema;
-      }
     },
     effectiveError() {
       const error = this.error || this.serverError;
