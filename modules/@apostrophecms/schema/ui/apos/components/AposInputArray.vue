@@ -22,32 +22,58 @@
           :id="listId"
         >
           <div
-            v-for="item in items"
+            v-for="(item, index) in items"
             :key="item._id"
             class="apos-input-array-inline-item"
+            :class="item.open ? 'apos-input-array-inline-item--active' : null"
           >
             <div class="apos-input-array-inline-item-controls">
               <AposIndicator
                 icon="drag-icon"
                 class="apos-drag-handle"
               />
-            </div>
-            <div class="apos-input-array-inline-schema-wrapper">
-              <AposSchema
-                :schema="effectiveSchema"
-                v-model="item.schemaInput"
-                :trigger-validation="triggerValidation"
-                :utility-rail="false"
-                :generation="generation"
-                :modifiers="[ 'margin-none' ]"
+              <AposButton
+                v-if="item.open && !alwaysExpand"
+                class="apos-input-array-inline-collapse"
+                :icon-size="20"
+                label="apostrophe:close"
+                icon="unfold-less-horizontal-icon"
+                type="subtle"
+                :modifiers="['inline', 'no-motion']"
+                :icon-only="true"
+                @click="closeInlineItem(item._id)"
               />
             </div>
-            <div class="apos-input-array-inline-item-controls">
+            <div class="apos-input-array-inline-content-wrapper">
+              <h3
+                class="apos-input-array-inline-label"
+                v-if="!item.open && !alwaysExpand"
+                @click="openInlineItem(item._id)"
+              >
+                {{ getLabel(item._id, index) }}
+              </h3>
+              <transition name="collapse">
+                <div
+                  v-show="item.open"
+                  class="apos-input-array-inline-schema-wrapper"
+                >
+                  <AposSchema
+                    :schema="field.schema"
+                    v-model="item.schemaInput"
+                    :trigger-validation="triggerValidation"
+                    :utility-rail="false"
+                    :generation="generation"
+                    :modifiers="['small', 'inverted']"
+                  />
+                </div>
+              </transition>
+            </div>
+            <div class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove">
               <AposButton
                 label="apostrophe:removeItem"
-                icon="close-icon"
+                icon="trash-can-outline-icon"
                 type="subtle"
-                :modifiers="['small', 'no-motion']"
+                :modifiers="['inline', 'danger', 'no-motion']"
                 :icon-only="true"
                 @click="remove(item._id)"
               />
@@ -57,9 +83,9 @@
         <AposButton
           type="button"
           label="apostrophe:addItem"
-          :icon-only="true"
           icon="plus-icon"
           :disabled="disableAdd()"
+          :modifiers="[ 'block' ]"
           @click="add"
         />
       </div>
@@ -94,15 +120,18 @@ export default {
       default: null
     }
   },
-  data () {
+  data() {
     const next = this.getNext();
     const data = {
       next,
-      items: expandItems(next)
+      items: modelItems(next, this.field)
     };
     return data;
   },
   computed: {
+    alwaysExpand() {
+      return alwaysExpand(this.field);
+    },
     listId() {
       return `sortableList-${cuid()}`;
     },
@@ -119,18 +148,6 @@ export default {
         type: this.$t(this.field.label)
       };
     },
-    effectiveSchema() {
-      if (this.field.schema.length === 1) {
-        return [
-          {
-            ...this.field.schema[0],
-            hideLabel: true
-          }
-        ];
-      } else {
-        return this.field.schema;
-      }
-    },
     effectiveError() {
       const error = this.error || this.serverError;
       // Server-side errors behave differently
@@ -146,12 +163,20 @@ export default {
   watch: {
     generation() {
       this.next = this.getNext();
-      this.items = expandItems(this.next);
+      this.items = modelItems(this.next, this.field);
     },
     items: {
       deep: true,
       handler() {
-        if (!this.items.find(item => item.schemaInput.hasErrors)) {
+        const erroneous = this.items.filter(item => item.schemaInput.hasErrors);
+        if (erroneous.length) {
+          erroneous.forEach(item => {
+            if (!item.open) {
+              // Make errors visible
+              item.open = true;
+            }
+          });
+        } else {
           const next = this.items.map(item => ({
             ...item.schemaInput.data,
             _id: item._id,
@@ -207,12 +232,15 @@ export default {
       this.items = this.items.filter(item => item._id !== _id);
     },
     add() {
+      const _id = cuid();
       this.items.push({
-        _id: cuid(),
+        _id,
         schemaInput: {
           data: this.newInstance()
-        }
+        },
+        open: alwaysExpand(this.field)
       });
+      this.openInlineItem(_id);
     },
     newInstance() {
       const instance = {};
@@ -222,17 +250,46 @@ export default {
         }
       }
       return instance;
+    },
+    getLabel(id, index) {
+      const titleField = this.field.titleField || null;
+      const item = this.items.find(item => item._id === id);
+      return item.schemaInput.data[titleField] || `Item ${index + 1}`;
+    },
+    openInlineItem(id) {
+      this.items.forEach(item => {
+        item.open = (item._id === id) || this.alwaysExpand;
+      });
+    },
+    closeInlineItem(id) {
+      this.items.forEach(item => {
+        item.open = this.alwaysExpand;
+      });
     }
   }
 };
 
-function expandItems(items) {
-  return items.map(item => ({
-    _id: item._id || cuid(),
-    schemaInput: {
-      data: item
-    }
-  }));
+function modelItems(items, field) {
+  return items.map(item => {
+    const open = alwaysExpand(field);
+    return {
+      _id: item._id || cuid(),
+      schemaInput: {
+        data: item
+      },
+      open
+    };
+  });
+}
+
+function alwaysExpand(field) {
+  if (!field.inline) {
+    return false;
+  }
+  if (field.inline.alwaysExpand === undefined) {
+    return field.schema.length < 3;
+  }
+  return field.inline.alwaysExpand;
 }
 </script>
 <style lang="scss" scoped>
@@ -240,21 +297,61 @@ function expandItems(items) {
     opacity: 0.5;
     background: var(--a-base-4);
   }
+  .apos-input-array-inline-label {
+    transition: background-color 0.3s ease;
+    @include type-label;
+    margin: 0;
+    &:hover {
+      cursor: pointer;
+    }
+  }
   .apos-input-array-inline-item {
+    position: relative;
+    transition: background-color 0.3s ease;
     display: flex;
-    margin-bottom: 20px;
-    border-left: 1px solid var(--a-base-9);
+    border-bottom: 1px solid var(--a-base-9);
+    &:hover {
+      background-color: var(--a-base-10);
+    }
+  }
+  .apos-input-array-inline-collapse {
+    position: absolute;
+    top: $spacing-quadruple;
+    left: 7.5px;
+  }
+
+  .apos-input-array-inline-item--active {
+    background-color: var(--a-base-10);
+    border-bottom: 1px solid var(--a-base-6);
+    .apos-input-array-inline-content-wrapper {
+      padding-top: $spacing-base;
+      padding-bottom: $spacing-base;
+    }
   }
   .apos-input-array-inline-item-controls {
-    // align-self: stretch seems like the answer, but looks bad
-    // once the field adds additional height to itself for an error.
-    // 15px - 7.5px (padding of icons) = 7.5px
-    padding-top: 7.5px;
+    padding: $spacing-base;
   }
-  .apos-input-array-inline-schema-wrapper {
+
+  .apos-input-array-inline-label {
+    padding-top: $spacing-base;
+    padding-bottom: $spacing-base;
+  }
+
+  .apos-input-array-inline-content-wrapper {
     flex-grow: 1;
   }
-  .apos-drag-handle {
-    padding: 7.5px;
+
+  .apos-input-array-inline-schema-wrapper {
+    max-height: 999px;
+    overflow: hidden;
+    transition: max-height 0.5s;
+  }
+
+  .collapse-enter, .collapse-leave-to {
+    max-height: 0;
+  }
+
+  .collapse-enter-to, .collapse-leave {
+    max-height: 999px;
   }
 </style>
