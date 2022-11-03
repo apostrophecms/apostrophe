@@ -33,7 +33,7 @@
                 class="apos-drag-handle"
               />
               <AposButton
-                v-if="item.open && field.titleField"
+                v-if="item.open && !alwaysExpand"
                 class="apos-input-array-inline-collapse"
                 :icon-size="20"
                 label="apostrophe:close"
@@ -47,7 +47,7 @@
             <div class="apos-input-array-inline-content-wrapper">
               <h3
                 class="apos-input-array-inline-label"
-                v-if="!item.open && field.titleField"
+                v-if="!item.open && !alwaysExpand"
                 @click="openInlineItem(item._id)"
               >
                 {{ getLabel(item._id, index) }}
@@ -124,11 +124,14 @@ export default {
     const next = this.getNext();
     const data = {
       next,
-      items: expandItems(next, this.field)
+      items: modelItems(next, this.field)
     };
     return data;
   },
   computed: {
+    alwaysExpand() {
+      return alwaysExpand(this.field);
+    },
     listId() {
       return `sortableList-${cuid()}`;
     },
@@ -172,7 +175,7 @@ export default {
   watch: {
     generation() {
       this.next = this.getNext();
-      this.items = expandItems(this.next, this.field);
+      this.items = modelItems(this.next, this.field);
     },
     items: {
       deep: true,
@@ -247,7 +250,7 @@ export default {
         schemaInput: {
           data: this.newInstance()
         },
-        open: !this.field.titleField
+        open: alwaysExpand(this.field)
       });
       this.openInlineItem(_id);
     },
@@ -267,26 +270,38 @@ export default {
     },
     openInlineItem(id) {
       this.items.forEach(item => {
-        item.open = false;
+        item.open = (item._id === id) || this.alwaysExpand;
       });
-      const item = this.items.find(item => item._id === id);
-      item.open = true;
     },
     closeInlineItem(id) {
-      const item = this.items.find(item => item._id === id);
-      item.open = false;
+      this.items.forEach(item => {
+        item.open = (item._id !== id) || this.alwaysExpand;
+      });
     }
   }
 };
 
-function expandItems(items, field) {
-  return items.map(item => ({
-    _id: item._id || cuid(),
-    schemaInput: {
-      data: item
-    },
-    open: !field.titleField
-  }));
+function modelItems(items, field) {
+  return items.map(item => {
+    const open = alwaysExpand(field);
+    return {
+      _id: item._id || cuid(),
+      schemaInput: {
+        data: item
+      },
+      open
+    };
+  });
+}
+
+function alwaysExpand(field) {
+  if (!field.inline) {
+    return false;
+  }
+  if (field.inline.alwaysExpand === undefined) {
+    return field.schema.length < 3;
+  }
+  return field.inline.alwaysExpand;
 }
 </script>
 <style lang="scss" scoped>
