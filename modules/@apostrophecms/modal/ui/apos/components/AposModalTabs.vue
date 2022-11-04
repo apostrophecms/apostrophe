@@ -124,6 +124,7 @@ export default {
   text-align: left;
   cursor: pointer;
   box-sizing: border-box;
+  transition: all 0.2s ease;
 
   @include media-up(lap) {
     padding: 25px 10px 25px 20px;
@@ -143,6 +144,7 @@ export default {
   &[aria-selected='true'],
   &[aria-selected='true']:hover,
   &[aria-selected='true']:focus {
+    padding-left: 15px;
     background-color: var(--a-background-primary);
     &::before {
       background-color: var(--a-primary);
