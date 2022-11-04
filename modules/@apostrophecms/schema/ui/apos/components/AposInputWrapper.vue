@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-field__wrapper">
+  <div
+    class="apos-field__wrapper"
+    :class="`apos-field__wrapper--${field.type}`"
+  >
     <component :is="wrapEl" :class="classList">
       <div class="apos-field__info">
         <component
