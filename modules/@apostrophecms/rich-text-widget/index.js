@@ -184,7 +184,11 @@ module.exports = {
       link: [ 'a' ],
       underline: [ 'u' ],
       codeBlock: [ 'pre' ],
-      blockquote: [ 'blockquote' ]
+      blockquote: [ 'blockquote' ],
+      table: [ 'table' ],
+      tableHeader: [ 'th' ],
+      tableRow: [ 'tr' ],
+      tableCell: [ 'td' ]
     }
   },
   beforeSuperClass(self) {
