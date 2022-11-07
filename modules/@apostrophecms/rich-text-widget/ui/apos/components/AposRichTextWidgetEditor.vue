@@ -46,7 +46,6 @@ import {
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
-import TextStyle from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 
@@ -187,12 +186,14 @@ export default {
   },
   mounted() {
     const extensions = [
-      StarterKit,
+      StarterKit.configure({
+        document: false,
+        heading: false
+      }),
       TextAlign.configure({
         types: [ 'heading', 'paragraph' ]
       }),
       Highlight,
-      TextStyle,
       Underline,
 
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
