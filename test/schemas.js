@@ -182,6 +182,46 @@ const hasArea = {
   ]
 };
 
+const hasGroupedArea = {
+  addFields: [
+    {
+      type: 'area',
+      name: 'body',
+      label: 'Body',
+      options: {
+        expanded: true,
+        groups: {
+          content: {
+            label: 'Content Widgets',
+            columns: 2,
+            widgets: {
+              '@apostrophecms/rich-text': {
+                toolbar: [ 'bold' ]
+              },
+              '@apostrophecms/form': {}
+            }
+          },
+          media: {
+            label: 'Media',
+            columns: 3,
+            widgets: {
+              '@apostrophecms/image': {},
+              '@apostrophecms/video': {}
+            }
+          },
+          layout: {
+            label: 'Layout Widgets',
+            columns: 4,
+            widgets: {
+              'two-column': {}
+            }
+          }
+        }
+      }
+    }
+  ]
+};
+
 const hasAreaWithoutWidgets = {
   addFields: [
     {
@@ -1286,6 +1326,28 @@ describe('Schemas', function() {
     assert(result.body.metaType === 'area');
     assert(result.body.items);
     assert(!result.body.items[0]);
+  });
+
+  it('should convert arrays of widgets when configured as groups to areas correctly', async function() {
+    const schema = apos.schema.compose(hasGroupedArea);
+    assert(schema.length === 1);
+    const input = {
+      irrelevant: 'Irrelevant',
+      // Should get escaped, not be treated as HTML
+      body: 'I have <h1>groups</h1>!'
+    };
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    // no irrelevant or missing fields
+    assert(_.keys(result).length === 1);
+    // expected fields came through
+    assert(result.body);
+    assert(result.body.metaType === 'area');
+    assert(result.body.items);
+    assert(result.body.items[0]);
+    assert(result.body.items[0].type === '@apostrophecms/rich-text');
+    assert(result.body.items[0].content === apos.util.escapeHtml(input.body));
   });
 
   it('should clean up extra slashes in page slugs', async function() {

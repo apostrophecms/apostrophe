@@ -28,7 +28,10 @@
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
-    <div class="apos-rich-text-editor__editor_after" :class="editorModifiers">
+    <div
+      v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
+      class="apos-rich-text-editor__editor_after" :class="editorModifiers"
+    >
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
   </div>
@@ -43,8 +46,9 @@ import {
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
-import TextStyle from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
+import Placeholder from '@tiptap/extension-placeholder';
+
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -88,7 +92,9 @@ export default {
         },
         hasErrors: false
       },
-      pending: null
+      pending: null,
+      isFocused: null,
+      showPlaceholder: null
     };
   },
   computed: {
@@ -158,6 +164,9 @@ export default {
     tiptapTypes() {
       return this.moduleOptions.tiptapTypes;
     },
+    placeholderText() {
+      return this.moduleOptions.placeholderText;
+    },
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
@@ -176,19 +185,65 @@ export default {
     }
   },
   mounted() {
+    const extensions = [
+      StarterKit.configure({
+        document: false,
+        heading: false
+      }),
+      TextAlign.configure({
+        types: [ 'heading', 'paragraph' ]
+      }),
+      Highlight,
+      Underline,
+
+      // For this contextual widget, no need to check `widget.aposPlaceholder` value
+      // since `placeholderText` option is enough to decide whether to display it or not.
+      this.placeholderText && Placeholder.configure({
+        placeholder: () => {
+          // Avoid brief display of the placeholder when loading the page.
+          if (this.isFocused === null) {
+            return '';
+          }
+
+          // Display placeholder after loading the page.
+          if (this.showPlaceholder === null) {
+            return this.$t(this.placeholderText);
+          }
+
+          return this.showPlaceholder ? this.$t(this.placeholderText) : '';
+        }
+      })
+    ]
+      .filter(Boolean)
+      .concat(this.aposTiptapExtensions);
+
     this.editor = new Editor({
       content: this.initialContent,
       autofocus: this.autofocus,
       onUpdate: this.editorUpdate,
-      extensions: [
-        StarterKit,
-        TextAlign.configure({
-          types: [ 'heading', 'paragraph' ]
-        }),
-        Highlight,
-        TextStyle,
-        Underline
-      ].concat(this.aposTiptapExtensions)
+      extensions,
+
+      // The following events are triggered:
+      //  - before the placeholder configuration function, when loading the page
+      //  - after it, once the page is loaded and we interact with the editors
+      // To solve this issue, use another `this.showPlaceholder` variable
+      // and toggle it after the placeholder configuration function is called,
+      // thanks to nextTick.
+      // The proper thing would be to call nextTick inside the placeholder
+      // function so that it can rely on the focus state set by these event
+      // listeners, but the placeholder function is called synchronously...
+      onFocus: () => {
+        this.isFocused = true;
+        this.$nextTick(() => {
+          this.showPlaceholder = false;
+        });
+      },
+      onBlur: () => {
+        this.isFocused = false;
+        this.$nextTick(() => {
+          this.showPlaceholder = true;
+        });
+      }
     });
   },
 
@@ -334,6 +389,14 @@ export default {
 
   .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
     outline: none;
+  }
+
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror p.is-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    pointer-events: none;
+    height: 0;
+    color: var(--a-base-4);
   }
 
   .apos-rich-text-editor__editor {

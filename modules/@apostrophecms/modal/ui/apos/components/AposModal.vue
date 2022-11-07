@@ -113,7 +113,11 @@ export default {
   computed: {
     transitionType: function () {
       if (this.modal.type === 'slide') {
-        return 'slide';
+        if (this.modal.origin === 'left') {
+          return 'slide-right';
+        } else {
+          return 'slide-left';
+        }
       } else {
         return 'fade';
       }
@@ -149,6 +153,11 @@ export default {
       const classes = [ 'apos-modal' ];
       classes.push(`apos-modal--${this.modal.type}`);
       if (this.modal.type === 'slide') {
+        if (this.modal.origin) {
+          classes.push(`apos-modal--origin-${this.modal.origin}`);
+        } else {
+          classes.push('apos-modal--origin-right');
+        }
         classes.push('apos-modal--full-height');
       }
       if (this.modal.busy) {
@@ -291,16 +300,25 @@ export default {
       position: fixed;
       transition: transform 0.15s ease;
       top: 0;
-      right: 0;
       bottom: 0;
-      left: auto;
       transform: translateX(0);
       width: 90%;
       border-radius: 0;
+      height: 100vh;
 
       @media screen and (min-width: 800px) {
         max-width: 540px;
       }
+    }
+
+    .apos-modal--origin-right & {
+      right: 0;
+      left: auto;
+    }
+
+    .apos-modal--origin-left & {
+      right: auto;
+      left: 0;
     }
 
     &.apos-modal__inner--two-thirds {
@@ -315,9 +333,14 @@ export default {
       }
     }
 
-    &.slide-enter,
-    &.slide-leave-to {
+    &.slide-left-enter,
+    &.slide-left-leave-to {
       transform: translateX(100%);
+    }
+
+    &.slide-right-enter,
+    &.slide-right-leave-to {
+      transform: translateX(-100%);
     }
 
     .apos-modal--overlay & {

@@ -51,17 +51,30 @@ module.exports = (self) => {
       return _.isEqual(one[field.name], two[field.name]);
     },
     validate: function (field, options, warn, fail) {
-      if (field.options && field.options.widgets) {
-        for (const name of Object.keys(field.options.widgets)) {
-          if (!self.apos.modules[`${name}-widget`]) {
-            if (name.match(/-widget$/)) {
-              warn(stripIndents`
-                Do not include "-widget" in the name when configuring a widget in an area field.
-                Apostrophe will automatically add "-widget" when looking for the right module.
-              `);
-            } else {
-              warn(`Nonexistent widget type name ${name} in area field.`);
-            }
+      let widgets = (field.options && field.options.widgets) || {};
+
+      if (field.options && field.options.groups) {
+        for (const group of Object.keys(field.options.groups)) {
+          widgets = {
+            ...widgets,
+            ...group.widgets
+          };
+        }
+      }
+
+      for (const name of Object.keys(widgets)) {
+        check(name);
+      }
+
+      function check(name) {
+        if (!self.apos.modules[`${name}-widget`]) {
+          if (name.match(/-widget$/)) {
+            warn(stripIndents`
+              Do not include "-widget" in the name when configuring a widget in an area field.
+              Apostrophe will automatically add "-widget" when looking for the right module.
+            `);
+          } else {
+            warn(`Nonexistent widget type name ${name} in area field.`);
           }
         }
       }
@@ -165,7 +178,7 @@ module.exports = (self) => {
       destination[field.name] = self.apos.launder.boolean(data[field.name], field.def);
     },
     isEmpty: function (field, value) {
-      return !value;
+      return !value && value !== false;
     },
     exporters: {
       string: function (req, field, object, output) {
@@ -190,7 +203,7 @@ module.exports = (self) => {
           return self.apos.launder.booleanOrNull(b);
         },
         choices: async function () {
-          const values = query.toDistinct(field.name);
+          const values = await query.toDistinct(field.name);
           const choices = [];
           if (_.includes(values, true)) {
             choices.push({
@@ -198,7 +211,7 @@ module.exports = (self) => {
               label: 'apostrophe:yes'
             });
           }
-          if (_.includes(values, true)) {
+          if (_.includes(values, false)) {
             choices.push({
               value: '0',
               label: 'apostrophe:no'
@@ -355,7 +368,7 @@ module.exports = (self) => {
             });
           } else {
             value = (typeof field.choices) === 'string'
-              ? self.apos.launder.string(value)
+              ? self.apos.launder.string(value, null)
               : self.apos.launder.select(value, field.choices, null);
             if (value === null) {
               return null;

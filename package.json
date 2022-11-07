@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "3.28.0",
+  "version": "3.31.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -35,6 +35,7 @@
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "@tiptap/extension-highlight": "^2.0.0-beta.33",
     "@tiptap/extension-link": "^2.0.0-beta.38",
+    "@tiptap/extension-placeholder": "^2.0.0-beta.196",
     "@tiptap/extension-text-align": "^2.0.0-beta.29",
     "@tiptap/extension-text-style": "^2.0.0-beta.23",
     "@tiptap/extension-underline": "^2.0.0-beta.23",
@@ -109,7 +110,7 @@
     "vue": "^2.6.14",
     "vue-advanced-cropper": "^1.10.1",
     "vue-click-outside-element": "^1.0.15",
-    "vue-loader": "~15.9.8",
+    "vue-loader": "^15.10.0",
     "vue-material-design-icons": "~4.12.1",
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.6.14",
@@ -124,16 +125,16 @@
     "eslint-config-apostrophe": "^3.4.0",
     "eslint-plugin-n": "^15.2.1",
     "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-vue": "^7.9.0",
     "mocha": "^9.1.2",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
-    "vue-eslint-parser": "^7.1.1",
-    "webpack-bundle-analyzer": "^3.9.0",
-    "eslint-plugin-promise": "^5.1.0",
     "stylelint": "^14.6.1",
     "stylelint-declaration-strict-value": "^1.8.0",
-    "stylelint-order": "^5.0.0"
+    "stylelint-order": "^5.0.0",
+    "vue-eslint-parser": "^7.1.1",
+    "webpack-bundle-analyzer": "^3.9.0"
   },
   "browserslist": [
     "ie >= 10"

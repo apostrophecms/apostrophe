@@ -4,7 +4,10 @@ module.exports = {
     label: 'apostrophe:image',
     className: false,
     icon: 'image-icon',
-    dimensionAttrs: false
+    dimensionAttrs: false,
+    placeholder: true,
+    placeholderClass: false,
+    placeholderUrl: '/modules/@apostrophecms/image-widget/placeholder.jpg'
   },
   fields: {
     add: {

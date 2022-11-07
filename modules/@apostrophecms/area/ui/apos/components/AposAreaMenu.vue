@@ -1,91 +1,33 @@
 <template>
-  <div class="apos-area-menu" :class="{'apos-is-focused': groupIsFocused}">
-    <AposContextMenu
-      :disabled="isDisabled"
-      :button="buttonOptions"
-      v-bind="extendedContextMenuOptions"
-      @open="menuOpen"
-      @close="menuClose"
-      ref="contextMenu"
-      :popover-modifiers="inContext ? ['z-index-in-context'] : []"
-    >
-      <ul class="apos-area-menu__wrapper">
-        <li
-          class="apos-area-menu__item"
-          v-for="(item, itemIndex) in myMenu"
-          :key="item.type ? `${item.type}_${item.label}` : item.label"
-          :class="{'apos-has-group': item.items}"
-          :ref="`item-${itemIndex}`"
-        >
-          <dl v-if="item.items" class="apos-area-menu__group">
-            <dt>
-              <button
-                :for="item.label" class="apos-area-menu__group-label"
-                v-if="item.items" tabindex="0"
-                :id="`${menuId}-trigger-${itemIndex}`"
-                :aria-controls="`${menuId}-group-${itemIndex}`"
-                @focus="groupFocused"
-                @blur="groupBlurred"
-                @click="toggleGroup(itemIndex)"
-                @keydown.prevent.space="toggleGroup(itemIndex)"
-                @keydown.prevent.enter="toggleGroup(itemIndex)"
-                @keydown.prevent.arrow-down="switchGroup(itemIndex, 1)"
-                @keydown.prevent.arrow-up="switchGroup(itemIndex, -1)"
-                @keydown.prevent.home="switchGroup(itemIndex, 0)"
-                @keydown.prevent.end="switchGroup(itemIndex, null)"
-                ref="groupButton"
-              >
-                <span>{{ item.label }}</span>
-                <chevron-up-icon
-                  class="apos-area-menu__group-chevron"
-                  :class="{'apos-is-active': itemIndex === active}" :size="13"
-                />
-              </button>
-            </dt>
-            <dd class="apos-area-menu__group-list" role="region">
-              <ul
-                class="apos-area-menu__items apos-area-menu__items--accordion"
-                :class="{'apos-is-active': active === itemIndex}"
-                :id="`${menuId}-group-${itemIndex}`"
-                :aria-labelledby="`${menuId}-trigger-${itemIndex}`"
-                :aria-expanded="active === itemIndex ? 'true' : 'false'"
-              >
-                <li
-                  class="apos-area-menu__item"
-                  v-for="(child, childIndex) in item.items"
-                  :key="child.name"
-                  :ref="`child-${index}-${childIndex}`"
-                >
-                  <AposAreaMenuItem
-                    @click="add(child)"
-                    :item="child"
-                    :tabbable="itemIndex === active"
-                    @up="switchItem(`child-${itemIndex}-${childIndex - 1}`, -1)"
-                    @down="switchItem(`child-${itemIndex}-${childIndex + 1}`, 1)"
-                  />
-                </li>
-              </ul>
-            </dd>
-          </dl>
-          <AposAreaMenuItem
-            v-else
-            @click="add(item)"
-            :item="item"
-            @up="switchItem(`item-${itemIndex - 1}`, -1)"
-            @down="switchItem(`item-${itemIndex + 1}`, 1)"
-          />
-        </li>
-      </ul>
-    </AposContextMenu>
-  </div>
+  <AposButton
+    v-if="options.expanded"
+    :disabled="disabled"
+    v-bind="buttonOptions"
+    @click="openExpandedMenu(index)"
+    role="button"
+  />
+  <AposAreaContextualMenu
+    v-else
+    @add="$emit('add', $event);"
+    :button-options="buttonOptions"
+    :context-menu-options="contextMenuOptions"
+    :empty="true"
+    :index="index"
+    :widget-options="options.widgets"
+    :options="options"
+    :max-reached="maxReached"
+    :disabled="disabled"
+  />
 </template>
 
 <script>
-
-import cuid from 'cuid';
-
 export default {
+  name: 'AposAreaMenu',
   props: {
+    disabled: {
+      type: Boolean,
+      default: false
+    },
     empty: {
       type: Boolean,
       default: false
@@ -98,30 +40,24 @@ export default {
       type: Number,
       default: 0
     },
-    widgetOptions: {
+    options: {
       type: Object,
       required: true
     },
     maxReached: {
       type: Boolean
     },
-    disabled: {
-      type: Boolean,
-      default: false
+    // NOTE: Left for backwards compatibility.
+    // Should use options now instead.
+    widgetOptions: {
+      type: Object,
+      default: function() {
+        return {};
+      }
     }
   },
-  emits: [ 'menu-close', 'menu-open', 'add' ],
-  data() {
-    return {
-      active: 0,
-      groupIsFocused: false,
-      inContext: true
-    };
-  },
+  emits: [ 'add' ],
   computed: {
-    moduleOptions() {
-      return window.apos.area;
-    },
     buttonOptions() {
       return {
         label: 'apostrophe:addContent',
@@ -131,147 +67,18 @@ export default {
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],
         iconSize: this.empty ? 20 : 11
       };
-    },
-    isDisabled() {
-      let flag = this.disabled;
-      if (this.maxReached) {
-        flag = true;
-      }
-      return flag;
-    },
-    extendedContextMenuOptions() {
-      const modifiers = [ 'unpadded' ];
-      if (!this.groupedMenus) {
-        modifiers.push('tb-padded');
-      }
-      return {
-        menuPlacement: 'bottom',
-        menuOffset: 15,
-        ...this.contextMenuOptions,
-        modifiers
-      };
-    },
-    groupedMenus() {
-      let flag = false;
-      this.contextMenuOptions.menu.forEach((e) => {
-        if (e.items) {
-          flag = true;
-        }
-      });
-      return flag;
-    },
-    myMenu() {
-      const clipboard = apos.area.widgetClipboard.get();
-      const menu = [ ...this.contextMenuOptions.menu ];
-      if (clipboard) {
-        const widget = clipboard;
-        const matchingChoice = menu.find(option => option.name === widget.type);
-        if (matchingChoice) {
-          menu.unshift({
-            type: 'clipboard',
-            ...matchingChoice,
-            label: {
-              key: 'apostrophe:pasteWidget',
-              widget: this.$t(matchingChoice.label)
-            },
-            clipboard: widget
-          });
-        }
-      }
-      if (this.groupedMenus) {
-        return this.composeGroups(menu);
-      } else {
-        return menu;
-      }
-    },
-    menuId() {
-      return `areaMenu-${cuid()}`;
     }
   },
-  mounted() {
-    // if this area is not in-context then it is assumed in a schema's modal and we need to bump
-    // the z-index of menus above them
-    this.inContext = !apos.util.closest(this.$el, '[data-apos-schema-area]');
-  },
   methods: {
-    menuClose(e) {
-      this.$emit('menu-close', e);
-    },
-    menuOpen(e) {
-      this.$emit('menu-open', e);
-    },
-    async add(item) {
-      // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
-      // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
-      // as it is often the logical experience (not always, see tag menus and filters)
-      this.$refs.contextMenu.isOpen = false;
-      this.$emit('add', {
-        ...item,
-        index: this.index
-      });
-    },
-    groupFocused() {
-      this.groupIsFocused = true;
-    },
-    groupBlurred() {
-      this.groupIsFocused = false;
-    },
-    composeGroups(menu) {
-      const ungrouped = {
-        label: 'apostrophe:ungroupedWidgets',
-        items: []
-      };
-      const myMenu = [];
-
-      menu.forEach((item) => {
-        if (!item.items) {
-          ungrouped.items.push(item);
-        } else {
-          myMenu.push(item);
-        }
+    async openExpandedMenu(index) {
+      const data = await apos.modal.execute('AposAreaExpandedMenu', {
+        field: this.field,
+        options: this.options,
+        index
       });
 
-      if (ungrouped.items.length) {
-        myMenu.push(ungrouped);
-      }
-      return myMenu;
-    },
-
-    toggleGroup(index) {
-      if (this.active !== index) {
-        this.active = index;
-      } else {
-        this.active = null;
-      }
-    },
-
-    switchGroup(index, dir) {
-      let target;
-
-      if (dir > 0) {
-        target = index < this.$refs.groupButton.length - 1 ? index + 1 : 0;
-      }
-
-      if (dir < 0) {
-        target = index === 0 ? this.$refs.groupButton.length - 1 : index - 1;
-      }
-
-      if (dir === 0) {
-        target = 0;
-      }
-
-      if (!dir) {
-        target = this.$refs.groupButton.length - 1;
-      }
-
-      this.$nextTick(() => {
-        this.$refs.groupButton[target].focus();
-      });
-    },
-
-    switchItem(name, dir) {
-      if (this.$refs[name]) {
-        this.$refs[name][0].querySelector('button').focus();
+      if (data) {
+        this.$emit('add', data);
       }
     }
   }

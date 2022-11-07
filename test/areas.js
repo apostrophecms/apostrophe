@@ -76,6 +76,43 @@ describe('Areas', function() {
     apos.argv._ = [];
   });
 
+  it('can get widgets from groups', function() {
+    const options = {
+      groups: {
+        content: {
+          widgets: {
+            article: {},
+            'selected-article': {},
+            topic: {},
+            hero: {},
+            '@apostrophecms/rich-text': {},
+            '@apostrophecms/form': {}
+          }
+        },
+        media: {
+          widgets: {
+            '@apostrophecms/image': {},
+            '@apostrophecms/video': {}
+          }
+        },
+        layout: {
+          widgets: {
+            'two-column': {}
+          }
+        }
+      }
+    };
+
+    const expected = {
+      ...options.groups.content.widgets,
+      ...options.groups.media.widgets,
+      ...options.groups.layout.widgets
+    };
+
+    const widgets = apos.area.getWidgets(options);
+    assert.strict(expected, widgets);
+  });
+
   it('returns the rich text of an area via the richText method', function() {
     assert(apos.area.richText({
       metaType: 'area',
@@ -207,7 +244,7 @@ describe('Areas', function() {
 `);
   });
 
-  it('returns rendered HTML from the `renderAarea` method for a mixed widget area', async function() {
+  it('returns rendered HTML from the `renderArea` method for a mixed widget area', async function() {
     const req = apos.task.getReq();
     apos.area.prepForRender(mixedArea, areaDocs[1], 'main');
 
@@ -336,10 +373,28 @@ describe('Areas', function() {
       }, true)
     );
     assert(
-      apos.schema.fieldTypes.boolean.isEmpty({
+      !apos.schema.fieldTypes.boolean.isEmpty({
         type: 'boolean',
         name: 'test'
       }, false)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, null)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, undefined)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, 0)
     );
     assert(
       !apos.schema.fieldTypes.boolean.empty({
@@ -348,10 +403,28 @@ describe('Areas', function() {
       }, true)
     );
     assert(
-      apos.schema.fieldTypes.boolean.empty({
+      !apos.schema.fieldTypes.boolean.empty({
         type: 'boolean',
         name: 'test'
       }, false)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, null)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, undefined)
+    );
+    assert(
+      apos.schema.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, 0)
     );
   });
 });

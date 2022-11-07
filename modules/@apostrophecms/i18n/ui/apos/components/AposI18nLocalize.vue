@@ -224,7 +224,7 @@
             v-if="isLastStep()"
             type="primary"
             label="apostrophe:localizeContent"
-            :disabled="!complete()"
+            :disabled="!complete() || wizard.busy"
             @click="submit"
           />
           <AposButton
@@ -233,13 +233,14 @@
             @click="goToNext()"
             icon="arrow-right-icon"
             :modifiers="['icon-right']"
-            :disabled="!complete()"
+            :disabled="!complete() || wizard.busy"
             :icon-size="12"
             label="apostrophe:next"
           />
           <AposButton
             v-if="!isFirstStep()"
             type="default"
+            :disabled="wizard.busy"
             @click="goToPrevious()"
             label="apostrophe:back"
           />
@@ -288,6 +289,7 @@ export default {
       },
       wizard: {
         step: 'selectContent',
+        busy: false,
         sections: {
           selectContent: {
             title: this.$t('apostrophe:selectContent'),
@@ -451,6 +453,10 @@ export default {
     }
   },
   watch: {
+    // Debug busy state - controlling disabled state for actions.
+    // 'wizard.busy'(newVal) {
+    //   console.log('BUSY STATUS', newVal);
+    // },
     'wizard.values.relatedDocSettings.data'() {
       this.updateRelatedDocs();
     },
@@ -473,26 +479,31 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-    this.fullDoc = await apos.http.get(
+    this.wizard.busy = true;
+    try {
+      this.fullDoc = await apos.http.get(
       `${this.action}/${this.doc._id}`,
       {
         busy: true
       }
-    );
+      );
 
-    const docs = await apos.http.get(
+      const docs = await apos.http.get(
       `${this.action}/${this.fullDoc._id}/locales`,
       {
         busy: true
       }
-    );
-    this.localized = Object.fromEntries(
-      docs.results
-        .filter(doc => doc.aposLocale.endsWith(':draft'))
-        .map(doc => [ doc.aposLocale.split(':')[0], doc ])
-    );
-    await this.updateRelatedDocs();
-    this.wizard.step = this.visibleStepNames[0];
+      );
+      this.localized = Object.fromEntries(
+        docs.results
+          .filter(doc => doc.aposLocale.endsWith(':draft'))
+          .map(doc => [ doc.aposLocale.split(':')[0], doc ])
+      );
+      await this.updateRelatedDocs();
+    } finally {
+      this.wizard.step = this.visibleStepNames[0];
+      this.wizard.busy = false;
+    }
   },
   methods: {
     close() {
@@ -605,6 +616,7 @@ export default {
     async submit() {
       let docs = [];
       const notifications = [];
+      this.wizard.busy = true;
 
       if (this.wizard.values.toLocalize.data !== 'relatedDocsOnly') {
         docs.push(this.fullDoc);
@@ -713,18 +725,24 @@ export default {
     },
     // Get all related documents
     async getRelatedDocs(doc) {
+      const status = this.wizard.busy;
+      this.wizard.busy = true;
       const schema = apos.modules[doc.type].schema;
       const docs = getRelatedBySchema(doc, schema);
       if (!docs.length) {
         return [];
       }
-      const result = await apos.http.post(`${apos.doc.action}/editable?aposMode=draft`, {
-        body: {
-          ids: docs.map(doc => doc._id)
-        }
-      });
-      const filtered = docs.filter(doc => result.editable.includes(doc._id));
-      return filtered;
+      try {
+        const result = await apos.http.post(`${apos.doc.action}/editable?aposMode=draft`, {
+          body: {
+            ids: docs.map(doc => doc._id)
+          }
+        });
+        const filtered = docs.filter(doc => result.editable.includes(doc._id));
+        return filtered;
+      } finally {
+        this.wizard.busy = status;
+      }
 
       function getRelatedBySchema(object, schema) {
         let related = [];
@@ -770,6 +788,8 @@ export default {
       if (this.wizard.values.toLocalize.data === 'thisDoc') {
         return;
       }
+      const status = this.wizard.busy;
+      this.wizard.busy = true;
       let relatedDocs = await this.getRelatedDocs(this.fullDoc);
       this.allRelatedDocs = relatedDocs;
       this.allRelatedDocsKnown = true;
@@ -794,6 +814,7 @@ export default {
         relatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
       }
       this.relatedDocs = relatedDocs;
+      this.wizard.busy = status;
     }
   }
 };

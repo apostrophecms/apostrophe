@@ -43,9 +43,10 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          let options = field.options && field.options.widgets && field.options.widgets[type];
+          const widgets = self.getWidgets(field.options);
 
-          options = options || {};
+          const options = widgets[type] || {};
+
           const manager = self.getWidgetManager(type);
           if (!manager) {
             self.warnMissingWidgetType(type);
@@ -96,6 +97,20 @@ module.exports = {
       setWidgetManager(name, manager) {
         self.widgetManagers[name] = manager;
       },
+      getWidgets(options) {
+        let widgets = options.widgets || {};
+
+        if (options.groups) {
+          for (const group of Object.keys(options.groups)) {
+            widgets = {
+              ...widgets,
+              ...options.groups[group].widgets
+            };
+          }
+        }
+
+        return widgets;
+      },
       // Get the manager object for the given widget type name.
       getWidgetManager(name) {
         return self.widgetManagers[name];
@@ -140,7 +155,12 @@ module.exports = {
             in an options property.
           `);
         }
-        _.each(options.widgets, function (options, name) {
+
+        const widgets = self.getWidgets(options);
+
+        options.widgets = widgets;
+
+        _.each(widgets, function (options, name) {
           const manager = self.widgetManagers[name];
           if (manager) {
             choices.push({
@@ -254,7 +274,8 @@ module.exports = {
         options = options || {};
         const result = [];
         const errors = [];
-        const widgetsOptions = options.widgets || {};
+        const widgetsOptions = self.getWidgets(options);
+
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           if ((item == null) || typeof item !== 'object' || typeof item.type !== 'string') {
@@ -554,6 +575,8 @@ module.exports = {
         const widgetEditors = {};
         const widgetManagers = {};
         const widgetIsContextual = {};
+        const widgetHasPlaceholder = {};
+        const widgetHasInitialModal = {};
         const contextualWidgetDefaultData = {};
 
         _.each(self.widgetManagers, function (manager, name) {
@@ -563,6 +586,8 @@ module.exports = {
           widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
+          widgetHasPlaceholder[name] = manager.options.placeholder;
+          widgetHasInitialModal[name] = !manager.options.placeholder && manager.options.initialModal !== false;
           contextualWidgetDefaultData[name] = manager.options.defaultData;
         });
 
@@ -573,6 +598,8 @@ module.exports = {
             widgetEditors
           },
           widgetIsContextual,
+          widgetHasPlaceholder,
+          widgetHasInitialModal,
           contextualWidgetDefaultData,
           widgetManagers,
           action: self.action

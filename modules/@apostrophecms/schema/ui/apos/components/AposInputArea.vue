@@ -62,7 +62,18 @@ export default {
     },
     choices() {
       const result = [];
-      for (const [ name, options ] of Object.entries(this.field.options.widgets)) {
+
+      let widgets = this.field.options.widgets || {};
+      if (this.field.options.groups) {
+        for (const group of Object.entries(this.field.options.groups)) {
+          widgets = {
+            ...widgets,
+            ...group.widgets
+          };
+        }
+      }
+
+      for (const [ name, options ] of Object.entries(widgets)) {
         result.push({
           name,
           label: options.addLabel || apos.modules[`${name}-widget`].label

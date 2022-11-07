@@ -26,9 +26,10 @@
           :context-menu-options="contextMenuOptions"
           :empty="true"
           :index="0"
-          :widget-options="options.widgets"
+          :options="options"
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
+          :widget-options="options.widgets"
         />
       </template>
     </div>
@@ -138,7 +139,8 @@ export default {
       contextMenuOptions: {
         menu: this.choices
       },
-      edited: {}
+      edited: {},
+      widgets: {}
     };
   },
   computed: {
@@ -164,7 +166,7 @@ export default {
       return window.apos.area;
     },
     types() {
-      return Object.keys(this.options.widgets);
+      return Object.keys(this.widgets);
     },
     maxReached() {
       return this.options.max && this.next.length >= this.options.max;
@@ -193,6 +195,16 @@ export default {
     },
     generation() {
       this.next = this.getValidItems();
+    }
+  },
+  created() {
+    if (this.options.groups) {
+      for (const group of Object.keys(this.options.groups)) {
+        this.widgets = {
+          ...this.options.groups[group].widgets,
+          ...this.widgets
+        };
+      }
     }
   },
   mounted() {
@@ -392,6 +404,8 @@ export default {
       }
     },
     async update(widget) {
+      widget.aposPlaceholder = false;
+
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
           [`@${widget._id}`]: widget
@@ -422,9 +436,17 @@ export default {
       } else if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
-            _id: cuid(),
             type: name,
-            ...this.contextualWidgetDefaultData(name)
+            ...this.contextualWidgetDefaultData(name),
+            aposPlaceholder: this.widgetHasPlaceholder(name)
+          },
+          index
+        });
+      } else if (!this.widgetHasInitialModal(name)) {
+        return this.insert({
+          widget: {
+            type: name,
+            aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
         });
@@ -433,7 +455,7 @@ export default {
         apos.area.activeEditor = this;
         const widget = await apos.modal.execute(componentName, {
           value: null,
-          options: this.options.widgets[name],
+          options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId
         });
@@ -445,6 +467,18 @@ export default {
           });
         }
       }
+    },
+    widgetOptionsByType(name) {
+      if (this.options.widgets) {
+        return this.options.widgets[name];
+      } else if (this.options.expanded) {
+        for (const info of Object.values(this.options.groups || {})) {
+          if (info?.widgets?.[name]) {
+            return info.widgets[name];
+          }
+        }
+      }
+      return null;
     },
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
@@ -477,6 +511,12 @@ export default {
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
+    },
+    widgetHasPlaceholder(type) {
+      return this.moduleOptions.widgetHasPlaceholder[type];
+    },
+    widgetHasInitialModal(type) {
+      return this.moduleOptions.widgetHasInitialModal[type];
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];

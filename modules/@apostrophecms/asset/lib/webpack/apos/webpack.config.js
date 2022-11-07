@@ -24,6 +24,8 @@ module.exports = ({
 
   const config = {
     entry: importFile,
+    // Ensure that the correct version of vue-loader is found
+    context: __dirname,
     mode: process.env.NODE_ENV || 'development',
     optimization: {
       minimize: process.env.NODE_ENV === 'production'

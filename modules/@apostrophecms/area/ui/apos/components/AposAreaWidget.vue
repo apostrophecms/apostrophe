@@ -60,7 +60,8 @@
           @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
           :index="i"
-          :widget-options="options.widgets"
+          :widget-options="widgets"
+          :options="options"
           :disabled="disabled"
         />
       </div>
@@ -96,10 +97,10 @@
       <component
         v-if="isContextual && !foreign"
         :is="widgetEditorComponent(widget.type)"
+        :options="widgetOptions"
+        :type="widget.type"
         :value="widget"
         @update="$emit('update', $event)"
-        :options="options.widgets[widget.type]"
-        :type="widget.type"
         :doc-id="docId"
         :focused="focused"
         :key="generation"
@@ -107,7 +108,7 @@
       <component
         v-else
         :is="widgetComponent(widget.type)"
-        :options="options.widgets[widget.type]"
+        :options="widgetOptions"
         :type="widget.type"
         :id="widget._id"
         :area-field-id="fieldId"
@@ -128,7 +129,8 @@
           @add="$emit('add', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
-          :widget-options="options.widgets"
+          :widget-options="widgets"
+          :options="options"
           :disabled="disabled"
           @menu-open="toggleMenuFocus($event, 'bottom', true)"
           @menu-close="toggleMenuFocus($event, 'bottom', false)"
@@ -139,7 +141,6 @@
 </template>
 
 <script>
-
 import { klona } from 'klona';
 import AposIndicator from '../../../../ui/ui/apos/components/AposIndicator.vue';
 
@@ -249,7 +250,8 @@ export default {
       breadcrumbs: {
         $lastEl: null,
         list: []
-      }
+      },
+      widgets: this.options.widgets || {}
     };
   },
   computed: {
@@ -261,6 +263,9 @@ export default {
     },
     widgetLabel() {
       return window.apos.modules[`${this.widget.type}-widget`].label;
+    },
+    widgetOptions() {
+      return this.widgets[this.widget.type];
     },
     isContextual() {
       return this.moduleOptions.widgetIsContextual[this.widget.type];
@@ -331,6 +336,16 @@ export default {
         this.highlightable = true;
       } else {
         this.highlightable = false;
+      }
+    }
+  },
+  created() {
+    if (this.options.groups) {
+      for (const group of Object.keys(this.options.groups)) {
+        this.widgets = {
+          ...this.options.groups[group].widgets,
+          ...this.widgets
+        };
       }
     }
   },

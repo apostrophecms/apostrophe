@@ -81,7 +81,7 @@ export default {
     },
     validate(value) {
       if (this.field.required) {
-        if (!value) {
+        if (!value && value !== false) {
           return 'required';
         }
       }
