@@ -438,6 +438,7 @@ export default {
           widget: {
             type: name,
             ...this.contextualWidgetDefaultData(name),
+            ...this.widgetAreaDefaultData(name),
             aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
@@ -446,6 +447,7 @@ export default {
         return this.insert({
           widget: {
             type: name,
+            ...this.widgetAreaDefaultData(name),
             aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
@@ -454,7 +456,7 @@ export default {
         const componentName = this.widgetEditorComponent(name);
         apos.area.activeEditor = this;
         const widget = await apos.modal.execute(componentName, {
-          value: null,
+          value: this.widgetAreaDefaultData(name),
           options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId
@@ -482,6 +484,13 @@ export default {
     },
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
+    },
+    widgetAreaDefaultData(type) {
+      const { _def } = this.options.widgets[type];
+
+      return _def && Object.keys(_def).length
+        ? _def
+        : null;
     },
     async insert({ index, widget }) {
       if (!widget._id) {
@@ -513,7 +522,7 @@ export default {
       return this.moduleOptions.widgetIsContextual[type];
     },
     widgetHasPlaceholder(type) {
-      return this.moduleOptions.widgetHasPlaceholder[type];
+      return this.moduleOptions.widgetHasPlaceholder[type] && !this.widgetAreaDefaultData(type);
     },
     widgetHasInitialModal(type) {
       return this.moduleOptions.widgetHasInitialModal[type];
