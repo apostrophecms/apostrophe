@@ -90,17 +90,19 @@ describe('Command-Menu', function() {
   });
 
   it('should merge commands', function() {
-    const actual = apos.commandMenu.composeCommand(
-      {},
-      [
+    const initialState = {
+      rawCommands: [
         moduleA.commands,
         moduleB.commands,
         moduleC.commands,
         moduleD.commands
       ]
-    );
+    };
+
+    const actual = apos.commandMenu.composeCommand(initialState);
     const expected = {
-      commands: {
+      ...initialState,
+      command: {
         '@apostrophecms/command-menu:test': {},
         '@apostrophecms/command-menu:toggle-shortcuts': {
           action: {
@@ -118,57 +120,60 @@ describe('Command-Menu', function() {
   });
 
   it('should group commands', function() {
-    const actual = apos.commandMenu.composeGroup(
-      {},
-      [
+    const initialState = {
+      rawCommands: [
         moduleA.commands,
         moduleB.commands,
         moduleC.commands,
         moduleD.commands
       ]
-    );
+    };
+
+    const actual = apos.commandMenu.composeGroup(initialState);
     const expected = {
-      '@apostrophecms/command-menu:content': {
-        label: 'apostrophe:commandMenuContent',
-        fields: [
-          'apostrophe:undo',
-          'apostrophe:redo',
-          'apostrophe:discard-draft',
-          'apostrophe:publish-draft'
-        ]
-      },
-      '@apostrophecms/command-menu:modes': {
-        label: 'apostrophe:commandMenuModes',
-        fields: [
-          'apostrophe:toggle-edit-preview-mode',
-          'apostrophe:toggle-publish-draft-mode'
-        ]
-      },
-      '@apostrophecms/command-menu:general': {
-        label: 'apostrophe:commandMenuGeneral',
-        fields: [
-          'apostrophe:command-menu'
-        ]
+      ...initialState,
+      group: {
+        '@apostrophecms/command-menu:content': {
+          label: 'apostrophe:commandMenuContent',
+          fields: [
+            'apostrophe:undo',
+            'apostrophe:redo',
+            'apostrophe:discard-draft',
+            'apostrophe:publish-draft'
+          ]
+        },
+        '@apostrophecms/command-menu:modes': {
+          label: 'apostrophe:commandMenuModes',
+          fields: [
+            'apostrophe:toggle-edit-preview-mode',
+            'apostrophe:toggle-publish-draft-mode'
+          ]
+        },
+        '@apostrophecms/command-menu:general': {
+          label: 'apostrophe:commandMenuGeneral',
+          fields: [
+            'apostrophe:command-menu'
+          ]
+        }
+        // '@apostrophecms/command-menu:general': {
+        //   label: 'apostrophe:commandMenuGeneral',
+        //   fields: [
+        //     'apostrophe:create-new',
+        //     'apostrophe:focus-search',
+        //     'apostrophe:select-all',
+        //     'apostrophe:archive',
+        //     'apostrophe:exit',
+        //   ]
+        // }
       }
-      // '@apostrophecms/command-menu:general': {
-      //   label: 'apostrophe:commandMenuGeneral',
-      //   fields: [
-      //     'apostrophe:create-new',
-      //     'apostrophe:focus-search',
-      //     'apostrophe:select-all',
-      //     'apostrophe:archive',
-      //     'apostrophe:exit',
-      //   ]
-      // }
     };
 
     assert.deepEqual(actual, expected);
   });
 
   it('should remove commands', function() {
-    const actual = apos.commandMenu.composeRemove(
-      {},
-      [
+    const initialState = {
+      rawCommands: [
         moduleA.commands,
         moduleB.commands,
         moduleC.commands,
@@ -185,8 +190,11 @@ describe('Command-Menu', function() {
           ]
         }
       ]
-    );
+    };
+
+    const actual = apos.commandMenu.composeRemove(initialState);
     const expected = {
+      ...initialState,
       remove: [
         'apostrophe:toggle-publish-draft-mode',
         'apostrophe:redo',

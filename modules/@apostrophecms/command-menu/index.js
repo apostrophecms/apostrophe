@@ -1,4 +1,3 @@
-const { klona } = require('klona');
 const pipe = (...functions) => (initial) => functions.reduce((accumulator, current) => current(accumulator), initial);
 
 module.exports = {
@@ -9,31 +8,20 @@ module.exports = {
     return {
       'apostrophe:ready': {
         composeCommands() {
-          // self.rawCommands = Object.values(self.apos.modules)
-          //   .reduce(
-          //     (acc, aposModule) => {
-          //       // TODO self.apos.util.helpers.merge is used here as an example, the final implementation will use another
-          //       // deep merge method
-          //       return self.apos.util.helpers.merge(acc, ...self.composeCommandsForModule(aposModule));
-          //     },
-          //     {
-          //       commands: {},
-          //       groups: {},
-          //       remove: {},
-          //       order: {}
-          //     }
-          //   );
+          self.rawCommands = Object.values(self.apos.modules).flatMap(self.composeCommandsForModule);
 
-          // self.commands = pipe(self.order, self.remove, self.group)(self.rawCommands);
+          const composed = pipe(self.composeCommand, self.composeRemove, self.composeGroup)({ rawCommands: self.rawCommands });
+          self.commands = composed.command;
+          self.groups = composed.group;
         }
       }
     };
   },
   methods(self) {
     return {
-      composeRemove(initialState, commands) {
+      composeRemove(initialState) {
         const concatenate = []
-          .concat(...commands.map(command => command.remove))
+          .concat(...initialState.rawCommands.map(command => command.remove))
           .filter(isNotEmpty => isNotEmpty);
 
         return {
@@ -41,7 +29,7 @@ module.exports = {
           remove: concatenate
         };
       },
-      composeGroup(initialState, commands) {
+      composeGroup(initialState) {
         const formatGroups = (state, { group }) => {
           return Object.entries(group)
             .reduce(
@@ -58,16 +46,21 @@ module.exports = {
             );
         };
 
-        return commands.reduce(formatGroups, initialState);
+        const concatenate = initialState.rawCommands.reduce(formatGroups, {});
+
+        return {
+          ...initialState,
+          group: concatenate
+        };
       },
-      composeCommand(initialState, commands) {
+      composeCommand(initialState) {
         const concatenate = []
-          .concat(...commands.map(command => command.add))
+          .concat(...initialState.rawCommands.map(command => command.add))
           .filter(isNotEmpty => isNotEmpty);
 
         return {
           ...initialState,
-          commands: concatenate
+          command: concatenate
             .reduce(
               (acc, command) => ({
                 ...acc,
@@ -76,22 +69,6 @@ module.exports = {
               {}
             )
         };
-        // const formatCommands = (state, { add }) => {
-        //   return Object.entries(add)
-        //     .reduce(
-        //       (commands, [ name, attributes ]) => {
-        //         return {
-        //           ...commands,
-        //           [name]: {
-        //             ...attributes
-        //           }
-        //         };
-        //       },
-        //       state
-        //     );
-        // };
-
-        // return commands.reduce(formatCommands, initialState);
       },
       composeCommandsForModule(aposModule) {
         return aposModule.__meta.chain
