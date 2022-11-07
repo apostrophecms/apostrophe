@@ -9,6 +9,7 @@
 * Fixed various localization bugs in the text of the "Update" dropdown menu.
 * The `singleton: true` option for piece types now automatically implies `showCreate: false`.
 * Remove browser console warnings by handling Tiptap Editor's breaking changes and duplicated plugins.
+* Improves the editor modal's responsive behavior for 'laptop'-sized displays.
 
 ## 3.31.0 (2022-10-27)
 
