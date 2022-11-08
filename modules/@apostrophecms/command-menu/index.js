@@ -81,9 +81,39 @@ module.exports = {
           })
           .filter(entry => entry !== null);
       },
-      getBrowserData() {
+      isCommandVisible(req, command) {
+        return command.permission
+          ? self.apos.permissions.can(req, command.permission.action, command.permission.type, command.permission.mode || 'draft')
+          : true;
+      },
+      getVisibleGroups(req) {
+        const commands = Object.fromEntries(
+          Object.entries(self.commands)
+            .map(([ key, command ]) => {
+              return self.isCommandVisible(req, command)
+                ? [ key, command ]
+                : [];
+            })
+        );
+
+        const keys = Object.keys(commands);
+
+        return Object.fromEntries(
+          Object.entries(self.groups)
+            .map(([ key, group ]) => {
+              const fields = group.fields
+                .filter(field => keys.includes(field))
+                .map(field => commands[field]);
+
+              return fields.length
+                ? [ key, { ...group, fields } ]
+                : [];
+            })
+        );
+      },
+      getBrowserData(req) {
         return {
-          commands: self.commands // TODO filter entries using self.apos.permissions.can
+          groups: self.getVisibleGroups(req)
         };
       }
     };
