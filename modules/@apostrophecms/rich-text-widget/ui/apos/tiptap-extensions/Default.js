@@ -26,9 +26,12 @@ export default (options) => {
     if (def.type === 'heading' || def.type === 'paragraph') {
       return nodeMap[def.type].extend({
         name: nodeName,
-        defaultOptions: {
-          HTMLAttributes: attrs,
-          levels: def.options.level ? [ def.options.level ] : null
+        addOptions() {
+          return {
+            ...this.parent?.(),
+            HTMLAttributes: attrs,
+            levels: def.options.level ? [ def.options.level ] : null
+          };
         }
       });
     }
@@ -38,8 +41,11 @@ export default (options) => {
         group: 'block',
         content: 'text*',
         name: nodeName,
-        defaultOptions: {
-          HTMLAttributes: attrs
+        addOptions() {
+          return {
+            ...this.parent?.(),
+            HTMLAttributes: attrs
+          };
         },
         renderHTML: () => {
           return [ 'span', attrs, 0 ];

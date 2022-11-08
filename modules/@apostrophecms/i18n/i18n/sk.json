@@ -393,6 +393,7 @@
   "unsavedChanges": "Neuložené zmeny",
   "update": "Aktualizácia",
   "updateAndRedirect": "{{ saveLabel }} aktualizuje a bude presmerovaný na {{ typeLabel }}.",
+  "updateSingleton": "{{ saveLabel }} {{ typeLabel}}.",
   "updateAndReturn": "{{ saveLabel }} aktualizácie a vráťte sa do {{ typeLabel }} výpis.",
   "updateAndNew": "{{ saveLabel }} aktualizuje a vytvorí nový {{ typeLabel }}.",
   "updated": "Aktualizované",
