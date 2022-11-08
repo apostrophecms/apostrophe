@@ -764,13 +764,13 @@ export default {
 
 <style lang="scss" scoped>
   .apos-doc-editor__body {
-    padding-top: 20px;
-    max-width: 90%;
-    margin-right: auto;
-    margin-left: auto;
+    padding-top: $spacing-double;
   }
 
   .apos-doc-editor__utility {
-    padding: 40px 20px;
+    padding: $spacing-quadruple $spacing-base;
+    @include media-up(lap) {
+      padding: $spacing-quadruple $spacing-double;
+    }
   }
 </style>
