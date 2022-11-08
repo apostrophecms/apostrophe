@@ -28,7 +28,10 @@ export default {
 <style lang="scss" scoped>
 .apos-modal__body {
   overflow-y: auto;
-  padding: 20px;
+  padding: $spacing-double;
+  @include media-up(lap) {
+    padding: $spacing-quadruple;
+  }
 }
 
 .apos-modal__body--flex {

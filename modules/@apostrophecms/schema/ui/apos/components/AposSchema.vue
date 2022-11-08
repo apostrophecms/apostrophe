@@ -319,6 +319,10 @@ export default {
     max-width: $input-max-width;
   }
 
+  .apos-schema ::v-deep .apos-field__wrapper--area {
+    max-width: 100%;
+  }
+
   .apos-schema ::v-deep img {
     max-width: 100%;
   }
