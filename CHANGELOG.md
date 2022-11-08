@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-###  Fixes
+### Adds
+
+* Adds Reset Password feature to the login page. Note that the feature must be enabled and email delivery must be properly configured. See the [documentation](https://v3.docs.apostrophecms.org/) for more details.
+
+
+### Fixes
 
 * Query builders for regular select fields have always accepted null to mean "do not filter on this property." Now this also works for dynamic select fields.
 * The i18n UI state management now doesn't allow actions while it's busy.
