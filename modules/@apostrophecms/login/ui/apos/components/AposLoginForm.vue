@@ -153,7 +153,7 @@ export default {
       }
     }
   },
-  mounted() {
+  created() {
     this.requirementProps = this.context.requirementProps;
   },
   methods: {
