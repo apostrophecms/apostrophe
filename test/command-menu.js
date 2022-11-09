@@ -27,10 +27,6 @@ const moduleA = {
 };
 const moduleB = {
   commands: {
-    add: {
-      '@apostrophecms/command-menu:test': {
-      }
-    },
     group: {
       '@apostrophecms/command-menu:content': {
         label: 'apostrophe:commandMenuContent',
@@ -103,7 +99,6 @@ describe('Command-Menu', function() {
     const expected = {
       ...initialState,
       command: {
-        '@apostrophecms/command-menu:test': {},
         '@apostrophecms/command-menu:toggle-shortcuts': {
           action: {
             payload: {},
@@ -201,6 +196,47 @@ describe('Command-Menu', function() {
         'apostrophe:command-menu'
       ]
     };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should validate commands', function() {
+    const initialState = {
+      rawCommands: [
+        moduleA.commands,
+        moduleB.commands,
+        moduleC.commands,
+        moduleD.commands
+      ]
+    };
+    const rawCommands = initialState.rawCommands.flatMap(rawCommand => Object.entries(rawCommand?.add || {}));
+
+    const actual = Object.values(rawCommands).map(([ name, command ]) => apos.commandMenu.validateCommand({ name, command }));
+    const expected = [
+      true
+    ];
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should validate groups', function() {
+    const initialState = {
+      rawCommands: [
+        moduleA.commands,
+        moduleB.commands,
+        moduleC.commands,
+        moduleD.commands
+      ]
+    };
+    const rawCommands = initialState.rawCommands.flatMap(rawCommand => Object.entries(rawCommand?.group || {}));
+
+    const actual = Object.values(rawCommands).map(([ name, group ]) => apos.commandMenu.validateGroup({ name, group }));
+    const expected = [
+      true,
+      true,
+      true,
+      true
+    ];
 
     assert.deepEqual(actual, expected);
   });

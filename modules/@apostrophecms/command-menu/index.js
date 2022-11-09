@@ -32,15 +32,16 @@ module.exports = {
       validateCommand({ name, command }) {
         assert.equal(command.type, 'item', `Invalid command type, must be "item", for ${name}`);
         assert.equal(typeof command.label, 'string', `Invalid command label, must be a string, for ${name} "${typeof command.label}" provided`);
-        assert.equal(typeof command.action, 'object', `Invalid command action, must be an object for ${name}`);
-        assert.equal(typeof command.action.type, 'string', `Invalid command action type for ${name}`);
-        assert.equal(typeof command.action.payload, 'object', `Invalid command action payload for ${name}`);
-        if (command.permission) {
-          assert.equal(typeof command.permission, 'object', `Invalid command permission for ${name}`);
-          assert.equal(typeof command.permission.action, 'string', `Invalid command permission action for ${name}`);
-          assert.equal(typeof command.permission.type, 'string', `Invalid command permission type for ${name}`);
-        }
-        assert.equal(typeof command.modal, 'string', `Invalid command modal for ${name}`);
+        assert.equal(typeof command.action, 'object', `Invalid command action, must be an object for ${name}`) &&
+          assert.equal(typeof command.action.type, 'string', `Invalid command action type for ${name}`) &&
+          assert.equal(typeof command.action.payload, 'object', `Invalid command action payload for ${name}`);
+        command.permission && (
+          assert.equal(typeof command.permission, 'object', `Invalid command permission for ${name}`) &&
+          assert.equal(typeof command.permission.action, 'string', `Invalid command permission action for ${name}`) &&
+          assert.equal(typeof command.permission.type, 'string', `Invalid command permission type for ${name}`)
+        );
+        command.modal &&
+          assert.equal(typeof command.modal, 'string', `Invalid command modal for ${name}`);
         assert.equal(typeof command.shortcut, 'string', `Invalid command shortcut, must be a string, for ${name}`);
 
         return true;
