@@ -153,6 +153,7 @@ var realWorldCase = {
         "loginRequired",
         "_viewUsers",
         "_viewGroups",
+        "_excludeViewGroups",
         "_editUsers",
         "_editGroups"
       ],

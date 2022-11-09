@@ -86,6 +86,15 @@ describe('Permissions', function() {
     it('certainUsers will not let you slide past to an unpublished doc', function() {
       assert(!apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', { loginRequired: 'certainUsers', docPermissions: [ 'view-1' ] }));
     });
+    it('forbids view-doc for individual with group id', function() {
+      assert(!apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-doc', { published: true, loginRequired: 'excludeCertainUsers', docPermissions: [ 'exclude-view-1002' ] }));
+    });
+    it('permits view-doc for individual with wrong group id', function() {
+      assert(apos.permissions.can(req({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }), 'view-doc', { published: true, loginRequired: 'excludeCertainUsers', docPermissions: [ 'exclude-view-1003' ] }));
+    });
+    it('excludeCertainUsers will not let you slide past to an unpublished doc', function() {
+      assert(!apos.permissions.can(req({ user: { _id: 1 } }), 'exclude-view-doc', { loginRequired: 'excludeCertainUsers', docPermissions: [ 'exclude-view-1' ] }));
+    });
     it('permits view-doc for unpublished doc for individual with group id for editing', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-doc', { docPermissions: [ 'edit-1002' ] }));
     });

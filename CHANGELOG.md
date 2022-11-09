@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Allows to exclude certain groups of users from seeing a piece or a page in `Permissions` tab.
+
 ## 2.222.0 (2022-07-20)
 
 ## Adds
