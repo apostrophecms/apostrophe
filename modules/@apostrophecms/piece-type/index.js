@@ -104,6 +104,19 @@ module.exports = {
   },
   utilityOperations: {},
   batchOperations: {
+    publish: {
+      label: 'apostrophe:publish',
+      messages: {
+        progress: 'Publishing {{ type }}...',
+        completed: 'Published {{ count }} {{ type }}.'
+      },
+      icon: 'checkbox-marked-icon',
+      modalOptions: {
+        title: 'apostrophe:publishType',
+        description: 'apostrophe:publishBatchConfirmation',
+        confirmationButton: 'apostrophe:publishBatchConfirmationButton'
+      }
+    },
     add: {
       archive: {
         label: 'apostrophe:archive',
@@ -294,6 +307,31 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           return self.publish(req, draft);
+        },
+        async publish (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              await self.publish(req, piece);
+            }, {
+              action: 'publish'
+            }
+          );
         },
         async archive (req) {
           if (!Array.isArray(req.body._ids)) {
