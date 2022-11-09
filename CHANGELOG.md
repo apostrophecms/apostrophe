@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased
+## 3.32.0 (2022-11-09)
 
 ### Adds
 
-* Allow project-level developer to override bundling decisions by configuring the `@apostrophecms/asset` module. Check the [module documentation](https://v3.docs.apostrophecms.org/reference/modules/asset.html#options) for more information.
 * Adds Reset Password feature to the login page. Note that the feature must be enabled and email delivery must be properly configured. See the [documentation](https://v3.docs.apostrophecms.org/) for more details.
+* Allow project-level developer to override bundling decisions by configuring the `@apostrophecms/asset` module. Check the [module documentation](https://v3.docs.apostrophecms.org/reference/modules/asset.html#options) for more information.
 
 ### Fixes
 
@@ -14,7 +14,7 @@
 * Fixed various localization bugs in the text of the "Update" dropdown menu.
 * The `singleton: true` option for piece types now automatically implies `showCreate: false`.
 * Remove browser console warnings by handling Tiptap Editor's breaking changes and duplicated plugins.
-* Improves the editor modal's responsive behavior for 'laptop'-sized displays.
+* The editor modal now allocates more space to area fields when possible, resolving common concerns about editing large widgets inside the modal.
 
 ## 3.31.0 (2022-10-27)
 
