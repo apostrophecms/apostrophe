@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Batch feature to publish pieces
+* Batch feature for publishing pieces
 
 ## 3.32.0 (2022-11-09)
 
