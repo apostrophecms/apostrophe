@@ -10,6 +10,7 @@ module.exports = {
       'apostrophe:ready': {
         composeCommands() {
           self.rawCommands = Object.values(self.apos.modules).flatMap(self.composeCommandsForModule);
+          self.removes = [];
           self.commands = {};
           self.groups = {};
 
@@ -18,10 +19,12 @@ module.exports = {
             Object.entries(composed.command).every(([ name, command ]) => self.validateCommand({ name, command }));
             Object.entries(composed.group).every(([ name, group ]) => self.validateGroup({ name, group }));
 
+            self.removes = composed.remove;
             self.commands = composed.command;
             self.groups = composed.group;
           } catch (error) {
-            self.apos.util.error('Command-Menu', error.message);
+            self.apos.util.error('Command-Menu validation error');
+            self.apos.util.error(error);
           }
         }
       }
@@ -124,7 +127,7 @@ module.exports = {
         const commands = Object.fromEntries(
           Object.entries(self.commands)
             .map(([ key, command ]) => {
-              return self.isCommandVisible(req, command)
+              return !self.removes.includes(key) && self.isCommandVisible(req, command)
                 ? [ key, command ]
                 : [];
             })
@@ -136,13 +139,18 @@ module.exports = {
           Object.entries(self.groups)
             .map(([ key, group ]) => {
               const fields = group.fields
-                .filter(field => keys.includes(field))
-                .map(field => commands[field]);
+                .reduce(
+                  (acc, field) => keys.includes(field)
+                    ? { ...acc, [field]: commands[field] }
+                    : acc,
+                  {}
+                );
 
-              return fields.length
+              return Object.keys(fields).length
                 ? [ key, { ...group, fields } ]
                 : [];
             })
+            .filter(groups => groups.length)
         );
       },
       getBrowserData(req) {

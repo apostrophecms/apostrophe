@@ -19,7 +19,8 @@ const moduleA = {
         label: 'apostrophe:commandMenuContent',
         fields: [
           'apostrophe:undo',
-          'apostrophe:redo'
+          'apostrophe:redo',
+          '@apostrophecms/command-menu:toggle-shortcuts'
         ]
       }
     }
@@ -27,12 +28,24 @@ const moduleA = {
 };
 const moduleB = {
   commands: {
+    add: {
+      '@apostrophecms/command-menu:test': {
+        type: 'item',
+        label: 'apostrophe:commandMenuShortcutTest',
+        action: {
+          type: 'test',
+          payload: {}
+        },
+        shortcut: 'Shift+G'
+      }
+    },
     group: {
       '@apostrophecms/command-menu:content': {
         label: 'apostrophe:commandMenuContent',
         fields: [
           'apostrophe:discard-draft',
-          'apostrophe:publish-draft'
+          'apostrophe:publish-draft',
+          '@apostrophecms/command-menu:test'
         ]
       }
     }
@@ -40,6 +53,9 @@ const moduleB = {
 };
 const moduleC = {
   commands: {
+    remove: [
+      '@apostrophecms/command-menu:test'
+    ],
     group: {
       '@apostrophecms/command-menu:modes': {
         label: 'apostrophe:commandMenuModes',
@@ -107,6 +123,15 @@ describe('Command-Menu', function() {
           label: 'apostrophe:commandMenuShortcutToggleShortcuts',
           shortcut: 'Shift+K ?',
           type: 'item'
+        },
+        '@apostrophecms/command-menu:test': {
+          type: 'item',
+          label: 'apostrophe:commandMenuShortcutTest',
+          action: {
+            type: 'test',
+            payload: {}
+          },
+          shortcut: 'Shift+G'
         }
       }
     };
@@ -133,8 +158,10 @@ describe('Command-Menu', function() {
           fields: [
             'apostrophe:undo',
             'apostrophe:redo',
+            '@apostrophecms/command-menu:toggle-shortcuts',
             'apostrophe:discard-draft',
-            'apostrophe:publish-draft'
+            'apostrophe:publish-draft',
+            '@apostrophecms/command-menu:test'
           ]
         },
         '@apostrophecms/command-menu:modes': {
@@ -150,16 +177,6 @@ describe('Command-Menu', function() {
             'apostrophe:command-menu'
           ]
         }
-        // '@apostrophecms/command-menu:general': {
-        //   label: 'apostrophe:commandMenuGeneral',
-        //   fields: [
-        //     'apostrophe:create-new',
-        //     'apostrophe:focus-search',
-        //     'apostrophe:select-all',
-        //     'apostrophe:archive',
-        //     'apostrophe:exit',
-        //   ]
-        // }
       }
     };
 
@@ -191,6 +208,7 @@ describe('Command-Menu', function() {
     const expected = {
       ...initialState,
       remove: [
+        '@apostrophecms/command-menu:test',
         'apostrophe:toggle-publish-draft-mode',
         'apostrophe:redo',
         'apostrophe:command-menu'
@@ -213,6 +231,7 @@ describe('Command-Menu', function() {
 
     const actual = Object.values(rawCommands).map(([ name, command ]) => apos.commandMenu.validateCommand({ name, command }));
     const expected = [
+      true,
       true
     ];
 
@@ -237,6 +256,31 @@ describe('Command-Menu', function() {
       true,
       true
     ];
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should get visible commands only', function() {
+    const req = apos.task.getReq();
+
+    const actual = apos.commandMenu.getVisibleGroups(req);
+    const expected = {
+      '@apostrophecms/command-menu:content': {
+        label: 'apostrophe:commandMenuContent',
+        fields: {
+          ...actual['@apostrophecms/command-menu:content']?.fields,
+          '@apostrophecms/command-menu:toggle-shortcuts': {
+            type: 'item',
+            label: 'apostrophe:commandMenuShortcutToggleShortcuts',
+            action: {
+              type: 'toggle-shortcuts',
+              payload: {}
+            },
+            shortcut: 'Shift+K ?'
+          }
+        }
+      }
+    };
 
     assert.deepEqual(actual, expected);
   });
