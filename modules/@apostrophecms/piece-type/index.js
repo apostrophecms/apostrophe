@@ -104,20 +104,20 @@ module.exports = {
   },
   utilityOperations: {},
   batchOperations: {
-    publish: {
-      label: 'apostrophe:publish',
-      messages: {
-        progress: 'Publishing {{ type }}...',
-        completed: 'Published {{ count }} {{ type }}.'
-      },
-      icon: 'checkbox-marked-icon',
-      modalOptions: {
-        title: 'apostrophe:publishType',
-        description: 'apostrophe:publishingBatchConfirmation',
-        confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
-      }
-    },
     add: {
+      publish: {
+        label: 'apostrophe:publish',
+        messages: {
+          progress: 'Publishing {{ type }}...',
+          completed: 'Published {{ count }} {{ type }}.'
+        },
+        icon: 'checkbox-marked-icon',
+        modalOptions: {
+          title: 'apostrophe:publishType',
+          description: 'apostrophe:publishingBatchConfirmation',
+          confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
+        }
+      },
       archive: {
         label: 'apostrophe:archive',
         messages: {
