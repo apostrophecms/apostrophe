@@ -16,8 +16,8 @@ module.exports = {
 
           const composed = pipe(self.composeCommand, self.composeRemove, self.composeGroup)({ rawCommands: self.rawCommands });
           try {
-            Object.entries(composed.command).every(([ name, command ]) => self.validateCommand({ name, command }));
-            Object.entries(composed.group).every(([ name, group ]) => self.validateGroup({ name, group }));
+            Object.entries(composed.command).some(([ name, command ]) => self.validateCommand({ name, command }));
+            Object.entries(composed.group).some(([ name, group ]) => self.validateGroup({ name, group }));
 
             self.removes = composed.remove;
             self.commands = composed.command;
