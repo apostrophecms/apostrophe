@@ -5,6 +5,11 @@ module.exports = {
   options: {
     alias: 'commandMenu'
   },
+  init(self) {
+    self.addToAdminBar(); // TODO keep?
+    self.addShortcutModal();
+    self.enableBrowserData();
+  },
   handlers(self) {
     return {
       'apostrophe:ready': {
@@ -153,7 +158,24 @@ module.exports = {
             .filter(groups => groups.length)
         );
       },
+      addToAdminBar() { // TODO keep?
+        self.apos.adminBar.add(
+          `${self.__meta.name}:shortcut`,
+          self.pluralLabel || 'shortcut'
+        );
+      },
+      addShortcutModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:shortcut`,
+          self.getComponentName('shortcutModal', 'AposCommandMenuShortcut'),
+          { moduleName: self.__meta.name }
+        );
+      },
       getBrowserData(req) {
+        if (!req.user) {
+          return false;
+        }
+
         return {
           groups: self.getVisibleGroups(req)
         };
