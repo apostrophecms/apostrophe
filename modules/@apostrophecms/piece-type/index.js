@@ -113,8 +113,8 @@ module.exports = {
       icon: 'checkbox-marked-icon',
       modalOptions: {
         title: 'apostrophe:publishType',
-        description: 'apostrophe:publishBatchConfirmation',
-        confirmationButton: 'apostrophe:publishBatchConfirmationButton'
+        description: 'apostrophe:publishingBatchConfirmation',
+        confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
       }
     },
     add: {
