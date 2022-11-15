@@ -5,6 +5,31 @@ module.exports = {
   options: {
     alias: 'commandMenu'
   },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:show-shortcut-list`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuShowShortcutList',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:editor`
+            }
+          },
+          shortcut: '?'
+        }
+      },
+      group: {
+        '@apostrophecms/command-menu:general': {
+          label: 'apostrophe:commandMenuGeneral',
+          fields: [
+            `${self.__meta.name}:show-shortcut-list`
+          ]
+        }
+      }
+    };
+  },
   init(self) {
     self.addToAdminBar(); // TODO keep?
     self.addShortcutModal();
@@ -161,7 +186,11 @@ module.exports = {
       addToAdminBar() { // TODO keep?
         self.apos.adminBar.add(
           `${self.__meta.name}:shortcut`,
-          self.pluralLabel || 'shortcut'
+          self.pluralLabel || 'shortcut',
+          {
+            action: 'edit',
+            type: 'article'
+          }
         );
       },
       addShortcutModal() {

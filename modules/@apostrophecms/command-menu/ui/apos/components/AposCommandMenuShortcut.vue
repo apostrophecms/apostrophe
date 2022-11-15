@@ -1,28 +1,55 @@
 <template>
   <AposModal
-    :modal="modal" modal-title="apostrophe:commandMenuShortcut"
+    :modal="modal"
+    class="apos-command-menu-shortcut"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <!--
-    # @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
-    -->
     <template #main>
       <AposModalBody>
         <template #bodyMain>
-          <div
-            v-for="(group, groupName) in groups"
-            :key="groupName"
-            class="apos-command-menu-shortcut-group"
-          >
-            <div>{{ group.label }}</div>
-            <div
-              v-for="(command, commandName) in group.fields"
-              :key="commandName"
-              class="apos-command-menu-shortcut-command"
-            >
-              <div>{{ command.label }}</div>
+          <header class="apos-modal__header">
+            <div class="apos-modal__header__main">
+              <AposButton
+                type="default"
+                label="apostrophe:commandMenuEsc"
+                @click="confirmAndCancel"
+              />
+              <h2 class="apos-modal__heading">
+                {{ $t('apostrophe:commandMenuShortcut') }}
+              </h2>
             </div>
-          </div>
+          </header>
+          <section class="apos-command-menu-shortcut-groups">
+            <div
+              v-for="(group, groupName) in groups"
+              :key="groupName"
+              class="apos-command-menu-shortcut-group"
+            >
+              <h3 class="apos-command-menu-shortcut-group-title">
+                {{ $t(group.label) }}
+              </h3>
+              <div
+                v-for="(command, commandName) in group.fields"
+                :key="commandName"
+                class="apos-command-menu-shortcut-command"
+              >
+                <div class="apos-command-menu-shortcut-command-title">{{ $t(command.label) }}</div>
+                <AposButton
+                  type="default"
+                  class="apos-command-menu-key"
+                  label="M"
+                  disabled="disabled"
+                />
+                <AposButton
+                  type="default"
+                  class="apos-command-menu-key"
+                  label="?"
+                  disabled="disabled"
+                />
+              </div>
+            </div>
+          </section>
         </template>
       </AposModalBody>
     </template>
@@ -49,9 +76,9 @@ export default {
       groups: apos.commandMenu.groups,
       modal: {
         active: false,
-        type: 'slide',
+        type: 'overlay',
         showModal: false,
-        width: 'two-thirds'
+        disableHeader: true
       }
     };
   },
@@ -80,75 +107,167 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/*
-.apos-admin-bar-wrapper {
-  z-index: $z-index-admin-bar;
-  position: relative;
+.apos-command-menu-shortcut {
+  // z-index: $z-index-modal;
+  // position: fixed;
+  // top: 0;
+  // right: 0;
+  // bottom: 0;
+  // left: 0;
+  // display: flex;
+  // align-items: center;
+  // justify-content: center;
 }
 
-.apos-admin-bar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  left: 0;
-  background: var(--a-background-primary);
+::v-deep .apos-modal__body {
+  padding: 0;
 }
 
-::v-deep .apos-admin-bar__row {
+::v-deep .apos-modal__inner {
+  top: auto;
+  left: auto;
+  max-width: 700px;
+  height: auto;
+  border-radius: $spacing-base + $spacing-half;
+}
+
+::v-deep .apos-modal__overlay {
+  display: none;
+
+  // .apos-modal + .apos-share-draft & {
+  //   display: block;
+  // }
+}
+
+.apos-modal__header {
   display: flex;
-  align-items: center;
-  height: 35px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--a-base-9);
-}
-
-.apos-admin-bar__logo {
-  display: inline-block;
-  height: 26px;
-  margin-right: 10px;
-}
-
-::v-deep .apos-admin-bar__control-set {
-  @include type-base;
-  display: flex;
+  justify-content: space-between;
   width: 100%;
-  height: 100%;
+  // @include type-large;
+  border-bottom: 1px solid var(--a-base-8);
+  padding: $spacing-base + $spacing-half 0;
+
+  .apos-modal__header__main {
+    width: 100%;
+    padding: 0 $spacing-base + $spacing-half;
+  }
+
+  ::v-deep .apos-button {
+    padding: 3px $spacing-half;
+    border-radius: 3px;
+    border-color: #C8C7C0;
+    border-bottom: 2px solid #C8C7C0;
+    box-sizing: border-box;
+    width: auto;
+    height: $spacing-double;
+    margin-right: $spacing-base;
+    vertical-align: bottom;
+  }
+}
+.apos-modal__heading {
+  margin: 0;
+  display: inline-block;
+  @include type-base;
+  font-size: 18px;
+  line-height: $spacing-double;
+
+  // title
+  // color: rgba(11,11,11,1);
+  // font-family: "SFProDisplay-Medium";
+  // font-weight: 500;
+  // font-style: normal;
+  // letter-spacing: 0.82px;
 }
 
-.apos-admin-bar__user {
-  margin-left: auto;
-}
+.apos-command-menu-key {
+  // // key
+  // width: $spacing-double;
+  // height: $spacing-double;
+  // border-radius: 3px;
+  // border: 0.5px solid rgba(200,199,192, 1);
+  // background: linear-gradient(180deg, rgba(247, 247, 245, 1) 0%, rgba(235, 235, 232, 1) 100%);
+  // margin-right: 5px;
 
-::v-deep .apos-context-menu__pane {
-  min-width: 150px;
-}
-::v-deep .flip-enter { // to the ground
-  transform: translateY(-20%);
-  opacity: 0;
-}
-::v-deep .flip-leave { // in the frame
-  transform: translateY(0);
-  opacity: 1;
-}
-::v-deep .flip-enter-to { // from the ground
-  transform: translateY(0);
-  opacity: 1;
-}
-::v-deep .flip-leave-to { // to the sky
-  transform: translateY(20%);
-  opacity: 0;
-}
-
-::v-deep .flip-enter-active, ::v-deep .flip-leave-active {
-  transition: all 150ms;
-  &.apos-admin-bar__control-set__group {
-    position: absolute;
+  // // key-text
+  // color: rgba(50,50,50,1);
+  // // font-family: "SFProText-Medium";
+  // font-size: 12px;
+  // font-weight: 500;
+  // font-style: normal;
+  // letter-spacing: 0.43px;
+  ::v-deep button {
+    padding: 3px $spacing-half;
+    border-radius: 3px;
+    border-color: #C8C7C0;
+    border-bottom: 2px solid #C8C7C0;
+    box-sizing: border-box;
+    width: auto;
+    height: $spacing-double;
+    margin-right: $spacing-base;
+    vertical-align: bottom;
   }
 }
 
-// make space for a widget's breadcrumbs that are flush with the admin bar
-.apos-admin-bar-spacer {
-  margin-bottom: 25px;
+.apos-command-menu-shortcut-groups {
+  padding: $spacing-base $spacing-double $spacing-base + $spacing-half;
 }
-*/
+.apos-command-menu-shortcut-group + .apos-command-menu-shortcut-group {
+  padding-top: $spacing-base + $spacing-half;
+}
+.apos-command-menu-shortcut-group {
+  @include type-base;
+}
+.apos-command-menu-shortcut-group-title {
+  @include type-base;
+  color: var(--a-base-3);
+  text-align: left;
+  padding: 0;
+  margin: 0;
+  height: 24px;
+  box-sizing: border-box;
+  padding: $spacing-half 0;
+
+  // opacity: 1;
+  // color: rgba(118,118,118,1);
+  // font-family: "SFPro-Semibold";
+  // font-size: 12px;
+  // font-weight: 600;
+  // font-style: normal;
+  // letter-spacing: 0.25px;
+  // text-align: left;
+}
+.apos-command-menu-shortcut-command {
+  // block
+  // background-color: rgba(255,255,255, 1);
+  box-sizing: border-box;
+  height: 28px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  // @include type-large;
+  padding: $spacing-half 0;
+
+  // text
+  // color: rgba(50,50,50,1);
+  // font-family: "SFProText-Medium";
+  // font-size: 12px;
+  // font-weight: 500;
+  // font-style: normal;
+  // letter-spacing: 0px;
+
+  // key
+  // border-radius: 3px;
+  // border: 0.5px solid rgba(200,199,192, 1);
+  // background: linear-gradient(180deg, rgba(247, 247, 245, 1) 0%, rgba(235, 235, 232, 1) 100%);
+  // margin-right: 5px;
+
+  // key-text
+  // color: rgba(50,50,50,1);
+  // font-family: "SFProText-Medium";
+  // font-size: 12px;
+  // font-weight: 500;
+  // font-style: normal;
+  // letter-spacing: 0.43px;
+}
+
 </style>
