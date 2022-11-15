@@ -13,6 +13,96 @@ module.exports = {
     // Do include a page tree button in the admin bar
     pageTree: true
   },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:undo`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuUndo',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:editor`
+            }
+          },
+          shortcut: 'Meta+Z Ctrl+Z'
+        },
+        [`${self.__meta.name}:redo`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuRedo',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:editor`
+            }
+          },
+          shortcut: 'Meta+Shift+Z Ctrl+Y'
+        },
+        [`${self.__meta.name}:discard-draft`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuDiscardDraft',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:editor`
+            }
+          },
+          shortcut: 'Meta+Shift+Del'
+        },
+        [`${self.__meta.name}:publish-draft`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuPublishDraft',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:editor`
+            }
+          },
+          shortcut: 'Meta+Shift+P'
+        },
+        [`${self.__meta.name}:toggle-edit-preview-mode`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuToggleEditPreviewMode',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:editor`
+            }
+          },
+          shortcut: 'Meta+/'
+        },
+        [`${self.__meta.name}:toggle-published-draft-document`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuTogglePublishedDraftDocument',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:editor`
+            }
+          },
+          shortcut: 'Meta+Shift+D'
+        }
+      },
+      group: {
+        '@apostrophecms/command-menu:content': {
+          label: 'apostrophe:commandMenuContent',
+          fields: [
+            `${self.__meta.name}:undo`,
+            `${self.__meta.name}:redo`,
+            `${self.__meta.name}:discard-draft`,
+            `${self.__meta.name}:publish-draft`
+          ]
+        },
+        '@apostrophecms/command-menu:mode': {
+          label: 'apostrophe:commandMenuMode',
+          fields: [
+            `${self.__meta.name}:toggle-edit-preview-mode`,
+            `${self.__meta.name}:toggle-published-draft-document`
+          ]
+        }
+      }
+    };
+  },
   init(self) {
     self.items = [];
     self.groups = [];
