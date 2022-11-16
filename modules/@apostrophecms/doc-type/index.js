@@ -71,6 +71,84 @@ module.exports = {
       }
     };
   },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:create-new`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuCreateNew',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          modal: `${self.__meta.name}:manager`,
+          shortcut: 'C'
+        },
+        [`${self.__meta.name}:search`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSearch',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          modal: `${self.__meta.name}:manager`,
+          shortcut: 'Meta+F'
+        },
+        [`${self.__meta.name}:select-all`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSelectAll',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          modal: `${self.__meta.name}:manager`,
+          shortcut: 'Meta+Shift+A'
+        },
+        [`${self.__meta.name}:archive-selected`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuArchiveSelected',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          modal: `${self.__meta.name}:manager`,
+          shortcut: 'E'
+        },
+        [`${self.__meta.name}:exit-manager`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuExitManager',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          modal: `${self.__meta.name}:manager`,
+          shortcut: 'Q'
+        }
+      },
+      group: {
+        '@apostrophecms/command-menu:manager': {
+          label: null,
+          fields: [
+            `${self.__meta.name}:create-new`,
+            `${self.__meta.name}:search`,
+            `${self.__meta.name}:select-all`,
+            `${self.__meta.name}:archive-selected`,
+            `${self.__meta.name}:exit-manager`
+          ]
+        }
+      }
+    };
+  },
   init(self) {
     if (!self.options.name) {
       self.options.name = self.__meta.name;

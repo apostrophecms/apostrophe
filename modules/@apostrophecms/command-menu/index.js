@@ -31,7 +31,6 @@ module.exports = {
     };
   },
   init(self) {
-    self.addToAdminBar(); // TODO keep?
     self.addShortcutModal();
     self.enableBrowserData();
   },
@@ -181,16 +180,6 @@ module.exports = {
                 : [];
             })
             .filter(groups => groups.length)
-        );
-      },
-      addToAdminBar() { // TODO keep?
-        self.apos.adminBar.add(
-          `${self.__meta.name}:shortcut`,
-          self.pluralLabel || 'shortcut',
-          {
-            action: 'edit',
-            type: 'article'
-          }
         );
       },
       addShortcutModal() {

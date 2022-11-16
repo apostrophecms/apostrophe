@@ -2,9 +2,9 @@
   <AposModal
     :modal="modal"
     class="apos-command-menu-shortcut"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
+    <!-- @esc="confirmAndCancel" @no-modal="$emit('safe-close')" -->
     <template #main>
       <AposModalBody>
         <template #bodyMain>
@@ -12,9 +12,11 @@
             <div class="apos-modal__header__main">
               <AposButton
                 type="default"
-                label="apostrophe:commandMenuEsc"
-                @click="confirmAndCancel"
+                title="apostrophe:commandMenuEsc"
+                :icon-only="true"
+                icon="keyboard-esc"
               />
+              <!-- @click="confirmAndCancel" -->
               <h2 class="apos-modal__heading">
                 {{ $t('apostrophe:commandMenuShortcut') }}
               </h2>
@@ -26,27 +28,20 @@
               :key="groupName"
               class="apos-command-menu-shortcut-group"
             >
-              <h3 class="apos-command-menu-shortcut-group-title">
-                {{ $t(group.label) }}
-              </h3>
               <div
-                v-for="(command, commandName) in group.fields"
-                :key="commandName"
-                class="apos-command-menu-shortcut-command"
+                v-if="groupName !== '@apostrophecms/command-menu:manager'"
               >
-                <div class="apos-command-menu-shortcut-command-title">{{ $t(command.label) }}</div>
-                <AposButton
-                  type="default"
-                  class="apos-command-menu-key"
-                  label="M"
-                  disabled="disabled"
-                />
-                <AposButton
-                  type="default"
-                  class="apos-command-menu-key"
-                  label="?"
-                  disabled="disabled"
-                />
+                <h3 class="apos-command-menu-shortcut-group-title">
+                  {{ $t(group.label) }}
+                </h3>
+                <div
+                  v-for="(command, commandName) in group.fields"
+                  :key="commandName"
+                  class="apos-command-menu-shortcut-command"
+                >
+                  <div class="apos-command-menu-shortcut-command-title">{{ $t(command.label) }}</div>
+                  <AposCommandMenuKeyList :shortcut="command.shortcut" />
+                </div>
               </div>
             </div>
           </section>
@@ -83,24 +78,30 @@ export default {
     };
   },
   async mounted() {
+    // document.addEventListener('keyup', function(evt) {
+    //   if (evt.keyCode === 67) {
+    //     alert('yeah!');
+    //   }
+    // });
     if (apos.modal.stack) {
       const [ , topModal = {} ] = apos.modal.stack || [];
-      alert(`${topModal}, ${topModal.componentName}, ${topModal.props?.moduleName}`);
-      console.log(apos.modal.stack[0]);
+      // alert(`${topModal}, ${topModal.componentName}, ${topModal.props?.moduleName}`);
+      console.log(topModal);
     }
 
     this.modal.active = true; // TODO keep?
-    await open(); // TODO keep?
+    // await open(); // TODO keep?
   },
   methods: {
     async open() {
-      const moduleName = this.moduleName;
-      self.apos.util.error(apos.modules[moduleName].components.shortcutModal, {
-        moduleName
-      }); // TODO remove
-      await apos.modal.execute(apos.modules[moduleName].components.shortcutModal, {
-        moduleName
-      });
+      // alert(10);
+      // const moduleName = this.moduleName;
+      // self.apos.util.error(apos.modules[moduleName].components.shortcutModal, {
+      //   moduleName
+      // }); // TODO remove
+      // await apos.modal.execute(apos.modules[moduleName].components.shortcutModal, {
+      //   moduleName
+      // });
     }
   }
 };
@@ -201,10 +202,11 @@ export default {
     border-color: #C8C7C0;
     border-bottom: 2px solid #C8C7C0;
     box-sizing: border-box;
-    width: auto;
+    width: $spacing-double;
     height: $spacing-double;
-    margin-right: $spacing-base;
-    vertical-align: bottom;
+    // margin-right: $spacing-base;
+    margin-left: $spacing-half;
+    // vertical-align: bottom;
   }
 }
 
@@ -243,6 +245,7 @@ export default {
   height: 28px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
   // @include type-large;
   padding: $spacing-half 0;
@@ -268,6 +271,9 @@ export default {
   // font-weight: 500;
   // font-style: normal;
   // letter-spacing: 0.43px;
+}
+.apos-command-menu-shortcut-command-title {
+  flex: 1 1 auto;
 }
 
 </style>
