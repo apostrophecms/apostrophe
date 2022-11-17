@@ -3,6 +3,7 @@ const pipe = (...functions) => (initial) => functions.reduce((accumulator, curre
 
 module.exports = {
   options: {
+    components: {},
     alias: 'commandMenu'
   },
   commands(self) {
@@ -195,6 +196,7 @@ module.exports = {
         }
 
         return {
+          components: { the: self.options.components.the || 'TheAposCommandMenu' },
           groups: self.getVisibleGroups(req)
         };
       }

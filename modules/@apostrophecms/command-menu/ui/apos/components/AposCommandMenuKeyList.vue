@@ -72,4 +72,8 @@ export default {
 
 <style lang="scss" scoped>
 
+.apos-command-menu-keys {
+  display: inline-flex;
+}
+
 </style>

@@ -1,5 +1,6 @@
 // Alphabetical collection of globally available vue-material-design-icons.
 module.exports = {
+  // TODO sort
   'apple-keyboard-command': 'AppleKeyboardCommand',
   'apple-keyboard-caps': 'AppleKeyboardCaps',
   'apple-keyboard-control': 'AppleKeyboardControl',

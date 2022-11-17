@@ -2,9 +2,11 @@
   <AposModal
     :modal="modal"
     class="apos-command-menu-shortcut"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    @esc="close"
+    @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
   >
-    <!-- @esc="confirmAndCancel" @no-modal="$emit('safe-close')" -->
     <template #main>
       <AposModalBody>
         <template #bodyMain>
@@ -12,11 +14,11 @@
             <div class="apos-modal__header__main">
               <AposButton
                 type="default"
-                title="apostrophe:commandMenuEsc"
+                :title="$t('apostrophe:commandMenuEsc')"
                 :icon-only="true"
                 icon="keyboard-esc"
+                @click="close"
               />
-              <!-- @click="confirmAndCancel" -->
               <h2 class="apos-modal__heading">
                 {{ $t('apostrophe:commandMenuShortcut') }}
               </h2>
@@ -31,6 +33,7 @@
               <div
                 v-if="groupName !== '@apostrophecms/command-menu:manager'"
               >
+                <!-- TODO remove condition -->
                 <h3 class="apos-command-menu-shortcut-group-title">
                   {{ $t(group.label) }}
                 </h3>
@@ -70,6 +73,7 @@ export default {
     return {
       groups: apos.commandMenu.groups,
       modal: {
+        busy: false,
         active: false,
         type: 'overlay',
         showModal: false,
@@ -78,6 +82,8 @@ export default {
     };
   },
   async mounted() {
+    this.modal.active = true; // TODO keep?
+    this.modal.busy = false;
     // document.addEventListener('keyup', function(evt) {
     //   if (evt.keyCode === 67) {
     //     alert('yeah!');
@@ -89,10 +95,12 @@ export default {
       console.log(topModal);
     }
 
-    this.modal.active = true; // TODO keep?
     // await open(); // TODO keep?
   },
   methods: {
+    close() {
+      this.modal.showModal = false;
+    },
     async open() {
       // alert(10);
       // const moduleName = this.moduleName;

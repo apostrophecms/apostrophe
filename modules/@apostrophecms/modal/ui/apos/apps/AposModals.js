@@ -8,11 +8,6 @@ export default function() {
         return window.apos;
       }
     },
-    async mounted() {
-      // TODO remove the following
-      console.log('remove execute AposCommandMenuShortcut on mount event in AposModals');
-      await this.execute('AposCommandMenuShortcut', { moduleName: '@apostrophecms/command-menu' });
-    },
     methods: {
       async confirm(content, options = {}) {
         return this.execute(apos.modal.components.confirm, {
