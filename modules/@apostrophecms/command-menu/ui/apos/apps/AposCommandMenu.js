@@ -10,13 +10,21 @@ export default function() {
     },
     async mounted() {
       // TODO remove the following
-      console.log('remove execute AposCommandMenuShortcut on mount event in AposCommandMenu vue app');
-      await apos.modal.execute('AposCommandMenuShortcut', { moduleName: '@apostrophecms/command-menu' });
+      // console.log('remove execute AposCommandMenuShortcut on mount event in AposCommandMenu vue app');
+      // await apos.modal.execute('AposCommandMenuShortcut', { moduleName: '@apostrophecms/command-menu' });
     },
     methods: {
     },
     render(h) {
-      return h(apos.commandMenu.components.the);
+      return h(
+        apos.commandMenu.components.the,
+        {
+          ref: 'groups',
+          props: {
+            groups: apos.commandMenu.groups
+          }
+        }
+      );
     }
   });
 }

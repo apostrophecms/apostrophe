@@ -32,6 +32,11 @@ module.exports = {
     };
   },
   init(self) {
+    self.rawCommands = [];
+    self.removes = [];
+    self.commands = {};
+    self.groups = {};
+
     self.addShortcutModal();
     self.enableBrowserData();
   },
