@@ -19,20 +19,29 @@ export default {
       type: Object,
       default() {
         return {
-          [[ 'Shift', 'K' ].join('+')]: { type: 'custom-event', payload: { value: 'test' } }
+          [[ 'Shift', 'K' ].join('+')]: { type: 'custom-event', payload: { value: 'test' } },
+          [[ 'G', 'K' ].join(',')]: { type: 'sequence', payload: { value: 'this is a sequence' } }
         };
       }
     }
   },
   data() {
     return {
-      keyboardShortcutListener() {}
+      keyboardShortcutListener() {},
+      previousKey: '',
+      async delay(resolve, ms) {
+        return new Promise(() => {
+          setTimeout(resolve, ms);
+        });
+      }
     };
   },
   mounted() {
-    console.log('TheAposCommandMenu mounted');
     apos.bus.$on('custom-event', state => {
       console.log({ event: 'custom-event', state });
+    });
+    apos.bus.$on('sequence', state => {
+      console.log({ event: 'sequence', state });
     });
 
     this.keyboardShortcutListener = (event) => {
@@ -42,19 +51,24 @@ export default {
           [ 'Ctrl', event.ctrlKey ],
           [ 'Meta', event.metaKey ],
           [ 'Shift', event.shiftKey ],
-          [ 'key', event.key.toUpperCase() ]
+          [ 'key', event.key.length === 1 ? [ this.previousKey, event.key.toUpperCase() ].filter(value =>
+            value).join(',') : event.key.toUpperCase() ]
         ]
           .filter(([ , value ]) => value)
           .map(([ key, value ]) => key === 'key' ? value : key)
           .join('+');
       // );
       const action = this.shortcuts[key];
-      console.log(key, this.shortcuts, action);
       if (action) {
         event.preventDefault();
         apos.bus.$emit(action.type, action.payload);
       }
-      this.previousKey = event.key;
+      if (event.key.length === 1) {
+        this.previousKey = event.key.toUpperCase();
+        this.delay(() => {
+          this.previousKey = '';
+        }, 1000);
+      }
     };
 
     document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
