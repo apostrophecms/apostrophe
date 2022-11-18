@@ -289,14 +289,13 @@ export default {
         return false;
       }
 
-      return !(this.hovered || this.nonForeignWidgetHovered);
+      return !(this.hovered || this.nonForeignHovered);
     },
     hovered() {
       return this.widgetHovered === this.widget._id;
     },
     nonForeignHovered() {
-      const result = this.nonForeignWidgetHovered === this.widget._id;
-      return result;
+      return this.nonForeignWidgetHovered === this.widget._id;
     },
     // Sets up all the interaction classes based on the current
     // state. If our widget is suppressed, return a blank UI state and reset
