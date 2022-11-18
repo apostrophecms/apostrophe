@@ -5,6 +5,8 @@
     :class="{'apos-area-widget-wrapper--foreign': foreign}"
     :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
+    :data-apos-widget-foreign="foreign ? 1 : 0"
+    :data-apos-widget-id="widget._id"
   >
     <div
       class="apos-area-widget-inner"
@@ -152,6 +154,10 @@ export default {
       type: String,
       default: null
     },
+    nonForeignWidgetHovered: {
+      type: String,
+      default: null
+    },
     widgetFocused: {
       type: String,
       default: null
@@ -283,11 +289,14 @@ export default {
         return false;
       }
 
-      if (this.widgetHovered) {
-        return this.widgetHovered !== this.widget._id;
-      } else {
-        return false;
-      }
+      return !(this.hovered || this.nonForeignWidgetHovered);
+    },
+    hovered() {
+      return this.widgetHovered === this.widget._id;
+    },
+    nonForeignHovered() {
+      const result = this.nonForeignWidgetHovered === this.widget._id;
+      return result;
     },
     // Sets up all the interaction classes based on the current
     // state. If our widget is suppressed, return a blank UI state and reset
@@ -299,9 +308,9 @@ export default {
         container: this.state.container.focus ? this.classes.focus
           : (this.state.container.highlight ? this.classes.highlight : null),
         addTop: this.state.add.top.focus ? this.classes.focus
-          : (this.state.add.top.show ? this.classes.show : null),
+          : ((this.state.add.top.show || this.nonForeignHovered) ? this.classes.show : null),
         addBottom: this.state.add.bottom.focus ? this.classes.focus
-          : (this.state.add.bottom.show ? this.classes.show : null)
+          : ((this.state.add.bottom.show || this.nonForeignHovered) ? this.classes.show : null)
       };
 
       if (this.isSuppressed) {
@@ -356,9 +365,7 @@ export default {
 
     this.breadcrumbs.$lastEl = this.$el;
 
-    if (!this.foreign) {
-      this.getBreadcrumbs();
-    }
+    this.getBreadcrumbs();
 
     if (this.widgetFocused) {
       // If another widget was in focus (because the user clicked the "add"
@@ -395,11 +402,16 @@ export default {
       if (this.focused) {
         return;
       }
-      this.state.add.top.show = true;
-      this.state.add.bottom.show = true;
+      if (!this.foreign) {
+        this.state.add.top.show = true;
+        this.state.add.bottom.show = true;
+      }
       this.state.container.highlight = true;
       this.state.labels.show = true;
-      apos.bus.$emit('widget-hover', this.widget._id);
+      apos.bus.$emit('widget-hover', {
+        _id: this.widget._id,
+        nonForeignId: this.foreign ? this.$el.closest('[data-apos-widget-foreign="0"]').getAttribute('data-apos-widget-id') : null
+      });
     },
 
     mouseleave() {
@@ -432,7 +444,7 @@ export default {
         this.focused = false;
         this.resetState();
         this.highlightable = false;
-        document.removeEventListener('click', this.blurUnfocus);
+        document.removeEventListener('click', this.unfocus);
         apos.bus.$emit('widget-focus', null);
       }
     },
@@ -477,9 +489,11 @@ export default {
     widgetComponent(type) {
       return this.moduleOptions.components.widgets[type];
     },
+
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
     }
+
   }
 };
 </script>
