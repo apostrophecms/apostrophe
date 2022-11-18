@@ -13,10 +13,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuShowShortcutList',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:editor`
-            }
+            type: 'command-menu-shortcut-list',
+            payload: {}
           },
           shortcut: '?'
         }

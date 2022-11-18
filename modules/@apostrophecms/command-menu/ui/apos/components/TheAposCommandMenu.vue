@@ -18,7 +18,7 @@ export default {
       default() {
         return {};
       }
-    },
+    }
     // shortcuts: {
     //   type: Object,
     //   default() {
@@ -32,32 +32,34 @@ export default {
   },
   data() {
     return {
-      keyboardShortcutListener() {},
       previousKey: '',
-      async delay(resolve, ms) {
+      keyboardShortcutListener() {},
+      delay(resolve, ms) {
         return new Promise(() => {
           setTimeout(resolve, ms);
         });
       }
     };
   },
-  computed() {
-    return {
-      shortcuts() {
-        return Object.fromEntries(
-          Object.values(this.groups)
-            .flatMap(group => {
-              return group.fields
-                .filter(field => field.shortcut)
-                .map(field => {
-                  return [ field.shortcut, field.action ];
-                });
-            })
-        );
-      }
-    };
+  computed: {
+    shortcuts() {
+      return Object.fromEntries(
+        Object.values(this.groups)
+          .flatMap(group => {
+            return Object.values(group.fields)
+              .filter(field => field.shortcut)
+              .map(field => {
+                return [ field.shortcut, field.action ];
+              });
+          })
+      );
+    }
   },
   mounted() {
+    apos.bus.$on('open-modal', async state => {
+      await apos.modal.execute(state.name, state.payload);
+      // 'AposCommandMenuShortcut', { moduleName: '@apostrophecms/command-menu' });
+    });
     apos.bus.$on('command-menu-shortcut-list', async state => {
       await apos.modal.execute('AposCommandMenuShortcut', { moduleName: '@apostrophecms/command-menu' });
     });
@@ -67,7 +69,6 @@ export default {
     apos.bus.$on('sequence', state => {
       console.log({ event: 'sequence', state });
     });
-    console.log(this.groups, this.shortcuts);
 
     this.keyboardShortcutListener = (event) => {
       const key = // Object.fromEntries(
@@ -83,17 +84,21 @@ export default {
           .map(([ key, value ]) => key === 'key' ? value : key)
           .join('+');
       // );
-      const action = this.shortcuts[key];
+      const action = this.shortcuts[key] || this.shortcuts[key.startsWith('Shift+') ? key.slice('Shift+'.length) : key];
       if (action) {
+        console.log({ key, event });
         event.preventDefault();
         apos.bus.$emit(action.type, action.payload);
+        return;
       }
+
       if (event.key.length === 1) {
         this.previousKey = event.key.toUpperCase();
         this.delay(() => {
           this.previousKey = '';
         }, 1000);
       }
+      console.log({ key, event });
     };
 
     document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));

@@ -64,10 +64,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuToggleEditPreviewMode',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:editor`
-            }
+            type: 'switch-edit-mode',
+            payload: true
           },
           shortcut: 'Meta+/'
         },
@@ -75,7 +73,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuTogglePublishedDraftDocument',
           action: {
-            type: 'admin-menu-click',
+            type: 'set-context',
             payload: {
               itemName: `${self.__meta.name}:editor`
             }
