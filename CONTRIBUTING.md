@@ -12,14 +12,17 @@ development updates, and help as you build with Apostrophe. There are also
 [Github Discussions](https://github.com/apostrophecms/apostrophe/discussions) and
 [Stack Overflow](https://stackoverflow.com/questions/tagged/apostrophe-cms).
 
-- [Code of Conduct](#code-of-conduct)
-- [How can I contribute?](#how-can-i-contribute)
-  - [Reporting Bugs](#reporting-bugs)
-  - [Suggesting a Feature or Enhancement](#suggesting-a-feature-or-enhancement)
-  - [Fixing Bugs or Submitting Enhancements](#fixing-bugs-or-submitting-enhancements)
-  - [Improving documentation](#improving-documentation)
-  - [Share the Love](#share-the-love)
-- [Should I make a new npm module?](#should-i-make-a-new-npm-module)
+- [ApostropheCMS Contribution Guide](#apostrophecms-contribution-guide)
+  - [Code of Conduct](#code-of-conduct)
+  - [How can I contribute?](#how-can-i-contribute)
+    - [Reporting Bugs](#reporting-bugs)
+    - [Suggesting a Feature or Enhancement](#suggesting-a-feature-or-enhancement)
+    - [Fixing Bugs or Submitting Enhancements](#fixing-bugs-or-submitting-enhancements)
+    - [Contributing to Apostrophe Core](#contributing-to-apostrophe-core)
+      - [**What to expect next**](#what-to-expect-next)
+    - [Improving documentation](#improving-documentation)
+    - [Share the Love](#share-the-love)
+  - [Should I make a new npm module?](#should-i-make-a-new-npm-module)
 
 ## Code of Conduct
 
@@ -95,6 +98,20 @@ were applicable. For Apostrophe core, that should be in the
 and for other modules, add it in their README files (unless the README directs
 you elsewhere).
 
+### Contributing to Apostrophe Core
+
+This is assuming you are interacting with the ApostropheCMS repositories on the GitHub website. If you are using GitHub Desktop you can read about how to fork a repository in the [GitHub docs.](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-and-forking-repositories-from-github-desktop)
+
+1. Fork the main Apostrophe repository to your own account by clicking on the fork button at the top of the [GitHub page.](https://github.com/apostrophecms/apostrophe) If you are contributing to the latest version of Apostrophe you can simply click on the "Create fork" button on the next screen. If you are contributing to Apostrophe 2, you will need to uncheck the "Copy the main branch only" selection before creating the fork.
+2. The forked version of the repository can be modified in any way you would like without impact on the original repository. As a best practice, we request that you create a branch with a short informative name for making code changes. This makes it easier for our team to track what you are contributing when you make your pull request (PR).
+3. Once you've completed your code changes (and updates to `CHANGELOG.md` if needed - see the notes above) you can push all of your changes to your repo. Navigating to your GitHub repository page you will see a banner for creating a PR. Click on the "Contribute" and then "Open a pull request" buttons.
+4. This will bring up a PR page. There are a number of sections to be filled out. Please read carefully and make selections where needed. Following this checklist is very helpful when our team reviews your request. If you need help, just ask!
+5. Finally, it is best to notify a team member on the [Discord channel](https://discord.com/channels/517772094482677790/701815369005924374) that you have submitted a PR. You can also find our contact addresses on our GitHub pages. We don't get automatic notifications from community-submitted PRs. We will see it in the queue eventually, notifying us will just speed up the process.
+   
+#### **What to expect next**
+
+After we get your PR, we will assign someone from the team to review it. They will follow your testing recommendations and run any tests that you have included. They will also look to make sure your code passes all of our internal linting tests. If there are any issues, the reviewer will highlight the needed changes in their PR review. You can then respond to those suggestions with another round of code changes and submissions to your code branch. Once accepted, the reviewer will merge your changes into the proper repository branch. You can then give yourself a well deserved pat on the back - thanks! 🥳
+
 ### Improving documentation
 
 The [documentation repo](https://github.com/apostrophecms/a3-docs)
@@ -102,7 +119,13 @@ is public and we appreciate contributions. The core maintainers know Apostrophe
 very well, but that can make it hard to see where the gaps in documentation are.
 Please open issues there letting us know (nicely, please). Even better, submit a
 pull request documenting something and you'll be helping many developers going
-forward.
+forward. The mechanism for creating a pull request for documentation is the same as the method described for contributing to the core. To summarize:
+1. Fork
+2. Clone and create branch
+3. Make changes and push to branch
+4. Make pull request (PR) and notify Apostrophe development team
+5. Respond to PR comments with any needed changes
+6. Enjoy your awesome contribution - thanks! 🎉
 
 Even typo fixes are great!
 
