@@ -8,9 +8,6 @@ module.exports = {
     // Pages should never be considered "related documents" when localizing another document etc.
     relatedDocument: false
   },
-  batchOperations: {
-    remove: [ 'publish' ]
-  },
   fields(self) {
     return {
       add: {
