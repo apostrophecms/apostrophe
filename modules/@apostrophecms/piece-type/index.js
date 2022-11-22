@@ -111,7 +111,7 @@ module.exports = {
           progress: 'Publishing {{ type }}...',
           completed: 'Published {{ count }} {{ type }}.'
         },
-        icon: 'checkbox-marked-icon',
+        icon: 'earth-icon',
         modalOptions: {
           title: 'apostrophe:publishType',
           description: 'apostrophe:publishingBatchConfirmation',
