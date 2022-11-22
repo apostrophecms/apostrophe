@@ -305,7 +305,7 @@ export default {
         controls: this.state.controls.show ? this.classes.show : null,
         labels: this.state.labels.show ? this.classes.show : null,
         container: this.state.container.focus ? this.classes.focus
-          : (this.state.container.highlight ? this.classes.highlight : null),
+          : ((this.state.container.highlight || this.nonForeignHovered) ? this.classes.highlight : null),
         addTop: this.state.add.top.focus ? this.classes.focus
           : ((this.state.add.top.show || this.nonForeignHovered) ? this.classes.show : null),
         addBottom: this.state.add.bottom.focus ? this.classes.focus
