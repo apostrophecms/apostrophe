@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Batch feature for publishing pieces
+
 ## 3.32.0 (2022-11-09)
 
 ### Adds
