@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Batch feature for publishing pieces.
+
 ### Fixes
 
 * Prior to this release, widget templates that contained areas pulled in from related documents would break the ability to add another widget beneath.
