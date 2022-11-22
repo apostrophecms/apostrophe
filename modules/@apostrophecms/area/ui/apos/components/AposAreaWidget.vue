@@ -407,9 +407,11 @@ export default {
       }
       this.state.container.highlight = true;
       this.state.labels.show = true;
+      const closest = this.foreign && this.$el.closest('[data-apos-widget-foreign="0"]');
+      const closestId = closest && closest.getAttribute('data-apos-widget-id');
       apos.bus.$emit('widget-hover', {
         _id: this.widget._id,
-        nonForeignId: this.foreign ? this.$el.closest('[data-apos-widget-foreign="0"]').getAttribute('data-apos-widget-id') : null
+        nonForeignId: this.foreign ? closestId : null
       });
     },
 
@@ -422,6 +424,12 @@ export default {
         this.state.labels.show = false;
         this.state.add.top.show = false;
         this.state.add.bottom.show = false;
+      }
+      if (this.hovered) {
+        apos.bus.$emit('widget-hover', {
+          _id: null,
+          nonForeignId: null
+        });
       }
     },
 
