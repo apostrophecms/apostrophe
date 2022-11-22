@@ -5,11 +5,19 @@
 ### Adds
 
 * You can now set `inline: true` on schema fields of type `array`. This displays a simple editing interface in the context of the main dialog box for the document in question, avoiding the need to open an additional dialog box. Usually best for cases with just one field or just a few. If your array field has a large number of subfields the default behavior (`inline: false`) is more suitable for your needs.
+* Batch feature for publishing pieces.
+
+### Fixes
+
+* Prior to this release, widget templates that contained areas pulled in from related documents would break the ability to add another widget beneath.
+* Validation of object fields now works properly on the browser side, in addition to server-side validation, resolving UX issues.
+
+## 3.32.0 (2022-11-09)
 
 ### Adds
 
+* Adds Reset Password feature to the login page. Note that the feature must be enabled and email delivery must be properly configured. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/login.html) for more details.
 * Allow project-level developer to override bundling decisions by configuring the `@apostrophecms/asset` module. Check the [module documentation](https://v3.docs.apostrophecms.org/reference/modules/asset.html#options) for more information.
-* Adds Reset Password feature to the login page. Note that the feature must be enabled and email delivery must be properly configured. See the [documentation](https://v3.docs.apostrophecms.org/) for more details.
 
 ### Fixes
 
@@ -18,7 +26,7 @@
 * Fixed various localization bugs in the text of the "Update" dropdown menu.
 * The `singleton: true` option for piece types now automatically implies `showCreate: false`.
 * Remove browser console warnings by handling Tiptap Editor's breaking changes and duplicated plugins.
-* Improves the editor modal's responsive behavior for 'laptop'-sized displays.
+* The editor modal now allocates more space to area fields when possible, resolving common concerns about editing large widgets inside the modal.
 
 ## 3.31.0 (2022-10-27)
 
