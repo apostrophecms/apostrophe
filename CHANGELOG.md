@@ -4,11 +4,13 @@
 
 ### Adds
 
+* You can now set `inline: true` on schema fields of type `array`. This displays a simple editing interface in the context of the main dialog box for the document in question, avoiding the need to open an additional dialog box. Usually best for cases with just one field or just a few. If your array field has a large number of subfields the default behavior (`inline: false`) is more suitable for your needs.
 * Batch feature for publishing pieces.
 
 ### Fixes
 
 * Prior to this release, widget templates that contained areas pulled in from related documents would break the ability to add another widget beneath.
+* Validation of object fields now works properly on the browser side, in addition to server-side validation, resolving UX issues.
 
 ## 3.32.0 (2022-11-09)
 
