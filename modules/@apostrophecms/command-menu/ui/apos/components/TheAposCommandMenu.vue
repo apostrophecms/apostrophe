@@ -48,8 +48,10 @@ export default {
           .flatMap(group => {
             return Object.values(group.fields)
               .filter(field => field.shortcut)
-              .map(field => {
-                return [ field.shortcut, field.action ];
+              .flatMap(field => {
+                return field.shortcut
+                  .split(' ')
+                  .map(shortcut => [ shortcut, field.action ]);
               });
           })
       );
@@ -86,7 +88,7 @@ export default {
       // );
       const action = this.shortcuts[key] || this.shortcuts[key.startsWith('Shift+') ? key.slice('Shift+'.length) : key];
       if (action) {
-        console.log({ key, event });
+        console.log({ key, event, action });
         event.preventDefault();
         apos.bus.$emit(action.type, action.payload);
         return;
@@ -98,7 +100,7 @@ export default {
           this.previousKey = '';
         }, 1000);
       }
-      console.log({ key, event });
+      console.log({ key, event, keys: Object.keys(this.shortcuts) });
     };
 
     document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));

@@ -20,10 +20,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuUndo',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:editor`
-            }
+            type: 'context-undo',
+            payload: {}
           },
           shortcut: 'Meta+Z Ctrl+Z'
         },
@@ -31,10 +29,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuRedo',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:editor`
-            }
+            type: 'context-redo',
+            payload: {}
           },
           shortcut: 'Meta+Shift+Z Ctrl+Y'
         },

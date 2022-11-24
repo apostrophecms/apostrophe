@@ -138,6 +138,9 @@ export default {
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('content-changed', this.onContentChanged);
 
+    apos.bus.$on('context-undo', this.undo);
+    apos.bus.$on('context-redo', this.redo);
+
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
 

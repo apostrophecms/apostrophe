@@ -83,7 +83,6 @@ export default {
   },
   async mounted() {
     this.modal.active = true; // TODO keep?
-    this.modal.busy = false;
     // document.addEventListener('keyup', function(evt) {
     //   if (evt.keyCode === 67) {
     //     alert('yeah!');
@@ -100,16 +99,6 @@ export default {
   methods: {
     close() {
       this.modal.showModal = false;
-    },
-    async open() {
-      // alert(10);
-      // const moduleName = this.moduleName;
-      // self.apos.util.error(apos.modules[moduleName].components.shortcutModal, {
-      //   moduleName
-      // }); // TODO remove
-      // await apos.modal.execute(apos.modules[moduleName].components.shortcutModal, {
-      //   moduleName
-      // });
     }
   }
 };
