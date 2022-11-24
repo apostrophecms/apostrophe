@@ -320,6 +320,10 @@ export default {
   },
   mounted() {
     apos.bus.$on('content-changed', this.onContentChanged);
+
+    apos.bus.$on('context-discard-draft', () => {
+      this.menuHandler('discardDraft');
+    });
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);

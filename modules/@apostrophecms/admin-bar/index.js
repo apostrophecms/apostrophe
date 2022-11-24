@@ -21,7 +21,7 @@ module.exports = {
           label: 'apostrophe:commandMenuUndo',
           action: {
             type: 'context-undo',
-            payload: {}
+            // payload: {}
           },
           shortcut: 'Meta+Z Ctrl+Z'
         },
@@ -30,7 +30,7 @@ module.exports = {
           label: 'apostrophe:commandMenuRedo',
           action: {
             type: 'context-redo',
-            payload: {}
+            // payload: {}
           },
           shortcut: 'Meta+Shift+Z Ctrl+Y'
         },
@@ -38,10 +38,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuDiscardDraft',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:editor`
-            }
+            type: 'context-discard-draft',
+            // payload: {}
           },
           shortcut: 'Meta+Shift+Del'
         },
@@ -49,10 +47,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuPublishDraft',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:editor`
-            }
+            type: 'context-publish',
+            // payload: {}
           },
           shortcut: 'Meta+Shift+P'
         },
@@ -60,8 +56,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuToggleEditPreviewMode',
           action: {
-            type: 'switch-edit-mode',
-            payload: true
+            type: 'context-toggle-edit-preview',
+            // payload: {}
           },
           shortcut: 'Meta+/'
         },
@@ -69,10 +65,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuTogglePublishedDraftDocument',
           action: {
-            type: 'set-context',
-            payload: {
-              itemName: `${self.__meta.name}:editor`
-            }
+            type: 'context-toggle-publish-draft',
+            // payload: {}
           },
           shortcut: 'Meta+Shift+D'
         }

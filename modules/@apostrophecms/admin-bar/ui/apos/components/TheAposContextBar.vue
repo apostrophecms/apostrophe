@@ -140,6 +140,10 @@ export default {
 
     apos.bus.$on('context-undo', this.undo);
     apos.bus.$on('context-redo', this.redo);
+    apos.bus.$on('context-discard-draft', this.redo);
+    apos.bus.$on('context-publish', this.onPublish);
+    apos.bus.$on('context-toggle-edit-preview', this.switchEditMode);
+    apos.bus.$on('context-toggle-publish-draft', this.switchDraftMode);
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
