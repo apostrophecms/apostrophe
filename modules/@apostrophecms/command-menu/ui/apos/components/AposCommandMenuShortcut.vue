@@ -89,9 +89,11 @@ export default {
     //   }
     // });
     if (apos.modal.stack) {
-      const [ , topModal = {} ] = apos.modal.stack || [];
+      const [ , topModal = {} ] = [ ...apos.modal.stack ] || [];
+      const properties = apos.modal.getProperties(topModal.id);
+      debugger;
       // alert(`${topModal}, ${topModal.componentName}, ${topModal.props?.moduleName}`);
-      console.log(topModal);
+      console.log({ topModal, properties });
     }
 
     // await open(); // TODO keep?

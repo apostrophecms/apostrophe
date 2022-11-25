@@ -66,6 +66,7 @@ export default {
         .join('+');
 
       const action = this.shortcuts[key] || this.shortcuts[key.startsWith('Shift+') ? key.slice('Shift+'.length) : key];
+      console.log({ action, key }); // TODO remove
       if (action) {
         event.preventDefault();
         apos.bus.$emit(action.type, action.payload);

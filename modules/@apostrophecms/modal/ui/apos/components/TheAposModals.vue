@@ -80,6 +80,20 @@ export default {
         return null;
       }
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
+    },
+    getProperties(id) {
+      const [ stackModal = null ] = this.stack.filter(modal => id === modal.id);
+      if (!stackModal || !this.modals) {
+        return null;
+      }
+
+      const properties = {
+        ...this.modals
+          .find(modal => modal.componentName === stackModal.componentName &&
+            modal.props.moduleName === stackModal.props.moduleName)
+      };
+
+      return properties;
     }
   }
 };

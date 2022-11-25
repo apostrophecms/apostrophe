@@ -25,6 +25,9 @@ export default function() {
       },
       execute(componentName, props) {
         return this.$refs.modals.execute(componentName, props);
+      },
+      getProperties(id) {
+        return this.$refs.modals.getProperties(id);
       }
     },
     render(h) {
@@ -37,6 +40,7 @@ export default function() {
     }
   });
   apos.modal.execute = theAposModals.execute;
+  apos.modal.getProperties = theAposModals.getProperties;
   apos.confirm = theAposModals.confirm;
   apos.alert = theAposModals.alert;
-};
+}
