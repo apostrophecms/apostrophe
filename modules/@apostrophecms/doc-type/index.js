@@ -96,7 +96,7 @@ module.exports = {
             }
           },
           modal: `${self.__meta.name}:manager`,
-          shortcut: 'Meta+F'
+          shortcut: 'Meta+F Ctrl+F'
         },
         [`${self.__meta.name}:select-all`]: {
           type: 'item',
@@ -108,7 +108,7 @@ module.exports = {
             }
           },
           modal: `${self.__meta.name}:manager`,
-          shortcut: 'Meta+Shift+A'
+          shortcut: 'Meta+Shift+A Ctrl+Shift+A'
         },
         [`${self.__meta.name}:archive-selected`]: {
           type: 'item',

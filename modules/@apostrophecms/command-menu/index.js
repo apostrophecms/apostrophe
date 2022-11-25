@@ -13,8 +13,11 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuShowShortcutList',
           action: {
-            type: 'command-menu-shortcut-list',
-            payload: {}
+            type: 'open-modal',
+            payload: {
+              name: 'AposCommandMenuShortcut',
+              props: { moduleName: '@apostrophecms/command-menu' }
+            }
           },
           shortcut: '?'
         }

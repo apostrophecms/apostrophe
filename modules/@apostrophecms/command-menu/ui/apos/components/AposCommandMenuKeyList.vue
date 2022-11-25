@@ -24,12 +24,12 @@ export default {
   computed: {
     keys() {
       const [ shortcut ] = this.shortcut.split(' ');
-      const keyMapping = {
+      const iconMapping = {
         meta: 'apple-keyboard-command',
         command: 'apple-keyboard-command',
         cmd: 'apple-keyboard-command',
         caps: 'apple-keyboard-caps',
-        capsLock: 'apple-keyboard-caps',
+        capslock: 'apple-keyboard-caps',
         control: 'apple-keyboard-control',
         ctrl: 'apple-keyboard-control',
         option: 'apple-keyboard-option',
@@ -54,17 +54,30 @@ export default {
         f6: 'keyboard-f6',
         f7: 'keyboard-f7',
         f8: 'keyboard-f8',
-        f9: 'keyboard-f9'
+        f9: 'keyboard-f9',
+        arrowdown: '',
+        arrowleft: '',
+        arrowright: '',
+        arrowup: ''
+      };
+      const keyMapping = {
+        delete: 'del',
+        pagedown: 'pgdn',
+        pageup: 'pgup'
       };
 
-      return shortcut.split('+').map(key => {
-        const icon = keyMapping[key.toLowerCase()];
+      return shortcut
+        .split('+')
+        .map(key => {
+          const icon = iconMapping[key.toLowerCase()];
 
-        return {
-          icon,
-          label: icon ? null : key.toLowerCase()
-        };
-      });
+          return {
+            icon,
+            label: icon
+              ? null
+              : (keyMapping[key.toLowerCase()] || key).toLowerCase()
+          };
+        });
     }
   }
 };
