@@ -90,10 +90,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSearch',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:manager`
-            }
+            type: '',
+            payload: {}
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+F Ctrl+F'
@@ -102,10 +100,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSelectAll',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:manager`
-            }
+            type: '',
+            payload: {}
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+Shift+A Ctrl+Shift+A'
@@ -114,10 +110,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuArchiveSelected',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:manager`
-            }
+            type: '',
+            payload: {}
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'E'
@@ -126,10 +120,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuExitManager',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:manager`
-            }
+            type: 'safe-close'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Q'
