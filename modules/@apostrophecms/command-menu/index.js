@@ -37,6 +37,7 @@ module.exports = {
     self.removes = [];
     self.commands = {};
     self.groups = {};
+    self.modals = {};
 
     self.addShortcutModal();
     self.enableBrowserData();
@@ -49,8 +50,9 @@ module.exports = {
           self.removes = [];
           self.commands = {};
           self.groups = {};
+          self.modals = {};
 
-          const composed = pipe(self.composeCommand, self.composeRemove, self.composeGroup)({ rawCommands: self.rawCommands });
+          const composed = pipe(self.composeCommand, self.composeRemove, self.composeGroup, self.composeModal)({ rawCommands: self.rawCommands });
           try {
             Object.entries(composed.command).some(([ name, command ]) => self.validateCommand({ name, command }));
             Object.entries(composed.group).some(([ name, group ]) => self.validateGroup({ name, group }));
@@ -58,6 +60,7 @@ module.exports = {
             self.removes = composed.remove;
             self.commands = composed.command;
             self.groups = composed.group;
+            self.modals = composed.modal;
           } catch (error) {
             self.apos.util.error('Command-Menu validation error');
             self.apos.util.error(error);
@@ -141,6 +144,16 @@ module.exports = {
               }),
               {}
             )
+        };
+      },
+      composeModal(initialState) {
+        const formatModals = () => {};
+
+        const concatenate = Object.entries(initialState.group).reduce(formatModals, {});
+
+        return {
+          ...initialState,
+          modal: concatenate
         };
       },
       composeCommandsForModule(aposModule) {

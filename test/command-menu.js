@@ -218,6 +218,203 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
+  it('should compose modal in commands', function() {
+    const initialState = {
+      rawCommands: [
+        moduleA.commands,
+        moduleB.commands,
+        moduleC.commands,
+        moduleD.commands,
+        {
+          add: {
+            'article:create-new': {
+              type: 'item',
+              label: 'apostrophe:commandMenuCreateNew',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            },
+            'article:search': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSearch',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            },
+            'article:select-all': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSelectAll',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            },
+            'article:archive-selected': {
+              type: 'item',
+              label: 'apostrophe:commandMenuArchiveSelected',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            },
+            'article:exit-manager': {
+              type: 'item',
+              label: 'apostrophe:commandMenuExitManager',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            }
+          },
+          group: {
+            '@apostrophecms/command-menu:manager': {
+              label: null,
+              fields: [
+                'article:create-new',
+                'article:search',
+                'article:select-all',
+                'article:archive-selected',
+                'article:exit-manager'
+              ]
+            }
+          }
+        },
+        {
+          add: {
+            'topic:create-new': {
+              type: 'item',
+              label: 'apostrophe:commandMenuCreateNew',
+              action: {},
+              shortcut: '',
+              modal: 'topic:manager'
+            },
+            'topic:search': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSearch',
+              action: {},
+              shortcut: '',
+              modal: 'topic:manager'
+            },
+            'topic:select-all': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSelectAll',
+              action: {},
+              shortcut: '',
+              modal: 'topic:manager'
+            },
+            'topic:archive-selected': {
+              type: 'item',
+              label: 'apostrophe:commandMenuArchiveSelected',
+              action: {},
+              shortcut: '',
+              modal: 'topic:manager'
+            },
+            'topic:exit-manager': {
+              type: 'item',
+              label: 'apostrophe:commandMenuExitManager',
+              action: {},
+              shortcut: '',
+              modal: 'topic:manager'
+            }
+          },
+          group: {
+            '@apostrophecms/command-menu:manager': {
+              label: null,
+              fields: [
+                'topic:create-new',
+                'topic:search',
+                'topic:select-all',
+                'topic:archive-selected',
+                'topic:exit-manager'
+              ]
+            }
+          }
+        }
+      ]
+    };
+
+    const actual = apos.commandMenu.composeModal(apos.commandMenu.composeGroup(initialState));
+    const expected = {
+      ...initialState,
+      group: {
+        '@apostrophecms/command-menu:content': {
+          label: 'apostrophe:commandMenuContent',
+          fields: [
+            'apostrophe:undo',
+            'apostrophe:redo',
+            '@apostrophecms/command-menu:toggle-shortcuts',
+            'apostrophe:discard-draft',
+            'apostrophe:publish-draft',
+            '@apostrophecms/command-menu:test'
+          ]
+        },
+        '@apostrophecms/command-menu:modes': {
+          label: 'apostrophe:commandMenuModes',
+          fields: [
+            'apostrophe:toggle-edit-preview-mode',
+            'apostrophe:toggle-publish-draft-mode'
+          ]
+        },
+        '@apostrophecms/command-menu:general': {
+          label: 'apostrophe:commandMenuGeneral',
+          fields: [
+            'apostrophe:command-menu'
+          ]
+        }
+      },
+      modal: {
+        null: {
+          '@apostrophecms/command-menu:content': {
+            label: 'apostrophe:commandMenuContent',
+            fields: [
+              'apostrophe:undo',
+              'apostrophe:redo',
+              '@apostrophecms/command-menu:toggle-shortcuts',
+              'apostrophe:discard-draft',
+              'apostrophe:publish-draft',
+              '@apostrophecms/command-menu:test'
+            ]
+          },
+          '@apostrophecms/command-menu:modes': {
+            label: 'apostrophe:commandMenuModes',
+            fields: [
+              'apostrophe:toggle-edit-preview-mode',
+              'apostrophe:toggle-publish-draft-mode'
+            ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            fields: [
+              'apostrophe:command-menu'
+            ]
+          }
+        },
+        'article:manager': {
+          '@apostrophecms/command-menu:manager': {
+            label: null,
+            fields: [
+              'article:create-new',
+              'article:search',
+              'article:select-all',
+              'article:archive-selected',
+              'article:exit-manager'
+            ]
+          }
+        },
+        'topic:manager': {
+          '@apostrophecms/command-menu:manager': {
+            label: null,
+            fields: [
+              'topic:create-new',
+              'topic:search',
+              'topic:select-all',
+              'topic:archive-selected',
+              'topic:exit-manager'
+            ]
+          }
+        }
+      }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
   it('should validate commands', function() {
     const initialState = {
       rawCommands: [
