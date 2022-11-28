@@ -11,6 +11,7 @@
 
 * Prior to this release, widget templates that contained areas pulled in from related documents would break the ability to add another widget beneath.
 * Validation of object fields now works properly on the browser side, in addition to server-side validation, resolving UX issues.
+* Provisions were added to prevent any possibility of a discrepancy in relationship loading results under high load. It is not clear whether this A2 bug was actually possible in A3.
 
 ## 3.32.0 (2022-11-09)
 
