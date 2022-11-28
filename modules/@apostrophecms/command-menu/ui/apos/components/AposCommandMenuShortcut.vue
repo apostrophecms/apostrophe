@@ -89,11 +89,12 @@ export default {
     //   }
     // });
     if (apos.modal.stack) {
-      const [ , topModal = {} ] = [ ...apos.modal.stack ] || [];
+      const topModal = apos.modal.getTop();
       const properties = apos.modal.getProperties(topModal.id);
-      debugger;
-      // alert(`${topModal}, ${topModal.componentName}, ${topModal.props?.moduleName}`);
-      console.log({ topModal, properties });
+
+      const commands = apos.commandMenu.groups.filter(shortcut => shortcut.modal && properties.itemName ===
+        shortcut.modal);
+      console.log({ topModal, properties, commands });
     }
 
     // await open(); // TODO keep?

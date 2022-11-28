@@ -73,6 +73,7 @@ export default {
     },
     resolve(modal) {
       this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
+      console.log({ result: modal.result, modal });
       modal.resolve(modal.result);
     },
     getModuleName(itemName) {
@@ -81,8 +82,14 @@ export default {
       }
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
     },
+    getTop() {
+      const [ , top = {} ] = this.stack;
+
+      return top;
+    },
     getProperties(id) {
       const [ stackModal = null ] = this.stack.filter(modal => id === modal.id);
+      console.log({ stackModal, id, stack: this.stack });
       if (!stackModal || !this.modals) {
         return null;
       }
