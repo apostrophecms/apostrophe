@@ -6,6 +6,10 @@
 
 * Allows to exclude certain groups of users from seeing a piece or a page in `Permissions` tab.
 
+### Fixes
+
+* Handles joins in array fields correctly under high concurrent load. Previously it was possible for joins in array fields to fail to load under certain conditions.
+
 ## 2.222.0 (2022-07-20)
 
 ## Adds
