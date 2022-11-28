@@ -236,6 +236,7 @@ export default {
         this.isFocused = true;
         this.$nextTick(() => {
           this.showPlaceholder = false;
+          apos.bus.$emit('rich-text-widget-focus', null);
         });
       },
       onBlur: () => {
@@ -243,6 +244,7 @@ export default {
         this.$nextTick(() => {
           this.showPlaceholder = true;
         });
+        apos.bus.$emit('rich-text-widget-blur', null);
       }
     });
   },

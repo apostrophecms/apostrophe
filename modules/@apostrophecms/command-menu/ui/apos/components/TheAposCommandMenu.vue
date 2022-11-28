@@ -22,6 +22,7 @@ export default {
   },
   data() {
     return {
+      active: true,
       previousKey: '',
       keyboardShortcutListener() {},
       delay(resolve, ms) {
@@ -52,32 +53,41 @@ export default {
       await apos.modal.execute(state.name, state.props);
     });
 
+    apos.bus.$on('rich-text-widget-focus', () => {
+      this.active = false;
+    });
+    apos.bus.$on('rich-text-widget-blur', () => {
+      this.active = true;
+    });
+
     this.keyboardShortcutListener = (event) => {
-      const key = [
-        [ 'Alt', event.altKey ],
-        [ 'Ctrl', event.ctrlKey ],
-        [ 'Meta', event.metaKey ],
-        [ 'Shift', event.shiftKey ],
-        [ 'key', event.key.length === 1 ? [ this.previousKey, event.key.toUpperCase() ].filter(value =>
-          value).join(',') : event.key.toUpperCase() ]
-      ]
-        .filter(([ , value ]) => value)
-        .map(([ key, value ]) => key === 'key' ? value : key)
-        .join('+');
+      if (this.active) {
+        const key = [
+          [ 'Alt', event.altKey ],
+          [ 'Ctrl', event.ctrlKey ],
+          [ 'Meta', event.metaKey ],
+          [ 'Shift', event.shiftKey ],
+          [ 'key', event.key.length === 1 ? [ this.previousKey, event.key.toUpperCase() ].filter(value =>
+            value).join(',') : event.key.toUpperCase() ]
+        ]
+          .filter(([ , value ]) => value)
+          .map(([ key, value ]) => key === 'key' ? value : key)
+          .join('+');
 
-      const action = this.shortcuts[key] || this.shortcuts[key.startsWith('Shift+') ? key.slice('Shift+'.length) : key];
-      console.log({ action, key }); // TODO remove
-      if (action) {
-        event.preventDefault();
-        apos.bus.$emit(action.type, action.payload);
-        return;
-      }
+        const action = this.shortcuts[key] || this.shortcuts[key.startsWith('Shift+') ? key.slice('Shift+'.length) : key];
+        console.log({ action, key }); // TODO remove
+        if (action) {
+          event.preventDefault();
+          apos.bus.$emit(action.type, action.payload);
+          return;
+        }
 
-      if (event.key.length === 1) {
-        this.previousKey = event.key.toUpperCase();
-        this.delay(() => {
-          this.previousKey = '';
-        }, 1000);
+        if (event.key.length === 1) {
+          this.previousKey = event.key.toUpperCase();
+          this.delay(() => {
+            this.previousKey = '';
+          }, 1000);
+        }
       }
     };
 
