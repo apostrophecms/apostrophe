@@ -22,7 +22,6 @@ export default {
   },
   data() {
     return {
-      active: true,
       previousKey: '',
       keyboardShortcutListener() {},
       delay(resolve, ms) {
@@ -53,15 +52,8 @@ export default {
       await apos.modal.execute(state.name, state.props);
     });
 
-    apos.bus.$on('rich-text-widget-focus', () => {
-      this.active = false;
-    });
-    apos.bus.$on('rich-text-widget-blur', () => {
-      this.active = true;
-    });
-
     this.keyboardShortcutListener = (event) => {
-      if (this.active) {
+      if (event.target.nodeName === 'INPUT' || event.target.nodeName === 'TEXTAREA' || document.activeElement.contentEditable === 'true') {
         const key = [
           [ 'Alt', event.altKey ],
           [ 'Ctrl', event.ctrlKey ],
@@ -75,7 +67,10 @@ export default {
           .join('+');
 
         const action = this.shortcuts[key] || this.shortcuts[key.startsWith('Shift+') ? key.slice('Shift+'.length) : key];
-        console.log({ action, key }); // TODO remove
+        console.log({
+          action,
+          key
+        }); // TODO remove
         if (action) {
           event.preventDefault();
           apos.bus.$emit(action.type, action.payload);
