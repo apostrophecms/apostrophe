@@ -26,8 +26,8 @@ export default function() {
       execute(componentName, props) {
         return this.$refs.modals.execute(componentName, props);
       },
-      getTop() {
-        return this.$refs.modals.getTop();
+      getTop(index) {
+        return this.$refs.modals.getTop(index);
       },
       getProperties(id) {
         return this.$refs.modals.getProperties(id);

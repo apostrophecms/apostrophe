@@ -12,9 +12,10 @@ export default function() {
       return h(
         apos.commandMenu.components.the,
         {
-          ref: 'groups',
+          ref: 'commandMenu',
           props: {
-            groups: apos.commandMenu.groups
+            groups: apos.commandMenu.groups,
+            modals: apos.commandMenu.modals
           }
         }
       );
