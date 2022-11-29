@@ -114,12 +114,12 @@ export default {
       );
 
       // Allow default options to pass through if `false`
-      for (const option in this.defaultOptions) {
+      Object.keys(this.defaultOptions).forEach((option) => {
         if (option !== 'styles') {
-          activeOptions[option] =(activeOptions[option] !== undefined)
+          activeOptions[option] = (activeOptions[option] !== undefined)
             ? activeOptions[option] : this.defaultOptions[option];
         }
-      }
+      })
 
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
