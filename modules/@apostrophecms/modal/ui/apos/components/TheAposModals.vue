@@ -73,8 +73,6 @@ export default {
     },
     resolve(modal) {
       this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
-      console.log({ result: modal.result, modal });
-      modal.resolve(modal.result);
     },
     getModuleName(itemName) {
       if (!itemName) {
@@ -82,14 +80,18 @@ export default {
       }
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
     },
-    getTop() {
-      const [ , top = {} ] = this.stack;
+    getTop(index) {
+      const top = this.stack[this.stack.length - 2] || {};
 
       return top;
+
+      // const [ , below = {}, top = {} ] = this.stack;
+      // console.log({ index, below, top, stack: this.stack });
+
+      // return index === -1 ? below : top; // TODO delete index
     },
     getProperties(id) {
       const [ stackModal = null ] = this.stack.filter(modal => id === modal.id);
-      console.log({ stackModal, id, stack: this.stack });
       if (!stackModal || !this.modals) {
         return null;
       }

@@ -147,9 +147,11 @@ module.exports = {
         };
       },
       composeModal(initialState) {
-        const formatModals = () => {};
+        const formatModals = (state, { group }) => {
+          return state;
+        };
 
-        const concatenate = Object.entries(initialState.group).reduce(formatModals, {});
+        const concatenate = initialState.rawCommands.reduce(formatModals, {});
 
         return {
           ...initialState,
@@ -172,16 +174,7 @@ module.exports = {
           ? self.apos.permissions.can(req, command.permission.action, command.permission.type, command.permission.mode || 'draft')
           : true;
       },
-      getVisibleGroups(req) {
-        const commands = Object.fromEntries(
-          Object.entries(self.commands)
-            .map(([ key, command ]) => {
-              return !self.removes.includes(key) && self.isCommandVisible(req, command)
-                ? [ key, command ]
-                : [];
-            })
-        );
-
+      getVisibleGroups(commands) {
         const keys = Object.keys(commands);
 
         return Object.fromEntries(
@@ -202,6 +195,70 @@ module.exports = {
             .filter(groups => groups.length)
         );
       },
+      getVisibleModals(commands) {
+        const keys = Object.keys(commands);
+
+        const groups = Object.fromEntries(
+          Object.entries(self.groups)
+            .map(([ key, group ]) => {
+              const fields = group.fields
+                .reduce(
+                  (acc, field) => keys.includes(field)
+                    ? { ...acc, [field]: commands[field] }
+                    : acc,
+                  {}
+                );
+
+              return Object.keys(fields).length
+                ? [ key, { ...group, fields } ]
+                : [];
+            })
+            .filter(groups => groups.length)
+        );
+
+        const modals = Object.entries(groups)
+          .reduce(
+            (acc, [ key, group ]) => {
+              Object.entries(group.fields)
+                .forEach(([ name, field ]) => {
+                  const modal = field.modal || null;
+                  acc[modal] = {
+                    ...acc[modal],
+                    [key]: {
+                      ...(acc[modal]?.[key] || group),
+                      fields: {
+                        ...acc[modal]?.[key]?.fields,
+                        [name]: field
+                      }
+                    }
+                  };
+                });
+
+              return acc;
+            },
+            {}
+          );
+
+        return modals;
+      },
+      getVisible(req) {
+        const commands = Object.fromEntries(
+          Object.entries(self.commands)
+            .map(([ key, command ]) => {
+              return !self.removes.includes(key) && self.isCommandVisible(req, command)
+                ? [ key, command ]
+                : [];
+            })
+        );
+
+        const groups = self.getVisibleGroups(commands);
+        const modals = self.getVisibleModals(commands);
+
+        return {
+          groups,
+          modals
+        };
+      },
       addShortcutModal() {
         self.apos.modal.add(
           `${self.__meta.name}:shortcut`,
@@ -214,9 +271,12 @@ module.exports = {
           return false;
         }
 
+        const visible = self.getVisible(req);
+
         return {
           components: { the: self.options.components.the || 'TheAposCommandMenu' },
-          groups: self.getVisibleGroups(req)
+          groups: visible.groups,
+          modals: visible.modals
         };
       }
     };

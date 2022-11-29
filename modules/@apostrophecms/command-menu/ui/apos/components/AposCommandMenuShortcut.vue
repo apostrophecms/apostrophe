@@ -30,21 +30,16 @@
               :key="groupName"
               class="apos-command-menu-shortcut-group"
             >
+              <h3 class="apos-command-menu-shortcut-group-title">
+                {{ $t(group.label) }}
+              </h3>
               <div
-                v-if="groupName !== '@apostrophecms/command-menu:manager'"
+                v-for="(command, commandName) in group.fields"
+                :key="commandName"
+                class="apos-command-menu-shortcut-command"
               >
-                <!-- TODO remove condition -->
-                <h3 class="apos-command-menu-shortcut-group-title">
-                  {{ $t(group.label) }}
-                </h3>
-                <div
-                  v-for="(command, commandName) in group.fields"
-                  :key="commandName"
-                  class="apos-command-menu-shortcut-command"
-                >
-                  <div class="apos-command-menu-shortcut-command-title">{{ $t(command.label) }}</div>
-                  <AposCommandMenuKeyList :shortcut="command.shortcut" />
-                </div>
+                <div class="apos-command-menu-shortcut-command-title">{{ $t(command.label) }}</div>
+                <AposCommandMenuKeyList :shortcut="command.shortcut" />
               </div>
             </div>
           </section>
@@ -83,21 +78,12 @@ export default {
   },
   async mounted() {
     this.modal.active = true; // TODO keep?
-    // document.addEventListener('keyup', function(evt) {
-    //   if (evt.keyCode === 67) {
-    //     alert('yeah!');
-    //   }
-    // });
-    if (apos.modal.stack) {
-      const topModal = apos.modal.getTop();
-      const properties = apos.modal.getProperties(topModal.id);
 
-      const commands = apos.commandMenu.groups.filter(shortcut => shortcut.modal && properties.itemName ===
-        shortcut.modal);
-      console.log({ topModal, properties, commands });
-    }
+    const topModal = apos.modal.getTop(-1);
+    const properties = apos.modal.getProperties(topModal.id) || {};
 
-    // await open(); // TODO keep?
+    const commands = apos.commandMenu.modals[properties.itemName || null];
+    this.groups = commands;
   },
   methods: {
     close() {
