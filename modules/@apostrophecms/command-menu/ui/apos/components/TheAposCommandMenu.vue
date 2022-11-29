@@ -53,7 +53,7 @@ export default {
     });
 
     this.keyboardShortcutListener = (event) => {
-      if (event.target.nodeName === 'INPUT' || event.target.nodeName === 'TEXTAREA' || document.activeElement.contentEditable === 'true') {
+      if (event.target.nodeName !== 'INPUT' && event.target.nodeName !== 'TEXTAREA' && document.activeElement.contentEditable !== 'true') {
         const key = [
           [ 'Alt', event.altKey ],
           [ 'Ctrl', event.ctrlKey ],
