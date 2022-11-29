@@ -52,7 +52,7 @@ module.exports = {
           self.groups = {};
           self.modals = {};
 
-          const composed = pipe(self.composeCommand, self.composeRemove, self.composeGroup, self.composeModal)({ rawCommands: self.rawCommands });
+          const composed = pipe(self.composeCommand, self.composeRemove, self.composeGroup)({ rawCommands: self.rawCommands });
           try {
             Object.entries(composed.command).some(([ name, command ]) => self.validateCommand({ name, command }));
             Object.entries(composed.group).some(([ name, group ]) => self.validateGroup({ name, group }));
@@ -146,7 +146,7 @@ module.exports = {
             )
         };
       },
-      composeModal(initialState) {
+      composeModal(initialState) { // TODO keep or remove
         const formatModals = (state, { group }) => {
           return state;
         };

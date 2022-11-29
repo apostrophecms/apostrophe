@@ -72,6 +72,16 @@ module.exports = {
     };
   },
   commands(self) {
+    if (
+      // TODO Please add or remove conditions to match the requirements
+      self.__meta.name === '@apostrophecms/any-doc-type' ||
+      self.apos.instanceOf(self, '@apostrophecms/page-type') ||
+      self.options.canCreate === false ||
+      self.options.showPermissions === false
+    ) {
+      return null;
+    }
+
     return {
       add: {
         [`${self.__meta.name}:create-new`]: {
