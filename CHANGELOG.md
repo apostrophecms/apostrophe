@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Relationships load more quickly.
+* Parked page checks at startup are faster.
+
 ## 3.33.0 (2022-11-28)
 
 ### Adds

@@ -347,6 +347,15 @@ module.exports = {
           submitted: 1,
           aposLocale: 1
         });
+        await self.db.createIndex({
+          type: 1,
+          aposDocId: 1,
+          aposLocale: 1
+        });
+        await self.db.createIndex({
+          aposDocId: 1,
+          aposLocale: 1
+        });
         await self.createPathLevelIndex();
       },
       async createTextIndex() {
