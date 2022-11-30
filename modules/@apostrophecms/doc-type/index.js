@@ -88,10 +88,8 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuCreateNew',
           action: {
-            type: 'admin-menu-click',
-            payload: {
-              itemName: `${self.__meta.name}:manager`
-            }
+            type: 'command-menu-manager-create-new',
+            payload: {}
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'C'
@@ -100,7 +98,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSearch',
           action: {
-            type: '',
+            type: 'command-menu-manager-focus-search',
             payload: {}
           },
           modal: `${self.__meta.name}:manager`,
@@ -110,7 +108,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSelectAll',
           action: {
-            type: '',
+            type: 'command-menu-manager-select-all',
             payload: {}
           },
           modal: `${self.__meta.name}:manager`,
@@ -120,7 +118,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuArchiveSelected',
           action: {
-            type: '',
+            type: 'command-menu-manager-archive-selected',
             payload: {}
           },
           modal: `${self.__meta.name}:manager`,
@@ -130,7 +128,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuExitManager',
           action: {
-            type: 'safe-close'
+            type: 'command-menu-manager-close'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Q'

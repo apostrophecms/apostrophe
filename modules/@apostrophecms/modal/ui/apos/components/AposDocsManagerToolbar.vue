@@ -8,7 +8,7 @@
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
-        @click="$emit('select-click')"
+        @click="selectAll"
       />
       <div
         v-for="{
@@ -62,6 +62,7 @@
         :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"
+        ref="search"
       />
     </template>
   </AposModalToolbar>
@@ -162,8 +163,29 @@ export default {
   },
   mounted () {
     this.computeActiveOperations();
+    apos.bus.$on('command-menu-manager-select-all', this.selectAll);
+    apos.bus.$on('command-menu-manager-archive-selected', this.archiveSelected);
+    apos.bus.$on('command-menu-manager-focus-search', this.focusSearch);
+  },
+  destroyed () {
+    apos.bus.$off('command-menu-manager-select-all', this.selectAll);
+    apos.bus.$off('command-menu-manager-archive-selected', this.archiveSelected);
+    apos.bus.$off('command-menu-manager-focus-search', this.focusSearch);
   },
   methods: {
+    selectAll() {
+      apos.bus.$emit('select-click');
+    },
+    archiveSelected() {
+      this.confirmOperation({
+        label: 'apostrophe:archive',
+        action: 'archive',
+        modifiers: [ 'danger' ]
+      });
+    },
+    focusSearch() {
+      this.$refs.search.$el.querySelector('input').focus();
+    },
     computeActiveOperations () {
       if (this.isRelationship) {
         this.activeOperations = [];
