@@ -20,7 +20,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuUndo',
           action: {
-            type: 'context-undo'
+            type: 'command-menu-admin-bar-undo'
           },
           shortcut: 'Meta+Z Ctrl+Z'
         },
@@ -28,7 +28,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuRedo',
           action: {
-            type: 'context-redo'
+            type: 'command-menu-admin-bar-redo'
           },
           shortcut: 'Meta+Shift+Z Ctrl+Y'
         },
@@ -36,15 +36,15 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuDiscardDraft',
           action: {
-            type: 'context-discard-draft'
+            type: 'command-menu-admin-bar-discard-draft'
           },
-          shortcut: 'Meta+Shift+Delete Ctrl+Shift+Delete'
+          shortcut: 'Meta+Shift+Backspace Ctrl+Shift+Backspace'
         },
         [`${self.__meta.name}:publish-draft`]: {
           type: 'item',
           label: 'apostrophe:commandMenuPublishDraft',
           action: {
-            type: 'context-publish'
+            type: 'command-menu-admin-bar-publish-draft'
           },
           shortcut: 'Meta+Shift+P Ctrl+Shift+P'
         },
@@ -52,7 +52,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuToggleEditPreviewMode',
           action: {
-            type: 'context-toggle-edit-preview'
+            type: 'command-menu-admin-bar-toggle-edit-preview'
           },
           shortcut: 'Meta+/ Ctrl+/'
         },
@@ -60,7 +60,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuTogglePublishedDraftDocument',
           action: {
-            type: 'context-toggle-publish-draft'
+            type: 'command-menu-admin-bar-toggle-publish-draft'
           },
           shortcut: 'Meta+Shift+D Ctrl+Shift+D'
         }

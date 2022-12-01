@@ -238,12 +238,14 @@ export default {
     await this.getAllPiecesTotal();
 
     apos.bus.$on('content-changed', this.getPieces);
+    // apos.bus.$on('command-menu-manager-archive-selected', this.archiveSelected);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   destroyed() {
     this.destroyShortcuts();
     apos.bus.$off('content-changed', this.getPieces);
+    // apos.bus.$off('command-menu-manager-archive-selected', this.archiveSelected);
     apos.bus.$off('command-menu-manager-create-new', this.create);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -264,6 +266,10 @@ export default {
     },
     async create() {
       await this.edit(null);
+    },
+    async archiveSelected() {
+      console.log(this.utilityOperations);
+      await this.handleBatchAction('archive');
     },
     async handleUtilityOperation(action) {
       const operation = this.utilityOperations.menu

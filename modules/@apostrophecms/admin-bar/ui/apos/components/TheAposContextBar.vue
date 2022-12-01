@@ -138,18 +138,6 @@ export default {
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('content-changed', this.onContentChanged);
 
-    apos.bus.$on('context-undo', this.undo);
-    apos.bus.$on('context-redo', this.redo);
-    apos.bus.$on('context-publish', this.onPublish);
-    apos.bus.$on('context-toggle-edit-preview', () => {
-      const mode = !this.editMode;
-      this.switchEditMode(mode);
-    });
-    apos.bus.$on('context-toggle-publish-draft', () => {
-      const mode = this.draftMode === 'draft' ? 'published' : 'draft';
-      this.switchDraftMode(mode);
-    });
-
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
 
@@ -609,13 +597,23 @@ export default {
         });
       }
     },
+    canUndo() {
+      return this.patchesSinceLoaded.length > 0;
+    },
     async undo() {
-      this.undone.push(this.patchesSinceLoaded.pop());
-      await this.refreshAfterHistoryChange('apostrophe:undoFailed');
+      if (this.canUndo()) {
+        this.undone.push(this.patchesSinceLoaded.pop());
+        await this.refreshAfterHistoryChange('apostrophe:undoFailed');
+      }
+    },
+    canRedo() {
+      return this.undone.length > 0;
     },
     async redo() {
-      this.patchesSinceLoaded.push(this.undone.pop());
-      await this.refreshAfterHistoryChange('apostrophe:redoFailed');
+      if (this.canRedo()) {
+        this.patchesSinceLoaded.push(this.undone.pop());
+        await this.refreshAfterHistoryChange('apostrophe:redoFailed');
+      }
     },
     async refreshAfterHistoryChange(errorMessageKey) {
       this.saving = true;

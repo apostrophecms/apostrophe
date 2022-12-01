@@ -9,6 +9,7 @@
         :icon-only="true"
         :icon="checkboxIcon"
         @click="selectAll"
+        ref="selectAll"
       />
       <div
         v-for="{
@@ -174,13 +175,28 @@ export default {
   },
   methods: {
     selectAll() {
-      apos.bus.$emit('select-click');
+      if (this.displayedItems) {
+        this.$emit('select-click');
+      }
     },
     archiveSelected() {
       this.confirmOperation({
         label: 'apostrophe:archive',
         action: 'archive',
-        modifiers: [ 'danger' ]
+        modifiers: [ 'danger' ],
+        // messages: {
+        //   progress: 'Archiving {{ type }}...',
+        //   completed: 'Archived {{ count }} {{ type }}.'
+        // },
+        // icon: 'archive-arrow-down-icon',
+        // if: {
+        //   archived: false
+        // },
+        // modalOptions: {
+        //   title: 'apostrophe:archiveType',
+        //   description: 'apostrophe:archivingBatchConfirmation',
+        //   confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
+        // }
       });
     },
     focusSearch() {
@@ -252,6 +268,7 @@ export default {
     async confirmOperation ({
       modalOptions = {}, action, operations, label, ...rest
     }) {
+      console.log({ modalOptions, action, operations, label, rest });
       const {
         title = label,
         description = '',

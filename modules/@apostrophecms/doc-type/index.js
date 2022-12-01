@@ -88,8 +88,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuCreateNew',
           action: {
-            type: 'command-menu-manager-create-new',
-            payload: {}
+            type: 'command-menu-manager-create-new'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'C'
@@ -98,8 +97,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSearch',
           action: {
-            type: 'command-menu-manager-focus-search',
-            payload: {}
+            type: 'command-menu-manager-focus-search'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+F Ctrl+F'
@@ -108,8 +106,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSelectAll',
           action: {
-            type: 'command-menu-manager-select-all',
-            payload: {}
+            type: 'command-menu-manager-select-all'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+Shift+A Ctrl+Shift+A'
@@ -118,8 +115,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuArchiveSelected',
           action: {
-            type: 'command-menu-manager-archive-selected',
-            payload: {}
+            type: 'command-menu-manager-archive-selected'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'E'

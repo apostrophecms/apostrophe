@@ -320,15 +320,18 @@ export default {
   },
   mounted() {
     apos.bus.$on('content-changed', this.onContentChanged);
-    apos.bus.$on('context-discard-draft', () => {
-      this.menuHandler('discardDraft');
-    });
+    apos.bus.$on('command-menu-admin-bar-discard-draft', this.discardDraft);
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);
-    apos.bus.$off('context-discard-draft');
+    apos.bus.$off('command-menu-admin-bar-discard-draft', this.discardDraft);
   },
   methods: {
+    discardDraft() {
+      if (this.showDiscardDraft && this.canDiscardDraft) {
+        this.menuHandler('discardDraft');
+      }
+    },
     async onContentChanged(e) {
       if (e.doc && (e.doc._id === this.context._id)) {
         this.context = e.doc;
