@@ -1,14 +1,41 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
 
-###  Fixes
+### Adds
+
+* Relationships load more quickly.
+* Parked page checks at startup are faster.
+
+## 3.33.0 (2022-11-28)
+
+### Adds
+
+* You can now set `inline: true` on schema fields of type `array`. This displays a simple editing interface in the context of the main dialog box for the document in question, avoiding the need to open an additional dialog box. Usually best for cases with just one field or just a few. If your array field has a large number of subfields the default behavior (`inline: false`) is more suitable for your needs. See the [array field](https://v3.docs.apostrophecms.org/reference/field-types/array.html) documentation for more information.
+* Batch feature for publishing pieces.
+* Add extensibility for `rich-text-widget` `defaultOptions`. Every key will now be used in the `AposRichTextWidgetEditor`.
+
+### Fixes
+
+* Prior to this release, widget templates that contained areas pulled in from related documents would break the ability to add another widget beneath.
+* Validation of object fields now works properly on the browser side, in addition to server-side validation, resolving UX issues.
+* Provisions were added to prevent any possibility of a discrepancy in relationship loading results under high load. It is not clear whether this A2 bug was actually possible in A3.
+
+## 3.32.0 (2022-11-09)
+
+### Adds
+
+* Adds Reset Password feature to the login page. Note that the feature must be enabled and email delivery must be properly configured. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/login.html) for more details.
+* Allow project-level developer to override bundling decisions by configuring the `@apostrophecms/asset` module. Check the [module documentation](https://v3.docs.apostrophecms.org/reference/modules/asset.html#options) for more information.
+
+### Fixes
 
 * Query builders for regular select fields have always accepted null to mean "do not filter on this property." Now this also works for dynamic select fields.
 * The i18n UI state management now doesn't allow actions while it's busy.
 * Fixed various localization bugs in the text of the "Update" dropdown menu.
 * The `singleton: true` option for piece types now automatically implies `showCreate: false`.
 * Remove browser console warnings by handling Tiptap Editor's breaking changes and duplicated plugins.
+* The editor modal now allocates more space to area fields when possible, resolving common concerns about editing large widgets inside the modal.
 
 ## 3.31.0 (2022-10-27)
 

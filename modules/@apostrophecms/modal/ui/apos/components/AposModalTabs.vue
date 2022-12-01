@@ -117,13 +117,18 @@ export default {
   align-items: center;
   width: 100%;
   height: 60px;
-  padding: 25px 10px 25px 20px;
+  padding: 25px 10px;
   border-bottom: 1px solid var(--a-base-7);
   color: var(--a-text-primary);
   background-color: var(--a-base-9);
   text-align: left;
   cursor: pointer;
   box-sizing: border-box;
+  transition: all 0.2s ease;
+
+  @include media-up(lap) {
+    padding: 25px 10px 25px 20px;
+  }
 
   &::before {
     content: '';
@@ -139,6 +144,7 @@ export default {
   &[aria-selected='true'],
   &[aria-selected='true']:hover,
   &[aria-selected='true']:focus {
+    padding-left: 15px;
     background-color: var(--a-background-primary);
     &::before {
       background-color: var(--a-primary);

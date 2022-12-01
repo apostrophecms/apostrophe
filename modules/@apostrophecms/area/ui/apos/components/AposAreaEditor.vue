@@ -48,6 +48,7 @@
         :field-id="fieldId"
         :disabled="field && field.readOnly"
         :widget-hovered="hoveredWidget"
+        :non-foreign-widget-hovered="hoveredNonForeignWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
         :rendering="rendering(widget)"
@@ -135,6 +136,7 @@ export default {
       areaId: cuid(),
       next: this.getValidItems(),
       hoveredWidget: null,
+      hoveredNonForeignWidget: null,
       focusedWidget: null,
       contextMenuOptions: {
         menu: this.choices
@@ -239,8 +241,9 @@ export default {
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
-    updateWidgetHovered(widgetId) {
-      this.hoveredWidget = widgetId;
+    updateWidgetHovered({ _id, nonForeignId }) {
+      this.hoveredWidget = _id;
+      this.hoveredNonForeignWidget = nonForeignId;
     },
     updateWidgetFocused(widgetId) {
       this.focusedWidget = widgetId;

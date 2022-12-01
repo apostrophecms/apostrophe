@@ -1867,7 +1867,12 @@ database.`);
           } else {
             parentSlug = item.parent;
           }
-          return self.findOneForEditing(req, { slug: parentSlug });
+          return self.findOneForEditing(req, {
+            slug: parentSlug
+          }, {
+            areas: false,
+            relationships: false
+          });
         }
         async function findExisting() {
           return self.findOneForEditing(req, { parkedId: item.parkedId });

@@ -661,9 +661,12 @@ module.exports = {
         let relationships = [];
 
         function findRelationships(schema, arrays) {
+          // Shallow clone of each relationship to allow
+          // for independent _dotPath and _arrays properties
+          // for different requests
           const _relationships = _.filter(schema, function (field) {
             return !!self.fieldTypes[field.type].relate;
-          });
+          }).map(relationship => ({ ...relationship }));
           _.each(_relationships, function (relationship) {
             if (!arrays.length) {
               relationship._dotPath = relationship.name;
