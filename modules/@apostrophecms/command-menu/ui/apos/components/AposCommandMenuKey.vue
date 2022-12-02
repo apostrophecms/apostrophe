@@ -61,9 +61,7 @@ export default {
   box-sizing: border-box;
   width: $spacing-double;
   height: $spacing-double;
-  // margin-right: $spacing-base;
   margin-left: $spacing-half;
-  // vertical-align: bottom;
   display: inline-flex;
   align-items: center;
   justify-content: center;

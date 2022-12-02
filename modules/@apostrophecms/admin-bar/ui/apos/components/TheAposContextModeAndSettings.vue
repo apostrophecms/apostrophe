@@ -156,7 +156,7 @@ export default {
       this.$emit('switch-edit-mode', mode);
     },
     onPublish() {
-      if (!this.editMode) {
+      if (!this.editMode || !this.readyToPublish) {
         return;
       }
 

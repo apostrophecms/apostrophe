@@ -44,18 +44,8 @@
 export default {
   name: 'TheAposContextUndoRedo',
   props: {
-    patchesSinceLoaded: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
-    undone: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
+    canUndo: Boolean,
+    canRedo: Boolean,
     retrying: Boolean,
     editing: Boolean,
     saving: Boolean,
@@ -69,21 +59,15 @@ export default {
         redo: 'apostrophe:redoTooltip'
       };
 
-      if (this.patchesSinceLoaded.length === 0) {
+      if (!this.undo) {
         tooltips.undo = 'apostrophe:undoTooltipNoChanges';
       }
 
-      if (this.undone.length === 0) {
+      if (!this.canRedo) {
         tooltips.redo = 'apostrophe:redoTooltipNoChanges';
       }
 
       return tooltips;
-    },
-    canUndo() {
-      return this.patchesSinceLoaded.length > 0;
-    },
-    canRedo() {
-      return this.undone.length > 0;
     }
   },
   mounted() {

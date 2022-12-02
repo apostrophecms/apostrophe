@@ -106,7 +106,7 @@ module.exports = {
         };
       },
       composeGroup(initialState) {
-        const formatGroups = (state, { group }) => {
+        const formatGroups = (state, { group = {} }) => {
           return Object.entries(group)
             .reduce(
               (groups, [ name, attributes ]) => {

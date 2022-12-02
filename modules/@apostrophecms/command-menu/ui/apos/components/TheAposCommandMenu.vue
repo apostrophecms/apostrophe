@@ -3,7 +3,7 @@
     class="apos-command-menu"
     :class="themeClass"
   >
-    <!-- <AposCommandMenuShortcut /> -->
+    <!-- nothing for the moment -->
   </div>
 </template>
 

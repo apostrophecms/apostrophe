@@ -162,7 +162,10 @@ export default {
       }
     },
     canSelectAll() {
-      return this.displaedItems;
+      return this.displayedItems;
+    },
+    canArchive() {
+      return this.checkedCount;
     },
     hasSearch() {
       return !this.options.noSearch;
@@ -187,7 +190,7 @@ export default {
     },
     archiveSelected() {
       const [ archiveOperation ] = this.activeOperations.filter(operation => operation.action === 'archive');
-      if (archiveOperation) {
+      if (archiveOperation && this.canArchive) {
         this.confirmOperation(archiveOperation);
       }
     },
