@@ -1,5 +1,6 @@
 <template>
   <AposModal
+    v-if="hasCommands"
     :modal="modal"
     class="apos-command-menu-shortcut"
     @esc="close"
@@ -72,18 +73,22 @@ export default {
         active: false,
         type: 'overlay',
         showModal: false,
-        disableHeader: true,
-        uniqueId: 'commandMenuShortcutList'
+        disableHeader: true
       }
     };
   },
-  async mounted() {
+  computed: {
+    hasCommands() {
+      return this.groups;
+    }
+  },
+  mounted() {
     this.modal.active = true; // TODO keep?
 
     const topModal = apos.modal.getTop(-1); // TODO rename
     const properties = apos.modal.getProperties(topModal.id) || {};
 
-    const commands = apos.commandMenu.modals[properties.itemName || null];
+    const commands = apos.commandMenu.modals[properties.itemName || null] || null;
     this.groups = commands;
   },
   methods: {
