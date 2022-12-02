@@ -74,6 +74,7 @@ module.exports = {
   commands(self) {
     if (
       self.__meta.name === '@apostrophecms/any-doc-type' ||
+      self.__meta.name === '@apostrophecms/global' ||
       self.apos.instanceOf(self, '@apostrophecms/any-page-type') ||
       self.apos.instanceOf(self, '@apostrophecms/page-type') ||
       self.options.canCreate === false ||
