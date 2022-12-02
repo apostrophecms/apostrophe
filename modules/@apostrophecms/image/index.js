@@ -118,6 +118,13 @@ module.exports = {
       }
     }
   },
+  commands(self) {
+    return {
+      remove: [
+        `${self.__meta.name}:archive-selected`
+      ]
+    };
+  },
   extendRestApiRoutes: (self) => ({
     async getAll (_super, req) {
       const pieces = await _super(req);
