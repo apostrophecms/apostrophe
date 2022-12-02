@@ -37,7 +37,7 @@ module.exports = {
     self.removes = [];
     self.commands = {};
     self.groups = {};
-    self.modals = {};
+    self.modals = {}; // TODO keep or update
 
     self.addShortcutModal();
     self.enableBrowserData();

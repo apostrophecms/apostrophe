@@ -2,7 +2,7 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
-        v-if="displayedItems"
+        v-if="canSelectAll"
         label="apostrophe:select"
         type="outline"
         text-color="var(--a-base-1)"
@@ -58,7 +58,7 @@
         @input="filter"
       />
       <AposInputString
-        v-if="!options.noSearch"
+        v-if="hasSearch"
         @input="search" @return="search($event, true)"
         :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
@@ -160,6 +160,12 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
+    },
+    canSelectAll() {
+      return this.displaedItems;
+    },
+    hasSearch() {
+      return !this.options.noSearch;
     }
   },
   mounted () {
@@ -175,32 +181,20 @@ export default {
   },
   methods: {
     selectAll() {
-      if (this.displayedItems) {
+      if (this.canSelectAll) {
         this.$emit('select-click');
       }
     },
     archiveSelected() {
-      this.confirmOperation({
-        label: 'apostrophe:archive',
-        action: 'archive',
-        modifiers: [ 'danger' ],
-        // messages: {
-        //   progress: 'Archiving {{ type }}...',
-        //   completed: 'Archived {{ count }} {{ type }}.'
-        // },
-        // icon: 'archive-arrow-down-icon',
-        // if: {
-        //   archived: false
-        // },
-        // modalOptions: {
-        //   title: 'apostrophe:archiveType',
-        //   description: 'apostrophe:archivingBatchConfirmation',
-        //   confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
-        // }
-      });
+      const [ archiveOperation ] = this.activeOperations.filter(operation => operation.action === 'archive');
+      if (archiveOperation) {
+        this.confirmOperation(archiveOperation);
+      }
     },
     focusSearch() {
-      this.$refs.search.$el.querySelector('input').focus();
+      if (this.hasSearch) {
+        this.$refs.search.$el.querySelector('input').focus();
+      }
     },
     computeActiveOperations () {
       if (this.isRelationship) {
@@ -268,7 +262,6 @@ export default {
     async confirmOperation ({
       modalOptions = {}, action, operations, label, ...rest
     }) {
-      console.log({ modalOptions, action, operations, label, rest });
       const {
         title = label,
         description = '',
