@@ -80,6 +80,7 @@ module.exports = {
   'trash-can-outline-icon': 'TrashCanOutline',
   'tune-icon': 'Tune',
   'undo-icon': 'UndoVariant',
+  'unfold-less-horizontal-icon': 'UnfoldLessHorizontal',
   'unfold-more-horizontal-icon': 'UnfoldMoreHorizontal',
   'video-icon': 'Video',
   'view-column-icon': 'ViewColumn',

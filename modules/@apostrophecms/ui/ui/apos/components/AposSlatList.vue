@@ -42,6 +42,7 @@
 
 <script>
 import draggable from 'vuedraggable';
+import cuid from 'cuid';
 
 export default {
   name: 'AposSlatList',
@@ -89,7 +90,7 @@ export default {
   },
   computed: {
     listId() {
-      return `sortableList-${(Math.floor(Math.random() * Math.floor(10000)))}`;
+      return `sortableList-${cuid()}`;
     },
     dragOptions() {
       return {

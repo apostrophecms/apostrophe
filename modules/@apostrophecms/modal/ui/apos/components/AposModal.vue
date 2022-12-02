@@ -284,17 +284,25 @@ export default {
   .apos-modal__inner {
     z-index: $z-index-modal;
     position: fixed;
-    top: $spacing-double;
-    right: $spacing-double;
-    bottom: $spacing-double;
-    left: $spacing-double;
+    top: $spacing-base;
+    right: $spacing-base;
+    bottom: $spacing-base;
+    left: $spacing-base;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    height: calc(100vh - #{$spacing-double * 2});
+    height: calc(100vh - #{$spacing-base * 2});
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
+
+    @include media-up(lap) {
+      top: $spacing-double;
+      right: $spacing-double;
+      bottom: $spacing-double;
+      left: $spacing-double;
+      height: calc(100vh - #{$spacing-double * 2});
+    }
 
     .apos-modal--slide & {
       position: fixed;
@@ -469,7 +477,10 @@ export default {
   }
 
   .apos-modal__main--with-rails {
-    grid-template-columns: 20% 1fr minmax(250px, $modal-rail-right-w);
+    grid-template-columns: 15% 1fr minmax(200px, 10%);
+    @include media-up(lap) {
+      grid-template-columns: 15% 1fr minmax(250px, $modal-rail-right-w);
+    }
   }
 
   .apos-modal__main--with-left-rail {

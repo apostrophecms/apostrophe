@@ -721,7 +721,16 @@ module.exports = {
               try {
                 const content = await module.render(req, template, args);
                 spanRender.setStatus({ code: telemetry.api.SpanStatusCode.OK });
-                return content;
+                const filledContent = self.insertBundlesMarkup({
+                  page: req.data.bestPage,
+                  scene,
+                  template,
+                  content,
+                  scriptsPlaceholder: req.scriptsPlaceholder,
+                  stylesheetsPlaceholder: req.stylesheetsPlaceholder,
+                  widgetsBundles: req.widgetsBundles
+                });
+                return filledContent;
               } catch (err) {
                 telemetry.handleError(spanRender, err);
                 throw err;
@@ -730,18 +739,8 @@ module.exports = {
               }
             }, span);
 
-            const filledContent = self.insertBundlesMarkup({
-              page: req.data.bestPage,
-              scene,
-              template,
-              content,
-              scriptsPlaceholder: req.scriptsPlaceholder,
-              stylesheetsPlaceholder: req.stylesheetsPlaceholder,
-              widgetsBundles: req.widgetsBundles
-            });
-
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
-            return filledContent;
+            return content;
           } catch (e) {
           // The page template threw an exception. Log where it
           // occurred for easier debugging
