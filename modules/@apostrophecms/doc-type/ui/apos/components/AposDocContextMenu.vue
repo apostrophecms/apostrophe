@@ -320,14 +320,14 @@ export default {
   },
   mounted() {
     apos.bus.$on('content-changed', this.onContentChanged);
-    apos.bus.$on('command-menu-admin-bar-discard-draft', this.discardDraft);
+    apos.bus.$on('command-menu-admin-bar-discard-draft', this.customDiscardDraft);
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);
-    apos.bus.$off('command-menu-admin-bar-discard-draft', this.discardDraft);
+    apos.bus.$off('command-menu-admin-bar-discard-draft', this.customDiscardDraft);
   },
   methods: {
-    discardDraft() {
+    customDiscardDraft() {
       if (this.showDiscardDraft && this.canDiscardDraft) {
         this.menuHandler('discardDraft');
       }
