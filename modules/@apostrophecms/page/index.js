@@ -48,6 +48,39 @@ module.exports = {
       }
     }
   },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:create-new`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuCreateNew',
+          action: {
+            type: 'command-menu-manager-create-new'
+          },
+          modal: `${self.__meta.name}:manager`,
+          shortcut: 'C'
+        },
+        [`${self.__meta.name}:exit-manager`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuExitManager',
+          action: {
+            type: 'command-menu-manager-close'
+          },
+          modal: `${self.__meta.name}:manager`,
+          shortcut: 'Q'
+        }
+      },
+      group: {
+        '@apostrophecms/command-menu:manager': {
+          label: null,
+          fields: [
+            `${self.__meta.name}:create-new`,
+            `${self.__meta.name}:exit-manager`
+          ]
+        }
+      }
+    };
+  },
   async init(self) {
     const { enableCacheOnDemand = true } = self.apos
       .modules['@apostrophecms/express'].options;
