@@ -6,7 +6,7 @@ const moduleA = {
     add: {
       '@apostrophecms/command-menu:toggle-shortcuts': {
         type: 'item',
-        label: 'apostrophe:commandMenuShortcutToggleShortcuts',
+        label: 'commandMenuShortcutToggleShortcuts',
         action: {
           type: 'toggle-shortcuts',
           payload: {}
@@ -16,10 +16,10 @@ const moduleA = {
     },
     group: {
       '@apostrophecms/command-menu:content': {
-        label: 'apostrophe:commandMenuContent',
+        label: 'commandMenuContent',
         fields: [
-          'apostrophe:undo',
-          'apostrophe:redo',
+          'undo',
+          'redo',
           '@apostrophecms/command-menu:toggle-shortcuts'
         ]
       }
@@ -31,7 +31,7 @@ const moduleB = {
     add: {
       '@apostrophecms/command-menu:test': {
         type: 'item',
-        label: 'apostrophe:commandMenuShortcutTest',
+        label: 'commandMenuShortcutTest',
         action: {
           type: 'test',
           payload: {}
@@ -41,10 +41,10 @@ const moduleB = {
     },
     group: {
       '@apostrophecms/command-menu:content': {
-        label: 'apostrophe:commandMenuContent',
+        label: 'commandMenuContent',
         fields: [
-          'apostrophe:discard-draft',
-          'apostrophe:publish-draft',
+          'discard-draft',
+          'publish-draft',
           '@apostrophecms/command-menu:test'
         ]
       }
@@ -58,10 +58,10 @@ const moduleC = {
     ],
     group: {
       '@apostrophecms/command-menu:modes': {
-        label: 'apostrophe:commandMenuModes',
+        label: 'commandMenuModes',
         fields: [
-          'apostrophe:toggle-edit-preview-mode',
-          'apostrophe:toggle-publish-draft-mode'
+          'toggle-edit-preview-mode',
+          'toggle-publish-draft-mode'
         ]
       }
     }
@@ -71,9 +71,9 @@ const moduleD = {
   commands: {
     group: {
       '@apostrophecms/command-menu:general': {
-        label: 'apostrophe:commandMenuGeneral',
+        label: 'commandMenuGeneral',
         fields: [
-          'apostrophe:command-menu'
+          'command-menu'
         ]
       }
     }
@@ -120,13 +120,13 @@ describe('Command-Menu', function() {
             payload: {},
             type: 'toggle-shortcuts'
           },
-          label: 'apostrophe:commandMenuShortcutToggleShortcuts',
+          label: 'commandMenuShortcutToggleShortcuts',
           shortcut: 'Shift+K ?',
           type: 'item'
         },
         '@apostrophecms/command-menu:test': {
           type: 'item',
-          label: 'apostrophe:commandMenuShortcutTest',
+          label: 'commandMenuShortcutTest',
           action: {
             type: 'test',
             payload: {}
@@ -154,27 +154,27 @@ describe('Command-Menu', function() {
       ...initialState,
       group: {
         '@apostrophecms/command-menu:content': {
-          label: 'apostrophe:commandMenuContent',
+          label: 'commandMenuContent',
           fields: [
-            'apostrophe:undo',
-            'apostrophe:redo',
+            'undo',
+            'redo',
             '@apostrophecms/command-menu:toggle-shortcuts',
-            'apostrophe:discard-draft',
-            'apostrophe:publish-draft',
+            'discard-draft',
+            'publish-draft',
             '@apostrophecms/command-menu:test'
           ]
         },
         '@apostrophecms/command-menu:modes': {
-          label: 'apostrophe:commandMenuModes',
+          label: 'commandMenuModes',
           fields: [
-            'apostrophe:toggle-edit-preview-mode',
-            'apostrophe:toggle-publish-draft-mode'
+            'toggle-edit-preview-mode',
+            'toggle-publish-draft-mode'
           ]
         },
         '@apostrophecms/command-menu:general': {
-          label: 'apostrophe:commandMenuGeneral',
+          label: 'commandMenuGeneral',
           fields: [
-            'apostrophe:command-menu'
+            'command-menu'
           ]
         }
       }
@@ -192,13 +192,13 @@ describe('Command-Menu', function() {
         {
           ...moduleD.commands,
           remove: [
-            'apostrophe:toggle-publish-draft-mode'
+            'toggle-publish-draft-mode'
           ]
         },
         {
           remove: [
-            'apostrophe:redo',
-            'apostrophe:command-menu'
+            'redo',
+            'command-menu'
           ]
         }
       ]
@@ -209,9 +209,9 @@ describe('Command-Menu', function() {
       ...initialState,
       remove: [
         '@apostrophecms/command-menu:test',
-        'apostrophe:toggle-publish-draft-mode',
-        'apostrophe:redo',
-        'apostrophe:command-menu'
+        'toggle-publish-draft-mode',
+        'redo',
+        'command-menu'
       ]
     };
 
@@ -229,10 +229,14 @@ describe('Command-Menu', function() {
     };
     const rawCommands = initialState.rawCommands.flatMap(rawCommand => Object.entries(rawCommand?.add || {}));
 
-    const actual = Object.values(rawCommands).map(([ name, command ]) => apos.commandMenu.validateCommand({ name, command }));
+    const actual = Object.values(rawCommands)
+      .map(([ name, command ]) => apos.commandMenu.validateCommand({
+        name,
+        command
+      }));
     const expected = [
-      true,
-      true
+      [ true, null ],
+      [ true, null ]
     ];
 
     assert.deepEqual(actual, expected);
@@ -249,15 +253,65 @@ describe('Command-Menu', function() {
     };
     const rawCommands = initialState.rawCommands.flatMap(rawCommand => Object.entries(rawCommand?.group || {}));
 
-    const actual = Object.values(rawCommands).map(([ name, group ]) => apos.commandMenu.validateGroup({ name, group }));
+    const actual = Object.values(rawCommands)
+      .map(([ name, group ]) => apos.commandMenu.validateGroup({
+        name,
+        group
+      }));
     const expected = [
-      true,
-      true,
-      true,
-      true
+      [ true, null ],
+      [ true, null ],
+      [ true, null ],
+      [ true, null ]
     ];
 
     assert.deepEqual(actual, expected);
+  });
+
+  it.only('compileErrors', function() {
+    const initialState = {
+      rawCommands: [
+        moduleA.commands,
+        moduleB.commands,
+        moduleC.commands,
+        moduleD.commands,
+        {
+          add: {
+            test: {}
+          }
+        }
+      ]
+    };
+    const rawCommands = initialState.rawCommands.flatMap(rawCommand => Object.entries(rawCommand?.add || {}));
+    const rawGroups = initialState.rawCommands.flatMap(rawCommand => Object.entries(rawCommand?.group || {}));
+
+    const result = [].concat(
+      Object.values(rawCommands)
+        .map(([ name, command ]) => apos.commandMenu.validateCommand({
+          name,
+          command
+        })),
+      Object.values(rawGroups)
+        .map(([ name, group ]) => apos.commandMenu.validateGroup({
+          name,
+          group
+        }))
+    );
+
+    const actual = () => apos.commandMenu.compileErrors(result);
+    const expected = {
+      name: 'Error',
+      message: 'Invalid',
+      cause: [
+        new assert.AssertionError({
+          message: 'Invalid command type, must be "item", for test',
+          expected: 'item',
+          operator: 'strictEqual'
+        })
+      ]
+    };
+
+    assert.throws(actual, expected);
   });
 
   it('should get visible commands only', function() {
@@ -266,12 +320,12 @@ describe('Command-Menu', function() {
     const actual = apos.commandMenu.getVisibleGroups(req);
     const expected = {
       '@apostrophecms/command-menu:content': {
-        label: 'apostrophe:commandMenuContent',
+        label: 'commandMenuContent',
         fields: {
           ...actual['@apostrophecms/command-menu:content']?.fields,
           '@apostrophecms/command-menu:toggle-shortcuts': {
             type: 'item',
-            label: 'apostrophe:commandMenuShortcutToggleShortcuts',
+            label: 'commandMenuShortcutToggleShortcuts',
             action: {
               type: 'toggle-shortcuts',
               payload: {}
