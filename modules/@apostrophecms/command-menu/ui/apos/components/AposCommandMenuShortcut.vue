@@ -1,5 +1,6 @@
 <template>
   <AposModal
+    v-if="hasCommands"
     :modal="modal"
     class="apos-command-menu-shortcut"
     @esc="close"
@@ -76,13 +77,18 @@ export default {
       }
     };
   },
-  async mounted() {
+  computed: {
+    hasCommands() {
+      return this.groups;
+    }
+  },
+  mounted() {
     this.modal.active = true; // TODO keep?
 
-    const topModal = apos.modal.getTop(-1);
+    const topModal = apos.modal.getTop(-1); // TODO rename
     const properties = apos.modal.getProperties(topModal.id) || {};
 
-    const commands = apos.commandMenu.modals[properties.itemName || null];
+    const commands = apos.commandMenu.modals[properties.itemName || null] || null;
     this.groups = commands;
   },
   methods: {
@@ -95,15 +101,7 @@ export default {
 
 <style lang="scss" scoped>
 .apos-command-menu-shortcut {
-  // z-index: $z-index-modal;
-  // position: fixed;
-  // top: 0;
-  // right: 0;
-  // bottom: 0;
-  // left: 0;
-  // display: flex;
-  // align-items: center;
-  // justify-content: center;
+  // TODO remove
 }
 
 ::v-deep .apos-modal__body {
@@ -120,17 +118,12 @@ export default {
 
 ::v-deep .apos-modal__overlay {
   display: none;
-
-  // .apos-modal + .apos-share-draft & {
-  //   display: block;
-  // }
 }
 
 .apos-modal__header {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  // @include type-large;
   border-bottom: 1px solid var(--a-base-8);
   padding: $spacing-base + $spacing-half 0;
 
@@ -157,31 +150,9 @@ export default {
   @include type-base;
   font-size: 18px;
   line-height: $spacing-double;
-
-  // title
-  // color: rgba(11,11,11,1);
-  // font-family: "SFProDisplay-Medium";
-  // font-weight: 500;
-  // font-style: normal;
-  // letter-spacing: 0.82px;
 }
 
 .apos-command-menu-key {
-  // // key
-  // width: $spacing-double;
-  // height: $spacing-double;
-  // border-radius: 3px;
-  // border: 0.5px solid rgba(200,199,192, 1);
-  // background: linear-gradient(180deg, rgba(247, 247, 245, 1) 0%, rgba(235, 235, 232, 1) 100%);
-  // margin-right: 5px;
-
-  // // key-text
-  // color: rgba(50,50,50,1);
-  // // font-family: "SFProText-Medium";
-  // font-size: 12px;
-  // font-weight: 500;
-  // font-style: normal;
-  // letter-spacing: 0.43px;
   ::v-deep button {
     padding: 3px $spacing-half;
     border-radius: 3px;
@@ -190,9 +161,7 @@ export default {
     box-sizing: border-box;
     width: $spacing-double;
     height: $spacing-double;
-    // margin-right: $spacing-base;
     margin-left: $spacing-half;
-    // vertical-align: bottom;
   }
 }
 
@@ -214,49 +183,15 @@ export default {
   height: 24px;
   box-sizing: border-box;
   padding: $spacing-half 0;
-
-  // opacity: 1;
-  // color: rgba(118,118,118,1);
-  // font-family: "SFPro-Semibold";
-  // font-size: 12px;
-  // font-weight: 600;
-  // font-style: normal;
-  // letter-spacing: 0.25px;
-  // text-align: left;
 }
 .apos-command-menu-shortcut-command {
-  // block
-  // background-color: rgba(255,255,255, 1);
   box-sizing: border-box;
   height: 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  // @include type-large;
   padding: $spacing-half 0;
-
-  // text
-  // color: rgba(50,50,50,1);
-  // font-family: "SFProText-Medium";
-  // font-size: 12px;
-  // font-weight: 500;
-  // font-style: normal;
-  // letter-spacing: 0px;
-
-  // key
-  // border-radius: 3px;
-  // border: 0.5px solid rgba(200,199,192, 1);
-  // background: linear-gradient(180deg, rgba(247, 247, 245, 1) 0%, rgba(235, 235, 232, 1) 100%);
-  // margin-right: 5px;
-
-  // key-text
-  // color: rgba(50,50,50,1);
-  // font-family: "SFProText-Medium";
-  // font-size: 12px;
-  // font-weight: 500;
-  // font-style: normal;
-  // letter-spacing: 0.43px;
 }
 .apos-command-menu-shortcut-command-title {
   flex: 1 1 auto;

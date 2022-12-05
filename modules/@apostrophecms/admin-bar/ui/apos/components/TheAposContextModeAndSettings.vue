@@ -36,7 +36,7 @@
         :show-preview="false"
       />
       <AposButton
-        v-if="!hasCustomUi"
+        v-if="canSwitchToPreviewMode"
         class="apos-admin-bar__context-button"
         label="apostrophe:preview" :tooltip="{
           content: 'apostrophe:previewTooltip',
@@ -127,16 +127,39 @@ export default {
     },
     hasBeenPublishedThisPageload() {
       return (this.context.lastPublishedAt > this.mountedAt) || ((this.context.submitted && this.context.submitted.at) > this.mountedAt);
+    },
+    canSwitchToEditMode() {
+      return !this.editMode;
+    },
+    canSwitchToPreviewMode() {
+      return this.editMode && !this.hasCustomUI;
     }
   },
   mounted() {
     this.mountedAt = (new Date()).toISOString();
+    apos.bus.$on('command-menu-admin-bar-toggle-edit-preview', this.toggleEditPreviewMode);
+    apos.bus.$on('command-menu-admin-bar-publish-draft', this.onPublish);
+  },
+  destroyed() {
+    apos.bus.$off('command-menu-admin-bar-toggle-edit-preview', this.toggleEditPreviewMode);
+    apos.bus.$off('command-menu-admin-bar-publish-draft', this.onPublish);
   },
   methods: {
+    toggleEditPreviewMode() {
+      if (this.canSwitchToEditMode) {
+        this.switchEditMode(true);
+      } else if (this.canSwitchToPreviewMode) {
+        this.switchEditMode(false);
+      }
+    },
     switchEditMode(mode) {
       this.$emit('switch-edit-mode', mode);
     },
     onPublish() {
+      if (!this.editMode || !this.readyToPublish) {
+        return;
+      }
+
       if (!this.context.lastPublishedAt) {
         this.hasBeenPublishedButNotUpdated = true;
       } else {

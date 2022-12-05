@@ -81,6 +81,7 @@ export default {
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
     },
     getTop(index) {
+      // TODO rename and refactor
       const top = this.stack[this.stack.length - 2] || {};
 
       return top;

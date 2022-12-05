@@ -2,13 +2,14 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
-        v-if="displayedItems"
+        v-if="canSelectAll"
         label="apostrophe:select"
         type="outline"
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
         @click="selectAll"
+        ref="selectAll"
       />
       <div
         v-for="{
@@ -57,7 +58,7 @@
         @input="filter"
       />
       <AposInputString
-        v-if="!options.noSearch"
+        v-if="hasSearch"
         @input="search" @return="search($event, true)"
         :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
@@ -159,6 +160,15 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
+    },
+    canSelectAll() {
+      return this.displayedItems;
+    },
+    canArchive() {
+      return this.checkedCount;
+    },
+    hasSearch() {
+      return !this.options.noSearch;
     }
   },
   mounted () {
@@ -174,17 +184,20 @@ export default {
   },
   methods: {
     selectAll() {
-      apos.bus.$emit('select-click');
+      if (this.canSelectAll) {
+        this.$emit('select-click');
+      }
     },
     archiveSelected() {
-      this.confirmOperation({
-        label: 'apostrophe:archive',
-        action: 'archive',
-        modifiers: [ 'danger' ]
-      });
+      const [ archiveOperation ] = this.activeOperations.filter(operation => operation.action === 'archive');
+      if (archiveOperation && this.canArchive) {
+        this.confirmOperation(archiveOperation);
+      }
     },
     focusSearch() {
-      this.$refs.search.$el.querySelector('input').focus();
+      if (this.hasSearch) {
+        this.$refs.search.$el.querySelector('input').focus();
+      }
     },
     computeActiveOperations () {
       if (this.isRelationship) {

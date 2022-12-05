@@ -226,9 +226,11 @@ export default {
     this.modal.active = true;
     await this.getMedia({ tags: true });
     apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);
+    apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
     // Update our current idea of whether the doc in the right hand rail

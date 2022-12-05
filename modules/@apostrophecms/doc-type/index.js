@@ -73,8 +73,9 @@ module.exports = {
   },
   commands(self) {
     if (
-      // TODO Please add or remove conditions to match the requirements
       self.__meta.name === '@apostrophecms/any-doc-type' ||
+      self.__meta.name === '@apostrophecms/global' ||
+      self.apos.instanceOf(self, '@apostrophecms/any-page-type') ||
       self.apos.instanceOf(self, '@apostrophecms/page-type') ||
       self.options.canCreate === false ||
       self.options.showPermissions === false
@@ -84,12 +85,25 @@ module.exports = {
 
     return {
       add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: self.options.label,
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          shortcut: `G,${self.apos.task.getReq().t(self.options.label).slice(0, 1)}`
+        },
         [`${self.__meta.name}:create-new`]: {
           type: 'item',
-          label: 'apostrophe:commandMenuCreateNew',
+          label: {
+            key: 'apostrophe:commandMenuCreateNew',
+            type: self.options.label
+          },
           action: {
-            type: 'command-menu-manager-create-new',
-            payload: {}
+            type: 'command-menu-manager-create-new'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'C'
@@ -98,8 +112,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSearch',
           action: {
-            type: 'command-menu-manager-focus-search',
-            payload: {}
+            type: 'command-menu-manager-focus-search'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+F Ctrl+F'
@@ -108,8 +121,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuSelectAll',
           action: {
-            type: 'command-menu-manager-select-all',
-            payload: {}
+            type: 'command-menu-manager-select-all'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+Shift+A Ctrl+Shift+A'
@@ -118,8 +130,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:commandMenuArchiveSelected',
           action: {
-            type: 'command-menu-manager-archive-selected',
-            payload: {}
+            type: 'command-menu-manager-archive-selected'
           },
           modal: `${self.__meta.name}:manager`,
           shortcut: 'E'
@@ -136,8 +147,9 @@ module.exports = {
       },
       group: {
         '@apostrophecms/command-menu:manager': {
-          label: null,
+          label: 'apostrophe:commandMenuManager',
           fields: [
+            `${self.__meta.name}:manager`,
             `${self.__meta.name}:create-new`,
             `${self.__meta.name}:search`,
             `${self.__meta.name}:select-all`,

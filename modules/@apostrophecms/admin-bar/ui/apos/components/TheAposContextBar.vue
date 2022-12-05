@@ -3,8 +3,8 @@
     <template v-if="contextBarActive">
       <TheAposContextUndoRedo
         :v-if="editMode"
-        :patches-since-loaded="patchesSinceLoaded"
-        :undone="undone"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
         @undo="undo"
         @redo="redo"
         :retrying="retrying"
@@ -122,6 +122,12 @@ export default {
     },
     customPublishLabel() {
       return (this.hasCustomUi && apos.modules[this.context.type].publishLabel) || null;
+    },
+    canUndo() {
+      return this.patchesSinceLoaded.length > 0;
+    },
+    canRedo() {
+      return this.undone.length > 0;
     }
   },
   watch: {
@@ -137,18 +143,6 @@ export default {
     apos.bus.$on('context-editing', this.onContextEditing);
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('content-changed', this.onContentChanged);
-
-    apos.bus.$on('context-undo', this.undo);
-    apos.bus.$on('context-redo', this.redo);
-    apos.bus.$on('context-publish', this.onPublish);
-    apos.bus.$on('context-toggle-edit-preview', () => {
-      const mode = !this.editMode;
-      this.switchEditMode(mode);
-    });
-    apos.bus.$on('context-toggle-publish-draft', () => {
-      const mode = this.draftMode === 'draft' ? 'published' : 'draft';
-      this.switchDraftMode(mode);
-    });
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
@@ -610,12 +604,16 @@ export default {
       }
     },
     async undo() {
-      this.undone.push(this.patchesSinceLoaded.pop());
-      await this.refreshAfterHistoryChange('apostrophe:undoFailed');
+      if (this.canUndo) {
+        this.undone.push(this.patchesSinceLoaded.pop());
+        await this.refreshAfterHistoryChange('apostrophe:undoFailed');
+      }
     },
     async redo() {
-      this.patchesSinceLoaded.push(this.undone.pop());
-      await this.refreshAfterHistoryChange('apostrophe:redoFailed');
+      if (this.canRedo) {
+        this.patchesSinceLoaded.push(this.undone.pop());
+        await this.refreshAfterHistoryChange('apostrophe:redoFailed');
+      }
     },
     async refreshAfterHistoryChange(errorMessageKey) {
       this.saving = true;
