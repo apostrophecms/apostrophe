@@ -93,7 +93,9 @@ module.exports = {
       validateCommand({ name, command }) {
         try {
           assert.equal(command.type, 'item', `Invalid command type, must be "item", for ${name}`);
-          assert.equal(typeof command.label, 'string', `Invalid command label, must be a string, for ${name} "${typeof command.label}" provided`);
+          command.label && typeof command.label === 'object'
+            ? assert.equal(typeof command.label.key, 'string', `Invalid command label key for ${name}`)
+            : assert.equal(typeof command.label, 'string', `Invalid command label, must be a string, for ${name} "${typeof command.label}" provided`);
           assert.equal(typeof command.action, 'object', `Invalid command action, must be an object for ${name}`) &&
             assert.equal(typeof command.action.type, 'string', `Invalid command action type for ${name}`) &&
             assert.equal(typeof command.action.payload, 'object', `Invalid command action payload for ${name}`);
@@ -113,7 +115,9 @@ module.exports = {
       },
       validateGroup({ name, group }) {
         try {
-          assert.equal(typeof group.label, 'string', `Invalid group label, must be a string, for ${name}`);
+          group.label && typeof group.label === 'object'
+            ? assert.equal(typeof group.label.key, 'string', `Invalid group label key for ${name}`)
+            : assert.equal(typeof group.label, 'string', `Invalid group label, must be a string, for ${name} "${typeof group.label}" provided`);
           assert.equal(Array.isArray(group.fields), true, `Invalid command fields, must be an array for ${name}`);
           assert.ok(group.fields.every(field => typeof field === 'string'), `Invalid command fields, must contains strings, for ${name}`);
 

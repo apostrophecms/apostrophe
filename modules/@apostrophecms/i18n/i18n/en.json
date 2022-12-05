@@ -62,6 +62,7 @@
   "commandMenuEsc": "Esc",
   "commandMenuExitManager": "Exit Manager",
   "commandMenuGeneral": "General",
+  "commandMenuManager": "Manager",
   "commandMenuMode": "Modes",
   "commandMenuPublishDraft": "Publish current draft",
   "commandMenuRedo": "Redo",

@@ -85,9 +85,23 @@ module.exports = {
 
     return {
       add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: self.options.label,
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          shortcut: `G,${self.apos.task.getReq().t(self.options.label).slice(0, 1)}`
+        },
         [`${self.__meta.name}:create-new`]: {
           type: 'item',
-          label: 'apostrophe:commandMenuCreateNew',
+          label: {
+            key: 'apostrophe:commandMenuCreateNew',
+            type: self.options.label
+          },
           action: {
             type: 'command-menu-manager-create-new'
           },
@@ -133,8 +147,9 @@ module.exports = {
       },
       group: {
         '@apostrophecms/command-menu:manager': {
-          label: null,
+          label: 'apostrophe:commandMenuManager',
           fields: [
+            `${self.__meta.name}:manager`,
             `${self.__meta.name}:create-new`,
             `${self.__meta.name}:search`,
             `${self.__meta.name}:select-all`,
