@@ -195,11 +195,25 @@ module.exports = {
           return {};
         }
 
-        return Object.values(widget.__meta.webpack || {})
-          .reduce((acc, config) => {
+        const { rebundleModules } = self.apos.asset;
+
+        const rebundleConfigs = rebundleModules.filter(entry => {
+          const names = widget.__meta?.chain?.map(c => c.name) ?? [ widgetType ];
+          return names.includes(entry.name);
+        });
+
+        return Object.entries(widget.__meta.webpack || {})
+          .reduce((acc, [ moduleName, config ]) => {
+            if (!config || !config.bundles) {
+              return acc;
+            }
             return {
               ...acc,
-              ...config && config.bundles
+              ...self.apos.asset.transformRebundledFor(
+                moduleName,
+                config.bundles,
+                rebundleConfigs
+              )
             };
           }, {});
       },

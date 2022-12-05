@@ -319,6 +319,10 @@ export default {
     max-width: $input-max-width;
   }
 
+  .apos-schema ::v-deep .apos-field__wrapper--area {
+    max-width: 100%;
+  }
+
   .apos-schema ::v-deep img {
     max-width: 100%;
   }
@@ -326,9 +330,13 @@ export default {
   .apos-field {
     .apos-schema ::v-deep & {
       margin-bottom: $spacing-quadruple;
+      &.apos-field--small,
       &.apos-field--micro,
       &.apos-field--margin-micro {
         margin-bottom: $spacing-double;
+      }
+      &.apos-field--margin-none {
+        margin-bottom: 0;
       }
     }
 

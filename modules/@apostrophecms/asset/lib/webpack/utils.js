@@ -47,16 +47,25 @@ module.exports = {
     }
   },
 
+  // Export for testing
+  formatRebundleConfig,
+  verifyRebundleConfig,
+
+  transformRebundledFor,
+
   async getWebpackExtensions ({
-    getMetadata, modulesToInstantiate
+    getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
   }) {
     const modulesMeta = modulesToInstantiate
       .map((name) => getMetadata(name));
 
+    const rebundleModules = formatRebundleConfig(rebundleModulesConfig);
+
     const {
       extensions, extensionOptions, foundBundles
     } = getModulesWebpackConfigs(
-      modulesMeta
+      modulesMeta,
+      rebundleModules
     );
 
     const verifiedBundles = await verifyBundlesEntryPoints(foundBundles);
@@ -64,26 +73,36 @@ module.exports = {
     return {
       extensions,
       extensionOptions,
-      verifiedBundles
+      verifiedBundles,
+      rebundleModules
     };
   },
 
   fillExtraBundles (verifiedBundles = {}) {
-    return Object.entries(verifiedBundles).reduce((acc, [ bundleName, { js, scss } ]) => {
-      return {
-        js: [
-          ...acc.js,
-          ...(js.length && !acc.js.includes(bundleName)) ? [ bundleName ] : []
-        ],
-        css: [
-          ...acc.css,
-          ...(scss.length && !acc.css.includes(bundleName)) ? [ bundleName ] : []
-        ]
-      };
-    }, {
-      js: [],
-      css: []
-    });
+
+    const res = Object.entries(verifiedBundles).reduce(
+      (acc, [ bundleName, entry ]) => {
+        const {
+          js, scss, main
+        } = entry;
+        if (main) {
+          return acc;
+        }
+        return {
+          js: [
+            ...acc.js,
+            ...(js.length && !acc.js.includes(bundleName)) ? [ bundleName ] : []
+          ],
+          css: [
+            ...acc.css,
+            ...(scss.length && !acc.css.includes(bundleName)) ? [ bundleName ] : []
+          ]
+        };
+      }, {
+        js: [],
+        css: []
+      });
+    return res;
   },
 
   getBundlesNames (bundles, es5 = false) {
@@ -177,13 +196,17 @@ async function findSymlinks(where, sub = '') {
   return result;
 }
 
-function getModulesWebpackConfigs (modulesMeta) {
+function getModulesWebpackConfigs (modulesMeta, rebundleModules) {
   const {
     extensions, extensionOptions, bundles
   } = modulesMeta.reduce((modulesAcc, meta) => {
     const { webpack, __meta } = meta;
 
-    const configs = formatConfigs(__meta.chain, webpack);
+    const configs = formatConfigs(
+      __meta.chain,
+      webpack,
+      rebundleModules
+    );
 
     if (!configs.length) {
       return modulesAcc;
@@ -235,15 +258,57 @@ function getModulesWebpackConfigs (modulesMeta) {
 };
 
 async function verifyBundlesEntryPoints (bundles) {
-  const checkPathsPromises = bundles.map(async ({ bundleName, modulePath }) => {
+  const checkPathsPromises = bundles.map(async ({
+    bundleName, modulePath, bundleRemapping
+  }) => {
     const jsPath = `${modulePath}/ui/src/${bundleName}.js`;
     const scssPath = `${modulePath}/ui/src/${bundleName}.scss`;
+    const jsIndexPath = `${modulePath}/ui/src/index.js`;
+    const scssIndexPath = `${modulePath}/ui/src/index.scss`;
+    let main = false;
+    let withIndex;
 
     const jsFileExists = await fs.pathExists(jsPath);
     const scssFileExists = await fs.pathExists(scssPath);
 
+    for (const remapping of bundleRemapping) {
+      main = remapping.main;
+      // - catch all to "main" or new bundle name,
+      // already verified it's unique for the given module
+      if (!remapping.source) {
+        // Bundle name for "main" "doesn't matter - it will be ignored and never built,
+        // we want to achieve a free from colision name. What matters is main = true.
+        // Target is 'main' by convention: `main.bundleName`
+        bundleName = `${remapping.target}.${bundleName}`;
+        if (!remapping.main) {
+          // move "ui/src/index.*" to the bundle,
+          // verify existence later, better performance
+          withIndex = {
+            jsPath: jsIndexPath,
+            scssPath: scssIndexPath
+          };
+          bundleName = remapping.target;
+        }
+
+        break;
+      }
+      // - not a catch-all statement from this point on
+      // - "main" for a concrete bunbdle
+      if (remapping.main && remapping.source === bundleName) {
+        bundleName = `${remapping.target}.${bundleName}`;
+        break;
+      }
+      // - not "main", concrete bundle remapping
+      if (remapping.source === bundleName) {
+        bundleName = remapping.target;
+        break;
+      }
+    }
+
     return {
       bundleName,
+      main,
+      withIndex,
       ...jsFileExists && { jsPath },
       ...scssFileExists && { scssPath }
     };
@@ -251,8 +316,39 @@ async function verifyBundlesEntryPoints (bundles) {
 
   const bundlesPaths = await Promise.all(checkPathsPromises);
 
-  const packedFilesByBundle = bundlesPaths.reduce((acc, {
-    bundleName, jsPath, scssPath
+  // Verify and squash withIndex data
+  const seen = {};
+  const bundlesPathsWithIndex = [];
+  for (const entry of bundlesPaths) {
+    if (!entry.withIndex) {
+      bundlesPathsWithIndex.push(entry);
+      continue;
+    }
+    if (seen[entry.bundleName]) {
+      delete entry.withIndex;
+      bundlesPathsWithIndex.push(entry);
+      continue;
+    }
+    seen[entry.bundleName] = true;
+    const { jsPath, scssPath } = entry.withIndex;
+    const jsFileExists = await fs.pathExists(jsPath);
+    const scssFileExists = await fs.pathExists(scssPath);
+    if (!jsFileExists && !scssFileExists) {
+      delete entry.withIndex;
+      bundlesPathsWithIndex.push(entry);
+      continue;
+    }
+    bundlesPathsWithIndex.push({
+      ...entry,
+      withIndex: {
+        ...jsFileExists && { jsPath },
+        ...scssFileExists && { scssPath }
+      }
+    });
+  }
+
+  const packedFilesByBundle = bundlesPathsWithIndex.reduce((acc, {
+    bundleName, jsPath, scssPath, main, withIndex
   }) => {
     if (!jsPath && !scssPath) {
       return acc;
@@ -261,11 +357,18 @@ async function verifyBundlesEntryPoints (bundles) {
     return {
       ...acc,
       [bundleName]: {
+        main,
+        // Boolean indicating if the "main" index.js is included
+        // caused by a remapping. It's not yet used anywhere but
+        // it's an useful information that we keep.
+        withIndex: !!withIndex || acc[bundleName]?.withIndex,
         js: [
+          ...withIndex?.jsPath ? [ withIndex?.jsPath ] : [],
           ...acc[bundleName] ? acc[bundleName].js : [],
           ...jsPath ? [ jsPath ] : []
         ],
         scss: [
+          ...withIndex?.scssPath ? [ withIndex?.scssPath ] : [],
           ...acc[bundleName] ? acc[bundleName].scss : [],
           ...scssPath ? [ scssPath ] : []
         ]
@@ -276,7 +379,105 @@ async function verifyBundlesEntryPoints (bundles) {
   return packedFilesByBundle;
 };
 
-function formatConfigs (chain, webpackConfigs) {
+// Normalize config:
+// - from { moduleName: 'main' }
+//    to [{ main: true, name: 'moduleName', target: 'main' }]
+// - from { moduleName: bundleName }
+//    to [{ main: false, name: 'moduleName', target: bundleName }]
+// - from { 'moduleName:sourceBundle': 'main' }
+//    to [{ main: true, name: 'moduleName', source: 'sourceBundle', target: 'main' }]
+// - from { 'moduleName:sourceBundle': targetBundle }
+//    to [{ main: false, name: 'moduleName', source: 'sourceBundle', target: targetBundle }]
+function formatRebundleConfig(mappingConfig = {}) {
+  const result = Object.keys(mappingConfig).reduce((transformed, key) => {
+    const main = mappingConfig[key] === 'main';
+    const [ moduleName, sourceBundle ] = key.split(':');
+    return [
+      ...transformed,
+      {
+        name: moduleName,
+        source: sourceBundle,
+        target: mappingConfig[key],
+        main
+      }
+    ];
+  }, []);
+  // Better panic than sorry!
+  verifyRebundleConfig(result);
+  return result;
+}
+
+// This function is used to detect re-bundled and moved to the main build bundles.
+// It returns filtered configuration containing the proper bundle names.
+// See usage in `template/lib/bundlesLoader.js` and `widget-type/index.js`.
+// Expected arguments:
+// - moduleName: the module owning the bundleConfig
+// - bundleConfig: the bundle configuration ({ bundles: {...} })
+// - rebundleConfigs: the normalized output of `formatRebundleConfig(asset.options.rebundleModules)`
+function transformRebundledFor(moduleName, bundleConfigs, rebundleConfigs) {
+  const rebundle = rebundleConfigs
+    .filter(entry => entry.name === moduleName);
+  let result = { ...bundleConfigs };
+
+  for (const entry of rebundle) {
+    // 1. CatchAll to "main", already bundled in the main build - skip.
+    if (!entry.source && entry.main) {
+      result = {};
+      break;
+    }
+    // 2. CatchAll to a new bundle name, preserve merged options.
+    if (!entry.source && !entry.main) {
+      const options = Object.values(bundleConfigs)
+        .reduce((all, opts) => ({
+          ...all,
+          ...opts
+        }), {});
+      result = { [entry.target]: options };
+      break;
+    }
+    // 3. Rename a single bundle.
+    if (entry.source) {
+      // 3.1. ... but it's sent to the main build
+      if (entry.main) {
+        delete result[entry.source];
+        continue;
+      }
+      // 3.2. rename it, preserve the options
+      if (bundleConfigs[entry.source]) {
+        result[entry.target] = { ...bundleConfigs[entry.source] };
+        delete result[entry.source];
+      }
+    }
+  }
+
+  return result;
+}
+
+// Expects formatted by formatRebundleConfig() `asset.options.rebundleModules`
+function verifyRebundleConfig(config = []) {
+  const targeted = [];
+  const catchAllModules = {};
+  for (const entry of config) {
+    if (!entry.source) {
+      catchAllModules[entry.name] = `${entry.name}: ${entry.target}`;
+    } else {
+      targeted.push(entry);
+    }
+  }
+  for (const entry of targeted) {
+    if (catchAllModules[entry.name]) {
+      const conflicting = `${entry.name}${entry.source ? `:${entry.source}` : ''}: ${entry.target}`;
+      throw new Error(
+        'Invalid apos.asset.options.rebundleModules: ' +
+        `"${catchAllModules[entry.name]}" conflicts with ` +
+        `"${conflicting}"`
+      );
+    }
+  }
+}
+
+// Gather and transform all available webpack configs
+function formatConfigs (chain, webpackConfigs, rebundleModules) {
   return Object.entries(webpackConfigs)
     .map(([ name, config ], i) => {
 
@@ -285,16 +486,26 @@ function formatConfigs (chain, webpackConfigs) {
       }
 
       const {
-        bundles = {}, extensions = {}, extensionOptions = {}
+        bundles = {},
+        extensions = {},
+        extensionOptions = {}
       } = config;
+      const bundleNames = Object.keys(bundles);
+
+      // Remapping only for the explicitly defined by the module bundle
+      // configurations
+      const bundleRemapping = rebundleModules
+        .filter(entry => entry.name === chain[i].name);
 
       return {
+        name: chain[i].name,
         extensions,
         extensionOptions,
         bundles: {
           [name]: {
-            bundleNames: Object.keys(bundles),
-            modulePath: chain[i].dirname
+            bundleNames,
+            modulePath: chain[i].dirname,
+            bundleRemapping
           }
         }
       };
@@ -303,11 +514,14 @@ function formatConfigs (chain, webpackConfigs) {
 
 function flattenBundles (bundles) {
   return Object.values(bundles)
-    .reduce((acc, { bundleNames, modulePath }) => {
+    .reduce((acc, {
+      bundleNames, modulePath, bundleRemapping
+    }) => {
       return [
         ...acc,
         ...bundleNames.map((bundleName) => ({
           bundleName,
+          bundleRemapping,
           modulePath
         }))
       ];

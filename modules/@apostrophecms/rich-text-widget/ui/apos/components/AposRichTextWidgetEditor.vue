@@ -107,15 +107,19 @@ export default {
     editorOptions() {
       const activeOptions = Object.assign({}, this.options);
 
-      // Allow toolbar option to pass through if `false`
-      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
-        ? activeOptions.toolbar : this.defaultOptions.toolbar;
-
       activeOptions.styles = this.enhanceStyles(
         activeOptions.styles?.length
           ? activeOptions.styles
           : this.defaultOptions.styles
       );
+
+      // Allow default options to pass through if `false`
+      Object.keys(this.defaultOptions).forEach((option) => {
+        if (option !== 'styles') {
+          activeOptions[option] = (activeOptions[option] !== undefined)
+            ? activeOptions[option] : this.defaultOptions[option];
+        }
+      });
 
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;

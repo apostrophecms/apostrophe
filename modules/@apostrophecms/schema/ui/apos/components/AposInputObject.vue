@@ -49,8 +49,19 @@ export default {
     };
   },
   watch: {
-    schemaInput() {
-      this.next = this.schemaInput.data;
+    schemaInput: {
+      deep: true,
+      handler() {
+        if (!this.schemaInput.hasErrors) {
+          this.next = this.schemaInput.data;
+        }
+        // Our validate method was called first before that of
+        // the subfields, so remedy that by calling again on any
+        // change to the subfield state during validation
+        if (this.triggerValidation) {
+          this.validateAndEmit();
+        }
+      }
     },
     generation() {
       this.next = this.getNext();

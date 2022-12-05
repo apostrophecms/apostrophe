@@ -52,6 +52,8 @@ module.exports = {
   options: {
     alias: 'login',
     localLogin: true,
+    passwordReset: false,
+    passwordResetHours: 48,
     scene: 'apos',
     csrfExceptions: [
       'login'
@@ -245,29 +247,53 @@ module.exports = {
         async context(req) {
           return self.getContext(req);
         },
-        ...(self.options.passwordReset ? {
+        ...(self.isPasswordResetEnabled() ? {
           async resetRequest(req) {
+            const wait = (t = 2000) => Promise.delay(t);
             const site = (req.headers.host || '').replace(/:\d+$/, '');
-            const username = self.apos.launder.string(req.body.username);
-            if (!username.length) {
-              throw self.apos.error('invalid');
+            const email = self.apos.launder.string(req.body.email);
+            if (!email.length) {
+              throw self.apos.error('invalid', req.t('apostrophe:loginResetEmailRequired'));
             }
-            const clauses = [];
-            clauses.push({ username: username });
-            clauses.push({ email: username });
-            const user = await self.apos.user.find(req, { $or: clauses }).permission(false).toObject();
+            let user;
+            // error not reported to browser for security reasons
+            try {
+              user = await self.getPasswordResetUser(req.body.email);
+            } catch (e) {
+              self.apos.util.error(e);
+            }
             if (!user) {
-              throw self.apos.error('notfound');
+              await wait();
+              self.apos.util.error(
+                `Reset password request error - the user ${email} doesn\`t exist.`
+              );
+              return;
             }
             if (!user.email) {
-              throw self.apos.error('invalid');
+              await wait();
+              self.apos.util.error(
+                `Reset password request error - the user ${user.username} doesn\`t have an email.`
+              );
+              return;
             }
             const reset = self.apos.util.generateId();
             user.passwordReset = reset;
             user.passwordResetAt = new Date();
             await self.apos.user.update(req, user, { permissions: false });
-            const parsed = new URL(req.absoluteUrl);
-            parsed.pathname = '/password-reset';
+            // Fix - missing host in the absoluteUrl results in a panic.
+            let port = (req.headers.host || '').split(':')[1];
+            if (!port || [ '80', '443' ].includes(port)) {
+              port = '';
+            } else {
+              port = `:${port}`;
+            }
+            const parsed = new URL(
+              req.absoluteUrl,
+              self.apos.baseUrl
+                ? undefined
+                : `${req.protocol}://${req.hostname}${port}`
+            );
+            parsed.pathname = self.login();
             parsed.search = '?';
             parsed.searchParams.append('reset', reset);
             parsed.searchParams.append('email', user.email);
@@ -281,27 +307,32 @@ module.exports = {
                 subject: req.t('apostrophe:passwordResetRequest', { site })
               });
             } catch (err) {
-              throw self.apos.error('email');
+              self.apos.util.error(`Error while sending email to ${user.email}`, err);
             }
           },
 
           async reset(req) {
-            const reset = self.apos.launder.string(req.body.reset);
-            const email = self.apos.launder.string(req.body.email);
             const password = self.apos.launder.string(req.body.password);
-            if (!reset.length || !password.length) {
-              throw self.apos.error('invalid');
+            if (!password.length) {
+              throw self.apos.error('invalid', req.t('apostrophe:loginResetPasswordRequired'));
             }
-            const adminReq = self.apos.task.getReq();
-            const user = await self.apos.user.find(adminReq, {
-              email: email,
-              passwordResetAt: { $gte: new Date(Date.now() - self.getPasswordResetLifetimeInMilliseconds()) }
-            });
-            if (!user) {
-              throw self.apos.error('notfound');
+            let user;
+            try {
+              user = await self.getPasswordResetUser(
+                req.body.email,
+                // important, empty to string to avoid security problems
+                req.body.reset || ''
+              );
+
+            } catch (e) {
+              self.apos.util.error(e);
+              throw self.apos.error('invalid', req.t('apostrophe:loginResetInvalid'));
             }
-            await self.apos.user.verifySecret(user, 'passwordReset', reset);
-            return user;
+
+            user.passwordReset = null;
+            user.passwordResetAt = new Date(0);
+            user.password = password;
+            await self.apos.user.update(req, user, { permissions: false });
           }
         } : {})
       },
@@ -312,6 +343,19 @@ module.exports = {
         // be cached
         async context(req) {
           return self.getContext(req);
+        },
+        async reset(req) {
+          try {
+            await self.getPasswordResetUser(
+              req.query.email,
+              // important, empty to string to avoid security problems
+              req.query.reset || ''
+            );
+
+          } catch (e) {
+            self.apos.util.error(e);
+            throw self.apos.error('invalid', req.t('apostrophe:loginResetInvalid'));
+          }
         }
       }
     };
@@ -467,9 +511,14 @@ module.exports = {
         return 1000 * 60 * 60 * (self.options.passwordResetHours || 48);
       },
 
+      isPasswordResetEnabled() {
+        return self.options.localLogin && self.options.passwordReset;
+      },
+
       getBrowserData(req) {
         return {
           action: self.action,
+          passwordResetEnabled: self.isPasswordResetEnabled(),
           ...(req.user ? {
             user: {
               _id: req.user._id,
@@ -489,6 +538,54 @@ module.exports = {
             })
           )
         };
+      },
+
+      // Get a user by EITHER:
+      // - username/email
+      // - username/email AND reset token
+      // `resetToken` can be `false` or `string`. Passing any other type
+      // will be converted to string and used for searching the user.
+      async getPasswordResetUser(usernameOrEmail, resetToken = false) {
+        if (!self.isPasswordResetEnabled()) {
+          return null;
+        }
+        const reset = self.apos.launder.string(resetToken);
+        const email = self.apos.launder.string(usernameOrEmail);
+
+        if (!email.length) {
+          throw self.apos.error('invalid');
+        }
+        if (resetToken !== false && !reset.length) {
+          throw self.apos.error('invalid');
+        }
+        const adminReq = self.apos.task.getReq();
+        const criteriaOr = [
+          { username: email },
+          { email: email }
+        ];
+        const criteriaAnd = {};
+        if (resetToken !== false) {
+          criteriaAnd.passwordResetAt = {
+            $gte: new Date(Date.now() - self.getPasswordResetLifetimeInMilliseconds())
+          };
+        }
+        const user = await self.apos.user
+          .find(adminReq, {
+            $or: criteriaOr,
+            ...criteriaAnd
+          })
+          .toObject();
+        if (!user) {
+          throw self.apos.error('notfound');
+        }
+        if (resetToken !== false) {
+          await self.apos.user.verifySecret(
+            user,
+            'passwordReset',
+            reset
+          );
+        }
+        return user;
       },
 
       async checkForUserAndAlert() {

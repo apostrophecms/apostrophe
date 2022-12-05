@@ -60,6 +60,10 @@ module.exports = {
     }
   },
 
+  batchOperations: {
+    remove: [ 'publish' ]
+  },
+
   handlers(self) {
     return {
       'apostrophe:modulesRegistered': {
