@@ -1,16 +1,4 @@
 <template>
-  <!--
-  <span v-if="textOnly" class="apos-command-menu-text">
-    <slot name="label" v-if="label">
-      {{ $t(label ) }}
-    </slot>
-  </span>
-  <span
-    v-else
-    class="apos-command-menu-key"
-    :class="!icon && label.length > 1 ? 'apos-command-menu-key-auto' : ''"
-  >
-  -->
   <span :class="classes">
     <AposIndicator
       v-if="icon"

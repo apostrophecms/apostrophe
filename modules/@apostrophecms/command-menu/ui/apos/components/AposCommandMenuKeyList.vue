@@ -1,8 +1,8 @@
 <template>
   <div class="apos-command-menu-keys">
     <AposCommandMenuKey
-      v-for="key in keys"
-      :key="key.icon || key.label"
+      v-for="(key, index) in keys"
+      :key="index"
       :label="key.label"
       :icon="key.icon"
       :text-only="key.textOnly"
