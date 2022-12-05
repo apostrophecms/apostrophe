@@ -268,15 +268,17 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it.only('compileErrors', function() {
+  it('should compile errors from multiple modules', function() {
     const initialState = {
       rawCommands: [
         moduleA.commands,
-        moduleB.commands,
-        moduleC.commands,
-        moduleD.commands,
         {
           add: {
+            test: {}
+          }
+        },
+        {
+          group: {
             test: {}
           }
         }
@@ -306,6 +308,12 @@ describe('Command-Menu', function() {
         new assert.AssertionError({
           message: 'Invalid command type, must be "item", for test',
           expected: 'item',
+          operator: 'strictEqual'
+        }),
+        new assert.AssertionError({
+          message: 'Invalid group label, must be a string, for test',
+          actual: 'undefined',
+          expected: 'string',
           operator: 'strictEqual'
         })
       ]
