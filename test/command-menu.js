@@ -274,12 +274,12 @@ describe('Command-Menu', function() {
         moduleA.commands,
         {
           add: {
-            test: {}
+            command1: {}
           }
         },
         {
           group: {
-            test: {}
+            groupA: {}
           }
         }
       ]
@@ -306,12 +306,12 @@ describe('Command-Menu', function() {
       message: 'Invalid',
       cause: [
         new assert.AssertionError({
-          message: 'Invalid command type, must be "item", for test',
+          message: 'Invalid command type, must be "item", for command1',
           expected: 'item',
           operator: 'strictEqual'
         }),
         new assert.AssertionError({
-          message: 'Invalid group label, must be a string, for test',
+          message: 'Invalid group label, must be a string, for groupA',
           actual: 'undefined',
           expected: 'string',
           operator: 'strictEqual'
