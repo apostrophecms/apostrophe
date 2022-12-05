@@ -13,6 +13,7 @@ module.exports = {
     placeholderText: 'apostrophe:richTextPlaceholder',
     defaultData: { content: '' },
     className: false,
+    linkWithType: [ '@apostrophecms/any-page-type' ],
     minimumDefaultOptions: {
       toolbar: [
         'styles',
@@ -420,7 +421,8 @@ module.exports = {
           defaultOptions: self.options.defaultOptions,
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
-          placeholderText: self.options.placeholder && self.options.placeholderText
+          placeholderText: self.options.placeholder && self.options.placeholderText,
+          linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ]
         };
         return finalData;
       }
