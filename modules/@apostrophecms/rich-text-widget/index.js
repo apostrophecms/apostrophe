@@ -14,6 +14,11 @@ module.exports = {
     defaultData: { content: '' },
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
+    // For permalinks
+    project: {
+      title: 1,
+      _url: 1
+    },
     minimumDefaultOptions: {
       toolbar: [
         'styles',
@@ -206,7 +211,40 @@ module.exports = {
         return widget.content;
       },
 
+      // Handle permalinkss
       async load(req, widgets) {
+        const widgetsByDocId = new Map();
+        let ids = [];
+        const project = self.options.project || {
+          title: 1,
+          _url: 1
+        };
+        for (const widget of widgets) {
+          if (!widget.permalinkIds) {
+            return;
+          }
+          for (const id of widget.permalinkIds) {
+            const docWidgets = widgetsByDocId.get(id) || [];
+            docWidgets.push(widget);
+            widgetsByDocId.set(id, docWidgets);
+          }
+        }
+        ids = [ ...new Map(ids) ];
+        if (!ids.length) {
+          return;
+        }
+        const docs = await self.apos.doc.find(req, {
+          _id: {
+            $in: ids
+          }
+        }).project(project).toArray();
+        for (const doc of docs) {
+          const widgets = widgetsByDocId.get(doc._id) || [];
+          for (const widget of widgets) {
+            widget._permalinkDocs = widget._permalinkDocs || [];
+            widget._permalinkDocs.push(doc);
+          }
+        }
       },
 
       // Convert area rich text options into a valid sanitize-html
@@ -409,7 +447,17 @@ module.exports = {
         const finalOptions = self.optionsToSanitizeHtml(rteOptions);
 
         output.content = sanitizeHtml(input.content, finalOptions);
+
+        const anchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
+        output.permalinkIds = anchors.map(anchor => {
+          const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
+          return matches[1];
+        });
+
         return output;
+      },
+      async output(_super, req, widget, options, _with) {
+        const output = await _super(req, widget, options, _with);
       },
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
