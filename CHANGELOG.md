@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Nested areas work properly in widgets that have the `initialModal: false` property.
+
 ### Adds
 
 * Relationships load more quickly.

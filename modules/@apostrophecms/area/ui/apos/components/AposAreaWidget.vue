@@ -268,6 +268,10 @@ export default {
       };
     },
     widgetLabel() {
+      const moduleName = `${this.widget.type}-widget`;
+      if (!window.apos.modules[moduleName]) {
+        console.error(`No ${moduleName} module found for widget type ${this.widget.type}`);
+      }
       return window.apos.modules[`${this.widget.type}-widget`].label;
     },
     widgetOptions() {
