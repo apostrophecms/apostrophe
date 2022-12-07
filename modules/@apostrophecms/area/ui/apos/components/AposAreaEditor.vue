@@ -450,7 +450,7 @@ export default {
         return this.insert({
           widget: {
             ...widget,
-            aposPlaceholder: this.widgetHasPlaceholder(name),
+            aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
         });
