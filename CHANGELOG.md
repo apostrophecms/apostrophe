@@ -6,6 +6,7 @@
 
 * Relationships load more quickly.
 * Parked page checks at startup are faster.
+* Keyboard shortcuts conflicts are detected and notified to the logged-in user.
 
 ## 3.33.0 (2022-11-28)
 
