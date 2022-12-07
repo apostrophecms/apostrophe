@@ -235,7 +235,7 @@ module.exports = {
             .filter(groups => groups.length)
         );
       },
-      getVisibleModals(commands) {
+      getVisibleModals(req, commands) {
         const keys = Object.keys(commands);
 
         const groups = Object.fromEntries(
@@ -244,23 +244,42 @@ module.exports = {
               const fields = group.fields
                 .reduce(
                   (acc, field) => keys.includes(field)
-                    ? { ...acc, [field]: commands[field] }
+                    ? {
+                      ...acc,
+                      [field]: commands[field]
+                    }
                     : acc,
                   {}
                 );
 
               return Object.keys(fields).length
-                ? [ key, { ...group, fields } ]
+                ? [ key, {
+                  ...group,
+                  fields
+                } ]
                 : [];
             })
             .filter(groups => groups.length)
         );
+
+        const shortcuts = {
+          standard: {},
+          global: [],
+          conflicts: []
+        };
 
         const modals = Object.entries(groups)
           .reduce(
             (acc, [ key, group ]) => {
               Object.entries(group.fields)
                 .forEach(([ name, field ]) => {
+                  detectShortcutConflict({
+                    shortcuts,
+                    shortcut: field.shortcut,
+                    standard: !!field.modal,
+                    moduleName: name
+                  });
+
                   const modal = field.modal || null;
                   acc[modal] = {
                     ...acc[modal],
@@ -279,7 +298,40 @@ module.exports = {
             {}
           );
 
+        for (const conflict of shortcuts.conflicts) {
+          self.apos.notify(req, conflict, {
+            type: 'warning',
+            dismiss: 10
+          });
+        }
+
         return modals;
+
+        function detectShortcutConflict({
+          shortcuts,
+          shortcut,
+          standard,
+          moduleName
+        }) {
+          let existingShortcut;
+          if (standard) {
+            shortcuts.standard[moduleName] = shortcuts[moduleName] || [];
+            existingShortcut =
+              shortcuts.standard[moduleName].includes(shortcut);
+          } else {
+            existingShortcut = shortcuts.global.includes(shortcut);
+          }
+
+          if (existingShortcut) {
+            shortcuts.conflicts.push(
+              `Shortcut conflict on ${moduleName} for '${shortcut}'`
+            );
+          } else {
+            standard
+              ? shortcuts.standard[moduleName].push(shortcut)
+              : shortcuts.global.push(shortcut);
+          }
+        }
       },
       getVisible(req) {
         const commands = Object.fromEntries(
@@ -292,7 +344,7 @@ module.exports = {
         );
 
         const groups = self.getVisibleGroups(commands);
-        const modals = self.getVisibleModals(commands);
+        const modals = self.getVisibleModals(req, commands);
 
         return {
           groups,
