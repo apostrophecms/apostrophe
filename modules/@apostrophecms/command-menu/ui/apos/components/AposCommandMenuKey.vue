@@ -1,5 +1,5 @@
 <template>
-  <span class="apos-command-menu-key" :class="!icon && label.length > 1 ? 'apos-command-menu-key-auto' : ''">
+  <span :class="classes">
     <AposIndicator
       v-if="icon"
       :icon="icon"
@@ -39,6 +39,18 @@ export default {
     iconSize: {
       type: Number,
       default: 12
+    },
+    textOnly: {
+      type: Boolean,
+      default: false
+    }
+  },
+  computed: {
+    classes() {
+      return [
+        this.textOnly ? 'apos-command-menu-text' : 'apos-command-menu-key',
+        !this.icon && this.label.length > 1 ? 'apos-command-menu-key-auto' : ''
+      ];
     }
   }
 };
@@ -69,6 +81,22 @@ export default {
   &.apos-command-menu-key-auto {
     width: auto;
   }
+}
+
+.apos-command-menu-text {
+  color: rgba(50,50,50,1);
+  font-size: 12px;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0.43px;
+  padding: 3px 0;
+  box-sizing: border-box;
+  width: auto;
+  height: $spacing-double;
+  margin-left: $spacing-half;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 </style>

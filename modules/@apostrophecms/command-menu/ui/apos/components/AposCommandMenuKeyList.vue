@@ -1,10 +1,11 @@
 <template>
   <div class="apos-command-menu-keys">
     <AposCommandMenuKey
-      v-for="key in keys"
-      :key="key.icon || key.label"
+      v-for="(key, index) in keys"
+      :key="index"
       :label="key.label"
       :icon="key.icon"
+      :text-only="key.textOnly"
     />
   </div>
 </template>
@@ -68,7 +69,16 @@ export default {
 
       return shortcut
         .split('+')
+        .flatMap(this.then)
         .map(key => {
+          if (key === 'then') {
+            return {
+              icon: null,
+              label: 'apostrophe:commandMenuKeyThen',
+              textOnly: true
+            };
+          }
+
           const icon = iconMapping[key.toLowerCase()];
 
           return {
@@ -78,6 +88,13 @@ export default {
               : (keyMapping[key.toLowerCase()] || key).toLowerCase()
           };
         });
+    }
+  },
+  methods: {
+    then(keys) {
+      return keys.includes(',')
+        ? keys.split(',').flatMap(key => [ key, 'then' ]).slice(0, -1)
+        : keys;
     }
   }
 };

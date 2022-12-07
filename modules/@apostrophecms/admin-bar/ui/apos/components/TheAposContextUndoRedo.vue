@@ -59,7 +59,7 @@ export default {
         redo: 'apostrophe:redoTooltip'
       };
 
-      if (!this.undo) {
+      if (!this.canUndo) {
         tooltips.undo = 'apostrophe:undoTooltipNoChanges';
       }
 
