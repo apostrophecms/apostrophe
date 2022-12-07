@@ -272,7 +272,7 @@ export default {
       if (!window.apos.modules[moduleName]) {
         console.error(`No ${moduleName} module found for widget type ${this.widget.type}`);
       }
-      return window.apos.modules[`${this.widget.type}-widget`].label;
+      return window.apos.modules[moduleName].label;
     },
     widgetOptions() {
       return this.widgets[this.widget.type];
