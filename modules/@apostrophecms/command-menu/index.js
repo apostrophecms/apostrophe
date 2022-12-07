@@ -273,7 +273,7 @@ module.exports = {
             (acc, [ key, group ]) => {
               Object.entries(group.fields)
                 .forEach(([ name, field ]) => {
-                  detectShortcutConflict({
+                  self.detectShortcutConflict({
                     shortcuts,
                     shortcut: field.shortcut,
                     standard: !!field.modal,
@@ -306,32 +306,30 @@ module.exports = {
         }
 
         return modals;
-
-        function detectShortcutConflict({
-          shortcuts,
-          shortcut,
-          standard,
-          moduleName
-        }) {
-          let existingShortcut;
-          if (standard) {
-            shortcuts.standard[moduleName] = shortcuts[moduleName] || [];
-            existingShortcut =
-              shortcuts.standard[moduleName].includes(shortcut);
-          } else {
-            existingShortcut = shortcuts.global.includes(shortcut);
-          }
-
-          if (existingShortcut) {
-            shortcuts.conflicts.push(
-              `Shortcut conflict on ${moduleName} for '${shortcut}'`
-            );
-          } else {
-            standard
-              ? shortcuts.standard[moduleName].push(shortcut)
-              : shortcuts.global.push(shortcut);
-          }
+      },
+      detectShortcutConflict({
+        shortcuts, shortcut, standard, moduleName
+      }) {
+        let existingShortcut;
+        if (standard) {
+          shortcuts.standard[moduleName] = shortcuts.standard[moduleName] || [];
+          existingShortcut =
+            shortcuts.standard[moduleName].includes(shortcut);
+        } else {
+          existingShortcut = shortcuts.global.includes(shortcut);
         }
+
+        if (existingShortcut) {
+          shortcuts.conflicts.push(
+            `Shortcut conflict on ${moduleName} for '${shortcut}'`
+          );
+        } else {
+          standard
+            ? shortcuts.standard[moduleName].push(shortcut)
+            : shortcuts.global.push(shortcut);
+        }
+
+        return shortcuts;
       },
       getVisible(req) {
         const commands = Object.fromEntries(

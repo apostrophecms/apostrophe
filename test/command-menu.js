@@ -545,7 +545,7 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it.only('should get visible modals commands only', function() {
+  it('should get visible modals commands only', function() {
     const req = apos.task.getReq();
 
     const actual = apos.commandMenu.getVisible(req);
@@ -612,6 +612,48 @@ describe('Command-Menu', function() {
           ...actual.modals.null
         }
       }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should detect standard shortcuts conflicts', () => {
+    const shortcuts = {
+      standard: { '@apostrophecms/file:manager': [ 'C' ] },
+      global: [],
+      conflicts: []
+    };
+    const actual = apos.commandMenu.detectShortcutConflict({
+      shortcuts,
+      shortcut: 'C',
+      standard: true,
+      moduleName: '@apostrophecms/file:manager'
+    });
+    const expected = {
+      standard: { '@apostrophecms/file:manager': [ 'C' ] },
+      global: [],
+      conflicts: [ 'Shortcut conflict on @apostrophecms/file:manager for \'C\'' ]
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should detect global shortcuts conflicts', () => {
+    const shortcuts = {
+      standard: {},
+      global: [ 'C' ],
+      conflicts: []
+    };
+    const actual = apos.commandMenu.detectShortcutConflict({
+      shortcuts,
+      shortcut: 'C',
+      standard: false,
+      moduleName: '@apostrophecms/file:manager'
+    });
+    const expected = {
+      standard: {},
+      global: [ 'C' ],
+      conflicts: [ 'Shortcut conflict on @apostrophecms/file:manager for \'C\'' ]
     };
 
     assert.deepEqual(actual, expected);
