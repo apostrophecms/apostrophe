@@ -269,10 +269,11 @@ export default {
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
-      if (!window.apos.modules[moduleName]) {
+      const module = window.apos.modules[moduleName];
+      if (!module) {
         console.error(`No ${moduleName} module found for widget type ${this.widget.type}`);
       }
-      return window.apos.modules[moduleName].label;
+      return module.label;
     },
     widgetOptions() {
       return this.widgets[this.widget.type];
