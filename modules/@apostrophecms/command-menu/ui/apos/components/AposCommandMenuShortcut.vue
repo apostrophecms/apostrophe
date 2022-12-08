@@ -39,7 +39,9 @@
                 :key="commandName"
                 class="apos-command-menu-shortcut-command"
               >
-                <div class="apos-command-menu-shortcut-command-title">{{ $t(command.label) }}</div>
+                <div class="apos-command-menu-shortcut-command-title">
+                  {{ $t(command.label) }}
+                </div>
                 <AposCommandMenuKeyList :shortcut="command.shortcut" />
               </div>
             </div>

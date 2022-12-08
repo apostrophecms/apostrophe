@@ -57,6 +57,10 @@ module.exports = {
           action: {
             type: 'command-menu-manager-create-new'
           },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
           shortcut: 'C'
         },
         [`${self.__meta.name}:exit-manager`]: {

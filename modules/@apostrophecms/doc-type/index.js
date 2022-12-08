@@ -94,6 +94,10 @@ module.exports = {
               itemName: `${self.__meta.name}:manager`
             }
           },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
           shortcut: `G,${self.apos.task.getReq().t(self.options.label).slice(0, 1)}`
         },
         [`${self.__meta.name}:create-new`]: {
@@ -104,6 +108,10 @@ module.exports = {
           },
           action: {
             type: 'command-menu-manager-create-new'
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
           },
           shortcut: 'C'
         },
@@ -128,6 +136,10 @@ module.exports = {
           label: 'apostrophe:commandMenuArchiveSelected',
           action: {
             type: 'command-menu-manager-archive-selected'
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
           },
           shortcut: 'E'
         },
