@@ -446,9 +446,10 @@ export default {
           index
         });
       } else if (!this.widgetHasInitialModal(name)) {
+        const widget = this.newWidget(name);
         return this.insert({
           widget: {
-            type: name,
+            ...widget,
             aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
@@ -561,6 +562,26 @@ export default {
         }
         return window.apos.modules[`${item.type}-widget`];
       });
+    },
+    // Return a new widget object in which defaults are fully populated,
+    // especially valid sub-area objects, so that nested edits work on the page
+    newWidget(type) {
+      const widget = {
+        type
+      };
+      const schema = apos.modules[apos.area.widgetManagers[type]].schema;
+      schema.forEach(field => {
+        if (field.type === 'area') {
+          widget[field.name] = {
+            _id: cuid(),
+            metaType: 'area',
+            items: []
+          };
+        } else {
+          widget[field.name] = field.def ? klona(field.def) : field.def;
+        }
+      });
+      return widget;
     }
   }
 };
