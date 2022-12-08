@@ -18,10 +18,6 @@ export default {
       default() {
         return {};
       }
-    // },
-    // modal: {
-    //   type: String,
-    //   default: 'default'
     }
   },
   data() {
