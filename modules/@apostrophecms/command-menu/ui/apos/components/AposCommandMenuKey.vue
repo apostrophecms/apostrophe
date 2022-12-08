@@ -14,11 +14,8 @@
 </template>
 
 <script>
-import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin'; // TODO keep?
-
 export default {
   name: 'AposCommandMenuKey',
-  mixins: [ AposThemeMixin ], // TODO keep?
   props: {
     label: {
       type: [ String, Object ],

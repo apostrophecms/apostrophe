@@ -11,11 +11,8 @@
 </template>
 
 <script>
-import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin'; // TODO keep?
-
 export default {
   name: 'AposCommandMenuKeyList',
-  mixins: [ AposThemeMixin ], // TODO keep?
   props: {
     shortcut: {
       type: String,
