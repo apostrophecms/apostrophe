@@ -58,6 +58,20 @@ module.exports = {
   },
   methods(self) {
     return {
+      composeCommandsForModule(aposModule) {
+        return [
+          aposModule.__meta.name,
+          aposModule.__meta.chain
+            .map(entry => {
+              const metadata = aposModule.__meta.commands[entry.name] || null;
+
+              return typeof metadata === 'function'
+                ? metadata(aposModule)
+                : metadata;
+            })
+            .filter(entry => entry !== null)
+        ];
+      },
       composeRemoves(initialState) {
         const formatRemove = (state, chain) => {
           return chain
@@ -226,75 +240,50 @@ module.exports = {
           modals: concatenate || {}
         };
       },
-
-      composeCommandsForModule(aposModule) {
-        return [
-          aposModule.__meta.name,
-          aposModule.__meta.chain
-            .map(entry => {
-              const metadata = aposModule.__meta.commands[entry.name] || null;
-
-              return typeof metadata === 'function'
-                ? metadata(aposModule)
-                : metadata;
-            })
-            .filter(entry => entry !== null)
-        ];
-      },
       isCommandVisible(req, command) {
         return command.permission
-          ? self.apos.permissions.can(req, command.permission.action, command.permission.type, command.permission.mode || 'draft')
+          ? self.apos.permission.can(req, command.permission.action, command.permission.type, command.permission.mode || 'draft')
           : true;
       },
-      getVisibleGroups(commands, groups) {
-        const keys = Object.keys(commands);
+      getVisibleGroups(visibleCommands, groups = self.groups) {
+        const formatGroup = (state, [ name, field ]) =>
+          visibleCommands.includes(name)
+            ? {
+              ...state,
+              [name]: field
+            }
+            : state;
 
         return Object.fromEntries(
           Object.entries(groups)
             .map(([ key, group ]) => {
-              const fields = Object.entries(group.fields)
-                .reduce(
-                  (acc, [ name, field ]) => keys.includes(name)
-                    ? {
-                      ...acc,
-                      [name]: field
-                    }
-                    : acc,
-                  {}
-                );
+              const fields = Object.entries(group.fields).reduce(formatGroup, {});
 
-              return Object.keys(fields).length
-                ? [
-                  key,
-                  {
-                    ...group,
-                    fields
-                  }
-                ]
-                : [];
+              return [
+                key,
+                {
+                  ...group,
+                  fields
+                }
+              ];
             })
-            .filter(fields => fields.length)
+            .filter(([ , { fields = {} } ]) => Object.keys(fields).length)
         );
       },
-      getVisibleModals(commands) {
+      getVisibleModals(visibleCommands, modals = self.modals) {
         return Object.fromEntries(
-          Object.entries(self.modals)
-            .map(([ key, groups ]) => [ key, self.getVisibleGroups(commands, groups) ])
-            .filter(modals => modals.length)
+          Object.entries(modals)
+            .map(([ key, groups ]) => [ key, self.getVisibleGroups(visibleCommands, groups) ])
+            .filter(([ , groups ]) => Object.keys(groups).length)
         );
       },
       getVisible(req) {
-        const commands = Object.fromEntries(
-          Object.entries(self.commands)
-            .map(([ key, command ]) => {
-              return self.isCommandVisible(req, command)
-                ? [ key, command ]
-                : [];
-            })
-        );
+        const visibleCommands = Object.entries(self.commands)
+          .map(([ key, command ]) => self.isCommandVisible(req, command) ? key : null)
+          .filter(isNotEmpty => isNotEmpty);
 
-        const groups = self.getVisibleGroups(commands, self.groups);
-        const modals = self.getVisibleModals(commands);
+        const groups = self.getVisibleGroups(visibleCommands);
+        const modals = self.getVisibleModals(visibleCommands);
 
         return {
           groups,
@@ -309,8 +298,11 @@ module.exports = {
         );
       },
       getBrowserData(req) {
+        const { groups, modals } = self.getVisible(req);
+
         return {
-          groups: self.getVisibleGroups(req)
+          groups,
+          modals
         };
       }
     };

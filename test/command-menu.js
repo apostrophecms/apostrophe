@@ -564,15 +564,95 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it.skip('should get visible groups', function() {
+  it('should tell that the command is visible without command permission', function() {
     const req = apos.task.getReq();
+    const command = {
+      type: 'item',
+      label: 'apostrophe:commandMenuCreateNew',
+      action: {},
+      shortcut: 'c'
+    };
 
-    const actual = apos.commandMenu.getVisibleGroups(req);
+    const actual = apos.commandMenu.isCommandVisible(req, command);
+    const expected = true;
+
+    assert.equal(actual, expected);
+  });
+
+  it('should tell that the command not visible with correct command permission', function() {
+    const req = apos.task.getReq();
+    const command = {
+      type: 'item',
+      label: 'apostrophe:commandMenuCreateNew',
+      action: {},
+      shortcut: 'c',
+      permission: {
+        action: 'edit',
+        type: '@apostrophecms/page',
+        mode: 'draft'
+      }
+    };
+
+    const actual = apos.commandMenu.isCommandVisible(req, command);
+    const expected = true;
+
+    assert.equal(actual, expected);
+  });
+
+  it('should tell that the command is not visible with wrong command permission', function() {
+    const req = apos.task.getContributorReq();
+    const command = {
+      type: 'item',
+      label: 'apostrophe:commandMenuCreateNew',
+      action: {},
+      shortcut: 'c',
+      permission: {
+        action: 'edit',
+        type: '@apostrophecms/page',
+        mode: 'published'
+      }
+    };
+
+    const actual = apos.commandMenu.isCommandVisible(req, command);
+    const expected = false;
+
+    assert.equal(actual, expected);
+  });
+
+  it('should get visible groups', function() {
+    const initialState = {
+      composed: apos.util.pipe(
+        apos.commandMenu.composeRemoves,
+        apos.commandMenu.composeCommands,
+        apos.commandMenu.composeGroups,
+        apos.commandMenu.composeModals
+      )({
+        definitions: [
+          [ moduleA.commands ],
+          [ moduleB.commands ],
+          [ moduleC.commands ],
+          [ moduleD.commands ],
+          [ article.commands ],
+          [ topic.commands ]
+        ]
+      })
+    };
+
+    const built = apos.util.pipe(
+      apos.commandMenu.buildCommands,
+      apos.commandMenu.buildGroups,
+      apos.commandMenu.buildModals
+    )(initialState);
+
+    const visibleCommands = [
+      '@apostrophecms/command-menu:toggle-shortcuts'
+    ];
+
+    const actual = apos.commandMenu.getVisibleGroups(visibleCommands, built.groups);
     const expected = {
-      '@apostrophecms/command-menu:content': {
-        label: 'commandMenuContent',
+      '@apostrophecms/command-menu:general': {
+        label: 'commandMenuGeneral',
         fields: {
-          ...actual['@apostrophecms/command-menu:content']?.fields,
           '@apostrophecms/command-menu:toggle-shortcuts': {
             type: 'item',
             label: 'commandMenuShortcutToggleShortcuts',
@@ -589,33 +669,108 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it.skip('should get visible modals', function() {
-    const req = apos.task.getReq();
+  it('should get visible modals', function() {
+    const initialState = {
+      composed: apos.util.pipe(
+        apos.commandMenu.composeRemoves,
+        apos.commandMenu.composeCommands,
+        apos.commandMenu.composeGroups,
+        apos.commandMenu.composeModals
+      )({
+        definitions: [
+          [ moduleA.commands ],
+          [ moduleB.commands ],
+          [ moduleC.commands ],
+          [ moduleD.commands ],
+          [ article.commands ],
+          [ topic.commands ]
+        ]
+      })
+    };
 
-    const actual = apos.commandMenu.getVisibleModals(req);
+    const built = apos.util.pipe(
+      apos.commandMenu.buildCommands,
+      apos.commandMenu.buildGroups,
+      apos.commandMenu.buildModals
+    )(initialState);
+
+    const visibleCommands = [
+      'article:search',
+      'article:select-all',
+      'article:archive-selected',
+      'article:exit-manager',
+      'topic:search',
+      'topic:select-all',
+      'topic:archive-selected',
+      'topic:exit-manager'
+    ];
+
+    const actual = apos.commandMenu.getVisibleModals(visibleCommands, built.modals);
     const expected = {
-      groups: actual.groups,
-      modals: {
-        '@apostrophecms/file-tag:manager': {
-          ...actual.modals['@apostrophecms/file-tag:manager']
-        },
-        '@apostrophecms/file:manager': {
-          ...actual.modals['@apostrophecms/file:manager']
-        },
-        '@apostrophecms/image-tag:manager': {
-          ...actual.modals['@apostrophecms/image-tag:manager']
-        },
-        '@apostrophecms/image:manager': {
-          ...actual.modals['@apostrophecms/image:manager']
-        },
-        '@apostrophecms/page:manager': {
-          ...actual.modals['@apostrophecms/page:manager']
-        },
-        '@apostrophecms/user:manager': {
-          ...actual.modals['@apostrophecms/user:manager']
-        },
-        null: {
-          ...actual.modals.null
+      'article:manager': {
+        '@apostrophecms/command-menu:manager': {
+          label: null,
+          fields: {
+            'article:search': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSearch',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            },
+            'article:select-all': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSelectAll',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            },
+            'article:archive-selected': {
+              type: 'item',
+              label: 'apostrophe:commandMenuArchiveSelected',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            },
+            'article:exit-manager': {
+              type: 'item',
+              label: 'apostrophe:commandMenuExitManager',
+              action: {},
+              shortcut: '',
+              modal: 'article:manager'
+            }
+          }
+        }
+      },
+      'topic:manager': {
+        '@apostrophecms/command-menu:manager': {
+          label: null,
+          fields: {
+            'topic:search': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSearch',
+              action: {},
+              shortcut: ''
+            },
+            'topic:select-all': {
+              type: 'item',
+              label: 'apostrophe:commandMenuSelectAll',
+              action: {},
+              shortcut: ''
+            },
+            'topic:archive-selected': {
+              type: 'item',
+              label: 'apostrophe:commandMenuArchiveSelected',
+              action: {},
+              shortcut: ''
+            },
+            'topic:exit-manager': {
+              type: 'item',
+              label: 'apostrophe:commandMenuExitManager',
+              action: {},
+              shortcut: ''
+            }
+          }
         }
       }
     };
