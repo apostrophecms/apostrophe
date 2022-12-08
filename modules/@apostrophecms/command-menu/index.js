@@ -162,8 +162,8 @@ module.exports = {
           group.label && typeof group.label === 'object'
             ? assert.equal(typeof group.label.key, 'string', `Invalid group label key for ${name}`)
             : assert.equal(typeof group.label, 'string', `Invalid group label, must be a string, for ${name} "${typeof group.label}" provided`);
-          assert.equal(Array.isArray(group.fields), true, `Invalid command fields, must be an array for ${name}`);
-          assert.ok(group.fields.every(field => typeof field === 'string'), `Invalid command fields, must contains strings, for ${name}`);
+          assert.equal(Array.isArray(group.commands), true, `Invalid group commands, must be an array for ${name}`);
+          assert.ok(group.commands.every(field => typeof field === 'string'), `Invalid group commands, must contains strings, for ${name}`);
 
           return [ true, null ];
         } catch (error) {
@@ -198,16 +198,16 @@ module.exports = {
       },
       buildGroups(initialState) {
         const filterGroups = (state, [ name, group ]) => {
-          const fields = group.fields
+          const commands = group.commands
             .map(field => [ field, initialState.commands[field] ])
             .filter(([ , isNotEmpty ]) => isNotEmpty);
 
-          return fields.length
+          return commands.length
             ? {
               ...state,
               [name]: {
                 ...group,
-                fields: Object.fromEntries(fields)
+                commands: Object.fromEntries(commands)
               }
             }
             : state;
@@ -257,17 +257,17 @@ module.exports = {
         return Object.fromEntries(
           Object.entries(groups)
             .map(([ key, group ]) => {
-              const fields = Object.entries(group.fields).reduce(formatGroup, {});
+              const commands = Object.entries(group.commands).reduce(formatGroup, {});
 
               return [
                 key,
                 {
                   ...group,
-                  fields
+                  commands
                 }
               ];
             })
-            .filter(([ , { fields = {} } ]) => Object.keys(fields).length)
+            .filter(([ , { commands = {} } ]) => Object.keys(commands).length)
         );
       },
       getVisibleModals(visibleCommands, modals = self.modals) {

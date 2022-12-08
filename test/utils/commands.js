@@ -15,7 +15,7 @@ const moduleA = {
       null: {
         '@apostrophecms/command-menu:content': {
           label: 'commandMenuContent',
-          fields: [
+          commands: [
             'apostrophe:undo',
             'apostrophe:redo',
             '@apostrophecms/command-menu:toggle-shortcuts'
@@ -42,7 +42,7 @@ const moduleB = {
       null: {
         '@apostrophecms/command-menu:content': {
           label: 'commandMenuContent',
-          fields: [
+          commands: [
             'apostrophe:discard-draft',
             'apostrophe:publish-draft',
             '@apostrophecms/command-menu:test'
@@ -61,7 +61,7 @@ const moduleC = {
       null: {
         '@apostrophecms/command-menu:modes': {
           label: 'commandMenuModes',
-          fields: [
+          commands: [
             'apostrophe:toggle-edit-preview-mode',
             'apostrophe:toggle-publish-draft-mode'
           ]
@@ -80,7 +80,7 @@ const moduleD = {
     group: {
       '@apostrophecms/command-menu:general': {
         label: 'commandMenuGeneral',
-        fields: [
+        commands: [
           '@apostrophecms/command-menu:toggle-shortcuts',
           'command-menu'
         ]
@@ -131,7 +131,7 @@ const article = {
       'article:manager': {
         '@apostrophecms/command-menu:manager': {
           label: null,
-          fields: [
+          commands: [
             'article:create-new',
             'article:search',
             'article:select-all',
@@ -181,7 +181,7 @@ const topic = {
       'topic:manager': {
         '@apostrophecms/command-menu:manager': {
           label: null,
-          fields: [
+          commands: [
             'topic:create-new',
             'topic:search',
             'topic:select-all',

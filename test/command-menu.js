@@ -119,7 +119,7 @@ describe('Command-Menu', function() {
       groups: {
         '@apostrophecms/command-menu:general': {
           label: 'commandMenuGeneral',
-          fields: [
+          commands: [
             '@apostrophecms/command-menu:toggle-shortcuts',
             'command-menu'
           ]
@@ -149,7 +149,7 @@ describe('Command-Menu', function() {
         null: {
           '@apostrophecms/command-menu:content': {
             label: 'commandMenuContent',
-            fields: [
+            commands: [
               'apostrophe:undo',
               'apostrophe:redo',
               '@apostrophecms/command-menu:toggle-shortcuts',
@@ -160,7 +160,7 @@ describe('Command-Menu', function() {
           },
           '@apostrophecms/command-menu:modes': {
             label: 'commandMenuModes',
-            fields: [
+            commands: [
               'apostrophe:toggle-edit-preview-mode',
               'apostrophe:toggle-publish-draft-mode'
             ]
@@ -169,7 +169,7 @@ describe('Command-Menu', function() {
         'article:manager': {
           '@apostrophecms/command-menu:manager': {
             label: null,
-            fields: [
+            commands: [
               'article:create-new',
               'article:search',
               'article:select-all',
@@ -181,7 +181,7 @@ describe('Command-Menu', function() {
         'topic:manager': {
           '@apostrophecms/command-menu:manager': {
             label: null,
-            fields: [
+            commands: [
               'topic:create-new',
               'topic:search',
               'topic:select-all',
@@ -408,7 +408,7 @@ describe('Command-Menu', function() {
       groups: {
         '@apostrophecms/command-menu:general': {
           label: 'commandMenuGeneral',
-          fields: {
+          commands: {
             '@apostrophecms/command-menu:toggle-shortcuts': {
               action: {
                 payload: {},
@@ -466,7 +466,7 @@ describe('Command-Menu', function() {
         null: {
           '@apostrophecms/command-menu:content': {
             label: 'commandMenuContent',
-            fields: {
+            commands: {
               '@apostrophecms/command-menu:toggle-shortcuts': {
                 type: 'item',
                 label: 'commandMenuShortcutToggleShortcuts',
@@ -482,7 +482,7 @@ describe('Command-Menu', function() {
         'article:manager': {
           '@apostrophecms/command-menu:manager': {
             label: null,
-            fields: {
+            commands: {
               'article:create-new': {
                 type: 'item',
                 label: 'apostrophe:commandMenuCreateNew',
@@ -524,7 +524,7 @@ describe('Command-Menu', function() {
         'topic:manager': {
           '@apostrophecms/command-menu:manager': {
             label: null,
-            fields: {
+            commands: {
               'topic:create-new': {
                 type: 'item',
                 label: 'apostrophe:commandMenuCreateNew',
@@ -652,7 +652,7 @@ describe('Command-Menu', function() {
     const expected = {
       '@apostrophecms/command-menu:general': {
         label: 'commandMenuGeneral',
-        fields: {
+        commands: {
           '@apostrophecms/command-menu:toggle-shortcuts': {
             type: 'item',
             label: 'commandMenuShortcutToggleShortcuts',
@@ -710,7 +710,7 @@ describe('Command-Menu', function() {
       'article:manager': {
         '@apostrophecms/command-menu:manager': {
           label: null,
-          fields: {
+          commands: {
             'article:search': {
               type: 'item',
               label: 'apostrophe:commandMenuSearch',
@@ -745,7 +745,7 @@ describe('Command-Menu', function() {
       'topic:manager': {
         '@apostrophecms/command-menu:manager': {
           label: null,
-          fields: {
+          commands: {
             'topic:search': {
               type: 'item',
               label: 'apostrophe:commandMenuSearch',
