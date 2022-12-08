@@ -119,7 +119,7 @@ export default {
           activeOptions[option] = (activeOptions[option] !== undefined)
             ? activeOptions[option] : this.defaultOptions[option];
         }
-      })
+      });
 
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
