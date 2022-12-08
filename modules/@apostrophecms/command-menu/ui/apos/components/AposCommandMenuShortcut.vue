@@ -53,12 +53,9 @@
 </template>
 
 <script>
-import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin'; // TODO keep?
-
 export default {
   name: 'AposCommandMenuShortcut',
-  mixins: [ AposThemeMixin ], // TODO keep?
-  emits: [ 'safe-close' ], // TODO keep?
+  emits: [ 'safe-close' ],
   data() {
     return {
       groups: apos.commandMenu.modals.default,
@@ -77,7 +74,7 @@ export default {
     }
   },
   mounted() {
-    this.modal.active = true; // TODO keep?
+    this.modal.active = true;
 
     const relatedModal = apos.modal.getAt(-2);
     const properties = apos.modal.getProperties(relatedModal.id) || {};
@@ -94,10 +91,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-command-menu-shortcut {
-  // TODO remove
-}
-
 ::v-deep .apos-modal__body {
   padding: 0;
 }
@@ -127,35 +120,35 @@ export default {
   }
 
   ::v-deep .apos-button {
-    padding: 3px $spacing-half;
-    border-radius: 3px;
-    border-color: #C8C7C0;
-    border-bottom: 2px solid #C8C7C0;
     box-sizing: border-box;
     width: auto;
     height: $spacing-double;
+    padding: 3px $spacing-half;
     margin-right: $spacing-base;
     vertical-align: bottom;
+    border-radius: 3px;
+    border-color: var(--a-base-7);
+    border-bottom: 2px solid var(--a-base-7);
   }
 }
 .apos-modal__heading {
-  margin: 0;
   display: inline-block;
+  margin: 0;
   @include type-base;
-  font-size: 18px;
+  font-size: var(--a-type-large);
   line-height: $spacing-double;
 }
 
 .apos-command-menu-key {
   ::v-deep button {
-    padding: 3px $spacing-half;
-    border-radius: 3px;
-    border-color: #C8C7C0;
-    border-bottom: 2px solid #C8C7C0;
-    box-sizing: border-box;
     width: $spacing-double;
     height: $spacing-double;
+    padding: 3px $spacing-half;
     margin-left: $spacing-half;
+    box-sizing: border-box;
+    border-radius: 3px;
+    border-color: var(--a-base-7);
+    border-bottom: 2px solid var(--a-base-7);
   }
 }
 
@@ -169,22 +162,21 @@ export default {
   @include type-base;
 }
 .apos-command-menu-shortcut-group-title {
+  height: 24px;
+  margin: 0;
+  padding: $spacing-half 0;
+  box-sizing: border-box;
   @include type-base;
   color: var(--a-base-3);
   text-align: left;
-  padding: 0;
-  margin: 0;
-  height: 24px;
-  box-sizing: border-box;
-  padding: $spacing-half 0;
 }
 .apos-command-menu-shortcut-command {
-  box-sizing: border-box;
-  height: 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
   width: 100%;
+  height: 28px;
   padding: $spacing-half 0;
 }
 .apos-command-menu-shortcut-command-title {

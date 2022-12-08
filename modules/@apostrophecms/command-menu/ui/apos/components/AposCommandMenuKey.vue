@@ -59,24 +59,20 @@ export default {
 <style lang="scss" scoped>
 
 .apos-command-menu-key {
-  border: 1px solid rgba(200,199,192, 1);
-  background: linear-gradient(180deg, rgba(247, 247, 245, 1) 0%, rgba(235, 235, 232, 1) 100%);
-  color: rgba(50,50,50,1);
-  font-size: 12px;
-  font-weight: 500;
-  font-style: normal;
-  letter-spacing: 0.43px;
-  padding: 3px $spacing-half;
-  border-radius: 3px;
-  border-color: #C8C7C0;
-  border-bottom: 2px solid #C8C7C0;
-  box-sizing: border-box;
-  width: $spacing-double;
-  height: $spacing-double;
-  margin-left: $spacing-half;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  width: $spacing-double;
+  height: $spacing-double;
+  padding: 3px $spacing-half;
+  margin-left: $spacing-half;
+  border: 1px solid var(--a-base-7);
+  border-radius: 3px;
+  border-color: var(--a-base-7);
+  border-bottom: 2px solid var(--a-base-7);
+  background: linear-gradient(180deg, var(--a-base-10) 0%, var(--a-base-9) 100%);
+  @include type-base;
 
   &.apos-command-menu-key-auto {
     width: auto;
@@ -84,19 +80,15 @@ export default {
 }
 
 .apos-command-menu-text {
-  color: rgba(50,50,50,1);
-  font-size: 12px;
-  font-weight: 500;
-  font-style: normal;
-  letter-spacing: 0.43px;
-  padding: 3px 0;
-  box-sizing: border-box;
-  width: auto;
-  height: $spacing-double;
-  margin-left: $spacing-half;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  width: auto;
+  height: $spacing-double;
+  padding: 3px 0;
+  margin-left: $spacing-half;
+  @include type-base;
 }
 
 </style>
