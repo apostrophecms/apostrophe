@@ -1,5 +1,4 @@
 const assert = require('assert').strict;
-const pipe = (...functions) => (initial) => functions.reduce((accumulator, current) => current(accumulator), initial);
 
 module.exports = {
   options: {
@@ -22,22 +21,22 @@ module.exports = {
           shortcut: '?'
         }
       },
-      group: {
-        '@apostrophecms/command-menu:general': {
-          label: 'apostrophe:commandMenuGeneral',
-          fields: [
-            `${self.__meta.name}:show-shortcut-list`
-          ]
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              `${self.__meta.name}:show-shortcut-list`
+            ]
+          }
         }
       }
     };
   },
   init(self) {
-    self.rawCommands = [];
-    self.removes = [];
     self.commands = {};
     self.groups = {};
-    self.modals = {}; // TODO keep or update
+    self.modals = {};
 
     self.addShortcutModal();
     self.enableBrowserData();
@@ -46,32 +45,38 @@ module.exports = {
     return {
       'apostrophe:ready': {
         composeCommands() {
-          self.rawCommands = Object.values(self.apos.modules).flatMap(self.composeCommandsForModule);
-          self.removes = [];
-          self.commands = {};
-          self.groups = {};
-          self.modals = {};
+          const definitions = Object.fromEntries(
+            Object.values(self.apos.modules)
+              .map(self.composeCommandsForModule)
+              .filter(([ , commands = [] ]) => commands.length)
+          );
 
-          const composed = pipe(self.composeCommand, self.composeRemove, self.composeGroup)({ rawCommands: self.rawCommands });
           try {
+            const composed = self.apos.util.pipe(self.composeRemoves, self.composeCommands, self.composeGroups, self.composeModals)({ definitions });
+
             const validationResult = [].concat(
-              Object.entries(composed.command)
+              Object.entries(composed.commands)
                 .map(([ name, command ]) => self.validateCommand({
                   name,
                   command
                 })),
-              Object.entries(composed.group)
+              Object.entries(composed.groups)
                 .map(([ name, group ]) => self.validateGroup({
                   name,
                   group
+                })),
+              Object.entries(composed.modals)
+                .flatMap(([ name, modal ]) => self.validateModal({
+                  name,
+                  modal
                 }))
             );
             self.compileErrors(validationResult);
 
-            self.removes = composed.remove;
-            self.commands = composed.command;
-            self.groups = composed.group;
-            self.modals = composed.modal;
+            const built = self.apos.util.pipe(self.buildCommands, self.buildGroups, self.buildModals)({ composed });
+            self.commands = built.commands;
+            self.groups = built.groups;
+            self.modals = built.modals;
           } catch (error) {
             self.apos.util.error('Command-Menu validation error');
             self.apos.util.error(error);
@@ -82,13 +87,83 @@ module.exports = {
   },
   methods(self) {
     return {
-      compileErrors(result) {
-        const errors = result
-          .filter(([ success ]) => !success)
-          .map(([ , error ]) => error);
-        if (errors.length) {
-          throw new Error('Invalid', { cause: errors });
-        }
+      composeCommandsForModule(aposModule) {
+        return [
+          aposModule.__meta.name,
+          aposModule.__meta.chain
+            .map(entry => {
+              const metadata = aposModule.__meta.commands[entry.name] || null;
+
+              return typeof metadata === 'function'
+                ? metadata(aposModule)
+                : metadata;
+            })
+            .filter(entry => entry !== null)
+        ];
+      },
+      composeRemoves(initialState) {
+        const formatRemove = (state, chain) => {
+          return chain
+            .reduce(
+              (removes, { remove = [] }) => removes.concat(remove),
+              state
+            );
+        };
+
+        const concatenate = Object.values(initialState.definitions).reduce(formatRemove, []);
+
+        return {
+          ...initialState,
+          removes: concatenate || []
+        };
+      },
+      composeCommands(initialState) {
+        const formatCommands = (state, chain) => {
+          return chain
+            .reduce(
+              (commands, { add = {} }) => self.apos.util.merge(commands, add),
+              state
+            );
+        };
+
+        const concatenate = Object.values(initialState.definitions).reduce(formatCommands, {});
+
+        return {
+          ...initialState,
+          commands: concatenate || {}
+        };
+      },
+      composeGroups(initialState) {
+        const formatGroups = (state, chain) => {
+          return chain
+            .reduce(
+              (groups, { group = {} }) => self.apos.util.merge(groups, group),
+              state
+            );
+        };
+
+        const concatenate = Object.values(initialState.definitions).reduce(formatGroups, {});
+
+        return {
+          ...initialState,
+          groups: concatenate || {}
+        };
+      },
+      composeModals(initialState) {
+        const formatModals = (state, chain) => {
+          return chain
+            .reduce(
+              (modals, { modal = {} }) => self.apos.util.merge(modals, modal),
+              state
+            );
+        };
+
+        const concatenate = Object.values(initialState.definitions).reduce(formatModals, {});
+
+        return {
+          ...initialState,
+          modals: concatenate || {}
+        };
       },
       validateCommand({ name, command }) {
         try {
@@ -118,181 +193,128 @@ module.exports = {
           group.label && typeof group.label === 'object'
             ? assert.equal(typeof group.label.key, 'string', `Invalid group label key for ${name}`)
             : assert.equal(typeof group.label, 'string', `Invalid group label, must be a string, for ${name} "${typeof group.label}" provided`);
-          assert.equal(Array.isArray(group.fields), true, `Invalid command fields, must be an array for ${name}`);
-          assert.ok(group.fields.every(field => typeof field === 'string'), `Invalid command fields, must contains strings, for ${name}`);
+          assert.equal(Array.isArray(group.commands), true, `Invalid group commands, must be an array for ${name}`);
+          assert.ok(group.commands.every(field => typeof field === 'string'), `Invalid group commands, must contains strings, for ${name}`);
 
           return [ true, null ];
         } catch (error) {
           return [ false, error ];
         }
       },
-      composeRemove(initialState) {
-        const concatenate = []
-          .concat(...initialState.rawCommands.map(command => command.remove))
-          .filter(isNotEmpty => isNotEmpty);
+      validateModal({ name, modal }) {
+        return Object.entries(modal)
+          .map(([ groupName, group ]) => self.validateGroup({
+            name: `${name}:${groupName}`,
+            group
+          }));
+      },
+      compileErrors(result) {
+        const errors = result
+          .filter(([ success ]) => !success)
+          .map(([ , error ]) => error);
+        if (errors.length) {
+          throw new Error('Invalid', { cause: errors });
+        }
+      },
+      buildCommands(initialState) {
+        const concatenate = self.apos.util.omit(
+          initialState.composed.commands,
+          initialState.composed.removes
+        );
 
         return {
           ...initialState,
-          remove: concatenate
+          commands: concatenate || {}
         };
       },
-      composeGroup(initialState) {
-        const formatGroups = (state, { group = {} }) => {
-          return Object.entries(group)
-            .reduce(
-              (groups, [ name, attributes ]) => {
-                return {
-                  ...groups,
-                  [name]: {
-                    ...attributes,
-                    fields: (groups[name]?.fields || []).concat(attributes.fields)
-                  }
-                };
-              },
-              state
-            );
+      buildGroups(initialState) {
+        const filterGroups = (state, [ name, group ]) => {
+          const commands = group.commands
+            .map(field => [ field, initialState.commands[field] ])
+            .filter(([ , isNotEmpty ]) => isNotEmpty);
+
+          return commands.length
+            ? {
+              ...state,
+              [name]: {
+                ...group,
+                commands: Object.fromEntries(commands)
+              }
+            }
+            : state;
         };
 
-        const concatenate = initialState.rawCommands.reduce(formatGroups, {});
+        const concatenate = Object.entries(initialState.composed.groups).reduce(filterGroups, {});
 
         return {
           ...initialState,
-          group: concatenate
+          groups: concatenate || {}
         };
       },
-      composeCommand(initialState) {
-        const concatenate = []
-          .concat(...initialState.rawCommands.map(command => command.add))
-          .filter(isNotEmpty => isNotEmpty);
+      buildModals(initialState) {
+        const formatModals = (state, [ modal, groups ]) => {
+          const built = self.buildGroups({
+            commands: initialState.commands,
+            composed: { groups }
+          });
+
+          return {
+            ...state,
+            [modal]: built.groups
+          };
+        };
+
+        const concatenate = Object.entries(initialState.composed.modals).reduce(formatModals, {});
 
         return {
           ...initialState,
-          command: concatenate
-            .reduce(
-              (acc, command) => ({
-                ...acc,
-                ...command
-              }),
-              {}
-            )
+          modals: concatenate || {}
         };
-      },
-      composeModal(initialState) { // TODO keep or remove
-        const formatModals = (state, { group }) => {
-          return state;
-        };
-
-        const concatenate = initialState.rawCommands.reduce(formatModals, {});
-
-        return {
-          ...initialState,
-          modal: concatenate
-        };
-      },
-      composeCommandsForModule(aposModule) {
-        return aposModule.__meta.chain
-          .map(entry => {
-            const metadata = aposModule.__meta.commands[entry.name] || null;
-
-            return typeof metadata === 'function'
-              ? metadata(aposModule)
-              : metadata;
-          })
-          .filter(entry => entry !== null);
       },
       isCommandVisible(req, command) {
         return command.permission
-          ? self.apos.permissions.can(req, command.permission.action, command.permission.type, command.permission.mode || 'draft')
+          ? self.apos.permission.can(req, command.permission.action, command.permission.type, command.permission.mode || 'draft')
           : true;
       },
-      getVisibleGroups(commands) {
-        const keys = Object.keys(commands);
+      getVisibleGroups(visibleCommands, groups = self.groups) {
+        const formatGroup = (state, [ name, field ]) =>
+          visibleCommands.includes(name)
+            ? {
+              ...state,
+              [name]: field
+            }
+            : state;
 
         return Object.fromEntries(
-          Object.entries(self.groups)
+          Object.entries(groups)
             .map(([ key, group ]) => {
-              const fields = group.fields
-                .reduce(
-                  (acc, field) => keys.includes(field)
-                    ? {
-                      ...acc,
-                      [field]: commands[field]
-                    }
-                    : acc,
-                  {}
-                );
+              const commands = Object.entries(group.commands).reduce(formatGroup, {});
 
-              return Object.keys(fields).length
-                ? [
-                  key,
-                  {
-                    ...group,
-                    fields
-                  }
-                ]
-                : [];
+              return [
+                key,
+                {
+                  ...group,
+                  commands
+                }
+              ];
             })
-            .filter(groups => groups.length)
+            .filter(([ , { commands = {} } ]) => Object.keys(commands).length)
         );
       },
-      getVisibleModals(commands) {
-        const keys = Object.keys(commands);
-
-        const groups = Object.fromEntries(
-          Object.entries(self.groups)
-            .map(([ key, group ]) => {
-              const fields = group.fields
-                .reduce(
-                  (acc, field) => keys.includes(field)
-                    ? { ...acc, [field]: commands[field] }
-                    : acc,
-                  {}
-                );
-
-              return Object.keys(fields).length
-                ? [ key, { ...group, fields } ]
-                : [];
-            })
-            .filter(groups => groups.length)
+      getVisibleModals(visibleCommands, modals = self.modals) {
+        return Object.fromEntries(
+          Object.entries(modals)
+            .map(([ key, groups ]) => [ key, self.getVisibleGroups(visibleCommands, groups) ])
+            .filter(([ , groups ]) => Object.keys(groups).length)
         );
-
-        const modals = Object.entries(groups)
-          .reduce(
-            (acc, [ key, group ]) => {
-              Object.entries(group.fields)
-                .forEach(([ name, field ]) => {
-                  const modal = field.modal || null;
-                  acc[modal] = {
-                    ...acc[modal],
-                    [key]: {
-                      ...(acc[modal]?.[key] || group),
-                      fields: {
-                        ...acc[modal]?.[key]?.fields,
-                        [name]: field
-                      }
-                    }
-                  };
-                });
-
-              return acc;
-            },
-            {}
-          );
-
-        return modals;
       },
       getVisible(req) {
-        const commands = Object.fromEntries(
-          Object.entries(self.commands)
-            .map(([ key, command ]) => {
-              return !self.removes.includes(key) && self.isCommandVisible(req, command)
-                ? [ key, command ]
-                : [];
-            })
-        );
+        const visibleCommands = Object.entries(self.commands)
+          .map(([ key, command ]) => self.isCommandVisible(req, command) ? key : null)
+          .filter(isNotEmpty => isNotEmpty);
 
-        const groups = self.getVisibleGroups(commands);
-        const modals = self.getVisibleModals(commands);
+        const groups = self.getVisibleGroups(visibleCommands);
+        const modals = self.getVisibleModals(visibleCommands);
 
         return {
           groups,
@@ -311,12 +333,12 @@ module.exports = {
           return false;
         }
 
-        const visible = self.getVisible(req);
+        const { groups, modals } = self.getVisible(req);
 
         return {
           components: { the: self.options.components.the || 'TheAposCommandMenu' },
-          groups: visible.groups,
-          modals: visible.modals
+          groups,
+          modals
         };
       }
     };

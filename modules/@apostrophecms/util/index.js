@@ -799,6 +799,19 @@ module.exports = {
           return self.apos.util.cloneReq(result, properties);
         };
         return result;
+      },
+      pipe: (...functions) => (initial) => functions.reduce((accumulator, current) => current(accumulator), initial),
+      merge(...objects) {
+        const concatArrays = (objValue, srcValue) => {
+          if (Array.isArray(objValue)) {
+            return objValue.concat(srcValue);
+          }
+        };
+
+        return _.mergeWith({}, ...objects, concatArrays);
+      },
+      omit(source, keys) {
+        return _.omit(source, keys);
       }
     };
   },

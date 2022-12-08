@@ -105,7 +105,6 @@ module.exports = {
           action: {
             type: 'command-menu-manager-create-new'
           },
-          modal: `${self.__meta.name}:manager`,
           shortcut: 'C'
         },
         [`${self.__meta.name}:search`]: {
@@ -114,7 +113,6 @@ module.exports = {
           action: {
             type: 'command-menu-manager-focus-search'
           },
-          modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+F Ctrl+F'
         },
         [`${self.__meta.name}:select-all`]: {
@@ -123,7 +121,6 @@ module.exports = {
           action: {
             type: 'command-menu-manager-select-all'
           },
-          modal: `${self.__meta.name}:manager`,
           shortcut: 'Meta+Shift+A Ctrl+Shift+A'
         },
         [`${self.__meta.name}:archive-selected`]: {
@@ -132,7 +129,6 @@ module.exports = {
           action: {
             type: 'command-menu-manager-archive-selected'
           },
-          modal: `${self.__meta.name}:manager`,
           shortcut: 'E'
         },
         [`${self.__meta.name}:exit-manager`]: {
@@ -141,21 +137,29 @@ module.exports = {
           action: {
             type: 'command-menu-manager-close'
           },
-          modal: `${self.__meta.name}:manager`,
           shortcut: 'Q'
         }
       },
-      group: {
-        '@apostrophecms/command-menu:manager': {
-          label: 'apostrophe:commandMenuManager',
-          fields: [
-            `${self.__meta.name}:manager`,
-            `${self.__meta.name}:create-new`,
-            `${self.__meta.name}:search`,
-            `${self.__meta.name}:select-all`,
-            `${self.__meta.name}:archive-selected`,
-            `${self.__meta.name}:exit-manager`
-          ]
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:manager': {
+            label: 'apostrophe:commandMenuManager',
+            commands: [
+              `${self.__meta.name}:manager`
+            ]
+          }
+        },
+        [`${self.__meta.name}:manager`]: {
+          '@apostrophecms/command-menu:manager': {
+            label: '',
+            commands: [
+              `${self.__meta.name}:create-new`,
+              `${self.__meta.name}:search`,
+              `${self.__meta.name}:select-all`,
+              `${self.__meta.name}:archive-selected`,
+              `${self.__meta.name}:exit-manager`
+            ]
+          }
         }
       }
     };

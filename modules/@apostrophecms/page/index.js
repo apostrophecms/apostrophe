@@ -57,7 +57,6 @@ module.exports = {
           action: {
             type: 'command-menu-manager-create-new'
           },
-          modal: `${self.__meta.name}:manager`,
           shortcut: 'C'
         },
         [`${self.__meta.name}:exit-manager`]: {
@@ -66,17 +65,18 @@ module.exports = {
           action: {
             type: 'command-menu-manager-close'
           },
-          modal: `${self.__meta.name}:manager`,
           shortcut: 'Q'
         }
       },
-      group: {
-        '@apostrophecms/command-menu:manager': {
-          label: null,
-          fields: [
-            `${self.__meta.name}:create-new`,
-            `${self.__meta.name}:exit-manager`
-          ]
+      modal: {
+        [`${self.__meta.name}:manager`]: {
+          '@apostrophecms/command-menu:manager': {
+            label: '',
+            commands: [
+              `${self.__meta.name}:create-new`,
+              `${self.__meta.name}:exit-manager`
+            ]
+          }
         }
       }
     };

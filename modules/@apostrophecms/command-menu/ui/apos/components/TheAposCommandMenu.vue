@@ -13,11 +13,15 @@ export default {
   name: 'TheAposCommandMenu',
   mixins: [ AposThemeMixin ],
   props: {
-    groups: {
+    modals: {
       type: Object,
       default() {
         return {};
       }
+    // },
+    // modal: {
+    //   type: String,
+    //   default: 'default'
     }
   },
   data() {
@@ -32,16 +36,36 @@ export default {
     };
   },
   computed: {
+    modal() {
+      const relatedModal = apos.modal.getAt(-1);
+      const properties = apos.modal.getProperties(relatedModal.id) || {};
+
+      if (properties.itemName !== '@apostrophecms/command-menu:shortcut') {
+        return properties.itemName || 'default';
+      }
+
+      const fallbackRelatedModal = apos.modal.getAt(-2);
+      const fallbackProperties = apos.modal.getProperties(fallbackRelatedModal.id) || {};
+
+      return fallbackProperties.itemName || 'default';
+    },
     shortcuts() {
+      const modals = Object.values(this.modals.default)
+        .concat(
+          this.modal !== 'default'
+            ? Object.values(this.modals[this.modal] || {})
+            : []
+        );
+
       return Object.fromEntries(
-        Object.values(this.groups)
+        modals
           .flatMap(group => {
-            return Object.values(group.fields)
-              .filter(field => field.shortcut)
-              .flatMap(field => {
-                return field.shortcut
+            return Object.values(group.commands)
+              .filter(command => command.shortcut)
+              .flatMap(command => {
+                return command.shortcut
                   .split(' ')
-                  .map(shortcut => [ shortcut.toUpperCase(), field.action ]);
+                  .map(shortcut => [ shortcut.toUpperCase(), command.action ]);
               });
           })
       );

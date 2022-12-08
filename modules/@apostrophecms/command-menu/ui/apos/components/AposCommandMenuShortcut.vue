@@ -35,7 +35,7 @@
                 {{ $t(group.label) }}
               </h3>
               <div
-                v-for="(command, commandName) in group.fields"
+                v-for="(command, commandName) in group.commands"
                 :key="commandName"
                 class="apos-command-menu-shortcut-command"
               >
@@ -56,18 +56,10 @@ import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin'; //
 export default {
   name: 'AposCommandMenuShortcut',
   mixins: [ AposThemeMixin ], // TODO keep?
-  props: {
-    commands: { // TODO keep?
-      type: Array,
-      default: function () {
-        return [];
-      }
-    }
-  },
   emits: [ 'safe-close' ], // TODO keep?
   data() {
     return {
-      groups: apos.commandMenu.groups,
+      groups: apos.commandMenu.modals.default,
       modal: {
         busy: false,
         active: false,
@@ -79,17 +71,17 @@ export default {
   },
   computed: {
     hasCommands() {
-      return this.groups;
+      return Object.keys(this.groups).length;
     }
   },
   mounted() {
     this.modal.active = true; // TODO keep?
 
-    const topModal = apos.modal.getTop(-1); // TODO rename
-    const properties = apos.modal.getProperties(topModal.id) || {};
+    const relatedModal = apos.modal.getAt(-2);
+    const properties = apos.modal.getProperties(relatedModal.id) || {};
 
-    const commands = apos.commandMenu.modals[properties.itemName || null] || null;
-    this.groups = commands;
+    const groups = apos.commandMenu.modals[properties.itemName || 'default'] || {};
+    this.groups = groups;
   },
   methods: {
     close() {
