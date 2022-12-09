@@ -38,7 +38,8 @@ jobs:
         with:
           mongodb-version: ${{ matrix.mongodb-version }}
 
-      - run: (node --version | grep v14) && npm install -g npm@8 
+      # Exit status must be succesful in the end
+      - run:  ( ( node --version | grep v14 ) && npm install -g npm@8 ) || echo "npm OK"
 
       - run: npm install
 
