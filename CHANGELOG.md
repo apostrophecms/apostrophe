@@ -5,6 +5,7 @@
 ### Fixes
 
 * Nested areas work properly in widgets that have the `initialModal: false` property.
+* Apostrophe's search index now properly incorporates most string field types as in A2.
 
 ### Adds
 

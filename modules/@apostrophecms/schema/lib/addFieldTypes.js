@@ -78,6 +78,18 @@ module.exports = (self) => {
           }
         }
       }
+    },
+    index: function (value, field, texts) {
+      for (const item of ((value && value.items) || [])) {
+        const manager = self.apos.area.getWidgetManager(item.type);
+        if (!manager) {
+          self.apos.area.warnMissingWidgetType(item.type);
+          return;
+        }
+        if (manager.addSearchTexts) {
+          manager.addSearchTexts(item, texts);
+        }
+      }
     }
   });
 
