@@ -1,6 +1,5 @@
 <template>
   <AposModal
-    v-if="hasCommands"
     :modal="modal"
     class="apos-command-menu-shortcut"
     @esc="close"
@@ -81,6 +80,10 @@ export default {
 
     const groups = apos.commandMenu.modals[properties.itemName || 'default'] || {};
     this.groups = groups;
+
+    if (!this.hasCommands) {
+      this.$emit('safe-close');
+    }
   },
   methods: {
     close() {
