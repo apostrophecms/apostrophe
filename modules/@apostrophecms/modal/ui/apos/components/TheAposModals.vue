@@ -80,16 +80,17 @@ export default {
       }
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
     },
-    getTop(index) {
-      // TODO rename and refactor
-      const top = this.stack[this.stack.length - 2] || {};
+    getAt(index) {
+      const last = this.stack.length - 1;
+      const target = index < 0
+        ? last + 1 + index
+        : index > this.stack.length
+          ? last
+          : index;
 
-      return top;
+      const modal = this.stack[target] || {};
 
-      // const [ , below = {}, top = {} ] = this.stack;
-      // console.log({ index, below, top, stack: this.stack });
-
-      // return index === -1 ? below : top; // TODO delete index
+      return modal;
     },
     getProperties(id) {
       const [ stackModal = null ] = this.stack.filter(modal => id === modal.id);

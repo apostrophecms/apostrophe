@@ -65,22 +65,24 @@ module.exports = {
           shortcut: 'Meta+Shift+D Ctrl+Shift+D'
         }
       },
-      group: {
-        '@apostrophecms/command-menu:content': {
-          label: 'apostrophe:commandMenuContent',
-          fields: [
-            `${self.__meta.name}:undo`,
-            `${self.__meta.name}:redo`,
-            `${self.__meta.name}:discard-draft`,
-            `${self.__meta.name}:publish-draft`
-          ]
-        },
-        '@apostrophecms/command-menu:mode': {
-          label: 'apostrophe:commandMenuMode',
-          fields: [
-            `${self.__meta.name}:toggle-edit-preview-mode`,
-            `${self.__meta.name}:toggle-published-draft-document`
-          ]
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:content': {
+            label: 'apostrophe:commandMenuContent',
+            commands: [
+              `${self.__meta.name}:undo`,
+              `${self.__meta.name}:redo`,
+              `${self.__meta.name}:discard-draft`,
+              `${self.__meta.name}:publish-draft`
+            ]
+          },
+          '@apostrophecms/command-menu:mode': {
+            label: 'apostrophe:commandMenuMode',
+            commands: [
+              `${self.__meta.name}:toggle-edit-preview-mode`,
+              `${self.__meta.name}:toggle-published-draft-document`
+            ]
+          }
         }
       }
     };

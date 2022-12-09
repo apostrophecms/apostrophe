@@ -1,6 +1,5 @@
 <template>
   <AposModal
-    v-if="hasCommands"
     :modal="modal"
     class="apos-command-menu-shortcut"
     @esc="close"
@@ -35,11 +34,13 @@
                 {{ $t(group.label) }}
               </h3>
               <div
-                v-for="(command, commandName) in group.fields"
+                v-for="(command, commandName) in group.commands"
                 :key="commandName"
                 class="apos-command-menu-shortcut-command"
               >
-                <div class="apos-command-menu-shortcut-command-title">{{ $t(command.label) }}</div>
+                <div class="apos-command-menu-shortcut-command-title">
+                  {{ $t(command.label) }}
+                </div>
                 <AposCommandMenuKeyList :shortcut="command.shortcut" />
               </div>
             </div>
@@ -51,23 +52,12 @@
 </template>
 
 <script>
-import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin'; // TODO keep?
-
 export default {
   name: 'AposCommandMenuShortcut',
-  mixins: [ AposThemeMixin ], // TODO keep?
-  props: {
-    commands: { // TODO keep?
-      type: Array,
-      default: function () {
-        return [];
-      }
-    }
-  },
-  emits: [ 'safe-close' ], // TODO keep?
+  emits: [ 'safe-close' ],
   data() {
     return {
-      groups: apos.commandMenu.groups,
+      groups: apos.commandMenu.modals.default,
       modal: {
         busy: false,
         active: false,
@@ -79,17 +69,21 @@ export default {
   },
   computed: {
     hasCommands() {
-      return this.groups;
+      return Object.keys(this.groups).length;
     }
   },
   mounted() {
-    this.modal.active = true; // TODO keep?
+    this.modal.active = true;
 
-    const topModal = apos.modal.getTop(-1); // TODO rename
-    const properties = apos.modal.getProperties(topModal.id) || {};
+    const relatedModal = apos.modal.getAt(-2);
+    const properties = apos.modal.getProperties(relatedModal.id) || {};
 
-    const commands = apos.commandMenu.modals[properties.itemName || null] || null;
-    this.groups = commands;
+    const groups = apos.commandMenu.modals[properties.itemName || 'default'] || {};
+    this.groups = groups;
+
+    if (!this.hasCommands) {
+      this.$emit('safe-close');
+    }
   },
   methods: {
     close() {
@@ -100,10 +94,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-command-menu-shortcut {
-  // TODO remove
-}
-
 ::v-deep .apos-modal__body {
   padding: 0;
 }
@@ -133,35 +123,35 @@ export default {
   }
 
   ::v-deep .apos-button {
-    padding: 3px $spacing-half;
-    border-radius: 3px;
-    border-color: #C8C7C0;
-    border-bottom: 2px solid #C8C7C0;
     box-sizing: border-box;
     width: auto;
     height: $spacing-double;
+    padding: 3px $spacing-half;
     margin-right: $spacing-base;
     vertical-align: bottom;
+    border-radius: 3px;
+    border-color: var(--a-base-7);
+    border-bottom: 2px solid var(--a-base-7);
   }
 }
 .apos-modal__heading {
-  margin: 0;
   display: inline-block;
+  margin: 0;
   @include type-base;
-  font-size: 18px;
+  font-size: var(--a-type-large);
   line-height: $spacing-double;
 }
 
 .apos-command-menu-key {
   ::v-deep button {
-    padding: 3px $spacing-half;
-    border-radius: 3px;
-    border-color: #C8C7C0;
-    border-bottom: 2px solid #C8C7C0;
-    box-sizing: border-box;
     width: $spacing-double;
     height: $spacing-double;
+    padding: 3px $spacing-half;
     margin-left: $spacing-half;
+    box-sizing: border-box;
+    border-radius: 3px;
+    border-color: var(--a-base-7);
+    border-bottom: 2px solid var(--a-base-7);
   }
 }
 
@@ -175,22 +165,21 @@ export default {
   @include type-base;
 }
 .apos-command-menu-shortcut-group-title {
+  height: 24px;
+  margin: 0;
+  padding: $spacing-half 0;
+  box-sizing: border-box;
   @include type-base;
   color: var(--a-base-3);
   text-align: left;
-  padding: 0;
-  margin: 0;
-  height: 24px;
-  box-sizing: border-box;
-  padding: $spacing-half 0;
 }
 .apos-command-menu-shortcut-command {
-  box-sizing: border-box;
-  height: 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
   width: 100%;
+  height: 28px;
   padding: $spacing-half 0;
 }
 .apos-command-menu-shortcut-command-title {
