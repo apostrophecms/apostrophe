@@ -81,7 +81,7 @@ module.exports = (self) => {
     },
     index: function (value, field, texts) {
       for (const item of ((value && value.items) || [])) {
-        const manager = self.apos.area.getWidgetManager(item.type);
+        const manager = item.type && self.apos.area.getWidgetManager(item.type);
         if (!manager) {
           self.apos.area.warnMissingWidgetType(item.type);
           return;
@@ -856,6 +856,11 @@ module.exports = (self) => {
         return true;
       }
       return self.isEqual(req, field.schema, one[field.name], two[field.name]);
+    },
+    index: function (value, field, texts) {
+      if (value) {
+        self.apos.schema.indexFields(field.schema, value, texts);
+      }
     },
     def: {}
   });
