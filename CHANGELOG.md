@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.34.0 (2022-12-12)
 
 ### Fixes
 
