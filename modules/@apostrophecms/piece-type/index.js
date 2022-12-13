@@ -1060,6 +1060,34 @@ module.exports = {
             });
           }
         }
+      },
+
+      delocalize: {
+        usage: '',
+        async task(argv) {
+          if (!self.options.autopublish && !self.options.localized) {
+            console.log('Removing draft documents and updating published ones');
+            const req = self.apos.task.getReq();
+            const docs = await self.find(req).toArray();
+
+            for (const doc of docs) {
+              if (doc.aposMode && doc.aposMode === 'draft') {
+                await self.delete(req, doc);
+              } else {
+                const newDoc = {
+                  ...doc,
+                  aposLocale: undefined,
+                  aposMode: undefined,
+                  _id: doc.aposDocId
+                };
+                await self.update(req, newDoc);
+              }
+            }
+            console.log('Done delocalizing module');
+          } else {
+            throw new Error('Autopublish or localized option is not false, so the module cannot be delocalized.');
+          }
+        }
       }
     };
   }
