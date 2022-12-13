@@ -1063,29 +1063,34 @@ module.exports = {
       },
 
       delocalize: {
-        usage: '',
+        usage: 'Remove duplicate documents when a module has not "localized" and "autopublish" anymore.' +
+        '\nOptions are:' +
+        '\n- locale: if not set, it is the project\'s default locale' +
+        '\n- mode: by default, published' +
+        '\nExample: node app [moduleName]:delocalize --mode=published --locale=en',
         async task(argv) {
           if (!self.options.autopublish && !self.options.localized) {
-            console.log('Removing draft documents and updating published ones');
-            const req = self.apos.task.getReq();
-            const docs = await self.find(req).toArray();
+            const locale = argv.locale || self.apos.i18n.defaultLocale;
+            const mode = argv.mode || 'published';
+            console.log(`Removing duplicated documents and updating ${mode} ones`);
 
-            for (const doc of docs) {
-              if (doc.aposMode && doc.aposMode === 'draft') {
-                await self.delete(req, doc);
-              } else {
+            await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+              await self.apos.doc.db.removeOne({ _id: doc._id });
+              if (doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
                 const newDoc = {
                   ...doc,
                   aposLocale: undefined,
                   aposMode: undefined,
                   _id: doc.aposDocId
                 };
-                await self.update(req, newDoc);
+                await self.apos.doc.db.insertOne(newDoc);
               }
-            }
-            console.log('Done delocalizing module');
+            });
+            await self.apos.attachment.recomputeAllDocReferences();
+
+            console.log(`Done delocalizing module ${self.name}`);
           } else {
-            throw new Error('Autopublish or localized option is not false, so the module cannot be delocalized.');
+            throw new Error('Autopublish or localized option are not false, so the module cannot be delocalized.');
           }
         }
       }
