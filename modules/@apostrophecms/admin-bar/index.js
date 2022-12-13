@@ -30,7 +30,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-redo'
           },
-          shortcut: 'Meta+Shift+Z Ctrl+Y'
+          shortcut: 'Meta+Shift+Z Ctrl+Shift+Z'
         },
         [`${self.__meta.name}:discard-draft`]: {
           type: 'item',
