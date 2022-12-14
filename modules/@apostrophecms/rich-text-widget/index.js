@@ -211,7 +211,7 @@ module.exports = {
         return widget.content;
       },
 
-      // Handle permalinkss
+      // Handle permalinks
       async load(req, widgets) {
         const widgetsByDocId = new Map();
         let ids = [];
@@ -457,7 +457,54 @@ module.exports = {
         return output;
       },
       async output(_super, req, widget, options, _with) {
-        const output = await _super(req, widget, options, _with);
+        let i;
+        let content = widget.content || '';
+        // "Why no regexps?" We need to do this as quickly as we can.
+        // indexOf and lastIndexOf are much faster.
+        for (const doc of (widget._permalinkDocs || [])) {
+          let offset = 0;
+          while (true) {
+            i = content.indexOf('apostrophe-permalink-' + doc._id, offset);
+            if (i === -1) {
+              break;
+            }
+            offset = i + ('apostrophe-permalink-' + doc._id).length;
+            let updateTitle = content.indexOf('?updateTitle=1', i);
+            if (updateTitle === i + ('apostrophe-permalink-' + doc._id).length) {
+              updateTitle = true;
+            } else {
+              updateTitle = false;
+            }
+            // If you can edit the widget, you don't want the link replaced,
+            // as that would lose the permalink if you edit the widget
+            const left = content.lastIndexOf('<', i);
+            const href = content.indexOf(' href="', left);
+            const close = content.indexOf('"', href + 7);
+            if (!widget._edit) {
+              if ((left !== -1) && (href !== -1) && (close !== -1)) {
+                content = content.substr(0, href + 6) + doc._url + content.substr(close + 1);
+              } else {
+                // So we don't get stuck in an infinite loop
+                break;
+              }
+            }
+            if (!updateTitle) {
+              continue;
+            }
+            const right = content.indexOf('>', left);
+            const nextLeft = content.indexOf('<', right);
+            if ((right !== -1) && (nextLeft !== -1)) {
+              content = content.substr(0, right + 1) + self.apos.util.escapeHtml(doc.title) + content.substr(nextLeft);
+            }
+          }
+        }
+        // We never modify the original widget.content because we do not want
+        // it to lose its permalinks in the database
+        const _widget = {
+          ...widget,
+          content
+        };
+        return _super(req, _widget, options, _with);
       },
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
