@@ -17,7 +17,7 @@
 //
 // For security the `password` property is not stored as plaintext and
 // is not kept in the aposDocs collection. Instead, it is hashed and salted
-// using the `credential` module and the resulting hash is stored
+// using the `credentials` module and the resulting hash is stored
 // in a separate `aposUsersSafe` collection.
 //
 // Additional secrets may be hashed in this way. If you set the
@@ -29,9 +29,8 @@
 // secret property. This is convenient when implementing a module
 // such as `@apostrophecms/signup`.
 
-const credential = require('credential');
+const credentials = require('credentials');
 const prompts = require('prompts');
-const Promise = require('bluebird');
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -372,7 +371,7 @@ module.exports = {
         if (!doc[secret]) {
           return;
         }
-        const hash = await require('util').promisify(self.pw.hash)(doc[secret]);
+        const hash = await self.pw.hash(doc[secret]);
         delete doc[secret];
         safeUser[secret + 'Hash'] = hash;
         doc[`_${secret}Updated`] = true;
@@ -402,13 +401,12 @@ module.exports = {
       // Otherwise the method returns normally.
 
       async verifySecret(user, secret, attempt) {
-        const verify = Promise.promisify(self.pw.verify);
         const safeUser = await self.safe.findOne({ _id: user._id });
         if (!safeUser) {
           throw new Error('No such user in the safe.');
         }
 
-        const isVerified = await verify(safeUser[secret + 'Hash'], attempt);
+        const isVerified = await self.pw.verify(safeUser[secret + 'Hash'], attempt);
 
         if (isVerified) {
           return null;
@@ -432,7 +430,7 @@ module.exports = {
 
       // Initialize the [credential](https://npmjs.org/package/credential) module.
       initializeCredential() {
-        self.pw = credential({
+        self.pw = credentials({
           // For efficient unit tests only. Reducing the work factor
           // for actual credentials increases the speed of brute force attacks
           // if the database is ever compromised
