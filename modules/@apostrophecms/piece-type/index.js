@@ -1062,12 +1062,54 @@ module.exports = {
         }
       },
 
-      delocalize: {
+      localize: {
+        usage: 'Add draft version documents for each locale when a module has the "localized" option.' +
+        '\nExample: node app [moduleName]:localize',
+        async task() {
+          if (self.options.localized) {
+            console.log('Adding draft version to documents');
+
+            await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+              await self.apos.doc.db.removeOne({ _id: doc._id });
+
+              for (const locale of Object.keys(self.apos.i18n.locales)) {
+                const lastPublishedAt = new Date();
+                const newDraft = {
+                  ...doc,
+                  aposLocale: `${locale}:draft`,
+                  aposMode: 'draft',
+                  aposDocId: doc._id,
+                  _id: `${doc.aposDocId}:${locale}:draft`,
+                  lastPublishedAt
+                };
+                const newPublished = {
+                  ...doc,
+                  aposLocale: `${locale}:published`,
+                  aposMode: 'published',
+                  aposDocId: doc._id,
+                  _id: `${doc.aposDocId}:${locale}:published`,
+                  lastPublishedAt
+                };
+                await self.apos.doc.db.insertOne(newDraft);
+                await self.apos.doc.db.insertOne(newPublished);
+              }
+            });
+
+            await self.apos.attachment.recomputeAllDocReferences();
+
+            console.log(`Done localizing module ${self.name}`);
+          } else {
+            throw new Error('Localized option not set to true, so the module cannot be localized.');
+          }
+        }
+      },
+
+      unlocalize: {
         usage: 'Remove duplicate documents when a module has not "localized" and "autopublish" anymore.' +
         '\nOptions are:' +
         '\n- locale: if not set, it is the project\'s default locale' +
         '\n- mode: by default, published' +
-        '\nExample: node app [moduleName]:delocalize --mode=published --locale=en',
+        '\nExample: node app [moduleName]:unlocalize --mode=published --locale=en',
         async task(argv) {
           if (!self.options.autopublish && !self.options.localized) {
             const locale = argv.locale || self.apos.i18n.defaultLocale;
@@ -1088,9 +1130,9 @@ module.exports = {
             });
             await self.apos.attachment.recomputeAllDocReferences();
 
-            console.log(`Done delocalizing module ${self.name}`);
+            console.log(`Done unlocalizing module ${self.name}`);
           } else {
-            throw new Error('Autopublish or localized option are not false, so the module cannot be delocalized.');
+            throw new Error('Autopublish or localized option are not false, so the module cannot be unlocalized.');
           }
         }
       }
