@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Replace [`credential`](https://www.npmjs.com/package/credential) package with [`credentials`](https://www.npmjs.com/package/credentials) to fix the [`mout` Prototype Pollution vulnerability](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-7792).
+
 ## 3.34.0 (2022-12-12)
 
 ### Fixes
