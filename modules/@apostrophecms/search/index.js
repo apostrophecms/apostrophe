@@ -68,6 +68,7 @@ module.exports = {
     self.options.suggestions.url = self.options.suggestions.url || self.action + '/suggest';
     self.dispatchAll();
     self.enableFilters();
+    self.addMigrations();
   },
   routes(self) {
     return {
@@ -117,6 +118,17 @@ module.exports = {
             } ]);
           }
         }
+      },
+
+      addMigrations() {
+        self.addIndexFixMigration();
+      },
+
+      addIndexFixMigration() {
+        // Search index lacked most text fields, correct that with a one-time migration
+        self.apos.migration.add('search-index-fix', async () => {
+          return self.indexTask();
+        });
       },
 
       suggest(req, q) {
@@ -235,7 +247,6 @@ module.exports = {
       indexDoc(req, doc) {
 
         const texts = self.getSearchTexts(doc);
-
         _.each(texts, function (text) {
           if (text.text === undefined) {
             text.text = '';
@@ -316,29 +327,11 @@ module.exports = {
           text: doc.slug,
           silent: true
         });
-
-        // Areas can be schemaless so find them automatically
-        self.apos.area.walk(doc, function (area, dotPath) {
-          // Do not examine areas accessed via temporarily
-          // present information loaded via relationships, such as
-          // snippets in a snippet widget. Allow those items to be found
-          // on their own as search results, and avoid bloating the
-          // search text up to the 16MB limit
-          if (dotPath.match(/\._\w/)) {
-            return;
-          }
-          _.each(area.items, function (item) {
-            const manager = self.apos.area.getWidgetManager(item.type);
-            if (!manager) {
-              self.apos.area.warnMissingWidgetType(item.type);
-              return;
-            }
-            if (manager.addSearchTexts) {
-              manager.addSearchTexts(item, texts);
-            }
-          });
-        });
-
+        const manager = self.apos.doc.getManager(doc.type);
+        if (manager) {
+          const schema = manager.schema;
+          self.apos.schema.indexFields(schema, doc, texts);
+        }
         return texts;
       },
 
@@ -358,6 +351,13 @@ module.exports = {
 
       docUnversionedFields(req, doc, fields) {
         fields.push('titleSortified', 'highSearchText', 'highSearchWords', 'lowSearchText', 'searchSummary');
+      },
+
+      async indexTask() {
+        const req = self.apos.task.getReq();
+        return self.apos.migration.eachDoc({}, doc => {
+          return self.indexTaskOne(req, doc);
+        });
       }
     };
   },
@@ -366,12 +366,11 @@ module.exports = {
       index: {
         usage: stripIndent`
           Rebuild the search index. Normally this happens automatically.
-          This should only be needed if you have changed the"searchable" property
+          This should only be needed if you have changed the "searchable" property
           for various fields or types.
         `,
-        task(argv) {
-          const req = self.apos.task.getReq();
-          return self.apos.migration.eachDoc({}, _.partial(self.indexTaskOne, req));
+        async task(argv) {
+          await self.indexTask();
         }
       }
     };

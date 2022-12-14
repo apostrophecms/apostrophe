@@ -268,7 +268,12 @@ export default {
       };
     },
     widgetLabel() {
-      return window.apos.modules[`${this.widget.type}-widget`].label;
+      const moduleName = `${this.widget.type}-widget`;
+      const module = window.apos.modules[moduleName];
+      if (!module) {
+        console.error(`No ${moduleName} module found for widget type ${this.widget.type}`);
+      }
+      return module.label;
     },
     widgetOptions() {
       return this.widgets[this.widget.type];
