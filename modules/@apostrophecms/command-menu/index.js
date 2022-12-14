@@ -355,6 +355,7 @@ module.exports = {
             .forEach(group => Object.entries(group.commands)
               .forEach(([ name, field ]) => {
                 self.detectShortcutConflict({
+                  req,
                   shortcuts,
                   shortcut: field.shortcut,
                   standard: modal === 'default',
@@ -364,15 +365,26 @@ module.exports = {
             )
           );
 
-        for (const conflict of shortcuts.conflicts) {
-          self.apos.notify(req, conflict, {
+        if (shortcuts.conflicts.length <= 5) {
+          for (const conflict of shortcuts.conflicts) {
+            self.apos.notify(req, conflict, {
+              type: 'warning',
+              dismiss: 10
+            });
+          }
+        } else {
+          self.apos.notify(req, req.t('apostrophe:shortcutConflictGeneric'), {
             type: 'warning',
             dismiss: 10
           });
         }
+        self.apos.util.log(
+          req.t('apostrophe:shortcutConflictNotification'),
+          shortcuts.conflicts
+        );
       },
       detectShortcutConflict({
-        shortcuts, shortcut, standard, moduleName
+        req, shortcuts, shortcut, standard, moduleName
       }) {
         let existingShortcut;
         if (standard) {
@@ -385,7 +397,10 @@ module.exports = {
 
         if (existingShortcut) {
           shortcuts.conflicts.push(
-            `Shortcut conflict on ${moduleName} for '${shortcut}'`
+            req.t('apostrophe:shortcutConflictMessage', {
+              moduleName,
+              shortcut
+            })
           );
         } else {
           standard

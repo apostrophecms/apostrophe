@@ -9,7 +9,7 @@ const {
   topic
 } = require('./utils/commands.js');
 
-describe('Command-Menu', function() {
+describe.only('Command-Menu', function() {
   this.timeout(t.timeout);
 
   let apos;
@@ -785,6 +785,7 @@ describe('Command-Menu', function() {
       conflicts: []
     };
     const actual = apos.commandMenu.detectShortcutConflict({
+      req: apos.task.getReq(),
       shortcuts,
       shortcut: 'C',
       standard: true,
@@ -793,7 +794,7 @@ describe('Command-Menu', function() {
     const expected = {
       standard: { '@apostrophecms/file:manager': [ 'C' ] },
       global: [],
-      conflicts: [ 'Shortcut conflict on @apostrophecms/file:manager for \'C\'' ]
+      conflicts: [ '@apostrophecms/file:manager: \'C\'' ]
     };
 
     assert.deepEqual(actual, expected);
@@ -806,6 +807,7 @@ describe('Command-Menu', function() {
       conflicts: []
     };
     const actual = apos.commandMenu.detectShortcutConflict({
+      req: apos.task.getReq(),
       shortcuts,
       shortcut: 'C',
       standard: false,
@@ -814,7 +816,7 @@ describe('Command-Menu', function() {
     const expected = {
       standard: {},
       global: [ 'C' ],
-      conflicts: [ 'Shortcut conflict on @apostrophecms/file:manager for \'C\'' ]
+      conflicts: [ '@apostrophecms/file:manager: \'C\'' ]
     };
 
     assert.deepEqual(actual, expected);
