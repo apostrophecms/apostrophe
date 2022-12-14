@@ -233,7 +233,7 @@ export default {
         }
         if (this.docFields.data.linkTo !== '_url') {
           const doc = this.docFields.data[`_${this.docFields.data.linkTo}`][0];
-          this.docFields.data.href = `#apostrophe-permalink-${doc._id}?updateTitle=${this.docFields.data.updateTitle ? 1 : 0}`;
+          this.docFields.data.href = `#apostrophe-permalink-${doc.aposDocId}?updateTitle=${this.docFields.data.updateTitle ? 1 : 0}`;
         }
         // This seems to trigger close on its own
         this.editor.commands.setLink({

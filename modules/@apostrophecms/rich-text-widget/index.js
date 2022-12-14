@@ -17,7 +17,8 @@ module.exports = {
     // For permalinks
     project: {
       title: 1,
-      _url: 1
+      _url: 1,
+      aposDocId: 1
     },
     minimumDefaultOptions: {
       toolbar: [
@@ -215,10 +216,7 @@ module.exports = {
       async load(req, widgets) {
         const widgetsByDocId = new Map();
         let ids = [];
-        const project = self.options.project || {
-          title: 1,
-          _url: 1
-        };
+        const project = self.options.project;
         for (const widget of widgets) {
           if (!widget.permalinkIds) {
             return;
@@ -227,19 +225,20 @@ module.exports = {
             const docWidgets = widgetsByDocId.get(id) || [];
             docWidgets.push(widget);
             widgetsByDocId.set(id, docWidgets);
+            ids.push(id);
           }
         }
-        ids = [ ...new Map(ids) ];
+        ids = [ ...new Set(ids) ];
         if (!ids.length) {
           return;
         }
         const docs = await self.apos.doc.find(req, {
-          _id: {
+          aposDocId: {
             $in: ids
           }
         }).project(project).toArray();
         for (const doc of docs) {
-          const widgets = widgetsByDocId.get(doc._id) || [];
+          const widgets = widgetsByDocId.get(doc.aposDocId) || [];
           for (const widget of widgets) {
             widget._permalinkDocs = widget._permalinkDocs || [];
             widget._permalinkDocs.push(doc);
@@ -464,13 +463,13 @@ module.exports = {
         for (const doc of (widget._permalinkDocs || [])) {
           let offset = 0;
           while (true) {
-            i = content.indexOf('apostrophe-permalink-' + doc._id, offset);
+            i = content.indexOf('apostrophe-permalink-' + doc.aposDocId, offset);
             if (i === -1) {
               break;
             }
-            offset = i + ('apostrophe-permalink-' + doc._id).length;
+            offset = i + ('apostrophe-permalink-' + doc.aposDocId).length;
             let updateTitle = content.indexOf('?updateTitle=1', i);
-            if (updateTitle === i + ('apostrophe-permalink-' + doc._id).length) {
+            if (updateTitle === i + ('apostrophe-permalink-' + doc.aposDocId).length) {
               updateTitle = true;
             } else {
               updateTitle = false;

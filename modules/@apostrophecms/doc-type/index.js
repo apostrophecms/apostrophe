@@ -1428,7 +1428,7 @@ module.exports = {
                 // because they don't want `_url`.
                 continue;
               }
-              if (key.toString().substr(0, 1) === '_') {
+              if (key.toString().substring(0, 1) === '_') {
                 if (key === '_id') {
                   continue;
                 }
