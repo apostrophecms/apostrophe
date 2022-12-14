@@ -1068,30 +1068,33 @@ module.exports = {
         async task() {
           if (self.options.localized) {
             console.log('Adding draft version to documents');
+            const locales = Object.keys(self.apos.i18n.locales);
 
             await self.apos.migration.eachDoc({ type: self.name }, async doc => {
               await self.apos.doc.db.removeOne({ _id: doc._id });
 
-              for (const locale of Object.keys(self.apos.i18n.locales)) {
-                const lastPublishedAt = new Date();
-                const newDraft = {
-                  ...doc,
-                  aposLocale: `${locale}:draft`,
-                  aposMode: 'draft',
-                  aposDocId: doc._id,
-                  _id: `${doc.aposDocId}:${locale}:draft`,
-                  lastPublishedAt
-                };
-                const newPublished = {
-                  ...doc,
-                  aposLocale: `${locale}:published`,
-                  aposMode: 'published',
-                  aposDocId: doc._id,
-                  _id: `${doc.aposDocId}:${locale}:published`,
-                  lastPublishedAt
-                };
-                await self.apos.doc.db.insertOne(newDraft);
-                await self.apos.doc.db.insertOne(newPublished);
+              if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
+                for (const locale of locales) {
+                  const lastPublishedAt = new Date();
+                  const newDraft = {
+                    ...doc,
+                    aposLocale: `${locale}:draft`,
+                    aposMode: 'draft',
+                    aposDocId: doc._id,
+                    _id: `${doc.aposDocId}:${locale}:draft`,
+                    lastPublishedAt
+                  };
+                  const newPublished = {
+                    ...doc,
+                    aposLocale: `${locale}:published`,
+                    aposMode: 'published',
+                    aposDocId: doc._id,
+                    _id: `${doc.aposDocId}:${locale}:published`,
+                    lastPublishedAt
+                  };
+                  await self.apos.doc.db.insertOne(newDraft);
+                  await self.apos.doc.db.insertOne(newPublished);
+                }
               }
             });
 
@@ -1118,7 +1121,7 @@ module.exports = {
 
             await self.apos.migration.eachDoc({ type: self.name }, async doc => {
               await self.apos.doc.db.removeOne({ _id: doc._id });
-              if (doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
+              if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
                 const newDoc = {
                   ...doc,
                   aposLocale: undefined,
