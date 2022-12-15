@@ -1075,10 +1075,11 @@ module.exports = {
           const locales = Object.keys(self.apos.i18n.locales);
           const lastPublishedAt = new Date();
           const inserts = [];
+          const deletes = [];
 
           await self.apos.migration.eachDoc({ type: self.name }, async doc => {
             if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
-              await self.apos.doc.db.removeOne({ _id: doc._id });
+              deletes.push(doc._id);
 
               for (const locale of locales) {
                 const newDraft = {
@@ -1102,6 +1103,7 @@ module.exports = {
             }
           });
 
+          await self.apos.doc.db.deleteMany({ _id: { $in: deletes }});
           await self.apos.doc.db.insertMany(inserts);
           await self.apos.attachment.recomputeAllDocReferences();
 
@@ -1123,11 +1125,12 @@ module.exports = {
           const locale = argv.locale || self.apos.i18n.defaultLocale;
           const mode = argv.mode || 'published';
           const inserts = [];
+          const deletes = [];
 
           console.log(`Removing duplicated documents and updating ${mode} ones`);
 
           await self.apos.migration.eachDoc({ type: self.name }, async doc => {
-            await self.apos.doc.db.removeOne({ _id: doc._id });
+            deletes.push(doc._id);
             if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
               const newDoc = {
                 ...doc,
@@ -1138,6 +1141,8 @@ module.exports = {
               inserts.push(newDoc);
             }
           });
+
+          await self.apos.doc.db.deleteMany({ _id: { $in: deletes }});
           await self.apos.doc.db.insertMany(inserts);
           await self.apos.attachment.recomputeAllDocReferences();
 
