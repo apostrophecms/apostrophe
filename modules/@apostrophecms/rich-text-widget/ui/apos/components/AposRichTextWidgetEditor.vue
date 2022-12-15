@@ -131,7 +131,7 @@ export default {
       return !this.stripPlaceholderBrs(this.value.content).length;
     },
     initialContent() {
-      const content = this.stripPlaceholderBrs(this.value.content);
+      const content = this.transformNamedAnchors(this.stripPlaceholderBrs(this.value.content));
       if (!content.length) {
         // If we don't supply a valid instance of the first style, then
         // the text align control will not work until the user manually
@@ -291,6 +291,54 @@ export default {
     stripPlaceholderBrs(html) {
       return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
     },
+    // Legacy content may have `id` and `name` attributes on anchor tags
+    // but our tiptap anchor extension needs them on a separate `span`, so nest
+    // a span to migrate this content for each relevant anchor tag encountered
+    transformNamedAnchors(html) {
+      const el = document.createElement('div');
+      el.innerHTML = html;
+      const anchors = el.querySelectorAll('a[name]');
+      for (const anchor of anchors) {
+        const name = anchor.getAttribute('id') || anchor.getAttribute('name');
+        if (((typeof name) === 'string') && name.length) {
+          const span = document.createElement('span');
+          span.setAttribute('id', name);
+          anchor.removeAttribute('id');
+          anchor.removeAttribute('name');
+          if (anchor.children.length) {
+            // Migrate children of the anchor to the span
+            while (anchor.firstElementChild) {
+              span.append(anchor.firstElementChild);
+            }
+            anchor.prepend(span);
+            if (!span.innerText.length) {
+              span.innerText = '⚓︎';
+            }
+          } else {
+            // Empty anchors result in empty spans, which
+            // disappear in tiptap. Wrap the anchor around
+            // the next text node encountered
+            let el = anchor;
+            while (true) {
+              if ((el.nodeType === Node.TEXT_NODE) && (el.textContent.length > 0)) {
+                break;
+              }
+              el = traverseNextNode(el);
+            }
+            if (el) {
+              el.parentNode.insertBefore(span, el);
+              span.append(el);
+            } else {
+              // Still no text discovered, supply something the
+              // editor can lock on to
+              span.innerText = '⚓︎';
+              anchor.prepend(span);
+            }
+          }
+        }
+      }
+      return el.innerHTML;
+    },
     // Enhances the dev-defined styles list with tiptap
     // commands and parameters used internally.
     enhanceStyles(styles) {
@@ -363,6 +411,18 @@ export default {
   }
 };
 
+function traverseNextNode(node) {
+  if (node.firstChild) {
+    return node.firstChild;
+  }
+  while (node) {
+    if (node.nextSibling) {
+      return node.nextSibling;
+    }
+    node = node.parentNode;
+  }
+  return null;
+}
 </script>
 
 <style lang="scss" scoped>

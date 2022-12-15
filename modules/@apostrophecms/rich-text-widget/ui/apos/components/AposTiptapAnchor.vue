@@ -100,7 +100,7 @@ export default {
   },
   computed: {
     buttonActive() {
-      return this.editor.isActive({ anchor: /./ }) || this.active;
+      return this.editor.isActive('anchor') || this.active;
     },
     lastSelectionTime() {
       return this.editor.view.lastSelectionTime;
@@ -167,7 +167,7 @@ export default {
           return;
         }
         this.editor.commands.setAnchor({
-          anchor: this.docFields.data.anchor
+          id: this.docFields.data.anchor
         });
         this.close();
       });
@@ -188,14 +188,8 @@ export default {
     },
     async populateFields() {
       try {
-        // Hack that doesn't work and involves private APIs anyway;
-        // this is why we have to pivot to anchor spans
-        let firstNode = this.editor.state.selection.$anchor?.nodeBefore;
-        while (firstNode.type.name === 'text') {
-          firstNode = firstNode.parent;
-        }
         const attrs = {
-          anchor: firstNode.attrs.anchor
+          anchor: this.editor.getAttributes('anchor').id
         };
         this.docFields.data = {};
         this.schema.forEach((item) => {

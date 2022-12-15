@@ -1,54 +1,57 @@
-// Based on the official TextAlign extension
+// Implement named anchors as spans with ids (more HTML5-ish).
 
-import { Extension } from '@tiptap/core';
+import { Mark, mergeAttributes } from '@tiptap/core';
 
 export default (options) => {
-  return Extension.create({
+  return Mark.create({
     name: 'anchor',
 
-    addOptions() {
+    // What does this do? Copied from link
+    priority: 1000,
+
+    // What does this do? Copied from link
+    keepOnSplit: false,
+
+    addAttributes() {
       return {
-        types: Object.keys(options.types)
+        id: {
+          default: null
+        }
       };
     },
 
-    addGlobalAttributes() {
+    parseHTML() {
       return [
-        {
-          types: this.options.types,
-          attributes: {
-            anchor: {
-              default: '',
-              parseHTML: element => {
-                return element.getAttribute('data-anchor') || element.getAttribute('id') || element.getAttribute('name') || '';
-              },
-              renderHTML: attributes => {
-                if (attributes.anchor === '') {
-                  return {};
-                }
-                return {
-                  'data-anchor': attributes.anchor
-                };
-              }
-            }
-          }
-        }
+        { tag: 'span[id]' }
+      ];
+    },
+
+    renderHTML({ HTMLAttributes }) {
+      return [
+        'span',
+        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+        0
       ];
     },
 
     addCommands() {
       return {
-        setAnchor: ({ anchor }) => ({ commands }) => {
-          if (!((typeof anchor) === 'string') || anchor.match(/\s/)) {
-            return false;
-          }
-          return this.options.types.every(type => commands.updateAttributes(type, {
-            anchor
-          }));
+        setAnchor: attributes => ({ chain }) => {
+          return chain()
+            .setMark(this.name, attributes)
+            .run();
         },
 
-        unsetAnchor: () => ({ commands }) => {
-          return this.options.types.every(type => commands.resetAttributes(type, 'anchor'));
+        toggleAnchor: attributes => ({ chain }) => {
+          return chain()
+            .toggleMark(this.name, attributes, { extendEmptyMarkRange: true })
+            .run();
+        },
+
+        unsetAnchor: () => ({ chain }) => {
+          return chain()
+            .unsetMark(this.name, { extendEmptyMarkRange: true })
+            .run();
         }
       };
     }

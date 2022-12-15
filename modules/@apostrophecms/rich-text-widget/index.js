@@ -182,20 +182,20 @@ module.exports = {
       setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
-        'a', 's', 'del', 'strike', 'span', 'u'
+        'a', 's', 'del', 'strike', 'span', 'u', 'anchor'
       ],
       wrapIn: [ 'blockquote' ]
     },
     tiptapTypes: {
       heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
       paragraph: [ 'p' ],
-      textStyle: [ 'span' ],
       code: [ 'code' ],
       bold: [ 'strong', 'b' ],
       strike: [ 's', 'del', 'strike' ],
       italic: [ 'i', 'em' ],
       highlight: [ 'mark' ],
       link: [ 'a' ],
+      anchor: [ 'span' ],
       underline: [ 'u' ],
       codeBlock: [ 'pre' ],
       blockquote: [ 'blockquote' ]
@@ -297,7 +297,8 @@ module.exports = {
             'pre',
             'code'
           ],
-          underline: [ 'u' ]
+          underline: [ 'u' ],
+          anchor: [ 'span' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
@@ -343,8 +344,8 @@ module.exports = {
             attributes: [ 'style' ]
           },
           anchor: {
-            tag: '*',
-            attributes: [ 'data-anchor' ]
+            tag: 'span',
+            attributes: [ 'id' ]
           }
         };
         for (const item of options.toolbar || []) {
