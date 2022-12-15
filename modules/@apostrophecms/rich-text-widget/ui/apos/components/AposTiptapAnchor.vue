@@ -80,7 +80,6 @@ export default {
   data () {
     return {
       generation: 1,
-      id: null,
       keepInBounds: true,
       hasAnchorOnOpen: false,
       triggerValidation: false,
@@ -90,17 +89,18 @@ export default {
       formModifiers: [ 'small', 'margin-micro' ],
       originalSchema: [
         {
-          name: 'id',
-          label: 'ID',
+          name: 'anchor',
+          label: 'Anchor Name',
           type: 'string',
           required: true
         }
-      ]
+      ],
+      active: false
     };
   },
   computed: {
     buttonActive() {
-      return this.docFields.data && this.docFields.data.id;
+      return this.editor.isActive({ anchor: /./ }) || this.active;
     },
     lastSelectionTime() {
       return this.editor.view.lastSelectionTime;
@@ -125,7 +125,7 @@ export default {
   watch: {
     active(newVal) {
       if (newVal) {
-        this.hasAnchorOnOpen = !!(this.docFields.data.id);
+        this.hasAnchorOnOpen = !!(this.docFields.data.anchor);
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
@@ -167,7 +167,7 @@ export default {
           return;
         }
         this.editor.commands.setAnchor({
-          id: this.docFields.data.id
+          anchor: this.docFields.data.anchor
         });
         this.close();
       });
@@ -177,7 +177,7 @@ export default {
         this.close();
       }
       if (e.keyCode === 13) {
-        if (this.docFields.data.id) {
+        if (this.docFields.data.anchor) {
           this.save();
           this.close();
           e.preventDefault();
@@ -188,7 +188,15 @@ export default {
     },
     async populateFields() {
       try {
-        const attrs = this.editor.getAttributes('id');
+        // Hack that doesn't work and involves private APIs anyway;
+        // this is why we have to pivot to anchor spans
+        let firstNode = this.editor.state.selection.$anchor?.nodeBefore;
+        while (firstNode.type.name === 'text') {
+          firstNode = firstNode.parent;
+        }
+        const attrs = {
+          anchor: firstNode.attrs.anchor
+        };
         this.docFields.data = {};
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';

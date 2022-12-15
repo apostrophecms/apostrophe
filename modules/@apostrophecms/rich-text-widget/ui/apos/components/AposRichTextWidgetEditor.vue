@@ -170,13 +170,6 @@ export default {
     },
     placeholderText() {
       return this.moduleOptions.placeholderText;
-    },
-    aposTiptapExtensions() {
-      return (apos.tiptapExtensions || [])
-        .map(extension => extension({
-          styles: this.editorOptions.styles.map(this.localizeStyle),
-          types: this.tiptapTypes
-        }));
     }
   },
   watch: {
@@ -219,7 +212,7 @@ export default {
       })
     ]
       .filter(Boolean)
-      .concat(this.aposTiptapExtensions);
+      .concat(this.aposTiptapExtensions());
 
     this.editor = new Editor({
       content: this.initialContent,
@@ -359,6 +352,13 @@ export default {
         ...style,
         label: this.$t(style.label)
       };
+    },
+    aposTiptapExtensions() {
+      return (apos.tiptapExtensions || [])
+        .map(extension => extension({
+          styles: this.editorOptions.styles.map(this.localizeStyle),
+          types: this.tiptapTypes
+        }));
     }
   }
 };

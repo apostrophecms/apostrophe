@@ -77,7 +77,7 @@ export default {
       required: true
     }
   },
-  data () {
+  data() {
     const linkWithType = getOptions().linkWithType;
     return {
       generation: 1,
@@ -161,7 +161,7 @@ export default {
   },
   computed: {
     buttonActive() {
-      return this.docFields.data && this.docFields.data.href;
+      return this.editor.getAttributes('link').href || this.active;
     },
     lastSelectionTime() {
       return this.editor.view.lastSelectionTime;

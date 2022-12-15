@@ -3,6 +3,7 @@ module.exports = {
   'account-box-icon': 'AccountBox',
   'alpha-x-icon': 'AlphaX',
   'alert-circle-icon': 'AlertCircle',
+  'anchor-icon': 'Anchor',
   'arrow-down-icon': 'ArrowDown',
   'arrow-up-icon': 'ArrowUp',
   'archive-arrow-down-icon': 'ArchiveArrowDown',
