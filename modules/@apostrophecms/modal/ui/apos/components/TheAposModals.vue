@@ -73,6 +73,7 @@ export default {
     },
     resolve(modal) {
       this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
+      modal.resolve(modal.result);
     },
     getModuleName(itemName) {
       if (!itemName) {
