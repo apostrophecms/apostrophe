@@ -418,7 +418,7 @@ export default {
       this.setCheckedDocs([]);
     },
     shortcutNew(event) {
-      const interesting = (event.keyCode === 78 || event.keyCode === 67); // C(reate) or N(ew)
+      const interesting = event.keyCode === 78; // N(ew)
       const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
       if (
         interesting &&
