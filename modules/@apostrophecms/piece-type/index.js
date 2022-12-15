@@ -1066,44 +1066,46 @@ module.exports = {
         usage: 'Add draft version documents for each locale when a module has the "localized" option.' +
         '\nExample: node app [moduleName]:localize',
         async task() {
-          if (self.options.localized) {
-            console.log('Adding draft version to documents');
-            const locales = Object.keys(self.apos.i18n.locales);
-
-            await self.apos.migration.eachDoc({ type: self.name }, async doc => {
-              await self.apos.doc.db.removeOne({ _id: doc._id });
-
-              if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
-                for (const locale of locales) {
-                  const lastPublishedAt = new Date();
-                  const newDraft = {
-                    ...doc,
-                    aposLocale: `${locale}:draft`,
-                    aposMode: 'draft',
-                    aposDocId: doc._id,
-                    _id: `${doc.aposDocId}:${locale}:draft`,
-                    lastPublishedAt
-                  };
-                  const newPublished = {
-                    ...doc,
-                    aposLocale: `${locale}:published`,
-                    aposMode: 'published',
-                    aposDocId: doc._id,
-                    _id: `${doc.aposDocId}:${locale}:published`,
-                    lastPublishedAt
-                  };
-                  await self.apos.doc.db.insertOne(newDraft);
-                  await self.apos.doc.db.insertOne(newPublished);
-                }
-              }
-            });
-
-            await self.apos.attachment.recomputeAllDocReferences();
-
-            console.log(`Done localizing module ${self.name}`);
-          } else {
+          if (!self.options.localized) {
             throw new Error('Localized option not set to true, so the module cannot be localized.');
           }
+
+          console.log('Adding drafts and locales to documents');
+
+          const locales = Object.keys(self.apos.i18n.locales);
+          const lastPublishedAt = new Date();
+          const inserts = [];
+
+          await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+            if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
+              await self.apos.doc.db.removeOne({ _id: doc._id });
+
+              for (const locale of locales) {
+                const newDraft = {
+                  ...doc,
+                  aposLocale: `${locale}:draft`,
+                  aposMode: 'draft',
+                  aposDocId: doc._id,
+                  _id: `${doc.aposDocId}:${locale}:draft`
+                };
+                const newPublished = {
+                  ...doc,
+                  aposLocale: `${locale}:published`,
+                  aposMode: 'published',
+                  aposDocId: doc._id,
+                  _id: `${doc.aposDocId}:${locale}:published`,
+                  lastPublishedAt
+                };
+                inserts.push(newDraft);
+                inserts.push(newPublished);
+              }
+            }
+          });
+
+          await self.apos.doc.db.insertMany(inserts);
+          await self.apos.attachment.recomputeAllDocReferences();
+
+          console.log(`Done localizing module ${self.name}`);
         }
       },
 
@@ -1114,29 +1116,32 @@ module.exports = {
         '\n- mode: by default, published' +
         '\nExample: node app [moduleName]:unlocalize --mode=published --locale=en',
         async task(argv) {
-          if (!self.options.autopublish && !self.options.localized) {
-            const locale = argv.locale || self.apos.i18n.defaultLocale;
-            const mode = argv.mode || 'published';
-            console.log(`Removing duplicated documents and updating ${mode} ones`);
-
-            await self.apos.migration.eachDoc({ type: self.name }, async doc => {
-              await self.apos.doc.db.removeOne({ _id: doc._id });
-              if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
-                const newDoc = {
-                  ...doc,
-                  aposLocale: undefined,
-                  aposMode: undefined,
-                  _id: doc.aposDocId
-                };
-                await self.apos.doc.db.insertOne(newDoc);
-              }
-            });
-            await self.apos.attachment.recomputeAllDocReferences();
-
-            console.log(`Done unlocalizing module ${self.name}`);
-          } else {
-            throw new Error('Autopublish or localized option are not false, so the module cannot be unlocalized.');
+          if (self.options.localized) {
+            throw new Error('Localized option not set to false, so the module cannot be unlocalized.');
           }
+
+          const locale = argv.locale || self.apos.i18n.defaultLocale;
+          const mode = argv.mode || 'published';
+          const inserts = [];
+
+          console.log(`Removing duplicated documents and updating ${mode} ones`);
+
+          await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+            await self.apos.doc.db.removeOne({ _id: doc._id });
+            if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
+              const newDoc = {
+                ...doc,
+                aposLocale: undefined,
+                aposMode: undefined,
+                _id: doc.aposDocId
+              };
+              inserts.push(newDoc);
+            }
+          });
+          await self.apos.doc.db.insertMany(inserts);
+          await self.apos.attachment.recomputeAllDocReferences();
+
+          console.log(`Done unlocalizing module ${self.name}`);
         }
       }
     };
