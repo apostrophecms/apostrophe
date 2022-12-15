@@ -31,7 +31,7 @@
               class="apos-command-menu-shortcut-group"
             >
               <h3 class="apos-command-menu-shortcut-group-title">
-                {{ $t(group.label) }}
+                {{ getLabel(group.label) }}
               </h3>
               <div
                 v-for="(command, commandName) in group.commands"
@@ -39,7 +39,7 @@
                 class="apos-command-menu-shortcut-command"
               >
                 <div class="apos-command-menu-shortcut-command-title">
-                  {{ $t(command.label) }}
+                  {{ getLabel(command.label) }}
                 </div>
                 <AposCommandMenuKeyList :shortcut="command.shortcut" />
               </div>
@@ -88,6 +88,16 @@ export default {
   methods: {
     close() {
       this.modal.showModal = false;
+    },
+    getLabel(label) {
+      if (label && label.key && label.type) {
+        return this.$t({
+          key: label.key,
+          type: this.$t(label.type)
+        });
+      }
+
+      return this.$t(label);
     }
   }
 };
