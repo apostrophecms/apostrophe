@@ -1022,10 +1022,16 @@ module.exports = {
           }
         }
       },
-      async flush(deletes, inserts) {
-        deletes.length &&
-          (await self.apos.doc.db.deleteMany({ _id: { $in: deletes } }));
-        inserts.length && (await self.apos.doc.db.insertMany(inserts));
+      async flushInsertsAndDeletes(inserts, deletes) {
+        if (inserts.length > 100) {
+          await self.apos.doc.db.insertMany(inserts);
+          inserts.splice(0);
+        }
+
+        if (deletes.length > 100) {
+          await self.apos.doc.db.deleteMany({ _id: { $in: deletes } });
+          deletes.splice(0);
+        }
       }
     };
   },
@@ -1102,8 +1108,8 @@ module.exports = {
 
           const locales = Object.keys(self.apos.i18n.locales);
           const lastPublishedAt = new Date();
-          let deletes = [];
-          let inserts = [];
+          const inserts = [];
+          const deletes = [];
 
           await self.apos.migration.eachDoc({ type: self.name }, async doc => {
             if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
@@ -1128,16 +1134,12 @@ module.exports = {
                 inserts.push(newDraft);
                 inserts.push(newPublished);
 
-                if (inserts.length > 100) {
-                  self.flush(deletes, inserts);
-                  deletes = [];
-                  inserts = [];
-                }
+                await self.flushInsertsAndDeletes(inserts, deletes);
               }
             }
           });
 
-          self.flush(deletes, inserts);
+          await self.flushInsertsAndDeletes(inserts, deletes);
           await self.apos.attachment.recomputeAllDocReferences();
 
           console.log(`Done localizing module ${self.name}`);
@@ -1157,8 +1159,8 @@ module.exports = {
 
           const locale = argv.locale || self.apos.i18n.defaultLocale;
           const mode = argv.mode || 'published';
-          let deletes = [];
-          let inserts = [];
+          const inserts = [];
+          const deletes = [];
 
           console.log(`Removing duplicated documents and updating ${mode} ones`);
 
@@ -1174,15 +1176,11 @@ module.exports = {
               };
               inserts.push(newDoc);
 
-              if (inserts.length > 100) {
-                self.flush(deletes, inserts);
-                deletes = [];
-                inserts = [];
-              }
+              await self.flushInsertsAndDeletes(inserts, deletes);
             }
           });
 
-          self.flush(deletes, inserts);
+          await self.flushInsertsAndDeletes(inserts, deletes);
           await self.apos.attachment.recomputeAllDocReferences();
 
           console.log(`Done unlocalizing module ${self.name}`);
