@@ -227,13 +227,13 @@ export default {
         if (this.docFields.hasErrors) {
           return;
         }
-        // Clean up incomplete submissions
-        if (this.docFields.data.target && !this.docFields.data.href) {
-          delete this.docFields.data.target;
-        }
         if (this.docFields.data.linkTo !== '_url') {
           const doc = this.docFields.data[`_${this.docFields.data.linkTo}`][0];
           this.docFields.data.href = `#apostrophe-permalink-${doc.aposDocId}?updateTitle=${this.docFields.data.updateTitle ? 1 : 0}`;
+        }
+        // Clean up incomplete submissions
+        if (this.docFields.data.target && !this.docFields.data.href) {
+          delete this.docFields.data.target;
         }
         // This seems to trigger close on its own
         this.editor.commands.setLink({
