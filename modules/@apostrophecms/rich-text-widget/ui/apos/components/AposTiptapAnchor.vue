@@ -26,7 +26,7 @@
           <AposButton
             type="quiet"
             @click="removeAnchor"
-            label="apostrophe:removeAnchor"
+            label="apostrophe:removeRichTextAnchor"
           />
         </div>
         <AposSchema
