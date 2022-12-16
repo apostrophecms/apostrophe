@@ -504,4 +504,8 @@ function traverseNextNode(node) {
     margin: 0;
   }
 
+  // So editors can find anchors again
+  .apos-rich-text-editor__editor ::v-deep span[id] {
+    text-decoration: underline dotted;
+  }
 </style>
