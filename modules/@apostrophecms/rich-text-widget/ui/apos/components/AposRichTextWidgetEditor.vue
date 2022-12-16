@@ -185,7 +185,8 @@ export default {
     const extensions = [
       StarterKit.configure({
         document: false,
-        heading: false
+        heading: false,
+        listItem: false
       }),
       TextAlign.configure({
         types: [ 'heading', 'paragraph' ]
