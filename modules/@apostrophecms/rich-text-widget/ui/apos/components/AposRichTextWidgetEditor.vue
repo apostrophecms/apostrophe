@@ -300,7 +300,8 @@ export default {
       const anchors = el.querySelectorAll('a[name]');
       for (const anchor of anchors) {
         const name = anchor.getAttribute('id') || anchor.getAttribute('name');
-        if (((typeof name) === 'string') && name.length) {
+        if (typeof name !== 'string' || name.length) {
+          continue;
           const span = document.createElement('span');
           span.setAttribute('id', name);
           anchor.removeAttribute('id');
