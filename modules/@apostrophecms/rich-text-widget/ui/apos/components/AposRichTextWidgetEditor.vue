@@ -300,41 +300,45 @@ export default {
       const anchors = el.querySelectorAll('a[name]');
       for (const anchor of anchors) {
         const name = anchor.getAttribute('id') || anchor.getAttribute('name');
-        if (typeof name !== 'string' || name.length) {
+        if (typeof name !== 'string' || !name.length) {
           continue;
-          const span = document.createElement('span');
-          span.setAttribute('id', name);
-          anchor.removeAttribute('id');
-          anchor.removeAttribute('name');
-          if (anchor.children.length) {
-            // Migrate children of the anchor to the span
-            while (anchor.firstElementChild) {
-              span.append(anchor.firstElementChild);
-            }
+        }
+        const span = document.createElement('span');
+        span.setAttribute('id', name);
+        anchor.removeAttribute('id');
+        anchor.removeAttribute('name');
+        if (anchor.children.length) {
+          // Migrate children of the anchor to the span
+          while (anchor.firstElementChild) {
+            span.append(anchor.firstElementChild);
+          }
+          if (anchor.attributes.length) {
             anchor.prepend(span);
-            if (!span.innerText.length) {
-              span.innerText = '⚓︎';
-            }
           } else {
-            // Empty anchors result in empty spans, which
-            // disappear in tiptap. Wrap the anchor around
-            // the next text node encountered
-            let el = anchor;
-            while (true) {
-              if ((el.nodeType === Node.TEXT_NODE) && (el.textContent.length > 0)) {
-                break;
-              }
-              el = traverseNextNode(el);
+            anchor.replaceWith(span);
+          }
+          if (!span.innerText.length) {
+            span.innerText = '⚓︎';
+          }
+        } else {
+          // Empty anchors result in empty spans, which
+          // disappear in tiptap. Wrap the anchor around
+          // the next text node encountered
+          let el = anchor;
+          while (true) {
+            if ((el.nodeType === Node.TEXT_NODE) && (el.textContent.length > 0)) {
+              break;
             }
-            if (el) {
-              el.parentNode.insertBefore(span, el);
-              span.append(el);
-            } else {
-              // Still no text discovered, supply something the
-              // editor can lock on to
-              span.innerText = '⚓︎';
-              anchor.prepend(span);
-            }
+            el = traverseNextNode(el);
+          }
+          if (el) {
+            el.parentNode.insertBefore(span, el);
+            span.append(el);
+          } else {
+            // Still no text discovered, supply something the
+            // editor can lock on to
+            span.innerText = '⚓︎';
+            anchor.prepend(span);
           }
         }
       }
