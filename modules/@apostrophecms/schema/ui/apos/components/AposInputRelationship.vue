@@ -28,6 +28,7 @@
           >
           <AposButton
             class="apos-input-relationship__button"
+            v-if="field.browse !== false"
             :disabled="field.readOnly || limitReached"
             :label="browseLabel"
             :modifiers="buttonModifiers"
@@ -169,13 +170,14 @@ export default {
         return;
       }
 
-      if (!this.searchTerm.length) {
+      const trimmed = this.searchTerm.trim();
+      if (!trimmed.length) {
         this.searchList = [];
         return;
       }
 
       const qs = {
-        autocomplete: this.searchTerm
+        autocomplete: trimmed
       };
 
       if (this.field.withType === '@apostrophecms/image') {
