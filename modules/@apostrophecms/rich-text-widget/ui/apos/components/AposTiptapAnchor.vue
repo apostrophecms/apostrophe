@@ -40,7 +40,7 @@
           :following-values="followingValues()"
           :conditional-fields="conditionalFields()"
         />
-        <footer class="apos-link-control__footer">
+        <footer class="apos-anchor-control__footer">
           <AposButton
             type="default" label="apostrophe:cancel"
             @click="close"
