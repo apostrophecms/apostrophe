@@ -170,13 +170,14 @@ export default {
         return;
       }
 
-      if (!this.searchTerm.length) {
+      const trimmed = this.searchTerm.trim();
+      if (!trimmed.length) {
         this.searchList = [];
         return;
       }
 
       const qs = {
-        autocomplete: this.searchTerm
+        autocomplete: trimmed
       };
 
       if (this.field.withType === '@apostrophecms/image') {

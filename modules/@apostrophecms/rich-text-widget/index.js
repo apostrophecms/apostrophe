@@ -223,10 +223,9 @@ module.exports = {
       async load(req, widgets) {
         const widgetsByDocId = new Map();
         let ids = [];
-        const project = self.options.project;
         for (const widget of widgets) {
           if (!widget.permalinkIds) {
-            return;
+            continue;
           }
           for (const id of widget.permalinkIds) {
             const docWidgets = widgetsByDocId.get(id) || [];
@@ -243,7 +242,7 @@ module.exports = {
           aposDocId: {
             $in: ids
           }
-        }).project(project).toArray();
+        }).project(self.options.project).toArray();
         for (const doc of docs) {
           const widgets = widgetsByDocId.get(doc.aposDocId) || [];
           for (const widget of widgets) {
