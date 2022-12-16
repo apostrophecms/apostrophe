@@ -90,7 +90,7 @@ export default {
       originalSchema: [
         {
           name: 'anchor',
-          label: 'Anchor Name',
+          label: this.$t('apostrophe:anchorId'),
           type: 'string',
           required: true
         }

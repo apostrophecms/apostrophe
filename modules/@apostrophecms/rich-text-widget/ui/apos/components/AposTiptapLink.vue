@@ -94,21 +94,21 @@ export default {
       originalSchema: [
         {
           name: 'linkTo',
-          // TODO this needs i18n
-          label: 'Link To...',
+          label: this.$t('apostrophe:linkTo'),
           type: 'select',
           def: linkWithType[0],
           required: true,
           choices: [
             ...(linkWithType.map(type => {
               return {
+                // Should already be localized server side
                 label: apos.modules[type].label,
                 value: type
               };
             })),
             {
               // TODO this needs i18n
-              label: 'URL',
+              label: this.$t('apostrophe:url'),
               // Value that will never be a doc type
               value: '_url'
             }
@@ -128,7 +128,7 @@ export default {
         })),
         {
           name: 'updateTitle',
-          label: 'Update Title',
+          label: this.$t('apostrophe:updateTitle'),
           type: 'boolean',
           def: true,
           if: {
@@ -139,7 +139,7 @@ export default {
         },
         {
           name: 'href',
-          label: 'URL',
+          label: this.$t('apostrophe:url'),
           type: 'string',
           if: {
             linkTo: '_url'
@@ -147,11 +147,11 @@ export default {
         },
         {
           name: 'target',
-          label: 'Link Target',
+          label: this.$t('apostrophe:linkTarget'),
           type: 'checkboxes',
           choices: [
             {
-              label: 'Open link in new tab',
+              label: this.$t('apostrophe:openLinkInNewTab'),
               value: '_blank'
             }
           ]
