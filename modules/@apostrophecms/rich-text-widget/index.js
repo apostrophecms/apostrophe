@@ -2,6 +2,7 @@
 // editor does not use a modal; instead you edit in context on the page.
 
 const sanitizeHtml = require('sanitize-html');
+const cheerio = require('cheerio');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
@@ -27,6 +28,7 @@ module.exports = {
         'italic',
         'strike',
         'link',
+        'anchor',
         'bulletList',
         'orderedList',
         'blockquote'
@@ -89,6 +91,11 @@ module.exports = {
         component: 'AposTiptapLink',
         label: 'apostrophe:richTextLink',
         icon: 'link-icon'
+      },
+      anchor: {
+        component: 'AposTiptapAnchor',
+        label: 'apostrophe:richTextAnchor',
+        icon: 'anchor-icon'
       },
       bulletList: {
         component: 'AposTiptapButton',
@@ -175,20 +182,20 @@ module.exports = {
       setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
-        'a', 's', 'del', 'strike', 'span', 'u'
+        'a', 's', 'del', 'strike', 'span', 'u', 'anchor'
       ],
       wrapIn: [ 'blockquote' ]
     },
     tiptapTypes: {
       heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
       paragraph: [ 'p' ],
-      textStyle: [ 'span' ],
       code: [ 'code' ],
       bold: [ 'strong', 'b' ],
       strike: [ 's', 'del', 'strike' ],
       italic: [ 'i', 'em' ],
       highlight: [ 'mark' ],
       link: [ 'a' ],
+      anchor: [ 'span' ],
       underline: [ 'u' ],
       codeBlock: [ 'pre' ],
       blockquote: [ 'blockquote' ]
@@ -290,7 +297,8 @@ module.exports = {
             'pre',
             'code'
           ],
-          underline: [ 'u' ]
+          underline: [ 'u' ],
+          anchor: [ 'span' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
@@ -334,6 +342,10 @@ module.exports = {
           alignJustify: {
             tag: '*',
             attributes: [ 'style' ]
+          },
+          anchor: {
+            tag: 'span',
+            attributes: [ 'id' ]
           }
         };
         for (const item of options.toolbar || []) {
@@ -431,6 +443,47 @@ module.exports = {
       isEmpty(widget) {
         const text = self.apos.util.htmlToPlaintext(widget.content || '');
         return !text.trim().length;
+      },
+
+      sanitizeHtml(html, options) {
+        html = sanitizeHtml(html, options);
+        html = self.sanitizeAnchors(html);
+        return html;
+      },
+
+      sanitizeAnchors(html) {
+        const $ = cheerio.load(html);
+        const seen = new Set();
+        $('[data-anchor]').each(function() {
+          const $el = $(this);
+          const anchor = $el.attr('data-anchor');
+          if (!self.validateAnchor(anchor)) {
+            return;
+          }
+          // tiptap will apply data-anchor to every tag involved in the selection
+          // at any depth. For ids and anchors this doesn't really make sense.
+          // Save the id to the first, rootmost tag involved
+          if (!seen.has(anchor)) {
+            $el.attr('id', anchor);
+            seen.add(anchor);
+          }
+        });
+        const result = $('body').html();
+        return result;
+      },
+
+      validateAnchor(anchor) {
+        if ((typeof anchor) !== 'string') {
+          return false;
+        }
+        if (!anchor.length) {
+          return false;
+        }
+        // Don't let them break the editor
+        if (anchor.startsWith('apos-')) {
+          return false;
+        }
+        return true;
       }
     };
   },
@@ -445,13 +498,13 @@ module.exports = {
         const output = await _super(req, input, rteOptions);
         const finalOptions = self.optionsToSanitizeHtml(rteOptions);
 
-        output.content = sanitizeHtml(input.content, finalOptions);
+        output.content = self.sanitizeHtml(input.content, finalOptions);
 
         const anchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
-        output.permalinkIds = anchors.map(anchor => {
+        output.permalinkIds = (anchors && anchors.map(anchor => {
           const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
           return matches[1];
-        });
+        })) || [];
 
         return output;
       },
