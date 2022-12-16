@@ -14,9 +14,9 @@ export default function() {
   followPermalink();
   async function followPermalink() {
     const hash = location.hash || '';
-    const matches = hash.match(/#apostrophe-permalink-(.*?)\?/);
+    const matches = hash.match(/#apostrophe-permalink-(.*)$/);
     if (matches) {
-      const aposDocId = matches[1];
+      const aposDocId = matches[1].replace(/\?.*$/, '');
       const doc = await apos.http.get(`${apos.doc.action}/${aposDocId}`, {});
       if (doc._url) {
         // This way the hashed version does not enter the history

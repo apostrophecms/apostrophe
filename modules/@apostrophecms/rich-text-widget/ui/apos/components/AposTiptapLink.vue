@@ -235,9 +235,8 @@ export default {
         if (this.docFields.data.target && !this.docFields.data.href) {
           delete this.docFields.data.target;
         }
-        // This seems to trigger close on its own
         this.editor.commands.setLink({
-          target: this.docFields.data.target,
+          target: this.docFields.data.target[0],
           href: this.docFields.data.href
         });
         this.close();
@@ -260,6 +259,10 @@ export default {
     async populateFields() {
       try {
         const attrs = this.editor.getAttributes('link');
+        if (attrs.target) {
+          // checkboxes field expects an array
+          attrs.target = [ attrs.target ];
+        }
         this.docFields.data = {};
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';
