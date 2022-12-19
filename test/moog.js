@@ -284,7 +284,7 @@ describe('moog', function() {
       assert(myObject.fieldsGroups.basics.fields.includes('five'));
     });
 
-    it('should support inheriting field group commands rather than requiring all commands to be restated', async function() {
+    it('should support inheriting field group commands + modals rather than requiring all commands to be restated', async function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('myObject', {
@@ -298,6 +298,13 @@ describe('moog', function() {
           group: {
             basics: {
               commands: [ 'one', 'two', 'three' ]
+            }
+          },
+          modal: {
+            default: {
+              basics: {
+                commands: [ 'one', 'two', 'three' ]
+              }
             }
           }
         }
@@ -316,6 +323,18 @@ describe('moog', function() {
             other: {
               commands: [ 'one' ]
             }
+          },
+          modal: {
+            default: {
+              basics: {
+                commands: [ 'one', 'two', 'three' ]
+              }
+            },
+            custom: {
+              basics: {
+                commands: [ 'one', 'two' ]
+              }
+            }
           }
         }
       });
@@ -329,6 +348,21 @@ describe('moog', function() {
       assert(myObject.commandsGroups.basics.commands.includes('three'));
       assert(myObject.commandsGroups.basics.commands.includes('four'));
       assert(myObject.commandsGroups.basics.commands.includes('five'));
+      assert.deepEqual(
+        myObject.commandsModals,
+        {
+          custom: {
+            basics: {
+              commands: [ 'one', 'two' ]
+            }
+          },
+          default: {
+            basics: {
+              commands: [ 'one', 'two', 'three' ]
+            }
+          }
+        }
+      );
     });
 
     it('should order fields with the last option unless the order array overrides', async function() {
