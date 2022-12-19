@@ -1023,12 +1023,12 @@ module.exports = {
         }
       },
       async flushInsertsAndDeletes(inserts, deletes, { force = false }) {
-        if (inserts.length > 100 || force) {
+        if (inserts.length > 100 || (force && inserts.length)) {
           await self.apos.doc.db.insertMany(inserts);
           inserts.splice(0);
         }
 
-        if (deletes.length > 100 || force) {
+        if (deletes.length > 100 || (force && deletes.length)) {
           await self.apos.doc.db.deleteMany({ _id: { $in: deletes } });
           deletes.splice(0);
         }
