@@ -284,6 +284,53 @@ describe('moog', function() {
       assert(myObject.fieldsGroups.basics.fields.includes('five'));
     });
 
+    it('should support inheriting field group commands rather than requiring all commands to be restated', async function() {
+      const moog = require('../lib/moog.js')({});
+
+      moog.define('myObject', {
+        cascades: [ 'commands' ],
+        commands: {
+          add: {
+            one: { type: 'string' },
+            two: { type: 'string' },
+            three: { type: 'string' }
+          },
+          group: {
+            basics: {
+              commands: [ 'one', 'two', 'three' ]
+            }
+          }
+        }
+      });
+
+      moog.define('myObject', {
+        commands: {
+          add: {
+            four: { type: 'string' },
+            five: { type: 'string' }
+          },
+          group: {
+            basics: {
+              commands: [ 'four', 'five' ]
+            },
+            other: {
+              commands: [ 'one' ]
+            }
+          }
+        }
+      });
+
+      const myObject = await moog.create('myObject', {});
+      assert(myObject);
+      assert(myObject.commandsGroups);
+      assert(!myObject.commandsGroups.basics.commands.includes('one'));
+      assert(myObject.commandsGroups.other.commands.includes('one'));
+      assert(myObject.commandsGroups.basics.commands.includes('two'));
+      assert(myObject.commandsGroups.basics.commands.includes('three'));
+      assert(myObject.commandsGroups.basics.commands.includes('four'));
+      assert(myObject.commandsGroups.basics.commands.includes('five'));
+    });
+
     it('should order fields with the last option unless the order array overrides', async function() {
       const moog = require('../lib/moog.js')({});
 
