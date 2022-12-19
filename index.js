@@ -537,8 +537,7 @@ async function apostrophe(options, telemetry, rootSpan) {
         'extendQueries',
         'icons',
         'i18n',
-        'webpack',
-        'commands'
+        'webpack'
       ]
     });
 

@@ -130,7 +130,7 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it('should compose modals', function() {
+  it.only('should compose modals', function() {
     const initialState = {
       definitions: [
         [ moduleA.commands ],

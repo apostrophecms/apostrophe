@@ -30,6 +30,8 @@ const _ = require('lodash');
 
 module.exports = {
 
+  cascades: [ 'commands' ],
+
   init(self) {
     self.apos = self.options.apos;
     const capturedSections = [
