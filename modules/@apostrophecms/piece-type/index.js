@@ -1022,13 +1022,13 @@ module.exports = {
           }
         }
       },
-      async flushInsertsAndDeletes(inserts, deletes) {
-        if (inserts.length > 100) {
+      async flushInsertsAndDeletes(inserts, deletes, { force = false }) {
+        if (inserts.length > 100 || force) {
           await self.apos.doc.db.insertMany(inserts);
           inserts.splice(0);
         }
 
-        if (deletes.length > 100) {
+        if (deletes.length > 100 || force) {
           await self.apos.doc.db.deleteMany({ _id: { $in: deletes } });
           deletes.splice(0);
         }
@@ -1139,7 +1139,7 @@ module.exports = {
             }
           });
 
-          await self.flushInsertsAndDeletes(inserts, deletes);
+          await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
           await self.apos.attachment.recomputeAllDocReferences();
 
           console.log(`Done localizing module ${self.name}`);
@@ -1180,7 +1180,7 @@ module.exports = {
             }
           });
 
-          await self.flushInsertsAndDeletes(inserts, deletes);
+          await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
           await self.apos.attachment.recomputeAllDocReferences();
 
           console.log(`Done unlocalizing module ${self.name}`);
