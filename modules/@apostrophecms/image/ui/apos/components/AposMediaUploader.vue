@@ -82,7 +82,7 @@ export default {
   },
   methods: {
     create() {
-      if (this.disabled) {
+      if (!this.disabled) {
         this.$refs.upload.click();
       }
     },
