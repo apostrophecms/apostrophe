@@ -24,7 +24,7 @@
 
 * Relationships load more quickly.
 * Parked page checks at startup are faster.
-
+* Tasks to localize and unlocalize piece type content (see `node app help [yourModuleName]:localize` and `node app help [yourModuleName]:unlocalize`).
 ## 3.33.0 (2022-11-28)
 
 ### Adds
