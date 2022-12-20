@@ -12,12 +12,12 @@ const moduleA = {
       }
     },
     modal: {
-      null: {
+      default: {
         '@apostrophecms/command-menu:content': {
           label: 'commandMenuContent',
           commands: [
-            'apostrophe:undo',
-            'apostrophe:redo',
+            '@apostrophecms/command-menu:undo',
+            '@apostrophecms/command-menu:redo',
             '@apostrophecms/command-menu:toggle-shortcuts'
           ]
         }
@@ -39,12 +39,12 @@ const moduleB = {
       }
     },
     modal: {
-      null: {
+      default: {
         '@apostrophecms/command-menu:content': {
           label: 'commandMenuContent',
           commands: [
-            'apostrophe:discard-draft',
-            'apostrophe:publish-draft',
+            '@apostrophecms/command-menu:discard-draft',
+            '@apostrophecms/command-menu:publish-draft',
             '@apostrophecms/command-menu:test'
           ]
         }
@@ -58,12 +58,12 @@ const moduleC = {
       '@apostrophecms/command-menu:test'
     ],
     modal: {
-      null: {
+      default: {
         '@apostrophecms/command-menu:modes': {
           label: 'commandMenuModes',
           commands: [
-            'apostrophe:toggle-edit-preview-mode',
-            'apostrophe:toggle-publish-draft-mode'
+            '@apostrophecms/command-menu:toggle-edit-preview-mode',
+            '@apostrophecms/command-menu:toggle-publish-draft-mode'
           ]
         }
       }

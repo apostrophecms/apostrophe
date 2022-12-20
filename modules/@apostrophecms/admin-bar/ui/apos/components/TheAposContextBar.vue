@@ -3,8 +3,8 @@
     <template v-if="contextBarActive">
       <TheAposContextUndoRedo
         :v-if="editMode"
-        :patches-since-loaded="patchesSinceLoaded"
-        :undone="undone"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
         @undo="undo"
         @redo="redo"
         :retrying="retrying"
@@ -122,6 +122,12 @@ export default {
     },
     customPublishLabel() {
       return (this.hasCustomUi && apos.modules[this.context.type].publishLabel) || null;
+    },
+    canUndo() {
+      return this.patchesSinceLoaded.length > 0;
+    },
+    canRedo() {
+      return this.undone.length > 0;
     }
   },
   watch: {
@@ -598,12 +604,16 @@ export default {
       }
     },
     async undo() {
-      this.undone.push(this.patchesSinceLoaded.pop());
-      await this.refreshAfterHistoryChange('apostrophe:undoFailed');
+      if (this.canUndo) {
+        this.undone.push(this.patchesSinceLoaded.pop());
+        await this.refreshAfterHistoryChange('apostrophe:undoFailed');
+      }
     },
     async redo() {
-      this.patchesSinceLoaded.push(this.undone.pop());
-      await this.refreshAfterHistoryChange('apostrophe:redoFailed');
+      if (this.canRedo) {
+        this.patchesSinceLoaded.push(this.undone.pop());
+        await this.refreshAfterHistoryChange('apostrophe:redoFailed');
+      }
     },
     async refreshAfterHistoryChange(errorMessageKey) {
       this.saving = true;

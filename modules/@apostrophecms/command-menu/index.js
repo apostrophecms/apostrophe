@@ -2,7 +2,36 @@ const assert = require('assert').strict;
 
 module.exports = {
   options: {
+    components: {},
     alias: 'commandMenu'
+  },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:show-shortcut-list`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuShowShortcutList',
+          action: {
+            type: 'open-modal',
+            payload: {
+              name: 'AposCommandMenuShortcut',
+              props: { moduleName: '@apostrophecms/command-menu' }
+            }
+          },
+          shortcut: '?'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              `${self.__meta.name}:show-shortcut-list`
+            ]
+          }
+        }
+      }
+    };
   },
   init(self) {
     self.commands = {};
@@ -163,7 +192,9 @@ module.exports = {
       validateCommand({ name, command }) {
         try {
           assert.equal(command.type, 'item', `Invalid command type, must be "item", for ${name}`);
-          assert.equal(typeof command.label, 'string', `Invalid command label, must be a string, for ${name} "${typeof command.label}" provided`);
+          command.label && typeof command.label === 'object'
+            ? assert.equal(typeof command.label.key, 'string', `Invalid command label key for ${name}`)
+            : assert.equal(typeof command.label, 'string', `Invalid command label, must be a string, for ${name} "${typeof command.label}" provided`);
           assert.equal(typeof command.action, 'object', `Invalid command action, must be an object for ${name}`) &&
             assert.equal(typeof command.action.type, 'string', `Invalid command action type for ${name}`) &&
             assert.equal(typeof command.action.payload, 'object', `Invalid command action payload for ${name}`);
@@ -322,9 +353,14 @@ module.exports = {
         );
       },
       getBrowserData(req) {
+        if (!req.user) {
+          return false;
+        }
+
         const { groups, modals } = self.getVisible(req);
 
         return {
+          components: { the: self.options.components.the || 'TheAposCommandMenu' },
           groups,
           modals
         };

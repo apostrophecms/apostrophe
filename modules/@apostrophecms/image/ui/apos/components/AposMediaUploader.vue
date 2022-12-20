@@ -74,7 +74,18 @@ export default {
       ].concat(this.disabled ? [] : [ 'apos-media-uploader--enabled' ]);
     }
   },
+  mounted() {
+    apos.bus.$on('command-menu-manager-create-new', this.create);
+  },
+  destroyed() {
+    apos.bus.$off('command-menu-manager-create-new', this.create);
+  },
   methods: {
+    create() {
+      if (!this.disabled) {
+        this.$refs.upload.click();
+      }
+    },
     incrementDragover() {
       this.dragoverCount++;
       this.dragover = this.dragoverCount > 0;

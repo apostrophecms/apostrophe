@@ -222,9 +222,13 @@ export default {
     this.modal.active = true;
     await this.getPages();
     apos.bus.$on('content-changed', this.getPages);
+    apos.bus.$on('command-menu-manager-create-new', this.create);
+    apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   destroyed() {
     apos.bus.$off('content-changed', this.getPages);
+    apos.bus.$off('command-menu-manager-create-new', this.create);
+    apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
     moreMenuHandler(action) {

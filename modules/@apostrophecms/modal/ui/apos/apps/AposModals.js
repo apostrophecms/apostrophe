@@ -25,6 +25,12 @@ export default function() {
       },
       execute(componentName, props) {
         return this.$refs.modals.execute(componentName, props);
+      },
+      getAt(index) {
+        return this.$refs.modals.getAt(index);
+      },
+      getProperties(id) {
+        return this.$refs.modals.getProperties(id);
       }
     },
     render(h) {
@@ -37,6 +43,9 @@ export default function() {
     }
   });
   apos.modal.execute = theAposModals.execute;
+  apos.modal.getAt = theAposModals.getAt;
+  apos.modal.getProperties = theAposModals.getProperties;
+  apos.modal.stack = [];
   apos.confirm = theAposModals.confirm;
   apos.alert = theAposModals.alert;
-};
+}

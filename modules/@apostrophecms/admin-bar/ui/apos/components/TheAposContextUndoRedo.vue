@@ -10,7 +10,7 @@
       v-apos-tooltip="undoTooltips.undo"
     >
       <AposButton
-        :disabled="patchesSinceLoaded.length === 0"
+        :disabled="!canUndo"
         type="subtle" :modifiers="['small', 'no-motion']"
         label="apostrophe:undo" class="apos-admin-bar__context-button"
         icon="undo-icon" :icon-only="true"
@@ -22,7 +22,7 @@
       v-apos-tooltip="undoTooltips.redo"
     >
       <AposButton
-        :disabled="undone.length === 0"
+        :disabled="!canRedo"
         type="subtle" :modifiers="['small', 'no-motion']"
         label="apostrophe:redo" class="apos-admin-bar__context-button"
         icon="redo-icon" :icon-only="true"
@@ -44,18 +44,8 @@
 export default {
   name: 'TheAposContextUndoRedo',
   props: {
-    patchesSinceLoaded: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
-    undone: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
+    canUndo: Boolean,
+    canRedo: Boolean,
     retrying: Boolean,
     editing: Boolean,
     saving: Boolean,
@@ -69,23 +59,35 @@ export default {
         redo: 'apostrophe:redoTooltip'
       };
 
-      if (this.patchesSinceLoaded.length === 0) {
+      if (!this.canUndo) {
         tooltips.undo = 'apostrophe:undoTooltipNoChanges';
       }
 
-      if (this.undone.length === 0) {
+      if (!this.canRedo) {
         tooltips.redo = 'apostrophe:redoTooltipNoChanges';
       }
 
       return tooltips;
     }
   },
+  mounted() {
+    apos.bus.$on('command-menu-admin-bar-undo', this.undo);
+    apos.bus.$on('command-menu-admin-bar-redo', this.redo);
+  },
+  destroyed() {
+    apos.bus.$off('command-menu-admin-bar-undo', this.undo);
+    apos.bus.$off('command-menu-admin-bar-redo', this.redo);
+  },
   methods: {
     undo() {
-      this.$emit('undo');
+      if (this.canUndo) {
+        this.$emit('undo');
+      }
     },
     redo() {
-      this.$emit('redo');
+      if (this.canRedo) {
+        this.$emit('redo');
+      }
     }
   }
 };
