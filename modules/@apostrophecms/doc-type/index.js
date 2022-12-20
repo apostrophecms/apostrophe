@@ -121,7 +121,7 @@ module.exports = {
           action: {
             type: 'command-menu-manager-focus-search'
           },
-          shortcut: 'Meta+F Ctrl+F'
+          shortcut: 'Ctrl+F Meta+F'
         },
         [`${self.__meta.name}:select-all`]: {
           type: 'item',
@@ -129,7 +129,7 @@ module.exports = {
           action: {
             type: 'command-menu-manager-select-all'
           },
-          shortcut: 'Meta+Shift+A Ctrl+Shift+A'
+          shortcut: 'Ctrl+Shift+A Meta+Shift+A'
         },
         [`${self.__meta.name}:archive-selected`]: {
           type: 'item',

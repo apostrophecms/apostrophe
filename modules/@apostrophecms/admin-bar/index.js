@@ -22,7 +22,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-undo'
           },
-          shortcut: 'Meta+Z Ctrl+Z'
+          shortcut: 'Ctrl+Z Meta+Z'
         },
         [`${self.__meta.name}:redo`]: {
           type: 'item',
@@ -30,7 +30,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-redo'
           },
-          shortcut: 'Meta+Shift+Z Ctrl+Shift+Z'
+          shortcut: 'Ctrl+Shift+Z Meta+Shift+Z'
         },
         [`${self.__meta.name}:discard-draft`]: {
           type: 'item',
@@ -38,7 +38,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-discard-draft'
           },
-          shortcut: 'Meta+Shift+Backspace Ctrl+Shift+Backspace'
+          shortcut: 'Ctrl+Shift+Backspace Meta+Shift+Backspace'
         },
         [`${self.__meta.name}:publish-draft`]: {
           type: 'item',
@@ -46,7 +46,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-publish-draft'
           },
-          shortcut: 'Meta+Shift+P Ctrl+Shift+P'
+          shortcut: 'Ctrl+Shift+P Meta+Shift+P'
         },
         [`${self.__meta.name}:toggle-edit-preview-mode`]: {
           type: 'item',
@@ -54,7 +54,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-toggle-edit-preview'
           },
-          shortcut: 'Meta+/ Ctrl+/'
+          shortcut: 'Ctrl+/ Meta+/'
         },
         [`${self.__meta.name}:toggle-published-draft-document`]: {
           type: 'item',
@@ -62,7 +62,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-toggle-publish-draft'
           },
-          shortcut: 'Meta+Shift+D Ctrl+Shift+D'
+          shortcut: 'Ctrl+Shift+D Meta+Shift+D'
         }
       },
       modal: {
