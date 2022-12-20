@@ -2,6 +2,7 @@
 // editor does not use a modal; instead you edit in context on the page.
 
 const sanitizeHtml = require('sanitize-html');
+const cheerio = require('cheerio');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
@@ -13,6 +14,13 @@ module.exports = {
     placeholderText: 'apostrophe:richTextPlaceholder',
     defaultData: { content: '' },
     className: false,
+    linkWithType: [ '@apostrophecms/any-page-type' ],
+    // For permalinks
+    project: {
+      title: 1,
+      _url: 1,
+      aposDocId: 1
+    },
     minimumDefaultOptions: {
       toolbar: [
         'styles',
@@ -20,6 +28,7 @@ module.exports = {
         'italic',
         'strike',
         'link',
+        'anchor',
         'bulletList',
         'orderedList',
         'blockquote'
@@ -82,6 +91,11 @@ module.exports = {
         component: 'AposTiptapLink',
         label: 'apostrophe:richTextLink',
         icon: 'link-icon'
+      },
+      anchor: {
+        component: 'AposTiptapAnchor',
+        label: 'apostrophe:richTextAnchor',
+        icon: 'anchor-icon'
       },
       bulletList: {
         component: 'AposTiptapButton',
@@ -168,20 +182,20 @@ module.exports = {
       setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
-        'a', 's', 'del', 'strike', 'span', 'u'
+        'a', 's', 'del', 'strike', 'span', 'u', 'anchor'
       ],
       wrapIn: [ 'blockquote' ]
     },
     tiptapTypes: {
       heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
       paragraph: [ 'p' ],
-      textStyle: [ 'span' ],
       code: [ 'code' ],
       bold: [ 'strong', 'b' ],
       strike: [ 's', 'del', 'strike' ],
       italic: [ 'i', 'em' ],
       highlight: [ 'mark' ],
       link: [ 'a' ],
+      anchor: [ 'span' ],
       underline: [ 'u' ],
       codeBlock: [ 'pre' ],
       blockquote: [ 'blockquote' ]
@@ -205,7 +219,37 @@ module.exports = {
         return widget.content;
       },
 
+      // Handle permalinks
       async load(req, widgets) {
+        const widgetsByDocId = new Map();
+        let ids = [];
+        for (const widget of widgets) {
+          if (!widget.permalinkIds) {
+            continue;
+          }
+          for (const id of widget.permalinkIds) {
+            const docWidgets = widgetsByDocId.get(id) || [];
+            docWidgets.push(widget);
+            widgetsByDocId.set(id, docWidgets);
+            ids.push(id);
+          }
+        }
+        ids = [ ...new Set(ids) ];
+        if (!ids.length) {
+          return;
+        }
+        const docs = await self.apos.doc.find(req, {
+          aposDocId: {
+            $in: ids
+          }
+        }).project(self.options.project).toArray();
+        for (const doc of docs) {
+          const widgets = widgetsByDocId.get(doc.aposDocId) || [];
+          for (const widget of widgets) {
+            widget._permalinkDocs = widget._permalinkDocs || [];
+            widget._permalinkDocs.push(doc);
+          }
+        }
       },
 
       // Convert area rich text options into a valid sanitize-html
@@ -252,7 +296,8 @@ module.exports = {
             'pre',
             'code'
           ],
-          underline: [ 'u' ]
+          underline: [ 'u' ],
+          anchor: [ 'span' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
@@ -296,6 +341,10 @@ module.exports = {
           alignJustify: {
             tag: '*',
             attributes: [ 'style' ]
+          },
+          anchor: {
+            tag: 'span',
+            attributes: [ 'id' ]
           }
         };
         for (const item of options.toolbar || []) {
@@ -393,6 +442,47 @@ module.exports = {
       isEmpty(widget) {
         const text = self.apos.util.htmlToPlaintext(widget.content || '');
         return !text.trim().length;
+      },
+
+      sanitizeHtml(html, options) {
+        html = sanitizeHtml(html, options);
+        html = self.sanitizeAnchors(html);
+        return html;
+      },
+
+      sanitizeAnchors(html) {
+        const $ = cheerio.load(html);
+        const seen = new Set();
+        $('[data-anchor]').each(function() {
+          const $el = $(this);
+          const anchor = $el.attr('data-anchor');
+          if (!self.validateAnchor(anchor)) {
+            return;
+          }
+          // tiptap will apply data-anchor to every tag involved in the selection
+          // at any depth. For ids and anchors this doesn't really make sense.
+          // Save the id to the first, rootmost tag involved
+          if (!seen.has(anchor)) {
+            $el.attr('id', anchor);
+            seen.add(anchor);
+          }
+        });
+        const result = $('body').html();
+        return result;
+      },
+
+      validateAnchor(anchor) {
+        if ((typeof anchor) !== 'string') {
+          return false;
+        }
+        if (!anchor.length) {
+          return false;
+        }
+        // Don't let them break the editor
+        if (anchor.startsWith('apos-')) {
+          return false;
+        }
+        return true;
       }
     };
   },
@@ -407,8 +497,65 @@ module.exports = {
         const output = await _super(req, input, rteOptions);
         const finalOptions = self.optionsToSanitizeHtml(rteOptions);
 
-        output.content = sanitizeHtml(input.content, finalOptions);
+        output.content = self.sanitizeHtml(input.content, finalOptions);
+
+        const anchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
+        output.permalinkIds = (anchors && anchors.map(anchor => {
+          const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
+          return matches[1];
+        })) || [];
+
         return output;
+      },
+      async output(_super, req, widget, options, _with) {
+        let i;
+        let content = widget.content || '';
+        // "Why no regexps?" We need to do this as quickly as we can.
+        // indexOf and lastIndexOf are much faster.
+        for (const doc of (widget._permalinkDocs || [])) {
+          let offset = 0;
+          while (true) {
+            i = content.indexOf('apostrophe-permalink-' + doc.aposDocId, offset);
+            if (i === -1) {
+              break;
+            }
+            offset = i + ('apostrophe-permalink-' + doc.aposDocId).length;
+            let updateTitle = content.indexOf('?updateTitle=1', i);
+            if (updateTitle === i + ('apostrophe-permalink-' + doc.aposDocId).length) {
+              updateTitle = true;
+            } else {
+              updateTitle = false;
+            }
+            // If you can edit the widget, you don't want the link replaced,
+            // as that would lose the permalink if you edit the widget
+            const left = content.lastIndexOf('<', i);
+            const href = content.indexOf(' href="', left);
+            const close = content.indexOf('"', href + 7);
+            if (!widget._edit) {
+              if ((left !== -1) && (href !== -1) && (close !== -1)) {
+                content = content.substr(0, href + 6) + doc._url + content.substr(close + 1);
+              } else {
+                // So we don't get stuck in an infinite loop
+                break;
+              }
+            }
+            if (!updateTitle) {
+              continue;
+            }
+            const right = content.indexOf('>', left);
+            const nextLeft = content.indexOf('<', right);
+            if ((right !== -1) && (nextLeft !== -1)) {
+              content = content.substr(0, right + 1) + self.apos.util.escapeHtml(doc.title) + content.substr(nextLeft);
+            }
+          }
+        }
+        // We never modify the original widget.content because we do not want
+        // it to lose its permalinks in the database
+        const _widget = {
+          ...widget,
+          content
+        };
+        return _super(req, _widget, options, _with);
       },
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
@@ -420,7 +567,8 @@ module.exports = {
           defaultOptions: self.options.defaultOptions,
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
-          placeholderText: self.options.placeholder && self.options.placeholderText
+          placeholderText: self.options.placeholder && self.options.placeholderText,
+          linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ]
         };
         return finalData;
       }
