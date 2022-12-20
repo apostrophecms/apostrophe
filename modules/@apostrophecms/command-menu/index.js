@@ -5,9 +5,9 @@ module.exports = {
     alias: 'commandMenu'
   },
   init(self) {
-    // self.commands = {};
-    // self.groups = {};
-    // self.modals = {};
+    self.commands = {};
+    self.groups = {};
+    self.modals = {};
 
     self.addShortcutModal();
     self.enableBrowserData();
@@ -44,15 +44,13 @@ module.exports = {
     return {
       'apostrophe:ready': {
         composeCommands() {
-          const definitions = // Object.fromEntries(
-            Object.values(self.apos.modules).reduce(self.composeCommandsForModule, {})
-              // .map(self.composeCommandsForModule)
-              // .filter(([ , { commands = {} } ]) => Object.keys(commands).length)
-          // );
-          console.log(definitions);
+          const definitions = Object.fromEntries(
+            Object.values(self.apos.modules)
+              .map(self.composeCommandsForModule)
+              .filter(([ , commands = [] ]) => commands.length)
+          );
 
           try {
-            // console.log('!!', ({ ...self.apos.modules['@apostrophecms/command-menu'], apos: '' }));
             const composed = self.apos.util.pipe(self.composeRemoves, self.composeCommands, self.composeGroups, self.composeModals)({ definitions });
 
             const validationResult = [].concat(
@@ -88,92 +86,92 @@ module.exports = {
   },
   methods(self) {
     return {
-      composeCommandsForModule(state, aposModule) {
-        return self.apos.util.merge(
-          state,
-          {
-            commands: aposModule.commands,
-            groups: aposModule.commandsGroups,
-            modals: aposModule.commandsModals
-          }
-        );
-        // return [
-          // aposModule.__meta.name,
-          // aposModule.__meta.chain
-          //   .map(entry => {
-          //     const metadata = aposModule.__meta.commands[entry.name] || null;
+      composeCommandsForModule(aposModule) {
+        return [
+          aposModule.__meta.name,
+          aposModule.__meta.chain
+            .map(entry => {
+              const metadata = aposModule.__meta.commands[entry.name] || null;
 
-          //     return typeof metadata === 'function'
-          //       ? metadata(aposModule)
-          //       : metadata;
-          //   })
-          //   .filter(entry => entry !== null)
-        // ];
+              return typeof metadata === 'function'
+                ? metadata(aposModule)
+                : metadata;
+            })
+            .filter(entry => entry !== null)
+        ];
       },
-      // composeRemoves(initialState) {
-      //   const formatRemove = (state, chain) => {
-      //     return chain
-      //       .reduce(
-      //         (removes, { remove = [] }) => removes.concat(remove),
-      //         state
-      //       );
-      //   };
+      composeRemoves(initialState) {
+        const formatRemove = (state, chain) => {
+          return chain
+            .reduce(
+              (removes, { add = {}, remove = [] }) => {
+                const existingCommands = Object.keys(add);
 
-      //   const concatenate = Object.values(initialState.definitions).reduce(formatRemove, []);
+                return removes
+                  .filter(key => !existingCommands.includes(key))
+                  .concat(remove);
+              },
+              state
+            );
+        };
 
-      //   return {
-      //     ...initialState,
-      //     removes: concatenate || []
-      //   };
-      // },
-      // composeCommands(initialState) {
-      //   const formatCommands = (state, chain) => {
-      //     return chain
-      //       .reduce(
-      //         (commands, { add = {} }) => self.apos.util.merge(commands, add),
-      //         state
-      //       );
-      //   };
+        const concatenate = Object.values(initialState.definitions).reduce(formatRemove, []);
 
-      //   const concatenate = Object.values(initialState.definitions).reduce(formatCommands, {});
+        return {
+          ...initialState,
+          removes: concatenate || []
+        };
+      },
+      composeCommands(initialState) {
+        const formatCommands = (state, chain) => {
+          return chain
+            .reduce(
+              (commands, { add = {} }) => self.apos.util.merge(commands, add),
+              state
+            );
+        };
 
-      //   return {
-      //     ...initialState,
-      //     commands: concatenate || {}
-      //   };
-      // },
-      // composeGroups(initialState) {
-      //   const formatGroups = (state, chain) => {
-      //     return chain
-      //       .reduce(
-      //         (groups, { group = {} }) => self.apos.util.merge(groups, group),
-      //         state
-      //       );
-      //   };
+        const concatenate = Object.values(initialState.definitions).reduce(formatCommands, {});
 
-      //   const concatenate = Object.values(initialState.definitions).reduce(formatGroups, {});
+        return {
+          ...initialState,
+          commands: concatenate || {}
+        };
+      },
+      composeGroups(initialState) {
+        const formatGroups = (state, chain) => {
+          return chain
+            .reduce(
+              (groups, { group = {} }) => {
+                return self.apos.util.merge(groups, group);
+              },
+              state
+            );
+        };
 
-      //   return {
-      //     ...initialState,
-      //     groups: concatenate || {}
-      //   };
-      // },
-      // composeModals(initialState) {
-      //   const formatModals = (state, chain) => {
-      //     return chain
-      //       .reduce(
-      //         (modals, { modal = {} }) => self.apos.util.merge(modals, modal),
-      //         state
-      //       );
-      //   };
+        const concatenate = Object.values(initialState.definitions).reduce(formatGroups, {});
 
-      //   const concatenate = Object.values(initialState.definitions).reduce(formatModals, {});
+        return {
+          ...initialState,
+          groups: concatenate || {}
+        };
+      },
+      composeModals(initialState) {
+        const formatModals = (state, chain) => {
+          return chain
+            .reduce(
+              (modals, { modal = {} }) => self.apos.util.merge(modals, modal),
+              state
+            );
+        };
 
-      //   return {
-      //     ...initialState,
-      //     modals: concatenate || {}
-      //   };
-      // },
+        const concatenate = Object.values(initialState.definitions).reduce(formatModals, {});
+
+        return {
+          ...initialState,
+          modals: concatenate || {}
+        };
+      },
       validateCommand({ name, command }) {
         try {
           assert.equal(command.type, 'item', `Invalid command type, must be "item", for ${name}`);
@@ -223,61 +221,61 @@ module.exports = {
           throw new Error('Invalid', { cause: errors });
         }
       },
-      // buildCommands(initialState) {
-      //   const concatenate = self.apos.util.omit(
-      //     initialState.composed.commands,
-      //     initialState.composed.removes
-      //   );
+      buildCommands(initialState) {
+        const concatenate = self.apos.util.omit(
+          initialState.composed.commands,
+          initialState.composed.removes
+        );
 
-      //   return {
-      //     ...initialState,
-      //     commands: concatenate || {}
-      //   };
-      // },
-      // buildGroups(initialState) {
-      //   const filterGroups = (state, [ name, group ]) => {
-      //     const commands = group.commands
-      //       .map(field => [ field, initialState.commands[field] ])
-      //       .filter(([ , isNotEmpty ]) => isNotEmpty);
+        return {
+          ...initialState,
+          commands: concatenate || {}
+        };
+      },
+      buildGroups(initialState) {
+        const filterGroups = (state, [ name, group ]) => {
+          const commands = group.commands
+            .map(field => [ field, initialState.commands[field] ])
+            .filter(([ , isNotEmpty ]) => isNotEmpty);
 
-      //     return commands.length
-      //       ? {
-      //         ...state,
-      //         [name]: {
-      //           ...group,
-      //           commands: Object.fromEntries(commands)
-      //         }
-      //       }
-      //       : state;
-      //   };
+          return commands.length
+            ? {
+              ...state,
+              [name]: {
+                ...group,
+                commands: Object.fromEntries(commands)
+              }
+            }
+            : state;
+        };
 
-      //   const concatenate = Object.entries(initialState.composed.groups).reduce(filterGroups, {});
+        const concatenate = Object.entries(initialState.composed.groups).reduce(filterGroups, {});
 
-      //   return {
-      //     ...initialState,
-      //     groups: concatenate || {}
-      //   };
-      // },
-      // buildModals(initialState) {
-      //   const formatModals = (state, [ modal, groups ]) => {
-      //     const built = self.buildGroups({
-      //       commands: initialState.commands,
-      //       composed: { groups }
-      //     });
+        return {
+          ...initialState,
+          groups: concatenate || {}
+        };
+      },
+      buildModals(initialState) {
+        const formatModals = (state, [ modal, groups ]) => {
+          const built = self.buildGroups({
+            commands: initialState.commands,
+            composed: { groups }
+          });
 
-      //     return {
-      //       ...state,
-      //       [modal]: built.groups
-      //     };
-      //   };
+          return {
+            ...state,
+            [modal]: built.groups
+          };
+        };
 
-      //   const concatenate = Object.entries(initialState.composed.modals).reduce(formatModals, {});
+        const concatenate = Object.entries(initialState.composed.modals).reduce(formatModals, {});
 
-      //   return {
-      //     ...initialState,
-      //     modals: concatenate || {}
-      //   };
-      // },
+        return {
+          ...initialState,
+          modals: concatenate || {}
+        };
+      },
       isCommandVisible(req, command) {
         return command.permission
           ? self.apos.permission.can(req, command.permission.action, command.permission.type, command.permission.mode || 'draft')

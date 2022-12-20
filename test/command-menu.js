@@ -65,6 +65,54 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
+  it('should compose removes sequentially', function() {
+    const initialState = {
+      definitions: [
+        [
+          {
+            add: {
+              '@apostrophecms/command-menu:test': {
+                type: 'item',
+                label: 'commandMenuShortcutTest',
+                action: {
+                  type: 'test',
+                  payload: {}
+                },
+                shortcut: 'Shift+G'
+              }
+            }
+          },
+          {
+            remove: [
+              '@apostrophecms/command-menu:test'
+            ]
+          }
+        ],
+        [ {
+          add: {
+            '@apostrophecms/command-menu:test': {
+              type: 'item',
+              label: 'commandMenuShortcutTest',
+              action: {
+                type: 'test',
+                payload: {}
+              },
+              shortcut: 'Shift+G'
+            }
+          }
+        } ]
+      ]
+    };
+
+    const actual = apos.commandMenu.composeRemoves(initialState);
+    const expected = {
+      ...initialState,
+      removes: []
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
   it('should compose commands', function() {
     const initialState = {
       definitions: [
@@ -130,7 +178,7 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it.only('should compose modals', function() {
+  it('should compose modals', function() {
     const initialState = {
       definitions: [
         [ moduleA.commands ],

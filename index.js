@@ -141,7 +141,6 @@ module.exports = async function(options) {
     } else {
       // continue as a worker operation, the pid should be recorded by the auto instrumentation
       spanName += ':worker';
-      console.log(`Cluster worker ${process.pid} started`);
     }
   }
 
@@ -537,7 +536,8 @@ async function apostrophe(options, telemetry, rootSpan) {
         'extendQueries',
         'icons',
         'i18n',
-        'webpack'
+        'webpack',
+        'commands'
       ]
     });
 
