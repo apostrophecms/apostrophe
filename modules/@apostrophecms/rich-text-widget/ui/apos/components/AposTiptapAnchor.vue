@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-link-control">
+  <div class="apos-anchor-control">
     <AposButton
       type="rich-text"
       @click="click"
@@ -12,7 +12,7 @@
     <div
       v-if="active"
       v-click-outside-element="close"
-      class="apos-popover apos-link-control__dialog"
+      class="apos-popover apos-anchor-control__dialog"
       x-placement="bottom"
       :class="{
         'apos-is-triggered': active,
@@ -22,11 +22,11 @@
       <AposContextMenuDialog
         menu-placement="bottom-start"
       >
-        <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
+        <div v-if="hasAnchorOnOpen" class="apos-anchor-control__remove">
           <AposButton
             type="quiet"
-            @click="removeLink"
-            label="apostrophe:removeLink"
+            @click="removeAnchor"
+            label="apostrophe:removeRichTextAnchor"
           />
         </div>
         <AposSchema
@@ -40,7 +40,7 @@
           :following-values="followingValues()"
           :conditional-fields="conditionalFields()"
         />
-        <footer class="apos-link-control__footer">
+        <footer class="apos-anchor-control__footer">
           <AposButton
             type="default" label="apostrophe:cancel"
             @click="close"
@@ -61,7 +61,7 @@
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 
 export default {
-  name: 'AposTiptapLink',
+  name: 'AposTiptapAnchor',
   mixins: [ AposEditorMixin ],
   props: {
     name: {
@@ -77,15 +77,11 @@ export default {
       required: true
     }
   },
-  data() {
-    const linkWithType = getOptions().linkWithType;
+  data () {
     return {
       generation: 1,
       keepInBounds: true,
-      href: null,
-      target: null,
-      active: false,
-      hasLinkOnOpen: false,
+      hasAnchorOnOpen: false,
       triggerValidation: false,
       docFields: {
         data: {}
@@ -93,75 +89,18 @@ export default {
       formModifiers: [ 'small', 'margin-micro' ],
       originalSchema: [
         {
-          name: 'linkTo',
-          label: this.$t('apostrophe:linkTo'),
-          type: 'select',
-          def: linkWithType[0],
-          required: true,
-          choices: [
-            ...(linkWithType.map(type => {
-              return {
-                // Should already be localized server side
-                label: apos.modules[type].label,
-                value: type
-              };
-            })),
-            {
-              // TODO this needs i18n
-              label: this.$t('apostrophe:url'),
-              // Value that will never be a doc type
-              value: '_url'
-            }
-          ]
-        },
-        ...getOptions().linkWithType.map(type => ({
-          name: `_${type}`,
-          type: 'relationship',
-          label: apos.modules[type].label,
-          withType: type,
-          required: true,
-          max: 1,
-          browse: false,
-          if: {
-            linkTo: type
-          }
-        })),
-        {
-          name: 'updateTitle',
-          label: this.$t('apostrophe:updateTitle'),
-          type: 'boolean',
-          def: true,
-          if: {
-            $or: linkWithType.map(type => ({
-              linkTo: type
-            }))
-          }
-        },
-        {
-          name: 'href',
-          label: this.$t('apostrophe:url'),
+          name: 'anchor',
+          label: this.$t('apostrophe:anchorId'),
           type: 'string',
-          if: {
-            linkTo: '_url'
-          }
-        },
-        {
-          name: 'target',
-          label: this.$t('apostrophe:linkTarget'),
-          type: 'checkboxes',
-          choices: [
-            {
-              label: this.$t('apostrophe:openLinkInNewTab'),
-              value: '_blank'
-            }
-          ]
+          required: true
         }
-      ]
+      ],
+      active: false
     };
   },
   computed: {
     buttonActive() {
-      return this.editor.getAttributes('link').href || this.active;
+      return this.editor.isActive('anchor') || this.active;
     },
     lastSelectionTime() {
       return this.editor.view.lastSelectionTime;
@@ -186,7 +125,7 @@ export default {
   watch: {
     active(newVal) {
       if (newVal) {
-        this.hasLinkOnOpen = !!(this.docFields.data.href);
+        this.hasAnchorOnOpen = !!(this.docFields.data.anchor);
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
@@ -204,9 +143,9 @@ export default {
     }
   },
   methods: {
-    removeLink() {
+    removeAnchor() {
       this.docFields.data = {};
-      this.editor.commands.unsetLink();
+      this.editor.commands.unsetAnchor();
       this.close();
     },
     click() {
@@ -227,17 +166,8 @@ export default {
         if (this.docFields.hasErrors) {
           return;
         }
-        if (this.docFields.data.linkTo !== '_url') {
-          const doc = this.docFields.data[`_${this.docFields.data.linkTo}`][0];
-          this.docFields.data.href = `#apostrophe-permalink-${doc.aposDocId}?updateTitle=${this.docFields.data.updateTitle ? 1 : 0}`;
-        }
-        // Clean up incomplete submissions
-        if (this.docFields.data.target && !this.docFields.data.href) {
-          delete this.docFields.data.target;
-        }
-        this.editor.commands.setLink({
-          target: this.docFields.data.target[0],
-          href: this.docFields.data.href
+        this.editor.commands.setAnchor({
+          id: this.docFields.data.anchor
         });
         this.close();
       });
@@ -247,7 +177,7 @@ export default {
         this.close();
       }
       if (e.keyCode === 13) {
-        if (this.docFields.data.href || e.metaKey) {
+        if (this.docFields.data.anchor) {
           this.save();
           this.close();
           e.preventDefault();
@@ -258,58 +188,28 @@ export default {
     },
     async populateFields() {
       try {
-        const attrs = this.editor.getAttributes('link');
-        if (attrs.target) {
-          // checkboxes field expects an array
-          attrs.target = [ attrs.target ];
-        }
+        const attrs = {
+          anchor: this.editor.getAttributes('anchor').id
+        };
         this.docFields.data = {};
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';
         });
-        const matches = this.docFields.data.href.match(/^#apostrophe-permalink-(.*)\?updateTitle=(\d)$/);
-        if (!matches) {
-          this.docFields.data.updateTitle = true;
-          this.docFields.data.linkTo = '_url';
-          return;
-        }
-        // Never expose the special link format for permalinks in the UI
-        this.docFields.data.href = '';
-        try {
-          const doc = await apos.http.get(`/api/v1/@apostrophecms/doc/${matches[1]}`, {
-            busy: true
-          });
-          this.docFields.data.linkTo = doc.slug.startsWith('/') ? '@apostrophecms/any-page-type' : doc.type;
-          this.docFields.data[`_${this.docFields.data.linkTo}`] = [ doc ];
-          this.docFields.data.updateTitle = !!parseInt(matches[2]);
-        } catch (e) {
-          if (e.status === 404) {
-            // No longer available
-            this.docFields.data.updateTitle = true;
-            this.docFields.linkTo = 'url';
-          } else {
-            throw e;
-          }
-        }
       } finally {
         this.generation++;
       }
     }
   }
 };
-
-function getOptions() {
-  return apos.modules['@apostrophecms/rich-text-widget'];
-}
 </script>
 
 <style lang="scss" scoped>
-  .apos-link-control {
+  .apos-anchor-control {
     position: relative;
     display: inline-block;
   }
 
-  .apos-link-control__dialog {
+  .apos-anchor-control__dialog {
     z-index: $z-index-modal;
     position: absolute;
     top: calc(100% + 5px);
@@ -319,7 +219,7 @@ function getOptions() {
     pointer-events: none;
   }
 
-  .apos-link-control__dialog.apos-is-triggered.apos-has-selection {
+  .apos-anchor-control__dialog.apos-is-triggered.apos-has-selection {
     opacity: 1;
     pointer-events: auto;
   }
@@ -328,23 +228,23 @@ function getOptions() {
     background-color: var(--a-base-7);
   }
 
-  .apos-link-control__footer {
+  .apos-anchor-control__footer {
     display: flex;
     justify-content: flex-end;
     margin-top: 10px;
   }
 
-  .apos-link-control__footer .apos-button__wrapper {
+  .apos-anchor-control__footer .apos-button__wrapper {
     margin-left: 7.5px;
   }
 
-  .apos-link-control__remove {
+  .apos-anchor-control__remove {
     display: flex;
     justify-content: flex-end;
   }
 
   // special schema style for this use
-  .apos-link-control ::v-deep .apos-field--target {
+  .apos-anchor-control ::v-deep .apos-field--target {
     .apos-field__label {
       display: none;
     }

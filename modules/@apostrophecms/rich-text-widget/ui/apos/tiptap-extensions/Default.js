@@ -1,8 +1,16 @@
 // If a style has been marked `def`, we need to make sure it
-// and it's attributes are prioritized in our editor.
-// It's easier to create a new Node with our specifications and put it
-// at the front of the line than try to infer between editor instantiation
-// and the editor-user setting styles via the toolbar to know when its needed.
+// and its attributes are prioritized in our editor.
+//
+// Specifically, when the "enter" key is pressed, we don't want
+// tiptap/prosemirror to insert "paragraph" nodes in a rich
+// text widget in which they are not even configured as an option.
+//
+// The simplest way to ensure this is to create a new node type that
+// matches the tag and CSS class of the default style (the first
+// configured style, or the one marked with def: `true`).
+//
+// Matching extensions have been provided to the document and listItem types
+// to prefer defaultNode rather than paragraph.
 
 import { Node } from '@tiptap/core';
 import Heading from '@tiptap/extension-heading';
