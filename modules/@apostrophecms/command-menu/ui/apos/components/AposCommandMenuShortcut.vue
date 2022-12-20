@@ -75,6 +75,7 @@ export default {
   },
   mounted() {
     apos.bus.$on('the-apos-modals-executed', this.autoCloseWhenHidden);
+    apos.bus.$on('the-apos-modals-resolved', this.close);
 
     this.modal.active = true;
 
@@ -88,11 +89,20 @@ export default {
   },
   beforeDestroy() {
     apos.bus.$off('the-apos-modals-executed', this.autoCloseWhenHidden);
+    apos.bus.$off('the-apos-modals-resolved', this.close);
   },
   methods: {
     autoCloseWhenHidden(modal) {
       const properties = apos.modal.getProperties(modal.id);
       if (properties.itemName !== '@apostrophecms/command-menu:shortcut') {
+        this.close();
+
+        return;
+      }
+
+      const subModal = apos.modal.getAt(-2);
+      const subProperties = apos.modal.getProperties(subModal.id);
+      if (subProperties.itemName === '@apostrophecms/command-menu:shortcut') {
         this.close();
       }
     },
