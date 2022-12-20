@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* German translation for Apostrophe Admin-UI.
+
 ## 3.34.0 (2022-12-12)
 
 ### Fixes
