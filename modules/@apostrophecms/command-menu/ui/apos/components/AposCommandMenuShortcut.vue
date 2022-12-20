@@ -37,6 +37,7 @@
                 v-for="(command, commandName) in group.commands"
                 :key="commandName"
                 class="apos-command-menu-shortcut-command"
+                :aria-keyshortcuts="command.shortcut"
               >
                 <div class="apos-command-menu-shortcut-command-title">
                   {{ getLabel(command.label) }}
