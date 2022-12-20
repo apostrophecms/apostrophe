@@ -89,7 +89,6 @@ describe('Concurrent Array Joins', function() {
       for (let i = 0; (i < 10); i++) {
         const person = result[i];
         assert.strictEqual(person.title, `Hobbyist ${i}`);
-        console.log(person);
         assert.strictEqual(person.hobbies.length, 1);
         assert.strictEqual(person.hobbies[0].name, `Hobby ${i}`);
         assert(person.hobbies[0]._friends);
