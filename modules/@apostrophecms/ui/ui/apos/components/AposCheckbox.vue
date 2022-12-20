@@ -39,7 +39,7 @@ export default {
   },
   props: {
     checked: {
-      type: [ Array, Boolean ],
+      type: [ Array, Boolean, String ],
       default: false
     },
     choice: {

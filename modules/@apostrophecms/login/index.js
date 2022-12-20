@@ -451,7 +451,7 @@ module.exports = {
       // Users with the `disabled` property set to true may not log in.
       // Passwords are verified via the `verifyPassword` method of
       // [@apostrophecms/user](../@apostrophecms/user/index.html), which is
-      // powered by the [credential](https://npmjs.org/package/credential) module.
+      // powered by the [credentials](https://npmjs.org/package/credentials) module.
 
       enableLocalStrategy() {
         self.passport.use(new LocalStrategy(self.localStrategy));

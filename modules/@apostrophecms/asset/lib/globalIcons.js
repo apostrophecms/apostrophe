@@ -3,6 +3,7 @@ module.exports = {
   'account-box-icon': 'AccountBox',
   'alert-circle-icon': 'AlertCircle',
   'alpha-x-icon': 'AlphaX',
+  'anchor-icon': 'Anchor',
   'apple-keyboard-caps': 'AppleKeyboardCaps',
   'apple-keyboard-command': 'AppleKeyboardCommand',
   'apple-keyboard-control': 'AppleKeyboardControl',

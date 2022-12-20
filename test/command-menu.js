@@ -65,6 +65,54 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
+  it('should compose removes sequentially', function() {
+    const initialState = {
+      definitions: [
+        [
+          {
+            add: {
+              '@apostrophecms/command-menu:test': {
+                type: 'item',
+                label: 'commandMenuShortcutTest',
+                action: {
+                  type: 'test',
+                  payload: {}
+                },
+                shortcut: 'Shift+G'
+              }
+            }
+          },
+          {
+            remove: [
+              '@apostrophecms/command-menu:test'
+            ]
+          }
+        ],
+        [ {
+          add: {
+            '@apostrophecms/command-menu:test': {
+              type: 'item',
+              label: 'commandMenuShortcutTest',
+              action: {
+                type: 'test',
+                payload: {}
+              },
+              shortcut: 'Shift+G'
+            }
+          }
+        } ]
+      ]
+    };
+
+    const actual = apos.commandMenu.composeRemoves(initialState);
+    const expected = {
+      ...initialState,
+      removes: []
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
   it('should compose commands', function() {
     const initialState = {
       definitions: [
@@ -122,6 +170,55 @@ describe('Command-Menu', function() {
           commands: [
             '@apostrophecms/command-menu:toggle-shortcuts',
             'command-menu'
+          ]
+        }
+      }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should compose groups and remove duplicate commands', function() {
+    const initialState = {
+      definitions: [
+        [ moduleA.commands ],
+        [ moduleB.commands ],
+        [ moduleC.commands ],
+        [ moduleD.commands ],
+        [ {
+          add: {
+            '@apostrophecms/command-menu:help': {
+              shortcut: '?'
+            }
+          },
+          group: {
+            '@apostrophecms/command-menu:help': {
+              label: 'commandMenuHelp',
+              commands: [
+                '@apostrophecms/command-menu:toggle-shortcuts',
+                '@apostrophecms/command-menu:help'
+              ]
+            }
+          }
+        } ]
+      ]
+    };
+
+    const actual = apos.commandMenu.composeGroups(initialState);
+    const expected = {
+      ...initialState,
+      groups: {
+        '@apostrophecms/command-menu:general': {
+          label: 'commandMenuGeneral',
+          commands: [
+            'command-menu'
+          ]
+        },
+        '@apostrophecms/command-menu:help': {
+          label: 'commandMenuHelp',
+          commands: [
+            '@apostrophecms/command-menu:toggle-shortcuts',
+            '@apostrophecms/command-menu:help'
           ]
         }
       }
