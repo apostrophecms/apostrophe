@@ -12,34 +12,6 @@ module.exports = {
     self.addShortcutModal();
     self.enableBrowserData();
   },
-  commands(self) {
-    return {
-      add: {
-        [`${self.__meta.name}:show-shortcut-list`]: {
-          type: 'item',
-          label: 'apostrophe:commandMenuShowShortcutList',
-          action: {
-            type: 'open-modal',
-            payload: {
-              name: 'AposCommandMenuShortcut',
-              props: { moduleName: '@apostrophecms/command-menu' }
-            }
-          },
-          shortcut: '?'
-        }
-      },
-      modal: {
-        default: {
-          '@apostrophecms/command-menu:general': {
-            label: 'apostrophe:commandMenuGeneral',
-            commands: [
-              `${self.__meta.name}:show-shortcut-list`
-            ]
-          }
-        }
-      }
-    };
-  },
   handlers(self) {
     return {
       'apostrophe:ready': {

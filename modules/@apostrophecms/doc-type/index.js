@@ -12,7 +12,7 @@ module.exports = {
     previewDraft: true,
     relatedDocType: null
   },
-  cascades: [ 'fields', 'commands' ],
+  cascades: [ 'fields' ],
   fields(self) {
     return {
       add: {
