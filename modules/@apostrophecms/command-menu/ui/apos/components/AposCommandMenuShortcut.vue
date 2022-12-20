@@ -74,19 +74,28 @@ export default {
     }
   },
   mounted() {
+    apos.bus.$on('the-apos-modals-executed', this.autoCloseWhenHidden);
+
     this.modal.active = true;
 
-    const relatedModal = apos.modal.getAt(-2);
-    const properties = apos.modal.getProperties(relatedModal.id) || {};
-
-    const groups = apos.commandMenu.modals[properties.itemName || 'default'] || {};
+    const commandMenuModal = apos.commandMenu.getModal();
+    const groups = apos.commandMenu.modals[commandMenuModal] || {};
     this.groups = groups;
 
     if (!this.hasCommands) {
       this.$emit('safe-close');
     }
   },
+  beforeDestroy() {
+    apos.bus.$off('the-apos-modals-executed', this.autoCloseWhenHidden);
+  },
   methods: {
+    autoCloseWhenHidden(modal) {
+      const properties = apos.modal.getProperties(modal.id);
+      if (properties.itemName !== '@apostrophecms/command-menu:shortcut') {
+        this.close();
+      }
+    },
     close() {
       this.modal.showModal = false;
     },

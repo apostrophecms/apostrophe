@@ -63,17 +63,21 @@ export default {
   methods: {
     async execute(componentName, props) {
       return new Promise((resolve, reject) => {
-        this.stack.push({
+        const item = {
           id: cuid(),
           componentName,
           resolve,
           props: props || {}
-        });
+        };
+
+        this.stack.push(item);
+        apos.bus.$emit('the-apos-modals-executed', item);
       });
     },
     resolve(modal) {
       this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
       modal.resolve(modal.result);
+      apos.bus.$emit('the-apos-modals-resolved', modal);
     },
     getModuleName(itemName) {
       if (!itemName) {
@@ -96,7 +100,7 @@ export default {
     getProperties(id) {
       const [ stackModal = null ] = this.stack.filter(modal => id === modal.id);
       if (!stackModal || !this.modals) {
-        return null;
+        return {};
       }
 
       const properties = {

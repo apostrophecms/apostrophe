@@ -45,6 +45,7 @@ export default function() {
   apos.modal.execute = theAposModals.execute;
   apos.modal.getAt = theAposModals.getAt;
   apos.modal.getProperties = theAposModals.getProperties;
+  apos.modal.stack = [];
   apos.confirm = theAposModals.confirm;
   apos.alert = theAposModals.alert;
 }

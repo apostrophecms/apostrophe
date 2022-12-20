@@ -23,6 +23,7 @@ export default {
   data() {
     return {
       previousKey: '',
+      modal: 'default',
       keyboardShortcutListener() {},
       delay(resolve, ms) {
         return new Promise(() => {
@@ -32,26 +33,8 @@ export default {
     };
   },
   computed: {
-    modal() {
-      const relatedModal = apos.modal.getAt(-1);
-      const properties = apos.modal.getProperties(relatedModal.id) || {};
-
-      if (properties.itemName !== '@apostrophecms/command-menu:shortcut') {
-        return properties.itemName || 'default';
-      }
-
-      const fallbackRelatedModal = apos.modal.getAt(-2);
-      const fallbackProperties = apos.modal.getProperties(fallbackRelatedModal.id) || {};
-
-      return fallbackProperties.itemName || 'default';
-    },
     shortcuts() {
-      const modals = Object.values(this.modals.default)
-        .concat(
-          this.modal !== 'default'
-            ? Object.values(this.modals[this.modal] || {})
-            : []
-        );
+      const modals = Object.values(this.modals[this.modal] || {});
 
       return Object.fromEntries(
         modals
@@ -103,9 +86,28 @@ export default {
     };
 
     document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
+
+    apos.bus.$on('the-apos-modals-executed', this.updateModal);
+    apos.bus.$on('the-apos-modals-resolved', this.updateModal);
   },
   beforeDestroy() {
     document.removeEventListener('keydown', this.keyboardShortcutListener);
+
+    apos.bus.$off('the-apos-modals-executed', this.updateModal);
+    apos.bus.$off('the-apos-modals-resolved', this.updateModal);
+  },
+  methods: {
+    getFirstNonShortcutModal(index = -1) {
+      const modal = apos.modal.getAt(index);
+      const properties = apos.modal.getProperties(modal.id);
+
+      return properties.itemName === '@apostrophecms/command-menu:shortcut'
+        ? this.getFirstNonShortcutModal(index + -1)
+        : properties.itemName || 'default';
+    },
+    updateModal() {
+      this.modal = this.getFirstNonShortcutModal();
+    }
   }
 };
 </script>
