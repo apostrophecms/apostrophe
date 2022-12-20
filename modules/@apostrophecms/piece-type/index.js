@@ -158,6 +158,17 @@ module.exports = {
       }
     }
   },
+  commands(self) {
+    if (!self.options.autopublish) {
+      return {};
+    }
+
+    return {
+      remove: [
+        `${self.__meta.name}:archive-selected`
+      ]
+    };
+  },
   init(self) {
     if (!self.options.name) {
       throw new Error('@apostrophecms/pieces require name option');
