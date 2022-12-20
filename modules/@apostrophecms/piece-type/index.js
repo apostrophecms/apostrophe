@@ -611,16 +611,20 @@ module.exports = {
           ...options,
           setModified: false
         };
-        const inserted = await self.insert(req.clone({
-          mode: 'draft'
-        }), draft, options);
+        const inserted = await self.insert(
+          req.clone({ mode: 'draft' }),
+          draft,
+          options
+        );
         return inserted;
       },
       // Similar to insertDraftOf, invoked on first publication.
       insertPublishedOf(req, doc, published, options) {
-        return self.insert(req.clone({
-          mode: 'published'
-        }), published, options);
+        return self.insert(
+          req.clone({ mode: 'published' }),
+          published,
+          options
+        );
       },
       // Returns one editable piece matching the criteria, throws `notfound`
       // if none match
@@ -650,18 +654,18 @@ module.exports = {
         return self.apos.doc.delete(req, piece, options);
       },
       composeFilters() {
-        self.filters = Object.keys(self.filters).map(key => ({
+        self.filters = Object.keys(self.filters).map((key) => ({
           name: key,
           ...self.filters[key],
           inputType: self.filters[key].inputType || 'select'
         }));
         // Add a null choice if not already added or set to `required`
-        self.filters.forEach(filter => {
+        self.filters.forEach((filter) => {
           if (filter.choices) {
             if (
               !filter.required &&
               filter.choices &&
-              !filter.choices.find(choice => choice.value === null)
+              !filter.choices.find((choice) => choice.value === null)
             ) {
               filter.def = null;
               filter.choices.push({
@@ -677,7 +681,7 @@ module.exports = {
         });
       },
       composeColumns() {
-        self.columns = Object.keys(self.columns).map(key => ({
+        self.columns = Object.keys(self.columns).map((key) => ({
           name: key,
           ...self.columns[key]
         }));
@@ -793,7 +797,11 @@ module.exports = {
         });
         await self.emit('afterConvert', req, input, piece);
         await self.insert(req, piece);
-        return self.findOneForEditing(req, { _id: piece._id }, { attachments: true });
+        return self.findOneForEditing(
+          req,
+          { _id: piece._id },
+          { attachments: true }
+        );
       },
 
       // Similar to `convertInsertAndRefresh`. Update the piece with the given _id, based on the
@@ -827,7 +835,7 @@ module.exports = {
           let tabId = null;
           let lock = false;
           let force = false;
-          if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
+          if (input._advisoryLock && typeof input._advisoryLock === 'object') {
             tabId = self.apos.launder.string(input._advisoryLock.tabId);
             lock = self.apos.launder.boolean(input._advisoryLock.lock);
             force = self.apos.launder.boolean(input._advisoryLock.force);
@@ -894,14 +902,19 @@ module.exports = {
           if (!piece) {
             throw self.apos.error('notfound');
           }
-          const patches = Array.isArray(input._patches) ? input._patches : [ input ];
+          const patches = Array.isArray(input._patches)
+            ? input._patches
+            : [ input ];
           // Conventional for loop so we can handle the last one specially
-          for (let i = 0; (i < patches.length); i++) {
+          for (let i = 0; i < patches.length; i++) {
             const input = patches[i];
             let tabId = null;
             let lock = false;
             let force = false;
-            if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
+            if (
+              input._advisoryLock &&
+              typeof input._advisoryLock === 'object'
+            ) {
               tabId = self.apos.launder.string(input._advisoryLock.tabId);
               lock = self.apos.launder.boolean(input._advisoryLock.lock);
               force = self.apos.launder.boolean(input._advisoryLock.force);
@@ -916,11 +929,15 @@ module.exports = {
                 force: self.apos.launder.boolean(input._advisory)
               });
             }
-            if (i === (patches.length - 1)) {
+            if (i === patches.length - 1) {
               if (possiblePatchedFields) {
                 await self.update(req, piece);
               }
-              result = self.findOneForEditing(req, { _id }, { attachments: true });
+              result = self.findOneForEditing(
+                req,
+                { _id },
+                { attachments: true }
+              );
             }
             if (tabId && !lock) {
               await self.apos.doc.unlock(req, piece, tabId);
@@ -932,7 +949,7 @@ module.exports = {
             return self.findOneForEditing(req, { _id }, { attachments: true });
           }
           if (self.apos.launder.boolean(input._publish)) {
-            if (self.options.localized && (!self.options.autopublish)) {
+            if (self.options.localized && !self.options.autopublish) {
               if (piece.aposLocale.includes(':draft')) {
                 await self.publish(req, piece, {});
               }
@@ -945,7 +962,10 @@ module.exports = {
       // convertPatchAndRefresh, also used by the undo mechanism to simulate patches.
       async applyPatch(req, piece, input) {
         self.apos.schema.implementPatchOperators(input, piece);
-        const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
+        const schema = self.apos.schema.subsetSchemaForPatch(
+          self.allowedSchema(req),
+          input
+        );
         await self.apos.schema.convert(req, schema, input, piece);
         await self.emit('afterConvert', req, input, piece);
       },
@@ -995,8 +1015,22 @@ module.exports = {
           if (piece.title) {
             piece.slug = self.apos.util.slugify(piece.title);
           } else if (piece.slug !== 'none') {
-            throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
+            throw self.apos.error(
+              'invalid',
+              'Document has neither slug nor title, giving up'
+            );
           }
+        }
+      },
+      async flushInsertsAndDeletes(inserts, deletes, { force = false }) {
+        if (inserts.length > 100 || (force && inserts.length)) {
+          await self.apos.doc.db.insertMany(inserts);
+          inserts.splice(0);
+        }
+
+        if (deletes.length > 100 || (force && deletes.length)) {
+          await self.apos.doc.db.deleteMany({ _id: { $in: deletes } });
+          deletes.splice(0);
         }
       }
     };
@@ -1059,6 +1093,97 @@ module.exports = {
               aposSampleData: true
             });
           }
+        }
+      },
+
+      localize: {
+        usage: 'Add draft version documents for each locale when a module has the "localized" option.' +
+        '\nExample: node app [moduleName]:localize',
+        async task() {
+          if (!self.options.localized) {
+            throw new Error('Localized option not set to true, so the module cannot be localized.');
+          }
+
+          console.log('Adding drafts and locales to documents');
+
+          const locales = Object.keys(self.apos.i18n.locales);
+          const lastPublishedAt = new Date();
+          const inserts = [];
+          const deletes = [];
+
+          await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+            if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
+              deletes.push(doc._id);
+
+              for (const locale of locales) {
+                const newDraft = {
+                  ...doc,
+                  aposLocale: `${locale}:draft`,
+                  aposMode: 'draft',
+                  aposDocId: doc._id,
+                  _id: `${doc.aposDocId}:${locale}:draft`
+                };
+                const newPublished = {
+                  ...doc,
+                  aposLocale: `${locale}:published`,
+                  aposMode: 'published',
+                  aposDocId: doc._id,
+                  _id: `${doc.aposDocId}:${locale}:published`,
+                  lastPublishedAt
+                };
+                inserts.push(newDraft);
+                inserts.push(newPublished);
+
+                await self.flushInsertsAndDeletes(inserts, deletes);
+              }
+            }
+          });
+
+          await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
+          await self.apos.attachment.recomputeAllDocReferences();
+
+          console.log(`Done localizing module ${self.name}`);
+        }
+      },
+
+      unlocalize: {
+        usage: 'Remove duplicate documents when a module has not "localized" and "autopublish" anymore.' +
+        '\nOptions are:' +
+        '\n- locale: if not set, it is the project\'s default locale' +
+        '\n- mode: by default, published' +
+        '\nExample: node app [moduleName]:unlocalize --mode=published --locale=en',
+        async task(argv) {
+          if (self.options.localized) {
+            throw new Error('Localized option not set to false, so the module cannot be unlocalized.');
+          }
+
+          const locale = argv.locale || self.apos.i18n.defaultLocale;
+          const mode = argv.mode || 'published';
+          const inserts = [];
+          const deletes = [];
+
+          console.log(`Removing duplicated documents and updating ${mode} ones`);
+
+          await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+            deletes.push(doc._id);
+
+            if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
+              const newDoc = {
+                ...doc,
+                aposLocale: undefined,
+                aposMode: undefined,
+                _id: doc.aposDocId
+              };
+              inserts.push(newDoc);
+
+              await self.flushInsertsAndDeletes(inserts, deletes);
+            }
+          });
+
+          await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
+          await self.apos.attachment.recomputeAllDocReferences();
+
+          console.log(`Done unlocalizing module ${self.name}`);
         }
       }
     };

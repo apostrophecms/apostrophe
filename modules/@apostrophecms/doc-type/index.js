@@ -203,6 +203,11 @@ module.exports = {
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
     self.addContextMenu();
+
+    // force autopublish to false when not localized to avoid bizarre configuration
+    if (!self.options.localized) {
+      self.options.autopublish = false;
+    }
   },
   handlers(self) {
     return {
