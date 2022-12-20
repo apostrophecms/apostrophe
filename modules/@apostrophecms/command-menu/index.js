@@ -77,8 +77,7 @@ module.exports = {
             self.groups = built.groups;
             self.modals = built.modals;
           } catch (error) {
-            self.apos.util.error('Command-Menu validation error');
-            self.apos.util.error(error);
+            self.apos.util.error(error, 'Command-Menu validation error');
           }
         }
       }
@@ -139,11 +138,28 @@ module.exports = {
         };
       },
       composeGroups(initialState) {
+        const removeDuplicates = (left, right) => {
+          const commands = Object.values(right).flatMap(group => group.commands);
+
+          return Object.fromEntries(
+            Object.entries(left)
+              .map(([ name, group ]) => {
+                return [
+                  name,
+                  {
+                    ...group,
+                    commands: (group.commands || []).filter(command => !commands.includes(command))
+                  }
+                ];
+              })
+          );
+        };
+
         const formatGroups = (state, chain) => {
           return chain
             .reduce(
               (groups, { group = {} }) => {
-                return self.apos.util.merge(groups, group);
+                return self.apos.util.merge(removeDuplicates(groups, group), group);
               },
               state
             );
