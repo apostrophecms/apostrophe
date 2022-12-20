@@ -8,6 +8,8 @@
 * Introduced support for linking directly to other Apostrophe documents in a rich text widget. The user can choose to link to a URL, or to a page. Linking to various piece types can also be enabled with the `linkWithType` option. This is equivalent to the old `apostrophe-rich-text-permalinks` module but is included in the core in A3. See the [documentation](https://v3.docs.apostrophecms.org/guide/core-widgets.html#rich-text-widget) for details.
 * Introduced support for the `anchor` toolbar control in the rich text editor. This allows named anchors to be inserted. These are rendered as `span` tags with the given `id` and can then be linked to via `#id`, providing basic support for internal links. HTML 4-style named anchors in legacy content (`name` on `a` tags) are automatically migrated upon first edit.
 * German translation i18n file created for the Apostrophe Admin-UI. Thanks to [Noah Gysin](https://github.com/NoahGysin) for this contribution.
+* Introduced support for keyboard shortcuts in admin UI. Hitting `?` will display the list of available shortcuts. Developpers can define their own shortcuts by using the new `@apostrophecms/command-menu` module and the `commands` property. Please check the [keyboard shortcut documentation](https://v3.docs.apostrophecms.org/guide/command-menu.html) for more details.
+
 ### Fixes
 
 * The `bulletList` and `orderedList` TipTap toolbar items now work as expected.

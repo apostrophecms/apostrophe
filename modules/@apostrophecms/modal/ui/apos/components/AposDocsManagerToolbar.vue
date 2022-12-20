@@ -2,13 +2,14 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
-        v-if="displayedItems"
+        v-if="canSelectAll"
         label="apostrophe:select"
         type="outline"
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
-        @click="$emit('select-click')"
+        @click="selectAll"
+        ref="selectAll"
       />
       <div
         v-for="{
@@ -57,11 +58,12 @@
         @input="filter"
       />
       <AposInputString
-        v-if="!options.noSearch"
+        v-if="hasSearch"
         @input="search" @return="search($event, true)"
         :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"
+        ref="search"
       />
     </template>
   </AposModalToolbar>
@@ -158,12 +160,45 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
+    },
+    canSelectAll() {
+      return this.displayedItems;
+    },
+    canArchive() {
+      return this.checkedCount;
+    },
+    hasSearch() {
+      return !this.options.noSearch;
     }
   },
   mounted () {
     this.computeActiveOperations();
+    apos.bus.$on('command-menu-manager-select-all', this.selectAll);
+    apos.bus.$on('command-menu-manager-archive-selected', this.archiveSelected);
+    apos.bus.$on('command-menu-manager-focus-search', this.focusSearch);
+  },
+  destroyed () {
+    apos.bus.$off('command-menu-manager-select-all', this.selectAll);
+    apos.bus.$off('command-menu-manager-archive-selected', this.archiveSelected);
+    apos.bus.$off('command-menu-manager-focus-search', this.focusSearch);
   },
   methods: {
+    selectAll() {
+      if (this.canSelectAll) {
+        this.$emit('select-click');
+      }
+    },
+    archiveSelected() {
+      const [ archiveOperation ] = this.activeOperations.filter(operation => operation.action === 'archive');
+      if (archiveOperation && this.canArchive) {
+        this.confirmOperation(archiveOperation);
+      }
+    },
+    focusSearch() {
+      if (this.hasSearch) {
+        this.$refs.search.$el.querySelector('input').focus();
+      }
+    },
     computeActiveOperations () {
       if (this.isRelationship) {
         this.activeOperations = [];

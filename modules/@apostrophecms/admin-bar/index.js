@@ -13,6 +13,80 @@ module.exports = {
     // Do include a page tree button in the admin bar
     pageTree: true
   },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:undo`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuUndo',
+          action: {
+            type: 'command-menu-admin-bar-undo'
+          },
+          shortcut: 'Ctrl+Z Meta+Z'
+        },
+        [`${self.__meta.name}:redo`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuRedo',
+          action: {
+            type: 'command-menu-admin-bar-redo'
+          },
+          shortcut: 'Ctrl+Shift+Z Meta+Shift+Z'
+        },
+        [`${self.__meta.name}:discard-draft`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuDiscardDraft',
+          action: {
+            type: 'command-menu-admin-bar-discard-draft'
+          },
+          shortcut: 'Ctrl+Shift+Backspace Meta+Shift+Backspace'
+        },
+        [`${self.__meta.name}:publish-draft`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuPublishDraft',
+          action: {
+            type: 'command-menu-admin-bar-publish-draft'
+          },
+          shortcut: 'Ctrl+Shift+P Meta+Shift+P'
+        },
+        [`${self.__meta.name}:toggle-edit-preview-mode`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuToggleEditPreviewMode',
+          action: {
+            type: 'command-menu-admin-bar-toggle-edit-preview'
+          },
+          shortcut: 'Ctrl+/ Meta+/'
+        },
+        [`${self.__meta.name}:toggle-published-draft-document`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuTogglePublishedDraftDocument',
+          action: {
+            type: 'command-menu-admin-bar-toggle-publish-draft'
+          },
+          shortcut: 'Ctrl+Shift+D Meta+Shift+D'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:content': {
+            label: 'apostrophe:commandMenuContent',
+            commands: [
+              `${self.__meta.name}:undo`,
+              `${self.__meta.name}:redo`,
+              `${self.__meta.name}:discard-draft`,
+              `${self.__meta.name}:publish-draft`
+            ]
+          },
+          '@apostrophecms/command-menu:mode': {
+            label: 'apostrophe:commandMenuMode',
+            commands: [
+              `${self.__meta.name}:toggle-edit-preview-mode`,
+              `${self.__meta.name}:toggle-published-draft-document`
+            ]
+          }
+        }
+      }
+    };
+  },
   init(self) {
     self.items = [];
     self.groups = [];

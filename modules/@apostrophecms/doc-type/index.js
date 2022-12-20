@@ -71,6 +71,117 @@ module.exports = {
       }
     };
   },
+  commands(self) {
+    if (
+      self.__meta.name === '@apostrophecms/any-doc-type' ||
+      self.__meta.name === '@apostrophecms/global' ||
+      self.apos.instanceOf(self, '@apostrophecms/any-page-type') ||
+      self.apos.instanceOf(self, '@apostrophecms/page-type') ||
+      self.options.canCreate === false ||
+      self.options.showPermissions === false
+    ) {
+      return null;
+    }
+
+    return {
+      add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: self.options.label,
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
+          shortcut: `G,${self.apos.task.getReq().t(self.options.label).slice(0, 1)}`
+        },
+        [`${self.__meta.name}:create-new`]: {
+          type: 'item',
+          label: {
+            key: 'apostrophe:commandMenuCreateNew',
+            type: self.options.label
+          },
+          action: {
+            type: 'command-menu-manager-create-new'
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
+          shortcut: 'C'
+        },
+        [`${self.__meta.name}:search`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSearch',
+          action: {
+            type: 'command-menu-manager-focus-search'
+          },
+          shortcut: 'Ctrl+F Meta+F'
+        },
+        [`${self.__meta.name}:select-all`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSelectAll',
+          action: {
+            type: 'command-menu-manager-select-all'
+          },
+          shortcut: 'Ctrl+Shift+A Meta+Shift+A'
+        },
+        [`${self.__meta.name}:archive-selected`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuArchiveSelected',
+          action: {
+            type: 'command-menu-manager-archive-selected'
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
+          shortcut: 'E'
+        },
+        [`${self.__meta.name}:exit-manager`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuExitManager',
+          action: {
+            type: 'command-menu-manager-close'
+          },
+          shortcut: 'Q'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:manager': {
+            label: 'apostrophe:commandMenuManager',
+            commands: [
+              `${self.__meta.name}:manager`
+            ]
+          }
+        },
+        [`${self.__meta.name}:manager`]: {
+          '@apostrophecms/command-menu:manager': {
+            label: '',
+            commands: [
+              `${self.__meta.name}:create-new`,
+              `${self.__meta.name}:search`,
+              `${self.__meta.name}:select-all`,
+              `${self.__meta.name}:archive-selected`,
+              `${self.__meta.name}:exit-manager`
+            ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              '@apostrophecms/command-menu:show-shortcut-list'
+            ]
+          }
+        }
+      }
+    };
+  },
   init(self) {
     if (!self.options.name) {
       self.options.name = self.__meta.name;

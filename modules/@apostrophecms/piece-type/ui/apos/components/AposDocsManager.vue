@@ -238,10 +238,14 @@ export default {
     await this.getAllPiecesTotal();
 
     apos.bus.$on('content-changed', this.getPieces);
+    apos.bus.$on('command-menu-manager-create-new', this.create);
+    apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   destroyed() {
     this.destroyShortcuts();
     apos.bus.$off('content-changed', this.getPieces);
+    apos.bus.$off('command-menu-manager-create-new', this.create);
+    apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
     utilityOperationsHandler(action) {
@@ -414,7 +418,7 @@ export default {
       this.setCheckedDocs([]);
     },
     shortcutNew(event) {
-      const interesting = (event.keyCode === 78 || event.keyCode === 67); // C(reate) or N(ew)
+      const interesting = event.keyCode === 78; // N(ew)
       const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
       if (
         interesting &&
