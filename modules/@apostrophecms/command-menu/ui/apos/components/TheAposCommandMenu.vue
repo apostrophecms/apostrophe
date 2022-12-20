@@ -87,14 +87,14 @@ export default {
 
     document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
 
-    apos.bus.$on('the-apos-modals-executed', this.updateModal);
-    apos.bus.$on('the-apos-modals-resolved', this.updateModal);
+    apos.bus.$on('modal-launched', this.updateModal);
+    apos.bus.$on('modal-resolved', this.updateModal);
   },
   beforeDestroy() {
     document.removeEventListener('keydown', this.keyboardShortcutListener);
 
-    apos.bus.$off('the-apos-modals-executed', this.updateModal);
-    apos.bus.$off('the-apos-modals-resolved', this.updateModal);
+    apos.bus.$off('modal-launched', this.updateModal);
+    apos.bus.$off('modal-resolved', this.updateModal);
   },
   methods: {
     getFirstNonShortcutModal(index = -1) {

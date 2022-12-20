@@ -74,8 +74,8 @@ export default {
     }
   },
   mounted() {
-    apos.bus.$on('the-apos-modals-executed', this.autoCloseWhenHidden);
-    apos.bus.$on('the-apos-modals-resolved', this.close);
+    apos.bus.$on('modal-launched', this.autoCloseWhenHidden);
+    apos.bus.$on('modal-resolved', this.close);
 
     this.modal.active = true;
 
@@ -88,8 +88,8 @@ export default {
     }
   },
   beforeDestroy() {
-    apos.bus.$off('the-apos-modals-executed', this.autoCloseWhenHidden);
-    apos.bus.$off('the-apos-modals-resolved', this.close);
+    apos.bus.$off('modal-launched', this.autoCloseWhenHidden);
+    apos.bus.$off('modal-resolved', this.close);
   },
   methods: {
     autoCloseWhenHidden(modal) {

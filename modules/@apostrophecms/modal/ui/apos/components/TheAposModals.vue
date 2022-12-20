@@ -71,13 +71,13 @@ export default {
         };
 
         this.stack.push(item);
-        apos.bus.$emit('the-apos-modals-executed', item);
+        apos.bus.$emit('modal-launched', item);
       });
     },
     resolve(modal) {
       this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
       modal.resolve(modal.result);
-      apos.bus.$emit('the-apos-modals-resolved', modal);
+      apos.bus.$emit('modal-resolved', modal);
     },
     getModuleName(itemName) {
       if (!itemName) {
