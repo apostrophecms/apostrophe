@@ -148,11 +148,13 @@ export default {
   padding: $spacing-base + $spacing-half 0;
 
   .apos-modal__header__main {
-    width: 100%;
+    display: flex;
     padding: 0 $spacing-base + $spacing-half;
   }
 
   ::v-deep .apos-button {
+    display: inline-flex;
+    align-items: center;
     box-sizing: border-box;
     width: auto;
     height: $spacing-double;
@@ -193,6 +195,7 @@ export default {
 }
 .apos-command-menu-shortcut-group {
   @include type-base;
+  font-weight: 400;
 }
 .apos-command-menu-shortcut-group-title {
   height: 24px;
@@ -214,6 +217,7 @@ export default {
 }
 .apos-command-menu-shortcut-command-title {
   flex: 1 1 auto;
+  margin-right: $spacing-base;
 }
 
 </style>
