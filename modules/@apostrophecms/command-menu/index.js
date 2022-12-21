@@ -237,7 +237,12 @@ module.exports = {
           .filter(([ success ]) => !success)
           .map(([ , error ]) => error);
         if (errors.length) {
-          throw new Error('Invalid', { cause: errors });
+          const error = new Error('Invalid', { cause: errors });
+          // For bc with node 14 and below we need to check cause
+          if (!error.cause) {
+            error.cause = errors;
+          }
+          throw error;
         }
       },
       buildCommands(initialState) {
