@@ -117,10 +117,45 @@ export default {
         'apos.expanded-menu: No groups or widgets defined. Please, either add a groups or widgets property to your area configuration.'
       );
     }
+
+    const clipboard = this.getClipboard();
+    this.groups = clipboard
+      ? [ clipboard ].concat(this.groups)
+      : this.groups;
   },
   methods: {
     isValidColumn(count) {
       return count ? +count > 1 && +count < 4 : true;
+    },
+    getClipboard() {
+      const clipboard = apos.area.widgetClipboard.get();
+      if (!clipboard) {
+        return null;
+      }
+
+      const widgets = this.groups.flatMap(group => Object.values(group.widgets));
+      const matchingChoice = widgets.find(widget => widget.name === clipboard.type);
+      if (!matchingChoice) {
+        return null;
+      }
+
+      const group = {
+        label: 'Clipboard',
+        widgets: [
+          {
+            type: 'clipboard',
+            ...matchingChoice,
+            label: {
+              key: 'apostrophe:pasteWidget',
+              widget: this.$t(matchingChoice.label)
+            },
+            clipboard
+          }
+        ],
+        columns: 1
+      };
+
+      return group;
     },
     createGroup(config) {
       const group = {
