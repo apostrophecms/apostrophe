@@ -56,6 +56,7 @@ export default {
 <style lang="scss" scoped>
 
 .apos-command-menu-key {
+  @include type-small;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -68,8 +69,9 @@ export default {
   border-radius: 3px;
   border-color: var(--a-base-7);
   border-bottom: 2px solid var(--a-base-7);
+  color: var(--a-base-1);
   background: linear-gradient(180deg, var(--a-base-10) 0%, var(--a-base-9) 100%);
-  @include type-base;
+  font-weight: 600;
 
   &.apos-command-menu-key-auto {
     width: auto;
@@ -83,9 +85,10 @@ export default {
   box-sizing: border-box;
   width: auto;
   height: $spacing-double;
-  padding: 3px 0;
+  padding: 3px 2px;
   margin-left: $spacing-half;
-  @include type-base;
+  @include type-small;
+  color: var(--a-base-1);
 }
 
 </style>
