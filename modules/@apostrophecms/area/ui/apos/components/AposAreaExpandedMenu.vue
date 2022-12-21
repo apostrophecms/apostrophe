@@ -103,11 +103,6 @@ export default {
         const group = this.createGroup(this.options.groups[item]);
         this.groups.push(group);
       }
-
-      const clipboard = this.getClipboard();
-      this.groups = clipboard
-        ? [ clipboard ].concat(this.groups)
-        : this.groups;
     } else if (this.options.widgets) {
       if (!this.isValidColumn(this.options.columns)) {
         console.warn(
@@ -122,6 +117,11 @@ export default {
         'apos.expanded-menu: No groups or widgets defined. Please, either add a groups or widgets property to your area configuration.'
       );
     }
+
+    const clipboard = this.getClipboard();
+    this.groups = clipboard
+      ? [ clipboard ].concat(this.groups)
+      : this.groups;
   },
   methods: {
     isValidColumn(count) {
