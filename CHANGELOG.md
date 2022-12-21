@@ -1,7 +1,7 @@
 # Changelog
 
 
-## UNRELEASED
+## 3.35.0 (2022-12-21)
 
 ### Adds
 
