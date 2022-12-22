@@ -98,7 +98,7 @@ module.exports = {
             action: 'edit',
             type: self.__meta.name
           },
-          shortcut: `G,${self.apos.task.getReq().t(self.options.label).slice(0, 1)}`
+          shortcut: self.options.shortcut ?? `G,${self.apos.task.getReq().t(self.options.label).slice(0, 1)}`
         },
         [`${self.__meta.name}:create-new`]: {
           type: 'item',

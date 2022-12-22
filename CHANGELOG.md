@@ -1,6 +1,16 @@
 # Changelog
 
 
+## 3.36.0 (2022-12-22)
+
+### Adds
+
+* `shortcut` option for piece modules, allowing easy re-mapping of the manager command shortcut per module. 
+
+### Fixes 
+
+* Ensure there are no conflicting command shortcuts for the core modules.
+
 ## 3.35.0 (2022-12-21)
 
 ### Adds
