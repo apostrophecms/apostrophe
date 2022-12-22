@@ -6,7 +6,8 @@ module.exports = {
     quickCreate: false,
     autopublish: true,
     editRole: 'editor',
-    publishRole: 'editor'
+    publishRole: 'editor',
+    shortcut: 'G,g'
   },
   fields: {
     remove: [ 'visibility' ]
