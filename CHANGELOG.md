@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Use `mergeWithCustomize` when merging extended source Webpack configuration. Introduce overideable asset module methods `srcCustomizeArray` and `srcCustomizeObject`, with reasonable default behavior, for fine tuning Webpack config arrays and objects merging. More info - [the Webpack mergeWithCustomize docs](https://github.com/survivejs/webpack-merge#mergewithcustomize-customizearray-customizeobject-configuration--configuration)
+
+### Fixes
+
+* The module `webpack.extensions` configuration is not applied to the core Admin UI build anymore.
 
 ## 3.36.0 (2022-12-22)
 
