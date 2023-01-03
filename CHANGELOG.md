@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Remove module `@apostrophecms/polymorphic-type` name alias `@apostrophecms/polymorphic`. It was causing warnings
+    e.g. `A permission.can() call was made with a type that has no manager: @apostrophecms/polymorphic-type`.
 
 ## 3.36.0 (2022-12-22)
 

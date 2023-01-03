@@ -1096,8 +1096,9 @@ module.exports = {
       normalizeType(type) {
         if (type === '@apostrophecms/page') {
           // Backwards compatible
-          type = '@apostrophecms/any-page-type';
+          return '@apostrophecms/any-page-type';
         }
+
         return type;
       },
       // Given a doc, an _id, or an aposDocId, this method
