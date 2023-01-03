@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const migrations = require('./lib/migrations.js');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -7,22 +8,7 @@ module.exports = {
     showPermissions: false
   },
   init(self) {
-    self.removePolymorphicTypeAliasMigration();
-  },
-  methods(self) {
-    return {
-      removePolymorphicTypeAliasMigration() {
-        self.apos.migration.add('remove-polymorphic-type-alias', () => {
-          return self.apos.doc.db.updateMany({
-            type: '@apostrophecms/polymorphic'
-          }, {
-            $set: {
-              type: '@apostrophecms/polymorphic-type'
-            }
-          });
-        });
-      }
-    };
+    migrations(self).addMigrations();
   },
   routes(self) {
     return {
