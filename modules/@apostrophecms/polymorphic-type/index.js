@@ -8,7 +8,12 @@ module.exports = {
     showPermissions: false
   },
   init(self) {
-    migrations(self).addMigrations();
+    self.addMigrations();
+  },
+  methods(self) {
+    return {
+      ...migrations(self)
+    };
   },
   routes(self) {
     return {
