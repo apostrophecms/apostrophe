@@ -6,6 +6,24 @@ module.exports = {
     name: '@apostrophecms/polymorphic-type',
     showPermissions: false
   },
+  init(self) {
+    self.removePolymorphicTypeAliasMigration();
+  },
+  methods(self) {
+    return {
+      removePolymorphicTypeAliasMigration() {
+        self.apos.migration.add('remove-polymorphic-type-alias', () => {
+          return self.apos.doc.db.updateMany({
+            type: '@apostrophecms/polymorphic'
+          }, {
+            $set: {
+              type: '@apostrophecms/polymorphic-type'
+            }
+          });
+        });
+      }
+    };
+  },
   routes(self) {
     return {
       post: {
