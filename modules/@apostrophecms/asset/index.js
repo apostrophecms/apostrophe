@@ -1343,6 +1343,11 @@ module.exports = {
           return 'url(\'' + filter(url) + '\')';
         });
         return css;
+      },
+      // Return the URL of the asset with the given path, taking into account
+      // the release id, uploadfs, etc.
+      url(path) {
+        return `${self.getAssetBaseUrl()}${path}`;
       }
     };
   },
@@ -1360,8 +1365,10 @@ module.exports = {
         }
         return self.apos.template.safe(`<script data-apos-refresh-on-restart="${self.action}/restart-id" src="${self.action}/refresh-on-restart"></script>`);
       },
+      // Return the URL of the release asset with the given path, taking into account
+      // the release id, uploadfs, etc.
       url(path) {
-        return `${self.getAssetBaseUrl()}${path}`;
+        return self.url(path);
       }
     };
   },

@@ -36,8 +36,8 @@
                     class="apos-icon--add"
                   />
                   <img
-                    v-if="item.previewImage"
-                    :src="previewUrl(item)"
+                    v-if="item.previewImageUrl"
+                    :src="item.previewImageUrl"
                     :alt="`${item.name} preview`"
                     class="apos-widget__preview-image"
                   >
@@ -175,9 +175,6 @@ export default {
     },
     hasIcon(widget) {
       return widget.previewIcon || widget.icon;
-    },
-    previewUrl(widget) {
-      return widget.previewImage ? apos.util.assetUrl(`/modules/${widget.name}-widget/preview.${widget.previewImage}`) : '';
     },
     close() {
       this.modal.showModal = false;

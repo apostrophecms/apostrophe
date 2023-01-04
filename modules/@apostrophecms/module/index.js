@@ -27,6 +27,7 @@
 
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const _ = require('lodash');
+const fs = require('fs');
 
 module.exports = {
 
@@ -759,6 +760,42 @@ module.exports = {
           typeof aposShareKey === 'string' &&
           aposShareKey.length
         );
+      },
+
+      // Given a name such as "placeholder", look at the
+      // relevant options (nameImage and, as a fallback, nameUrl)
+      // and determine the appropriate asset URL. If nameImage is used,
+      // search the inheritance chain of the module
+      // for the best match, e.g. a file in a project-level override
+      // wins, followed by the original module in core or npm,
+      // followed by something in a base class that extends, etc.
+      // If no file is found, the method returns `undefined`.
+      //
+      // Even if `nameUrl is used, the method still corrects paths
+      // beginning with `/module` to account for the actual asset
+      // release URL (`nameUrl` is really an asset path, but for bc
+      // this is the naming pattern).
+      //
+      // In the above examples "name" should be replaced with the
+      // actual value of the name argument.
+
+      determineBestAssetUrl(name) {
+        let urlOption = self.options[`${name}Url`];
+        const imageOption = self.options[`${name}Image`];
+        if (imageOption) {
+          const chain = [ ...self.__meta.chain ].reverse();
+          for (const entry of chain) {
+            const path = `${entry.dirname}/public/${name}.${imageOption}`;
+            if (fs.existsSync(path)) {
+              urlOption = `/modules/${entry.name}/${name}.${imageOption}`;
+              break;
+            }
+          }
+        }
+        if (urlOption && urlOption.startsWith('/modules')) {
+          urlOption = self.apos.asset.url(urlOption);
+        }
+        self.options[`${name}Url`] = urlOption;
       },
 
       // Merge in the event emitter / responder capabilities

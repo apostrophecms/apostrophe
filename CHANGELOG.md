@@ -5,13 +5,15 @@
 ### Adds
 
 * Use `mergeWithCustomize` when merging extended source Webpack configuration. Introduce overideable asset module methods `srcCustomizeArray` and `srcCustomizeObject`, with reasonable default behavior, for fine tuning Webpack config arrays and objects merging. More info - [the Webpack mergeWithCustomize docs](https://github.com/survivejs/webpack-merge#mergewithcustomize-customizearray-customizeobject-configuration--configuration)
+* The image widget now accepts a `placeholderImage` option that works like `previewImage` (just specify a file extension, like `placeholderImage: 'jpg'`, and provide the file `public/placeholder.jpg` in the module). The `placeholderUrl` option is still available for backwards compatibility.
 
 ### Fixes
 
 * Remove module `@apostrophecms/polymorphic-type` name alias `@apostrophecms/polymorphic`. It was causing warnings
     e.g. `A permission.can() call was made with a type that has no manager: @apostrophecms/polymorphic-type`.
 * The module `webpack.extensions` configuration is not applied to the core Admin UI build anymore. This is the correct and intended behavior as explained in the [relevant documentation](https://v3.docs.apostrophecms.org/guide/webpack.html#extending-webpack-configuration).
-
+* The `previewImage` option now works properly for widget modules loaded from npm and those that subclass them. Specifically, the preview image may be provided in the `public/` subdirectory of the original module, the project-level configuration of it, or a subclass.
+ 
 ## 3.36.0 (2022-12-22)
 
 ### Adds
