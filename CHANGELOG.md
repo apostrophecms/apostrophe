@@ -8,7 +8,7 @@
 
 ### Fixes
 
-* The module `webpack.extensions` configuration is not applied to the core Admin UI build anymore.
+* The module `webpack.extensions` configuration is not applied to the core Admin UI build anymore. This is the correct and intended behavior as explained in the [relevant documentation](https://v3.docs.apostrophecms.org/guide/webpack.html#extending-webpack-configuration).
 
 ## 3.36.0 (2022-12-22)
 
