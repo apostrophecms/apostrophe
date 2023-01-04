@@ -7,7 +7,7 @@ const path = require('path');
 const util = require('util');
 const express = require('express');
 const { stripIndent } = require('common-tags');
-const { merge: webpackMerge } = require('webpack-merge');
+const { mergeWithCustomize: webpackMerge } = require('webpack-merge');
 const cuid = require('cuid');
 const chokidar = require('chokidar');
 const _ = require('lodash');
@@ -73,7 +73,6 @@ module.exports = {
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
     self.buildWatcher = null;
-
   },
   handlers (self) {
     return {
@@ -389,8 +388,11 @@ module.exports = {
                 es5TaskFn: self.es5TaskFn
               }, self.apos);
 
-              const webpackInstanceConfigMerged = self.webpackExtensions
-                ? webpackMerge(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
+              const webpackInstanceConfigMerged = !options.apos && self.webpackExtensions
+                ? webpackMerge({
+                  customizeArray: self.srcCustomizeArray,
+                  customizeObject: self.srcCustomizeObject
+                })(webpackInstanceConfig, ...Object.values(self.webpackExtensions))
                 : webpackInstanceConfig;
 
               // Inject the cache location at the end - we need the merged config
@@ -940,6 +942,28 @@ module.exports = {
       // Register the library function as method to be used by core modules.
       // Open the implementation for more dev comments.
       transformRebundledFor,
+
+      // Optional functions passed to webpack's mergeWithCustomize, allowing
+      // fine control over merging of the webpack configuration for the
+      // src build. Extend or override to alter the default behavior.
+      // See https://github.com/survivejs/webpack-merge#mergewithcustomize-customizearray-customizeobject-configuration--configuration
+      srcCustomizeArray(a, b, key) {
+        // Keep arrays unique when merging
+        if (
+          [
+            'resolveLoader.extensions',
+            'resolveLoader.modules',
+            'resolve.extensions',
+            'resolve.modules'
+          ].includes(key)
+        ) {
+          return _.uniq([ ...a, ...b ]);
+        }
+      },
+
+      srcCustomizeObject(a, b, key) {
+        // override to alter the default webpack merge behavior
+      },
 
       async initUploadfs() {
         if (self.options.uploadfs) {
