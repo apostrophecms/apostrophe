@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Dynamic choice functions in schemas now als recieve a data object with their original doc id for further inspection by your function.
+* Dynamic choice functions in schemas now also recieve a data object with their original doc id for further inspection by your function.
 * Use `mergeWithCustomize` when merging extended source Webpack configuration. Introduce overideable asset module methods `srcCustomizeArray` and `srcCustomizeObject`, with reasonable default behavior, for fine tuning Webpack config arrays and objects merging. More info - [the Webpack mergeWithCustomize docs](https://github.com/survivejs/webpack-merge#mergewithcustomize-customizearray-customizeobject-configuration--configuration)
 
 ### Fixes
