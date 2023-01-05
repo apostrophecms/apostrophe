@@ -106,6 +106,8 @@ module.exports = {
 
     self.enableBrowserData();
 
+    self.determineBestAssetUrl('preview');
+
     self.template = self.options.template || 'widget';
 
     self.name = self.__meta.name.replace(/-widget$/, '');
@@ -362,6 +364,7 @@ module.exports = {
           version. The method in 3.x simply returns an empty array.`);
         return [];
       }
+
     };
   },
   extendMethods(self) {
@@ -384,7 +387,7 @@ module.exports = {
           description: self.options.description,
           icon: self.options.icon,
           previewIcon: self.options.previewIcon,
-          previewImage: self.options.previewImage,
+          previewUrl: self.options.previewUrl,
           action: self.action,
           schema: schema,
           contextual: self.options.contextual,

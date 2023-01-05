@@ -7,7 +7,7 @@ module.exports = {
     dimensionAttrs: false,
     placeholder: true,
     placeholderClass: false,
-    placeholderUrl: '/modules/@apostrophecms/image-widget/placeholder.jpg'
+    placeholderImage: 'jpg'
   },
   fields: {
     add: {
@@ -19,5 +19,8 @@ module.exports = {
         withType: '@apostrophecms/image'
       }
     }
+  },
+  init(self) {
+    self.determineBestAssetUrl('placeholder');
   }
 };
