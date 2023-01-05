@@ -1485,7 +1485,7 @@ module.exports = {
           ) {
             throw self.apos.error('invalid');
           }
-          choices = await self.apos.modules[field.moduleName][field.choices](req, docId);
+          choices = await self.apos.modules[field.moduleName][field.choices](req, { docId });
           if (Array.isArray(choices)) {
             return {
               choices
