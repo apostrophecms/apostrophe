@@ -9,7 +9,7 @@
 
 ### Fixes
 
-* `docId` is now properly passed through array fields and into it's child schemas.
+* `docId` is now properly passed through array and object fields and into their child schemas.
 * Remove module `@apostrophecms/polymorphic-type` name alias `@apostrophecms/polymorphic`. It was causing warnings
     e.g. `A permission.can() call was made with a type that has no manager: @apostrophecms/polymorphic-type`.
 * The module `webpack.extensions` configuration is not applied to the core Admin UI build anymore. This is the correct and intended behavior as explained in the [relevant documentation](https://v3.docs.apostrophecms.org/guide/webpack.html#extending-webpack-configuration).
