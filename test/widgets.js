@@ -290,7 +290,6 @@ describe('Widgets', function() {
         },
         assertFalsyPlaceholderUrl(document) {
           const imgNodes = document.querySelectorAll('img');
-
           assert(imgNodes.length === 0);
         },
         assertPlaceholderUrlOverride(document) {
@@ -409,7 +408,8 @@ describe('Widgets', function() {
                 'placeholder-page': {},
                 [`@apostrophecms/${type}-widget`]: {
                   options: {
-                    placeholderUrl: null
+                    placeholderUrl: null,
+                    placeholderImage: null
                   }
                 }
               }

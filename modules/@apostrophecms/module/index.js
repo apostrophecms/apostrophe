@@ -782,13 +782,15 @@ module.exports = {
       determineBestAssetUrl(name) {
         let urlOption = self.options[`${name}Url`];
         const imageOption = self.options[`${name}Image`];
-        if (imageOption) {
-          const chain = [ ...self.__meta.chain ].reverse();
-          for (const entry of chain) {
-            const path = `${entry.dirname}/public/${name}.${imageOption}`;
-            if (fs.existsSync(path)) {
-              urlOption = `/modules/${entry.name}/${name}.${imageOption}`;
-              break;
+        if (!urlOption) {
+          if (imageOption) {
+            const chain = [ ...self.__meta.chain ].reverse();
+            for (const entry of chain) {
+              const path = `${entry.dirname}/public/${name}.${imageOption}`;
+              if (fs.existsSync(path)) {
+                urlOption = `/modules/${entry.name}/${name}.${imageOption}`;
+                break;
+              }
             }
           }
         }
