@@ -795,7 +795,9 @@ module.exports = {
         if (urlOption && urlOption.startsWith('/modules')) {
           urlOption = self.apos.asset.url(urlOption);
         }
-        self.options[`${name}Url`] = urlOption;
+        if (urlOption) {
+          self.options[`${name}Url`] = urlOption;
+        }
       },
 
       // Merge in the event emitter / responder capabilities

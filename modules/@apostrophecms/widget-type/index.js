@@ -387,7 +387,7 @@ module.exports = {
           description: self.options.description,
           icon: self.options.icon,
           previewIcon: self.options.previewIcon,
-          previewImageUrl: self.options.previewImageUrl,
+          previewUrl: self.options.previewUrl,
           action: self.action,
           schema: schema,
           contextual: self.options.contextual,

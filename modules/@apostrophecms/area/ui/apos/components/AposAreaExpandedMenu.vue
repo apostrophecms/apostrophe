@@ -36,8 +36,8 @@
                     class="apos-icon--add"
                   />
                   <img
-                    v-if="item.previewImageUrl"
-                    :src="item.previewImageUrl"
+                    v-if="item.previewUrl"
+                    :src="item.previewUrl"
                     :alt="`${item.name} preview`"
                     class="apos-widget__preview-image"
                   >
