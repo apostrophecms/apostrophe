@@ -2,8 +2,13 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Dynamic choice functions in schemas now recieve their original doc id for further inspection by your function.
+
 ### Fixes
 
+* `docId` is now properly passed through array fields and into it's child schemas.
 * Remove module `@apostrophecms/polymorphic-type` name alias `@apostrophecms/polymorphic`. It was causing warnings
     e.g. `A permission.can() call was made with a type that has no manager: @apostrophecms/polymorphic-type`.
 
