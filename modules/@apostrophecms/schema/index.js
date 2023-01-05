@@ -1474,8 +1474,9 @@ module.exports = {
     return {
       get: {
         async choices(req) {
-          const id = self.apos.launder.string(req.query.fieldId);
-          const field = self.getFieldById(id);
+          const fieldId = self.apos.launder.string(req.query.fieldId);
+          const docId = self.apos.launder.string(req.query.docId);
+          const field = self.getFieldById(fieldId);
           let choices = [];
           if (
             !field ||
@@ -1484,7 +1485,7 @@ module.exports = {
           ) {
             throw self.apos.error('invalid');
           }
-          choices = await self.apos.modules[field.moduleName][field.choices](req);
+          choices = await self.apos.modules[field.moduleName][field.choices](req, { docId });
           if (Array.isArray(choices)) {
             return {
               choices

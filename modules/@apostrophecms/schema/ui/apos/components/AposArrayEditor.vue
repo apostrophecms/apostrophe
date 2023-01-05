@@ -72,6 +72,7 @@
                     @validate="triggerValidate"
                     :server-errors="currentDocServerErrors"
                     ref="schema"
+                    :doc-id="docId"
                   />
                 </div>
               </div>
@@ -108,6 +109,10 @@ export default {
     },
     serverError: {
       type: Object,
+      default: null
+    },
+    docId: {
+      type: String,
       default: null
     }
   },

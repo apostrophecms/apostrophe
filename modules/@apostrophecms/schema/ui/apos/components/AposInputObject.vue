@@ -15,6 +15,7 @@
             :trigger-validation="triggerValidation"
             :utility-rail="false"
             :generation="generation"
+            :doc-id="docId"
             v-model="schemaInput"
             ref="schema"
           />
@@ -33,6 +34,13 @@ export default {
   props: {
     generation: {
       type: Number,
+      required: false,
+      default() {
+        return null;
+      }
+    },
+    docId: {
+      type: String,
       required: false,
       default() {
         return null;

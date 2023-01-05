@@ -17,7 +17,8 @@ export default {
         `${action}/choices`,
         {
           qs: {
-            fieldId: this.field._id
+            fieldId: this.field._id,
+            docId: this.docId
           },
           busy: true
         }

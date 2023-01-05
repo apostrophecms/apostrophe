@@ -64,6 +64,7 @@
                     :utility-rail="false"
                     :generation="generation"
                     :modifiers="['small', 'inverted']"
+                    :doc-id="docId"
                   />
                 </div>
               </transition>
@@ -214,7 +215,8 @@ export default {
       const result = await apos.modal.execute('AposArrayEditor', {
         field: this.field,
         items: this.next,
-        serverError: this.serverError
+        serverError: this.serverError,
+        docId: this.docId
       });
       if (result) {
         this.next = result;
