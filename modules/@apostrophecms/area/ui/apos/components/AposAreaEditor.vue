@@ -363,7 +363,7 @@ export default {
         apos.area.activeEditor = this;
         const result = await apos.modal.execute(componentName, {
           value: widget,
-          options: this.options.widgets[widget.type],
+          options: this.widgetOptionsByType(widget.type),
           type: widget.type,
           docId: this.docId
         });
