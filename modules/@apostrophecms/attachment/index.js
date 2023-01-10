@@ -443,6 +443,9 @@ module.exports = {
           await Promise.promisify(self.uploadfs.copyIn)(file.path, '/attachments/' + info._id + '-' + info.name + '.' + info.extension);
         }
         info.createdAt = new Date();
+
+        await self.emit('beforeInsert', req, info);
+
         await self.db.insertOne(info);
         return info;
       },
