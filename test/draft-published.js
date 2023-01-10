@@ -209,11 +209,12 @@ describe('Draft / Published', function() {
     }), testDraftProduct);
   });
 
-  it('"previous published" should be deduplicated at this point', async function() {
+  it('"previous published" should be deduplicated at this point, and have the right aposMode set', async function() {
     const previous = await apos.doc.db.findOne({
       _id: testDraftProduct._id.replace(':draft', ':previous')
     });
     assert(previous);
+    assert(previous.aposMode === 'previous');
     assert.strictEqual(previous.slug, `deduplicate-${previous.aposDocId}-test-product`);
   });
 
