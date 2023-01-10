@@ -1143,6 +1143,7 @@ module.exports = {
         }
         const $set = await self.getRevertDeduplicationSet(req, previous);
         Object.assign(previous, $set);
+
         // We must load relationships as if we had done a regular find
         // because relationships are read/write in A3,
         // but we don't have to call widget loaders
@@ -1153,7 +1154,7 @@ module.exports = {
         self.copyForPublication(req, previous, published);
         published.lastPublishedAt = previous.lastPublishedAt;
         published = await self.update(req.clone({
-          mode: 'published'
+          aposMode: 'published'
         }), published);
         self.apos.doc.db.removeOne({
           _id: previousId
