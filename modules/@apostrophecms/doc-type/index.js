@@ -208,6 +208,9 @@ module.exports = {
     if (!self.options.localized) {
       self.options.autopublish = false;
     }
+
+
+    self.apos.migration.add('set-previous-docs-apos-mode', self.addSetPreviousDocsAposModeMigration);
   },
   handlers(self) {
     return {
@@ -847,6 +850,7 @@ module.exports = {
           if (previousPublished) {
             previousPublished._id = previousPublished._id.replace(':published', ':previous');
             previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
+            previousPublished.aposMode = 'previous';
             Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
             await self.apos.doc.db.replaceOne({
               _id: previousPublished._id
@@ -1374,6 +1378,18 @@ module.exports = {
         });
 
         return draft;
+      },
+
+      async addSetPreviousDocsAposModeMigration () {
+        self.apos.migration.eachDoc({
+          _id: { $regex: ':previous' }
+        }, async (doc) => {
+          await self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: { aposMode: 'previous' }
+          });
+        });
       }
     };
   },
