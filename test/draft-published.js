@@ -557,17 +557,20 @@ describe('Draft / Published', function() {
       const draftItem = {
         ...baseItem,
         _id: 'some-page:en:draft',
-        aposLocale: 'en:draft'
+        aposLocale: 'en:draft',
+        aposMode: 'draft'
       };
       const publishedItem = {
         ...baseItem,
         _id: 'some-page:en:published',
-        aposLocale: 'en:published'
+        aposLocale: 'en:published',
+        aposMode: 'published'
       };
       const previousItem = {
         ...baseItem,
         _id: 'some-page:en:previous',
-        aposLocale: 'en:previous'
+        aposLocale: 'en:previous',
+        aposMode: 'previous'
       };
 
       let draft;
