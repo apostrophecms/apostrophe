@@ -1154,7 +1154,7 @@ module.exports = {
         self.copyForPublication(req, previous, published);
         published.lastPublishedAt = previous.lastPublishedAt;
         published = await self.update(req.clone({
-          aposMode: 'published'
+          mode: 'published'
         }), published);
         self.apos.doc.db.removeOne({
           _id: previousId
