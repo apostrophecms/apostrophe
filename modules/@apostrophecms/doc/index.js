@@ -1293,7 +1293,8 @@ module.exports = {
       async addSetPreviousDocsAposModeMigration () {
         self.apos.migration.add('set-previous-docs-apos-mode', async () => {
           await self.apos.doc.db.updateMany({
-            _id: { $regex: ':previous' }
+            _id: { $regex: ':previous$' },
+            aposMode: { $not: { $eq: 'previous' } }
           }, {
             $set: {
               aposMode: 'previous'
