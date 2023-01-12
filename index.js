@@ -616,6 +616,10 @@ module.exports.moogBundle = {
   directory: 'lib/modules'
 };
 
+module.exports.createModule = function (module) {
+  return module;
+};
+
 function traceStartup(message) {
   if (process.env.APOS_TRACE_STARTUP) {
     /* eslint-disable-next-line no-console */
