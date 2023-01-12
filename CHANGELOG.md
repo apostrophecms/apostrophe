@@ -5,7 +5,7 @@
 ### Adds
 
 * Emit a `beforeInsert` event from the `@apostrophecms:attachment` module, with `req` and the `doc` as arguments, in order to give the possibility to override the attachment.
-* Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override the safe user.
+* Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the 'safe' object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
 
 ## 3.37.0 (2023-01-06)
 
