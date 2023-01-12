@@ -209,11 +209,12 @@ describe('Draft / Published', function() {
     }), testDraftProduct);
   });
 
-  it('"previous published" should be deduplicated at this point', async function() {
+  it('"previous published" should be deduplicated at this point, and previous have the right props', async function() {
     const previous = await apos.doc.db.findOne({
       _id: testDraftProduct._id.replace(':draft', ':previous')
     });
     assert(previous);
+    assert(previous.aposMode === 'previous');
     assert.strictEqual(previous.slug, `deduplicate-${previous.aposDocId}-test-product`);
   });
 
@@ -539,6 +540,7 @@ describe('Draft / Published', function() {
     }), {
       aposDocId: sibling.aposDocId
     }).children(true).toObject();
+
     assert(siblingPublished && siblingPublished._children && siblingPublished._children[0] && siblingPublished._children[0]._id === grandchild._id.replace(':draft', ':published'));
   });
 
@@ -556,17 +558,20 @@ describe('Draft / Published', function() {
       const draftItem = {
         ...baseItem,
         _id: 'some-page:en:draft',
-        aposLocale: 'en:draft'
+        aposLocale: 'en:draft',
+        aposMode: 'draft'
       };
       const publishedItem = {
         ...baseItem,
         _id: 'some-page:en:published',
-        aposLocale: 'en:published'
+        aposLocale: 'en:published',
+        aposMode: 'published'
       };
       const previousItem = {
         ...baseItem,
         _id: 'some-page:en:previous',
-        aposLocale: 'en:previous'
+        aposLocale: 'en:previous',
+        aposMode: 'previous'
       };
 
       let draft;

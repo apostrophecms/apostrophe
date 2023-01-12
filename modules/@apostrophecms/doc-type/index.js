@@ -847,6 +847,7 @@ module.exports = {
           if (previousPublished) {
             previousPublished._id = previousPublished._id.replace(':published', ':previous');
             previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
+            previousPublished.aposMode = 'previous';
             Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
             await self.apos.doc.db.replaceOne({
               _id: previousPublished._id

@@ -6,6 +6,11 @@
 
 * Emit a `beforeInsert` event from the `@apostrophecms:attachment` module, with `req` and the `doc` as arguments, in order to give the possibility to override the attachment.
 * Convert uppercase URLs automatically to their lowercase version - can be disabled through `forceLowerCaseUrls` option in `@apostrophecms/page/index.js`.
+
+### Fixes
+
+* Modifies the `aposMode` property of a document, to set it to `previous`, when this one switch from `published` to `previous` state.
+
 ## 3.37.0 (2023-01-06)
 
 ### Adds
