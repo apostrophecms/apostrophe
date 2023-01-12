@@ -37,6 +37,7 @@ module.exports = {
     await self.createIndexes();
     self.addLegacyMigrations();
     self.addCacheFieldMigration();
+    self.addSetPreviousDocsAposModeMigration();
   },
   restApiRoutes(self) {
     return {
@@ -1288,6 +1289,20 @@ module.exports = {
       addCacheFieldMigration() {
         self.apos.migration.add('add-cache-invalidated-at-field', self.setCacheField);
       },
+
+      async addSetPreviousDocsAposModeMigration () {
+        self.apos.migration.add('set-previous-docs-apos-mode', async () => {
+          await self.apos.doc.db.updateMany({
+            _id: { $regex: ':previous$' },
+            aposMode: { $ne: 'previous' }
+          }, {
+            $set: {
+              aposMode: 'previous'
+            }
+          });
+        });
+      },
+
       ...require('./lib/legacy-migrations')(self)
     };
   }
