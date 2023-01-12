@@ -215,11 +215,22 @@ describe('Pages', function() {
     assert(page.path === `${homeId.replace(':en:published', '')}/parent/child`);
   });
 
-  it('should redirect to a lowercase URL when uppercase is detected', async function() {
+  it('should convert an uppercase URL to its lowercase version', async function() {
     const response = await apos.http.get('/PArent/cHild', {
       fullResponse: true
     });
     assert(response.body.match(/URL: \/parent\/child/));
+  });
+
+  it('should NOT convert an uppercase URL if forceLowerCaseUrls is false', async function() {
+    apos.page.options.forceLowerCaseUrls = false;
+    try {
+      await apos.http.get('/PArent/cHild', {
+        fullResponse: true
+      });
+    } catch (error) {
+      assert(error.status === 404);
+    }
   });
 
   it('should be able to include the ancestors of a page', async function() {

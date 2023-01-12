@@ -33,7 +33,8 @@ module.exports = {
         orphan: true,
         title: 'Archive'
       }
-    ]
+    ],
+    forceLowerCaseUrls: true
   },
   batchOperations: {
     add: {
@@ -1616,7 +1617,7 @@ database.`);
         }
 
         // If uppercase letters in URL, try with lowercase
-        if(/[A-Z]/.test(req.path)) {
+        if(self.options.forceLowerCaseUrls && /[A-Z]/.test(req.path)) {
           req.redirect = self.apos.url.build(req.path.toLowerCase(), req.query);
         }
 
