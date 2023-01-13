@@ -5,7 +5,7 @@
 ### Adds
 
 * Emit a `beforeInsert` event from the `@apostrophecms:attachment` module, with `req` and the `doc` as arguments, in order to give the possibility to override the attachment.
-* Convert uppercase URLs automatically to their lowercase version - can be disabled through `forceLowerCaseUrls` option in `@apostrophecms/page/index.js`.
+* Convert uppercase URLs automatically to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options.
 
 ### Fixes
 

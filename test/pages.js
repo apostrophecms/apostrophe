@@ -222,8 +222,8 @@ describe('Pages', function() {
     assert(response.body.match(/URL: \/parent\/child/));
   });
 
-  it('should NOT convert an uppercase URL if forceLowerCaseUrls is false', async function() {
-    apos.page.options.forceLowerCaseUrls = false;
+  it('should NOT convert an uppercase URL if redirectFailedUpperCaseUrls is false', async function() {
+    apos.page.options.redirectFailedUpperCaseUrls = false;
     try {
       await apos.http.get('/PArent/cHild', {
         fullResponse: true
