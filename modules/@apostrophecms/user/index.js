@@ -292,6 +292,9 @@ module.exports = {
 
         await self.hashPassword(doc, safeUser);
         await self.hashSecrets(doc, safeUser);
+
+        await self.emit('beforeSaveSafe', req, safeUser, doc);
+
         if (action === 'insert') {
           await self.safe.insertOne(safeUser);
         } else {
