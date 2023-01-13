@@ -6,6 +6,18 @@
     :modifiers="modifiers"
   >
     <template #additional>
+      <div
+        v-if="minSize[0] || minSize[1]"
+        :class="minSizeError ? 'apos-has-error' : ''"
+        class="apos-field__min-size"
+      >
+        {{
+          $t('apostrophe:minSize', {
+            width: minSize[0] || '???',
+            height: minSize[1] || '???'
+          })
+        }}
+      </div>
       <AposMinMaxCount
         :field="field"
         :value="next"
@@ -122,6 +134,17 @@ export default {
         modifiers.push('block');
       }
       return modifiers;
+    },
+    minSize() {
+      const [ widgetOptions = {} ] = apos.area.widgetOptions;
+
+      return widgetOptions.minSize || [];
+    },
+    minSizeError() {
+      const minSizeError = true;
+      console.log(this);
+      console.log('>>', this.field);
+      return minSizeError;
     }
   },
   watch: {
@@ -225,6 +248,18 @@ export default {
       if (result) {
         this.updateSelected(result);
       }
+
+      // Trigger auto crop if needed
+      // TODO uncomment?
+      // if (result && result.length === 1) {
+      //   const [ widgetOptions = {} ] = apos.area.widgetOptions;
+      //   const [ minWidth = 0, minHeight = 0 ] = widgetOptions.minSize || [];
+      //   if (result[0].attachment.width < minWidth ||
+      //     result[0].attachment.height < minHeight
+      //   ) {
+      //     await this.editRelationship(this.next[0]);
+      //   }
+      // }
     },
     async editRelationship (item) {
       const editor = this.field.editor || 'AposRelationshipEditor';
@@ -286,5 +321,16 @@ export default {
       width: 100%;
       padding: 0;
     }
+  }
+
+  .apos-field__min-size {
+    @include type-help;
+    display: flex;
+    flex-grow: 1;
+    margin-bottom: $spacing-base;
+  }
+
+  .apos-has-error {
+    color: var(--a-danger);
   }
 </style>
