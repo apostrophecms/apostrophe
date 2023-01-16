@@ -302,6 +302,8 @@ module.exports = {
             noteId: notification._id
           };
         }
+
+        return {};
       },
 
       // The dismiss method accepts the following arguments:
