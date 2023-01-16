@@ -8,7 +8,6 @@
     <template #additional>
       <div
         v-if="minSize[0] || minSize[1]"
-        :class="minSizeError ? 'apos-has-error' : ''"
         class="apos-field__min-size"
       >
         {{
@@ -328,9 +327,6 @@ export default {
     display: flex;
     flex-grow: 1;
     margin-bottom: $spacing-base;
-  }
-
-  .apos-has-error {
-    color: var(--a-danger);
+    font-weight: var(--a-weight-bold);
   }
 </style>

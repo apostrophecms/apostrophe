@@ -50,9 +50,6 @@ export default {
       if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
         return 'max';
       }
-      if (this.relationshipField.minSize && this.checked.length > this.checkedDocs.length) {
-        return 'minSize';
-      }
 
       return false;
     },
