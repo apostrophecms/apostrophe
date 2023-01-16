@@ -331,6 +331,7 @@ export default {
           }
         });
         this.updateEditing(null);
+        return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
         this.checked = this.checked.concat(imgIds);
