@@ -5,7 +5,8 @@
 ### Adds
 
 * Emit a `beforeInsert` event from the `@apostrophecms:attachment` module, with `req` and the `doc` as arguments, in order to give the possibility to override the attachment.
-* Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the 'safe' object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
+* Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the `safeUser` object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
+* Convert uppercase URLs automatically to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options.
 
 ### Fixes
 
@@ -26,14 +27,14 @@
     e.g. `A permission.can() call was made with a type that has no manager: @apostrophecms/polymorphic-type`.
 * The module `webpack.extensions` configuration is not applied to the core Admin UI build anymore. This is the correct and intended behavior as explained in the [relevant documentation](https://v3.docs.apostrophecms.org/guide/webpack.html#extending-webpack-configuration).
 * The `previewImage` option now works properly for widget modules loaded from npm and those that subclass them. Specifically, the preview image may be provided in the `public/` subdirectory of the original module, the project-level configuration of it, or a subclass.
- 
+
 ## 3.36.0 (2022-12-22)
 
 ### Adds
 
-* `shortcut` option for piece modules, allowing easy re-mapping of the manager command shortcut per module. 
+* `shortcut` option for piece modules, allowing easy re-mapping of the manager command shortcut per module.
 
-### Fixes 
+### Fixes
 
 * Ensure there are no conflicting command shortcuts for the core modules.
 
