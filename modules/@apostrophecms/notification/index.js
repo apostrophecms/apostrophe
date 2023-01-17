@@ -92,6 +92,7 @@ module.exports = {
     async post(req) {
       const type = self.apos.launder.select(req.body.type, [
         'danger',
+        'error',
         'warning',
         'success',
         'info'
