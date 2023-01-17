@@ -5,7 +5,8 @@
 ### Adds
 
 * Emit a `beforeInsert` event from the `@apostrophecms:attachment` module, with `req` and the `doc` as arguments, in order to give the possibility to override the attachment.
-* Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the 'safe' object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
+* Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the `safeUser` object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
+* Convert uppercase URLs automatically to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options.
 * Enforce i18next locale format as xx-XX
 
 ### Fixes

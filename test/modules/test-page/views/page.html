@@ -10,4 +10,6 @@
   {% for tab in data.home._children %}
     <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
   {% endfor %}
+
+  URL: {{ data.page._url }}
 {% endblock %}
