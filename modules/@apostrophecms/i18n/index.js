@@ -287,6 +287,9 @@ module.exports = {
       post: {
         async locale(req) {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
+          if (!sanitizedLocale) {
+            throw self.apos.error('invalid', 'invalid locale');
+          }
           // Clipboards transferring between locales needs to jump
           // from LocalStorage to the cross-domain session cache
           let clipboard = req.body.clipboard;
@@ -626,21 +629,29 @@ module.exports = {
       // if possible, to the corresponding version in toLocale.
       toLocaleRouteFactory(module) {
         return async (req, res) => {
-          const _id = module.inferIdLocaleAndMode(req, req.params._id);
-          const toLocale = req.params.toLocale;
-          const localeReq = req.clone({
-            locale: toLocale
-          });
-          const corresponding = await module.find(localeReq, {
-            _id: `${_id.split(':')[0]}:${localeReq.locale}:${localeReq.mode}`
-          }).toObject();
-          if (!corresponding) {
-            return res.status(404).send('not found');
+          try {
+            const _id = module.inferIdLocaleAndMode(req, req.params._id);
+            const toLocale = self.sanitizeLocaleName(req.params.toLocale);
+            if (!toLocale) {
+              return res.status(400).send('invalid locale name');
+            }
+            const localeReq = req.clone({
+              locale: toLocale
+            });
+            const corresponding = await module.find(localeReq, {
+              _id: `${_id.split(':')[0]}:${localeReq.locale}:${localeReq.mode}`
+            }).toObject();
+            if (!corresponding) {
+              return res.status(404).send('not found');
+            }
+            if (!corresponding._url) {
+              return res.status(400).send('invalid (has no URL)');
+            }
+            return res.redirect(corresponding._url);
+          } catch (e) {
+            self.apos.util.error(e);
+            return res.status(500).send('error');
           }
-          if (!corresponding._url) {
-            return res.status(400).send('invalid (has no URL)');
-          }
-          return res.redirect(corresponding._url);
         };
       },
       // Exclude private locales when logged out

@@ -13,6 +13,8 @@
 ### Fixes
 
 * Modifies the `aposMode` property of a document, to set it to `previous`, when this one switch from `published` to `previous` state.
+* Invalid locales passed to the i18n locale switching middleware are politely mapped to 400 errors.
+* Any other exceptions thrown in the i18n locale switching middleware can no longer crash the process.
 
 ## 3.37.0 (2023-01-06)
 
