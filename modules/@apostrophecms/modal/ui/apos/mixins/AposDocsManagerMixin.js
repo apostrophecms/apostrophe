@@ -219,7 +219,8 @@ export default {
       // database.
       this.checked.forEach(id => {
         if (this.checkedDocs.findIndex(doc => doc._id === id) === -1) {
-          this.checkedDocs.push(this.items.find(item => item._id === id));
+          const found = this.items.find(item => item._id === id);
+          found && this.checkedDocs.push(found);
         }
       });
 

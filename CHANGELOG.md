@@ -13,6 +13,8 @@
 ### Fixes
 
 * Modifies the `aposMode` property of a document, to set it to `previous`, when this one switch from `published` to `previous` state.
+* Uploading an image in an apostrophe area with `minSize` requirements will not trigger an error anymore. If the image is too small, a notification will be displayed with the minimum size requirements. The `Edit Image` modal will now display the minimum size requirements above the `Browse Images` field if any.
+* Some browsers sees the empty `POST` notification response as invalid XML, it will now return an empty JSON object with the `Content-Type` set to `application/json`.
 
 ## 3.37.0 (2023-01-06)
 

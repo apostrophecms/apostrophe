@@ -92,6 +92,7 @@ module.exports = {
     async post(req) {
       const type = self.apos.launder.select(req.body.type, [
         'danger',
+        'error',
         'warning',
         'success',
         'info'
@@ -309,6 +310,8 @@ module.exports = {
             noteId: notification._id
           };
         }
+
+        return {};
       },
 
       // The dismiss method accepts the following arguments:
