@@ -143,9 +143,14 @@ module.exports = {
     put(req, _id) {
       throw self.apos.error('unimplemented');
     },
-    patch(req, _id) {
+    async patch(req, _id) {
       const dismissed = self.apos.launder.boolean(req.body.dismissed);
       if (dismissed) {
+        await self.emit('beforeSave', req, {
+          _id,
+          dismissed
+        });
+
         return self.db.updateOne({ _id }, {
           $set: {
             dismissed
@@ -283,6 +288,8 @@ module.exports = {
 
         Object.assign(notification, copiedOptions);
 
+        await self.emit('beforeSave', req, notification);
+
         // We await here rather than returning because we expressly do not
         // want to leak mongodb metadata to the browser
         await self.db.updateOne(
@@ -317,6 +324,11 @@ module.exports = {
         await pause(delay);
 
         try {
+          await self.emit('beforeSave', req, {
+            _id: noteId,
+            dismissed: true
+          });
+
           await self.db.updateOne(
             {
               _id: noteId
