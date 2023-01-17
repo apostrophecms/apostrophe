@@ -255,7 +255,7 @@ export default {
       }
 
       if (this.relationshipField) {
-        await apos.bus.$emit('piece-relationship-query', qs);
+        apos.bus.$emit('piece-relationship-query', qs);
       }
 
       // Avoid undefined properties.
@@ -321,7 +321,7 @@ export default {
       if (Array.isArray(imgIds) && imgIds.length && this.items.length === 0) {
         const [ widgetOptions = {} ] = apos.area.widgetOptions;
         const [ width, height ] = widgetOptions.minSize || [];
-        apos.notify('apostrophe:minSize', {
+        await apos.notify('apostrophe:minSize', {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true,
