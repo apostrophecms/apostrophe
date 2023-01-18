@@ -874,4 +874,48 @@ describe('Command-Menu', function() {
 
     assert.deepEqual(actual, expected);
   });
+
+  it('should detect standard shortcuts conflicts', () => {
+    const shortcuts = {
+      standard: { '@apostrophecms/file:manager': [ 'C' ] },
+      global: [],
+      conflicts: []
+    };
+    const actual = apos.commandMenu.detectShortcutConflict({
+      req: apos.task.getReq(),
+      shortcuts,
+      shortcut: 'C',
+      standard: true,
+      moduleName: '@apostrophecms/file:manager'
+    });
+    const expected = {
+      standard: { '@apostrophecms/file:manager': [ 'C' ] },
+      global: [],
+      conflicts: [ '@apostrophecms/file:manager: \'C\'' ]
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should detect global shortcuts conflicts', () => {
+    const shortcuts = {
+      standard: {},
+      global: [ 'C' ],
+      conflicts: []
+    };
+    const actual = apos.commandMenu.detectShortcutConflict({
+      req: apos.task.getReq(),
+      shortcuts,
+      shortcut: 'C',
+      standard: false,
+      moduleName: '@apostrophecms/file:manager'
+    });
+    const expected = {
+      standard: {},
+      global: [ 'C' ],
+      conflicts: [ '@apostrophecms/file:manager: \'C\'' ]
+    };
+
+    assert.deepEqual(actual, expected);
+  });
 });

@@ -363,12 +363,80 @@ module.exports = {
         }
 
         const { groups, modals } = self.getVisible(req);
+        self.notifyConflicts(req, modals);
 
         return {
           components: { the: self.options.components.the || 'TheAposCommandMenu' },
           groups,
           modals
         };
+      },
+      notifyConflicts(req, modals = self.modals) {
+        const shortcuts = {
+          standard: {},
+          global: [],
+          conflicts: []
+        };
+
+        Object.entries(modals)
+          .forEach(([ modal, groups ]) => Object.values(groups)
+            .forEach(group => Object.entries(group.commands)
+              .forEach(([ name, field ]) => {
+                self.detectShortcutConflict({
+                  req,
+                  shortcuts,
+                  shortcut: field.shortcut,
+                  standard: modal === 'default',
+                  moduleName: name
+                });
+              })
+            )
+          );
+
+        if (shortcuts.conflicts.length <= 5) {
+          for (const conflict of shortcuts.conflicts) {
+            self.apos.notify(req, conflict, {
+              type: 'warning',
+              dismiss: 10
+            });
+          }
+        } else {
+          self.apos.notify(req, req.t('apostrophe:shortcutConflictGeneric'), {
+            type: 'warning',
+            dismiss: 10
+          });
+        }
+        self.apos.util.log(
+          req.t('apostrophe:shortcutConflictNotification'),
+          shortcuts.conflicts
+        );
+      },
+      detectShortcutConflict({
+        req, shortcuts, shortcut, standard, moduleName
+      }) {
+        let existingShortcut;
+        if (standard) {
+          shortcuts.standard[moduleName] = shortcuts.standard[moduleName] || [];
+          existingShortcut =
+            shortcuts.standard[moduleName].includes(shortcut);
+        } else {
+          existingShortcut = shortcuts.global.includes(shortcut);
+        }
+
+        if (existingShortcut) {
+          shortcuts.conflicts.push(
+            req.t('apostrophe:shortcutConflictMessage', {
+              moduleName,
+              shortcut
+            })
+          );
+        } else {
+          standard
+            ? shortcuts.standard[moduleName].push(shortcut)
+            : shortcuts.global.push(shortcut);
+        }
+
+        return shortcuts;
       }
     };
   }
