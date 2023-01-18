@@ -81,6 +81,25 @@ module.exports = {
         icon: 'format-underline-icon',
         command: 'toggleUnderline'
       },
+      strike: {
+        component: 'AposTiptapButton',
+        label: 'apostrophe:richTextStrikethrough',
+        icon: 'format-strikethrough-variant-icon',
+        command: 'toggleStrike'
+      },
+      superscript: {
+        component: 'AposTiptapButton',
+        label: 'apostrophe:superscript',
+        icon: 'format-superscript-icon',
+        command: 'toggleSuperscript'
+      },
+      subscript: {
+        component: 'AposTiptapButton',
+        label: 'apostrophe:subscript',
+        icon: 'format-subscript-icon',
+        command: 'toggleSubscript'
+      },
+
       horizontalRule: {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextHorizontalRule',
@@ -108,12 +127,6 @@ module.exports = {
         label: 'apostrophe:richTextOrderedList',
         icon: 'format-list-numbered-icon',
         command: 'toggleOrderedList'
-      },
-      strike: {
-        component: 'AposTiptapButton',
-        label: 'apostrophe:richTextStrikethrough',
-        icon: 'format-strikethrough-variant-icon',
-        command: 'toggleStrike'
       },
       blockquote: {
         component: 'AposTiptapButton',
@@ -182,7 +195,8 @@ module.exports = {
       setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
-        'a', 's', 'del', 'strike', 'span', 'u', 'anchor'
+        'a', 's', 'del', 'strike', 'span', 'u', 'anchor',
+        'superscript', 'subscript'
       ],
       wrapIn: [ 'blockquote' ]
     },
@@ -198,7 +212,9 @@ module.exports = {
       anchor: [ 'span' ],
       underline: [ 'u' ],
       codeBlock: [ 'pre' ],
-      blockquote: [ 'blockquote' ]
+      blockquote: [ 'blockquote' ],
+      superscript: [ 'sup' ],
+      subscript: [ 'sub' ]
     }
   },
   beforeSuperClass(self) {
