@@ -1,20 +1,20 @@
 # Changelog
 
-## UNRELEASED
+## 3.38.0 (2023-01-18)
 
 ### Adds
 
 * Emit a `beforeSave` event from the `@apostrophecms:notification` module, with `req` and the `notification` as arguments, in order to give the possibility to override the notification.
 * Emit a `beforeInsert` event from the `@apostrophecms:attachment` module, with `req` and the `doc` as arguments, in order to give the possibility to override the attachment.
 * Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the `safeUser` object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
-* Convert uppercase URLs automatically to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options.
-* Enforce i18next locale format as xx-XX
+* Automatically convert failed uppercase URLs to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options. This only comes into play if a 404 is about to happen.
+* Automatically convert country codes in locales like `xx-yy` to `xx-YY` before passing them to `i18next`, which is strict about uppercase country codes.
 
 ### Fixes
 
-* Modifies the `aposMode` property of a document, to set it to `previous`, when this one switch from `published` to `previous` state.
-* Uploading an image in an apostrophe area with `minSize` requirements will not trigger an error anymore. If the image is too small, a notification will be displayed with the minimum size requirements. The `Edit Image` modal will now display the minimum size requirements above the `Browse Images` field if any.
-* Some browsers sees the empty `POST` notification response as invalid XML, it will now return an empty JSON object with the `Content-Type` set to `application/json`.
+* Documents kept as the `previous` version for undo purposes were not properly marked as such, breaking the public language switcher in some cases. This was fixed and a migration was added for existing data.
+* Uploading an image in an apostrophe area with `minSize` requirements will not trigger an unexpected error anymore. If the image is too small, a notification will be displayed with the minimum size requirements. The `Edit Image` modal will now display the minimum size requirements, if any, above the `Browse Images` field.
+* Some browsers saw the empty `POST` response for new notifications as invalid XML. It will now return an empty JSON object with the `Content-Type` set to `application/json`.
 
 ## 3.37.0 (2023-01-06)
 
