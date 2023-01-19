@@ -373,9 +373,9 @@ module.exports = {
       },
       notifyConflicts(req, modals = self.modals) {
         const shortcuts = {
-          standard: {},
-          global: [],
-          conflicts: []
+          modal: {},
+          list: {},
+          conflict: {}
         };
 
         Object.entries(modals)
@@ -383,58 +383,36 @@ module.exports = {
             .forEach(group => Object.entries(group.commands)
               .forEach(([ name, field ]) => {
                 self.detectShortcutConflict({
-                  req,
                   shortcuts,
                   shortcut: field.shortcut,
-                  standard: modal === 'default',
+                  modal: modal === 'default' ? 'admin-bar' : modal,
                   moduleName: name
                 });
               })
             )
           );
 
-        if (shortcuts.conflicts.length <= 5) {
-          for (const conflict of shortcuts.conflicts) {
-            self.apos.notify(req, conflict, {
-              type: 'warning',
-              dismiss: 10
-            });
-          }
-        } else {
-          self.apos.notify(req, req.t('apostrophe:shortcutConflictGeneric'), {
-            type: 'warning',
-            dismiss: 10
-          });
-        }
-        self.apos.util.log(
+        self.apos.util.warnDev(
           req.t('apostrophe:shortcutConflictNotification'),
-          shortcuts.conflicts
+          shortcuts.conflict
         );
       },
       detectShortcutConflict({
-        req, shortcuts, shortcut, standard, moduleName
+        shortcuts, shortcut, modal, moduleName
       }) {
-        let existingShortcut;
-        if (standard) {
-          shortcuts.standard[moduleName] = shortcuts.standard[moduleName] || [];
-          existingShortcut =
-            shortcuts.standard[moduleName].includes(shortcut);
-        } else {
-          existingShortcut = shortcuts.global.includes(shortcut);
-        }
+        shortcuts.modal[modal] = shortcuts.modal[modal] || [];
+        shortcuts.list[modal] = shortcuts.list[modal] || {};
+        shortcuts.list[modal][shortcut] = shortcuts.list[modal][shortcut] || [];
+
+        const existingShortcut = shortcuts.modal[modal].includes(shortcut);
 
         if (existingShortcut) {
-          shortcuts.conflicts.push(
-            req.t('apostrophe:shortcutConflictMessage', {
-              moduleName,
-              shortcut
-            })
-          );
+          shortcuts.conflict[modal] = shortcuts.conflict[modal] || {};
+          shortcuts.conflict[modal][shortcut] = shortcuts.list[modal][shortcut];
         } else {
-          standard
-            ? shortcuts.standard[moduleName].push(shortcut)
-            : shortcuts.global.push(shortcut);
+          shortcuts.modal[modal].push(shortcut);
         }
+        shortcuts.list[modal][shortcut].push(moduleName);
 
         return shortcuts;
       }

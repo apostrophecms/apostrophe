@@ -875,45 +875,71 @@ describe('Command-Menu', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it('should detect standard shortcuts conflicts', () => {
+  it('should detect a single shortcut conflict', () => {
     const shortcuts = {
-      standard: { '@apostrophecms/file:manager': [ 'C' ] },
-      global: [],
-      conflicts: []
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new' ]
+        }
+      },
+      conflict: {}
     };
     const actual = apos.commandMenu.detectShortcutConflict({
-      req: apos.task.getReq(),
       shortcuts,
       shortcut: 'C',
-      standard: true,
-      moduleName: '@apostrophecms/file:manager'
+      modal: '@apostrophecms/file:manager',
+      moduleName: '@apostrophecms/file:search'
     });
     const expected = {
-      standard: { '@apostrophecms/file:manager': [ 'C' ] },
-      global: [],
-      conflicts: [ '@apostrophecms/file:manager: \'C\'' ]
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search' ]
+        }
+      },
+      conflict: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search' ]
+        }
+      }
     };
 
     assert.deepEqual(actual, expected);
   });
 
-  it('should detect global shortcuts conflicts', () => {
+  it('should detect multiple shortcut conflicts', () => {
     const shortcuts = {
-      standard: {},
-      global: [ 'C' ],
-      conflicts: []
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search' ]
+        }
+      },
+      conflict: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new' ]
+        }
+      }
     };
     const actual = apos.commandMenu.detectShortcutConflict({
-      req: apos.task.getReq(),
       shortcuts,
       shortcut: 'C',
-      standard: false,
-      moduleName: '@apostrophecms/file:manager'
+      modal: '@apostrophecms/file:manager',
+      moduleName: '@apostrophecms/file:select-all'
     });
     const expected = {
-      standard: {},
-      global: [ 'C' ],
-      conflicts: [ '@apostrophecms/file:manager: \'C\'' ]
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search', '@apostrophecms/file:select-all' ]
+        }
+      },
+      conflict: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search', '@apostrophecms/file:select-all' ]
+        }
+      }
     };
 
     assert.deepEqual(actual, expected);
