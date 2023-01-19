@@ -384,7 +384,7 @@ module.exports = {
               .forEach(([ name, field ]) => {
                 self.detectShortcutConflict({
                   shortcuts,
-                  shortcut: field.shortcut,
+                  shortcut: field.shortcut.toUpperCase(),
                   modal: modal === 'default' ? 'admin-bar' : modal,
                   moduleName: name
                 });
