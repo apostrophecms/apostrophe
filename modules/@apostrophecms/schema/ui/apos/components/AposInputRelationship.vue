@@ -6,6 +6,17 @@
     :modifiers="modifiers"
   >
     <template #additional>
+      <div
+        v-if="minSize[0] || minSize[1]"
+        class="apos-field__min-size"
+      >
+        {{
+          $t('apostrophe:minSize', {
+            width: minSize[0] || '???',
+            height: minSize[1] || '???'
+          })
+        }}
+      </div>
       <AposMinMaxCount
         :field="field"
         :value="next"
@@ -122,6 +133,11 @@ export default {
         modifiers.push('block');
       }
       return modifiers;
+    },
+    minSize() {
+      const [ widgetOptions = {} ] = apos.area.widgetOptions;
+
+      return widgetOptions.minSize || [];
     }
   },
   watch: {
@@ -286,5 +302,13 @@ export default {
       width: 100%;
       padding: 0;
     }
+  }
+
+  .apos-field__min-size {
+    @include type-help;
+    display: flex;
+    flex-grow: 1;
+    margin-bottom: $spacing-base;
+    font-weight: var(--a-weight-bold);
   }
 </style>

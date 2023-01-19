@@ -318,6 +318,21 @@ export default {
       this.uploading = false;
       await this.getMedia();
 
+      if (Array.isArray(imgIds) && imgIds.length && this.items.length === 0) {
+        const [ widgetOptions = {} ] = apos.area.widgetOptions;
+        const [ width, height ] = widgetOptions.minSize || [];
+        await apos.notify('apostrophe:minSize', {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true,
+          interpolate: {
+            width,
+            height
+          }
+        });
+        this.updateEditing(null);
+        return;
+      }
       if (Array.isArray(imgIds) && imgIds.length) {
         this.checked = this.checked.concat(imgIds);
 
