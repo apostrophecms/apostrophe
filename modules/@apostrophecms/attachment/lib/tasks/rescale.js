@@ -1,36 +1,36 @@
 // Direct use of console is appropriate in tasks. -Tom
 /* eslint-disable no-console */
 
-const _ = require("lodash");
-const fs = require("fs");
-const Promise = require("bluebird");
+const _ = require('lodash');
+const fs = require('fs');
+const Promise = require('bluebird');
 
 // Regenerate all scaled images. Useful after changing the configured sizes
 
 module.exports = function (self) {
   return async function (argv) {
-    console.log("Rescaling all images with latest uploadfs settings");
+    console.log('Rescaling all images with latest uploadfs settings');
     const total = await self.db.count();
     let n = 0;
     await self.each({}, argv.parallel || 1, async function (file) {
-      if (!_.includes(["jpg", "png", "gif", "webp"], file.extension)) {
+      if (!_.includes(['jpg', 'png', 'gif', 'webp'], file.extension)) {
         n++;
         console.log(
-          "Skipping a non-image attachment: " + file.name + "." + file.extension
+          'Skipping a non-image attachment: ' + file.name + '.' + file.extension
         );
         return;
       }
 
       const originalFile =
-        "/attachments/" + file._id + "-" + file.name + "." + file.extension;
+        '/attachments/' + file._id + '-' + file.name + '.' + file.extension;
       const tempFile =
         self.uploadfs.getTempPath() +
-        "/" +
+        '/' +
         self.apos.util.generateId() +
-        "." +
+        '.' +
         file.extension;
       n++;
-      console.log(n + " of " + total + ": " + originalFile);
+      console.log(n + ' of ' + total + ': ' + originalFile);
       // By default, the --resume option will skip any image that
       // has a one-third size rendering. If you are adding a
       // different size, already have images of the other
@@ -41,23 +41,23 @@ module.exports = function (self) {
       // relative URL to files will be appended. If your media are
       // actually on s3 you can skip that part, it'll figure it out.
       if (argv.resume) {
-        const resumeTestSize = argv["resume-test-size"] || "one-third";
+        const resumeTestSize = argv['resume-test-size'] || 'one-third';
         let url =
           self.uploadfs.getUrl() +
-          "/attachments/" +
+          '/attachments/' +
           file._id +
-          "-" +
+          '-' +
           file.name +
-          "." +
+          '.' +
           resumeTestSize +
-          "." +
+          '.' +
           file.extension;
-        if (url.substr(0, 1) === "/") {
+        if (url.substr(0, 1) === '/') {
           url = argv.resume + url;
         }
         try {
           await self.apos.http.head(url);
-          console.log("exists, skipping");
+          console.log('exists, skipping');
           return;
         } catch (e) {
           // Continue the pipeline, we didn't find it
@@ -67,55 +67,55 @@ module.exports = function (self) {
         await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
       } catch (e) {
         self.apos.util.error(
-          "WARNING: could not access " +
+          'WARNING: could not access ' +
             originalFile +
-            ", perhaps it was deleted"
+            ', perhaps it was deleted'
         );
         return;
       }
-      if (!argv["crop-only"]) {
+      if (!argv['crop-only']) {
         try {
           await Promise.promisify(self.uploadfs.copyImageIn)(
             tempFile,
             originalFile,
             {
-              sizes: self.imageSizes,
+              sizes: self.imageSizes
             }
           );
         } catch (e) {
           self.apos.util.error(
-            "WARNING: could not work with " +
+            'WARNING: could not work with ' +
               tempFile +
-              " even though copyOut claims it is there"
+              ' even though copyOut claims it is there'
           );
           return;
         }
       }
       for (const crop of file.crops || []) {
-        console.log("RECROPPING");
+        console.log('RECROPPING');
         const originalFile =
-          "/attachments/" +
+          '/attachments/' +
           file._id +
-          "-" +
+          '-' +
           file.name +
-          "." +
+          '.' +
           crop.left +
-          "." +
+          '.' +
           crop.top +
-          "." +
+          '.' +
           crop.width +
-          "." +
+          '.' +
           crop.height +
-          "." +
+          '.' +
           file.extension;
-        console.log("Cropping " + tempFile + " to " + originalFile);
+        console.log('Cropping ' + tempFile + ' to ' + originalFile);
         try {
           Promise.promisify(self.uploadfs.copyImageIn)(tempFile, originalFile, {
             crop: crop,
-            sizes: self.imageSizes,
+            sizes: self.imageSizes
           });
         } catch (e) {
-          console.error("WARNING: problem copying image back into uploadfs:");
+          console.error('WARNING: problem copying image back into uploadfs:');
           console.error(e);
         }
       }
