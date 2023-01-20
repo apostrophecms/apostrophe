@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* `superscript` and `subscript` may now be added to the rich text widget's `toolbar` option.
+
 ## 3.38.0 (2023-01-18)
 
 ### Adds
