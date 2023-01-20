@@ -62,6 +62,10 @@ module.exports = {
         component: 'AposTiptapStyles',
         label: 'apostrophe:richTextStyles'
       },
+      table: {
+        component: 'AposTiptapTable',
+        label: 'apostrophe:table'
+      },
       '|': { component: 'AposTiptapDivider' },
       bold: {
         component: 'AposTiptapButton',
@@ -297,7 +301,8 @@ module.exports = {
             'code'
           ],
           underline: [ 'u' ],
-          anchor: [ 'span' ]
+          anchor: [ 'span' ],
+          table: [ 'table', 'tr', 'td', 'th' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
@@ -345,14 +350,27 @@ module.exports = {
           anchor: {
             tag: 'span',
             attributes: [ 'id' ]
-          }
+          },
+          table: [
+            {
+              tag: 'td',
+              attributes: [ 'colspan', 'rowspan' ]
+            },
+            {
+              tag: 'th',
+              attributes: [ 'colspan', 'rowspan' ]
+            }
+          ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
-            for (const attribute of simple[item].attributes) {
-              allowedAttributes[simple[item].tag] = allowedAttributes[simple[item].tag] || [];
-              allowedAttributes[simple[item].tag].push(attribute);
-              allowedAttributes[simple[item].tag] = [ ...new Set(allowedAttributes[simple[item].tag]) ];
+            const entries = Array.isArray(simple[item]) ? simple[item] : [ simple[item] ];
+            for (const entry of entries) {
+              for (const attribute of entry.attributes) {
+                allowedAttributes[entry.tag] = allowedAttributes[entry.tag] || [];
+                allowedAttributes[entry.tag].push(attribute);
+                allowedAttributes[entry.tag] = [ ...new Set(allowedAttributes[entry.tag]) ];
+              }
             }
           }
         }

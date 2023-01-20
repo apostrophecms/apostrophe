@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Support for `table` in the rich text toolbar. Enabling `table` allows you to create tables, including `td` and `th` tags, with the ability to merge and split cells. For now the table editing UI is basic, see the "Table" dropdown for actions you can take in the current situation.
+
 ## 3.38.0 (2023-01-18)
 
 ### Adds
