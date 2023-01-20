@@ -313,7 +313,9 @@ module.exports = {
             'code'
           ],
           underline: [ 'u' ],
-          anchor: [ 'span' ]
+          anchor: [ 'span' ],
+          superscript: [ 'sup' ],
+          subscript: [ 'sub' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
