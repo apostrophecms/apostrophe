@@ -202,7 +202,11 @@ module.exports = {
       anchor: [ 'span' ],
       underline: [ 'u' ],
       codeBlock: [ 'pre' ],
-      blockquote: [ 'blockquote' ]
+      blockquote: [ 'blockquote' ],
+      // Generic div type, usually used with classes,
+      // and for A2 content migration. Intentionally not
+      // given a nicer-sounding name
+      div: [ 'div' ]
     }
   },
   beforeSuperClass(self) {
@@ -302,7 +306,8 @@ module.exports = {
           ],
           underline: [ 'u' ],
           anchor: [ 'span' ],
-          table: [ 'table', 'tr', 'td', 'th' ]
+          table: [ 'table', 'tr', 'td', 'th' ],
+          div: [ 'div' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
