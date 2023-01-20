@@ -47,7 +47,6 @@ export default {
       return this.tool.command || this.name;
     },
     click() {
-      console.log(`command is ${this.command()}`);
       this.editor.commands[this.command()](this.tool.commandParameters || {});
       this.editor.commands.focus();
     }
