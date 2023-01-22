@@ -593,6 +593,11 @@ module.exports = {
         checkSearchable(types) {
           self.searchDetermineTypes(types);
         }
+      },
+      afterConstruct: {
+        checkSchema(self) {
+          console.log('in piece-type afterConstruct', self);
+        }
       }
     };
   },
