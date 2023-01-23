@@ -485,10 +485,10 @@ describe('Pages', function() {
     return request('http://localhost:7900/chiLD', function (err, response, body) {
       assert(!err);
       assert.equal(response.statusCode, 404);
+      apos.pages.options.redirectFailedUpperCaseUrls = true;
       return done();
     });
 
-    apos.pages.options.redirectFailedUpperCaseUrls = true;
   });
 
   it('should detect that the home page is an ancestor of any page except itself', function() {
@@ -577,6 +577,7 @@ describe('Pages', function() {
       assert.equal(page.path, '/newish-page');
       done();
     });
+
   });
 });
 
