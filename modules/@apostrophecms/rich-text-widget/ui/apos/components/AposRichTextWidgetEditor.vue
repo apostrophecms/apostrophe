@@ -525,8 +525,12 @@ function traverseNextNode(node) {
 
   // So editors can find table cells while editing tables
 
+  .apos-rich-text-editor__editor ::v-deep table {
+    min-width: 100%;
+    min-height: 200px;
+  }
+
   .apos-rich-text-editor__editor ::v-deep th, .apos-rich-text-editor__editor ::v-deep td {
-    min-width: 120px;
     outline: dotted;
   }
 
