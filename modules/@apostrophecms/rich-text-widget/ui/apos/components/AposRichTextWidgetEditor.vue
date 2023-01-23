@@ -524,17 +524,16 @@ function traverseNextNode(node) {
   }
 
   // So editors can find table cells while editing tables
-  .apos-rich-text-editor__editor ::v-deep th {
-    outline: dotted;
-  }
 
-  .apos-rich-text-editor__editor ::v-deep td {
+  .apos-rich-text-editor__editor ::v-deep th, .apos-rich-text-editor__editor ::v-deep td {
+    min-width: 120px;
     outline: dotted;
   }
 
   // So editors can identify the cells that would take part
   // in a merge operation
   .apos-rich-text-editor__editor ::v-deep .selectedCell {
-    backdrop-filter: hue-rotate(120deg);
+    // Should be visible on any background, light mode or dark mode
+    backdrop-filter: invert(.1);
   }
 </style>
