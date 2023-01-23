@@ -558,7 +558,6 @@ module.exports = {
       },
       getBrowserBundles(locale) {
         const i18n = {};
-        console.log(`locale is ${locale}`);
         for (const [ name, options ] of Object.entries(self.namespaces)) {
           if (options.browser) {
             i18n[name] = self.i18next.getResourceBundle(locale, name);
@@ -568,15 +567,11 @@ module.exports = {
               // is difficult to tap into when calling getResourceBundle,
               // but it should work for most situations
               const [ lang, country ] = locale.split('-');
-              console.log(`lang is ${lang} and country is ${country} and original was ${locale}`);
               if (country) {
                 i18n[name] = self.i18next.getResourceBundle(lang, name);
               }
             }
           }
-        }
-        if (locale === 'de-de') {
-          console.log('--->', i18n);
         }
         return i18n;
       },
