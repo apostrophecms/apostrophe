@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.38.1 (2023-01-23)
+
+### Fixes
+
+* Version 3.38.0 introduced a regression that temporarily broke support for user-edited content in locales with names like `de-de` (note the lowercase country name). This was inadvertently introduced in an effort to improve support for locale fallback when generating static translations of the admin interface. Version 3.38.1 resolves this comprehensively, and brings back the content that temporarily appeared to be missing for these locales (it was never removed from the database). **However, if you created content for such locales using `3.38.0` and wish to keep that content,** rather than reverting to the content from before `3.38.0`, see below.
+
+### Adds
+
+* The new `i18n:rename-locale` task can be used to move all content from one locale name to another, using the `--old` and `--new` options. By default, any duplicate keys for content existing in both locales will stop the process. However you can specify which content to keep in the event of a duplicate key error using the `--keep=localename` option. Note that the value of `--new` should match the a locale name that is currently configured for the `@apostrophecms/i18n` module.
+
+Example:
+
+```
+# If you always had de-de configured as a locale, but created
+# a lot of content with Apostrophe 3.38.0 which incorrectly stored
+# it under de-DE, you can copy that content. In this case we opt
+# to keep de-de content in the event of any conflicts
+node app i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
+```
+
 ## 3.38.0 (2023-01-18)
 
 ### Adds

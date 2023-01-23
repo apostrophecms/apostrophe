@@ -558,10 +558,25 @@ module.exports = {
       },
       getBrowserBundles(locale) {
         const i18n = {};
+        console.log(`locale is ${locale}`);
         for (const [ name, options ] of Object.entries(self.namespaces)) {
           if (options.browser) {
             i18n[name] = self.i18next.getResourceBundle(locale, name);
+            if (!i18n[name]) {
+              // Attempt fallback to language only. This is not
+              // the full fallback support of i18next because that
+              // is difficult to tap into when calling getResourceBundle,
+              // but it should work for most situations
+              const [ lang, country ] = locale.split('-');
+              console.log(`lang is ${lang} and country is ${country} and original was ${locale}`);
+              if (country) {
+                i18n[name] = self.i18next.getResourceBundle(lang, name);
+              }
+            }
           }
+        }
+        if (locale === 'de-de') {
+          console.log('--->', i18n);
         }
         return i18n;
       },
@@ -642,6 +657,55 @@ module.exports = {
               .entries(locales)
               .filter(([ name, options ]) => options.private !== true)
           );
+      }
+    };
+  },
+  tasks(self) {
+    return {
+      'rename-locale': {
+        usage: 'Usage: node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de',
+        async task(argv) {
+          const oldLocale = self.apos.launder.string(argv.old);
+          const newLocale = self.apos.launder.string(argv.new);
+          const keep = self.apos.launder.string(argv.keep);
+          if (!oldLocale) {
+            throw new Error('You must specify --old');
+          }
+          if (!newLocale) {
+            throw new Error('You must specify --new');
+          }
+          if (oldLocale === newLocale) {
+            throw new Error('The old and new locales must be different');
+          }
+          if (keep && (!(keep === oldLocale) && !(keep === newLocale))) {
+            throw new Error('--keep must match --old or --new');
+          }
+          if (!Object.keys(self.locales).includes(oldLocale)) {
+            throw new Error(`The old locale ${oldLocale} is not configured`);
+          }
+          if (!Object.keys(self.locales).includes(newLocale)) {
+            throw new Error(`The new locale ${newLocale} is not configured`);
+          }
+          return self.apos.migration.eachDoc({ aposLocale: new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`) }, async doc => {
+            const newDoc = {
+              ...doc,
+              aposLocale: doc.aposLocale.replace(oldLocale, newLocale),
+              _id: doc._id.replace(`:${oldLocale}`, `:${newLocale}`)
+            };
+            try {
+              await self.apos.doc.db.insertOne(newDoc);
+            } catch (e) {
+              if (self.apos.doc.isUniqueError(e)) {
+                if (keep === newLocale) {
+                  await self.apos.doc.db.deleteOne({ _id: doc._id });
+                  await self.apos.doc.db.insertOne(newDoc);
+                }
+              } else {
+                // Ignore because we are keeping the old locale on conflicts
+              }
+            }
+          });
+        }
       }
     };
   }
