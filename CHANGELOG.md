@@ -4,7 +4,7 @@
 
 ### Fixes
 
-* Version 3.38.0 introduced a regression that temporarily broke support for user-edited content in locales with names like `de-de` (note the lowercase country name). This was inadvertently introduced in an effort to improve support for locale fallback when generating static translations of the admin interface. Version 3.38.1 resolves this comprehensively, and brings back the content that temporarily appeared to be missing for these locales (it was never removed from the database). **However, if you created content for such locales using `3.38.0` and wish to keep that content,** rather than reverting to the content from before `3.38.0`, see below.
+* Version 3.38.0 introduced a regression that temporarily broke support for user-edited content in locales with names like `de-de` (note the lowercase country name). This was inadvertently introduced in an effort to improve support for locale fallback when generating static translations of the admin interface. Version 3.38.1 brings back the content that temporarily appeared to be missing for these locales (it was never removed from the database), and also achieves the original goal. **However, if you created content for such locales using `3.38.0` (released five days ago) and wish to keep that content,** rather than reverting to the content from before `3.38.0`, see below.
 
 ### Adds
 
@@ -29,7 +29,6 @@ node app i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 * Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the `safeUser` object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
 * Automatically convert failed uppercase URLs to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options. This only comes into play if a 404 is about to happen.
 * Automatically convert country codes in locales like `xx-yy` to `xx-YY` before passing them to `i18next`, which is strict about uppercase country codes.
-* Convert uppercase URLs automatically to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options.
 
 ### Fixes
 
