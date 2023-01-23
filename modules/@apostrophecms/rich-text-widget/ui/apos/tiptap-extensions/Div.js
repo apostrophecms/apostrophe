@@ -1,5 +1,7 @@
 import { mergeAttributes, Node } from '@tiptap/core';
 
+// Based on the default heading extension
+
 export default (options) => {
   return Node.create({
 
@@ -11,7 +13,7 @@ export default (options) => {
       };
     },
 
-    content: 'block+',
+    content: 'inline*',
 
     group: 'block',
 
@@ -29,14 +31,11 @@ export default (options) => {
 
     addCommands() {
       return {
-        setDiv: () => ({ commands }) => {
-          return commands.wrapIn(this.name);
+        setDiv: attributes => ({ commands }) => {
+          return commands.setNode(this.name, attributes);
         },
-        toggleDiv: () => ({ commands }) => {
-          return commands.toggleWrap(this.name);
-        },
-        unsetDiv: () => ({ commands }) => {
-          return commands.lift(this.name);
+        toggleDiv: attributes => ({ commands }) => {
+          return commands.toggleNode(this.name, 'paragraph', attributes);
         }
       };
     }

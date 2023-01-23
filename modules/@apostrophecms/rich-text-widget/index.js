@@ -183,12 +183,11 @@ module.exports = {
     // Additional properties used in executing tiptap commands
     // Will be mixed in automatically for developers
     tiptapTextCommands: {
-      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
+      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'div' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
         'a', 's', 'del', 'strike', 'span', 'u', 'anchor'
-      ],
-      wrapIn: [ 'blockquote' ]
+      ]
     },
     tiptapTypes: {
       heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
