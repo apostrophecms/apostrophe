@@ -168,7 +168,8 @@ export default {
       }
 
       for (const item of Object.keys(config.widgets)) {
-        group.widgets.push(apos.modules[`${item}-widget`]);
+        const widget = apos.modules[`${item}-widget`];
+        if (widget) group.widgets.push(widget);
       }
 
       return group;
