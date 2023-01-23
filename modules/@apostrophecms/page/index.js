@@ -33,8 +33,7 @@ module.exports = {
         orphan: true,
         title: 'Archive'
       }
-    ],
-    redirectFailedUpperCaseUrls: true
+    ]
   },
   batchOperations: {
     add: {
@@ -1566,7 +1565,6 @@ database.`);
         if (self.isFound(req)) {
           return;
         }
-
         if (req.user && (req.mode === 'published')) {
           // Try again in draft mode
           try {
@@ -1615,12 +1613,6 @@ database.`);
             // Nonfatal, we were just probing
           }
         }
-
-        // If uppercase letters in URL, try with lowercase
-        if (self.options.redirectFailedUpperCaseUrls && /[A-Z]/.test(req.path)) {
-          req.redirect = self.apos.url.build(req.path.toLowerCase(), req.query);
-        }
-
         // Give all modules a chance to save the day
         await self.emit('notFound', req);
         // Are we happy now?
