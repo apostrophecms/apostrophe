@@ -17,7 +17,7 @@ Example:
 # a lot of content with Apostrophe 3.38.0 which incorrectly stored
 # it under de-DE, you can copy that content. In this case we opt
 # to keep de-de content in the event of any conflicts
-node app i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
+node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 ```
 
 ## 3.38.0 (2023-01-18)
