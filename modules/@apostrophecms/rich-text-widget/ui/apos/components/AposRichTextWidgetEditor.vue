@@ -538,6 +538,6 @@ function traverseNextNode(node) {
   // in a merge operation
   .apos-rich-text-editor__editor ::v-deep .selectedCell {
     // Should be visible on any background, light mode or dark mode
-    backdrop-filter: invert(.1);
+    backdrop-filter: invert(0.1);
   }
 </style>
