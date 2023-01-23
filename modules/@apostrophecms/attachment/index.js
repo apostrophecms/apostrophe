@@ -112,6 +112,7 @@ module.exports = {
     self.sizeAvailableInArchive = self.options.sizeAvailableInArchive || 'one-sixth';
 
     self.rescaleTask = require('./lib/tasks/rescale.js')(self);
+    self.downloadAllTask = require('./lib/tasks/download-all.js')(self);
     self.addFieldType();
     self.enableBrowserData();
 
@@ -127,6 +128,10 @@ module.exports = {
       rescale: {
         usage: 'Usage: node app @apostrophecms/attachment:rescale\n\nRegenerate all sizes of all image attachments. Useful after a new size\nis added to the configuration. Takes a long time!',
         task: self.rescaleTask
+      },
+      'download-all': {
+        usage: 'Usage: node app @apostrophecms/attachment:download-all --to=public/uploads/attachments [--resume] [--parallel=3]\n\nDownload all attachments to a local folder, usually to sync\nfrom a non-local uploadfs backend. Takes a long time!',
+        task: self.downloadAllTask
       },
       'migrate-to-disabled-file-key': {
         usage: 'Usage: node app @apostrophecms/attachment:migrate-to-disabled-file-key\n\nThis task should be run after adding the disabledFileKey option to uploadfs\nfor the first time. It should only be relevant for storage backends where\nthat option is not mandatory, i.e. only local storage as of this writing.',
