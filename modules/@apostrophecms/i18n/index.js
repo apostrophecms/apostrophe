@@ -409,11 +409,7 @@ module.exports = {
                 continue;
               }
               const data = JSON.parse(fs.readFileSync(path.join(localizationsDir, localizationFile)));
-
-              // enforce i18next locale format as xx-XX
-              const [ language, country ] = localizationFile.replace('.json', '').split('-');
-              const locale = country ? `${language.toLocaleLowerCase()}-${country.toUpperCase()}` : language;
-
+              const locale = localizationFile.replace('.json', '');
               self.i18next.addResourceBundle(locale, ns, data, true, true);
             }
           }
@@ -570,17 +566,11 @@ module.exports = {
         return i18n;
       },
       getLocales() {
-        const locales = self.options.locales
-          ? Object.fromEntries(Object.entries(self.options.locales).map(([ name, options ]) => {
-            // enforce i18next locale format as xx-XX
-            const [ language, country ] = name.split('-');
-            return country ? [ `${language.toLocaleLowerCase()}-${country.toUpperCase()}`, options ] : [ language, options ];
-          }))
-          : {
-            en: {
-              label: 'English'
-            }
-          };
+        const locales = self.options.locales || {
+          en: {
+            label: 'English'
+          }
+        };
         verifyLocales(locales, self.apos.options.baseUrl);
         return locales;
       },
