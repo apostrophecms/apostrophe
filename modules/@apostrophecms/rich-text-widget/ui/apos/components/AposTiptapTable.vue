@@ -125,11 +125,13 @@ export default {
     takeAction() {
       const action = this.current;
       this.editor.commands.focus();
-      // Reach into prosemirror for current selection,
-      // then turn it into a cursor position only so we don't
-      // delete the existing selection which would mean
-      // you can only create a table by deleting some work
-      this.editor.commands.setTextSelection(this.editor.view.state.selection.$anchor.pos);
+      if (action === 'insertTable') {
+        // Reach into prosemirror for current selection,
+        // then turn it into a cursor position only so we don't
+        // delete the existing selection which would mean
+        // you can only create a table by deleting some work
+        this.editor.commands.setTextSelection(this.editor.view.state.selection.$anchor.pos);
+      }
       this.editor.commands[action]();
       // We are using the select as a menu of one-time actions, it's not really a persisted value
       this.current = '';
