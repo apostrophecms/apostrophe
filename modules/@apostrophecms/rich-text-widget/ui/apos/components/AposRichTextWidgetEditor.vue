@@ -205,7 +205,6 @@ export default {
       TableCell,
       TableHeader,
       TableRow,
-      
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
       // since `placeholderText` option is enough to decide whether to display it or not.
       this.placeholderText && Placeholder.configure({
