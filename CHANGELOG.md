@@ -10,7 +10,7 @@
 
 ### Fixes
 
-* Adding missing require (`bluebird`) and fallback to `@apostrophecms/attachment:rescale`-task (`file.crops || []`)
+* Adding missing require (`bluebird`) and fallback (`file.crops || []`) to `@apostrophecms/attachment:rescale`-task
 
 ## 3.38.1 (2023-01-23)
 
