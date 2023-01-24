@@ -287,6 +287,9 @@ module.exports = {
       post: {
         async locale(req) {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
+          if (!sanitizedLocale) {
+            throw self.apos.error('invalid', 'invalid locale');
+          }
           // Clipboards transferring between locales needs to jump
           // from LocalStorage to the cross-domain session cache
           let clipboard = req.body.clipboard;
@@ -409,11 +412,7 @@ module.exports = {
                 continue;
               }
               const data = JSON.parse(fs.readFileSync(path.join(localizationsDir, localizationFile)));
-
-              // enforce i18next locale format as xx-XX
-              const [ language, country ] = localizationFile.replace('.json', '').split('-');
-              const locale = country ? `${language.toLocaleLowerCase()}-${country.toUpperCase()}` : language;
-
+              const locale = localizationFile.replace('.json', '');
               self.i18next.addResourceBundle(locale, ns, data, true, true);
             }
           }
@@ -565,22 +564,26 @@ module.exports = {
         for (const [ name, options ] of Object.entries(self.namespaces)) {
           if (options.browser) {
             i18n[name] = self.i18next.getResourceBundle(locale, name);
+            if (!i18n[name]) {
+              // Attempt fallback to language only. This is not
+              // the full fallback support of i18next because that
+              // is difficult to tap into when calling getResourceBundle,
+              // but it should work for most situations
+              const [ lang, country ] = locale.split('-');
+              if (country) {
+                i18n[name] = self.i18next.getResourceBundle(lang, name);
+              }
+            }
           }
         }
         return i18n;
       },
       getLocales() {
-        const locales = self.options.locales
-          ? Object.fromEntries(Object.entries(self.options.locales).map(([ name, options ]) => {
-            // enforce i18next locale format as xx-XX
-            const [ language, country ] = name.split('-');
-            return country ? [ `${language.toLocaleLowerCase()}-${country.toUpperCase()}`, options ] : [ language, options ];
-          }))
-          : {
-            en: {
-              label: 'English'
-            }
-          };
+        const locales = self.options.locales || {
+          en: {
+            label: 'English'
+          }
+        };
         verifyLocales(locales, self.apos.options.baseUrl);
         return locales;
       },
@@ -626,21 +629,29 @@ module.exports = {
       // if possible, to the corresponding version in toLocale.
       toLocaleRouteFactory(module) {
         return async (req, res) => {
-          const _id = module.inferIdLocaleAndMode(req, req.params._id);
-          const toLocale = req.params.toLocale;
-          const localeReq = req.clone({
-            locale: toLocale
-          });
-          const corresponding = await module.find(localeReq, {
-            _id: `${_id.split(':')[0]}:${localeReq.locale}:${localeReq.mode}`
-          }).toObject();
-          if (!corresponding) {
-            return res.status(404).send('not found');
+          try {
+            const _id = module.inferIdLocaleAndMode(req, req.params._id);
+            const toLocale = self.sanitizeLocaleName(req.params.toLocale);
+            if (!toLocale) {
+              return res.status(400).send('invalid locale name');
+            }
+            const localeReq = req.clone({
+              locale: toLocale
+            });
+            const corresponding = await module.find(localeReq, {
+              _id: `${_id.split(':')[0]}:${localeReq.locale}:${localeReq.mode}`
+            }).toObject();
+            if (!corresponding) {
+              return res.status(404).send('not found');
+            }
+            if (!corresponding._url) {
+              return res.status(400).send('invalid (has no URL)');
+            }
+            return res.redirect(corresponding._url);
+          } catch (e) {
+            self.apos.util.error(e);
+            return res.status(500).send('error');
           }
-          if (!corresponding._url) {
-            return res.status(400).send('invalid (has no URL)');
-          }
-          return res.redirect(corresponding._url);
         };
       },
       // Exclude private locales when logged out
@@ -652,6 +663,83 @@ module.exports = {
               .entries(locales)
               .filter(([ name, options ]) => options.private !== true)
           );
+      }
+    };
+  },
+  tasks(self) {
+    return {
+      'rename-locale': {
+        usage: 'Usage: node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de',
+        async task(argv) {
+          const oldLocale = self.apos.launder.string(argv.old);
+          const newLocale = self.apos.launder.string(argv.new);
+          const keep = self.apos.launder.string(argv.keep);
+          let renamed = 0;
+          let kept = 0;
+          if (!oldLocale) {
+            throw new Error('You must specify --old');
+          }
+          if (!newLocale) {
+            throw new Error('You must specify --new');
+          }
+          if (oldLocale === newLocale) {
+            throw new Error('The old and new locales must be different');
+          }
+          if (keep && (!(keep === oldLocale) && !(keep === newLocale))) {
+            throw new Error('--keep must match --old or --new');
+          }
+          await self.apos.migration.eachDoc({ aposLocale: new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`) }, async doc => {
+            const newDoc = {
+              ...doc,
+              aposLocale: doc.aposLocale.replace(oldLocale, newLocale),
+              _id: doc._id.replace(`:${oldLocale}`, `:${newLocale}`)
+            };
+            try {
+              // Remove old first to cut down on duplicate key conflicts due to
+              // custom properties
+              await self.apos.doc.db.removeOne({ _id: doc._id });
+              await self.apos.doc.db.insertOne(newDoc);
+              renamed++;
+            } catch (e) {
+              // First reinsert old doc to prevent content loss on new doc insert failure
+              await self.apos.doc.db.insertOne(doc);
+              if (!self.apos.doc.isUniqueError(e)) {
+                throw e;
+              }
+              const existing = await self.apos.doc.db.findOne({ _id: newDoc._id });
+              if (!existing) {
+                // We don't know the cause of this error
+                throw e;
+              }
+              if (keep === newLocale) {
+                // New content already exists in new locale, delete old locale
+                // and keep new
+                await self.apos.doc.db.removeOne({ _id: doc._id });
+                kept++;
+              } else if (keep === oldLocale) {
+                // We want to keep the old locale's content. Once again we
+                // need to remove the old doc first to cut down on conflicts
+                try {
+                  await self.apos.doc.db.removeOne({ _id: doc._id });
+                  await self.apos.doc.db.deleteOne({ _id: newDoc._id });
+                  await self.apos.doc.db.insertOne(newDoc);
+                } catch (e) {
+                  // Reinsert old doc to prevent content loss on new doc insert failure
+                  await self.apos.doc.db.insertOne(doc);
+                  throw e;
+                }
+                kept++;
+              } else {
+                console.error('A conflict occurred. Use --keep to specify a locale to keep and retry');
+                throw e;
+              }
+            }
+          });
+          console.log(`Renamed ${renamed} documents from ${oldLocale} to ${newLocale}`);
+          if (keep) {
+            console.log(`Due to conflicts, kept ${kept} documents from ${keep}`);
+          }
+        }
       }
     };
   }

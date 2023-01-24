@@ -1,8 +1,36 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Basic support for editing tables by adding `table` to the rich text toolbar. Enabling `table` allows you to create tables, including `td` and `th` tags, with the ability to merge and split cells. For now the table editing UI is basic, all of the functionality is there but we plan to add more conveniences for easy table editing soon. See the "Table" dropdown for actions that are permitted based on the current selection.
+* Support for `div` tags in the rich text toolbar, if you choose to include them in `styles`. This is often necessary for A2 content migration and can potentially be useful in new work when combined with a `class` if there is no suitable semantic block tag.
+* The new `@apostrophecms/attachment:download-all --to=folder` command line task is useful to download all of your attachments from an uploadfs backend other than local storage, especially if you do not have a more powerful "sync" utility for that particular backend.
+
 ### Fixes
 
 * Adding missing require (`bluebird`) and fallback to `@apostrophecms/attachment:rescale`-task (`file.crops || []`)
+
+## 3.38.1 (2023-01-23)
+
+### Fixes
+
+* Version 3.38.0 introduced a regression that temporarily broke support for user-edited content in locales with names like `de-de` (note the lowercase country name). This was inadvertently introduced in an effort to improve support for locale fallback when generating static translations of the admin interface. Version 3.38.1 brings back the content that temporarily appeared to be missing for these locales (it was never removed from the database), and also achieves the original goal. **However, if you created content for such locales using `3.38.0` (released five days ago) and wish to keep that content,** rather than reverting to the content from before `3.38.0`, see below.
+
+### Adds
+
+* The new `i18n:rename-locale` task can be used to move all content from one locale name to another, using the `--old` and `--new` options. By default, any duplicate keys for content existing in both locales will stop the process. However you can specify which content to keep in the event of a duplicate key error using the `--keep=localename` option. Note that the value of `--new` should match the a locale name that is currently configured for the `@apostrophecms/i18n` module.
+
+Example:
+
+```
+# If you always had de-de configured as a locale, but created
+# a lot of content with Apostrophe 3.38.0 which incorrectly stored
+# it under de-DE, you can copy that content. In this case we opt
+# to keep de-de content in the event of any conflicts
+node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
+```
 
 ## 3.38.0 (2023-01-18)
 
@@ -16,6 +44,8 @@
 
 ### Fixes
 
+* Invalid locales passed to the i18n locale switching middleware are politely mapped to 400 errors.
+* Any other exceptions thrown in the i18n locale switching middleware can no longer crash the process.
 * Documents kept as the `previous` version for undo purposes were not properly marked as such, breaking the public language switcher in some cases. This was fixed and a migration was added for existing data.
 * Uploading an image in an apostrophe area with `minSize` requirements will not trigger an unexpected error anymore. If the image is too small, a notification will be displayed with the minimum size requirements. The `Edit Image` modal will now display the minimum size requirements, if any, above the `Browse Images` field.
 * Some browsers saw the empty `POST` response for new notifications as invalid XML. It will now return an empty JSON object with the `Content-Type` set to `application/json`.
