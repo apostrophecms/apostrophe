@@ -49,6 +49,10 @@ import Highlight from '@tiptap/extension-highlight';
 import Underline from '@tiptap/extension-underline';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
+import Table from '@tiptap/extension-table';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 
 export default {
@@ -197,7 +201,11 @@ export default {
       Underline,
       Superscript,
       Subscript,
-
+      Table,
+      TableCell,
+      TableHeader,
+      TableRow,
+      
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
       // since `placeholderText` option is enough to decide whether to display it or not.
       this.placeholderText && Placeholder.configure({
@@ -517,5 +525,23 @@ function traverseNextNode(node) {
   // So editors can find anchors again
   .apos-rich-text-editor__editor ::v-deep span[id] {
     text-decoration: underline dotted;
+  }
+
+  // So editors can find table cells while editing tables
+
+  .apos-rich-text-editor__editor ::v-deep table {
+    min-width: 100%;
+    min-height: 200px;
+  }
+
+  .apos-rich-text-editor__editor ::v-deep th, .apos-rich-text-editor__editor ::v-deep td {
+    outline: dotted;
+  }
+
+  // So editors can identify the cells that would take part
+  // in a merge operation
+  .apos-rich-text-editor__editor ::v-deep .selectedCell {
+    // Should be visible on any background, light mode or dark mode
+    backdrop-filter: invert(0.1);
   }
 </style>

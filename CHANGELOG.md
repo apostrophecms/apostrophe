@@ -5,6 +5,8 @@
 ### Adds
 
 * `superscript` and `subscript` may now be added to the rich text widget's `toolbar` option.
+* Basic support for editing tables by adding `table` to the rich text toolbar. Enabling `table` allows you to create tables, including `td` and `th` tags, with the ability to merge and split cells. For now the table editing UI is basic, all of the functionality is there but we plan to add more conveniences for easy table editing soon. See the "Table" dropdown for actions that are permitted based on the current selection.
+* Support for `div` tags in the rich text toolbar, if you choose to include them in `styles`. This is often necessary for A2 content migration and can potentially be useful in new work when combined with a `class` if there is no suitable semantic block tag.
 * The new `@apostrophecms/attachment:download-all --to=folder` command line task is useful to download all of your attachments from an uploadfs backend other than local storage, especially if you do not have a more powerful "sync" utility for that particular backend.
 
 ## 3.38.1 (2023-01-23)
@@ -39,6 +41,8 @@ node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 
 ### Fixes
 
+* Invalid locales passed to the i18n locale switching middleware are politely mapped to 400 errors.
+* Any other exceptions thrown in the i18n locale switching middleware can no longer crash the process.
 * Documents kept as the `previous` version for undo purposes were not properly marked as such, breaking the public language switcher in some cases. This was fixed and a migration was added for existing data.
 * Uploading an image in an apostrophe area with `minSize` requirements will not trigger an unexpected error anymore. If the image is too small, a notification will be displayed with the minimum size requirements. The `Edit Image` modal will now display the minimum size requirements, if any, above the `Browse Images` field.
 * Some browsers saw the empty `POST` response for new notifications as invalid XML. It will now return an empty JSON object with the `Content-Type` set to `application/json`.

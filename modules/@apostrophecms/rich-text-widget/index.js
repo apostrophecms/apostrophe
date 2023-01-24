@@ -62,6 +62,10 @@ module.exports = {
         component: 'AposTiptapStyles',
         label: 'apostrophe:richTextStyles'
       },
+      table: {
+        component: 'AposTiptapTable',
+        label: 'apostrophe:table'
+      },
       '|': { component: 'AposTiptapDivider' },
       bold: {
         component: 'AposTiptapButton',
@@ -192,7 +196,7 @@ module.exports = {
     // Additional properties used in executing tiptap commands
     // Will be mixed in automatically for developers
     tiptapTextCommands: {
-      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre' ],
+      setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'div' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
         'a', 's', 'del', 'strike', 'span', 'u', 'anchor',
@@ -215,6 +219,10 @@ module.exports = {
       blockquote: [ 'blockquote' ],
       superscript: [ 'sup' ],
       subscript: [ 'sub' ]
+      // Generic div type, usually used with classes,
+      // and for A2 content migration. Intentionally not
+      // given a nicer-sounding name
+      div: [ 'div' ]
     }
   },
   beforeSuperClass(self) {
@@ -316,6 +324,8 @@ module.exports = {
           anchor: [ 'span' ],
           superscript: [ 'sup' ],
           subscript: [ 'sub' ]
+          table: [ 'table', 'tr', 'td', 'th' ],
+          div: [ 'div' ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
@@ -363,14 +373,27 @@ module.exports = {
           anchor: {
             tag: 'span',
             attributes: [ 'id' ]
-          }
+          },
+          table: [
+            {
+              tag: 'td',
+              attributes: [ 'colspan', 'rowspan' ]
+            },
+            {
+              tag: 'th',
+              attributes: [ 'colspan', 'rowspan' ]
+            }
+          ]
         };
         for (const item of options.toolbar || []) {
           if (simple[item]) {
-            for (const attribute of simple[item].attributes) {
-              allowedAttributes[simple[item].tag] = allowedAttributes[simple[item].tag] || [];
-              allowedAttributes[simple[item].tag].push(attribute);
-              allowedAttributes[simple[item].tag] = [ ...new Set(allowedAttributes[simple[item].tag]) ];
+            const entries = Array.isArray(simple[item]) ? simple[item] : [ simple[item] ];
+            for (const entry of entries) {
+              for (const attribute of entry.attributes) {
+                allowedAttributes[entry.tag] = allowedAttributes[entry.tag] || [];
+                allowedAttributes[entry.tag].push(attribute);
+                allowedAttributes[entry.tag] = [ ...new Set(allowedAttributes[entry.tag]) ];
+              }
             }
           }
         }
