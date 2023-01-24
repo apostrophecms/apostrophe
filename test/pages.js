@@ -433,7 +433,6 @@ describe('Pages', function() {
       assert(body.match(/Home: \//));
       // Does the response prove that data.home._children was available?
       assert(body.match(/Tab: \/another-parent/));
-      // console.log(body);
       return done();
     });
   });
@@ -447,7 +446,6 @@ describe('Pages', function() {
       assert(body.match(/Home: \//));
       // Does the response prove that data.home._children was available?
       assert(body.match(/Tab: \/another-parent/));
-      // console.log(body);
       return done();
     });
   });
@@ -473,6 +471,29 @@ describe('Pages', function() {
         done();
       });
     });
+  });
+
+  it('should redirect to url with path in lower case by default', function(done) {
+    return request('http://localhost:7900/chiLD', function (err, response, body) {
+      assert(!err);
+      assert.equal(response.statusCode, 200);
+      assert(body.match(/Sing to me, Oh Muse./));
+      assert(body.match(/Home: \//));
+      assert(body.match(/Tab: \/another-parent/));
+      return done();
+    });
+  });
+
+  it('should not redirect to url with path in lower case if the option is disabled', function(done) {
+    apos.pages.options.redirectFailedUpperCaseUrls = false;
+
+    return request('http://localhost:7900/chiLD', function (err, response, body) {
+      assert(!err);
+      assert.equal(response.statusCode, 404);
+      apos.pages.options.redirectFailedUpperCaseUrls = true;
+      return done();
+    });
+
   });
 
   it('should detect that the home page is an ancestor of any page except itself', function() {
@@ -561,8 +582,8 @@ describe('Pages', function() {
       assert.equal(page.path, '/newish-page');
       done();
     });
-  });
 
+  });
 });
 
 describe('Pages with trashInSchema', function() {
