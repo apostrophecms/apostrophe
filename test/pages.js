@@ -433,7 +433,6 @@ describe('Pages', function() {
       assert(body.match(/Home: \//));
       // Does the response prove that data.home._children was available?
       assert(body.match(/Tab: \/another-parent/));
-      // console.log(body);
       return done();
     });
   });
@@ -443,7 +442,10 @@ describe('Pages', function() {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 404);
-
+      // Does the response prove that data.home was available?
+      assert(body.match(/Home: \//));
+      // Does the response prove that data.home._children was available?
+      assert(body.match(/Tab: \/another-parent/));
       return done();
     });
   });
@@ -475,6 +477,9 @@ describe('Pages', function() {
     return request('http://localhost:7900/chiLD', function (err, response, body) {
       assert(!err);
       assert.equal(response.statusCode, 200);
+      assert(body.match(/Sing to me, Oh Muse./));
+      assert(body.match(/Home: \//));
+      assert(body.match(/Tab: \/another-parent/));
       return done();
     });
   });
