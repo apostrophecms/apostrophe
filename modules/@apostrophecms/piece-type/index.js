@@ -587,16 +587,14 @@ module.exports = {
               action,
               ...properties
             }));
+        },
+        checkTheSchema() {
+          console.log(self.schema);
         }
       },
       '@apostrophecms/search:determineTypes': {
         checkSearchable(types) {
           self.searchDetermineTypes(types);
-        }
-      },
-      afterConstruct: {
-        checkSchema(self) {
-          console.log('in piece-type afterConstruct', self);
         }
       }
     };
