@@ -218,7 +218,7 @@ module.exports = {
       codeBlock: [ 'pre' ],
       blockquote: [ 'blockquote' ],
       superscript: [ 'sup' ],
-      subscript: [ 'sub' ]
+      subscript: [ 'sub' ],
       // Generic div type, usually used with classes,
       // and for A2 content migration. Intentionally not
       // given a nicer-sounding name
