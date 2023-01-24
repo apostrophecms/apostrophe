@@ -8,6 +8,10 @@
 * Support for `div` tags in the rich text toolbar, if you choose to include them in `styles`. This is often necessary for A2 content migration and can potentially be useful in new work when combined with a `class` if there is no suitable semantic block tag.
 * The new `@apostrophecms/attachment:download-all --to=folder` command line task is useful to download all of your attachments from an uploadfs backend other than local storage, especially if you do not have a more powerful "sync" utility for that particular backend.
 
+### Fixes
+
+* Adding missing require (`bluebird`) and fallback (`file.crops || []`) to `@apostrophecms/attachment:rescale`-task
+
 ## 3.38.1 (2023-01-23)
 
 ### Fixes

@@ -3,6 +3,7 @@
 
 const _ = require('lodash');
 const fs = require('fs');
+const Promise = require("bluebird");
 
 // Regenerate all scaled images. Useful after changing the configured sizes
 
@@ -61,7 +62,7 @@ module.exports = function(self) {
           return;
         }
       }
-      for (const crop of file.crops) {
+      for (const crop of file.crops || []) {
         console.log('RECROPPING');
         const originalFile = '/attachments/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
         console.log('Cropping ' + tempFile + ' to ' + originalFile);
