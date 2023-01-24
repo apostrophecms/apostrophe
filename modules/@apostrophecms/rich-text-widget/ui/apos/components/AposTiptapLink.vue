@@ -81,7 +81,6 @@ export default {
     const linkWithType = getOptions().linkWithType;
     return {
       generation: 1,
-      keepInBounds: true,
       href: null,
       target: null,
       active: false,
@@ -172,12 +171,6 @@ export default {
       const { from, to } = selection;
       const text = state.doc.textBetween(from, to, '');
       return text !== '';
-    },
-    offset() {
-      const selection = window.getSelection();
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      return (rect.height + 15) + 'px';
     },
     schema() {
       return this.originalSchema;

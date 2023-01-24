@@ -178,6 +178,11 @@ module.exports = {
         label: 'apostrophe:richTextHighlight',
         icon: 'format-color-highlight-icon',
         command: 'toggleHighlight'
+      },
+      image: {
+        component: 'AposTiptapImage',
+        label: 'apostrophe:image',
+        icon: 'image-icon'
       }
     },
     // Additional properties used in executing tiptap commands
@@ -306,6 +311,7 @@ module.exports = {
           underline: [ 'u' ],
           anchor: [ 'span' ],
           table: [ 'table', 'tr', 'td', 'th' ],
+          image: [ 'figure', 'img', 'figcaption' ],
           div: [ 'div' ]
         };
         for (const item of options.toolbar || []) {
@@ -363,6 +369,16 @@ module.exports = {
             {
               tag: 'th',
               attributes: [ 'colspan', 'rowspan' ]
+            }
+          ],
+          image: [
+            {
+              tag: 'figure',
+              attributes: [ 'class' ]
+            },
+            {
+              tag: 'img',
+              attributes: [ 'src' ]
             }
           ]
         };
@@ -590,7 +606,8 @@ module.exports = {
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
           placeholderText: self.options.placeholder && self.options.placeholderText,
-          linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ]
+          linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
+          imageStyles: self.options.imageStyles
         };
         return finalData;
       }
