@@ -1,5 +1,9 @@
 # Changelog
 
+### Fixes
+
+* Adding missing require (`bluebird`) and fallback to `@apostrophecms/attachment:rescale`-task (`file.crops || []`)
+
 ## 3.38.0 (2023-01-18)
 
 ### Adds
