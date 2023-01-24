@@ -3,7 +3,7 @@
 
 const _ = require('lodash');
 const fs = require('fs');
-const Promise = require("bluebird");
+const Promise = require('bluebird');
 
 // Regenerate all scaled images. Useful after changing the configured sizes
 
