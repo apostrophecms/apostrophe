@@ -528,7 +528,9 @@ module.exports = {
         let disabled;
         let type;
         const schema = _.filter(self.schema, function (field) {
-          return !field.permission || self.apos.permission.can(req, field.permission && field.permission.action, field.permission && field.permission.type);
+          return (!field.permission && !field.viewPermission) ||
+            (field.permission && self.apos.permission.can(req, field.permission.action, field.permission.type)) ||
+            (field.viewPermission && self.apos.viewPermission.can(req, field.viewPermission.action, field.viewPermission.type));
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
