@@ -85,6 +85,25 @@ module.exports = {
         icon: 'format-underline-icon',
         command: 'toggleUnderline'
       },
+      strike: {
+        component: 'AposTiptapButton',
+        label: 'apostrophe:richTextStrikethrough',
+        icon: 'format-strikethrough-variant-icon',
+        command: 'toggleStrike'
+      },
+      superscript: {
+        component: 'AposTiptapButton',
+        label: 'apostrophe:superscript',
+        icon: 'format-superscript-icon',
+        command: 'toggleSuperscript'
+      },
+      subscript: {
+        component: 'AposTiptapButton',
+        label: 'apostrophe:subscript',
+        icon: 'format-subscript-icon',
+        command: 'toggleSubscript'
+      },
+
       horizontalRule: {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextHorizontalRule',
@@ -112,12 +131,6 @@ module.exports = {
         label: 'apostrophe:richTextOrderedList',
         icon: 'format-list-numbered-icon',
         command: 'toggleOrderedList'
-      },
-      strike: {
-        component: 'AposTiptapButton',
-        label: 'apostrophe:richTextStrikethrough',
-        icon: 'format-strikethrough-variant-icon',
-        command: 'toggleStrike'
       },
       blockquote: {
         component: 'AposTiptapButton',
@@ -186,8 +199,10 @@ module.exports = {
       setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'div' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
-        'a', 's', 'del', 'strike', 'span', 'u', 'anchor'
-      ]
+        'a', 's', 'del', 'strike', 'span', 'u', 'anchor',
+        'superscript', 'subscript'
+      ],
+      wrapIn: [ 'blockquote' ]
     },
     tiptapTypes: {
       heading: [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ],
@@ -202,6 +217,8 @@ module.exports = {
       underline: [ 'u' ],
       codeBlock: [ 'pre' ],
       blockquote: [ 'blockquote' ],
+      superscript: [ 'sup' ],
+      subscript: [ 'sub' ],
       // Generic div type, usually used with classes,
       // and for A2 content migration. Intentionally not
       // given a nicer-sounding name
@@ -305,6 +322,8 @@ module.exports = {
           ],
           underline: [ 'u' ],
           anchor: [ 'span' ],
+          superscript: [ 'sup' ],
+          subscript: [ 'sub' ]
           table: [ 'table', 'tr', 'td', 'th' ],
           div: [ 'div' ]
         };

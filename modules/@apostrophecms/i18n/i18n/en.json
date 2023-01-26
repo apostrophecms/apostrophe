@@ -412,6 +412,8 @@
   "shareDraftEnable": "Enable draft sharing",
   "shareDraftHeader": "Share this page",
   "shareDraftError": "This document cannot be shared at this time",
+  "subscript": "Subscript",
+  "superscript": "Superscript",
   "splitCell": "Split Cell",
   "toggleHeaderCell": "Toggle Header (Cell)",
   "toggleHeaderColumn": "Toggle Header (Column)",
