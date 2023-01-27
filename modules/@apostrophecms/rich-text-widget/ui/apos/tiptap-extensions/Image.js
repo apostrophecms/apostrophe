@@ -12,7 +12,9 @@ export default options => {
       };
     },
 
-    group: 'block',
+    inline: true,
+
+    group: 'inline',
 
     draggable: true,
 
@@ -62,11 +64,12 @@ export default options => {
             if (!imageId) {
               return false;
             }
-            return {
+            const result = {
               imageId,
               style,
-              caption: caption.innerText
+              caption: (caption && caption.innerText) || ''
             };
+            return result;
           }
         }
       ];
