@@ -299,9 +299,12 @@ module.exports = {
         ':imageId/src': async (req, res) => {
           const size = req.query.size || self.getLargestSize();
           try {
-            const image = await self.findOneForEditing(req, {
+            const image = await self.find(req, {
               aposDocId: req.params.imageId
-            });
+            }).toObject();
+            if (!image) {
+              return res.status(404).send('notfound');
+            }
             const url = image.attachment && image.attachment._urls && image.attachment._urls[size];
             if (url) {
               return res.redirect(image.attachment._urls[size]);

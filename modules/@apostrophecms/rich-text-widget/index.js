@@ -15,11 +15,16 @@ module.exports = {
     defaultData: { content: '' },
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
-    // For permalinks
+    // For permalinks and images. For efficiency we make
+    // one query
     project: {
       title: 1,
+      aposDocId: 1,
       _url: 1,
-      aposDocId: 1
+      attachment: 1,
+      alt: 1,
+      credit: 1,
+      creditUrl: 1
     },
     minimumDefaultOptions: {
       toolbar: [
@@ -231,19 +236,36 @@ module.exports = {
         return widget.content;
       },
 
-      // Handle permalinks
+      // Handle relationships to permalinks and inline images
       async load(req, widgets) {
+        try {
+          return await self.loadInlineRelationships(req, widgets, [ 'permalinkIds', 'imageIds' ]);
+        } catch (e) {
+          console.error(e);
+          throw e;
+        }
+      },
+
+      // Load the permalink and image relationships for the given rich text
+      // widgets, using a single efficient query. `names` is an array of
+      // properties that contain arrays of doc IDs, such as `permalinkIds`.
+      // An implementation detail of `load` for this widget. After this method
+      // each widget has a `_relatedDocs` property. Note this is a mixed
+      // collection of permalink docs and inline image docs
+      async loadInlineRelationships(req, widgets, names) {
         const widgetsByDocId = new Map();
         let ids = [];
         for (const widget of widgets) {
-          if (!widget.permalinkIds) {
-            continue;
-          }
-          for (const id of widget.permalinkIds) {
-            const docWidgets = widgetsByDocId.get(id) || [];
-            docWidgets.push(widget);
-            widgetsByDocId.set(id, docWidgets);
-            ids.push(id);
+          for (const name of names) {
+            if (!widget[name]) {
+              continue;
+            }
+            for (const id of widget[name]) {
+              const docWidgets = widgetsByDocId.get(id) || [];
+              docWidgets.push(widget);
+              widgetsByDocId.set(id, docWidgets);
+              ids.push(id);
+            }
           }
         }
         ids = [ ...new Set(ids) ];
@@ -258,8 +280,8 @@ module.exports = {
         for (const doc of docs) {
           const widgets = widgetsByDocId.get(doc.aposDocId) || [];
           for (const widget of widgets) {
-            widget._permalinkDocs = widget._permalinkDocs || [];
-            widget._permalinkDocs.push(doc);
+            widget._relatedDocs = widget._relatedDocs || [];
+            widget._relatedDocs.push(doc);
           }
         }
       },
@@ -521,36 +543,15 @@ module.exports = {
           return false;
         }
         return true;
-      }
-    };
-  },
-  extendMethods(self) {
-    return {
-      async sanitize(_super, req, input, options) {
-        const rteOptions = {
-          ...self.options.defaultOptions,
-          ...options
-        };
-
-        const output = await _super(req, input, rteOptions);
-        const finalOptions = self.optionsToSanitizeHtml(rteOptions);
-
-        output.content = self.sanitizeHtml(input.content, finalOptions);
-
-        const anchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
-        output.permalinkIds = (anchors && anchors.map(anchor => {
-          const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
-          return matches[1];
-        })) || [];
-
-        return output;
       },
-      async output(_super, req, widget, options, _with) {
-        let i;
-        let content = widget.content || '';
+
+      // Quickly replaces rich text permalink placeholder URLs with
+      // actual, SEO-friendly URLs based on `widget._relatedDocs`
+      linkPermalinks(widget, content) {
         // "Why no regexps?" We need to do this as quickly as we can.
         // indexOf and lastIndexOf are much faster.
-        for (const doc of (widget._permalinkDocs || [])) {
+        let i;
+        for (const doc of (widget._relatedDocs || [])) {
           let offset = 0;
           while (true) {
             i = content.indexOf('apostrophe-permalink-' + doc.aposDocId, offset);
@@ -566,12 +567,13 @@ module.exports = {
             }
             // If you can edit the widget, you don't want the link replaced,
             // as that would lose the permalink if you edit the widget
+            // (but you may still want the title updated)
             const left = content.lastIndexOf('<', i);
             const href = content.indexOf(' href="', left);
             const close = content.indexOf('"', href + 7);
             if (!widget._edit) {
               if ((left !== -1) && (href !== -1) && (close !== -1)) {
-                content = content.substr(0, href + 6) + doc._url + content.substr(close + 1);
+                content = content.substring(0, href + 6) + doc._url + content.substring(close + 1);
               } else {
                 // So we don't get stuck in an infinite loop
                 break;
@@ -583,10 +585,87 @@ module.exports = {
             const right = content.indexOf('>', left);
             const nextLeft = content.indexOf('<', right);
             if ((right !== -1) && (nextLeft !== -1)) {
-              content = content.substr(0, right + 1) + self.apos.util.escapeHtml(doc.title) + content.substr(nextLeft);
+              content = content.substring(0, right + 1) + self.apos.util.escapeHtml(doc.title) + content.substring(nextLeft);
             }
           }
         }
+        return content;
+      },
+      // Quickly replaces inline image placeholder URLs with
+      // actual, SEO-friendly URLs based on `widget._relatedDocs`
+      linkImages(widget, content) {
+        if (widget._edit) {
+          return content;
+        }
+        // "Why no regexps?" We need to do this as quickly as we can.
+        // indexOf and lastIndexOf are much faster.
+        let i;
+        for (const doc of (widget._relatedDocs || [])) {
+          let offset = 0;
+          while (true) {
+            const target = `${self.apos.modules['@apostrophecms/image'].action}/${doc.aposDocId}/src`;
+            i = content.indexOf(target, offset);
+            if (i === -1) {
+              break;
+            }
+            offset = i + target.length;
+            // If you can edit the widget, you don't want the link replaced,
+            // as that would lose the image if you edit the widget
+            const left = content.lastIndexOf('<', i);
+            const src = content.indexOf(' src="', left);
+            const close = content.indexOf('"', src + 6);
+            if (!widget._edit) {
+              if ((left !== -1) && (src !== -1) && (close !== -1)) {
+                content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
+              } else {
+                // So we don't get stuck in an infinite loop
+                break;
+              }
+            }
+          }
+        }
+        return content;
+      }
+    };
+  },
+  extendMethods(self) {
+    return {
+      async sanitize(_super, req, input, options) {
+        try {
+          const rteOptions = {
+            ...self.options.defaultOptions,
+            ...options
+          };
+
+          const output = await _super(req, input, rteOptions);
+          const finalOptions = self.optionsToSanitizeHtml(rteOptions);
+
+          output.content = self.sanitizeHtml(input.content, finalOptions);
+
+          const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
+          output.permalinkIds = (permalinkAnchors && permalinkAnchors.map(anchor => {
+            const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
+            return matches[1];
+          })) || [];
+          const quotedAction = self.apos.util.regExpQuote(self.apos.modules['@apostrophecms/image'].action);
+          const imageAnchors = output.content.match(new RegExp(`${quotedAction}/([^/]+)/src`, 'g'));
+          output.imageIds = (imageAnchors && imageAnchors.map(anchor => {
+            const matches = anchor.match(new RegExp(`${quotedAction}/([^/]+)/src`));
+            return matches[1];
+          })) || [];
+          return output;
+        } catch (e) {
+          // Because the trace for template errors is not very
+          // useful, for now we log any error here up front
+          // until we improve that or this has been stable for a while
+          console.error(e);
+          throw e;
+        }
+      },
+      async output(_super, req, widget, options, _with) {
+        let content = widget.content || '';
+        content = self.linkPermalinks(widget, content);
+        content = self.linkImages(widget, content);
         // We never modify the original widget.content because we do not want
         // it to lose its permalinks in the database
         const _widget = {
