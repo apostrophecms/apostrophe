@@ -412,6 +412,7 @@
   "shareDraftEnable": "Enable draft sharing",
   "shareDraftHeader": "Share this page",
   "shareDraftError": "This document cannot be shared at this time",
+  "shortcutConflictNotification": "Shortcut conflicts detected:",
   "subscript": "Subscript",
   "superscript": "Superscript",
   "splitCell": "Split Cell",
