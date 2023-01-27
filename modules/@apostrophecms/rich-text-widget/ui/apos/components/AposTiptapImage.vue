@@ -94,7 +94,7 @@ export default {
             label: this.$t('apostrophe:style'),
             type: 'select',
             choices: getOptions().imageStyles,
-            def: getOptions().imageStyles?.[0]
+            def: getOptions().imageStyles?.[0].value
           }
         ] : []
         ),
