@@ -324,7 +324,7 @@ module.exports = {
 
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `permission`
-      // property of the schema field, or there is no `permission` property for the field.
+      // property of the schema field, or there is no `permission`|`viewPermission` property for the field.
 
       allowedSchema(req) {
         return _.filter(self.schema, function (field) {
