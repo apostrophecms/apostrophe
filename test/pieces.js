@@ -1918,7 +1918,7 @@ describe('Pieces', function() {
         assert.deepEqual(actual, expected);
       });
 
-      it('should be able to retrieve fields with permission and viewPermission when having appropriate credentials', async function() {
+      it('should be able to retrieve fields with permission and viewPermission when having appropriate credentials on rest API', async function() {
         await createUser('admin')();
         const jar = await loginAs('admin');
 
@@ -1932,6 +1932,34 @@ describe('Pieces', function() {
         };
         const inserted = await apos.modules.board.insert(req, candidate);
         const board = await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getAdminReq(), { _id: inserted._id }).toObject();
 
         const actual = {
           title: board.title,
@@ -1974,8 +2002,6 @@ describe('Pieces', function() {
         const req = apos.task.getReq();
         const candidate = {
           ...apos.modules.board.newInstance(),
-          // _id: 'parent:en:published',
-          aposLocale: 'en:published',
           title: 'Icarus',
           slug: 'icarus',
           stock: 99,
@@ -1995,6 +2021,34 @@ describe('Pieces', function() {
           slug: 'icarus',
           stock: 99,
           discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getEditorReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
         };
 
         assert.deepEqual(actual, expected);
@@ -2043,6 +2097,34 @@ describe('Pieces', function() {
           slug: 'icarus',
           stock: undefined,
           discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getContributorReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
         };
 
         assert.deepEqual(actual, expected);
