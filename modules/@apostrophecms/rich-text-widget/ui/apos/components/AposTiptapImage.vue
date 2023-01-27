@@ -86,7 +86,10 @@ export default {
           label: apos.image.label,
           withType: '@apostrophecms/image',
           required: true,
-          max: 1
+          max: 1,
+          // Temporary until we fix our modals to
+          // stack interchangeably with tiptap's
+          browse: false
         },
         ...(getOptions().imageStyles ? [
           {
