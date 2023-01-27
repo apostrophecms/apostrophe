@@ -50,7 +50,6 @@ export default options => {
               return false;
             }
             const components = src.split('/');
-            console.log(components);
             if (components.length < 2) {
               return false;
             }
