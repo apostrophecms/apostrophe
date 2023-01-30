@@ -12,6 +12,7 @@
   * Two new options have been added: `loadingType` and `size`
   * `loadingType` adds the attribute `loading={{ loadingType }}` to the `img`
   * With the `size` option it is possible to have a configurable default `size` for the `apos.attachment.url`-function
+  * Thanks to [Waldemar Pankratz](https://github.com/waldemar-p) for this contribution.
 
 ### Fixes
 
