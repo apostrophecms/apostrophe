@@ -323,7 +323,7 @@ module.exports = {
           underline: [ 'u' ],
           anchor: [ 'span' ],
           superscript: [ 'sup' ],
-          subscript: [ 'sub' ]
+          subscript: [ 'sub' ],
           table: [ 'table', 'tr', 'td', 'th' ],
           div: [ 'div' ]
         };
