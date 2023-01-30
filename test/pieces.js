@@ -1862,7 +1862,7 @@ describe('Pieces', function() {
     });
   });
 
-  describe('field permission', function() {
+  describe('field permission|viewPermission', function() {
     const createUser = (role = 'admin') => async ({
       title = `test-${role}`,
       username = `test-${role}`,

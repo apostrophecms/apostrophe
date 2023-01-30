@@ -1,6 +1,6 @@
-const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert').strict;
 const _ = require('lodash');
+const t = require('../test-lib/test.js');
 
 let apos;
 
@@ -239,7 +239,13 @@ describe('Schemas', function() {
 
   this.timeout(t.timeout);
 
-  after(async function() {
+  before(async function() {
+    apos = await t.create({
+      root: module
+    });
+  });
+
+  after(function() {
     return t.destroy(apos);
   });
 
@@ -247,10 +253,7 @@ describe('Schemas', function() {
   // EXISTENCE
   /// ///
 
-  it('should be a property of the apos object', async function() {
-    apos = await t.create({
-      root: module
-    });
+  it('should be a property of the apos object', function() {
     assert(apos.schema);
     apos.argv._ = [];
   });
@@ -1738,6 +1741,148 @@ describe('Schemas', function() {
 
     assert(output.emptyValue === null);
     assert(output.goodValue === '2022-05-09T22:36:00.000Z');
+  });
+
+  describe('field permission|viewPermission', function() {
+    it('validate doc type', function() {
+      const logger = apos.util.error;
+      const schema = [
+        {
+          name: 'legacy',
+          type: 'string',
+          permission: {
+            action: 'edit',
+            type: '@apostrophecms/user'
+          }
+        },
+        {
+          name: 'new',
+          type: 'string',
+          viewPermission: {
+            action: 'edit',
+            type: '@apostrophecms/user'
+          }
+        },
+        {
+          name: 'array',
+          type: 'array',
+          schema: [
+            {
+              name: 'item',
+              type: 'string',
+              label: 'item',
+              viewPermission: {
+                action: 'edit',
+                type: '@apostrophecms/user'
+              }
+            }
+          ]
+        },
+        {
+          name: 'object',
+          type: 'object',
+          schema: [
+            {
+              name: 'key',
+              type: 'string',
+              label: 'key',
+              viewPermission: {
+                action: 'edit',
+                type: '@apostrophecms/user'
+              }
+            }
+          ]
+        }
+      ];
+      const options = {
+        type: 'doc type',
+        subtype: 'test'
+      };
+
+      const messages = [];
+      apos.util.error = (message) => messages.push(message);
+      apos.schema.validate(schema, options);
+      apos.util.error = logger;
+
+      const actual = messages;
+      const expected = [
+        'doc type test, string field "item":\n\npermission or viewPermission must be defined on root fields only, provided on "array.item"',
+        'doc type test, string field "key":\n\npermission or viewPermission must be defined on root fields only, provided on "object.key"'
+      ];
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('validate widget type', function() {
+      const logger = apos.util.error;
+      const schema = [
+        {
+          name: 'legacy',
+          type: 'string',
+          permission: {
+            action: 'edit',
+            type: '@apostrophecms/user'
+          }
+        },
+        {
+          name: 'new',
+          type: 'string',
+          viewPermission: {
+            action: 'edit',
+            type: '@apostrophecms/user'
+          }
+        },
+        {
+          name: 'array',
+          type: 'array',
+          schema: [
+            {
+              name: 'item',
+              type: 'string',
+              label: 'item',
+              viewPermission: {
+                action: 'edit',
+                type: '@apostrophecms/user'
+              }
+            }
+          ]
+        },
+        {
+          name: 'object',
+          type: 'object',
+          schema: [
+            {
+              name: 'key',
+              type: 'string',
+              label: 'key',
+              viewPermission: {
+                action: 'edit',
+                type: '@apostrophecms/user'
+              }
+            }
+          ]
+        }
+      ];
+      const options = {
+        type: 'widget type',
+        subtype: 'test'
+      };
+
+      const messages = [];
+      apos.util.error = (message) => messages.push(message);
+      apos.schema.validate(schema, options);
+      apos.util.error = logger;
+
+      const actual = messages;
+      const expected = [
+        'widget type test, string field "legacy":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "new":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "item":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "key":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided'
+      ];
+
+      assert.deepEqual(actual, expected);
+    });
   });
 });
 
