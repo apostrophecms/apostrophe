@@ -9,9 +9,9 @@
 * Support for `div` tags in the rich text toolbar, if you choose to include them in `styles`. This is often necessary for A2 content migration and can potentially be useful in new work when combined with a `class` if there is no suitable semantic block tag.
 * The new `@apostrophecms/attachment:download-all --to=folder` command line task is useful to download all of your attachments from an uploadfs backend other than local storage, especially if you do not have a more powerful "sync" utility for that particular backend.
 * For the widget `image-widget`
-  * `manager.option` properties:  `loadingType` and `size`
-  * If `loadingType` is set in the options the attribute `loading={{ loadingType }}` is added to the `img``
-  * With the `size` property it is possible to have a configurable default `size` for the `apos.attachment.url`-function
+  * Two new options have been added: `loadingType` and `size`
+  * `loadingType` adds the attribute `loading={{ loadingType }}` to the `img`
+  * With the `size` option it is possible to have a configurable default `size` for the `apos.attachment.url`-function
 
 ### Fixes
 
