@@ -290,6 +290,34 @@ module.exports = {
       }
     }
   }),
+  routes(self, options) {
+    return {
+      get: {
+        // Convenience route to get the URL of the image
+        // knowing only the image id. Useful in the rich text editor.
+        // Not performant for frontend use
+        ':imageId/src': async (req, res) => {
+          const size = req.query.size || self.getLargestSize();
+          try {
+            const image = await self.find(req, {
+              aposDocId: req.params.imageId
+            }).toObject();
+            if (!image) {
+              return res.status(404).send('notfound');
+            }
+            const url = image.attachment && image.attachment._urls && image.attachment._urls[size];
+            if (url) {
+              return res.redirect(image.attachment._urls[size]);
+            }
+            return res.status(404).send('notfound');
+          } catch (e) {
+            self.apos.util.error(e);
+            return res.status(500).send('error');
+          }
+        }
+      }
+    };
+  },
   methods(self) {
     return {
       // This method is available as a template helper: apos.image.first
@@ -417,6 +445,14 @@ module.exports = {
           self.getComponentName('managerModal', 'AposMediaManager'),
           { moduleName: self.__meta.name }
         );
+      },
+      getLargestSize() {
+        return self.apos.attachment.imageSizes.reduce((a, size) => {
+          return size.width > a.width ? size : a;
+        }, {
+          name: 'dummy',
+          width: 0
+        }).name;
       }
     };
   },

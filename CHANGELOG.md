@@ -6,6 +6,10 @@
 
 * `superscript` and `subscript` may now be added to the rich text widget's `toolbar` option.
 * Basic support for editing tables by adding `table` to the rich text toolbar. Enabling `table` allows you to create tables, including `td` and `th` tags, with the ability to merge and split cells. For now the table editing UI is basic, all of the functionality is there but we plan to add more conveniences for easy table editing soon. See the "Table" dropdown for actions that are permitted based on the current selection.
+* Early beta-quality support for adding inline images to rich text, by adding `image` to the rich text toolbar.
+This feature works reliably, however the UI is not mature yet. In particular you must search for images by typing part
+of the title. We will support a proper browse experience here soon. For good results you should also configure the `imageStyles` option. You will
+also want to style the `figure` tags produced. See the documentation for more information.
 * Support for `div` tags in the rich text toolbar, if you choose to include them in `styles`. This is often necessary for A2 content migration and can potentially be useful in new work when combined with a `class` if there is no suitable semantic block tag.
 * The new `@apostrophecms/attachment:download-all --to=folder` command line task is useful to download all of your attachments from an uploadfs backend other than local storage, especially if you do not have a more powerful "sync" utility for that particular backend.
 * For the widget `image-widget`

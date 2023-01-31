@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-anchor-control">
+  <div class="apos-image-control">
     <AposButton
       type="rich-text"
       @click="click"
@@ -12,23 +12,16 @@
     <div
       v-if="active"
       v-click-outside-element="close"
-      class="apos-popover apos-anchor-control__dialog"
+      class="apos-popover apos-image-control__dialog"
       x-placement="bottom"
       :class="{
         'apos-is-triggered': active,
-        'apos-has-selection': hasSelection
+        'apos-has-selection': true
       }"
     >
       <AposContextMenuDialog
         menu-placement="bottom-start"
       >
-        <div v-if="hasAnchorOnOpen" class="apos-anchor-control__remove">
-          <AposButton
-            type="quiet"
-            @click="removeAnchor"
-            label="apostrophe:removeRichTextAnchor"
-          />
-        </div>
         <AposSchema
           :schema="schema"
           :trigger-validation="triggerValidation"
@@ -40,7 +33,7 @@
           :following-values="followingValues()"
           :conditional-fields="conditionalFields()"
         />
-        <footer class="apos-anchor-control__footer">
+        <footer class="apos-image-control__footer">
           <AposButton
             type="default" label="apostrophe:cancel"
             @click="close"
@@ -61,7 +54,7 @@
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 
 export default {
-  name: 'AposTiptapAnchor',
+  name: 'AposTiptapImage',
   mixins: [ AposEditorMixin ],
   props: {
     name: {
@@ -77,39 +70,52 @@ export default {
       required: true
     }
   },
-  data () {
+  data() {
     return {
       generation: 1,
-      hasAnchorOnOpen: false,
       triggerValidation: false,
       docFields: {
         data: {}
       },
+      active: false,
       formModifiers: [ 'small', 'margin-micro' ],
       originalSchema: [
         {
-          name: 'anchor',
-          label: this.$t('apostrophe:anchorId'),
-          type: 'string',
-          required: true
+          name: '_image',
+          type: 'relationship',
+          label: apos.image.label,
+          withType: '@apostrophecms/image',
+          required: true,
+          max: 1,
+          // Temporary until we fix our modals to
+          // stack interchangeably with tiptap's
+          browse: false
+        },
+        ...(getOptions().imageStyles ? [
+          {
+            name: 'style',
+            label: this.$t('apostrophe:style'),
+            type: 'select',
+            choices: getOptions().imageStyles,
+            def: getOptions().imageStyles?.[0].value,
+            required: true
+          }
+        ] : []
+        ),
+        {
+          name: 'caption',
+          label: this.$t('apostrophe:caption'),
+          type: 'string'
         }
-      ],
-      active: false
+      ]
     };
   },
   computed: {
     buttonActive() {
-      return this.editor.isActive('anchor') || this.active;
+      return this.editor.getAttributes('img').src || this.active;
     },
     lastSelectionTime() {
       return this.editor.view.lastSelectionTime;
-    },
-    hasSelection() {
-      const { state } = this.editor;
-      const { selection } = this.editor.state;
-      const { from, to } = selection;
-      const text = state.doc.textBetween(from, to, '');
-      return text !== '';
     },
     schema() {
       return this.originalSchema;
@@ -118,32 +124,16 @@ export default {
   watch: {
     active(newVal) {
       if (newVal) {
-        this.hasAnchorOnOpen = !!(this.docFields.data.anchor);
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
-    },
-    'editor.view.lastSelectionTime': {
-      handler(newVal, oldVal) {
-        this.populateFields();
-      }
-    },
-    hasSelection(newVal, oldVal) {
-      if (!newVal) {
-        this.close();
-      }
     }
   },
   methods: {
-    removeAnchor() {
-      this.docFields.data = {};
-      this.editor.commands.unsetAnchor();
-      this.close();
-    },
     click() {
-      if (this.hasSelection) {
-        this.active = !this.active;
+      this.active = !this.active;
+      if (this.active) {
         this.populateFields();
       }
     },
@@ -159,8 +149,12 @@ export default {
         if (this.docFields.hasErrors) {
           return;
         }
-        this.editor.commands.setAnchor({
-          id: this.docFields.data.anchor
+        const image = this.docFields.data._image[0];
+        this.docFields.data.imageId = image && image.aposDocId;
+        this.editor.commands.setImage({
+          imageId: this.docFields.data.imageId,
+          caption: this.docFields.data.caption,
+          style: this.docFields.data.style
         });
         this.close();
       });
@@ -170,7 +164,7 @@ export default {
         this.close();
       }
       if (e.keyCode === 13) {
-        if (this.docFields.data.anchor) {
+        if (this.docFields.data.href || e.metaKey) {
           this.save();
           this.close();
           e.preventDefault();
@@ -181,28 +175,49 @@ export default {
     },
     async populateFields() {
       try {
-        const attrs = {
-          anchor: this.editor.getAttributes('anchor').id
-        };
+        const attrs = this.editor.getAttributes('image');
         this.docFields.data = {};
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';
         });
+        const defaultStyle = getOptions().imageStyles?.[0]?.value;
+        if (defaultStyle && !this.docFields.data.style) {
+          this.docFields.data.style = defaultStyle;
+        }
+        if (attrs.imageId) {
+          try {
+            const doc = await apos.http.get(`/api/v1/@apostrophecms/image/${attrs.imageId}`, {
+              busy: true
+            });
+            this.docFields.data._image = [ doc ];
+          } catch (e) {
+            if (e.status === 404) {
+              // No longer available
+              this.docFields._image = [];
+            } else {
+              throw e;
+            }
+          }
+        }
       } finally {
         this.generation++;
       }
     }
   }
 };
+
+function getOptions() {
+  return apos.modules['@apostrophecms/rich-text-widget'];
+}
 </script>
 
 <style lang="scss" scoped>
-  .apos-anchor-control {
+  .apos-image-control {
     position: relative;
     display: inline-block;
   }
 
-  .apos-anchor-control__dialog {
+  .apos-image-control__dialog {
     z-index: $z-index-modal;
     position: absolute;
     top: calc(100% + 5px);
@@ -212,7 +227,7 @@ export default {
     pointer-events: none;
   }
 
-  .apos-anchor-control__dialog.apos-is-triggered.apos-has-selection {
+  .apos-image-control__dialog.apos-is-triggered {
     opacity: 1;
     pointer-events: auto;
   }
@@ -221,23 +236,23 @@ export default {
     background-color: var(--a-base-7);
   }
 
-  .apos-anchor-control__footer {
+  .apos-image-control__footer {
     display: flex;
     justify-content: flex-end;
     margin-top: 10px;
   }
 
-  .apos-anchor-control__footer .apos-button__wrapper {
+  .apos-image-control__footer .apos-button__wrapper {
     margin-left: 7.5px;
   }
 
-  .apos-anchor-control__remove {
+  .apos-image-control__remove {
     display: flex;
     justify-content: flex-end;
   }
 
   // special schema style for this use
-  .apos-anchor-control ::v-deep .apos-field--target {
+  .apos-image-control ::v-deep .apos-field--target {
     .apos-field__label {
       display: none;
     }
