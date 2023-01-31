@@ -43,14 +43,11 @@ export default options => {
           tag: 'figure',
           getAttrs: el => {
             const img = el.querySelector('img');
-            if (!img) {
+            const src = img.getAttribute('src');
+            if (!img || !src) {
               return false;
             }
             const caption = el.querySelector('figcaption');
-            const src = img.getAttribute('src');
-            if (!src) {
-              return false;
-            }
             const components = src.split('/');
             if (components.length < 2) {
               return false;

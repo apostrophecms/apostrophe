@@ -6,7 +6,7 @@
       :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
-      :icon="tool.icon ? tool.icon : false"
+      :icon="tool.icon || false"
       :modifiers="['no-border', 'no-motion']"
     />
     <div

@@ -6,7 +6,7 @@
       :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
-      :icon="tool.icon ? tool.icon : false"
+      :icon="tool.icon || false"
       :modifiers="['no-border', 'no-motion']"
     />
     <div
@@ -97,7 +97,8 @@ export default {
             label: this.$t('apostrophe:style'),
             type: 'select',
             choices: getOptions().imageStyles,
-            def: getOptions().imageStyles?.[0].value
+            def: getOptions().imageStyles?.[0].value,
+            required: true
           }
         ] : []
         ),
@@ -179,6 +180,10 @@ export default {
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';
         });
+        const defaultStyle = getOptions().imageStyles?.[0]?.value;
+        if (defaultStyle && !this.docFields.data.style) {
+          this.docFields.data.style = defaultStyle;
+        }
         if (attrs.imageId) {
           try {
             const doc = await apos.http.get(`/api/v1/@apostrophecms/image/${attrs.imageId}`, {

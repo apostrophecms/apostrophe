@@ -6,7 +6,7 @@
     :class="{ 'apos-is-active': active }"
     :label="tool.label"
     :icon-only="!!tool.icon"
-    :icon="tool.icon ? tool.icon : false"
+    :icon="tool.icon || false"
     :icon-size="16"
     :modifiers="['no-border', 'no-motion']"
   />
