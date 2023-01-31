@@ -1380,8 +1380,7 @@ module.exports = {
       },
 
       // Remove forbidden fields from document
-      // A forbidden field is a field for which the current user does not have the appropriate permission or
-      // viewPermission to see it
+      // A forbidden field is a field for which the current user does not have the appropriate viewPermission to see it
       removeForbiddenFields(req, doc) {
         if (!doc) {
           return doc;
@@ -1389,8 +1388,7 @@ module.exports = {
 
         const forbiddenSchemaFields = Object.values(self.schema)
           .filter(field => {
-            return (field.permission && !self.apos.permission.can(req, field.permission.action, field.permission.type)) ||
-              (field.viewPermission && !self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type));
+            return field.viewPermission && !self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type);
           });
 
         forbiddenSchemaFields.forEach(field => {

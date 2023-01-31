@@ -1862,7 +1862,7 @@ describe('Pieces', function() {
     });
   });
 
-  describe('field permission|viewPermission', function() {
+  describe('field viewPermission', function() {
     const createUser = (role = 'admin') => async ({
       title = `test-${role}`,
       username = `test-${role}`,
@@ -1918,7 +1918,7 @@ describe('Pieces', function() {
         assert.deepEqual(actual, expected);
       });
 
-      it('should be able to retrieve fields with permission and viewPermission when having appropriate credentials on rest API', async function() {
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials on rest API', async function() {
         await createUser('admin')();
         const jar = await loginAs('admin');
 
@@ -1995,7 +1995,7 @@ describe('Pieces', function() {
         assert.deepEqual(actual, expected);
       });
 
-      it('should be able to retrieve fields with permission and viewPermission when having appropriate credentials', async function() {
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
         await createUser('editor')();
         const jar = await loginAs('editor');
 
@@ -2071,7 +2071,7 @@ describe('Pieces', function() {
         assert.deepEqual(actual, expected);
       });
 
-      it('should be able to retrieve fields with permission and viewPermission when having appropriate credentials', async function() {
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
         await createUser('contributor')();
         const jar = await loginAs('contributor');
 
@@ -2095,7 +2095,7 @@ describe('Pieces', function() {
         const expected = {
           title: 'Icarus',
           slug: 'icarus',
-          stock: undefined,
+          stock: 99,
           discontinued: undefined
         };
 
