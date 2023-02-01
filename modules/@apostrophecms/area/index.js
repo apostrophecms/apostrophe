@@ -324,15 +324,20 @@ module.exports = {
       // to update a widget on the page after it is saved, or for
       // preview when editing.
       async renderWidget(req, type, data, options) {
-        const manager = self.getWidgetManager(type);
-        if (!manager) {
-          // No manager available - possibly a stale widget in the database
-          // of a type no longer in the project
-          self.warnMissingWidgetType(type);
-          return '';
+        try {
+          const manager = self.getWidgetManager(type);
+          if (!manager) {
+            // No manager available - possibly a stale widget in the database
+            // of a type no longer in the project
+            self.warnMissingWidgetType(type);
+            return '';
+          }
+          data.type = type;
+          return manager.output(req, data, options);
+        } catch (e) {
+          console.error(e);
+          throw e;
         }
-        data.type = type;
-        return manager.output(req, data, options);
       },
       // Update or create an area at the specified
       // dot path in the document with the specified

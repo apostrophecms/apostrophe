@@ -5,24 +5,18 @@
     class="image-widget-placeholder"
   />
 {% else %}
-  {% if data.options.className %}
-    {% set className = data.options.className %}
-  {% elif data.manager.options.className %}
-    {% set className = data.manager.options.className %}
-  {% endif %}
-
-  {% if data.options.dimensionAttrs %}
-    {% set dimensionAttrs = data.options.dimensionAttrs %}
-  {% elif data.manager.options.dimensionAttrs %}
-    {% set dimensionAttrs = data.manager.options.dimensionAttrs  %}
-  {% endif %}
+  {% set className = data.options.className or data.manager.options.className %}
+  {% set dimensionAttrs = data.options.dimensionAttrs or data.manager.options.dimensionAttrs %}
+  {% set loadingType = data.options.loadingType or data.manager.options.loadingType %}
+  {% set size = data.options.size or data.manager.options.size or 'full' %}
 
   {% set attachment = apos.image.first(data.widget._image) %}
 
   {% if attachment %}
     <img {% if className %} class="{{ className }}"{% endif %}
+      {% if loadingType %} loading="{{ loadingType }}"{% endif %}
       srcset="{{ apos.image.srcset(attachment) }}"
-      src="{{ apos.attachment.url(attachment, { size: data.options.size or 'full' }) }}"
+      src="{{ apos.attachment.url(attachment, { size: size }) }}"
       alt="{{ attachment._alt or '' }}"
       {% if dimensionAttrs %}
         {% if attachment.width %} width="{{ apos.attachment.getWidth(attachment) }}" {% endif %}

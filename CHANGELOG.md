@@ -4,9 +4,23 @@
 
 ### Adds
 
+* `superscript` and `subscript` may now be added to the rich text widget's `toolbar` option.
 * Basic support for editing tables by adding `table` to the rich text toolbar. Enabling `table` allows you to create tables, including `td` and `th` tags, with the ability to merge and split cells. For now the table editing UI is basic, all of the functionality is there but we plan to add more conveniences for easy table editing soon. See the "Table" dropdown for actions that are permitted based on the current selection.
+* Early beta-quality support for adding inline images to rich text, by adding `image` to the rich text toolbar.
+This feature works reliably, however the UI is not mature yet. In particular you must search for images by typing part
+of the title. We will support a proper browse experience here soon. For good results you should also configure the `imageStyles` option. You will
+also want to style the `figure` tags produced. See the documentation for more information.
 * Support for `div` tags in the rich text toolbar, if you choose to include them in `styles`. This is often necessary for A2 content migration and can potentially be useful in new work when combined with a `class` if there is no suitable semantic block tag.
 * The new `@apostrophecms/attachment:download-all --to=folder` command line task is useful to download all of your attachments from an uploadfs backend other than local storage, especially if you do not have a more powerful "sync" utility for that particular backend.
+* For the widget `image-widget`
+  * Two new options have been added: `loadingType` and `size`
+  * `loadingType` adds the attribute `loading={{ loadingType }}` to the `img`
+  * With the `size` option it is possible to have a configurable default `size` for the `apos.attachment.url`-function
+  * Thanks to [Waldemar Pankratz](https://github.com/waldemar-p) for this contribution.
+
+### Fixes
+
+* Adding missing require (`bluebird`) and fallback (`file.crops || []`) to `@apostrophecms/attachment:rescale`-task
 
 ## 3.38.1 (2023-01-23)
 
@@ -37,6 +51,7 @@ node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 * Emit a `beforeSaveSafe` event from the `@apostrophecms:user` module, with `req`, `safeUser` and `user` as arguments, in order to give the possibility to override properties of the `safeUser` object which contains password hashes and other information too sensitive to be stored in the aposDocs collection.
 * Automatically convert failed uppercase URLs to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `@apostrophecms/page/index.js` options. This only comes into play if a 404 is about to happen.
 * Automatically convert country codes in locales like `xx-yy` to `xx-YY` before passing them to `i18next`, which is strict about uppercase country codes.
+* Keyboard shortcuts conflicts are detected and logged on to the terminal.
 
 ### Fixes
 

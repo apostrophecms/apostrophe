@@ -363,12 +363,58 @@ module.exports = {
         }
 
         const { groups, modals } = self.getVisible(req);
+        self.notifyConflicts(req, modals);
 
         return {
           components: { the: self.options.components.the || 'TheAposCommandMenu' },
           groups,
           modals
         };
+      },
+      notifyConflicts(req, modals = self.modals) {
+        const shortcuts = {
+          modal: {},
+          list: {},
+          conflict: {}
+        };
+
+        Object.entries(modals)
+          .forEach(([ modal, groups ]) => Object.values(groups)
+            .forEach(group => Object.entries(group.commands)
+              .forEach(([ name, field ]) => {
+                self.detectShortcutConflict({
+                  shortcuts,
+                  shortcut: field.shortcut.toUpperCase(),
+                  modal: modal === 'default' ? 'admin-bar' : modal,
+                  moduleName: name
+                });
+              })
+            )
+          );
+
+        self.apos.util.warnDev(
+          req.t('apostrophe:shortcutConflictNotification'),
+          shortcuts.conflict
+        );
+      },
+      detectShortcutConflict({
+        shortcuts, shortcut, modal, moduleName
+      }) {
+        shortcuts.modal[modal] = shortcuts.modal[modal] || [];
+        shortcuts.list[modal] = shortcuts.list[modal] || {};
+        shortcuts.list[modal][shortcut] = shortcuts.list[modal][shortcut] || [];
+
+        const existingShortcut = shortcuts.modal[modal].includes(shortcut);
+
+        if (existingShortcut) {
+          shortcuts.conflict[modal] = shortcuts.conflict[modal] || {};
+          shortcuts.conflict[modal][shortcut] = shortcuts.list[modal][shortcut];
+        } else {
+          shortcuts.modal[modal].push(shortcut);
+        }
+        shortcuts.list[modal][shortcut].push(moduleName);
+
+        return shortcuts;
       }
     };
   }

@@ -47,6 +47,8 @@ import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import Underline from '@tiptap/extension-underline';
+import Superscript from '@tiptap/extension-superscript';
+import Subscript from '@tiptap/extension-subscript';
 import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
@@ -197,11 +199,12 @@ export default {
       }),
       Highlight,
       Underline,
+      Superscript,
+      Subscript,
       Table,
       TableCell,
       TableHeader,
       TableRow,
-
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
       // since `placeholderText` option is enough to decide whether to display it or not.
       this.placeholderText && Placeholder.configure({

@@ -56,6 +56,8 @@ module.exports = {
   'format-list-numbered-icon': 'FormatListNumbered',
   'format-quote-close-icon': 'FormatQuoteClose',
   'format-strikethrough-variant-icon': 'FormatStrikethroughVariant',
+  'format-superscript-icon': 'FormatSuperscript',
+  'format-subscript-icon': 'FormatSubscript',
   'format-underline-icon': 'FormatUnderline',
   'help-circle-icon': 'HelpCircle',
   'image-edit-outline': 'ImageEditOutline',

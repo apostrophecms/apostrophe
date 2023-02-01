@@ -874,4 +874,74 @@ describe('Command-Menu', function() {
 
     assert.deepEqual(actual, expected);
   });
+
+  it('should detect a single shortcut conflict', () => {
+    const shortcuts = {
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new' ]
+        }
+      },
+      conflict: {}
+    };
+    const actual = apos.commandMenu.detectShortcutConflict({
+      shortcuts,
+      shortcut: 'C',
+      modal: '@apostrophecms/file:manager',
+      moduleName: '@apostrophecms/file:search'
+    });
+    const expected = {
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search' ]
+        }
+      },
+      conflict: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search' ]
+        }
+      }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should detect multiple shortcut conflicts', () => {
+    const shortcuts = {
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search' ]
+        }
+      },
+      conflict: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new' ]
+        }
+      }
+    };
+    const actual = apos.commandMenu.detectShortcutConflict({
+      shortcuts,
+      shortcut: 'C',
+      modal: '@apostrophecms/file:manager',
+      moduleName: '@apostrophecms/file:select-all'
+    });
+    const expected = {
+      modal: { '@apostrophecms/file:manager': [ 'C' ] },
+      list: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search', '@apostrophecms/file:select-all' ]
+        }
+      },
+      conflict: {
+        '@apostrophecms/file:manager': {
+          C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search', '@apostrophecms/file:select-all' ]
+        }
+      }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
 });
