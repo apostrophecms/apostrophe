@@ -1142,8 +1142,12 @@ module.exports = {
           self.apos.util.error(format(s));
         }
         function format(s) {
+          const fieldName = parent && parent.name
+            ? `${parent.name}.${field.name}`
+            : field.name;
+
           return stripIndents`
-            ${options.type} ${options.subtype}, ${field.type} field "${field.name}":
+            ${options.type} ${options.subtype}, ${field.type} field "${fieldName}":
 
             ${s}
 

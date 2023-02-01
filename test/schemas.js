@@ -1833,10 +1833,10 @@ describe('Schemas', function() {
 
       const actual = messages;
       const expected = [
-        'doc type test, string field "edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.edit"',
-        'doc type test, string field "view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.view"',
-        'doc type test, string field "edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.edit"',
-        'doc type test, string field "view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.view"'
+        'doc type test, string field "array.edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.edit"',
+        'doc type test, string field "array.view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.view"',
+        'doc type test, string field "object.edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.edit"',
+        'doc type test, string field "object.view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.view"'
       ];
 
       assert.deepEqual(actual, expected);
@@ -1859,10 +1859,10 @@ describe('Schemas', function() {
         'widget type test, string field "legacy":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
         'widget type test, string field "edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
         'widget type test, string field "view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
-        'widget type test, string field "edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
-        'widget type test, string field "view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
-        'widget type test, string field "edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
-        'widget type test, string field "view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided'
+        'widget type test, string field "array.edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "array.view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "object.edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "object.view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided'
       ];
 
       assert.deepEqual(actual, expected);
