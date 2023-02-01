@@ -522,15 +522,17 @@ module.exports = {
         change.text = doc.title;
       },
       // Return a new schema containing only fields for which the
-      // current user has the permission specified by the `permission`
-      // property of the schema field, or there is no `permission`|`viewPermission` property for the field.
+      // current user has the permission specified by the `editPermission`
+      // property of the schema field, or there is no `editPermission`|`viewPermission` property
+      // or legacy `permission` property for the field.
       allowedSchema(req) {
         let disabled;
         let type;
         const schema = _.filter(self.schema, function (field) {
-          return (!field.permission && !field.viewPermission) ||
-            (field.permission && self.apos.permission.can(req, field.permission.action, field.permission.type)) ||
-            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type));
+          return (!field.editPermission && !field.viewPermission && !field.permission) ||
+            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            (field.permission && self.apos.permission.can(req, field.permission.action, field.permission.type));
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
