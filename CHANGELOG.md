@@ -1,10 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.224.0 (2023-02-01)
 
 ### Adds
 
-* Convert uppercase URLs automatically to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `apostrophe-pages/index.js` options.
+* If about to 404, redirect uppercase URLs automatically to their lowercase version - can be disabled with `redirectFailedUpperCaseUrls: false` in `apostrophe-pages/index.js` options.
 
 ## 2.223.1 (2022-12-21)
 
