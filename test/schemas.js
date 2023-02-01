@@ -1743,7 +1743,7 @@ describe('Schemas', function() {
     assert(output.goodValue === '2022-05-09T22:36:00.000Z');
   });
 
-  describe.only('field editPermission|viewPermission', function() {
+  describe('field editPermission|viewPermission', function() {
     const schema = [
       {
         name: 'legacy',

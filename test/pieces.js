@@ -237,7 +237,7 @@ describe('Pieces', function() {
             alias: 'board',
             name: 'board',
             label: 'Board',
-            editRole: 'editor',
+            editRole: 'contributor',
             publishRole: 'admin'
           },
           fields: {
@@ -256,6 +256,37 @@ describe('Pieces', function() {
                 type: 'string',
                 label: 'Discontinued',
                 viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                }
+              },
+              nickname: {
+                name: 'nickname',
+                type: 'string',
+                label: 'nickname',
+                editPermission: {
+                  action: 'edit',
+                  type: 'board'
+                }
+              },
+              sku: {
+                name: 'sku',
+                type: 'string',
+                label: 'SKU',
+                editPermission: {
+                  action: 'publish',
+                  type: 'board'
+                }
+              },
+              hidden: {
+                name: 'hidden',
+                type: 'boolean',
+                label: 'Hidden?',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                editPermission: {
                   action: 'publish',
                   type: 'board'
                 }
@@ -1912,7 +1943,10 @@ describe('Pieces', function() {
           'visibility',
           'archived',
           'stock',
-          'discontinued'
+          'discontinued',
+          'nickname',
+          'sku',
+          'hidden'
         ];
 
         assert.deepEqual(actual, expected);
@@ -1944,6 +1978,61 @@ describe('Pieces', function() {
           slug: 'icarus',
           stock: 99,
           discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
+        await createUser('admin')();
+        const jar = await loginAs('admin');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+        const board = await apos.http.put(
+          `/api/v1/board/${inserted._id}`,
+          {
+            body: {
+              ...inserted,
+              slug: 'board-icarus',
+              stock: 77,
+              discontinued: 'May 2049',
+              nickname: 'f1',
+              sku: 'LO-IC',
+              hidden: true
+            },
+            jar
+          }
+        );
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued,
+          nickname: board.nickname,
+          sku: board.sku,
+          hidden: board.hidden
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'board-icarus',
+          stock: 77,
+          discontinued: 'May 2049',
+          nickname: 'f1',
+          sku: 'LO-IC',
+          hidden: true
         };
 
         assert.deepEqual(actual, expected);
@@ -1989,7 +2078,8 @@ describe('Pieces', function() {
           'slug',
           'visibility',
           'archived',
-          'stock'
+          'stock',
+          'nickname'
         ];
 
         assert.deepEqual(actual, expected);
@@ -2021,6 +2111,61 @@ describe('Pieces', function() {
           slug: 'icarus',
           stock: 99,
           discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
+        await createUser('editor')();
+        const jar = await loginAs('editor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+        const board = await apos.http.put(
+          `/api/v1/board/${inserted._id}`,
+          {
+            body: {
+              ...inserted,
+              slug: 'board-icarus',
+              stock: 77,
+              discontinued: 'May 2049',
+              nickname: 'f1',
+              sku: 'LO-IC',
+              hidden: true
+            },
+            jar
+          }
+        );
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued,
+          nickname: board.nickname,
+          sku: board.sku,
+          hidden: board.hidden
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'board-icarus',
+          stock: 77,
+          discontinued: 'April 2077',
+          nickname: 'f1',
+          sku: 'LI',
+          hidden: false
         };
 
         assert.deepEqual(actual, expected);
@@ -2097,6 +2242,61 @@ describe('Pieces', function() {
           slug: 'icarus',
           stock: 99,
           discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
+        await createUser('contributor')();
+        const jar = await loginAs('contributor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const found = await apos.http.get(`/api/v1/board/${inserted._id.replace('published', 'draft')}`, { jar });
+        const board = await apos.http.put(
+          `/api/v1/board/${found._id}`,
+          {
+            body: {
+              ...found,
+              slug: 'board-icarus',
+              stock: 77,
+              discontinued: 'May 2049',
+              nickname: 'f1',
+              sku: 'LO-IC',
+              hidden: true
+            },
+            jar
+          }
+        );
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued,
+          nickname: board.nickname,
+          sku: board.sku,
+          hidden: board.hidden
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'board-icarus',
+          stock: 77,
+          discontinued: 'April 2077',
+          nickname: 'f1',
+          sku: 'LI',
+          hidden: false
         };
 
         assert.deepEqual(actual, expected);
