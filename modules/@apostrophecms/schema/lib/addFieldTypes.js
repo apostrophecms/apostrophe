@@ -766,7 +766,7 @@ module.exports = (self) => {
     },
     validate: function (field, options, warn, fail) {
       for (const subField of field.schema || field.fields.add) {
-        self.validateField(subField, options);
+        self.validateField(subField, options, field);
       }
     },
     register: function (metaType, type, field) {
@@ -833,7 +833,7 @@ module.exports = (self) => {
     },
     validate: function (field, options, warn, fail) {
       for (const subField of field.schema || field.fields.add) {
-        self.validateField(subField, options);
+        self.validateField(subField, options, field);
       }
     },
     isEqual(req, field, one, two) {

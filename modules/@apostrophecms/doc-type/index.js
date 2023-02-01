@@ -523,12 +523,14 @@ module.exports = {
       },
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `permission`
-      // property of the schema field, or there is no `permission` property for the field.
+      // property of the schema field, or there is no `permission`|`viewPermission` property for the field.
       allowedSchema(req) {
         let disabled;
         let type;
         const schema = _.filter(self.schema, function (field) {
-          return !field.permission || self.apos.permission.can(req, field.permission && field.permission.action, field.permission && field.permission.type);
+          return (!field.permission && !field.viewPermission) ||
+            (field.permission && self.apos.permission.can(req, field.permission.action, field.permission.type)) ||
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type));
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
@@ -1375,6 +1377,25 @@ module.exports = {
         });
 
         return draft;
+      },
+
+      // Remove forbidden fields from document
+      // A forbidden field is a field for which the current user does not have the appropriate viewPermission to see it
+      removeForbiddenFields(req, doc) {
+        if (!doc) {
+          return doc;
+        }
+
+        const forbiddenSchemaFields = Object.values(self.schema)
+          .filter(field => {
+            return field.viewPermission && !self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type);
+          });
+
+        forbiddenSchemaFields.forEach(field => {
+          delete doc[field.name];
+        });
+
+        return doc;
       }
     };
   },

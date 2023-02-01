@@ -1,10 +1,10 @@
-const t = require('../test-lib/test.js');
-const assert = require('assert');
-const _ = require('lodash');
-const cuid = require('cuid');
+const assert = require('assert').strict;
 const fs = require('fs');
 const path = require('path');
+const _ = require('lodash');
+const cuid = require('cuid');
 const FormData = require('form-data');
+const t = require('../test-lib/test.js');
 
 let apos;
 let jar;
@@ -14,15 +14,7 @@ describe('Pieces', function() {
 
   this.timeout(t.timeout);
 
-  after(async function () {
-    return t.destroy(apos);
-  });
-
-  /// ///
-  // EXISTENCE
-  /// ///
-
-  it('should initialize with a schema', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
 
@@ -238,9 +230,52 @@ describe('Pieces', function() {
               }
             ]
           }
+        },
+        board: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'board',
+            name: 'board',
+            label: 'Board',
+            editRole: 'editor',
+            publishRole: 'admin'
+          },
+          fields: {
+            add: {
+              stock: {
+                name: 'stock',
+                type: 'integer',
+                label: 'stock',
+                permission: {
+                  action: 'edit',
+                  type: 'board'
+                }
+              },
+              discontinued: {
+                name: 'discontinued',
+                type: 'string',
+                label: 'Discontinued',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                }
+              }
+            }
+          }
         }
       }
     });
+  });
+
+  after(function () {
+    return t.destroy(apos);
+  });
+
+  /// ///
+  // EXISTENCE
+  /// ///
+
+  it('should initialize with a schema', function() {
     assert(apos.modules.thing);
     assert(apos.modules.thing.schema);
   });
@@ -1823,6 +1858,276 @@ describe('Pieces', function() {
           return;
         }
         throw new Error('should have thrown 404 error');
+      });
+    });
+  });
+
+  describe('field viewPermission', function() {
+    const createUser = (role = 'admin') => async ({
+      title = `test-${role}`,
+      username = `test-${role}`,
+      password = role
+    } = {}) => {
+      await apos.user.insert(
+        apos.task.getReq(),
+        {
+          ...apos.user.newInstance(),
+          title,
+          username,
+          password,
+          email: `${username}@admin.io`,
+          role
+        }
+      );
+    };
+    const loginAs = async (role) => {
+      const jar = apos.http.jar();
+      await apos.http.post('/api/v1/@apostrophecms/login/login', {
+        body: {
+          username: `test-${role}`,
+          password: role,
+          session: true
+        },
+        jar
+      });
+
+      return jar;
+    };
+
+    this.afterEach(async function() {
+      await apos.doc.db.deleteMany({ email: /@admin.io$/ });
+      await apos.db.collection('aposUsersSafe').deleteMany({ email: /@admin.io$/ });
+      await apos.doc.db.deleteMany({ type: 'board' });
+    });
+
+    context('admin', function() {
+      it('getBrowserData', async function() {
+        const req = apos.task.getReq();
+        const { schema } = await apos.modules.board.getBrowserData(req);
+
+        const actual = schema.map(field => field.name);
+        const expected = [
+          'title',
+          'slug',
+          'visibility',
+          'archived',
+          'stock',
+          'discontinued'
+        ];
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials on rest API', async function() {
+        await createUser('admin')();
+        const jar = await loginAs('admin');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getAdminReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+    });
+
+    context('editor', function() {
+      it('getBrowserData', async function() {
+        const req = apos.task.getEditorReq();
+        const { schema } = await apos.modules.board.getBrowserData(req);
+
+        const actual = schema.map(field => field.name);
+        const expected = [
+          'title',
+          'slug',
+          'visibility',
+          'archived',
+          'stock'
+        ];
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
+        await createUser('editor')();
+        const jar = await loginAs('editor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getEditorReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+    });
+
+    context('contributor', function() {
+      it('getBrowserData', async function() {
+        const req = apos.task.getContributorReq();
+        const { schema } = await apos.modules.board.getBrowserData(req);
+
+        const actual = schema.map(field => field.name);
+        const expected = [
+          'title',
+          'slug',
+          'visibility',
+          'archived'
+        ];
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
+        await createUser('contributor')();
+        const jar = await loginAs('contributor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getContributorReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
       });
     });
   });
