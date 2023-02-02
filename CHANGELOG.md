@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* The promise to rescale cropped images is now awaited and working correctly.
+
 ## 3.39.0 (2023-02-01)
 
 ### Adds
