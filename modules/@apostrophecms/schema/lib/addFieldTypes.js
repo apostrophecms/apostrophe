@@ -682,8 +682,8 @@ module.exports = (self) => {
       // `min` here does not imply requirement, it is the minimum value the range UI will represent
       if (
         typeof destination[field.name] !== 'number' ||
-        destination[field.name] < field.min ||
-        destination[field.name] > field.max
+        data[field.name] < field.min ||
+        data[field.name] > field.max
       ) {
         destination[field.name] = null;
       }
