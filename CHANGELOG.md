@@ -1,10 +1,10 @@
 # Changelog
 
-## UNRELEASED
+## 3.39.1 (2023-02-02)
 
 ### Fixes
 
-* The promise to rescale cropped images is now awaited and working correctly.
+* Rescaling cropped images with the `@apostrophecms/attachment:rescale` task now works correctly. Thanks to [Waldemar Pankratz](https://github.com/waldemar-p) for this contribution.
 
 ## 3.39.0 (2023-02-01)
 
