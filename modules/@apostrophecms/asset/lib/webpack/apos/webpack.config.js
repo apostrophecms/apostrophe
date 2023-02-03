@@ -2,6 +2,7 @@ const path = require('path');
 const merge = require('webpack-merge').merge;
 const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
+const mjs = require('./webpack.mjs');
 
 let BundleAnalyzerPlugin;
 
@@ -12,7 +13,7 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 module.exports = ({
   importFile, modulesDir, outputPath, outputFilename
 }, apos) => {
-  const tasks = [ scss, vue ].map(task =>
+  const tasks = [ scss, vue, mjs ].map(task =>
     task(
       {
         importFile,
