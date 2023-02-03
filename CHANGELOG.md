@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.39.2 (2023-02-03)
+
+### Fixes
+
+* Hotfix for a backwards compatibility break in webpack that triggered a tiptap bug. The admin UI build will now succeed as expected.
+
 ## 3.39.1 (2023-02-02)
 
 ### Fixes
