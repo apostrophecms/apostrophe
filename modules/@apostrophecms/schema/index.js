@@ -1126,10 +1126,13 @@ module.exports = {
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
         }
-        if (options.type !== 'doc type' && (field.editPermission || field.viewPermission || field.permission)) {
+        if (!field.editPermission && field.permission) {
+          field.editPermission = field.permission;
+        }
+        if (options.type !== 'doc type' && (field.editPermission || field.viewPermission)) {
           warn(`editPermission or viewPermission must be defined on doc-type schemas only, "${options.type}" provided`);
         }
-        if (options.type === 'doc type' && (field.editPermission || field.viewPermission || field.permission) && parent) {
+        if (options.type === 'doc type' && (field.editPermission || field.viewPermission) && parent) {
           warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
         }
         if (fieldType.validate) {

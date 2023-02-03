@@ -324,15 +324,13 @@ module.exports = {
 
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `editPermission`
-      // property of the schema field, or there is no `editPermission`|`viewPermission` property
-      // or legacy `permission` property for the field.
+      // property of the schema field, or there is no `editPermission`|`viewPermission` property for the field.
 
       allowedSchema(req) {
         return _.filter(self.schema, function (field) {
-          return (!field.editPermission && !field.viewPermission && !field.permission) ||
+          return (!field.editPermission && !field.viewPermission) ||
             (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
-            (field.viewPermission && self.apos.viewPermission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
-            (field.permission && self.apos.permission.can(req, field.permission.action, field.permission.type));
+            (field.viewPermission && self.apos.viewPermission.can(req, field.viewPermission.action, field.viewPermission.type));
         });
       },
 
