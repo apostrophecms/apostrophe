@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Fix buggy development warnings about conflicting keyboard shortcuts.
+
 ## 3.39.2 (2023-02-03)
 
 ### Fixes
