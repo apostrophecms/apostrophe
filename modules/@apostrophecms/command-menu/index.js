@@ -392,10 +392,12 @@ module.exports = {
             )
           );
 
-        self.apos.util.warnDev(
-          req.t('apostrophe:shortcutConflictNotification'),
-          shortcuts.conflict
-        );
+        if (Object.entries(shortcuts.conflict).length) {
+          self.apos.util.warnDev(
+            req.t('apostrophe:shortcutConflictNotification'),
+            shortcuts.conflict
+          );
+        }
       },
       detectShortcutConflict({
         shortcuts, shortcut, modal, moduleName
