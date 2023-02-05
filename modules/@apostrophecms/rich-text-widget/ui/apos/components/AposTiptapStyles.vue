@@ -48,13 +48,21 @@ export default {
   computed: {
     active() {
       const styles = this.options.styles || [];
-      for (let i = 0; (i < styles.length); i++) {
-        const style = styles[i];
+      const styleWithIndex = styles.map((item, index) => ({
+        ...item, originalIndex: index
+      }));
+      styleWithIndex.sort((a, b) => {
+        if (Object.keys(a.options).length === 0 && Object.keys(b.options).length > 0) return 1;
+        if (Object.keys(a.options).length > 0 && Object.keys(b.options).length === 0) return -1;
+        return 0;
+      });
+      for (let i = 0; (i < styleWithIndex.length); i++) {
+        const style = styleWithIndex[i];
         if (this.editor.isActive(style.type, (style.options || {}))) {
-          return i;
+          return style.originalIndex;
         } else if (this.editor.state.selection.$head.parent.type.name === 'defaultNode' && style.def) {
           // Look deeper to see if custom defaultNode is active
-          return i;
+          return style.originalIndex;
         }
       }
       return 0;
