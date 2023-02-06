@@ -1743,57 +1743,84 @@ describe('Schemas', function() {
     assert(output.goodValue === '2022-05-09T22:36:00.000Z');
   });
 
-  describe('field permission|viewPermission', function() {
+  describe('field editPermission|viewPermission', function() {
+    const schema = [
+      {
+        name: 'legacy',
+        type: 'string',
+        permission: {
+          action: 'edit',
+          type: '@apostrophecms/user'
+        }
+      },
+      {
+        name: 'edit',
+        type: 'string',
+        editPermission: {
+          action: 'edit',
+          type: '@apostrophecms/user'
+        }
+      },
+      {
+        name: 'view',
+        type: 'string',
+        viewPermission: {
+          action: 'edit',
+          type: '@apostrophecms/user'
+        }
+      },
+      {
+        name: 'array',
+        type: 'array',
+        schema: [
+          {
+            name: 'edit',
+            type: 'string',
+            label: 'edit',
+            editPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          },
+          {
+            name: 'view',
+            type: 'string',
+            label: 'view',
+            viewPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          }
+        ]
+      },
+      {
+        name: 'object',
+        type: 'object',
+        schema: [
+          {
+            name: 'edit',
+            type: 'string',
+            label: 'edit',
+            editPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          },
+          {
+            name: 'view',
+            type: 'string',
+            label: 'view',
+            viewPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          }
+        ]
+      }
+    ];
+
     it('validate doc type', function() {
       const logger = apos.util.error;
-      const schema = [
-        {
-          name: 'legacy',
-          type: 'string',
-          permission: {
-            action: 'edit',
-            type: '@apostrophecms/user'
-          }
-        },
-        {
-          name: 'new',
-          type: 'string',
-          viewPermission: {
-            action: 'edit',
-            type: '@apostrophecms/user'
-          }
-        },
-        {
-          name: 'array',
-          type: 'array',
-          schema: [
-            {
-              name: 'item',
-              type: 'string',
-              label: 'item',
-              viewPermission: {
-                action: 'edit',
-                type: '@apostrophecms/user'
-              }
-            }
-          ]
-        },
-        {
-          name: 'object',
-          type: 'object',
-          schema: [
-            {
-              name: 'key',
-              type: 'string',
-              label: 'key',
-              viewPermission: {
-                action: 'edit',
-                type: '@apostrophecms/user'
-              }
-            }
-          ]
-        }
-      ];
       const options = {
         type: 'doc type',
         subtype: 'test'
@@ -1806,8 +1833,10 @@ describe('Schemas', function() {
 
       const actual = messages;
       const expected = [
-        'doc type test, string field "item":\n\npermission or viewPermission must be defined on root fields only, provided on "array.item"',
-        'doc type test, string field "key":\n\npermission or viewPermission must be defined on root fields only, provided on "object.key"'
+        'doc type test, string field "array.edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.edit"',
+        'doc type test, string field "array.view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.view"',
+        'doc type test, string field "object.edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.edit"',
+        'doc type test, string field "object.view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.view"'
       ];
 
       assert.deepEqual(actual, expected);
@@ -1815,54 +1844,6 @@ describe('Schemas', function() {
 
     it('validate widget type', function() {
       const logger = apos.util.error;
-      const schema = [
-        {
-          name: 'legacy',
-          type: 'string',
-          permission: {
-            action: 'edit',
-            type: '@apostrophecms/user'
-          }
-        },
-        {
-          name: 'new',
-          type: 'string',
-          viewPermission: {
-            action: 'edit',
-            type: '@apostrophecms/user'
-          }
-        },
-        {
-          name: 'array',
-          type: 'array',
-          schema: [
-            {
-              name: 'item',
-              type: 'string',
-              label: 'item',
-              viewPermission: {
-                action: 'edit',
-                type: '@apostrophecms/user'
-              }
-            }
-          ]
-        },
-        {
-          name: 'object',
-          type: 'object',
-          schema: [
-            {
-              name: 'key',
-              type: 'string',
-              label: 'key',
-              viewPermission: {
-                action: 'edit',
-                type: '@apostrophecms/user'
-              }
-            }
-          ]
-        }
-      ];
       const options = {
         type: 'widget type',
         subtype: 'test'
@@ -1875,10 +1856,13 @@ describe('Schemas', function() {
 
       const actual = messages;
       const expected = [
-        'widget type test, string field "legacy":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
-        'widget type test, string field "new":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
-        'widget type test, string field "item":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
-        'widget type test, string field "key":\n\npermission or viewPermission must be defined on doc-type schemas only, "widget type" provided'
+        'widget type test, string field "legacy":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "array.edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "array.view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "object.edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "object.view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided'
       ];
 
       assert.deepEqual(actual, expected);
