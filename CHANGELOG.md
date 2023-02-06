@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Do not display shortcut conflicts if none.
+
 ## 3.39.2 (2023-02-03)
 
 ### Fixes
