@@ -1126,11 +1126,14 @@ module.exports = {
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
         }
-        if (options.type !== 'doc type' && (field.permission || field.viewPermission)) {
-          warn(`permission or viewPermission must be defined on doc-type schemas only, "${options.type}" provided`);
+        if (!field.editPermission && field.permission) {
+          field.editPermission = field.permission;
         }
-        if (options.type === 'doc type' && (field.permission || field.viewPermission) && parent) {
-          warn(`permission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
+        if (options.type !== 'doc type' && (field.editPermission || field.viewPermission)) {
+          warn(`editPermission or viewPermission must be defined on doc-type schemas only, "${options.type}" provided`);
+        }
+        if (options.type === 'doc type' && (field.editPermission || field.viewPermission) && parent) {
+          warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
         }
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
@@ -1142,8 +1145,12 @@ module.exports = {
           self.apos.util.error(format(s));
         }
         function format(s) {
+          const fieldName = parent && parent.name
+            ? `${parent.name}.${field.name}`
+            : field.name;
+
           return stripIndents`
-            ${options.type} ${options.subtype}, ${field.type} field "${field.name}":
+            ${options.type} ${options.subtype}, ${field.type} field "${fieldName}":
 
             ${s}
 
