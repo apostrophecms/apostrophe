@@ -5,6 +5,8 @@
 ### Fixes
 
 * Do not display shortcut conflicts if none.
+* Range field correctly handles the `def` attribute set to `0` now.  
+The default range field will be used when the field has no value provided; a value going over the max or below the min threshold still returns `null`.
 
 ## 3.39.2 (2023-02-03)
 
