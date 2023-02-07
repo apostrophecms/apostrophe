@@ -1,5 +1,5 @@
 <template>
-  <ul class="apos-search">
+  <ul class="apos-search apos-primary-scrollbar">
     <li
       v-for="item in list"
       :key="item._id"
