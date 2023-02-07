@@ -154,6 +154,12 @@ export default {
   },
   mounted () {
     this.checkLimit();
+    if (this.field.prefill) {
+      this.searching = true;
+      this.busy = true;
+      const qs = {};
+      this.search(qs);
+    }
   },
   methods: {
     validate(value) {
@@ -181,21 +187,7 @@ export default {
     updateSelected(items) {
       this.next = items;
     },
-    async input () {
-      if (this.searching) {
-        return;
-      }
-
-      const trimmed = this.searchTerm.trim();
-      if (!trimmed.length) {
-        this.searchList = [];
-        return;
-      }
-
-      const qs = {
-        autocomplete: trimmed
-      };
-
+    async search(qs) {
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
       }
@@ -218,6 +210,23 @@ export default {
         }));
 
       this.searching = false;
+    },
+    async input () {
+      if (this.searching) {
+        return;
+      }
+
+      const trimmed = this.searchTerm.trim();
+      if (!trimmed.length) {
+        this.searchList = [];
+        return;
+      }
+
+      const qs = {
+        autocomplete: trimmed
+      };
+
+      this.search(qs);
     },
     handleFocusOut() {
       // hide search list when click outside the input
