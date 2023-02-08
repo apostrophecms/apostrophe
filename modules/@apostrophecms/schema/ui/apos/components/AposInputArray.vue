@@ -4,6 +4,13 @@
     :uid="uid" :items="next"
     :display-options="displayOptions"
   >
+    <template #additional>
+      <AposMinMaxCount
+        :field="field"
+        :value="next"
+        v-if="!field.inline"
+      />
+    </template>
     <template #body>
       <div v-if="field.inline">
         <div
