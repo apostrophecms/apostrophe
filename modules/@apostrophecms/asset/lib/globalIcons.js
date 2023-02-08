@@ -1,6 +1,7 @@
 // Alphabetical collection of globally available vue-material-design-icons.
 module.exports = {
   'account-box-icon': 'AccountBox',
+  'account-group-icon': 'AccountGroup',
   'alert-circle-icon': 'AlertCircle',
   'alpha-x-icon': 'AlphaX',
   'anchor-icon': 'Anchor',
@@ -101,6 +102,8 @@ module.exports = {
   'redo-icon': 'RedoVariant',
   'refresh-icon': 'Refresh',
   'sign-text-icon': 'SignText',
+  'tag-icon': 'Tag',
+  'text-box-icon': 'TextBox',
   'text-box-remove-icon': 'TextBoxRemove',
   'trash-can-icon': 'TrashCan',
   'trash-can-outline-icon': 'TrashCanOutline',
