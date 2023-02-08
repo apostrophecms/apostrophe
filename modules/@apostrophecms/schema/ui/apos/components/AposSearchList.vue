@@ -1,4 +1,4 @@
-<tmplate>
+<template>
   <ul class="apos-primary-scrollbar apos-search">
     <li
       v-if="label && list.length"

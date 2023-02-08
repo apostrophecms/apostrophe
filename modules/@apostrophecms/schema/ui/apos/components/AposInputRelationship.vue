@@ -128,8 +128,8 @@ export default {
       };
     },
     suggestionHelp() {
-      return this.field.suggestionHelp || {
-        key: 'apostrophe:relationshipSuggestionHelp',
+      return {
+        key: this.field.suggestionHelp || 'apostrophe:relationshipSuggestionHelp',
         type: this.$t(this.pluralLabel)
       };
     },
