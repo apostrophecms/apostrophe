@@ -34,7 +34,8 @@ module.exports = {
         title: 'Archive'
       }
     ],
-    redirectFailedUpperCaseUrls: true
+    redirectFailedUpperCaseUrls: true,
+    relationshipSuggestionIcon: 'web-icon'
   },
   batchOperations: {
     add: {

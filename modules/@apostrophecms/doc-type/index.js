@@ -10,7 +10,13 @@ module.exports = {
     publishRole: 'editor',
     viewRole: false,
     previewDraft: true,
-    relatedDocType: null
+    relatedDocType: null,
+    relationshipSuggestionLabel: 'apostrophe:relationshipSuggestionLabel',
+    relationshipSuggestionHelp: 'apostrophe:relationshipSuggestionHelp',
+    relationshipSuggestionLimit: 25,
+    relationshipSuggestionSort: { updatedAt: -1 },
+    relationshipSuggestionIcon: 'text-box-icon',
+    relationshipSuggestionFields: [ 'slug' ]
   },
   cascades: [ 'fields' ],
   fields(self) {
