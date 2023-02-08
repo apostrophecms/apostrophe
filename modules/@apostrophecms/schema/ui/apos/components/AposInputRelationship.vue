@@ -34,6 +34,7 @@
             :required="field.required"
             :id="uid"
             @input="input"
+            @focus="search"
             @focusout="handleFocusOut"
             tabindex="0"
           >
@@ -62,6 +63,11 @@
           :list="searchList"
           @select="updateSelected"
           :selected-items="next"
+          :label="field.suggestionLabel"
+          :help="suggestionHelp"
+          :icon="field.suggestionIcon"
+          :icon-size="field.suggestionIconSize"
+          :fields="field.suggestionFields"
           disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
         />
       </div>
@@ -121,6 +127,12 @@ export default {
         type: this.$t(this.pluralLabel)
       };
     },
+    suggestionHelp() {
+      return this.field.suggestionHelp || {
+        key: 'apostrophe:relationshipSuggestionHelp',
+        type: this.$t(this.pluralLabel)
+      };
+    },
     chooserComponent () {
       return apos.modules[this.field.withType].components.managerModal;
     },
@@ -154,12 +166,6 @@ export default {
   },
   mounted () {
     this.checkLimit();
-    if (this.field.prefill) {
-      this.searching = true;
-      this.busy = true;
-      const qs = {};
-      this.search(qs);
-    }
   },
   methods: {
     validate(value) {
@@ -187,7 +193,8 @@ export default {
     updateSelected(items) {
       this.next = items;
     },
-    async search(qs) {
+    async search(qs = {}) {
+      qs.perPage = this.field.suggestionLimit;
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
       }
@@ -232,7 +239,8 @@ export default {
       // hide search list when click outside the input
       // timeout to execute "@select" method before
       setTimeout(() => {
-        this.searchList = [];
+        // TODO remove comment
+        // this.searchList = [];
       }, 200);
     },
     watchValue () {
@@ -281,6 +289,7 @@ export default {
 <style lang="scss" scoped>
   .apos-input-relationship__input-wrapper {
     position: relative;
+    z-index: $z-index-widget-focused-controls;
 
     .apos-input-relationship__button {
       position: absolute;
