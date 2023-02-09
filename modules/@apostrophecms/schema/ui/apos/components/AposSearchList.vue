@@ -1,26 +1,14 @@
 <template>
   <ul class="apos-primary-scrollbar apos-search">
     <li
-      v-if="label && list.length"
-      :class="getClasses({ suggestion: true })"
-    >
-      <div class="apos-search__item__title">
-        {{ $t(label, interpolate) }}
-      </div>
-      <div v-if="help" class="apos-search__item__field">
-        {{ $t(help, interpolate) }} -
-        {{ help }}
-      </div>
-    </li>
-    <li
       v-for="item in list"
       :key="item._id"
       :class="getClasses(item)"
-      v-apos-tooltip="item.disabled ? disabledTooltip : null"
+      v-apos-tooltip="item.disabled && !item.suggestion ? disabledTooltip : null"
       @click="select(item, $event)"
     >
       <AposIndicator
-        v-if="icon"
+        v-if="icon && !item.suggestion"
         :icon="icon"
         :icon-size="iconSize"
         class="apos-button__icon"
@@ -30,11 +18,18 @@
         {{ item.title }}
       </div>
       <div
+        v-if="item.suggestion"
+        class="apos-search__item__field"
+      >
+        {{ item.help }}
+      </div>
+      <div
         v-for="field in fields"
         :key="field"
         class="apos-search__item__field"
       >
         {{ item[field] }}
+        {{ item }}
       </div>
     </li>
   </ul>
@@ -45,12 +40,6 @@
 export default {
   name: 'AposSearchList',
   props: {
-    interpolate: {
-      type: Object,
-      default() {
-        return {};
-      }
-    },
     list: {
       type: Array,
       default() {
@@ -107,11 +96,11 @@ export default {
       const classes = {
         'apos-search__item': true
       };
-      if (item.suggestion) {
-        classes['apos-search__item--suggestion'] = true;
-      }
       if (item.disabled) {
         classes['apos-search__item--disabled'] = true;
+      }
+      if (item.suggestion) {
+        classes['apos-search__item--suggestion'] = true;
       }
       return classes;
     }
@@ -156,14 +145,12 @@ export default {
 }
 
 @mixin suggestion {
-  padding: 10px 20px;
-  border: none;
+  padding-top: 14px;
   background-color: var(--a-background-inverted);
-  cursor: auto;
-  .apos_search__item__title {
+  .apos-search__item__title {
     color: var(--a-text-inverted);
   }
-  .apos_search__item__field {
+  .apos-search__item__field {
     color: var(--a-base-8);
   }
 }

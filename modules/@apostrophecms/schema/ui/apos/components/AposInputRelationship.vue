@@ -63,8 +63,6 @@
           :list="searchList"
           @select="updateSelected"
           :selected-items="next"
-          :label="field.suggestionLabel"
-          :help="suggestionHelp"
           :icon="field.suggestionIcon"
           :icon-size="field.suggestionIconSize"
           :fields="field.suggestionFields"
@@ -127,10 +125,15 @@ export default {
         type: this.$t(this.pluralLabel)
       };
     },
-    suggestionHelp() {
+    suggestion() {
       return {
-        key: this.field.suggestionHelp || 'apostrophe:relationshipSuggestionHelp',
-        type: this.$t(this.pluralLabel)
+        disabled: true,
+        suggestion: true,
+        title: this.$t(this.field.suggestionLabel),
+        help: this.$t({
+          key: this.field.suggestionHelp || 'apostrophe:relationshipSuggestionHelp',
+          type: this.$t(this.pluralLabel)
+        })
       };
     },
     chooserComponent () {
@@ -209,12 +212,14 @@ export default {
         }
       );
       // filter items already selected
-      this.searchList = list.results
-        .filter(item => !this.next.map(i => i._id).includes(item._id))
-        .map(item => ({
-          ...item,
-          disabled: this.disableUnpublished && !item.lastPublishedAt
-        }));
+      this.searchList = [ this.suggestion ]
+        .concat(list.results
+          .filter(item => !this.next.map(i => i._id).includes(item._id))
+          .map(item => ({
+            ...item,
+            disabled: this.disableUnpublished && !item.lastPublishedAt
+          }))
+        );
 
       this.searching = false;
     },
