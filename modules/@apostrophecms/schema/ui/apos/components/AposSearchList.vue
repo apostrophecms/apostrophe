@@ -29,7 +29,6 @@
         class="apos-search__item__field"
       >
         {{ item[field] }}
-        {{ item }}
       </div>
     </li>
   </ul>

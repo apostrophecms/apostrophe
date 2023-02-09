@@ -244,8 +244,7 @@ export default {
       // hide search list when click outside the input
       // timeout to execute "@select" method before
       setTimeout(() => {
-        // TODO remove comment
-        // this.searchList = [];
+        this.searchList = [];
       }, 200);
     },
     watchValue () {
