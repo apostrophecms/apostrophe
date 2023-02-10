@@ -263,7 +263,7 @@ export default {
         }
         : {};
 
-      this.search(qs);
+      await this.search(qs);
     },
     handleFocusOut() {
       // hide search list when click outside the input
