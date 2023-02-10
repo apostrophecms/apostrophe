@@ -98,9 +98,6 @@ export default {
     return data;
   },
   computed: {
-    alwaysExpand() {
-      return alwaysExpand(this.field);
-    },
     editLabel() {
       return {
         key: 'apostrophe:editType',
@@ -127,25 +124,13 @@ export default {
     items: {
       deep: true,
       handler() {
-        const erroneous = this.items.filter(
-          (item) => item.schemaInput.hasErrors
-        );
-        if (erroneous.length) {
-          erroneous.forEach((item) => {
-            if (!item.open) {
-              // Make errors visible
-              item.open = true;
-            }
-          });
-        } else {
-          const next = this.items.map((item) => ({
-            ...item.schemaInput.data,
-            _id: item._id,
-            metaType: 'arrayItem',
-            scopedArrayName: this.field.scopedArrayName
-          }));
-          this.next = next;
-        }
+        const next = this.items.map((item) => ({
+          ...item.schemaInput.data,
+          _id: item._id,
+          metaType: 'arrayItem',
+          scopedArrayName: this.field.scopedArrayName
+        }));
+        this.next = next;
         // Our validate method was called first before that of
         // the subfields, so remedy that by calling again on any
         // change to the subfield state during validation
@@ -156,21 +141,21 @@ export default {
     }
   },
   methods: {
-    // validate(value) {
-    //   if (this.items.find((item) => item.schemaInput.hasErrors)) {
-    //     return 'invalid';
-    //   }
-    //   if (this.field.required && !value.length) {
-    //     return 'required';
-    //   }
-    //   if (this.field.min && value.length < this.field.min) {
-    //     return 'min';
-    //   }
-    //   if (this.field.max && value.length > this.field.max) {
-    //     return 'max';
-    //   }
-    //   return false;
-    // },
+    validate(value) {
+      if (this.items.find((item) => item.schemaInput.hasErrors)) {
+        return 'invalid';
+      }
+      if (this.field.required && !value.length) {
+        return 'required';
+      }
+      if (this.field.min && value.length < this.field.min) {
+        return 'min';
+      }
+      if (this.field.max && value.length > this.field.max) {
+        return 'max';
+      }
+      return false;
+    },
     async edit() {
       const result = await apos.modal.execute('AposArrayEditor', {
         field: this.field,
@@ -194,55 +179,36 @@ export default {
     remove(_id) {
       this.items = this.items.filter((item) => item._id !== _id);
     },
-    // add() {
-    //   const _id = cuid();
-    //   this.items.push({
-    //     _id,
-    //     schemaInput: {
-    //       data: this.newInstance()
-    //     },
-    //     open: alwaysExpand(this.field)
-    //   });
-    //   this.openInlineItem(_id);
-    // },
-    // newInstance() {
-    //   const instance = {};
-    //   for (const field of this.field.schema) {
-    //     if (field.def !== undefined) {
-    //       instance[field.name] = klona(field.def);
-    //     }
-    //   }
-    //   return instance;
-    // },
-    openInlineItem(id) {
-      this.items.forEach((item) => {
-        item.open = item._id === id || this.alwaysExpand;
+    add() {
+      const _id = cuid();
+      this.items.push({
+        _id,
+        schemaInput: {
+          data: this.newInstance()
+        }
       });
+    },
+    newInstance() {
+      const instance = {};
+      for (const field of this.field.schema) {
+        if (field.def !== undefined) {
+          instance[field.name] = klona(field.def);
+        }
+      }
+      return instance;
     }
   }
 };
 
 function modelItems(items, field) {
   return items.map((item) => {
-    const open = alwaysExpand(field);
     return {
       _id: item._id || cuid(),
       schemaInput: {
         data: item
-      },
-      open
+      }
     };
   });
-}
-
-function alwaysExpand(field) {
-  if (!field.inline) {
-    return false;
-  }
-  if (field.inline.alwaysExpand === undefined) {
-    return field.schema.length < 3;
-  }
-  return field.inline.alwaysExpand;
 }
 </script>
 <style lang="scss" scoped>
