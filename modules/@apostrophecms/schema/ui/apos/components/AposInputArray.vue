@@ -1,92 +1,62 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="effectiveError"
-    :uid="uid" :items="next"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
+    :items="next"
     :display-options="displayOptions"
   >
     <template #additional>
-      <AposMinMaxCount
-        :field="field"
-        :value="next"
-      />
+      <AposMinMaxCount :field="field" :value="next" />
     </template>
     <template #body>
       <div v-if="field.inline">
-        <draggable
-          v-if="field.inline"
-          class="apos-input-array-inline"
-          tag="div"
-          role="list"
-          :list="items"
-          v-bind="dragOptions"
-          :id="listId"
-        >
-          <div
-            v-for="(item, index) in items"
-            :key="item._id"
-            class="apos-input-array-inline-item"
-            :class="item.open ? 'apos-input-array-inline-item--active' : null"
-          >
-            <div class="apos-input-array-inline-item-controls">
-              <AposIndicator
-                icon="drag-icon"
-                class="apos-drag-handle"
-              />
-              <AposButton
-                v-if="item.open && !alwaysExpand"
-                class="apos-input-array-inline-collapse"
-                :icon-size="20"
-                label="apostrophe:close"
-                icon="unfold-less-horizontal-icon"
-                type="subtle"
-                :modifiers="['inline', 'no-motion']"
-                :icon-only="true"
-                @click="closeInlineItem(item._id)"
-              />
-            </div>
-            <div class="apos-input-array-inline-content-wrapper">
-              <h3
-                class="apos-input-array-inline-label"
-                v-if="!item.open && !alwaysExpand"
-                @click="openInlineItem(item._id)"
+        <table class="apos-table" v-if="items.length">
+          <thead>
+            <tr class="apos-input-array-inline-header">
+              <th class="apos-table-head--hidden" />
+              <th
+                v-for="schema in field.schema"
+                :key="schema._id"
+                class="apos-table-head"
               >
-                {{ getLabel(item._id, index) }}
-              </h3>
-              <transition name="collapse">
-                <div
-                  v-show="item.open"
-                  class="apos-input-array-inline-schema-wrapper"
-                >
-                  <AposSchema
-                    :schema="field.schema"
-                    v-model="item.schemaInput"
-                    :trigger-validation="triggerValidation"
-                    :utility-rail="false"
-                    :generation="generation"
-                    :modifiers="['small', 'inverted']"
-                    :doc-id="docId"
-                  />
-                </div>
-              </transition>
-            </div>
-            <div class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove">
-              <AposButton
-                label="apostrophe:removeItem"
-                icon="trash-can-outline-icon"
-                type="subtle"
-                :modifiers="['inline', 'danger', 'no-motion']"
-                :icon-only="true"
-                @click="remove(item._id)"
-              />
-            </div>
-          </div>
-        </draggable>
+                {{ $t(schema.label) }}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="apos-input-array-inline">
+            <tr
+              v-for="item in items"
+              :key="item._id"
+              class="apos-input-array-inline-item"
+            >
+              <td class="apos-table-cell--hidden">
+                <close-icon @click="remove(item._id)" />
+              </td>
+              <td
+                v-for="schema in field.schema"
+                :key="schema._id"
+                class="apos-table-cell"
+              >
+                <AposSchema
+                  :schema="[schema]"
+                  v-model="item.schemaInput"
+                  :trigger-validation="triggerValidation"
+                  :utility-rail="false"
+                  :generation="generation"
+                  :modifiers="['small', 'inline']"
+                  :doc-id="docId"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
         <AposButton
           type="button"
           label="apostrophe:addItem"
           icon="plus-icon"
           :disabled="disableAdd()"
-          :modifiers="[ 'block' ]"
+          :modifiers="['block']"
           @click="add"
         />
       </div>
@@ -108,11 +78,9 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import cuid from 'cuid';
 import { klona } from 'klona';
-import draggable from 'vuedraggable';
 
 export default {
   name: 'AposInputArray',
-  components: { draggable },
   mixins: [ AposInputMixin ],
   props: {
     generation: {
@@ -132,16 +100,6 @@ export default {
   computed: {
     alwaysExpand() {
       return alwaysExpand(this.field);
-    },
-    listId() {
-      return `sortableList-${cuid()}`;
-    },
-    dragOptions() {
-      return {
-        disabled: this.field.readOnly || this.next.length <= 1,
-        ghostClass: 'apos-is-dragging',
-        handle: '.apos-drag-handle'
-      };
     },
     editLabel() {
       return {
@@ -169,16 +127,18 @@ export default {
     items: {
       deep: true,
       handler() {
-        const erroneous = this.items.filter(item => item.schemaInput.hasErrors);
+        const erroneous = this.items.filter(
+          (item) => item.schemaInput.hasErrors
+        );
         if (erroneous.length) {
-          erroneous.forEach(item => {
+          erroneous.forEach((item) => {
             if (!item.open) {
               // Make errors visible
               item.open = true;
             }
           });
         } else {
-          const next = this.items.map(item => ({
+          const next = this.items.map((item) => ({
             ...item.schemaInput.data,
             _id: item._id,
             metaType: 'arrayItem',
@@ -196,21 +156,21 @@ export default {
     }
   },
   methods: {
-    validate(value) {
-      if (this.items.find(item => item.schemaInput.hasErrors)) {
-        return 'invalid';
-      }
-      if (this.field.required && !value.length) {
-        return 'required';
-      }
-      if (this.field.min && value.length < this.field.min) {
-        return 'min';
-      }
-      if (this.field.max && value.length > this.field.max) {
-        return 'max';
-      }
-      return false;
-    },
+    // validate(value) {
+    //   if (this.items.find((item) => item.schemaInput.hasErrors)) {
+    //     return 'invalid';
+    //   }
+    //   if (this.field.required && !value.length) {
+    //     return 'required';
+    //   }
+    //   if (this.field.min && value.length < this.field.min) {
+    //     return 'min';
+    //   }
+    //   if (this.field.max && value.length > this.field.max) {
+    //     return 'max';
+    //   }
+    //   return false;
+    // },
     async edit() {
       const result = await apos.modal.execute('AposArrayEditor', {
         field: this.field,
@@ -224,55 +184,46 @@ export default {
     },
     getNext() {
       // Next should consistently be an array.
-      return (this.value && Array.isArray(this.value.data))
-        ? this.value.data : (this.field.def || []);
+      return this.value && Array.isArray(this.value.data)
+        ? this.value.data
+        : this.field.def || [];
     },
     disableAdd() {
-      return this.field.max && (this.items.length >= this.field.max);
+      return this.field.max && this.items.length >= this.field.max;
     },
     remove(_id) {
-      this.items = this.items.filter(item => item._id !== _id);
+      this.items = this.items.filter((item) => item._id !== _id);
     },
-    add() {
-      const _id = cuid();
-      this.items.push({
-        _id,
-        schemaInput: {
-          data: this.newInstance()
-        },
-        open: alwaysExpand(this.field)
-      });
-      this.openInlineItem(_id);
-    },
-    newInstance() {
-      const instance = {};
-      for (const field of this.field.schema) {
-        if (field.def !== undefined) {
-          instance[field.name] = klona(field.def);
-        }
-      }
-      return instance;
-    },
-    getLabel(id, index) {
-      const titleField = this.field.titleField || null;
-      const item = this.items.find(item => item._id === id);
-      return item.schemaInput.data[titleField] || `Item ${index + 1}`;
-    },
+    // add() {
+    //   const _id = cuid();
+    //   this.items.push({
+    //     _id,
+    //     schemaInput: {
+    //       data: this.newInstance()
+    //     },
+    //     open: alwaysExpand(this.field)
+    //   });
+    //   this.openInlineItem(_id);
+    // },
+    // newInstance() {
+    //   const instance = {};
+    //   for (const field of this.field.schema) {
+    //     if (field.def !== undefined) {
+    //       instance[field.name] = klona(field.def);
+    //     }
+    //   }
+    //   return instance;
+    // },
     openInlineItem(id) {
-      this.items.forEach(item => {
-        item.open = (item._id === id) || this.alwaysExpand;
-      });
-    },
-    closeInlineItem(id) {
-      this.items.forEach(item => {
-        item.open = this.alwaysExpand;
+      this.items.forEach((item) => {
+        item.open = item._id === id || this.alwaysExpand;
       });
     }
   }
 };
 
 function modelItems(items, field) {
-  return items.map(item => {
+  return items.map((item) => {
     const open = alwaysExpand(field);
     return {
       _id: item._id || cuid(),
@@ -295,65 +246,51 @@ function alwaysExpand(field) {
 }
 </script>
 <style lang="scss" scoped>
-  .apos-is-dragging {
-    opacity: 0.5;
-    background: var(--a-base-4);
+::v-deep .apos-table {
+  .apos-field__info, .apos-field__error, .apos-context-menu, .apos-slat__secondary {
+    display: none;
   }
-  .apos-input-array-inline-label {
-    transition: background-color 0.3s ease;
-    @include type-label;
-    margin: 0;
-    &:hover {
-      cursor: pointer;
-    }
+  .apos-table-cell .apos-schema .apos-field {
+    margin: 5px;
   }
-  .apos-input-array-inline-item {
-    position: relative;
-    transition: background-color 0.3s ease;
-    display: flex;
-    border-bottom: 1px solid var(--a-base-9);
-    &:hover {
-      background-color: var(--a-base-10);
-    }
+  .apos-field--inline .apos-input-wrapper {
+    width: 130px;
+    height: 36px;
   }
-  .apos-input-array-inline-collapse {
-    position: absolute;
-    top: $spacing-quadruple;
-    left: 7.5px;
+  .apos-input-relationship__items {
+    margin-top: 0;
   }
+  .apos-input {
+    padding-right: 0;
+  }
+}
+.apos-table {
+  position: relative;
+  left: -30px;
+}
+.apos-table-cell--hidden {
+  background-color: var(--a-white);
+  padding-left: 5px;
+  cursor: pointer;
+}
+.apos-table, .apos-table-head, .apos-table-cell {
+  @include type-label;
+  border: 1px solid var(--a-base-9);
+  width: auto;
+}
+.apos-table, .apos-input-array-inline-item {
+  border:none;
+}
+.apos-input-array-inline-header {
+  height: 40px;
+}
+.apos-table-head {
+  background-color: var(--a-base-10);
+  text-align: left;
+  padding-left: 10px;
+}
+.apos-table-cell {
+  background-color: var(--a-background-primary);
+}
 
-  .apos-input-array-inline-item--active {
-    background-color: var(--a-base-10);
-    border-bottom: 1px solid var(--a-base-6);
-    .apos-input-array-inline-content-wrapper {
-      padding-top: $spacing-base;
-      padding-bottom: $spacing-base;
-    }
-  }
-  .apos-input-array-inline-item-controls {
-    padding: $spacing-base;
-  }
-
-  .apos-input-array-inline-label {
-    padding-top: $spacing-base;
-    padding-bottom: $spacing-base;
-  }
-
-  .apos-input-array-inline-content-wrapper {
-    flex-grow: 1;
-  }
-
-  .apos-input-array-inline-schema-wrapper {
-    max-height: 999px;
-    overflow: hidden;
-    transition: max-height 0.5s;
-  }
-
-  .collapse-enter, .collapse-leave-to {
-    max-height: 0;
-  }
-
-  .collapse-enter-to, .collapse-leave {
-    max-height: 999px;
-  }
 </style>
