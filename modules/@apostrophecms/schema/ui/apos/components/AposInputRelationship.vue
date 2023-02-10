@@ -218,6 +218,7 @@ export default {
     },
     async search(qs) {
       qs.perPage = this.field.suggestionLimit;
+      qs.sort = this.field.suggestionSort;
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
       }
