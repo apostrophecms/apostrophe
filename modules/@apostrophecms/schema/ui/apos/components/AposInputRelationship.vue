@@ -34,7 +34,7 @@
             :required="field.required"
             :id="uid"
             @input="input"
-            @focus="search"
+            @focus="input"
             @focusout="handleFocusOut"
             tabindex="0"
           >
@@ -128,12 +128,32 @@ export default {
     suggestion() {
       return {
         disabled: true,
-        suggestion: true,
+        tooltip: false,
+        icon: false,
+        classes: [ 'suggestion' ],
         title: this.$t(this.field.suggestionLabel),
         help: this.$t({
           key: this.field.suggestionHelp || 'apostrophe:relationshipSuggestionHelp',
           type: this.$t(this.pluralLabel)
-        })
+        }),
+        customFields: [ 'help' ]
+      };
+    },
+    hint() {
+      return {
+        disabled: true,
+        tooltip: false,
+        icon: 'binoculars-icon',
+        iconSize: 35,
+        classes: [ 'hint' ],
+        title: this.$t('apostrophe:relationshipSuggestionNoResults'),
+        help: this.$t({
+          key: this.field.browse
+            ? 'apostrophe:relationshipSuggestionSearchAndBrowse'
+            : 'apostrophe:relationshipSuggestionSearch',
+          type: this.$t(this.pluralLabel)
+        }),
+        customFields: [ 'help' ]
       };
     },
     chooserComponent () {
@@ -196,7 +216,7 @@ export default {
     updateSelected(items) {
       this.next = items;
     },
-    async search(qs = {}) {
+    async search(qs) {
       qs.perPage = this.field.suggestionLimit;
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
@@ -212,14 +232,17 @@ export default {
         }
       );
       // filter items already selected
-      this.searchList = [ this.suggestion ]
+      const first = this.suggestion;
+      const last = this.hint;
+      this.searchList = [ first ]
         .concat(list.results
           .filter(item => !this.next.map(i => i._id).includes(item._id))
           .map(item => ({
             ...item,
             disabled: this.disableUnpublished && !item.lastPublishedAt
           }))
-        );
+        )
+        .concat(last);
 
       this.searching = false;
     },
@@ -229,14 +252,11 @@ export default {
       }
 
       const trimmed = this.searchTerm.trim();
-      if (!trimmed.length) {
-        this.searchList = [];
-        return;
-      }
-
-      const qs = {
-        autocomplete: trimmed
-      };
+      const qs = trimmed.length
+        ? {
+          autocomplete: trimmed
+        }
+        : {};
 
       this.search(qs);
     },

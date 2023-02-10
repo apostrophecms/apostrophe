@@ -4,13 +4,13 @@
       v-for="item in list"
       :key="item._id"
       :class="getClasses(item)"
-      v-apos-tooltip="item.disabled && !item.suggestion ? disabledTooltip : null"
+      v-apos-tooltip="getTooltip(item)"
       @click="select(item, $event)"
     >
       <AposIndicator
-        v-if="icon && !item.suggestion"
-        :icon="icon"
-        :icon-size="iconSize"
+        v-if="getIcon(item).icon"
+        :icon="getIcon(item).icon"
+        :icon-size="getIcon(item).iconSize"
         class="apos-button__icon"
         fill-color="currentColor"
       />
@@ -18,13 +18,14 @@
         {{ item.title }}
       </div>
       <div
-        v-if="item.suggestion"
+        v-for="field in fields"
+        :key="field"
         class="apos-search__item__field"
       >
-        {{ item.help }}
+        {{ item[field] }}
       </div>
       <div
-        v-for="field in fields"
+        v-for="field in item.customFields"
         :key="field"
         class="apos-search__item__field"
       >
@@ -40,6 +41,12 @@ export default {
   name: 'AposSearchList',
   props: {
     list: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
+    customFields: {
       type: Array,
       default() {
         return [];
@@ -98,10 +105,20 @@ export default {
       if (item.disabled) {
         classes['apos-search__item--disabled'] = true;
       }
-      if (item.suggestion) {
-        classes['apos-search__item--suggestion'] = true;
-      }
+      item.classes && Array.isArray(item.classes) && item.classes.forEach(suffix => {
+        classes[`apos-search__item--${suffix}`] = true;
+      });
+
       return classes;
+    },
+    getTooltip(item) {
+      return item.disabled && item.tooltip !== false ? this.disabledTooltip : null;
+    },
+    getIcon(item) {
+      return {
+        icon: item.icon ?? this.icon,
+        iconSize: item.iconSize || this.iconSize
+      };
     }
   }
 };
@@ -154,6 +171,18 @@ export default {
   }
 }
 
+@mixin hint {
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--a-base-5);
+  .apos-search__item__title {
+    color: var(--a-base-2);
+  }
+  .apos-search__item__field {
+    color: var(--a-text-primary);
+  }
+}
+
 .apos-search__item {
   display: flex;
   justify-content: flex-start;
@@ -177,6 +206,9 @@ export default {
     &.apos-search__item--suggestion {
       @include suggestion;
     }
+    &.apos-search__item--hint {
+      @include hint;
+    }
   }
 
   &__title {
@@ -195,6 +227,10 @@ export default {
 
   &.apos-search__item--suggestion {
     @include suggestion;
+  }
+
+  &.apos-search__item--hint {
+    @include hint;
   }
 }
 </style>
