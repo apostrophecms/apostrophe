@@ -217,8 +217,12 @@ export default {
       this.next = items;
     },
     async search(qs) {
-      qs.perPage = this.field.suggestionLimit;
-      qs.sort = this.field.suggestionSort;
+      if (this.field.suggestionLimit) {
+        qs.perPage = this.field.suggestionLimit;
+      }
+      if (this.field.suggestionSort) {
+        qs.sort = this.field.suggestionSort;
+      }
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
       }
