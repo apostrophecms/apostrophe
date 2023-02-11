@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.40.0 (2023-02-11)
+
+* For devops purposes, the `APOS_BASE_URL` environment variable is now respected as an override of the `baseUrl` option.
+
 ## 3.39.2 (2023-02-03)
 
 ### Fixes
