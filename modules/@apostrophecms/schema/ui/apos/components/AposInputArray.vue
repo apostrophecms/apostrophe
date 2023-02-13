@@ -8,7 +8,6 @@
       <AposMinMaxCount
         :field="field"
         :value="next"
-        v-if="!field.inline"
       />
     </template>
     <template #body>
