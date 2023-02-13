@@ -90,10 +90,13 @@ export default {
     }
   },
   methods: {
-    // Default to a value outside the range, to be used as a flag.
+    // Default to a value outside the range when no def is defined,
+    // to be used as a flag.
     // The value will be set to null later in validation
     unset() {
-      this.next = this.field.min - 1;
+      this.next = typeof this.field.def === 'number'
+        ? this.field.def
+        : this.field.min - 1;
     },
     validate(value) {
       if (this.field.required) {
