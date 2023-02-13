@@ -12,6 +12,22 @@
     </template>
     <template #body>
       <div v-if="field.inline">
+        <div
+          v-if="!items.length && field.whenEmpty"
+          class="apos-input-array-inline-empty"
+        >
+          <component
+            v-if="field.whenEmpty.icon"
+            :is="field.whenEmpty.icon"
+            size="50"
+          />
+          <label
+            v-if="field.whenEmpty.label"
+            class="apos-input-array-inline-empty-label"
+          >
+            {{ $t(field.whenEmpty.label) }}
+          </label>
+        </div>
         <draggable
           v-if="field.inline"
           class="apos-input-array-inline"
@@ -82,7 +98,7 @@
           </div>
         </draggable>
         <AposButton
-          type="button"
+          type="primary"
           label="apostrophe:addItem"
           icon="plus-icon"
           :disabled="disableAdd()"
@@ -298,6 +314,20 @@ function alwaysExpand(field) {
   .apos-is-dragging {
     opacity: 0.5;
     background: var(--a-base-4);
+  }
+  .apos-input-array-inline-empty {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: $spacing-base;
+    padding: $spacing-triple 0;
+    border: 1px solid var(--a-base-9);
+    color: var(--a-base-8);
+  }
+  .apos-input-array-inline-empty-label {
+    @include type-label;
+    color: var(--a-base-3);
   }
   .apos-input-array-inline-label {
     transition: background-color 0.3s ease;
