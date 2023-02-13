@@ -34,6 +34,7 @@
             :required="field.required"
             :id="uid"
             @input="input"
+            @focus="input"
             @focusout="handleFocusOut"
             tabindex="0"
           >
@@ -62,6 +63,9 @@
           :list="searchList"
           @select="updateSelected"
           :selected-items="next"
+          :icon="field.suggestionIcon"
+          :icon-size="field.suggestionIconSize"
+          :fields="field.suggestionFields"
           disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
         />
       </div>
@@ -119,6 +123,37 @@ export default {
       return {
         key: 'apostrophe:browseDocType',
         type: this.$t(this.pluralLabel)
+      };
+    },
+    suggestion() {
+      return {
+        disabled: true,
+        tooltip: false,
+        icon: false,
+        classes: [ 'suggestion' ],
+        title: this.$t(this.field.suggestionLabel),
+        help: this.$t({
+          key: this.field.suggestionHelp || 'apostrophe:relationshipSuggestionHelp',
+          type: this.$t(this.pluralLabel)
+        }),
+        customFields: [ 'help' ]
+      };
+    },
+    hint() {
+      return {
+        disabled: true,
+        tooltip: false,
+        icon: 'binoculars-icon',
+        iconSize: 35,
+        classes: [ 'hint' ],
+        title: this.$t('apostrophe:relationshipSuggestionNoResults'),
+        help: this.$t({
+          key: this.field.browse
+            ? 'apostrophe:relationshipSuggestionSearchAndBrowse'
+            : 'apostrophe:relationshipSuggestionSearch',
+          type: this.$t(this.pluralLabel)
+        }),
+        customFields: [ 'help' ]
       };
     },
     chooserComponent () {
@@ -181,21 +216,13 @@ export default {
     updateSelected(items) {
       this.next = items;
     },
-    async input () {
-      if (this.searching) {
-        return;
+    async search(qs) {
+      if (this.field.suggestionLimit) {
+        qs.perPage = this.field.suggestionLimit;
       }
-
-      const trimmed = this.searchTerm.trim();
-      if (!trimmed.length) {
-        this.searchList = [];
-        return;
+      if (this.field.suggestionSort) {
+        qs.sort = this.field.suggestionSort;
       }
-
-      const qs = {
-        autocomplete: trimmed
-      };
-
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
       }
@@ -210,14 +237,33 @@ export default {
         }
       );
       // filter items already selected
-      this.searchList = list.results
-        .filter(item => !this.next.map(i => i._id).includes(item._id))
-        .map(item => ({
-          ...item,
-          disabled: this.disableUnpublished && !item.lastPublishedAt
-        }));
+      const first = this.suggestion;
+      const last = this.hint;
+      this.searchList = [ first ]
+        .concat(list.results
+          .filter(item => !this.next.map(i => i._id).includes(item._id))
+          .map(item => ({
+            ...item,
+            disabled: this.disableUnpublished && !item.lastPublishedAt
+          }))
+        )
+        .concat(last);
 
       this.searching = false;
+    },
+    async input () {
+      if (this.searching) {
+        return;
+      }
+
+      const trimmed = this.searchTerm.trim();
+      const qs = trimmed.length
+        ? {
+          autocomplete: trimmed
+        }
+        : {};
+
+      await this.search(qs);
     },
     handleFocusOut() {
       // hide search list when click outside the input
@@ -272,6 +318,7 @@ export default {
 <style lang="scss" scoped>
   .apos-input-relationship__input-wrapper {
     position: relative;
+    z-index: $z-index-widget-focused-controls;
 
     .apos-input-relationship__button {
       position: absolute;

@@ -1130,6 +1130,96 @@ describe('Schemas', function() {
     assert(result.price === 11.4);
   });
 
+  it('should set the default range field value when undefined is given', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'range',
+          name: 'rating',
+          label: 'Rating',
+          def: 0,
+          min: 0,
+          max: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    const input = {};
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    assert(result.rating === 0);
+  });
+
+  it('should set the default range field value when null is given', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'range',
+          name: 'rating',
+          label: 'Rating',
+          def: 0,
+          min: 0,
+          max: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    const input = {
+      rating: null
+    };
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    assert(result.rating === 0);
+  });
+
+  it('should set the range field value to null when a value below the min threshold is given', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'range',
+          name: 'rating',
+          label: 'Rating',
+          def: 0,
+          min: 0,
+          max: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    const input = {
+      rating: -1
+    };
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    assert(result.rating === null);
+  });
+
+  it('should set the range field value to null when a value over the max threshold is given', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'range',
+          name: 'rating',
+          label: 'Rating',
+          def: 0,
+          min: 0,
+          max: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    const input = {
+      rating: 6
+    };
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    assert(result.rating === null);
+  });
+
   it('should convert simple data correctly', async function() {
     const schema = apos.schema.compose({
       addFields: simpleFields

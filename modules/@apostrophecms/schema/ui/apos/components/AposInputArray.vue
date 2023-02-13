@@ -7,10 +7,29 @@
     :display-options="displayOptions"
   >
     <template #additional>
-      <AposMinMaxCount :field="field" :value="next" />
+      <AposMinMaxCount
+        :field="field"
+        :value="next"
+      />
     </template>
     <template #body>
       <div v-if="field.inline">
+        <div
+          v-if="!items.length && field.whenEmpty"
+          class="apos-input-array-inline-empty"
+        >
+          <component
+            v-if="field.whenEmpty.icon"
+            :is="field.whenEmpty.icon"
+            size="50"
+          />
+          <label
+            v-if="field.whenEmpty.label"
+            class="apos-input-array-inline-empty-label"
+          >
+            {{ $t(field.whenEmpty.label) }}
+          </label>
+        </div>
         <table class="apos-table" v-if="items.length">
           <thead>
             <tr class="apos-input-array-inline-header">
@@ -52,7 +71,7 @@
           </tbody>
         </table>
         <AposButton
-          type="button"
+          type="primary"
           label="apostrophe:addItem"
           icon="plus-icon"
           :disabled="disableAdd()"
@@ -212,12 +231,35 @@ function modelItems(items, field) {
 }
 </script>
 <style lang="scss" scoped>
+.apos-input-array-inline-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: $spacing-base;
+  padding: $spacing-triple 0;
+  border: 1px solid var(--a-base-9);
+  color: var(--a-base-8);
+}
+.apos-input-array-inline-empty-label {
+  @include type-label;
+  color: var(--a-base-3);
+}
+
 ::v-deep .apos-table {
   .apos-field__info, .apos-field__error, .apos-context-menu, .apos-slat__secondary {
     display: none;
   }
   .apos-table-cell .apos-schema .apos-field {
     margin: 5px;
+  }
+  .apos-input-array-inline-label {
+    transition: background-color 0.3s ease;
+    @include type-label;
+    margin: 0;
+    &:hover {
+      cursor: pointer;
+    }
   }
   .apos-field--inline .apos-input-wrapper {
     width: 130px;
@@ -258,5 +300,4 @@ function modelItems(items, field) {
 .apos-table-cell {
   background-color: var(--a-background-primary);
 }
-
 </style>
