@@ -753,6 +753,41 @@ describe('Pieces', function() {
     assert(response.pages === 2);
   });
 
+  it('can GET the results sorted ascending', async function() {
+    const response = await apos.http.get('/api/v1/product?perPage=5&sort[title]=1', {
+      jar
+    });
+
+    const actual = response.results.map(result => result.title);
+    const expected = [
+      'Cool Product #1',
+      'Cool Product #10',
+      'Cool Product #2',
+      'Cool Product #3',
+      'Cool Product #4'
+    ];
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('can GET the results sorted descending', async function() {
+    const response = await apos.http.get('/api/v1/product?perPage=5&sort[title]=-1', {
+      jar
+    });
+
+    const actual = response.results.map(result => result.title);
+    console.log(response.results);
+    const expected = [
+      'Cool Product #9',
+      'Cool Product #8',
+      'Cool Product #7',
+      'Cool Product #6',
+      'Cool Product #5'
+    ];
+
+    assert.deepEqual(actual, expected);
+  });
+
   it('can update a product with PUT', async function() {
     const args = {
       body: {

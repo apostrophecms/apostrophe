@@ -1042,6 +1042,12 @@ module.exports = (self) => {
         field.postprocessor = field.postprocessor || withTypeManager.options.relationshipPostprocessor;
         field.editorLabel = field.editorLabel || withTypeManager.options.relationshipEditorLabel;
         field.editorIcon = field.editorIcon || withTypeManager.options.relationshipEditorIcon;
+        field.suggestionLabel = field.suggestionLabel || withTypeManager.options.relationshipSuggestionLabel;
+        field.suggestionHelp = field.suggestionHelp || withTypeManager.options.relationshipSuggestionHelp;
+        field.suggestionLimit = field.suggestionLimit || withTypeManager.options.relationshipSuggestionLimit;
+        field.suggestionSort = field.suggestionSort || withTypeManager.options.relationshipSuggestionSort;
+        field.suggestionIcon = field.suggestionIcon || withTypeManager.options.relationshipSuggestionIcon;
+        field.suggestionFields = field.suggestionFields || withTypeManager.options.relationshipSuggestionFields;
 
         if (!field.schema && !Array.isArray(field.withType)) {
           const fieldsOption = withTypeManager.options.relationshipFields;

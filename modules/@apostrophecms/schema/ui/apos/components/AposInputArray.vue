@@ -86,7 +86,7 @@
           label="apostrophe:addItem"
           icon="plus-icon"
           :disabled="disableAdd()"
-          :modifiers="[ 'block' ]"
+          :modifiers="[ 'block', 'primary' ]"
           @click="add"
         />
       </div>
@@ -345,7 +345,6 @@ function alwaysExpand(field) {
 
   .apos-input-array-inline-schema-wrapper {
     max-height: 999px;
-    overflow: hidden;
     transition: max-height 0.5s;
   }
 
