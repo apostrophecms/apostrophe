@@ -241,11 +241,11 @@ function modelItems(items, field) {
 }
 .apos-table, .apos-table-head, .apos-table-cell {
   @include type-label;
-  border: 1px solid var(--a-base-9);
   width: auto;
+  border: 1px solid var(--a-base-9);
 }
 .apos-table, .apos-input-array-inline-item {
-  border:none;
+  border: none;
 }
 .apos-input-array-inline-header {
   height: 40px;
