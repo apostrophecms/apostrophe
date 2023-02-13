@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Accepts `APOS_BASE_URL` environment variable as an override of the global `baseUrl` option. Useful in devops.
+
 ## 2.224.0 (2023-02-01)
 
 ### Adds
