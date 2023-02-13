@@ -681,7 +681,7 @@ module.exports = (self) => {
       // Allow for ranges to go unset
       // `min` here does not imply requirement, it is the minimum value the range UI will represent
       if (
-        !data[field.name] ||
+        typeof destination[field.name] !== 'number' ||
         data[field.name] < field.min ||
         data[field.name] > field.max
       ) {
