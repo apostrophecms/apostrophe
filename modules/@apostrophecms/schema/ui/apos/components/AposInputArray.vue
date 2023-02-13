@@ -321,9 +321,9 @@ function alwaysExpand(field) {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border: 1px solid var(--a-base-9);
     margin-bottom: $spacing-base;
     padding: $spacing-triple 0;
+    border: 1px solid var(--a-base-9);
     color: var(--a-base-8);
   }
   .apos-input-array-inline-empty-label {

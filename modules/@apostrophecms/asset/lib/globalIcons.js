@@ -1,8 +1,6 @@
 // Alphabetical collection of globally available vue-material-design-icons.
 module.exports = {
-  'account-icon': 'Account',
   'account-box-icon': 'AccountBox',
-  'account-group-icon': 'AccountGroup',
   'alert-circle-icon': 'AlertCircle',
   'alpha-x-icon': 'AlphaX',
   'anchor-icon': 'Anchor',
