@@ -201,7 +201,7 @@ describe('Attachment', function() {
         extension: 'jpg',
         _id: 'test'
       });
-      assert(url === '/uploads/attachments/test-test.full.jpg');
+      assert.strictEqual(url, '/uploads/attachments/test-test.full.jpg');
     });
 
     it('should generate the "one-half" URL when one-half size specified for image', function() {

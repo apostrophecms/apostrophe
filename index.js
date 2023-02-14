@@ -449,6 +449,8 @@ async function apostrophe(options, telemetry, rootSpan) {
       throw 'Specify the `shortName` option and set it to the name of your project\'s repository or folder';
     }
     self.title = self.options.title;
+    // Environment variable override
+    self.options.baseUrl = process.env.APOS_BASE_URL || self.options.baseUrl;
     self.baseUrl = self.options.baseUrl;
     self.prefix = self.options.prefix || '';
   }
