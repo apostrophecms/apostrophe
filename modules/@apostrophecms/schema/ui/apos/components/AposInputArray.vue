@@ -384,55 +384,55 @@ function alwaysExpand(field) {
     color: var(--a-base-3);
   }
   .apos-input-array-inline-label {
-     transition: background-color 0.3s ease;
-     @include type-label;
-     margin: 0;
-     &:hover {
-       cursor: pointer;
-     }
-   }
+    transition: background-color 0.3s ease;
+    @include type-label;
+    margin: 0;
+    &:hover {
+      cursor: pointer;
+    }
+  }
   .apos-input-array-inline-item {
-     position: relative;
-     transition: background-color 0.3s ease;
-     display: flex;
-     border-bottom: 1px solid var(--a-base-9);
-     &:hover {
-       background-color: var(--a-base-10);
-     }
-   }
-   .apos-input-array-inline-collapse {
-     position: absolute;
-     top: $spacing-quadruple;
-     left: 7.5px;
-   }
-   .apos-input-array-inline-item--active {
-     background-color: var(--a-base-10);
-     border-bottom: 1px solid var(--a-base-6);
-     .apos-input-array-inline-content-wrapper {
-       padding-top: $spacing-base;
-       padding-bottom: $spacing-base;
-     }
-   }
-   .apos-input-array-inline-item-controls {
-     padding: $spacing-base;
-   }
-   .apos-input-array-inline-label {
-     padding-top: $spacing-base;
-     padding-bottom: $spacing-base;
-   }
-   .apos-input-array-inline-content-wrapper {
-     flex-grow: 1;
-   }
-   .apos-input-array-inline-schema-wrapper {
-     max-height: 999px;
-     transition: max-height 0.5s;
-   }
-   .collapse-enter, .collapse-leave-to {
-     max-height: 0;
-   }
-   .collapse-enter-to, .collapse-leave {
-     max-height: 999px;
-   }
+    position: relative;
+    transition: background-color 0.3s ease;
+    display: flex;
+    border-bottom: 1px solid var(--a-base-9);
+    &:hover {
+      background-color: var(--a-base-10);
+    }
+  }
+  .apos-input-array-inline-collapse {
+    position: absolute;
+    top: $spacing-quadruple;
+    left: 7.5px;
+  }
+  .apos-input-array-inline-item--active {
+    background-color: var(--a-base-10);
+    border-bottom: 1px solid var(--a-base-6);
+    .apos-input-array-inline-content-wrapper {
+      padding-top: $spacing-base;
+      padding-bottom: $spacing-base;
+    }
+  }
+  .apos-input-array-inline-item-controls {
+    padding: $spacing-base;
+  }
+  .apos-input-array-inline-label {
+    padding-top: $spacing-base;
+    padding-bottom: $spacing-base;
+  }
+  .apos-input-array-inline-content-wrapper {
+    flex-grow: 1;
+  }
+  .apos-input-array-inline-schema-wrapper {
+    max-height: 999px;
+    transition: max-height 0.5s;
+  }
+  .collapse-enter, .collapse-leave-to {
+    max-height: 0;
+  }
+  .collapse-enter-to, .collapse-leave {
+    max-height: 999px;
+  }
 
   ::v-deep .apos-table {
     .apos-field__info, .apos-field__error, .apos-context-menu, .apos-slat__secondary {
