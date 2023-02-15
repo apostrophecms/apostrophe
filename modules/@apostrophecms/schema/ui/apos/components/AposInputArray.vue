@@ -28,54 +28,85 @@
             {{ $t(field.whenEmpty.label) }}
           </label>
         </div>
-        <table class="apos-table" v-if="items.length">
-          <thead>
-            <tr class="apos-input-array-inline-header">
-              <th class="apos-table-head--hidden" />
-              <th
-                v-for="schema in field.schema"
-                :key="schema._id"
-                class="apos-table-head"
-              >
-                {{ $t(schema.label) }}
-              </th>
-            </tr>
-          </thead>
-          <draggable
-            :disabled="!field.draggable"
-            class="apos-input-array-inline"
-            tag="tbody"
-            role="list"
-            :list="items"
-            v-bind="dragOptions"
-            :id="listId"
+        <div v-if="field.styles === 'table'">
+          <div
+            v-for="schema in field.schema"
+            :key="schema._id"
+            class="apos-table-head"
           >
-            <tr
-              v-for="item in items"
-              :key="item._id"
-              class="apos-input-array-inline-item"
-            >
-              <td class="apos-table-cell--hidden">
-                <close-icon @click="remove(item._id)" />
-              </td>
-              <td
-                v-for="schema in field.schema"
-                :key="schema._id"
-                class="apos-table-cell"
+            {{ $t(schema.label) }}
+          </div>
+        </div>
+        <draggable
+          :disabled="!field.draggable"
+          class="apos-input-array-inline"
+          tag="tbody"
+          role="list"
+          :list="items"
+          v-bind="dragOptions"
+          :id="listId"
+        >
+          <div
+            v-for="(item, index) in items"
+            :key="item._id"
+            class="apos-input-array-inline-item"
+            :class="item.open ? 'apos-input-array-inline-item--active' : null"
+          >
+            <div class="apos-input-array-inline-item-controls">
+              <AposIndicator
+                v-if="field.draggable"
+                icon="drag-icon"
+                class="apos-drag-handle"
+              />
+              <AposButton
+                v-if="item.open && !alwaysExpand"
+                class="apos-input-array-inline-collapse"
+                :icon-size="20"
+                label="apostrophe:close"
+                icon="unfold-less-horizontal-icon"
+                type="subtle"
+                :modifiers="['inline', 'no-motion']"
+                :icon-only="true"
+                @click="closeInlineItem(item._id)"
+              />
+            </div>
+            <div class="apos-input-array-inline-content-wrapper">
+              <h3
+                class="apos-input-array-inline-label"
+                v-if="!item.open && !alwaysExpand"
+                @click="openInlineItem(item._id)"
               >
-                <AposSchema
-                  :schema="[schema]"
-                  v-model="item.schemaInput"
-                  :trigger-validation="triggerValidation"
-                  :utility-rail="false"
-                  :generation="generation"
-                  :modifiers="['small', 'inline']"
-                  :doc-id="docId"
-                />
-              </td>
-            </tr>
-          </draggable>
-        </table>
+                {{ getLabel(item._id, index) }}
+              </h3>
+              <transition name="collapse">
+                <div
+                  v-show="item.open"
+                  class="apos-input-array-inline-schema-wrapper"
+                >
+                  <AposSchema
+                    :schema="field.schema"
+                    v-model="item.schemaInput"
+                    :trigger-validation="triggerValidation"
+                    :utility-rail="false"
+                    :generation="generation"
+                    :modifiers="['small', 'inverted']"
+                    :doc-id="docId"
+                  />
+                </div>
+              </transition>
+            </div>
+            <div class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove">
+              <AposButton
+                label="apostrophe:removeItem"
+                :icon="field.styles === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
+                type="subtle"
+                :modifiers="['inline', 'danger', 'no-motion']"
+                :icon-only="true"
+                @click="remove(item._id)"
+              />
+            </div>
+          </div>
+        </draggable>
         <AposButton
           type="primary"
           label="apostrophe:addItem"
@@ -97,6 +128,50 @@
       </div>
     </template>
   </AposInputWrapper>
+  <!--
+  <tr
+    v-for="item in items"
+    :key="item._id"
+    class="apos-input-array-inline-item"
+  >
+    <td class="apos-table-cell--hidden">
+      <close-icon @click="remove(item._id)" />
+    </td>
+    <AposSchema
+      :schema="field.schema"
+      v-model="item.schemaInput"
+      :trigger-validation="triggerValidation"
+      :utility-rail="false"
+      :generation="generation"
+      :modifiers="['small', 'inline']"
+      :doc-id="docId"
+      style-display="table"
+      style-class="apos-table-cell"
+    />
+  </tr>
+
+  <div v-if="field.styles === 'table'">
+    <table class="apos-table" v-if="items.length">
+      <thead>
+        <tr class="apos-input-array-inline-header">
+          <th class="apos-table-head--hidden" />
+          <th
+            v-for="schema in field.schema"
+            :key="schema._id"
+            class="apos-table-head"
+          >
+            {{ $t(schema.label) }}
+          </th>
+        </tr>
+      </thead>
+  </div>
+
+  <div v-if="field.styles === 'table'">
+    </table>
+  </div>
+
+  </draggable>
+  -->
 </template>
 
 <script>
@@ -173,19 +248,19 @@ export default {
             }
           });
         } else {
-          const next = this.items.map((item) => ({
+          const next = this.items.map(item => ({
             ...item.schemaInput.data,
             _id: item._id,
             metaType: 'arrayItem',
             scopedArrayName: this.field.scopedArrayName
           }));
           this.next = next;
-          // Our validate method was called first before that of
-          // the subfields, so remedy that by calling again on any
-          // change to the subfield state during validation
-          if (this.triggerValidation) {
-            this.validateAndEmit();
-          }
+        }
+        // Our validate method was called first before that of
+        // the subfields, so remedy that by calling again on any
+        // change to the subfield state during validation
+        if (this.triggerValidation) {
+          this.validateAndEmit();
         }
       }
     }
@@ -219,8 +294,8 @@ export default {
     },
     getNext() {
       // Next should consistently be an array.
-      return this.value && Array.isArray(this.value.data)
-        ? this.value.data : this.field.def || [];
+      return (this.value && Array.isArray(this.value.data))
+        ? this.value.data : (this.field.def || []);
     },
     disableAdd() {
       return this.field.max && (this.items.length >= this.field.max);
@@ -290,77 +365,120 @@ function alwaysExpand(field) {
 }
 </script>
 <style lang="scss" scoped>
-.apos-is-dragging {
-  opacity: 0.5;
-  background: var(--a-base-4);
-}
-.apos-input-array-inline-empty {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: $spacing-base;
-  padding: $spacing-triple 0;
-  border: 1px solid var(--a-base-9);
-  color: var(--a-base-8);
-}
-.apos-input-array-inline-empty-label {
-  @include type-label;
-  color: var(--a-base-3);
-}
-
-::v-deep .apos-table {
-  .apos-field__info, .apos-field__error, .apos-context-menu, .apos-slat__secondary {
-    display: none;
+  .apos-is-dragging {
+    opacity: 0.5;
+    background: var(--a-base-4);
   }
-  .apos-table-cell .apos-schema .apos-field {
-    margin: 5px;
+  .apos-input-array-inline-empty {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: $spacing-base;
+    padding: $spacing-triple 0;
+    border: 1px solid var(--a-base-9);
+    color: var(--a-base-8);
   }
-  .apos-input-array-inline-label {
-    transition: background-color 0.3s ease;
+  .apos-input-array-inline-empty-label {
     @include type-label;
-    margin: 0;
-    &:hover {
-      cursor: pointer;
+    color: var(--a-base-3);
+  }
+
+  .apos-input-array-inline-item {
+     position: relative;
+     transition: background-color 0.3s ease;
+     display: flex;
+     border-bottom: 1px solid var(--a-base-9);
+     &:hover {
+       background-color: var(--a-base-10);
+     }
+   }
+   .apos-input-array-inline-collapse {
+     position: absolute;
+     top: $spacing-quadruple;
+     left: 7.5px;
+   }
+   .apos-input-array-inline-item--active {
+     background-color: var(--a-base-10);
+     border-bottom: 1px solid var(--a-base-6);
+     .apos-input-array-inline-content-wrapper {
+       padding-top: $spacing-base;
+       padding-bottom: $spacing-base;
+     }
+   }
+   .apos-input-array-inline-item-controls {
+     padding: $spacing-base;
+   }
+   .apos-input-array-inline-label {
+     padding-top: $spacing-base;
+     padding-bottom: $spacing-base;
+   }
+   .apos-input-array-inline-content-wrapper {
+     flex-grow: 1;
+   }
+   .apos-input-array-inline-schema-wrapper {
+     max-height: 999px;
+     transition: max-height 0.5s;
+   }
+   .collapse-enter, .collapse-leave-to {
+     max-height: 0;
+   }
+   .collapse-enter-to, .collapse-leave {
+     max-height: 999px;
+   }
+
+  ::v-deep .apos-table {
+    .apos-field__info, .apos-field__error, .apos-context-menu, .apos-slat__secondary {
+      display: none;
+    }
+    .apos-table-cell .apos-schema .apos-field {
+      margin: 5px;
+    }
+    .apos-input-array-inline-label {
+      transition: background-color 0.3s ease;
+      @include type-label;
+      margin: 0;
+      &:hover {
+        cursor: pointer;
+      }
+    }
+    .apos-field--inline .apos-input-wrapper {
+      width: 130px;
+      height: 36px;
+    }
+    .apos-input-relationship__items {
+      margin-top: 0;
+    }
+    .apos-input {
+      padding-right: 0;
     }
   }
-  .apos-field--inline .apos-input-wrapper {
-    width: 130px;
-    height: 36px;
+  .apos-table {
+    position: relative;
+    left: -30px;
   }
-  .apos-input-relationship__items {
-    margin-top: 0;
+  .apos-table-cell--hidden {
+    background-color: var(--a-white);
+    padding-left: 5px;
+    cursor: pointer;
   }
-  .apos-input {
-    padding-right: 0;
+  .apos-table, .apos-table-head, .apos-table-cell {
+    @include type-label;
+    width: auto;
+    border: 1px solid var(--a-base-9);
   }
-}
-.apos-table {
-  position: relative;
-  left: -30px;
-}
-.apos-table-cell--hidden {
-  background-color: var(--a-white);
-  padding-left: 5px;
-  cursor: pointer;
-}
-.apos-table, .apos-table-head, .apos-table-cell {
-  @include type-label;
-  width: auto;
-  border: 1px solid var(--a-base-9);
-}
-.apos-table, .apos-input-array-inline-item {
-  border: none;
-}
-.apos-input-array-inline-header {
-  height: 40px;
-}
-.apos-table-head {
-  background-color: var(--a-base-10);
-  text-align: left;
-  padding-left: 10px;
-}
-.apos-table-cell {
-  background-color: var(--a-background-primary);
-}
+  .apos-table, .apos-input-array-inline-item {
+    border: none;
+  }
+  .apos-input-array-inline-header {
+    height: 40px;
+  }
+  .apos-table-head {
+    background-color: var(--a-base-10);
+    text-align: left;
+    padding-left: 10px;
+  }
+  .apos-table-cell {
+    background-color: var(--a-background-primary);
+  }
 </style>
