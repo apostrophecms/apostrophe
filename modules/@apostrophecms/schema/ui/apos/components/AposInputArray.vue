@@ -40,7 +40,7 @@
         <draggable
           :disabled="!field.draggable"
           class="apos-input-array-inline"
-          tag="tbody"
+          tag="div"
           role="list"
           :list="items"
           v-bind="dragOptions"
@@ -383,7 +383,14 @@ function alwaysExpand(field) {
     @include type-label;
     color: var(--a-base-3);
   }
-
+  .apos-input-array-inline-label {
+     transition: background-color 0.3s ease;
+     @include type-label;
+     margin: 0;
+     &:hover {
+       cursor: pointer;
+     }
+   }
   .apos-input-array-inline-item {
      position: relative;
      transition: background-color 0.3s ease;
