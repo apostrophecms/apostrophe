@@ -1,9 +1,7 @@
 <template>
   <AposInputWrapper
-    :field="field"
-    :error="effectiveError"
-    :uid="uid"
-    :items="next"
+    :field="field" :error="effectiveError"
+    :uid="uid" :items="next"
     :display-options="displayOptions"
   >
     <template #additional>
@@ -43,7 +41,15 @@
               </th>
             </tr>
           </thead>
-          <tbody class="apos-input-array-inline">
+          <draggable
+            :disabled="!field.draggable"
+            class="apos-input-array-inline"
+            tag="tbody"
+            role="list"
+            :list="items"
+            v-bind="dragOptions"
+            :id="listId"
+          >
             <tr
               v-for="item in items"
               :key="item._id"
@@ -68,7 +74,7 @@
                 />
               </td>
             </tr>
-          </tbody>
+          </draggable>
         </table>
         <AposButton
           type="primary"
