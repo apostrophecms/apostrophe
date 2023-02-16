@@ -405,6 +405,7 @@ function alwaysExpand(field) {
     top: $spacing-quadruple;
     left: 7.5px;
   }
+
   .apos-input-array-inline-item--active {
     background-color: var(--a-base-10);
     border-bottom: 1px solid var(--a-base-6);
@@ -416,20 +417,25 @@ function alwaysExpand(field) {
   .apos-input-array-inline-item-controls {
     padding: $spacing-base;
   }
+
   .apos-input-array-inline-label {
     padding-top: $spacing-base;
     padding-bottom: $spacing-base;
   }
+
   .apos-input-array-inline-content-wrapper {
     flex-grow: 1;
   }
+
   .apos-input-array-inline-schema-wrapper {
     max-height: 999px;
     transition: max-height 0.5s;
   }
+
   .collapse-enter, .collapse-leave-to {
     max-height: 0;
   }
+
   .collapse-enter-to, .collapse-leave {
     max-height: 999px;
   }
