@@ -463,7 +463,8 @@ function alwaysExpand(field) {
           margin: 0;
           padding-top: $spacing-base;
           padding-bottom: $spacing-base;
-          justify-self: start;
+          text-align: left;
+          grid-column: 2;
           &:hover {
             cursor: pointer;
           }
