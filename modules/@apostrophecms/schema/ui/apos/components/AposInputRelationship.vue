@@ -18,6 +18,7 @@
         }}
       </div>
       <AposMinMaxCount
+        v-if="field.max > 1"
         :field="field"
         :value="next"
       />
@@ -334,7 +335,7 @@ export default {
   }
 
   .apos-input-relationship__items {
-    padding: relative;
+    position: relative;
     margin-top: $spacing-base;
   }
 

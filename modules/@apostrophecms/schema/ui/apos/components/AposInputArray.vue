@@ -77,7 +77,7 @@
                     class="apos-drag-handle"
                   />
                   <AposButton
-                    v-if="item.open && !alwaysExpand"
+                    v-if="field.styles !== 'table' && item.open && !alwaysExpand"
                     class="apos-input-array-inline-collapse"
                     :icon-size="15"
                     label="apostrophe:close"
@@ -379,6 +379,7 @@ function alwaysExpand(field) {
       background-color: var(--a-background-primary);
     }
     td.apos-input-array-inline-item-controls {
+      width: 25px;
       border: none;
       background-color: transparent;
     }
@@ -410,6 +411,29 @@ function alwaysExpand(field) {
         .apos-field.apos-field--small, .apos-field.apos-field--micro, .apos-field.apos-field--margin-micro {
           margin-bottom: 0;
         }
+      }
+      .apos-search {
+        width: 100%;
+        z-index: $z-index-widget-focused-controls + 1;
+        top: 35px;
+        position: absolute;
+      }
+      .apos-slat-list .apos-slat,
+      .apos-input-relationship__items {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+      .apos-input-relationship__input-wrapper :disabled {
+        display: none;
+      }
+      .apos-field__error {
+        position: absolute;
+        top: 5px;
+        left: 10px;
+      }
+      .apos-field--relationship .apos-field__error {
+        top: 9px;
+        left: 0px;
       }
     }
   }
