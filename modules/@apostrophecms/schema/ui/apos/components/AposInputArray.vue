@@ -428,12 +428,11 @@ function alwaysExpand(field) {
       }
       .apos-field__error {
         position: absolute;
-        top: 5px;
+        bottom: 13px;
         left: 10px;
       }
       .apos-field--relationship .apos-field__error {
-        top: 9px;
-        left: 0px;
+        z-index: $z-index-widget-focused-controls + 1;
       }
     }
   }
