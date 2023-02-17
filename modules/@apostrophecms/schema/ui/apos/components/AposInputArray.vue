@@ -355,10 +355,11 @@ function alwaysExpand(field) {
 
   .apos-input-array-inline-table {
     @include type-label;
-    width: 100%;
+    width: calc(100% + 70px);
     margin: 0 0 10px;
-    border: 1px solid var(--a-base-9);
     border-collapse: collapse;
+    position: relative;
+    left: -35px;
 
     th {
       padding-left: 10px;
@@ -368,18 +369,28 @@ function alwaysExpand(field) {
       background-color: var(--a-base-10);
     }
     .apos-table-cell--hidden {
-      background-color: var(--a-white);
       padding-left: 5px;
+      border: none;
       cursor: pointer;
+      background-color: transparent;
     }
 
     td, ::v-deep td {
+      padding-left: 10px;
+      padding-bottom: 10px;
       border: 1px solid var(--a-base-9);
       vertical-align: bottom;
       background-color: var(--a-background-primary);
     }
+    td.apos-input-array-inline-item-controls {
+      border: none;
+      background-color: transparent;
+    }
 
     ::v-deep {
+      .apos-field__info {
+        padding-top: 10px;
+      }
       .apos-field__label {
         display: none;
       }
@@ -398,7 +409,7 @@ function alwaysExpand(field) {
     .apos-input-array-inline-collapse {
       position: absolute;
       top: $spacing-quadruple;
-      left: 7.5px;
+      left: 10px;
     }
 
     .apos-input-array-inline-item {
@@ -475,6 +486,7 @@ function alwaysExpand(field) {
           margin: 0;
           padding-top: $spacing-base;
           padding-bottom: $spacing-base;
+          justify-self: start;
           &:hover {
             cursor: pointer;
           }
