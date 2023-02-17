@@ -1,16 +1,16 @@
 # Changelog
 
-## UNRELEASED
+## 3.40.0 (2023-02-17)
 
 ### Adds
 
 * For devops purposes, the `APOS_BASE_URL` environment variable is now respected as an override of the `baseUrl` option.
-* Allow boolean values in `selected` prop of the `AposSelect.vue` component.
 
 ### Fixes
 
 * Do not display shortcut conflicts at startup if there are none.
 * Range field correctly handles the `def` attribute set to `0` now. The `def` property will be used when the field has no value provided; a value going over the max or below the min threshold still returns `null`.
+* `select` fields now work properly when the `value` of a choice is a boolean rather than a string or a number.
 
 ## 3.39.2 (2023-02-03)
 
