@@ -46,159 +46,78 @@
             <th class="apos-table-cell--hidden" />
           </thead>
           <draggable
-            :disabled="!field.draggable"
             class="apos-input-array-inline-item"
-            :class="item.open ? 'apos-input-array-inline-item--active' : null"
             :tag="field.styles === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
             v-bind="dragOptions"
             :id="listId"
-            v-for="item in items"
-            :key="item._id"
           >
-            <h3
-              class="apos-input-array-inline-label"
-              v-if="field.styles !== 'table' && !item.open && !alwaysExpand"
-              @click="openInlineItem(item._id)"
-            >
-              {{ getLabel(item._id, index) }}
-            </h3>
-            <AposSchema
-              :schema="field.schema"
-              v-model="item.schemaInput"
-              :trigger-validation="triggerValidation"
-              :utility-rail="false"
-              :generation="generation"
-              :modifiers="['small', 'inverted']"
-              :doc-id="docId"
-              :styles="field.styles"
-            >
-              <template #before>
-                <component
-                  :is="field.styles === 'table' ? 'td' : 'div'"
-                  class="apos-input-array-inline-item-controls"
-                >
-                  <AposIndicator
-                    v-if="field.draggable"
-                    icon="drag-icon"
-                    class="apos-drag-handle"
-                  />
-                  <AposButton
-                    v-if="item.open && !alwaysExpand"
-                    class="apos-input-array-inline-collapse"
-                    :icon-size="20"
-                    label="apostrophe:close"
-                    icon="unfold-less-horizontal-icon"
-                    type="subtle"
-                    :modifiers="['inline', 'no-motion']"
-                    :icon-only="true"
-                    @click="closeInlineItem(item._id)"
-                  />
-                </component>
-              </template>
-              <template #after>
-                <component
-                  :is="field.styles === 'table' ? 'td' : 'div'"
-                  class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove"
-                >
-                  <AposButton
-                    label="apostrophe:removeItem"
-                    :icon="field.styles === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
-                    type="subtle"
-                    :modifiers="['inline', 'danger', 'no-motion']"
-                    :icon-only="true"
-                    @click="remove(item._id)"
-                  />
-                </component>
-              </template>
-            </AposSchema>
-            <!--
-            <div class="apos-input-array-inline-content-wrapper">
-              <transition name="collapse">
-                <div
-                  v-show="item.open"
-                  class="apos-input-array-inline-schema-wrapper"
-                >
-                  ## here
-                </div>
-              </transition>
-            </div>
-            -->
-          </draggable>
-          <!--
-          <draggable
-            :disabled="!field.draggable"
-            class="apos-input-array-inline"
-            :class="{ 'apos-input-array-inline-table': field.styles === 'table' }"
-            tag="div"
-            role="list"
-            :list="items"
-            v-bind="dragOptions"
-            :id="listId"
-          >
-            <div
+            <component
+              :is="field.styles === 'table' ? 'transition' : 'div'"
+              name="collapse"
               v-for="(item, index) in items"
               :key="item._id"
-              class="apos-input-array-inline-item"
-              :class="item.open ? 'apos-input-array-inline-item--active' : null"
             >
-              <div class="apos-input-array-inline-item-controls">
-                <AposIndicator
-                  v-if="field.draggable"
-                  icon="drag-icon"
-                  class="apos-drag-handle"
-                />
-                <AposButton
-                  v-if="item.open && !alwaysExpand"
-                  class="apos-input-array-inline-collapse"
-                  :icon-size="20"
-                  label="apostrophe:close"
-                  icon="unfold-less-horizontal-icon"
-                  type="subtle"
-                  :modifiers="['inline', 'no-motion']"
-                  :icon-only="true"
-                  @click="closeInlineItem(item._id)"
-                />
-              </div>
-              <div class="apos-input-array-inline-content-wrapper">
-                <h3
-                  class="apos-input-array-inline-label"
-                  v-if="!item.open && !alwaysExpand"
-                  @click="openInlineItem(item._id)"
-                >
-                  {{ getLabel(item._id, index) }}
-                </h3>
-                <transition name="collapse">
-                  <div
-                    v-show="item.open"
-                    class="apos-input-array-inline-schema-wrapper"
+              <AposSchema
+                :schema="field.schema"
+                :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
+                v-model="item.schemaInput"
+                :trigger-validation="triggerValidation"
+                :utility-rail="false"
+                :generation="generation"
+                :modifiers="['small', 'inverted']"
+                :doc-id="docId"
+                :styles="field.styles"
+              >
+                <template #before>
+                  <component
+                    :is="field.styles === 'table' ? 'td' : 'div'"
+                    class="apos-input-array-inline-item-controls"
                   >
-                    <AposSchema
-                      :schema="field.schema"
-                      v-model="item.schemaInput"
-                      :trigger-validation="triggerValidation"
-                      :utility-rail="false"
-                      :generation="generation"
-                      :modifiers="['small', 'inverted']"
-                      :doc-id="docId"
+                    <AposIndicator
+                      v-if="field.draggable"
+                      icon="drag-icon"
+                      class="apos-drag-handle"
                     />
-                  </div>
-                </transition>
-              </div>
-              <div class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove">
-                <AposButton
-                  label="apostrophe:removeItem"
-                  :icon="field.styles === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
-                  type="subtle"
-                  :modifiers="['inline', 'danger', 'no-motion']"
-                  :icon-only="true"
-                  @click="remove(item._id)"
-                />
-              </div>
-            </div>
+                    <AposButton
+                      v-if="item.open && !alwaysExpand"
+                      class="apos-input-array-inline-collapse"
+                      :icon-size="15"
+                      label="apostrophe:close"
+                      icon="unfold-less-horizontal-icon"
+                      type="subtle"
+                      :modifiers="['inline', 'no-motion']"
+                      :icon-only="true"
+                      @click="closeInlineItem(item._id)"
+                    />
+                  </component>
+                  <h3
+                    class="apos-input-array-inline-label"
+                    v-if="field.styles !== 'table' && !item.open && !alwaysExpand"
+                    @click="openInlineItem(item._id)"
+                  >
+                    {{ getLabel(item._id, index) }}
+                  </h3>
+                </template>
+                <template #after>
+                  <component
+                    :is="field.styles === 'table' ? 'td' : 'div'"
+                    class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove"
+                  >
+                    <AposButton
+                      label="apostrophe:removeItem"
+                      :icon="field.styles === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
+                      type="subtle"
+                      :modifiers="['inline', 'danger', 'no-motion']"
+                      :icon-only="true"
+                      @click="remove(item._id)"
+                    />
+                  </component>
+                </template>
+              </AposSchema>
+            </component>
           </draggable>
-          -->
         </component>
         <AposButton
           type="primary"
@@ -221,56 +140,13 @@
       </div>
     </template>
   </AposInputWrapper>
-  <!--
-  <tr
-    v-for="item in items"
-    :key="item._id"
-    class="apos-input-array-inline-item"
-  >
-    <td class="apos-table-cell--hidden">
-      <close-icon @click="remove(item._id)" />
-    </td>
-    <AposSchema
-      :schema="field.schema"
-      v-model="item.schemaInput"
-      :trigger-validation="triggerValidation"
-      :utility-rail="false"
-      :generation="generation"
-      :modifiers="['small', 'inline']"
-      :doc-id="docId"
-      style-display="table"
-      style-class="apos-table-cell"
-    />
-  </tr>
-
-  <div v-if="field.styles === 'table'">
-    <table class="apos-table" v-if="items.length">
-      <thead>
-        <tr class="apos-input-array-inline-header">
-          <th class="apos-table-head--hidden" />
-          <th
-            v-for="schema in field.schema"
-            :key="schema._id"
-            class="apos-table-head"
-          >
-            {{ $t(schema.label) }}
-          </th>
-        </tr>
-      </thead>
-  </div>
-
-  <div v-if="field.styles === 'table'">
-    </table>
-  </div>
-
-  </draggable>
-  -->
 </template>
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import cuid from 'cuid';
 import { klona } from 'klona';
+import { get } from 'lodash';
 import draggable from 'vuedraggable';
 
 export default {
@@ -301,7 +177,7 @@ export default {
     },
     dragOptions() {
       return {
-        disabled: this.field.readOnly || this.next.length <= 1,
+        disabled: !this.field.draggable || this.field.readOnly || this.next.length <= 1,
         ghostClass: 'apos-is-dragging',
         handle: '.apos-drag-handle'
       };
@@ -419,7 +295,7 @@ export default {
     getLabel(id, index) {
       const titleField = this.field.titleField || null;
       const item = this.items.find(item => item._id === id);
-      return item.schemaInput.data[titleField] || `Item ${index + 1}`;
+      return get(item.schemaInput.data, titleField) || `Item ${index + 1}`;
     },
     openInlineItem(id) {
       this.items.forEach(item => {
@@ -480,6 +356,7 @@ function alwaysExpand(field) {
   .apos-input-array-inline-table {
     @include type-label;
     width: 100%;
+    margin: 0 0 10px;
     border: 1px solid var(--a-base-9);
     border-collapse: collapse;
 
@@ -503,72 +380,116 @@ function alwaysExpand(field) {
     }
 
     ::v-deep {
-      .apos-field__info {
+      .apos-field__label {
         display: none;
       }
-      .apos-field.apos-field--small, .apos-field.apos-field--micro, .apos-field.apos-field--margin-micro {
-        margin-bottom: 0;
+      .apos-input-wrapper {
+        padding: 0 4px;
+      }
+      .apos-schema {
+        .apos-field.apos-field--small, .apos-field.apos-field--micro, .apos-field.apos-field--margin-micro {
+          margin-bottom: 0;
+        }
       }
     }
   }
 
   .apos-input-array-inline {
-    .apos-input-array-inline-label {
-      transition: background-color 0.3s ease;
-      @include type-label;
-      margin: 0;
-      padding-top: $spacing-base;
-      padding-bottom: $spacing-base;
-      &:hover {
-        cursor: pointer;
-      }
-    }
-
-    .apos-input-array-inline-item {
-      position: relative;
-      transition: background-color 0.3s ease;
-      display: flex;
-      border-bottom: 1px solid var(--a-base-9);
-      &:hover {
-        background-color: var(--a-base-10);
-      }
-    }
     .apos-input-array-inline-collapse {
       position: absolute;
       top: $spacing-quadruple;
       left: 7.5px;
     }
 
-    .apos-input-array-inline-item--active {
-      background-color: var(--a-base-10);
-      border-bottom: 1px solid var(--a-base-6);
-      .apos-input-array-inline-content-wrapper {
-        padding-top: $spacing-base;
-        padding-bottom: $spacing-base;
+    .apos-input-array-inline-item {
+      ::v-deep .apos-schema {
+        position: relative;
+        transition: background-color 0.3s ease;
+        border-bottom: 1px solid var(--a-base-9);
+        &:hover {
+          background-color: var(--a-base-10);
+        }
+        & > div {
+          display: none;
+        }
+        &.apos-input-array-inline-item--active {
+          background-color: var(--a-base-10);
+          border-bottom: 1px solid var(--a-base-6);
+          & > div {
+            display: block;
+          }
+        }
+        .apos-input-array-inline-label,
+        .apos-input-array-inline-item-controls,
+        .apos-input-array-inline-item-controls--remove {
+          display: block;
+        }
       }
     }
+    // ::v-deep .apos-schema {
+    //   // .apos-input-array-inline-content-wrapper {
+    //   //   padding-top: $spacing-base;
+    //   //   padding-bottom: $spacing-base;
+    //   // }
+    // }
 
-    .apos-input-array-inline-item-controls {
-      padding: $spacing-base;
-    }
-    .apos-input-array-inline-item-controls--remove {
-    }
+    // .apos-input-array-inline-content-wrapper {
+    //   flex-grow: 1;
+    // }
 
-    .apos-input-array-inline-content-wrapper {
-      flex-grow: 1;
-    }
+    // .apos-input-array-inline-schema-wrapper {
+    //   max-height: 999px;
+    //   transition: max-height 0.5s;
+    // }
 
-    .apos-input-array-inline-schema-wrapper {
-      max-height: 999px;
-      transition: max-height 0.5s;
-    }
+    ::v-deep {
+      .collapse-enter, .collapse-leave-to {
+        max-height: 0;
+      }
 
-    .collapse-enter, .collapse-leave-to {
-      max-height: 0;
-    }
+      .collapse-enter-to, .collapse-leave {
+        max-height: 999px;
+      }
 
-    .collapse-enter-to, .collapse-leave {
-      max-height: 999px;
+      .apos-schema {
+        display: grid;
+        grid-template-columns: 35px auto 35px;
+        gap: 5px;
+        width: 100%;
+        padding-bottom: $spacing-base;
+        transition: max-height 0.5s;
+
+        .apos-field.apos-field--small, .apos-field.apos-field--micro, .apos-field.apos-field--margin-micro {
+          margin-bottom: 0;
+        }
+
+        & > div {
+          grid-column: 2;
+          padding-top: $spacing-base;
+          padding-bottom: $spacing-base;
+        }
+
+        .apos-input-array-inline-label {
+          transition: background-color 0.3s ease;
+          @include type-label;
+          margin: 0;
+          padding-top: $spacing-base;
+          padding-bottom: $spacing-base;
+          &:hover {
+            cursor: pointer;
+          }
+        }
+
+        .apos-input-array-inline-item-controls {
+          padding: $spacing-base;
+          grid-column: 1;
+          grid-row: 1;
+        }
+        .apos-input-array-inline-item-controls--remove {
+          grid-column: 3;
+          grid-row: 1;
+        }
+      }
     }
   }
 </style>

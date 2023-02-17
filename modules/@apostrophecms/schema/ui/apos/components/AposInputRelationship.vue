@@ -24,7 +24,7 @@
     </template>
     <template #body>
       <div class="apos-input-wrapper apos-input-relationship">
-        <div class="apos-input-relationship__input-wrapper" v-if="modifiers.includes('inline') && !next.length">
+        <div class="apos-input-relationship__input-wrapper">
           <input
             v-if="!modifiers.includes('no-search')"
             class="apos-input apos-input--text apos-input--relationship"
