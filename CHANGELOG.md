@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.40.1 (2023-02-18)
+
+* No code change. Patch level bump for package update.
 ## 3.40.0 (2023-02-17)
 
 ### Adds
