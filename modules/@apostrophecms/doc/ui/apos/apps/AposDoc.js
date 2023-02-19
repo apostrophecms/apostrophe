@@ -4,10 +4,13 @@
 // configuration etc.
 
 export default () => {
-  // Create or edit a document. `type` must be the document type.
+  // Create or edit a document. `type` must be the document type, or
+  // `@apostrophecms/page`.
+  //
   // `_id` should be the `_id` of the existing document to edit; leave
-  // blank to create a new document. `copyOf` is an optional, existing document
-  // from which properties should be copied.
+  // blank to create a new document.
+  //
+  // `copyOf` is an optional, existing document from which properties should be copied.
   //
   // On success, returns the new or updated document. If the modal is cancelled,
   // `undefined` is returned. Be sure to `await` the result.
@@ -19,7 +22,10 @@ export default () => {
     if (!type) {
       throw new Error('You must specify the type of document to edit.');
     }
-    const modal = apos.modules[type]?.components?.editorModal || (apos.page.validPageTypes.includes(type) && apos.page.components.editorModal);
+    if (apos.page.validPageTypes.includes(type)) {
+      type = '@apostrophecms/page';
+    }
+    const modal = apos.modules[type]?.components?.editorModal;
     if (!modal) {
       throw new Error(`${type} is not a valid piece or page type, or cannot be edited`);
     }

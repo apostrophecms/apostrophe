@@ -464,7 +464,6 @@ module.exports = {
       getBrowserData(_super, req) {
         const data = _super(req);
         data.components.managerModal = 'AposMediaManager';
-        data.utilityOperationsNewButton = false;
         return data;
       }
     };
