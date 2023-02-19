@@ -62,16 +62,14 @@ export default {
 
   methods: {
     async handleUtilityOperation(action) {
-      console.log('>>', action);
       const operation = [ ...this.utilityOperations.menu, ...this.utilityOperations.buttons ]
         .find((op) => op.action === action);
 
       if (!operation) {
-        console.log('utility operation definition was not found');
+        console.error('utility operation definition was not found');
         return;
       }
 
-      console.log(JSON.stringify(operation));
       const {
         modal, ...modalOptions
       } = operation.modalOptions || {};
@@ -89,7 +87,6 @@ export default {
           ...modalOptions
         });
       } else if (event) {
-        console.log('emitting event', event, payload);
         apos.bus.$emit(event, payload);
       } else {
         // For backwards compatibility, because it did nothing before we should not
