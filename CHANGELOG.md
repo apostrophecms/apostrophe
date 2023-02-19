@@ -1,8 +1,30 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* The `utilityOperations` feature of piece types now supports additional properties:
+`relationship: true` (show the operation only when editing a relationship), `relationship: false` (never show
+the operation when editing a relationship), `button: true`, `icon` and `iconOnly: true`.
+When `button: true` is specified, the operation appears as a standalone button rather than
+being tucked away in the "more" menu.
+* Those extending our admin UI on the front end can now open a modal to create or edit a page or piece by calling
+`await apos.doc.edit({ type: 'article' })` (the type here is an example). To edit an existing document add an
+`_id` property. To copy an existing document (like our "duplicate" feature) add a `copyOf`
+property.
+* This feature is also available by emitting an `edit` event on the Apostrophe bus with
+the same options object as its payload, for instance by configuring `utilityOperations` to do so.
+* Localized strings in the admin UI can now use `$t(key)` to localize a string inside
+an interpolated variable. This was accomplished by setting `skipOnVariables` to false
+for i18next, solely on the front end for admin UI purposes.
+
+### Changes
+
 ## 3.40.1 (2023-02-18)
 
 * No code change. Patch level bump for package update.
+
 ## 3.40.0 (2023-02-17)
 
 ### Adds
