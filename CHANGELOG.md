@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.226.0
+
+### Fixed
+
+* Upgrades passport version to latest to fix security vulnerability. For passport methods that are internally used by Apostrophe nothing changes. For projects that are accessing passport instance directly through `self.apos.login.passport`, some verifications may be necessary to be sure there are no comptibility issues. The internally used methods are `authenticate`, `use`, `serializeUser`, `deserializeUser`, `initialize`, `session`.
+
 ## 2.225.0 (2023-02-17)
 
 ### Adds
