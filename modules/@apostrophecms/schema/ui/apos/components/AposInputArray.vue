@@ -64,6 +64,7 @@
               :generation="generation"
               :modifiers="['small', 'inverted']"
               :doc-id="docId"
+              :following-values="getFollowingValues(item)"
               :styles="field.styles"
             >
               <template #before>
@@ -301,6 +302,20 @@ export default {
       this.items.forEach(item => {
         item.open = this.alwaysExpand;
       });
+    },
+    getFollowingValues(item) {
+      const followingValues = {};
+      for (const field of this.field.schema) {
+        if (field.following) {
+          const following = Array.isArray(field.following) ? field.following : [ field.following ];
+          followingValues[field.name] = {};
+          for (const name of following) {
+            followingValues[field.name][name] = item.schemaInput.data[name];
+          }
+        }
+      }
+
+      return followingValues;
     }
   }
 };
@@ -350,14 +365,15 @@ function alwaysExpand(field) {
 
   .apos-input-array-inline-table {
     @include type-label;
-    width: calc(100% + 70px);
-    margin: 0 0 10px;
-    border-collapse: collapse;
     position: relative;
     left: -35px;
+    width: calc(100% + 70px);
+    margin: 0 0 $spacing-base;
+    border-collapse: collapse;
 
     th {
-      padding-left: 10px;
+      padding-left: $spacing-base;
+      padding-right: $spacing-base;
       height: 40px;
       border: 1px solid var(--a-base-9);
       text-align: left;
@@ -371,10 +387,10 @@ function alwaysExpand(field) {
     }
 
     td, ::v-deep td {
-      padding-left: 10px;
-      padding-bottom: 10px;
+      padding: 0 $spacing-base $spacing-base;
       border: 1px solid var(--a-base-9);
-      vertical-align: bottom;
+      vertical-align: middle;
+      text-align: center;
       transition: background-color 0.3s ease;
       background-color: var(--a-background-primary);
     }
@@ -399,7 +415,7 @@ function alwaysExpand(field) {
 
     ::v-deep {
       .apos-field__info {
-        padding-top: 10px;
+        padding-top: $spacing-base;
       }
       .apos-field__label {
         display: none;
@@ -407,16 +423,16 @@ function alwaysExpand(field) {
       .apos-input-wrapper {
         padding: 0 4px;
       }
-      .apos-schema {
-        .apos-field.apos-field--small, .apos-field.apos-field--micro, .apos-field.apos-field--margin-micro {
-          margin-bottom: 0;
-        }
+      .apos-schema .apos-field.apos-field--small,
+      .apos-schema .apos-field.apos-field--micro,
+      .apos-schema .apos-field.apos-field--margin-micro {
+        margin-bottom: 0;
       }
       .apos-search {
-        width: 100%;
-        z-index: $z-index-widget-focused-controls + 1;
-        top: 35px;
+        z-index: calc(#{$z-index-widget-focused-controls} + 1);
         position: absolute;
+        top: 35px;
+        width: 100%;
       }
       .apos-slat-list .apos-slat,
       .apos-input-relationship__items {
@@ -429,10 +445,10 @@ function alwaysExpand(field) {
       .apos-field__error {
         position: absolute;
         bottom: 13px;
-        left: 10px;
+        left: $spacing-base;
       }
       .apos-field--relationship .apos-field__error {
-        z-index: $z-index-widget-focused-controls + 1;
+        z-index: calc(#{$z-index-widget-focused-controls} + 1);
       }
     }
   }
@@ -441,67 +457,67 @@ function alwaysExpand(field) {
     .apos-input-array-inline-collapse {
       position: absolute;
       top: $spacing-quadruple;
-      left: 10px;
+      left: $spacing-base;
     }
 
-    ::v-deep {
-      .apos-schema {
-        display: grid;
-        grid-template-columns: 35px auto 35px;
-        gap: 5px;
-        width: 100%;
+    ::v-deep .apos-schema {
+      position: relative;
+      display: grid;
+      grid-template-columns: 35px auto 35px;
+      gap: 5px;
+      width: 100%;
+      padding-bottom: $spacing-base;
+      border-bottom: 1px solid var(--a-base-9);
+      transition: background-color 0.3s ease;
+      &:hover {
+        background-color: var(--a-base-10);
+      }
+      .apos-field.apos-field--small,
+      .apos-field.apos-field--micro,
+      .apos-field.apos-field--margin-micro {
+        margin-bottom: 0;
+      }
+
+      & > div {
+        display: none;
+        grid-column: 2;
+        padding-top: $spacing-base;
         padding-bottom: $spacing-base;
-        position: relative;
-        border-bottom: 1px solid var(--a-base-9);
+      }
+      &.apos-input-array-inline-item--active {
+        background-color: var(--a-base-10);
+        border-bottom: 1px solid var(--a-base-6);
+      }
+      &.apos-input-array-inline-item--active > div {
+        display: block;
+      }
+      .apos-input-array-inline-label,
+      .apos-input-array-inline-item-controls,
+      .apos-input-array-inline-item-controls--remove {
+        display: block;
+      }
+
+      .apos-input-array-inline-label {
         transition: background-color 0.3s ease;
-        &:hover {
-          background-color: var(--a-base-10);
-        }
-        .apos-field.apos-field--small, .apos-field.apos-field--micro, .apos-field.apos-field--margin-micro {
-          margin-bottom: 0;
-        }
+        @include type-label;
+        margin: 0;
+        padding-top: $spacing-base;
+        padding-bottom: $spacing-base;
+        text-align: left;
+        grid-column: 2;
+      }
+      .apos-input-array-inline-label:hover {
+        cursor: pointer;
+      }
 
-        & > div {
-          display: none;
-          grid-column: 2;
-          padding-top: $spacing-base;
-          padding-bottom: $spacing-base;
-        }
-        &.apos-input-array-inline-item--active {
-          background-color: var(--a-base-10);
-          border-bottom: 1px solid var(--a-base-6);
-          & > div {
-            display: block;
-          }
-        }
-        .apos-input-array-inline-label,
-        .apos-input-array-inline-item-controls,
-        .apos-input-array-inline-item-controls--remove {
-          display: block;
-        }
-
-        .apos-input-array-inline-label {
-          transition: background-color 0.3s ease;
-          @include type-label;
-          margin: 0;
-          padding-top: $spacing-base;
-          padding-bottom: $spacing-base;
-          text-align: left;
-          grid-column: 2;
-          &:hover {
-            cursor: pointer;
-          }
-        }
-
-        .apos-input-array-inline-item-controls {
-          padding: $spacing-base;
-          grid-column: 1;
-          grid-row: 1;
-        }
-        .apos-input-array-inline-item-controls--remove {
-          grid-column: 3;
-          grid-row: 1;
-        }
+      .apos-input-array-inline-item-controls {
+        padding: $spacing-base;
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .apos-input-array-inline-item-controls--remove {
+        grid-column: 3;
+        grid-row: 1;
       }
     }
   }
