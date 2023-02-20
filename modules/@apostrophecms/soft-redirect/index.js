@@ -37,22 +37,23 @@ module.exports = {
     return {
       '@apostrophecms/page:notFound': {
         async notFoundRedirect(req) {
-          const urlPathname = req.url.replace(/\?.*$/, '');
+          const url = req._parsedOriginalUrl?.pathname;
+          const urlPathname = url.replace(/\?.*$/, '');
 
           const doc = await self.apos.doc
             .find(req, {
               historicUrls: {
-                $in: [ urlPathname ]
-              }
+                $in: [ urlPathname ],
+              },
             })
             .sort({ updatedAt: -1 })
             .toObject();
           if (!(doc && doc._url)) {
             return;
           }
-          if (self.local(doc._url) !== req.url) {
+          if (doc._url !== url) {
             req.statusCode = self.options.statusCode;
-            req.redirect = self.local(doc._url);
+            req.redirect = doc._url;
           }
         }
       },

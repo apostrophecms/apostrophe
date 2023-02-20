@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Fix the soft-redirect so that it works for localized content.
+
+
+
 ## 3.40.1 (2023-02-18)
 
 * No code change. Patch level bump for package update.
