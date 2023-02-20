@@ -19,7 +19,7 @@
           <component
             v-if="field.whenEmpty.icon"
             :is="field.whenEmpty.icon"
-            size="50"
+            :size="50"
           />
           <label
             v-if="field.whenEmpty.label"
