@@ -43,8 +43,8 @@ module.exports = {
           const doc = await self.apos.doc
             .find(req, {
               historicUrls: {
-                $in: [ urlPathname ],
-              },
+                $in: [ urlPathname ]
+              }
             })
             .sort({ updatedAt: -1 })
             .toObject();
