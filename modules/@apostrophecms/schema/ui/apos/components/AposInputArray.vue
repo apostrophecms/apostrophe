@@ -30,11 +30,11 @@
         </div>
         <component
           v-if="items.length"
-          :is="field.fieldStyle === 'table' ? 'table' : 'div'"
-          :class="field.fieldStyle === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline'"
+          :is="field.style === 'table' ? 'table' : 'div'"
+          :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline'"
         >
           <thead
-            v-if="field.fieldStyle === 'table'"
+            v-if="field.style === 'table'"
           >
             <th class="apos-table-cell--hidden" />
             <th
@@ -47,7 +47,7 @@
           </thead>
           <draggable
             class="apos-input-array-inline-item"
-            :tag="field.fieldStyle === 'table' ? 'tbody' : 'div'"
+            :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
             v-bind="dragOptions"
@@ -65,11 +65,11 @@
               :modifiers="['small', 'inverted']"
               :doc-id="docId"
               :following-values="getFollowingValues(item)"
-              :styles="field.fieldStyle"
+              :field-style="field.style"
             >
               <template #before>
                 <component
-                  :is="field.fieldStyle === 'table' ? 'td' : 'div'"
+                  :is="field.style === 'table' ? 'td' : 'div'"
                   class="apos-input-array-inline-item-controls"
                 >
                   <AposIndicator
@@ -78,7 +78,7 @@
                     class="apos-drag-handle"
                   />
                   <AposButton
-                    v-if="field.fieldStyle !== 'table' && item.open && !alwaysExpand"
+                    v-if="field.style !== 'table' && item.open && !alwaysExpand"
                     class="apos-input-array-inline-collapse"
                     :icon-size="15"
                     label="apostrophe:close"
@@ -91,7 +91,7 @@
                 </component>
                 <h3
                   class="apos-input-array-inline-label"
-                  v-if="field.fieldStyle !== 'table' && !item.open && !alwaysExpand"
+                  v-if="field.style !== 'table' && !item.open && !alwaysExpand"
                   @click="openInlineItem(item._id)"
                 >
                   {{ getLabel(item._id, index) }}
@@ -99,12 +99,12 @@
               </template>
               <template #after>
                 <component
-                  :is="field.fieldStyle === 'table' ? 'td' : 'div'"
+                  :is="field.style === 'table' ? 'td' : 'div'"
                   class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove"
                 >
                   <AposButton
                     label="apostrophe:removeItem"
-                    :icon="field.fieldStyle === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
+                    :icon="field.style === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
                     type="subtle"
                     :modifiers="['inline', 'danger', 'no-motion']"
                     :icon-only="true"
