@@ -25,13 +25,13 @@
 <template>
   <component
     class="apos-schema"
-    :is="styles === 'table' ? 'tr' : 'div'"
+    :is="fieldStyle === 'table' ? 'tr' : 'div'"
   >
     <slot name="before" />
     <component
       v-for="field in schema" :key="field.name"
       :data-apos-field="field.name"
-      :is="styles === 'table' ? 'td' : 'div'"
+      :is="fieldStyle === 'table' ? 'td' : 'div'"
     >
       <component
         v-show="displayComponent(field.name)"
@@ -74,7 +74,7 @@ export default {
       type: Array,
       required: true
     },
-    styles: {
+    fieldStyle: {
       type: String,
       required: false,
       default: ''
