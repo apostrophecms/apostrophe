@@ -19,7 +19,7 @@
           <component
             v-if="field.whenEmpty.icon"
             :is="field.whenEmpty.icon"
-            size="50"
+            :size="50"
           />
           <label
             v-if="field.whenEmpty.label"
@@ -204,6 +204,7 @@ export default {
       deep: true,
       handler() {
         const erroneous = this.items.filter(item => item.schemaInput.hasErrors);
+        console.log('erroneous ====> ', erroneous);
         if (erroneous.length) {
           erroneous.forEach(item => {
             if (!item.open) {
@@ -242,6 +243,23 @@ export default {
       }
       if (this.field.max && value.length > this.field.max) {
         return 'max';
+      }
+      if (value.length && this.field.fields && this.field.fields.add) {
+        console.log('value ====> ', value);
+        const [ uniqueField ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
+        console.log('uniqueField ====> ', uniqueField);
+        if (uniqueField) {
+          const uniqueValues = new Set(this.items.map(item => {
+            return Array.isArray(item.schemaInput.data[uniqueField])
+              ? item.schemaInput.data[uniqueField][0]._id
+              : item.schemaInput.data[uniqueField];
+          }));
+          console.log('uniqueValues ====> ', uniqueValues, uniqueValues.size, this.items.length);
+          if (uniqueValues.size !== this.items.length) {
+            return 'required';
+          }
+        }
+
       }
       return false;
     },
