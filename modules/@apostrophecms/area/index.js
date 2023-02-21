@@ -250,7 +250,6 @@ module.exports = {
         function findParent(doc, dotPath) {
           const pathSplit = dotPath.split('.');
           const parentDotPath = pathSplit.slice(0, pathSplit.length - 1).join('.');
-          console.log('_.get(doc, parentDotPath, doc)', _.get(doc, parentDotPath, doc));
           return _.get(doc, parentDotPath, doc);
         }
       },
