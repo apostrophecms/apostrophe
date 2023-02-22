@@ -55,7 +55,7 @@ export default {
       }
     },
     selected: {
-      type: [ String, Number ],
+      type: [ String, Number, Boolean ],
       default: ''
     },
     disabled: {
