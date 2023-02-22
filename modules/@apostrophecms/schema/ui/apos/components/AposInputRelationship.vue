@@ -18,6 +18,7 @@
         }}
       </div>
       <AposMinMaxCount
+        v-if="field.max > 1"
         :field="field"
         :value="next"
       />
@@ -317,8 +318,8 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input-relationship__input-wrapper {
-    position: relative;
     z-index: $z-index-widget-focused-controls;
+    position: relative;
 
     .apos-input-relationship__button {
       position: absolute;
@@ -334,7 +335,7 @@ export default {
   }
 
   .apos-input-relationship__items {
-    padding: relative;
+    position: relative;
     margin-top: $spacing-base;
   }
 

@@ -23,10 +23,15 @@
   an external reason.
 -->
 <template>
-  <div class="apos-schema">
-    <div
+  <component
+    class="apos-schema"
+    :is="fieldStyle === 'table' ? 'tr' : 'div'"
+  >
+    <slot name="before" />
+    <component
       v-for="field in schema" :key="field.name"
       :data-apos-field="field.name"
+      :is="fieldStyle === 'table' ? 'td' : 'div'"
     >
       <component
         v-show="displayComponent(field.name)"
@@ -43,8 +48,9 @@
         :ref="field.name"
         :generation="generation"
       />
-    </div>
-  </div>
+    </component>
+    <slot name="after" />
+  </component>
 </template>
 
 <script>
@@ -67,6 +73,11 @@ export default {
     schema: {
       type: Array,
       required: true
+    },
+    fieldStyle: {
+      type: String,
+      required: false,
+      default: ''
     },
     currentFields: {
       type: Array,

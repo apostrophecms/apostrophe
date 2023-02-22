@@ -19,7 +19,7 @@
           <component
             v-if="field.whenEmpty.icon"
             :is="field.whenEmpty.icon"
-            size="50"
+            :size="50"
           />
           <label
             v-if="field.whenEmpty.label"
@@ -28,81 +28,99 @@
             {{ $t(field.whenEmpty.label) }}
           </label>
         </div>
-        <draggable
-          v-if="field.inline"
-          class="apos-input-array-inline"
-          tag="div"
-          role="list"
-          :list="items"
-          v-bind="dragOptions"
-          :id="listId"
+        <component
+          v-if="items.length"
+          :is="field.style === 'table' ? 'table' : 'div'"
+          :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline'"
         >
-          <div
-            v-for="(item, index) in items"
-            :key="item._id"
-            class="apos-input-array-inline-item"
-            :class="item.open ? 'apos-input-array-inline-item--active' : null"
+          <thead
+            v-if="field.style === 'table'"
           >
-            <div class="apos-input-array-inline-item-controls">
-              <AposIndicator
-                icon="drag-icon"
-                class="apos-drag-handle"
-              />
-              <AposButton
-                v-if="item.open && !alwaysExpand"
-                class="apos-input-array-inline-collapse"
-                :icon-size="20"
-                label="apostrophe:close"
-                icon="unfold-less-horizontal-icon"
-                type="subtle"
-                :modifiers="['inline', 'no-motion']"
-                :icon-only="true"
-                @click="closeInlineItem(item._id)"
-              />
-            </div>
-            <div class="apos-input-array-inline-content-wrapper">
-              <h3
-                class="apos-input-array-inline-label"
-                v-if="!item.open && !alwaysExpand"
-                @click="openInlineItem(item._id)"
-              >
-                {{ getLabel(item._id, index) }}
-              </h3>
-              <transition name="collapse">
-                <div
-                  v-show="item.open"
-                  class="apos-input-array-inline-schema-wrapper"
+            <th class="apos-table-cell--hidden" />
+            <th
+              v-for="schema in field.schema"
+              :key="schema._id"
+            >
+              {{ $t(schema.label) }}
+            </th>
+            <th class="apos-table-cell--hidden" />
+          </thead>
+          <draggable
+            class="apos-input-array-inline-item"
+            :tag="field.style === 'table' ? 'tbody' : 'div'"
+            role="list"
+            :list="items"
+            v-bind="dragOptions"
+            :id="listId"
+          >
+            <AposSchema
+              v-for="(item, index) in items"
+              :key="item._id"
+              :schema="field.schema"
+              :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
+              v-model="item.schemaInput"
+              :trigger-validation="triggerValidation"
+              :utility-rail="false"
+              :generation="generation"
+              :modifiers="['small', 'inverted']"
+              :doc-id="docId"
+              :following-values="getFollowingValues(item)"
+              :field-style="field.style"
+            >
+              <template #before>
+                <component
+                  :is="field.style === 'table' ? 'td' : 'div'"
+                  class="apos-input-array-inline-item-controls"
                 >
-                  <AposSchema
-                    :schema="field.schema"
-                    v-model="item.schemaInput"
-                    :trigger-validation="triggerValidation"
-                    :utility-rail="false"
-                    :generation="generation"
-                    :modifiers="['small', 'inverted']"
-                    :doc-id="docId"
+                  <AposIndicator
+                    v-if="field.draggable"
+                    icon="drag-icon"
+                    class="apos-drag-handle"
                   />
-                </div>
-              </transition>
-            </div>
-            <div class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove">
-              <AposButton
-                label="apostrophe:removeItem"
-                icon="trash-can-outline-icon"
-                type="subtle"
-                :modifiers="['inline', 'danger', 'no-motion']"
-                :icon-only="true"
-                @click="remove(item._id)"
-              />
-            </div>
-          </div>
-        </draggable>
+                  <AposButton
+                    v-if="field.style !== 'table' && item.open && !alwaysExpand"
+                    class="apos-input-array-inline-collapse"
+                    :icon-size="15"
+                    label="apostrophe:close"
+                    icon="unfold-less-horizontal-icon"
+                    type="subtle"
+                    :modifiers="['inline', 'no-motion']"
+                    :icon-only="true"
+                    @click="closeInlineItem(item._id)"
+                  />
+                </component>
+                <h3
+                  class="apos-input-array-inline-label"
+                  v-if="field.style !== 'table' && !item.open && !alwaysExpand"
+                  @click="openInlineItem(item._id)"
+                >
+                  {{ getLabel(item._id, index) }}
+                </h3>
+              </template>
+              <template #after>
+                <component
+                  :is="field.style === 'table' ? 'td' : 'div'"
+                  class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove"
+                >
+                  <AposButton
+                    label="apostrophe:removeItem"
+                    :icon="field.style === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
+                    type="subtle"
+                    :modifiers="['inline', 'danger', 'no-motion']"
+                    :icon-only="true"
+                    @click="remove(item._id)"
+                  />
+                </component>
+              </template>
+            </AposSchema>
+          </draggable>
+        </component>
         <AposButton
           type="primary"
           label="apostrophe:addItem"
           icon="plus-icon"
           :disabled="disableAdd()"
-          :modifiers="[ 'block', 'primary' ]"
+          :modifiers="['block']"
           @click="add"
         />
       </div>
@@ -124,6 +142,7 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import cuid from 'cuid';
 import { klona } from 'klona';
+import { get } from 'lodash';
 import draggable from 'vuedraggable';
 
 export default {
@@ -154,7 +173,7 @@ export default {
     },
     dragOptions() {
       return {
-        disabled: this.field.readOnly || this.next.length <= 1,
+        disabled: !this.field.draggable || this.field.readOnly || this.next.length <= 1,
         ghostClass: 'apos-is-dragging',
         handle: '.apos-drag-handle'
       };
@@ -272,7 +291,7 @@ export default {
     getLabel(id, index) {
       const titleField = this.field.titleField || null;
       const item = this.items.find(item => item._id === id);
-      return item.schemaInput.data[titleField] || `Item ${index + 1}`;
+      return get(item.schemaInput.data, titleField) || `Item ${index + 1}`;
     },
     openInlineItem(id) {
       this.items.forEach(item => {
@@ -283,6 +302,20 @@ export default {
       this.items.forEach(item => {
         item.open = this.alwaysExpand;
       });
+    },
+    getFollowingValues(item) {
+      const followingValues = {};
+      for (const field of this.field.schema) {
+        if (field.following) {
+          const following = Array.isArray(field.following) ? field.following : [ field.following ];
+          followingValues[field.name] = {};
+          for (const name of following) {
+            followingValues[field.name][name] = item.schemaInput.data[name];
+          }
+        }
+      }
+
+      return followingValues;
     }
   }
 };
@@ -329,60 +362,163 @@ function alwaysExpand(field) {
     @include type-label;
     color: var(--a-base-3);
   }
-  .apos-input-array-inline-label {
-    transition: background-color 0.3s ease;
+
+  .apos-input-array-inline-table {
     @include type-label;
-    margin: 0;
-    &:hover {
-      cursor: pointer;
-    }
-  }
-  .apos-input-array-inline-item {
     position: relative;
-    transition: background-color 0.3s ease;
-    display: flex;
-    border-bottom: 1px solid var(--a-base-9);
-    &:hover {
+    left: -35px;
+    width: calc(100% + 70px);
+    margin: 0 0 $spacing-base;
+    border-collapse: collapse;
+
+    th {
+      padding-left: $spacing-base;
+      padding-right: $spacing-base;
+      height: 40px;
+      border: 1px solid var(--a-base-9);
+      text-align: left;
       background-color: var(--a-base-10);
     }
-  }
-  .apos-input-array-inline-collapse {
-    position: absolute;
-    top: $spacing-quadruple;
-    left: 7.5px;
-  }
+    .apos-table-cell--hidden {
+      padding-left: 5px;
+      border: none;
+      cursor: pointer;
+      background-color: transparent;
+    }
 
-  .apos-input-array-inline-item--active {
-    background-color: var(--a-base-10);
-    border-bottom: 1px solid var(--a-base-6);
-    .apos-input-array-inline-content-wrapper {
-      padding-top: $spacing-base;
-      padding-bottom: $spacing-base;
+    td, ::v-deep td {
+      padding: 0 $spacing-base $spacing-base;
+      border: 1px solid var(--a-base-9);
+      vertical-align: middle;
+      text-align: center;
+      transition: background-color 0.3s ease;
+      background-color: var(--a-background-primary);
+    }
+    td.apos-input-array-inline-item-controls {
+      width: 25px;
+      border: none;
+      background-color: transparent;
+    }
+    tr.apos-is-dragging, ::v-deep tr.apos-is-dragging {
+      td, &:hover td {
+        background: var(--a-base-4);
+      }
+    }
+    tr:hover, ::v-deep tr:hover {
+      td {
+        background-color: var(--a-base-10);
+      }
+      td.apos-input-array-inline-item-controls {
+        background-color: transparent;
+      }
+    }
+
+    ::v-deep {
+      .apos-field__info {
+        padding-top: $spacing-base;
+      }
+      .apos-field__label {
+        display: none;
+      }
+      .apos-input-wrapper {
+        padding: 0 4px;
+      }
+      .apos-schema .apos-field.apos-field--small,
+      .apos-schema .apos-field.apos-field--micro,
+      .apos-schema .apos-field.apos-field--margin-micro {
+        margin-bottom: 0;
+      }
+      .apos-search {
+        z-index: calc(#{$z-index-widget-focused-controls} + 1);
+        position: absolute;
+        top: 35px;
+        width: 100%;
+      }
+      .apos-slat-list .apos-slat,
+      .apos-input-relationship__items {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+      .apos-input-relationship__input-wrapper :disabled {
+        display: none;
+      }
+      .apos-field__error {
+        position: absolute;
+        bottom: 13px;
+        left: $spacing-base;
+      }
+      .apos-field--relationship .apos-field__error {
+        z-index: calc(#{$z-index-widget-focused-controls} + 1);
+      }
     }
   }
-  .apos-input-array-inline-item-controls {
-    padding: $spacing-base;
-  }
 
-  .apos-input-array-inline-label {
-    padding-top: $spacing-base;
-    padding-bottom: $spacing-base;
-  }
+  .apos-input-array-inline {
+    .apos-input-array-inline-collapse {
+      position: absolute;
+      top: $spacing-quadruple;
+      left: $spacing-base;
+    }
 
-  .apos-input-array-inline-content-wrapper {
-    flex-grow: 1;
-  }
+    ::v-deep .apos-schema {
+      position: relative;
+      display: grid;
+      grid-template-columns: 35px auto 35px;
+      gap: 5px;
+      width: 100%;
+      padding-bottom: $spacing-base;
+      border-bottom: 1px solid var(--a-base-9);
+      transition: background-color 0.3s ease;
+      &:hover {
+        background-color: var(--a-base-10);
+      }
+      .apos-field.apos-field--small,
+      .apos-field.apos-field--micro,
+      .apos-field.apos-field--margin-micro {
+        margin-bottom: 0;
+      }
 
-  .apos-input-array-inline-schema-wrapper {
-    max-height: 999px;
-    transition: max-height 0.5s;
-  }
+      & > div {
+        display: none;
+        grid-column: 2;
+        padding-top: $spacing-base;
+        padding-bottom: $spacing-base;
+      }
+      &.apos-input-array-inline-item--active {
+        background-color: var(--a-base-10);
+        border-bottom: 1px solid var(--a-base-6);
+      }
+      &.apos-input-array-inline-item--active > div {
+        display: block;
+      }
+      .apos-input-array-inline-label,
+      .apos-input-array-inline-item-controls,
+      .apos-input-array-inline-item-controls--remove {
+        display: block;
+      }
 
-  .collapse-enter, .collapse-leave-to {
-    max-height: 0;
-  }
+      .apos-input-array-inline-label {
+        transition: background-color 0.3s ease;
+        @include type-label;
+        margin: 0;
+        padding-top: $spacing-base;
+        padding-bottom: $spacing-base;
+        text-align: left;
+        grid-column: 2;
+      }
+      .apos-input-array-inline-label:hover {
+        cursor: pointer;
+      }
 
-  .collapse-enter-to, .collapse-leave {
-    max-height: 999px;
+      .apos-input-array-inline-item-controls {
+        padding: $spacing-base;
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .apos-input-array-inline-item-controls--remove {
+        grid-column: 3;
+        grid-row: 1;
+      }
+    }
   }
 </style>

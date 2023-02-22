@@ -135,8 +135,8 @@ export default {
   box-shadow: var(--a-box-shadow);
   box-sizing: border-box;
   max-height: 300px;
-  padding: 0;
   margin: 0;
+  padding: 0;
   border-bottom-left-radius: var(--a-border-radius);
   border-bottom-right-radius: var(--a-border-radius);
   border: 1px solid var(--a-base-8);
