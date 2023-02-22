@@ -204,7 +204,6 @@ export default {
       deep: true,
       handler() {
         const erroneous = this.items.filter(item => item.schemaInput.hasErrors);
-        console.log('erroneous ====> ', erroneous);
         if (erroneous.length) {
           erroneous.forEach(item => {
             if (!item.open) {
@@ -245,18 +244,26 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
-        console.log('value ====> ', value);
-        const [ uniqueField ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
-        console.log('uniqueField ====> ', uniqueField);
-        if (uniqueField) {
-          const uniqueValues = new Set(this.items.map(item => {
-            return Array.isArray(item.schemaInput.data[uniqueField])
-              ? item.schemaInput.data[uniqueField][0]._id
-              : item.schemaInput.data[uniqueField];
-          }));
-          console.log('uniqueValues ====> ', uniqueValues, uniqueValues.size, this.items.length);
-          if (uniqueValues.size !== this.items.length) {
-            return 'required';
+        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
+        if (uniqueFieldName) {
+          const duplicates = this.items
+            .map(item => Array.isArray(item.schemaInput.data[uniqueFieldName])
+              ? item.schemaInput.data[uniqueFieldName][0]._id
+              : item.schemaInput.data[uniqueFieldName])
+            .filter((item, index, array) => array.indexOf(item) !== index);
+
+          if (duplicates.length) {
+            duplicates.forEach(duplicate => {
+              this.$el.querySelector(`[data-id=${duplicate}]`).style.borderColor = 'var(--a-danger)';
+            });
+            return {
+              name: 'duplicate',
+              message: `duplicate ${this.$t(uniqueFieldSchema.label)}`
+            };
+          } else {
+            this.$el.querySelectorAll('[data-id]').forEach(item => {
+              item.style.borderColor = 'var(--a-base-5)';
+            });
           }
         }
 
@@ -347,6 +354,14 @@ function alwaysExpand(field) {
 }
 </script>
 <style lang="scss" scoped>
+  ::v-deep .apos-field--array.apos-field--error-duplicate {
+    .apos-input {
+      border-color: var(--a-base-8);
+    }
+    .apos-input-icon {
+      color: var(--a-base-2);
+    }
+  }
   .apos-is-dragging {
     opacity: 0.5;
     background: var(--a-base-4);
