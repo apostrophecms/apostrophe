@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const deep = require('deep-get-set');
 const { stripIndent } = require('common-tags');
 
 // An area is a series of zero or more widgets, in which users can add
@@ -243,15 +242,15 @@ module.exports = {
 
           const areaRendered = await self.apos.area.renderArea(req, preppedArea, context);
 
-          deep(context, `${path}._rendered`, areaRendered);
-          deep(context, `${path}._fieldId`, undefined);
-          deep(context, `${path}.items`, undefined);
+          _.set(context, [ path, '_rendered' ], areaRendered);
+          _.set(context, [ path, '_fieldId' ], undefined);
+          _.set(context, [ path, 'items' ], undefined);
         }
 
         function findParent(doc, dotPath) {
           const pathSplit = dotPath.split('.');
           const parentDotPath = pathSplit.slice(0, pathSplit.length - 1).join('.');
-          return deep(doc, parentDotPath) || doc;
+          return _.get(doc, parentDotPath, doc);
         }
       },
       // Sanitize an input array of items intended to become
@@ -365,12 +364,12 @@ module.exports = {
           // always okay - unless it already exists
           // and is not an area.
           if (components.length > 1) {
-            const existing = deep(doc, dotPath);
+            const existing = _.get(doc, dotPath);
             if (existing && existing.metaType !== 'area') {
               throw self.apos.error('forbidden');
             }
           }
-          const existingArea = deep(doc, dotPath);
+          const existingArea = _.get(doc, dotPath);
           const existingItems = existingArea && (existingArea.items || []);
           if (_.isEqual(self.apos.util.clonePermanent(items), self.apos.util.clonePermanent(existingItems))) {
             // No real change — don't waste a version and clutter the database.
@@ -378,7 +377,7 @@ module.exports = {
             // nothing has changed. -Tom
             return;
           }
-          deep(doc, dotPath, {
+          _.set(doc, dotPath, {
             metaType: 'area',
             items: items
           });
