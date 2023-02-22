@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.226.0
+
+### Security
+
+* Upgrades passport to the latest version in order to ensure session regeneration when logging in or out. This adds additional security to logins by mitigating any risks due to XSS attacks. Apostrophe is already robust against XSS attacks. For passport methods that are internally used by Apostrophe everything is still working. For projects that are accessing the passport instance directly through `self.apos.login.passport`, some verifications may be necessary to avoid any compatibility issue. The internally used methods are `authenticate`, `use`, `serializeUser`, `deserializeUser`, `initialize`, `session`.
+
 ## 2.225.0 (2023-02-17)
 
 ### Adds
