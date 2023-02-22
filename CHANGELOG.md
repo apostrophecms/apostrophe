@@ -1,6 +1,10 @@
 # Changelog
 
-## 3.41.0
+## UNRELEASED
+
+### Fixes
+
+* Replace `deep-get-set` dependency with `lodash`'s `get` and `set` functions to fix the [Prototype Pollution in deep-get-set](https://github.com/advisories/GHSA-mjjj-6p43-vhhv) vulnerability. There was no actual vulnerability in Apostrophe due to the way the module was actually used, and this was done to address vulnerability scan reports.
 
 ### Security
 
@@ -9,6 +13,7 @@
 ## 3.40.1 (2023-02-18)
 
 * No code change. Patch level bump for package update.
+
 ## 3.40.0 (2023-02-17)
 
 ### Adds
