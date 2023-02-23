@@ -318,8 +318,8 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input-relationship__input-wrapper {
-    position: relative;
     z-index: $z-index-widget-focused-controls;
+    position: relative;
 
     .apos-input-relationship__button {
       position: absolute;

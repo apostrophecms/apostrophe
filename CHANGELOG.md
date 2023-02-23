@@ -1,6 +1,9 @@
 # Changelog
 
-## UNRELEASED
+## 3.40.1 (2023-02-18)
+
+* No code change. Patch level bump for package update.
+## 3.40.0 (2023-02-17)
 
 ### Adds
 
@@ -10,11 +13,11 @@
 
 * Do not display shortcut conflicts at startup if there are none.
 * Range field correctly handles the `def` attribute set to `0` now. The `def` property will be used when the field has no value provided; a value going over the max or below the min threshold still returns `null`.
+* `select` fields now work properly when the `value` of a choice is a boolean rather than a string or a number.
 
 ## 3.39.2 (2023-02-03)
 
 ### Fixes
-
 * Hotfix for a backwards compatibility break in webpack that triggered a tiptap bug. The admin UI build will now succeed as expected.
 
 ## 3.39.1 (2023-02-02)
