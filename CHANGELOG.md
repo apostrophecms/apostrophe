@@ -1,12 +1,10 @@
 # Changelog
 
-## UNRELEASED
+## 2.226.0 (UNRELEASED)
 
 ### Adds
 
 * Add `readOnlyFields` option. Exactly like `showFields`, a boolean/select/checkboxes field in the document can control whether other fields are read-only or not (as opposed to visible or not).
-
-## 2.226.0
 
 ### Security
 
