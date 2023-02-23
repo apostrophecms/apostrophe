@@ -2129,4 +2129,110 @@ describe('Schemas', function() {
     });
   });
 
+  it('should disregard read-only fields set by a boolean field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer'
+        },
+        {
+          name: 'canEditAge',
+          type: 'boolean',
+          choices: [
+            {
+              value: true
+            },
+            {
+              value: false,
+              readOnlyFields: [ 'age' ]
+            }
+          ]
+        }
+      ]
+    });
+    var object = {
+      age: 20,
+      canEditAge: false
+    };
+    apos.schemas.convert(req, schema, 'form', { age: '30' }, object, function(err) {
+      assert(!err);
+      assert(object.age === 20);
+      done();
+    });
+  });
+
+  it('should disregard read-only fields set by a select field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer'
+        },
+        {
+          name: 'edit',
+          type: 'select',
+          choices: [
+            {
+              label: 'Can edit anything',
+              value: 'canEditAnything'
+            },
+            {
+              label: 'Cannot edit age',
+              value: 'cannotEditAge',
+              readOnlyFields: [ 'age' ]
+            }
+          ]
+        }
+      ]
+    });
+    var object = {
+      age: 20,
+      edit: 'cannotEditAge'
+    };
+    apos.schemas.convert(req, schema, 'form', { age: '30' }, object, function(err) {
+      assert(!err);
+      assert(object.age === 20);
+      done();
+    });
+  });
+
+  it('should disregard read-only fields set by a checkboxes field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer'
+        },
+        {
+          name: 'edit',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'Can edit anything',
+              value: 'canEditAnything'
+            },
+            {
+              label: 'Cannot edit age',
+              value: 'cannotEditAge',
+              readOnlyFields: [ 'age' ]
+            }
+          ]
+        }
+      ]
+    });
+    var object = {
+      age: 20,
+      edit: 'cannotEditAge'
+    };
+    apos.schemas.convert(req, schema, 'form', { age: '30' }, object, function(err) {
+      assert(!err);
+      assert(object.age === 20);
+      done();
+    });
+  });
+
 });

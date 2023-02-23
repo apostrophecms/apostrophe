@@ -137,6 +137,7 @@
 {%- endmacro -%}
 
 {%- macro checkboxesBody(field) -%}
+  <div class="apos-field-readonly-overlay"></div>
   {%- for choice in field.choices -%}
     <div class="apos-form-checkbox">
       <label class="apos-form-checkbox-label apos-text-small">

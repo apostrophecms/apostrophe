@@ -6,6 +6,7 @@
 
 .apos-field
 {
+  position: relative;
   margin-bottom: @apos-margin-4;
   width: 100%;
   max-width: 540px;
@@ -298,6 +299,20 @@
 
 .apos-field-range .apos-field-label {
   display: inline-block;
+}
+
+// Field readonly overlay  ===================================
+.apos-field-readonly-overlay {
+  display: none;
+  position: absolute;
+  z-index: @apos-z-index-2;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.75);
+}
+
+.apos-field-readonly-overlay--active {
+  display: block;
 }
 
 // Browse and autocomplete combo
