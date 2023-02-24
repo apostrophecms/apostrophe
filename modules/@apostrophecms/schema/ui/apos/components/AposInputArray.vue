@@ -246,6 +246,9 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
+        const errorColor = 'var(--a-danger)';
+        const neutralColor = 'var(--a-base-5)';
+
         const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
         if (uniqueFieldName) {
           const duplicates = this.items
@@ -256,22 +259,22 @@ export default {
 
           if (duplicates.length) {
             duplicates.forEach(duplicate => {
-              if (uniqueFieldSchema.type === 'select') {
-                this.$el.querySelectorAll('select option:checked').forEach(selectedOption => {
-                  if (selectedOption.value.replaceAll('"', '') === duplicate) {
-                    selectedOption.closest('select').style.borderColor = 'var(--a-danger)';
-                  }
-                });
-              } else if (uniqueFieldSchema.type === 'relationship') {
+              if (uniqueFieldSchema.type === 'relationship') {
                 nextTick(() => {
                   this.$el.querySelectorAll(`[data-id=${duplicate}]`).forEach(item => {
-                    item.style.borderColor = 'var(--a-danger)';
+                    item.style.borderColor = errorColor;
                   });
+                });
+              } else if (uniqueFieldSchema.type === 'select') {
+                this.$el.querySelectorAll('select option:checked').forEach(selectedOption => {
+                  if (selectedOption.value.replaceAll('"', '') === duplicate) {
+                    selectedOption.closest('select').style.borderColor = errorColor;
+                  }
                 });
               } else {
                 this.$el.querySelectorAll('input').forEach(input => {
                   if (input.value === duplicate.toString()) {
-                    input.style.borderColor = 'var(--a-danger)';
+                    input.style.borderColor = errorColor;
                   }
                 });
               }
@@ -281,22 +284,22 @@ export default {
               message: `duplicate ${this.$t(uniqueFieldSchema.label)}`
             };
           } else {
-            if (uniqueFieldSchema.type === 'select') {
-              this.$el.querySelectorAll('select').forEach(select => {
-                select.style.borderColor = 'var(--a-base-5)';
-              });
-            } else if (uniqueFieldSchema.type === 'relationship') {
+            // reset styles when no duplicates
+            if (uniqueFieldSchema.type === 'relationship') {
               this.$el.querySelectorAll('[data-id]').forEach(item => {
-                item.style.borderColor = 'var(--a-base-5)';
+                item.style.borderColor = neutralColor;
+              });
+            } else if (uniqueFieldSchema.type === 'select') {
+              this.$el.querySelectorAll('select').forEach(select => {
+                select.style.borderColor = neutralColor;
               });
             } else {
               this.$el.querySelectorAll('input').forEach(input => {
-                input.style.borderColor = 'var(--a-base-5)';
+                input.style.borderColor = neutralColor;
               });
             }
           }
         }
-
       }
       return false;
     },
@@ -409,8 +412,16 @@ function alwaysExpand(field) {
       color: var(--a-base-2);
     }
   }
-  ::v-deep .apos-input-relationship .apos-button__wrapper {
-    display: none;
+  ::v-deep .apos-input-relationship {
+    .apos-button__wrapper {
+      display: none;
+    }
+    .apos-input {
+      width: auto;
+    }
+    .apos-slat__main {
+      min-width: 160px;
+    }
   }
   .apos-is-dragging {
     opacity: 0.5;
@@ -434,8 +445,7 @@ function alwaysExpand(field) {
   .apos-input-array-inline-table {
     @include type-label;
     position: relative;
-    left: -35px;
-    width: calc(100% + 70px);
+    left: -45px;
     margin: 0 0 $spacing-base;
     border-collapse: collapse;
 
