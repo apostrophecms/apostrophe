@@ -139,6 +139,7 @@
 </template>
 
 <script>
+import { nextTick } from 'vue';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import cuid from 'cuid';
 import { klona } from 'klona';
@@ -255,16 +256,45 @@ export default {
 
           if (duplicates.length) {
             duplicates.forEach(duplicate => {
-              this.$el.querySelector(`[data-id=${duplicate}]`).style.borderColor = 'var(--a-danger)';
+              if (uniqueFieldSchema.type === 'select') {
+                this.$el.querySelectorAll('select option:checked').forEach(selectedOption => {
+                  if (selectedOption.value.replaceAll('"', '') === duplicate) {
+                    selectedOption.closest('select').style.borderColor = 'var(--a-danger)';
+                  }
+                });
+              } else if (uniqueFieldSchema.type === 'relationship') {
+                nextTick(() => {
+                  this.$el.querySelectorAll(`[data-id=${duplicate}]`).forEach(item => {
+                    item.style.borderColor = 'var(--a-danger)';
+                  });
+                });
+              } else {
+                this.$el.querySelectorAll('input').forEach(input => {
+                  if (input.value === duplicate.toString()) {
+                    input.style.borderColor = 'var(--a-danger)';
+                  }
+                });
+              }
             });
             return {
               name: 'duplicate',
               message: `duplicate ${this.$t(uniqueFieldSchema.label)}`
             };
           } else {
-            this.$el.querySelectorAll('[data-id]').forEach(item => {
-              item.style.borderColor = 'var(--a-base-5)';
-            });
+            if (uniqueFieldSchema.type === 'select') {
+              this.$el.querySelectorAll('select').forEach(select => {
+                select.style.borderColor = 'var(--a-base-5)';
+              });
+            } else if (uniqueFieldSchema.type === 'relationship') {
+              this.$el.querySelectorAll('[data-id]').forEach(item => {
+                console.log('item ====> ', item);
+                item.style.borderColor = 'var(--a-base-5)';
+              });
+            } else {
+              this.$el.querySelectorAll('input').forEach(input => {
+                input.style.borderColor = 'var(--a-base-5)';
+              });
+            }
           }
         }
 
@@ -373,9 +403,15 @@ function alwaysExpand(field) {
     .apos-input {
       border-color: var(--a-base-8);
     }
+    .apos-input:focus {
+      box-shadow: 0 0 3px var(--a-base-8);
+    }
     .apos-input-icon {
       color: var(--a-base-2);
     }
+  }
+  ::v-deep .apos-input-relationship .apos-button__wrapper {
+    display: none;
   }
   .apos-is-dragging {
     opacity: 0.5;
