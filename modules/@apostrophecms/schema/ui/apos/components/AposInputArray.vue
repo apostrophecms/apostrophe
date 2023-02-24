@@ -287,7 +287,6 @@ export default {
               });
             } else if (uniqueFieldSchema.type === 'relationship') {
               this.$el.querySelectorAll('[data-id]').forEach(item => {
-                console.log('item ====> ', item);
                 item.style.borderColor = 'var(--a-base-5)';
               });
             } else {
@@ -548,7 +547,6 @@ function alwaysExpand(field) {
       }
 
       & > div {
-        display: none;
         grid-column: 2;
         padding-top: $spacing-base;
         padding-bottom: $spacing-base;
