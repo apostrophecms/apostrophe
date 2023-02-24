@@ -98,7 +98,7 @@ export default {
       return !!this.patchesSinceSave.length;
     },
     canPublish() {
-      return apos.modules[this.context.type].canPublish;
+      return this.context._publish || apos.modules[this.context.type].canPublish;
     },
     readyToPublish() {
       if (this.canPublish) {
