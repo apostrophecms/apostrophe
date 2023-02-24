@@ -330,7 +330,8 @@ module.exports = {
         return _.filter(self.schema, function (field) {
           return (!field.editPermission && !field.viewPermission) ||
             (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
-            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type));
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            false;
         });
       },
 
