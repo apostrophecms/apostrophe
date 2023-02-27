@@ -21,6 +21,8 @@
 // }
 // ```
 
+const parseurl = require('parseurl');
+
 module.exports = {
   async init(self) {
     self.options.statusCode = self.options.statusCode || 302;
