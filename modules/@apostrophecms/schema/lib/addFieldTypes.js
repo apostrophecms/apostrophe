@@ -752,8 +752,8 @@ module.exports = (self) => {
       if ((field.max !== undefined) && (results.length > field.max)) {
         throw self.apos.error('max');
       }
-      if (data.length && field.fields && field.fields.add) {
-        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(field.fields.add).find(([ , subfield ]) => subfield.unique);
+      if (data.length && field.schema && field.schema.length) {
+        const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema.find(subfield => subfield.unique);
         if (uniqueFieldName) {
           const duplicates = data
             .map(item => Array.isArray(item[uniqueFieldName])
@@ -761,7 +761,7 @@ module.exports = (self) => {
               : item[uniqueFieldName])
             .filter((item, index, array) => array.indexOf(item) !== index);
           if (duplicates.length) {
-            throw self.apos.error('duplicate', `${req.t(uniqueFieldSchema.label)} in ${req.t(field.label)} must be unique`);
+            throw self.apos.error('duplicate', `${req.t(uniqueFieldLabel)} in ${req.t(field.label)} must be unique`);
           }
         }
       }

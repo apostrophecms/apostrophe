@@ -1330,6 +1330,56 @@ describe('Schemas', function() {
     assert(result.addresses[1].address === '602 test ave');
   });
 
+  it('should check for duplicates in arrays when relevant', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'array',
+          name: 'addresses',
+          label: 'Addresses',
+          schema: [
+            {
+              name: 'address',
+              type: 'string',
+              label: 'Address',
+              unique: true
+            }
+          ]
+        }
+      ]
+    });
+
+    const input = {
+      addresses: [
+        {
+          address: '500 test lane'
+        },
+        {
+          address: '602 test ave'
+        }
+      ]
+    };
+    const result = {};
+    const req = apos.task.getReq();
+    await apos.schema.convert(req, schema, input, result);
+    assert(_.keys(result).length === 1);
+    assert(result.addresses);
+    assert(result.addresses.length === 2);
+    assert(result.addresses[0]._id);
+    assert(result.addresses[1]._id);
+    assert(result.addresses[0].address === '500 test lane');
+    assert(result.addresses[1].address === '602 test ave');
+
+    input.addresses[1] = '500 test lane';
+    await apos.schema.convert(req, schema, input, result);
+    assert.throws(() => {
+      throw apos.error('duplicate', 'Address in Addresses must be unique');
+    }, {
+      name: 'duplicate',
+      message: 'Address in Addresses must be unique'
+    });
+  });
+
   it('should convert string values to areas correctly', async function() {
     const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
