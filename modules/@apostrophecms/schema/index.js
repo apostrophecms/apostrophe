@@ -578,9 +578,10 @@ module.exports = {
             }
 
             // Handle external conditions:
-            //  - `if: { 'methodName()' }`
-            //  - `if: { 'moduleName:methodName()' }`
-            if (key.endsWith('()')) {
+            //  - `if: { 'methodName()': true }`
+            //  - `if: { 'moduleName:methodName()': 'expected value' }`
+            // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
+            if (key.endsWith(')')) {
               const externalConditionResult = await evaluateExternalCondition(key, fieldName);
 
               console.log('🚀 ~ file: index.js:599 ~ evaluate ~ externalConditionResult:', externalConditionResult);
@@ -608,7 +609,12 @@ module.exports = {
           return result;
         }
         async function evaluateExternalCondition(key, fieldName) {
-          const [ methodDefinition ] = key.split('()');
+          const [ methodDefinition ] = key.split('(');
+
+          if (!key.endsWith('()')) {
+            self.apos.util.warn(`Warning in the \`if\` definition of the "${fieldName}" field: "${methodDefinition}()" should not be passed any argument.`);
+          }
+
           const [ methodName, moduleName = object.type ] = methodDefinition
             .split(':')
             .reverse();
@@ -619,9 +625,9 @@ module.exports = {
           const manager = self.apos.doc.getManager(moduleName);
 
           if (!manager) {
-            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found`);
+            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found.`);
           } else if (!manager[methodName]) {
-            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module`);
+            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module.`);
           }
 
           return manager[methodName](req, object);
