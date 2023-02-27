@@ -214,11 +214,15 @@ export default {
     apos.bus.$on('widget-hover', this.updateWidgetHovered);
     apos.bus.$on('widget-focus', this.updateWidgetFocused);
     this.bindEventListeners();
+
+    apos.bus.$on('refreshed', this.destroyObsoleteComponent);
   },
   beforeDestroy() {
+    console.log('=====> DESTROY AREA EDITOR <=====');
     apos.bus.$off('area-updated', this.areaUpdatedHandler);
     apos.bus.$off('widget-hover', this.updateWidgetHovered);
     apos.bus.$off('widget-focus', this.updateWidgetFocused);
+    apos.bus.$off('refreshed', this.destroyObsoleteComponent);
     this.unbindEventListeners();
   },
   methods: {
@@ -582,6 +586,12 @@ export default {
         }
       });
       return widget;
+    },
+    destroyObsoleteComponent() {
+      if (!document.body.contains(this.$el)) {
+        console.log('destroy');
+        this.$destroy();
+      }
     }
   }
 };
