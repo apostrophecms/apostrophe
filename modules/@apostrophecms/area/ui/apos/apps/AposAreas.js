@@ -6,6 +6,7 @@ export default function() {
   let widgetsRendering = 0;
 
   apos.area.widgetOptions = [];
+  apos.area.apps = [];
 
   createWidgetClipboardApp();
 
@@ -23,8 +24,22 @@ export default function() {
   });
 
   apos.bus.$on('refreshed', function() {
+    /* killObsoleteApps(); */
     createAreaAppsAndRunPlayersIfDone();
   });
+
+  /* function killObsoleteApps() { */
+  /*   console.log('Apos.area.apps.length', apos.area.apps.length); */
+  /*   apos.area.apps = apos.area.apps.filter((app) => { */
+  /**/
+  /*     if (document.body.contains(app.$el)) { */
+  /*       return true; */
+  /*     } */
+  /**/
+  /*     app.$destroy(); */
+  /*     return false; */
+  /*   }); */
+  /* } */
 
   function createAreaAppsAndRunPlayersIfDone() {
     createAreaApps();
@@ -48,120 +63,122 @@ export default function() {
       }
     });
     for (const el of els) {
-      createAreaApp(el);
+
+      const app = createAreaApp(el);
+      apos.area.apps.push(app);
     }
   }
+}
 
-  function depth(el) {
-    let depth = 0;
-    while (el) {
-      el = el.parentNode;
-      depth++;
-    }
-    return depth;
+function depth(el) {
+  let depth = 0;
+  while (el) {
+    el = el.parentNode;
+    depth++;
   }
+  return depth;
+}
 
-  function createAreaApp(el) {
+function createAreaApp(el) {
 
-    const options = JSON.parse(el.getAttribute('data-options'));
-    const data = JSON.parse(el.getAttribute('data'));
-    const fieldId = el.getAttribute('data-field-id');
-    const choices = JSON.parse(el.getAttribute('data-choices'));
-    const renderings = {};
-    const _docId = data._docId;
+  const options = JSON.parse(el.getAttribute('data-options'));
+  const data = JSON.parse(el.getAttribute('data'));
+  const fieldId = el.getAttribute('data-field-id');
+  const choices = JSON.parse(el.getAttribute('data-choices'));
+  const renderings = {};
+  const _docId = data._docId;
 
-    for (const widgetEl of el.querySelectorAll('[data-apos-widget]')) {
-      const _id = widgetEl.getAttribute('data-apos-widget');
-      const item = data.items.find(item => _id === item._id);
-      // This will only match our own widgets, leaving the nested matches alone,
-      // another area app will handle them when the time comes
-      if (item) {
-        renderings[_id] = {
-          html: widgetEl.innerHTML,
-          parameters: {
-            _docId,
-            widget: item,
-            areaFieldId: fieldId,
-            type: item.type
-          }
-        };
-        widgetEl.remove();
-      }
-    }
-    el.removeAttribute('data-apos-area-newly-editable');
-
-    const component = window.apos.area.components.editor;
-
-    if (apos.area.activeEditor && (apos.area.activeEditor.id === data._id)) {
-      // Editing a piece causes a refresh of the main content area,
-      // but this may contain the area we originally intended to add
-      // a widget to when we created a piece for that purpose. Preserve
-      // the editing experience by restoring that widget's editor to the DOM
-      // rather than creating a new one.
-      el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
-    } else {
-      return new Vue({
-        el,
-        data: function() {
-          return {
-            options,
-            id: data._id,
-            items: data.items,
-            choices,
-            docId: _docId,
-            fieldId,
-            renderings
-          };
-        },
-        render(h) {
-          return h(component, {
-            props: {
-              options: this.options,
-              items: this.items,
-              choices: this.choices,
-              id: this.id,
-              docId: this.docId,
-              fieldId: this.fieldId,
-              renderings: this.renderings
-            }
-          });
+  for (const widgetEl of el.querySelectorAll('[data-apos-widget]')) {
+    const _id = widgetEl.getAttribute('data-apos-widget');
+    const item = data.items.find(item => _id === item._id);
+    // This will only match our own widgets, leaving the nested matches alone,
+    // another area app will handle them when the time comes
+    if (item) {
+      renderings[_id] = {
+        html: widgetEl.innerHTML,
+        parameters: {
+          _docId,
+          widget: item,
+          areaFieldId: fieldId,
+          type: item.type
         }
-      });
+      };
+      widgetEl.remove();
     }
   }
+  el.removeAttribute('data-apos-area-newly-editable');
 
-  function createWidgetClipboardApp() {
-    // Headless app to provide simple reactivity for the clipboard state
-    apos.area.widgetClipboard = new Vue({
-      el: null,
-      data: () => {
-        const existing = window.localStorage.getItem('aposWidgetClipboard');
+  const component = window.apos.area.components.editor;
+
+  if (apos.area.activeEditor && (apos.area.activeEditor.id === data._id)) {
+    // Editing a piece causes a refresh of the main content area,
+    // but this may contain the area we originally intended to add
+    // a widget to when we created a piece for that purpose. Preserve
+    // the editing experience by restoring that widget's editor to the DOM
+    // rather than creating a new one.
+
+    el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
+  } else {
+    return new Vue({
+      el,
+      data: function() {
         return {
-          widgetClipboard: existing ? JSON.parse(existing) : null
+          options,
+          id: data._id,
+          items: data.items,
+          choices,
+          docId: _docId,
+          fieldId,
+          renderings
         };
       },
-      mounted() {
-        window.addEventListener('storage', this.onStorage);
-      },
-      methods: {
-        set(widget) {
-          this.widgetClipboard = widget;
-          localStorage.setItem('aposWidgetClipboard', JSON.stringify(this.widgetClipboard));
-        },
-        get() {
-          // If we don't clone, the second paste will be a duplicate key error
-          return klona(this.widgetClipboard);
-        },
-        onStorage() {
-          // When local storage changes, dump the list to
-          // the console.
-          const contents = window.localStorage.getItem('aposWidgetClipboard');
-          if (contents) {
-            this.widgetClipboard = JSON.parse(contents);
+      render(h) {
+        return h(component, {
+          props: {
+            options: this.options,
+            items: this.items,
+            choices: this.choices,
+            id: this.id,
+            docId: this.docId,
+            fieldId: this.fieldId,
+            renderings: this.renderings
           }
-        }
+        });
       }
     });
   }
+}
 
-};
+function createWidgetClipboardApp() {
+  // Headless app to provide simple reactivity for the clipboard state
+  apos.area.widgetClipboard = new Vue({
+    el: null,
+    data: () => {
+      const existing = window.localStorage.getItem('aposWidgetClipboard');
+      return {
+        widgetClipboard: existing ? JSON.parse(existing) : null
+      };
+    },
+    mounted() {
+      window.addEventListener('storage', this.onStorage);
+    },
+    methods: {
+      set(widget) {
+        this.widgetClipboard = widget;
+        localStorage.setItem('aposWidgetClipboard', JSON.stringify(this.widgetClipboard));
+      },
+      get() {
+        // If we don't clone, the second paste will be a duplicate key error
+        return klona(this.widgetClipboard);
+      },
+      onStorage() {
+        // When local storage changes, dump the list to
+        // the console.
+        const contents = window.localStorage.getItem('aposWidgetClipboard');
+        if (contents) {
+          this.widgetClipboard = JSON.parse(contents);
+        }
+      }
+    }
+  });
+}
