@@ -487,18 +487,21 @@ module.exports = {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
 
-        let errors = [];
+        const errors = [];
 
         for (const field of schema) {
           if (field.readOnly) {
             continue;
           }
+
           // Fields that are contextual are left alone, not blanked out, if
           // they do not appear at all in the data object.
           if (field.contextual && !_.has(data, field.name)) {
             continue;
           }
-          const convert = self.fieldTypes[field.type].convert;
+
+          const { convert } = self.fieldTypes[field.type];
+
           if (convert) {
             try {
               await convert(req, field, data, destination);
@@ -520,15 +523,21 @@ module.exports = {
           }
         }
 
-        errors = errors.filter(error => {
-          if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, destination, error.path)) {
+        const errorsList = [];
+
+        for (const error of errors) {
+          const isVisible = await self.isVisible(req, schema, destination, error.path);
+
+          if ((error.name === 'required' || error.name === 'mandatory') && !isVisible) {
             // It is not reasonable to enforce required for
             // fields hidden via conditional fields
-            return false;
+            continue;
           }
-          return true;
-        });
-        if (errors.length) {
+
+          errorsList.push(error);
+        }
+
+        if (errorsList.length) {
           throw errors;
         }
       },
@@ -536,13 +545,13 @@ module.exports = {
       // Determine whether the given field is visible
       // based on `if` conditions of all fields
 
-      isVisible(schema, object, name) {
+      async isVisible(req, schema, object, name) {
         const conditionalFields = {};
         while (true) {
           let change = false;
           for (const field of schema) {
             if (field.if) {
-              const result = evaluate(field.if);
+              const result = await evaluate(field.if);
               const previous = conditionalFields[field.name];
               if (previous !== result) {
                 change = true;
@@ -559,12 +568,46 @@ module.exports = {
         } else {
           return true;
         }
-        function evaluate(clause) {
+        async function evaluate(clause) {
           let result = true;
           for (const [ key, val ] of Object.entries(clause)) {
             if (key === '$or') {
-              return val.some(clause => evaluate(clause));
+              const promisesResult = await Promise.allSettled(val.map(clause => evaluate(clause)));
+              return promisesResult.some(({ value }) => value);
             }
+
+            // Handle external condition defined either as:
+            //  - `if: { 'methodName()' }`
+            //  - `if: { 'moduleName:methodName()' }`
+            if (key.endsWith('()')) {
+              const [ methodPath ] = key.split('()');
+              const [ methodName, moduleName ] = methodPath
+                .split(':')
+                .reverse();
+
+              console.log('methodName', methodName);
+              console.log('moduleName', moduleName);
+
+              const moduleManager = moduleName
+                ? self.apos.modules[moduleName]
+                : self.apos.doc.getManager(object.type);
+
+              try {
+                const externalConditionResult = await moduleManager[methodName](req, object);
+                console.log('🚀 ~ file: index.js:599 ~ evaluate ~ externalConditionResult:', externalConditionResult);
+                console.log('🚀 ~ file: index.js:601 ~ evaluate ~ val:', val);
+                return externalConditionResult === val;
+              } catch (error) {
+                if (!self.apos.modules[moduleName]) {
+                  throw new Error('module not found');
+                }
+                if (!self.apos.modules[moduleName][methodName]) {
+                  throw new Error(`method not found in ${moduleName}`);
+                }
+                throw error;
+              }
+            }
+
             if (conditionalFields[key] === false) {
               result = false;
               break;
