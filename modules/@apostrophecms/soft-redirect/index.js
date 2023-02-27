@@ -37,7 +37,7 @@ module.exports = {
     return {
       '@apostrophecms/page:notFound': {
         async notFoundRedirect(req) {
-          const urlPathname = req._parsedOriginalUrl?.pathname;
+          const urlPathname = parseurl.original(req).pathname;
 
           const doc = await self.apos.doc
             .find(req, {
