@@ -551,7 +551,7 @@ module.exports = {
           let change = false;
           for (const field of schema) {
             if (field.if) {
-              const result = await evaluate(field.if);
+              const result = await evaluate(field.if, field.name);
               const previous = conditionalFields[field.name];
               if (previous !== result) {
                 change = true;
@@ -568,44 +568,31 @@ module.exports = {
         } else {
           return true;
         }
-        async function evaluate(clause) {
+        async function evaluate(clause, fieldName) {
           let result = true;
+          // TODO: run promises in parallel
           for (const [ key, val ] of Object.entries(clause)) {
             if (key === '$or') {
-              const promisesResult = await Promise.allSettled(val.map(clause => evaluate(clause)));
+              const promisesResult = await Promise.allSettled(val.map(clause => evaluate(clause, fieldName)));
               return promisesResult.some(({ value }) => value);
             }
 
-            // Handle external condition defined either as:
+            // Handle external conditions:
             //  - `if: { 'methodName()' }`
             //  - `if: { 'moduleName:methodName()' }`
             if (key.endsWith('()')) {
-              const [ methodPath ] = key.split('()');
-              const [ methodName, moduleName ] = methodPath
-                .split(':')
-                .reverse();
+              const externalConditionResult = await evaluateExternalCondition(key, fieldName);
 
-              console.log('methodName', methodName);
-              console.log('moduleName', moduleName);
+              console.log('🚀 ~ file: index.js:599 ~ evaluate ~ externalConditionResult:', externalConditionResult);
+              console.log('🚀 ~ file: index.js:601 ~ evaluate ~ val:', val);
+              console.log('externalConditionResult === val', externalConditionResult === val);
 
-              const moduleManager = moduleName
-                ? self.apos.modules[moduleName]
-                : self.apos.doc.getManager(object.type);
+              if (externalConditionResult !== val) {
+                result = false;
+                break;
+              };
 
-              try {
-                const externalConditionResult = await moduleManager[methodName](req, object);
-                console.log('🚀 ~ file: index.js:599 ~ evaluate ~ externalConditionResult:', externalConditionResult);
-                console.log('🚀 ~ file: index.js:601 ~ evaluate ~ val:', val);
-                return externalConditionResult === val;
-              } catch (error) {
-                if (!self.apos.modules[moduleName]) {
-                  throw new Error('module not found');
-                }
-                if (!self.apos.modules[moduleName][methodName]) {
-                  throw new Error(`method not found in ${moduleName}`);
-                }
-                throw error;
-              }
+              continue;
             }
 
             if (conditionalFields[key] === false) {
@@ -617,7 +604,27 @@ module.exports = {
               break;
             }
           }
+          console.log('result', result);
           return result;
+        }
+        async function evaluateExternalCondition(key, fieldName) {
+          const [ methodDefinition ] = key.split('()');
+          const [ methodName, moduleName = object.type ] = methodDefinition
+            .split(':')
+            .reverse();
+
+          console.log('methodName', methodName);
+          console.log('moduleName', moduleName);
+
+          const manager = self.apos.doc.getManager(moduleName);
+
+          if (!manager) {
+            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found`);
+          } else if (!manager[methodName]) {
+            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module`);
+          }
+
+          return manager[methodName](req, object);
         }
       },
 
