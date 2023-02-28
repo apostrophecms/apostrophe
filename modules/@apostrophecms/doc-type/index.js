@@ -83,7 +83,7 @@ module.exports = {
       self.__meta.name === '@apostrophecms/global' ||
       self.apos.instanceOf(self, '@apostrophecms/any-page-type') ||
       self.apos.instanceOf(self, '@apostrophecms/page-type') ||
-      self.options.canCreate === false ||
+      self.options.showCreate === false ||
       self.options.showPermissions === false
     ) {
       return null;
