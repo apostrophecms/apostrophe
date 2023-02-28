@@ -263,8 +263,6 @@ export default {
       await this.setContext({
         doc: layer.doc
       });
-      // So that areas revert to being editable
-      /* await this.refresh(); */
     },
     // Accept a hint that a user is actively typing and/or manipulating controls
     // and it would best not to enable a save button or a "...Saved" indication yet
@@ -506,30 +504,6 @@ export default {
         await this.refresh();
       }
     },
-    async refreshPage(refreshable) {
-
-      const qs = {
-        ...apos.http.parseQuery(window.location.search),
-        aposRefresh: '1',
-        aposMode: this.draftMode,
-        ...(this.editMode ? {
-          aposEdit: '1'
-        } : {})
-      };
-      const url = apos.http.addQueryToUrl(window.location.href, qs);
-
-      console.log('url', url);
-      const content = await apos.http.get(url, {
-        qs,
-        headers: {
-          'Cache-Control': 'no-cache'
-        },
-        draft: true,
-        busy: true
-      });
-
-      refreshable.innerHTML = content;
-    },
     async refresh(options = {}) {
       const refreshable = document.querySelector('[data-apos-refreshable]');
       if (options.scrollcheck) {
@@ -543,7 +517,25 @@ export default {
         return;
       }
 
-      await this.refreshPage(refreshable);
+      const qs = {
+        ...apos.http.parseQuery(window.location.search),
+        aposRefresh: '1',
+        aposMode: this.draftMode,
+        ...(this.editMode ? {
+          aposEdit: '1'
+        } : {})
+      };
+      const url = apos.http.addQueryToUrl(window.location.href, qs);
+      const content = await apos.http.get(url, {
+        qs,
+        headers: {
+          'Cache-Control': 'no-cache'
+        },
+        draft: true,
+        busy: true
+      });
+
+      refreshable.innerHTML = content;
 
       if (this.editMode && (!this.original)) {
         // the first time we enter edit mode on the page, we need to
