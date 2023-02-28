@@ -261,6 +261,8 @@ export default {
       await this.setContext({
         doc: layer.doc
       });
+      // So that areas revert to being editable
+      await this.refresh();
     },
     // Accept a hint that a user is actively typing and/or manipulating controls
     // and it would best not to enable a save button or a "...Saved" indication yet
