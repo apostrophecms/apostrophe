@@ -2,6 +2,7 @@ import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 import { klona } from 'klona';
 
 export default function() {
+
   let widgetsRendering = 0;
 
   apos.area.widgetOptions = [];
@@ -61,6 +62,7 @@ export default function() {
   }
 
   function createAreaApp(el) {
+
     const options = JSON.parse(el.getAttribute('data-options'));
     const data = JSON.parse(el.getAttribute('data'));
     const fieldId = el.getAttribute('data-field-id');
