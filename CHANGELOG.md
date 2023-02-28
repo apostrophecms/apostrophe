@@ -5,6 +5,7 @@
 ### Fixes
 
 * Replace `deep-get-set` dependency with `lodash`'s `get` and `set` functions to fix the [Prototype Pollution in deep-get-set](https://github.com/advisories/GHSA-mjjj-6p43-vhhv) vulnerability. There was no actual vulnerability in Apostrophe due to the way the module was actually used, and this was done to address vulnerability scan reports.
+* Destroy AreaEditor Vue components when the page is refreshed. This avoids a leak of Vue apps components being recreated while instances of old ones are still alive.
 
 ### Security
 
