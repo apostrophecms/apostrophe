@@ -211,7 +211,6 @@ export default {
   },
   mounted() {
     this.bindEventListeners();
-
   },
   beforeDestroy() {
     this.unbindEventListeners();
