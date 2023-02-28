@@ -512,6 +512,8 @@ export default {
       }
 
       if (!refreshable) {
+        apos.bus.$emit('refreshed');
+        this.rememberLastBaseContext();
         return;
       }
 
