@@ -53,7 +53,6 @@ export default {
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, newQuery));
     }
     return {
-      refreshed: false,
       patchesSinceLoaded: [],
       undone: [],
       patchesSinceSave: [],
@@ -137,7 +136,6 @@ export default {
     }
   },
   async mounted() {
-
     apos.bus.$on('revert-published-to-previous', this.onRevertPublishedToPrevious);
     apos.bus.$on('set-context', this.onSetContext);
     apos.bus.$on('push-context', this.onPushContext);
