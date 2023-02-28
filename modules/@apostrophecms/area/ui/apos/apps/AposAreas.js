@@ -2,11 +2,9 @@ import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 import { klona } from 'klona';
 
 export default function() {
-
   let widgetsRendering = 0;
 
   apos.area.widgetOptions = [];
-  apos.area.apps = [];
 
   createWidgetClipboardApp();
 
@@ -24,22 +22,8 @@ export default function() {
   });
 
   apos.bus.$on('refreshed', function() {
-    /* killObsoleteApps(); */
     createAreaAppsAndRunPlayersIfDone();
   });
-
-  /* function killObsoleteApps() { */
-  /*   console.log('Apos.area.apps.length', apos.area.apps.length); */
-  /*   apos.area.apps = apos.area.apps.filter((app) => { */
-  /**/
-  /*     if (document.body.contains(app.$el)) { */
-  /*       return true; */
-  /*     } */
-  /**/
-  /*     app.$destroy(); */
-  /*     return false; */
-  /*   }); */
-  /* } */
 
   function createAreaAppsAndRunPlayersIfDone() {
     createAreaApps();
@@ -63,9 +47,7 @@ export default function() {
       }
     });
     for (const el of els) {
-
-      const app = createAreaApp(el);
-      apos.area.apps.push(app);
+      createAreaApp(el);
     }
   }
 }
@@ -80,7 +62,6 @@ function depth(el) {
 }
 
 function createAreaApp(el) {
-
   const options = JSON.parse(el.getAttribute('data-options'));
   const data = JSON.parse(el.getAttribute('data'));
   const fieldId = el.getAttribute('data-field-id');
