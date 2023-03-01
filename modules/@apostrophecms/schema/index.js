@@ -1562,7 +1562,7 @@ module.exports = {
         },
         async evaluateExternalCondition(req) {
           const fieldId = self.apos.launder.string(req.query.fieldId);
-          const docId = self.apos.launder.string(req.query.docId);
+          const docId = self.apos.launder.string(req.query.docId, null);
           const conditionKey = self.apos.launder.string(req.query.conditionKey);
 
           const field = self.getFieldById(fieldId);
