@@ -33,7 +33,7 @@
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
-        :condition-met="conditionalFields[field.name]"
+        :condition-met="isConditionMet(field.name)"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
@@ -134,7 +134,9 @@ export default {
       },
       fieldState: {},
       fieldComponentMap: window.apos.schema.components.fields || {},
-      externalConditions: {}
+
+      // Conditional fields with external conditions:
+      externalConditionalFields: {}
     };
   },
   computed: {
@@ -195,6 +197,7 @@ export default {
           (newVal[field] === false) ||
           (newVal[field] && this.fieldState[field].ranValidation)
         ) {
+          // TODO: check
           this.$emit('validate');
         }
       }
@@ -202,9 +205,14 @@ export default {
   },
   async created() {
     this.populateDocData();
-    await this.fetchExternalConditions();
+    await this.fetchExternalConditionalFields();
   },
   methods: {
+    isConditionMet(fieldName) {
+      console.log('🚀 ~ file: AposSchema.vue:212 ~ isConditionMet ~ this.conditionalFields[fieldName]:', this.conditionalFields[fieldName]);
+      console.log('🚀 ~ file: AposSchema.vue:213 ~ isConditionMet ~ this.externalConditionalFields[fieldName]:', this.externalConditionalFields[fieldName]);
+      return this.conditionalFields[fieldName] && this.externalConditionalFields[fieldName] !== false;
+    },
     getDisplayOptions(fieldName) {
       let options = {};
       if (this.displayOptions) {
@@ -303,7 +311,7 @@ export default {
         }
       }
       // Might not be a conditional field at all, so test explicitly for false
-      if (this.conditionalFields[fieldName] === false) {
+      if (this.conditionalFields[fieldName] === false || this.externalConditionalFields[fieldName] === false) {
         return false;
       } else {
         return true;
@@ -315,7 +323,7 @@ export default {
       // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
       this.$refs[fieldName][0].$el.scrollIntoView();
     },
-    async fetchExternalConditions() {
+    async fetchExternalConditionalFields() {
       const clauses = this.schema
         .map(field => field.if)
         .filter(Boolean);
@@ -323,7 +331,7 @@ export default {
       const containsExternalCondition = clauses => clauses
         .flatMap(Object.entries)
         .some(
-          ([ key, val ]) => key.endsWith('()') || (key === '$or' && containsExternalCondition(val))
+          ([ key, val ]) => key.endsWith(')') || (key === '$or' && containsExternalCondition(val))
         );
 
       if (!clauses.length || !containsExternalCondition(clauses)) {
@@ -334,12 +342,14 @@ export default {
 
       for (const field of this.schema) {
         if (field.if) {
-          const result = await this.evaluate(field.if, field._id);
-          this.externalConditions[field.name] = result;
+          this.externalConditionalFields = {
+            ...this.externalConditionalFields,
+            [field.name]: await this.evaluate(field.if, field._id)
+          };
         }
       }
 
-      console.log('this.externalConditions', this.externalConditions);
+      console.log('this.externalConditionalFields', this.externalConditionalFields);
     },
     async evaluate(clause, fieldId) {
       let result = true;

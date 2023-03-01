@@ -527,6 +527,7 @@ module.exports = {
 
         for (const error of errors) {
           const isVisible = await self.isVisible(req, schema, destination, error.path);
+          console.log('🚀 ~ file: index.js:530 ~ convert ~ isVisible:', isVisible);
 
           if ((error.name === 'required' || error.name === 'mandatory') && !isVisible) {
             // It is not reasonable to enforce required for
