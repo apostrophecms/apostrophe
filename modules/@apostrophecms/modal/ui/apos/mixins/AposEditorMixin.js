@@ -128,7 +128,10 @@ export default {
         let result = true;
         for (const [ key, val ] of Object.entries(clause)) {
           if (key === '$or') {
-            return val.some(clause => evaluate(clause));
+            if (!val.some(clause => evaluate(clause))) {
+              result = false;
+              break;
+            }
           }
           if (conditionalFields[key] === false) {
             result = false;
