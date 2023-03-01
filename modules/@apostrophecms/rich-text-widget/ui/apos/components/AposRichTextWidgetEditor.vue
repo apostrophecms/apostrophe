@@ -195,7 +195,7 @@ export default {
         listItem: false
       }),
       TextAlign.configure({
-        types: [ 'heading', 'paragraph' ]
+        types: [ 'heading', 'paragraph', 'defaultNode' ]
       }),
       Highlight,
       Underline,
