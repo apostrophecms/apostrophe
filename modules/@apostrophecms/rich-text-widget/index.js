@@ -42,8 +42,7 @@ module.exports = {
         // you may also use a `class` property with these
         {
           tag: 'p',
-          label: 'apostrophe:richTextParagraph',
-          def: true
+          label: 'apostrophe:richTextParagraph'
         },
         {
           tag: 'h2',
