@@ -355,9 +355,12 @@ export default {
           // No need to go further here, the key is an "$or" condition...
           continue;
         }
+
+        // Handle external conditions by executing them on the server:
         //  - `if: { 'methodName()': true }`
         //  - `if: { 'moduleName:methodName()': 'expected value' }`
-        if (key.endsWith('()')) {
+        // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
+        if (key.endsWith(')')) {
           try {
             const externalConditionResult = await this.evaluateExternalCondition(key, fieldId, this.docId);
 
