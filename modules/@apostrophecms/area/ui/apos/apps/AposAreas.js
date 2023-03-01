@@ -93,11 +93,12 @@ export default function() {
     const component = window.apos.area.components.editor;
 
     if (apos.area.activeEditor && (apos.area.activeEditor.id === data._id)) {
-      // Editing a piece causes a refresh of the main content area,
-      // but this may contain the area we originally intended to add
-      // a widget to when we created a piece for that purpose. Preserve
-      // the editing experience by restoring that widget's editor to the DOM
-      // rather than creating a new one.
+    // Editing a piece causes a refresh of the main content area,
+    // but this may contain the area we originally intended to add
+    // a widget to when we created a piece for that purpose. Preserve
+    // the editing experience by restoring that widget's editor to the DOM
+    // rather than creating a new one.
+
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
       return new Vue({
@@ -131,7 +132,7 @@ export default function() {
   }
 
   function createWidgetClipboardApp() {
-    // Headless app to provide simple reactivity for the clipboard state
+  // Headless app to provide simple reactivity for the clipboard state
     apos.area.widgetClipboard = new Vue({
       el: null,
       data: () => {
@@ -149,12 +150,12 @@ export default function() {
           localStorage.setItem('aposWidgetClipboard', JSON.stringify(this.widgetClipboard));
         },
         get() {
-          // If we don't clone, the second paste will be a duplicate key error
+        // If we don't clone, the second paste will be a duplicate key error
           return klona(this.widgetClipboard);
         },
         onStorage() {
-          // When local storage changes, dump the list to
-          // the console.
+        // When local storage changes, dump the list to
+        // the console.
           const contents = window.localStorage.getItem('aposWidgetClipboard');
           if (contents) {
             this.widgetClipboard = JSON.parse(contents);
@@ -164,4 +165,4 @@ export default function() {
     });
   }
 
-};
+}
