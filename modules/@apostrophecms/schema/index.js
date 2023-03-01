@@ -572,8 +572,16 @@ module.exports = {
           let result = true;
           for (const [ key, val ] of Object.entries(clause)) {
             if (key === '$or') {
-              const promisesResult = await Promise.allSettled(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
-              return promisesResult.some(({ value }) => value);
+              const results = await Promise.allSettled(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
+
+              // TODO: check with return with a $or condition set before all else
+              if (!results.some(({ value }) => value)) {
+                result = false;
+                break;
+              }
+
+              // No need to go further here, the key is an "$or" condition...
+              continue;
             }
 
             // Handle external conditions:

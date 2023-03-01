@@ -345,11 +345,16 @@ export default {
       let result = true;
       for (const [ key, val ] of Object.entries(clause)) {
         if (key === '$or') {
-          const promisesResult = await Promise.allSettled(val.map(clause => this.evaluate(clause, fieldId)));
-          return promisesResult.some(({ value }) => value);
-        }
+          const results = await Promise.allSettled(val.map(clause => this.evaluate(clause, fieldId)));
 
-        // Handle external conditions:
+          if (!results.some(({ value }) => value)) {
+            result = false;
+            break;
+          }
+
+          // No need to go further here, the key is an "$or" condition...
+          continue;
+        }
         //  - `if: { 'methodName()': true }`
         //  - `if: { 'moduleName:methodName()': 'expected value' }`
         if (key.endsWith('()')) {
