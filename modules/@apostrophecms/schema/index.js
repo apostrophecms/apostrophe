@@ -551,7 +551,7 @@ module.exports = {
           let change = false;
           for (const field of schema) {
             if (field.if) {
-              const result = await evaluate(field.if, field.name);
+              const result = await evaluate(field.if, field.name, field.moduleName);
               const previous = conditionalFields[field.name];
               if (previous !== result) {
                 change = true;
@@ -568,12 +568,11 @@ module.exports = {
         } else {
           return true;
         }
-        async function evaluate(clause, fieldName) {
+        async function evaluate(clause, fieldName, fieldModuleName) {
           let result = true;
-          // TODO: run promises in parallel
           for (const [ key, val ] of Object.entries(clause)) {
             if (key === '$or') {
-              const promisesResult = await Promise.allSettled(val.map(clause => evaluate(clause, fieldName)));
+              const promisesResult = await Promise.allSettled(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
               return promisesResult.some(({ value }) => value);
             }
 
@@ -582,7 +581,7 @@ module.exports = {
             //  - `if: { 'moduleName:methodName()': 'expected value' }`
             // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
             if (key.endsWith(')')) {
-              const externalConditionResult = await evaluateExternalCondition(key, fieldName);
+              const externalConditionResult = await self.evaluateExternalCondition(req, key, fieldName, fieldModuleName, object._id);
 
               console.log('🚀 ~ file: index.js:599 ~ evaluate ~ externalConditionResult:', externalConditionResult);
               console.log('🚀 ~ file: index.js:601 ~ evaluate ~ val:', val);
@@ -593,6 +592,8 @@ module.exports = {
                 break;
               };
 
+              // Stop there, this is an external condition thus
+              // does not need to be checked against doc fields.
               continue;
             }
 
@@ -608,30 +609,31 @@ module.exports = {
           console.log('result', result);
           return result;
         }
-        async function evaluateExternalCondition(key, fieldName) {
-          const [ methodDefinition ] = key.split('(');
+      },
 
-          if (!key.endsWith('()')) {
-            self.apos.util.warn(`Warning in the \`if\` definition of the "${fieldName}" field: "${methodDefinition}()" should not be passed any argument.`);
-          }
+      async evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId = null) {
+        const [ methodDefinition ] = conditionKey.split('(');
 
-          const [ methodName, moduleName = object.type ] = methodDefinition
-            .split(':')
-            .reverse();
-
-          console.log('methodName', methodName);
-          console.log('moduleName', moduleName);
-
-          const manager = self.apos.doc.getManager(moduleName);
-
-          if (!manager) {
-            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found.`);
-          } else if (!manager[methodName]) {
-            throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module.`);
-          }
-
-          return manager[methodName](req, object);
+        if (!conditionKey.endsWith('()')) {
+          self.apos.util.warn(`Warning in the \`if\` definition of the "${fieldName}" field: "${methodDefinition}()" should not be passed any argument.`);
         }
+
+        const [ methodName, moduleName = fieldModuleName ] = methodDefinition
+          .split(':')
+          .reverse();
+
+        // console.log('methodName', methodName);
+        // console.log('moduleName', moduleName);
+
+        const manager = self.apos.doc.getManager(moduleName);
+
+        if (!manager) {
+          throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found.`);
+        } else if (!manager[methodName]) {
+          throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module.`);
+        }
+
+        return manager[methodName](req, { docId });
       },
 
       // Driver invoked by the "relationship" methods of the standard
@@ -1549,6 +1551,15 @@ module.exports = {
           } else {
             throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
           }
+        },
+        async evaluateExternalCondition(req) {
+          const fieldId = self.apos.launder.string(req.query.fieldId);
+          const docId = self.apos.launder.string(req.query.docId);
+          const conditionKey = self.apos.launder.string(req.query.conditionKey);
+
+          const field = self.getFieldById(fieldId);
+
+          return self.evaluateExternalCondition(req, conditionKey, field.name, field.moduleName, docId);
         }
       }
     };
