@@ -22,57 +22,61 @@ const nodeMap = {
 };
 
 export default (options) => {
-  const def = options.styles.filter(style => style.def)[0];
+  const [ def ] = options.styles.filter(style => style.def);
+
+  console.log('options.styles', options.styles);
+
+  if (!def) {
+    return;
+  }
 
   // Configuration has a default style
-  if (def) {
-    const nodeName = 'defaultNode';
-    const attrs = {
-      class: def.options.class || null
-    };
+  const nodeName = 'defaultNode';
+  const attrs = {
+    class: def.options.class || null
+  };
 
-    if (def.type === 'heading' || def.type === 'paragraph') {
-      return nodeMap[def.type].extend({
-        name: nodeName,
-        addOptions() {
-          return {
-            ...this.parent?.(),
-            HTMLAttributes: attrs,
-            levels: def.options.level ? [ def.options.level ] : null
-          };
-        }
-      });
-    }
+  if (def.type === 'heading' || def.type === 'paragraph') {
+    return nodeMap[def.type].extend({
+      name: nodeName,
+      addOptions() {
+        return {
+          ...this.parent?.(),
+          HTMLAttributes: attrs,
+          levels: def.options.level ? [ def.options.level ] : null
+        };
+      }
+    });
+  }
 
-    if (def.type === 'textStyle') {
-      return Node.create({
-        group: 'block',
-        content: 'text*',
-        name: nodeName,
-        addOptions() {
-          return {
-            ...this.parent?.(),
-            HTMLAttributes: attrs
-          };
-        },
-        renderHTML: () => {
-          return [ 'span', attrs, 0 ];
-        },
-        parseHTML() {
-          return [
-            {
-              tag: 'span',
-              getAttrs: element => {
-                const hasStyles = element.hasAttribute('style');
-                if (!hasStyles) {
-                  return false;
-                }
-                return {};
+  if (def.type === 'textStyle') {
+    return Node.create({
+      group: 'block',
+      content: 'text*',
+      name: nodeName,
+      addOptions() {
+        return {
+          ...this.parent?.(),
+          HTMLAttributes: attrs
+        };
+      },
+      renderHTML: () => {
+        return [ 'span', attrs, 0 ];
+      },
+      parseHTML() {
+        return [
+          {
+            tag: 'span',
+            getAttrs: element => {
+              const hasStyles = element.hasAttribute('style');
+              if (!hasStyles) {
+                return false;
               }
+              return {};
             }
-          ];
-        }
-      });
-    }
+          }
+        ];
+      }
+    });
   }
 };
