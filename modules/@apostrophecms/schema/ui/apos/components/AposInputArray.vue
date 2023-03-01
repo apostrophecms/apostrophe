@@ -251,18 +251,20 @@ export default {
 
         const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
         if (uniqueFieldName) {
-          const duplicates = this.items
-            .map(item => Array.isArray(item.schemaInput.data[uniqueFieldName])
-              ? item.schemaInput.data[uniqueFieldName][0]._id
-              : item.schemaInput.data[uniqueFieldName])
+          const duplicates = this.next
+            .map(item => Array.isArray(item[uniqueFieldName])
+              ? item[uniqueFieldName].map(i => i._id).sort().join('|')
+              : item[uniqueFieldName])
             .filter((item, index, array) => array.indexOf(item) !== index);
 
           if (duplicates.length) {
             duplicates.forEach(duplicate => {
               if (uniqueFieldSchema.type === 'relationship') {
                 nextTick(() => {
-                  this.$el.querySelectorAll(`[data-id=${duplicate}]`).forEach(item => {
-                    item.style.borderColor = errorColor;
+                  duplicate.split('|').forEach(item => {
+                    this.$el.querySelectorAll(`[data-id="${item}"]`).forEach(relation => {
+                      relation.style.borderColor = errorColor;
+                    });
                   });
                 });
               } else if (uniqueFieldSchema.type === 'select') {
@@ -281,7 +283,7 @@ export default {
             });
             return {
               name: 'duplicate',
-              message: `duplicate ${this.$t(uniqueFieldSchema.label)}`
+              message: `duplicate ${this.$t(uniqueFieldSchema.label) || uniqueFieldName}`
             };
           } else {
             // reset styles when no duplicates
