@@ -133,10 +133,14 @@ export default {
         fieldErrors: {}
       },
       fieldState: {},
-      fieldComponentMap: window.apos.schema.components.fields || {}
+      fieldComponentMap: window.apos.schema.components.fields || {},
+      externalConditions: {}
     };
   },
   computed: {
+    moduleOptions() {
+      return window.apos.schema || {};
+    },
     fields() {
       const fields = {};
       this.schema.forEach(item => {
@@ -196,8 +200,9 @@ export default {
       }
     }
   },
-  created() {
+  async created() {
     this.populateDocData();
+    await this.fetchExternalConditions();
   },
   methods: {
     getDisplayOptions(fieldName) {
@@ -309,6 +314,85 @@ export default {
       // in a v-for. We know there is only one in this case
       // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
       this.$refs[fieldName][0].$el.scrollIntoView();
+    },
+    async fetchExternalConditions() {
+      const clauses = this.schema
+        .map(field => field.if)
+        .filter(Boolean);
+
+      const containsExternalCondition = clauses => clauses
+        .flatMap(Object.entries)
+        .some(
+          ([ key, val ]) => key.endsWith('()') || (key === '$or' && containsExternalCondition(val))
+        );
+
+      if (!clauses.length || !containsExternalCondition(clauses)) {
+        return;
+      }
+
+      console.log('this.value.data._id', this.value.data._id);
+
+      for (const field of this.schema) {
+        if (field.if) {
+          const result = await this.evaluate(field.if, field._id);
+          this.externalConditions[field.name] = result;
+        }
+      }
+
+      console.log('this.externalConditions', this.externalConditions);
+    },
+    async evaluate(clause, fieldId) {
+      let result = true;
+      for (const [ key, val ] of Object.entries(clause)) {
+        if (key === '$or') {
+          const promisesResult = await Promise.allSettled(val.map(clause => this.evaluate(clause, fieldId)));
+          return promisesResult.some(({ value }) => value);
+        }
+
+        // Handle external conditions:
+        //  - `if: { 'methodName()': true }`
+        //  - `if: { 'moduleName:methodName()': 'expected value' }`
+        if (key.endsWith('()')) {
+          try {
+            const externalConditionResult = await this.evaluateExternalCondition(key, fieldId, this.docId);
+
+            console.log('🚀 ~ file: AposSchema.vue:357 ~ evaluate ~ externalConditionResult:', externalConditionResult);
+            console.log('🚀 ~ file: AposSchema.vue:364 ~ evaluate ~ val:', val);
+            console.log('externalConditionResult === val', externalConditionResult === val);
+
+            if (externalConditionResult !== val) {
+              result = false;
+            };
+          } catch {
+            // TODO: set result to false to avoid displaying conditional fields if API call throws?
+            result = false;
+          }
+        }
+      }
+      console.log('result', result);
+      return result;
+    },
+    async evaluateExternalCondition(conditionKey, fieldId, docId) {
+      try {
+        const response = await apos.http.get(
+          `${this.moduleOptions.action}/evaluate-external-condition`,
+          {
+            qs: {
+              fieldId,
+              docId,
+              conditionKey
+            },
+            busy: true
+          }
+        );
+
+        return response;
+      } catch (error) {
+        // TODO: translation key for clean error
+        console.error(this.$t('apostrophe:errorFetchingExternalConditions'));
+
+        throw error;
+      }
     }
   }
 };
