@@ -367,10 +367,12 @@ export default {
 
             if (externalConditionResult !== val) {
               result = false;
+              break;
             };
           } catch {
             // TODO: set result to false to avoid displaying conditional fields if API call throws?
             result = false;
+            break;
           }
         }
       }
