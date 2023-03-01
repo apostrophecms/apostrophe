@@ -840,16 +840,16 @@ module.exports = {
       },
       ...self.enabledBrowserData && {
         '@apostrophecms/template:addBodyData': {
-          async addBrowserDataToBody(req, data) {
+          addBrowserDataToBody(req, data) {
             let myData;
             if (self.enabledBrowserData === 'apos') {
               if (req.scene === 'apos') {
                 // apos scene only
-                myData = await self.getBrowserData(req);
+                myData = self.getBrowserData(req);
               }
             } else {
               // All the time
-              myData = await self.getBrowserData(req);
+              myData = self.getBrowserData(req);
             }
             if (!myData) {
               return;
