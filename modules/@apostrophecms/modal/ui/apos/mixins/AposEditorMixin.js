@@ -159,12 +159,13 @@ export default {
               result = false;
               break;
             }
+
+            // No need to go further here, the key is an "$or" condition...
+            continue;
           }
 
           if (self.isExternalCondition(key)) {
             if (!self.externalConditionalFields[fieldName]) {
-              console.log('HERE');
-              console.log(key, fieldName, self.externalConditionalFields[fieldName]);
               result = false;
               break;
             }
