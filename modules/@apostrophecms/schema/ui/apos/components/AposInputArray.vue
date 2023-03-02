@@ -31,7 +31,7 @@
         <component
           v-if="items.length"
           :is="field.style === 'table' ? 'table' : 'div'"
-          :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline'"
+          :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline-standard'"
         >
           <thead
             v-if="field.style === 'table'"
@@ -46,7 +46,7 @@
             <th class="apos-table-cell--hidden" />
           </thead>
           <draggable
-            class="apos-input-array-inline-item"
+            class="apos-input-array-inline"
             :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
@@ -57,6 +57,7 @@
               v-for="(item, index) in items"
               :key="item._id"
               :schema="field.schema"
+              class="apos-input-array-inline-item"
               :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
               v-model="item.schemaInput"
               :trigger-validation="triggerValidation"
@@ -533,7 +534,7 @@ function alwaysExpand(field) {
     }
   }
 
-  .apos-input-array-inline {
+  .apos-input-array-inline-standard {
     .apos-input-array-inline-collapse {
       position: absolute;
       top: $spacing-quadruple;
