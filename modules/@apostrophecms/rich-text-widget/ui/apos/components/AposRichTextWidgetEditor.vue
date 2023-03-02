@@ -338,7 +338,7 @@ export default {
           // the next text node encountered
           let el = anchor;
           while (true) {
-            if ((el.nodeType === Node.TEXT_NODE) && (el.texrrontent.length > 0)) {
+            if ((el.nodeType === Node.TEXT_NODE) && (el.textContent.length > 0)) {
               break;
             }
             el = traverseNextNode(el);
