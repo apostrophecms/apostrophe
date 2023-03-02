@@ -141,20 +141,14 @@ export default {
       }
 
       const fields = this.getFieldsByCategory(followedByCategory);
-      const result = {};
       for (const field of fields) {
         if (field.if) {
-          result[field.name] = conditionalFields[field.name];
+          this.conditionalFields[followedByCategory] = {
+            ...this.conditionalFields[followedByCategory],
+            [field.name]: conditionalFields[field.name]
+          };
         }
       }
-      this.conditionalFields[followedByCategory] = result;
-      // this.conditionalFields = {
-      //   ...this.conditionalFields,
-      //   [followedByCategory]: {
-      //     ...this.conditionalFields[followedByCategory],
-      //     ...result
-      //   }
-      // };
 
       function evaluate(clause, fieldName) {
         let result = true;
@@ -218,10 +212,7 @@ export default {
 
       for (const field of this.schema) {
         if (field.if) {
-          this.externalConditionalFields = {
-            ...this.externalConditionalFields,
-            [field.name]: await this.evaluate(field.if, field._id, field.name)
-          };
+          this.externalConditionalFields[field.name] = await this.evaluate(field.if, field._id, field.name);
         }
       }
 
