@@ -6,7 +6,14 @@
     :display-options="displayOptions"
   >
     <template #body>
+      <AposCombo
+        v-if="field?.style === 'combo'"
+        :choices="choices"
+        :field="field"
+        :value="value"
+      />
       <AposCheckbox
+        v-else
         :for="getChoiceId(uid, choice.value)"
         v-for="choice in choices"
         :key="choice.value"
@@ -26,7 +33,7 @@ import AposInputChoicesMixin from 'Modules/@apostrophecms/schema/mixins/AposInpu
 export default {
   name: 'AposInputCheckboxes',
   mixins: [ AposInputMixin, AposInputChoicesMixin ],
-  beforeMount: function () {
+  beforeMount () {
     this.value.data = Array.isArray(this.value.data) ? this.value.data : [];
   },
   methods: {
@@ -69,6 +76,11 @@ export default {
       }
 
       return false;
+    },
+    getComponentName() {
+      return this.field?.style === 'combo'
+        ? 'AposCombo'
+        : 'AposCheckbox';
     }
   }
 };
