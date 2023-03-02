@@ -65,13 +65,7 @@ export default (options) => {
         return [
           {
             tag: 'span',
-            getAttrs: element => {
-              const hasStyles = element.hasAttribute('style');
-              if (!hasStyles) {
-                return false;
-              }
-              return {};
-            }
+            getAttrs: el => el.hasAttribute('style') ? {} : false
           }
         ];
       }
