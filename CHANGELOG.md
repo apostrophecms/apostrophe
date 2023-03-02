@@ -6,6 +6,7 @@
 
 * Replace `deep-get-set` dependency with `lodash`'s `get` and `set` functions to fix the [Prototype Pollution in deep-get-set](https://github.com/advisories/GHSA-mjjj-6p43-vhhv) vulnerability. There was no actual vulnerability in Apostrophe due to the way the module was actually used, and this was done to address vulnerability scan reports.
 * The "soft redirects" for former URLs of documents now work better with localization. Thanks to [Waldemar Pankratz](https://github.com/waldemar-p).
+* Destroy `AreaEditor` Vue apps when the page content is refreshed in edit mode. This avoids a leak of Vue apps components being recreated while instances of old ones are still alive.
 * Configure Tiptap Text Align also for `DefaultNode`, not only for `paragraph` and `heading`. This is the default node created on new line.
 
 ### Security
