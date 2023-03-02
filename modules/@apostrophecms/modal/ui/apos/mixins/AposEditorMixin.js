@@ -50,8 +50,7 @@ export default {
 
   async created() {
     await this.evaluateExternalConditionalFields();
-    this.getConditionalFields('utility');
-    this.getConditionalFields('other');
+    this.updateConditionalFields();
   },
 
   methods: {
@@ -128,7 +127,6 @@ export default {
         let change = false;
         for (const field of this.schema) {
           if (field.if) {
-            console.log('field.if', field.if);
             const result = evaluate(field.if, field.name);
             const previous = conditionalFields[field.name];
             if (previous !== result) {
@@ -150,6 +148,13 @@ export default {
         }
       }
       this.conditionalFields[followedByCategory] = result;
+      // this.conditionalFields = {
+      //   ...this.conditionalFields,
+      //   [followedByCategory]: {
+      //     ...this.conditionalFields[followedByCategory],
+      //     ...result
+      //   }
+      // };
 
       function evaluate(clause, fieldName) {
         let result = true;
@@ -189,6 +194,11 @@ export default {
         return result;
       }
 
+    },
+
+    updateConditionalFields() {
+      this.getConditionalFields('utility');
+      this.getConditionalFields('other');
     },
 
     async evaluateExternalConditionalFields() {
