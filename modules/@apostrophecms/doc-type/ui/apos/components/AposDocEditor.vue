@@ -67,7 +67,7 @@
               :conditional-fields="conditionalFields['other']"
               :doc-id="docId"
               :value="docFields"
-              @input="updateDocFields"
+              @input="onInput"
               @validate="triggerValidate"
               :server-errors="serverErrors"
               :ref="tab.name"
@@ -91,7 +91,7 @@
             :conditional-fields="conditionalFields['utility']"
             :doc-id="docId"
             :value="docFields"
-            @input="updateDocFields"
+            @input="onInput"
             @validate="triggerValidate"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
@@ -626,6 +626,13 @@ export default {
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`
       });
+    },
+    // TODO: do it in other components having AposSchema:
+    onInput(value) {
+      this.updateDocFields(value);
+
+      // should be called after updateDocFields()
+      this.updateConditionalFields();
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
