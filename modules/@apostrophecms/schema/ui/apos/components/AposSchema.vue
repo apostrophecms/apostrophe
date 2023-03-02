@@ -33,7 +33,7 @@
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
-        :condition-met="isConditionMet(field.name)"
+        :condition-met="conditionalFields[field.name]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
@@ -133,16 +133,10 @@ export default {
         fieldErrors: {}
       },
       fieldState: {},
-      fieldComponentMap: window.apos.schema.components.fields || {},
-
-      // Conditional fields with external conditions:
-      externalConditionalFields: {}
+      fieldComponentMap: window.apos.schema.components.fields || {}
     };
   },
   computed: {
-    moduleOptions() {
-      return window.apos.schema || {};
-    },
     fields() {
       const fields = {};
       this.schema.forEach(item => {
@@ -197,22 +191,15 @@ export default {
           (newVal[field] === false) ||
           (newVal[field] && this.fieldState[field].ranValidation)
         ) {
-          // TODO: check
           this.$emit('validate');
         }
       }
     }
   },
-  async created() {
+  created() {
     this.populateDocData();
-    await this.fetchExternalConditionalFields();
   },
   methods: {
-    isConditionMet(fieldName) {
-      console.log('🚀 ~ file: AposSchema.vue:212 ~ isConditionMet ~ this.conditionalFields[fieldName]:', this.conditionalFields[fieldName]);
-      console.log('🚀 ~ file: AposSchema.vue:213 ~ isConditionMet ~ this.externalConditionalFields[fieldName]:', this.externalConditionalFields[fieldName]);
-      return this.conditionalFields[fieldName] && this.externalConditionalFields[fieldName] !== false;
-    },
     getDisplayOptions(fieldName) {
       let options = {};
       if (this.displayOptions) {
@@ -311,7 +298,7 @@ export default {
         }
       }
       // Might not be a conditional field at all, so test explicitly for false
-      if (this.conditionalFields[fieldName] === false || this.externalConditionalFields[fieldName] === false) {
+      if (this.conditionalFields[fieldName] === false) {
         return false;
       } else {
         return true;
@@ -322,97 +309,6 @@ export default {
       // in a v-for. We know there is only one in this case
       // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
       this.$refs[fieldName][0].$el.scrollIntoView();
-    },
-    async fetchExternalConditionalFields() {
-      const clauses = this.schema
-        .map(field => field.if)
-        .filter(Boolean);
-
-      const containsExternalCondition = clauses => clauses
-        .flatMap(Object.entries)
-        .some(
-          ([ key, val ]) => key.endsWith(')') || (key === '$or' && containsExternalCondition(val))
-        );
-
-      if (!clauses.length || !containsExternalCondition(clauses)) {
-        return;
-      }
-
-      console.log('this.value.data._id', this.value.data._id);
-
-      for (const field of this.schema) {
-        if (field.if) {
-          this.externalConditionalFields = {
-            ...this.externalConditionalFields,
-            [field.name]: await this.evaluate(field.if, field._id)
-          };
-        }
-      }
-
-      console.log('this.externalConditionalFields', this.externalConditionalFields);
-    },
-    async evaluate(clause, fieldId) {
-      let result = true;
-      for (const [ key, val ] of Object.entries(clause)) {
-        if (key === '$or') {
-          const results = await Promise.allSettled(val.map(clause => this.evaluate(clause, fieldId)));
-
-          if (!results.some(({ value }) => value)) {
-            result = false;
-            break;
-          }
-
-          // No need to go further here, the key is an "$or" condition...
-          continue;
-        }
-
-        // Handle external conditions by executing them on the server:
-        //  - `if: { 'methodName()': true }`
-        //  - `if: { 'moduleName:methodName()': 'expected value' }`
-        // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
-        if (key.endsWith(')')) {
-          try {
-            const externalConditionResult = await this.evaluateExternalCondition(key, fieldId, this.docId);
-
-            console.log('🚀 ~ file: AposSchema.vue:357 ~ evaluate ~ externalConditionResult:', externalConditionResult);
-            console.log('🚀 ~ file: AposSchema.vue:364 ~ evaluate ~ val:', val);
-            console.log('externalConditionResult === val', externalConditionResult === val);
-
-            if (externalConditionResult !== val) {
-              result = false;
-              break;
-            };
-          } catch {
-            // TODO: set result to false to avoid displaying conditional fields if API call throws?
-            result = false;
-            break;
-          }
-        }
-      }
-      console.log('result', result);
-      return result;
-    },
-    async evaluateExternalCondition(conditionKey, fieldId, docId) {
-      try {
-        const response = await apos.http.get(
-          `${this.moduleOptions.action}/evaluate-external-condition`,
-          {
-            qs: {
-              fieldId,
-              docId,
-              conditionKey
-            },
-            busy: true
-          }
-        );
-
-        return response;
-      } catch (error) {
-        // TODO: translation key for clean error
-        console.error(this.$t('apostrophe:errorFetchingExternalConditions'));
-
-        throw error;
-      }
     }
   }
 };
