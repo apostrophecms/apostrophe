@@ -326,6 +326,10 @@ export default {
       this.saveMenu = this.computeSaveMenu();
     }
   },
+  async created() {
+    await this.getConditionalFields('utility');
+    await this.getConditionalFields('other');
+  },
   async mounted() {
     this.modal.active = true;
     // After computed properties become available
@@ -627,12 +631,12 @@ export default {
         itemName: `${this.moduleName}:editor`
       });
     },
-    // TODO: do it in other components having AposSchema:
     async onInput(value) {
       this.updateDocFields(value);
 
       // should be called after updateDocFields()
-      await this.updateConditionalFields();
+      await this.getConditionalFields('utility');
+      await this.getConditionalFields('other');
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);

@@ -26,6 +26,7 @@ export default {
       restoreOnly: false,
       changed: [],
       conditionalFields: {
+        default: {},
         utility: {},
         other: {}
       },
@@ -47,10 +48,6 @@ export default {
       schema = schema.filter(field => field.name !== 'archived');
       return schema;
     }
-  },
-
-  async created() {
-    await this.updateConditionalFields();
   },
 
   methods: {
@@ -118,7 +115,7 @@ export default {
       return true;
     },
 
-    async getConditionalFields(followedByCategory) {
+    async getConditionalFields(followedByCategory = 'default') {
       const self = this;
       const conditionalFields = {};
 
@@ -209,11 +206,6 @@ export default {
         return result;
       }
 
-    },
-
-    async updateConditionalFields() {
-      // await this.getConditionalFields('utility');
-      await this.getConditionalFields('other');
     },
 
     async evaluateExternalCondition(conditionKey, fieldId, fieldName, docId) {
