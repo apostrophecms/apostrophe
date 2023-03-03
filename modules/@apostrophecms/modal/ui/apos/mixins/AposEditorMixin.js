@@ -119,7 +119,6 @@ export default {
     },
 
     async getConditionalFields(followedByCategory) {
-      console.log('🚀 ~ file: AposEditorMixin.js:121 ~ getConditionalFields ~ followedByCategory:', followedByCategory);
       const self = this;
       const conditionalFields = {};
 
@@ -151,7 +150,10 @@ export default {
       }
 
       async function evaluate(clause, fieldId, fieldName) {
+        const memo = self.externalConditionsEvaluatedMemo;
+        const lock = self.externalConditionsEvaluatedLock;
         let result = true;
+
         for (const [ key, val ] of Object.entries(clause)) {
           if (key === '$or') {
             const results = await Promise.allSettled(val.map(clause => evaluate(clause, fieldId, fieldName)));
@@ -165,34 +167,29 @@ export default {
             continue;
           }
 
-          if (self.isExternalCondition(key)) {
-            const memo = self.externalConditionsEvaluatedMemo;
-            const lock = self.externalConditionsEvaluatedLock;
-            console.log('memo', key, memo[key]);
-            console.log('lock', key, lock[key]);
-
-            if (!memo[key] && !lock[key]) {
-              console.info(`Interrogating the server to evaluate external condition "${key}" for field "${fieldName}"...`);
+          if (self.isExternalCondition(key) && !lock[key]) {
+            if (!memo[key]) {
+              console.info(`Interrogating the server to evaluate external condition "${key}" of field "${fieldName}"...`);
 
               try {
                 lock[key] = true;
                 memo[key] = await self.evaluateExternalCondition(key, fieldId, fieldName, self.docId);
-              } catch {
                 lock[key] = false;
+              } catch {
                 // TODO: set result to false to avoid displaying conditional fields if API call throws?
                 result = false;
+                lock[key] = false;
                 break;
               }
-              lock[key] = false;
             }
 
             if (memo[key] !== val) {
-              console.log('this is an external condition that is NOT respected');
+              console.info(`External condition "${key}" of field "${fieldName}" evaluated to "${memo[key]}" does not match the expected value: "${val}"`);
               result = false;
               break;
             }
+            console.info(`External condition "${key}" of field "${fieldName}" evaluated to "${memo[key]}" matches the expected value: "${val}"`);
 
-            console.log('this is an external condition that is respected');
             continue;
           }
 
