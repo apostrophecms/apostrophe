@@ -104,7 +104,6 @@ export default {
     // category.
 
     // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
-    // TODO: throw here
     isExternalCondition(conditionKey) {
       if (!conditionKey.endsWith(')')) {
         return false;
@@ -113,7 +112,7 @@ export default {
       const [ methodDefinition ] = conditionKey.split('(');
 
       if (!conditionKey.endsWith('()')) {
-        console.warn(`Warning in an \`if\` definition: "${methodDefinition}()" should not be passed any argument.`);
+        console.warn(`Warning in the \`if\` definition: "${methodDefinition}()" should not be passed any argument.`);
       }
 
       return true;
@@ -154,6 +153,7 @@ export default {
         let result = true;
         for (const [ key, val ] of Object.entries(clause)) {
           if (key === '$or') {
+            // TODO: check with return with a $or condition set before all else
             if (!val.some(clause => evaluate(clause, fieldName))) {
               result = false;
               break;
@@ -226,6 +226,7 @@ export default {
         if (key === '$or') {
           const results = await Promise.allSettled(val.map(clause => this.evaluate(clause, fieldId, fieldName)));
 
+          // TODO: check with return with a $or condition set before all else
           if (!results.some(({ value }) => value)) {
             result = false;
             break;
@@ -277,7 +278,6 @@ export default {
 
         return response;
       } catch (error) {
-        // TODO: translation key for clean error
         console.error(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: fieldName }));
 
         throw error;
