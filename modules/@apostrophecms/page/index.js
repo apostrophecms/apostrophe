@@ -154,7 +154,6 @@ module.exports = {
               orphan: null,
               relationships: false,
               areas: false,
-              permission: false,
               withPublished: self.apos.launder.boolean(req.query.withPublished),
               project: self.getAllProjection()
             }).toObject();
