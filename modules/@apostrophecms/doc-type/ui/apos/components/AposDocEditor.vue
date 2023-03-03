@@ -628,11 +628,11 @@ export default {
       });
     },
     // TODO: do it in other components having AposSchema:
-    onInput(value) {
+    async onInput(value) {
       this.updateDocFields(value);
 
       // should be called after updateDocFields()
-      this.updateConditionalFields();
+      await this.updateConditionalFields();
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
