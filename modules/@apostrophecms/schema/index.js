@@ -575,7 +575,6 @@ module.exports = {
             if (key === '$or') {
               const results = await Promise.allSettled(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
 
-              // TODO: check with return with a $or condition set before all else
               if (!results.some(({ value }) => value)) {
                 result = false;
                 break;
