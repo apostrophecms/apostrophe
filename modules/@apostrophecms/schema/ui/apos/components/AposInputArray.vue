@@ -247,9 +247,6 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
-        const errorColor = 'var(--a-danger)';
-        const neutralColor = 'var(--a-base-5)';
-
         const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
         if (uniqueFieldName) {
           const duplicates = this.next
@@ -264,20 +261,20 @@ export default {
                 nextTick(() => {
                   duplicate.split('|').forEach(item => {
                     this.$el.querySelectorAll(`[data-id="${item}"]`).forEach(relation => {
-                      relation.style.borderColor = errorColor;
+                      relation.classList.add('apos-input--error');
                     });
                   });
                 });
               } else if (uniqueFieldSchema.type === 'select') {
                 this.$el.querySelectorAll('select option:checked').forEach(selectedOption => {
                   if (selectedOption.value.replaceAll('"', '') === duplicate) {
-                    selectedOption.closest('select').style.borderColor = errorColor;
+                    selectedOption.closest('select').classList.add('apos-input--error');
                   }
                 });
               } else {
                 this.$el.querySelectorAll('input').forEach(input => {
                   if (input.value === duplicate.toString()) {
-                    input.style.borderColor = errorColor;
+                    input.classList.add('apos-input--error');
                   }
                 });
               }
@@ -287,20 +284,9 @@ export default {
               message: `duplicate ${this.$t(uniqueFieldSchema.label) || uniqueFieldName}`
             };
           } else {
-            // reset styles when no duplicates
-            if (uniqueFieldSchema.type === 'relationship') {
-              this.$el.querySelectorAll('[data-id]').forEach(item => {
-                item.style.borderColor = neutralColor;
-              });
-            } else if (uniqueFieldSchema.type === 'select') {
-              this.$el.querySelectorAll('select').forEach(select => {
-                select.style.borderColor = neutralColor;
-              });
-            } else {
-              this.$el.querySelectorAll('input').forEach(input => {
-                input.style.borderColor = neutralColor;
-              });
-            }
+            this.$el.querySelectorAll('.apos-input--error').forEach(item => {
+              item.classList.remove('apos-input--error');
+            });
           }
         }
       }
@@ -413,6 +399,9 @@ function alwaysExpand(field) {
     }
     .apos-input-icon {
       color: var(--a-base-2);
+    }
+    .apos-input--error {
+      border-color: var(--a-danger);
     }
   }
   ::v-deep .apos-input-relationship {
