@@ -64,10 +64,10 @@
               :trigger-validation="triggerValidation"
               :utility-rail="false"
               :following-values="followingValues('other')"
-              :conditional-fields="conditionalFields['other']"
+              :conditional-fields="conditionalFields('other')"
               :doc-id="docId"
               :value="docFields"
-              @input="onInput"
+              @input="updateDocFields"
               @validate="triggerValidate"
               :server-errors="serverErrors"
               :ref="tab.name"
@@ -88,10 +88,10 @@
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following-values="followingUtils"
-            :conditional-fields="conditionalFields['utility']"
+            :conditional-fields="conditionalFields('utility')"
             :doc-id="docId"
             :value="docFields"
-            @input="onInput"
+            @input="updateDocFields"
             @validate="triggerValidate"
             :modifiers="['small', 'inverted']"
             ref="utilitySchema"
@@ -325,10 +325,6 @@ export default {
       this.originalDoc.ref = newVal;
       this.saveMenu = this.computeSaveMenu();
     }
-  },
-  async created() {
-    await this.getConditionalFields('utility');
-    await this.getConditionalFields('other');
   },
   async mounted() {
     this.modal.active = true;
@@ -630,13 +626,6 @@ export default {
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`
       });
-    },
-    async onInput(value) {
-      this.updateDocFields(value);
-
-      // should be called after updateDocFields()
-      await this.getConditionalFields('utility');
-      await this.getConditionalFields('other');
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);

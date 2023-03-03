@@ -25,13 +25,7 @@ export default {
       serverErrors: null,
       restoreOnly: false,
       changed: [],
-      conditionalFields: {
-        default: {},
-        utility: {},
-        other: {}
-      },
-      externalConditionsEvaluatedLock: {},
-      externalConditionsEvaluatedMemo: {}
+      asyncResults: {}
     };
   },
 
@@ -48,6 +42,28 @@ export default {
       schema = schema.filter(field => field.name !== 'archived');
       return schema;
     }
+  },
+
+  async created() {
+    // TODO: make API call parallel
+    for (const field of this.schema) {
+      if (field.if) {
+        for (const key of Object.keys(field.if)) {
+          // TODO: use recursivity (scope all this into a function)
+          if (this.isExternalCondition(key)) {
+            let result;
+            try {
+              result = await this.evaluateExternalCondition(key, field._id, field.name, this.docId);
+            } catch {
+              // TODO: better solution?
+              result = 'API_CALL_ERROR';
+            }
+            this.$set(this.asyncResults, key, result);
+          }
+        }
+      }
+    }
+    console.log({ ...this.asyncResults });
   },
 
   methods: {
@@ -115,7 +131,7 @@ export default {
       return true;
     },
 
-    async getConditionalFields(followedByCategory = 'default') {
+    conditionalFields(followedByCategory) {
       const self = this;
       const conditionalFields = {};
 
@@ -123,7 +139,7 @@ export default {
         let change = false;
         for (const field of this.schema) {
           if (field.if) {
-            const result = await evaluate(field.if, field._id, field.name);
+            const result = evaluate(field.if);
             const previous = conditionalFields[field.name];
             if (previous !== result) {
               change = true;
@@ -137,25 +153,19 @@ export default {
       }
 
       const fields = this.getFieldsByCategory(followedByCategory);
+      const result = {};
       for (const field of fields) {
         if (field.if) {
-          this.conditionalFields[followedByCategory] = {
-            ...this.conditionalFields[followedByCategory],
-            [field.name]: conditionalFields[field.name]
-          };
+          result[field.name] = conditionalFields[field.name];
         }
       }
+      return result;
 
-      async function evaluate(clause, fieldId, fieldName) {
-        const memo = self.externalConditionsEvaluatedMemo;
-        const lock = self.externalConditionsEvaluatedLock;
+      function evaluate(clause) {
         let result = true;
-
         for (const [ key, val ] of Object.entries(clause)) {
           if (key === '$or') {
-            const results = await Promise.allSettled(val.map(clause => evaluate(clause, fieldId, fieldName)));
-
-            if (!results.some(({ value }) => value)) {
+            if (!val.some(clause => evaluate(clause))) {
               result = false;
               break;
             }
@@ -164,32 +174,15 @@ export default {
             continue;
           }
 
-          if (self.isExternalCondition(key) && !lock[key]) {
-            if (!memo[key]) {
-              console.info(`Interrogating the server to evaluate external condition "${key}" of field "${fieldName}"...`);
-
-              try {
-                lock[key] = true;
-                memo[key] = await self.evaluateExternalCondition(key, fieldId, fieldName, self.docId);
-                lock[key] = false;
-              } catch {
-                // TODO: set result to false to avoid displaying conditional fields if API call throws?
-                result = false;
-                lock[key] = false;
-                break;
-              }
-            }
-
-            if (memo[key] !== val) {
-              console.info(`External condition "${key}" of field "${fieldName}" evaluated to "${memo[key]}" does not match the expected value: "${val}"`);
+          console.log(self.isExternalCondition(key), val, self.asyncResults[key]);
+          if (self.isExternalCondition(key)) {
+            // TODO: display field if API call fails?
+            if (self.asyncResults[key] !== val || self.asyncResults[key] === 'API_CALL_ERROR') {
               result = false;
               break;
             }
-            console.info(`External condition "${key}" of field "${fieldName}" evaluated to "${memo[key]}" matches the expected value: "${val}"`);
-
             continue;
           }
-
           if (conditionalFields[key] === false) {
             result = false;
             break;
