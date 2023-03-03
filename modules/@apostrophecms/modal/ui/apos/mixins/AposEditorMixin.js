@@ -196,6 +196,7 @@ export default {
     },
 
     async evaluateExternalConditionalFields() {
+      const self = this;
       const clauses = this.schema
         .map(field => field.if)
         .filter(Boolean);
@@ -212,75 +213,75 @@ export default {
 
       for (const field of this.schema) {
         if (field.if) {
-          this.externalConditionalFields[field.name] = await this.evaluate(field.if, field._id, field.name);
+          this.externalConditionalFields[field.name] = await evaluate(field.if, field._id, field.name);
         }
       }
 
       console.log('this.externalConditionalFields', this.externalConditionalFields);
-    },
 
-    // TODO: keep the same structure as normal conditions (keep external conditions keys separated)
-    async evaluate(clause, fieldId, fieldName) {
-      let result = true;
-      for (const [ key, val ] of Object.entries(clause)) {
-        if (key === '$or') {
-          const results = await Promise.allSettled(val.map(clause => this.evaluate(clause, fieldId, fieldName)));
+      // TODO: keep the same structure as normal conditions (keep external conditions keys separated)
+      async function evaluate(clause, fieldId, fieldName) {
+        let result = true;
+        for (const [ key, val ] of Object.entries(clause)) {
+          if (key === '$or') {
+            const results = await Promise.allSettled(val.map(clause => evaluate(clause, fieldId, fieldName)));
 
-          // TODO: check with return with a $or condition set before all else
-          if (!results.some(({ value }) => value)) {
-            result = false;
-            break;
-          }
-
-          // No need to go further here, the key is an "$or" condition...
-          continue;
-        }
-
-        // Handle external conditions by executing them on the server:
-        //  - `if: { 'methodName()': true }`
-        //  - `if: { 'moduleName:methodName()': 'expected value' }`
-        if (this.isExternalCondition(key)) {
-          try {
-            const externalConditionResult = await this.evaluateExternalCondition(key, fieldId, fieldName, this.docId);
-
-            console.log('🚀 ~ file: AposSchema.vue:357 ~ evaluate ~ externalConditionResult:', externalConditionResult);
-            console.log('🚀 ~ file: AposSchema.vue:364 ~ evaluate ~ val:', val);
-            console.log('externalConditionResult === val', externalConditionResult === val);
-
-            if (externalConditionResult !== val) {
+            // TODO: check with return with a $or condition set before all else
+            if (!results.some(({ value }) => value)) {
               result = false;
               break;
-            };
-          } catch {
-            // TODO: set result to false to avoid displaying conditional fields if API call throws?
-            result = false;
-            break;
+            }
+
+            // No need to go further here, the key is an "$or" condition...
+            continue;
+          }
+
+          // Handle external conditions by executing them on the server:
+          //  - `if: { 'methodName()': true }`
+          //  - `if: { 'moduleName:methodName()': 'expected value' }`
+          if (self.isExternalCondition(key)) {
+            try {
+              const externalConditionResult = await evaluateExternalCondition(key, fieldId, fieldName, self.docId);
+
+              console.log('🚀 ~ file: AposSchema.vue:357 ~ evaluate ~ externalConditionResult:', externalConditionResult);
+              console.log('🚀 ~ file: AposSchema.vue:364 ~ evaluate ~ val:', val);
+              console.log('externalConditionResult === val', externalConditionResult === val);
+
+              if (externalConditionResult !== val) {
+                result = false;
+                break;
+              };
+            } catch {
+              // TODO: set result to false to avoid displaying conditional fields if API call throws?
+              result = false;
+              break;
+            }
           }
         }
-      }
-      console.log('result', result);
-      return result;
-    },
+        console.log('result', result);
+        return result;
+      };
 
-    async evaluateExternalCondition(conditionKey, fieldId, fieldName, docId) {
-      try {
-        const response = await apos.http.get(
-          `${apos.schema.action}/evaluate-external-condition`,
-          {
-            qs: {
-              fieldId,
-              docId,
-              conditionKey
-            },
-            busy: true
-          }
-        );
+      async function evaluateExternalCondition(conditionKey, fieldId, fieldName, docId) {
+        try {
+          const response = await apos.http.get(
+            `${apos.schema.action}/evaluate-external-condition`,
+            {
+              qs: {
+                fieldId,
+                docId,
+                conditionKey
+              },
+              busy: true
+            }
+          );
 
-        return response;
-      } catch (error) {
-        console.error(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: fieldName }));
+          return response;
+        } catch (error) {
+          console.error(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: fieldName }));
 
-        throw error;
+          throw error;
+        }
       }
     },
 
