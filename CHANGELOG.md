@@ -18,6 +18,9 @@ property. When creating new pages, `type` can be sent to `@apostrophecms/page` f
 (note that the `type` property does not override the default or current page type in the editor).
 * The `edit` Apostrophe event is now available and takes an object with the same properties
 as above. This is useful when configuring `utilityOperations`.
+* The `content-changed` Apostrophe event can now be emitted with a `select: true` property. If a
+document manager for the relevant content type is open, it will attempt to add the document to the
+current selection. Currently this works best with newly inserted documents.
 * Localized strings in the admin UI can now use `$t(key)` to localize a string inside
 an interpolated variable. This was accomplished by setting `skipOnVariables` to false
 for i18next, solely on the front end for admin UI purposes.
