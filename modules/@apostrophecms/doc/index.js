@@ -1014,7 +1014,7 @@ module.exports = {
       // }
       // All properties are required.
       // The only supported `context` for now is `update`.
-      // `action` is the operation idefntifier and should be globally unique.
+      // `action` is the operation identifier and should be globally unique.
       // Overriding existing custom actions is possible (the last wins).
       // `modal` is the name of the modal component to be opened.
       // `label` is the menu label to be shown when expanding the context menu.
