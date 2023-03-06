@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
+This can be useful for displaying fields according to the result of an external API or any business logic run on the server.
+
 ### Fixes
 
 * Replace `deep-get-set` dependency with `lodash`'s `get` and `set` functions to fix the [Prototype Pollution in deep-get-set](https://github.com/advisories/GHSA-mjjj-6p43-vhhv) vulnerability. There was no actual vulnerability in Apostrophe due to the way the module was actually used, and this was done to address vulnerability scan reports.
