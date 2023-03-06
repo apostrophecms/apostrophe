@@ -81,7 +81,7 @@ export default {
             const promises = uniqExternalConditionKeys
               .map(key => this.externalConditionsResults[key] !== undefined
                 ? null
-                : this.evaluateExternalCondition(key, field._id, field.name, docOrContextDocId)
+                : this.evaluateExternalCondition(key, field._id, docOrContextDocId)
               )
               .filter(Boolean);
 
@@ -92,7 +92,12 @@ export default {
               ...Object.fromEntries(results)
             };
           } catch (error) {
-            console.error(error);
+            await apos.notify(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: field.name }), {
+              type: 'danger',
+              icon: 'alert-circle-icon',
+              dismiss: true,
+              localize: false
+            });
           }
         }
       }
@@ -108,26 +113,20 @@ export default {
       }
     },
 
-    async evaluateExternalCondition(conditionKey, fieldId, fieldName, docId) {
-      try {
-        const response = await apos.http.get(
-          `${apos.schema.action}/evaluate-external-condition`,
-          {
-            qs: {
-              fieldId,
-              docId,
-              conditionKey
-            },
-            busy: true
-          }
-        );
+    async evaluateExternalCondition(conditionKey, fieldId, docId) {
+      const response = await apos.http.get(
+        `${apos.schema.action}/evaluate-external-condition`,
+        {
+          qs: {
+            fieldId,
+            docId,
+            conditionKey
+          },
+          busy: true
+        }
+      );
 
-        return [ conditionKey, response ];
-      } catch (error) {
-        console.error(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: fieldName }));
-
-        throw error;
-      }
+      return [ conditionKey, response ];
     },
 
     // followedByCategory may be falsy (all fields), "other" or "utility". The returned
