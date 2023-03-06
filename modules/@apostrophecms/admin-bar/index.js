@@ -353,19 +353,5 @@ module.exports = {
         };
       }
     };
-  },
-  apiRoutes(self) {
-    return {
-      get: {
-        // GET /api/v1/admin-bar/items
-        async items(req) {
-          const items = [];
-
-          return {
-            items
-          };
-        }
-      }
-    };
   }
 };
