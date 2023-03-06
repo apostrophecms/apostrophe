@@ -527,7 +527,6 @@ module.exports = {
 
         for (const error of errors) {
           const isVisible = await self.isVisible(req, schema, destination, error.path);
-          console.log('🚀 ~ file: index.js:530 ~ convert ~ isVisible:', isVisible);
 
           if ((error.name === 'required' || error.name === 'mandatory') && !isVisible) {
             // It is not reasonable to enforce required for
@@ -573,7 +572,7 @@ module.exports = {
           let result = true;
           for (const [ key, val ] of Object.entries(clause)) {
             if (key === '$or') {
-              const results = await Promise.allSettled(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
+              const results = await Promise.all(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
 
               if (!results.some(({ value }) => value)) {
                 result = false;
@@ -590,10 +589,6 @@ module.exports = {
             // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
             if (key.endsWith(')')) {
               const externalConditionResult = await self.evaluateExternalCondition(req, key, fieldName, fieldModuleName, object._id);
-
-              console.log('🚀 ~ file: index.js:599 ~ evaluate ~ externalConditionResult:', externalConditionResult);
-              console.log('🚀 ~ file: index.js:601 ~ evaluate ~ val:', val);
-              console.log('externalConditionResult === val', externalConditionResult === val);
 
               if (externalConditionResult !== val) {
                 result = false;
@@ -614,7 +609,6 @@ module.exports = {
               break;
             }
           }
-          console.log('result', result);
           return result;
         }
       },
@@ -629,9 +623,6 @@ module.exports = {
         const [ methodName, moduleName = fieldModuleName ] = methodDefinition
           .split(':')
           .reverse();
-
-        // console.log('methodName', methodName);
-        // console.log('moduleName', moduleName);
 
         const manager = self.apos.doc.getManager(moduleName);
 
