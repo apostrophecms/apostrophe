@@ -149,6 +149,7 @@
   "errorCount": "{{ count }} error remaining",
   "errorCount_plural": "{{ count }} errors remaining",
   "errorCreatingNewContent": "Error while creating new, empty content.",
+  "errorEvaluatingExternalCondition": "An error occurred while evaluating the external condition for the field \"{{ name }}\"",
   "errorFetchingTitleFieldChoicesByMethod": "An error occurred while fetching the choices for the titleField {{ name }}",
   "errorWhileRestoring": "An error occurred while restoring the previously published version.",
   "errorWhileUnpublishing": "An error occurred while unpublishing the document.",
