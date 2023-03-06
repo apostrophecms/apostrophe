@@ -55,6 +55,7 @@
           @input="updateSelected"
           @item-clicked="editRelationship"
           :value="next"
+          :duplicate="duplicate"
           :disabled="field.readOnly"
           :has-relationship-schema="!!field.schema"
           :editor-label="field.editorLabel"
@@ -174,6 +175,9 @@ export default {
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
 
       return widgetOptions.minSize || [];
+    },
+    duplicate () {
+      return this.value.duplicate ? 'apos-input--error' : null;
     }
   },
   watch: {

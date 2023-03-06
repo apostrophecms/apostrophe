@@ -249,44 +249,39 @@ export default {
       if (value.length && this.field.fields && this.field.fields.add) {
         const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
         if (uniqueFieldName) {
-          const duplicates = this.next
-            .map(item => Array.isArray(item[uniqueFieldName])
-              ? item[uniqueFieldName].map(i => i._id).sort().join('|')
-              : item[uniqueFieldName])
+          const duplicates = this.items
+            .map(item => {
+              if (Array.isArray(item.schemaInput.data[uniqueFieldName])) {
+                (item.schemaInput.data[uniqueFieldName] || []).forEach(() => {
+                  if (item.schemaInput && item.schemaInput.fieldState && item.schemaInput.fieldState[uniqueFieldName]) {
+                    item.schemaInput.fieldState[uniqueFieldName].duplicate = false;
+                  }
+                });
+                return item.schemaInput.data[uniqueFieldName].map(i => i._id).sort().join('|');
+              } else {
+                if (item.schemaInput && item.schemaInput.fieldState && item.schemaInput.fieldState[uniqueFieldName]) {
+                  item.schemaInput.fieldState[uniqueFieldName].duplicate = false;
+                }
+                return item.schemaInput.data[uniqueFieldName];
+              }
+            })
             .filter((item, index, array) => array.indexOf(item) !== index);
 
           if (duplicates.length) {
             duplicates.forEach(duplicate => {
-              if (uniqueFieldSchema.type === 'relationship') {
-                nextTick(() => {
-                  duplicate.split('|').forEach(item => {
-                    this.$el.querySelectorAll(`[data-id="${item}"]`).forEach(relation => {
-                      relation.classList.add('apos-input--error');
-                    });
-                  });
-                });
-              } else if (uniqueFieldSchema.type === 'select') {
-                this.$el.querySelectorAll('select option:checked').forEach(selectedOption => {
-                  if (selectedOption.value.replaceAll('"', '') === duplicate) {
-                    selectedOption.closest('select').classList.add('apos-input--error');
-                  }
-                });
-              } else {
-                this.$el.querySelectorAll('input').forEach(input => {
-                  if (input.value === duplicate.toString()) {
-                    input.classList.add('apos-input--error');
-                  }
-                });
-              }
+              this.items.forEach(item => {
+                uniqueFieldSchema.type === 'relationship'
+                  ? item.schemaInput.data[uniqueFieldName] && item.schemaInput.data[uniqueFieldName].forEach(datum => {
+                    item.schemaInput.fieldState[uniqueFieldName].duplicate = duplicate.split('|').find(i => i === datum._id);
+                  })
+                  : item.schemaInput.fieldState[uniqueFieldName].duplicate = item.schemaInput.data[uniqueFieldName] === duplicate;
+              });
             });
+
             return {
               name: 'duplicate',
               message: `duplicate ${this.$t(uniqueFieldSchema.label) || uniqueFieldName}`
             };
-          } else {
-            this.$el.querySelectorAll('.apos-input--error').forEach(item => {
-              item.classList.remove('apos-input--error');
-            });
           }
         }
       }

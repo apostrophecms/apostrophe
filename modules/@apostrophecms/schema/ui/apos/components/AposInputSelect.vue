@@ -10,6 +10,7 @@
       <AposSelect
         :icon="icon"
         :choices="choices"
+        :classes="classes"
         :disabled="field.readOnly"
         :selected="value.data"
         @change="change"
@@ -36,6 +37,11 @@ export default {
       next: (this.value.data == null) ? null : this.value.data,
       choices: []
     };
+  },
+  computed: {
+    classes () {
+      return [ this.value.duplicate && 'apos-input--error' ];
+    }
   },
   async mounted() {
     // Add an null option if there isn't one already
