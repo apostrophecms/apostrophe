@@ -249,22 +249,11 @@ export default {
       if (value.length && this.field.fields && this.field.fields.add) {
         const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
         if (uniqueFieldName) {
-          const duplicates = this.items
-            .map(item => {
-              if (Array.isArray(item.schemaInput.data[uniqueFieldName])) {
-                (item.schemaInput.data[uniqueFieldName] || []).forEach(() => {
-                  if (item.schemaInput && item.schemaInput.fieldState && item.schemaInput.fieldState[uniqueFieldName]) {
-                    item.schemaInput.fieldState[uniqueFieldName].duplicate = false;
-                  }
-                });
-                return item.schemaInput.data[uniqueFieldName].map(i => i._id).sort().join('|');
-              } else {
-                if (item.schemaInput && item.schemaInput.fieldState && item.schemaInput.fieldState[uniqueFieldName]) {
-                  item.schemaInput.fieldState[uniqueFieldName].duplicate = false;
-                }
-                return item.schemaInput.data[uniqueFieldName];
-              }
-            })
+          const duplicates = this.next
+            .map(item =>
+              Array.isArray(item[uniqueFieldName])
+                ? item[uniqueFieldName].map(i => i._id).sort().join('|')
+                : item[uniqueFieldName])
             .filter((item, index, array) => array.indexOf(item) !== index);
 
           if (duplicates.length) {
