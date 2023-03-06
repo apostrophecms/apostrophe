@@ -249,7 +249,18 @@ describe('Schemas', function() {
 
   it('should be a property of the apos object', async function() {
     apos = await t.create({
-      root: module
+      root: module,
+      modules: {
+        'external-condition': {
+          methods() {
+            return {
+              async externalCondition() {
+                return 'yes';
+              }
+            };
+          }
+        }
+      }
     });
     assert(apos.schema);
     apos.argv._ = [];
@@ -1803,6 +1814,49 @@ describe('Schemas', function() {
       doWeCare: true,
       age: null
     }, 'age', 'required');
+  });
+
+  it('should ignore required property when external condition does not match', async function() {
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true,
+          if: {
+            'external-condition:externalCondition()': 'no'
+          }
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        }
+      ]
+    });
+    const output = {};
+    await apos.schema.convert(req, schema, {
+      shoeSize: 20
+    }, output);
+    assert(output.shoeSize === 20);
+  });
+
+  it('should enforce required property when external condition matches', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true,
+          if: {
+            'external-condition:externalCondition()': 'yes'
+          }
+        }
+      ]
+    });
+
+    await testSchemaError(schema, {}, 'age', 'required');
   });
 
   it('should save date and time with the right format', async function () {
