@@ -45,28 +45,74 @@ export default {
   },
 
   async created() {
-    // TODO: make API call parallel
-    for (const field of this.schema) {
-      if (field.if) {
-        for (const key of Object.keys(field.if)) {
-          // TODO: use recursivity (scope all this into a function)
-          if (this.isExternalCondition(key)) {
-            let result;
-            try {
-              result = await this.evaluateExternalCondition(key, field._id, field.name, this.docId);
-            } catch {
-              // TODO: better solution?
-              result = 'API_CALL_ERROR';
-            }
-            this.$set(this.asyncResults, key, result);
-          }
-        }
-      }
-    }
-    console.log({ ...this.asyncResults });
+    await this.evaluateExternalConditions();
   },
 
   methods: {
+    // Evaluate external conditions of each field and store their result.
+    async evaluateExternalConditions() {
+      const self = this;
+
+      for (const field of this.schema) {
+        if (field.if) {
+          const externalConditionKeys = Object
+            .entries(field.if)
+            .flatMap(getExternalConditionKeys)
+            .filter(Boolean);
+
+          const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
+
+          let results = [];
+          try {
+            const promises = uniqExternalConditionKeys
+              .map(key => this.asyncResults[key] !== undefined
+                ? null
+                : this.evaluateExternalCondition(key, field._id, field.name, this.docId)
+              )
+              .filter(Boolean);
+            results = await Promise.all(promises);
+          } catch (error) {
+            console.error(error);
+          }
+          results.forEach(([ key, val ]) => {
+            this.$set(this.asyncResults, key, val);
+          });
+        }
+      }
+
+      function getExternalConditionKeys([ key, val ]) {
+        if (key === '$or') {
+          return val.flatMap(nested => Object.entries(nested).map(getExternalConditionKeys));
+        }
+        if (self.isExternalCondition(key)) {
+          return key;
+        }
+        return null;
+      }
+    },
+
+    async evaluateExternalCondition(conditionKey, fieldId, fieldName, docId) {
+      try {
+        const response = await apos.http.get(
+          `${apos.schema.action}/evaluate-external-condition`,
+          {
+            qs: {
+              fieldId,
+              docId,
+              conditionKey
+            },
+            busy: true
+          }
+        );
+
+        return [ conditionKey, response ];
+      } catch (error) {
+        console.error(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: fieldName }));
+
+        throw error;
+      }
+    },
+
     // followedByCategory may be falsy (all fields), "other" or "utility". The returned
     // object contains properties named for each field in that category that
     // follows other fields. For instance if followedBy is "utility" then in our
@@ -174,10 +220,8 @@ export default {
             continue;
           }
 
-          console.log(self.isExternalCondition(key), val, self.asyncResults[key]);
           if (self.isExternalCondition(key)) {
-            // TODO: display field if API call fails?
-            if (self.asyncResults[key] !== val || self.asyncResults[key] === 'API_CALL_ERROR') {
+            if (self.asyncResults[key] !== val) {
               result = false;
               break;
             }
@@ -197,29 +241,6 @@ export default {
           }
         }
         return result;
-      }
-
-    },
-
-    async evaluateExternalCondition(conditionKey, fieldId, fieldName, docId) {
-      try {
-        const response = await apos.http.get(
-          `${apos.schema.action}/evaluate-external-condition`,
-          {
-            qs: {
-              fieldId,
-              docId,
-              conditionKey
-            },
-            busy: true
-          }
-        );
-
-        return response;
-      } catch (error) {
-        console.error(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: fieldName }));
-
-        throw error;
       }
     },
 
