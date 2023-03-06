@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.226.0 (UNRELEASED)
+## 2.226.0 (2023-03-06)
 
 ### Adds
 
