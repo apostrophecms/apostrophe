@@ -1925,7 +1925,9 @@ describe('Schemas', function() {
       await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
     } catch (error) {
       assert(error.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      return;
     }
+    throw new Error('should have thrown');
   });
 
   it('should throw when the method defined in the external condition key is not found', async function() {
@@ -1939,7 +1941,51 @@ describe('Schemas', function() {
       await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
     } catch (error) {
       assert(error.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      return;
     }
+    throw new Error('should have thrown');
+  });
+
+  it('should call the evaluate-external-condition API successfully', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'external-condition'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
+    assert(res === 'yes');
+  });
+
+  it('should receive a clean error response when the evaluate-external-condition API call fails (module not found)', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'unknown-module'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should receive a clean error response when the evaluate-external-condition API call fails (external method not found)', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'external-condition'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=unknownMethod()', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      return;
+    }
+    throw new Error('should have thrown');
   });
 
   it('should save date and time with the right format', async function () {

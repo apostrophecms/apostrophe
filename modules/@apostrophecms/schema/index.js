@@ -1558,7 +1558,12 @@ module.exports = {
 
           const field = self.getFieldById(fieldId);
 
-          return self.evaluateExternalCondition(req, conditionKey, field.name, field.moduleName, docId);
+          try {
+            const result = await self.evaluateExternalCondition(req, conditionKey, field.name, field.moduleName, docId);
+            return result;
+          } catch (error) {
+            throw self.apos.error('invalid', error.message);
+          }
         }
       }
     };
