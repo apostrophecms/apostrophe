@@ -8,7 +8,7 @@
  * 3. A scaffold for handling `following` in field definitions, via
  *   the `followingValues` method
  * 4. A scaffold for handling conditional fields, via the
- *   `getConditionalFields` method
+ *   `conditionalFields` method
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.
@@ -25,7 +25,7 @@ export default {
       serverErrors: null,
       restoreOnly: false,
       changed: [],
-      asyncResults: {}
+      externalConditionsResults: {}
     };
   },
 
@@ -46,7 +46,7 @@ export default {
 
   watch: {
     docType: {
-      // Evaluate external conditions found in new page type schema
+      // Evaluate external conditions found in current page-type's schema
       async handler() {
         if (this.moduleName === '@apostrophecms/page') {
           await this.evaluateExternalConditions();
@@ -60,7 +60,9 @@ export default {
   },
 
   methods: {
-    // Evaluate external conditions of each field and store their result.
+    // Evaluate the external conditions found in each field
+    // via API calls -made in parallel for performance-
+    // and store their result for reusability.
     async evaluateExternalConditions() {
       const self = this;
       for (const field of this.schema) {
@@ -70,24 +72,30 @@ export default {
             .flatMap(getExternalConditionKeys)
             .filter(Boolean);
 
+          console.log('externalConditionKeys', externalConditionKeys);
+
           const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
 
           let results = [];
+
           try {
             const docOrContextDocId = this.docId || this.docFields.data._docId;
             const promises = uniqExternalConditionKeys
-              .map(key => this.asyncResults[key] !== undefined
+              .map(key => this.externalConditionsResults[key] !== undefined
                 ? null
                 : this.evaluateExternalCondition(key, field._id, field.name, docOrContextDocId)
               )
               .filter(Boolean);
+
             results = await Promise.all(promises);
+
+            this.externalConditionsResults = {
+              ...this.externalConditionsResults,
+              ...Object.fromEntries(results)
+            };
           } catch (error) {
             console.error(error);
           }
-          results.forEach(([ key, val ]) => {
-            this.$set(this.asyncResults, key, val);
-          });
         }
       }
 
@@ -182,7 +190,7 @@ export default {
       const [ methodDefinition ] = conditionKey.split('(');
 
       if (!conditionKey.endsWith('()')) {
-        console.warn(`Warning in the \`if\` definition: "${methodDefinition}()" should not be passed any argument.`);
+        console.warn(`Warning in \`if\` definition: "${methodDefinition}()" should not be passed any argument.`);
       }
 
       return true;
@@ -232,12 +240,16 @@ export default {
           }
 
           if (self.isExternalCondition(key)) {
-            if (self.asyncResults[key] !== val) {
+            if (self.externalConditionsResults[key] !== val) {
               result = false;
               break;
             }
+
+            // Stop there, this is an external condition thus
+            // does not need to be checked against doc fields.
             continue;
           }
+
           if (conditionalFields[key] === false) {
             result = false;
             break;
