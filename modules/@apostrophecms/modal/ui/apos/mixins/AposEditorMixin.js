@@ -45,14 +45,12 @@ export default {
   },
 
   watch: {
-    'docFields.data.type': {
-      handler(newVal) {
-        if (this.moduleName !== '@apostrophecms/page' || this.docType === newVal) {
-          return;
-        }
-        this.$nextTick(async () => {
+    docType: {
+      // Evaluate external conditions found in new page type schema
+      async handler() {
+        if (this.moduleName === '@apostrophecms/page') {
           await this.evaluateExternalConditions();
-        });
+        }
       }
     }
   },
@@ -65,7 +63,6 @@ export default {
     // Evaluate external conditions of each field and store their result.
     async evaluateExternalConditions() {
       const self = this;
-
       for (const field of this.schema) {
         if (field.if) {
           const externalConditionKeys = Object
@@ -74,7 +71,6 @@ export default {
             .filter(Boolean);
 
           const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
-          console.log('🚀 ~ file: AposEditorMixin.js:64 ~ evaluateExternalConditions ~ uniqExternalConditionKeys:', uniqExternalConditionKeys);
 
           let results = [];
           try {
