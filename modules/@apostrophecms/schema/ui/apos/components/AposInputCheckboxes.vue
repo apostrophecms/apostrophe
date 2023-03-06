@@ -7,11 +7,13 @@
   >
     <template #body>
       <AposCombo
-        v-if="field?.style === 'combo'"
+        v-if="field?.style === 'combo' && choices.length"
         :choices="choices"
         :field="field"
         :value="value"
+        @select-item="selectItem"
       />
+
       <AposCheckbox
         v-else
         :for="getChoiceId(uid, choice.value)"
@@ -76,6 +78,21 @@ export default {
       }
 
       return false;
+    },
+    selectItem(choice) {
+      if (choice.value === 'all') {
+        this.value.data = this.choices.length === this.value.data.length
+          ? []
+          : this.choices.map(({ value }) => value);
+
+        return;
+      }
+
+      if (this.value.data.includes(choice.value)) {
+        this.value.data = this.value.data.filter((val) => val !== choice.value);
+      } else {
+        this.value.data.push(choice.value);
+      }
     },
     getComponentName() {
       return this.field?.style === 'combo'
