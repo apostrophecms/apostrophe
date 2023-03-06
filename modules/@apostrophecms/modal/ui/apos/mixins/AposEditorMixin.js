@@ -72,8 +72,6 @@ export default {
             .flatMap(getExternalConditionKeys)
             .filter(Boolean);
 
-          console.log('externalConditionKeys', externalConditionKeys);
-
           const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
 
           let results = [];
