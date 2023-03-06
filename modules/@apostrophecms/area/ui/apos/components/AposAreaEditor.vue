@@ -210,22 +210,24 @@ export default {
     }
   },
   mounted() {
-    apos.bus.$on('area-updated', this.areaUpdatedHandler);
-    apos.bus.$on('widget-hover', this.updateWidgetHovered);
-    apos.bus.$on('widget-focus', this.updateWidgetFocused);
     this.bindEventListeners();
   },
   beforeDestroy() {
-    apos.bus.$off('area-updated', this.areaUpdatedHandler);
-    apos.bus.$off('widget-hover', this.updateWidgetHovered);
-    apos.bus.$off('widget-focus', this.updateWidgetFocused);
     this.unbindEventListeners();
   },
   methods: {
     bindEventListeners() {
+      apos.bus.$on('area-updated', this.areaUpdatedHandler);
+      apos.bus.$on('widget-hover', this.updateWidgetHovered);
+      apos.bus.$on('widget-focus', this.updateWidgetFocused);
+      apos.bus.$on('refreshed', this.destroyParentComponent);
       window.addEventListener('keydown', this.focusParentEvent);
     },
     unbindEventListeners() {
+      apos.bus.$off('area-updated', this.areaUpdatedHandler);
+      apos.bus.$off('widget-hover', this.updateWidgetHovered);
+      apos.bus.$off('widget-focus', this.updateWidgetFocused);
+      apos.bus.$off('refreshed', this.destroyParentComponent);
       window.removeEventListener('keydown', this.focusParentEvent);
     },
     areaUpdatedHandler(area) {
@@ -582,6 +584,11 @@ export default {
         }
       });
       return widget;
+    },
+    destroyParentComponent() {
+      if (!document.body.contains(this.$parent.$el)) {
+        this.$parent.$destroy();
+      }
     }
   }
 };
