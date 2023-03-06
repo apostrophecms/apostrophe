@@ -624,15 +624,15 @@ module.exports = {
           .split(':')
           .reverse();
 
-        const manager = self.apos.doc.getManager(moduleName);
+        const module = self.apos.modules[moduleName];
 
-        if (!manager) {
+        if (!module) {
           throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found.`);
-        } else if (!manager[methodName]) {
+        } else if (!module[methodName]) {
           throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module.`);
         }
 
-        return manager[methodName](req, { docId });
+        return module[methodName](req, { docId });
       },
 
       // Driver invoked by the "relationship" methods of the standard
@@ -1558,7 +1558,12 @@ module.exports = {
 
           const field = self.getFieldById(fieldId);
 
-          return self.evaluateExternalCondition(req, conditionKey, field.name, field.moduleName, docId);
+          try {
+            const result = await self.evaluateExternalCondition(req, conditionKey, field.name, field.moduleName, docId);
+            return result;
+          } catch (error) {
+            throw self.apos.error('invalid', error.message);
+          }
         }
       }
     };
