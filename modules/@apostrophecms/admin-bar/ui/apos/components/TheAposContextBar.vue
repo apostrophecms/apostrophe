@@ -291,7 +291,7 @@ export default {
         }, 1100);
       }
     },
-    async onPublish(e) {
+    async onPublish() {
       if (!this.canPublish) {
         const submitted = await this.submitDraft(this.context);
         if (submitted) {
@@ -505,7 +505,20 @@ export default {
       }
     },
     async refresh(options = {}) {
-      let url = window.location.href;
+      const refreshable = document.querySelector('[data-apos-refreshable]');
+      if (options.scrollcheck) {
+        window.apos.adminBar.scrollPosition = {
+          x: window.scrollX,
+          y: window.scrollY
+        };
+      }
+
+      if (!refreshable) {
+        apos.bus.$emit('refreshed');
+        this.rememberLastBaseContext();
+        return;
+      }
+
       const qs = {
         ...apos.http.parseQuery(window.location.search),
         aposRefresh: '1',
@@ -514,7 +527,7 @@ export default {
           aposEdit: '1'
         } : {})
       };
-      url = apos.http.addQueryToUrl(url, qs);
+      const url = apos.http.addQueryToUrl(window.location.href, qs);
       const content = await apos.http.get(url, {
         qs,
         headers: {
@@ -523,39 +536,30 @@ export default {
         draft: true,
         busy: true
       });
-      const refreshable = document.querySelector('[data-apos-refreshable]');
 
-      if (options.scrollcheck) {
-        window.apos.adminBar.scrollPosition = {
-          x: window.scrollX,
-          y: window.scrollY
-        };
-      }
+      refreshable.innerHTML = content;
 
-      if (refreshable) {
-        refreshable.innerHTML = content;
-        if (this.editMode && (!this.original)) {
-          // the first time we enter edit mode on the page, we need to
-          // establish a baseline for undo/redo. Use our
-          // "@ notation" PATCH feature. Sort the areas by DOM depth
-          // to ensure parents patch before children
-          this.original = {};
-          const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]')).filter(el => el.getAttribute('data-doc-id') === this.context._id);
-          els.sort((a, b) => {
-            const da = depth(a);
-            const db = depth(b);
-            if (da < db) {
-              return -1;
-            } else if (db > da) {
-              return 1;
-            } else {
-              return 0;
-            }
-          });
-          for (const el of els) {
-            const data = JSON.parse(el.getAttribute('data'));
-            this.original[`@${data._id}`] = data;
+      if (this.editMode && (!this.original)) {
+        // the first time we enter edit mode on the page, we need to
+        // establish a baseline for undo/redo. Use our
+        // "@ notation" PATCH feature. Sort the areas by DOM depth
+        // to ensure parents patch before children
+        this.original = {};
+        const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]')).filter(el => el.getAttribute('data-doc-id') === this.context._id);
+        els.sort((a, b) => {
+          const da = depth(a);
+          const db = depth(b);
+          if (da < db) {
+            return -1;
+          } else if (db > da) {
+            return 1;
+          } else {
+            return 0;
           }
+        });
+        for (const el of els) {
+          const data = JSON.parse(el.getAttribute('data'));
+          this.original[`@${data._id}`] = data;
         }
       }
       apos.bus.$emit('refreshed');
