@@ -74,10 +74,11 @@ export default {
 
           let results = [];
           try {
+            const docOrContextDocId = this.docId || this.docFields.data._docId;
             const promises = uniqExternalConditionKeys
               .map(key => this.asyncResults[key] !== undefined
                 ? null
-                : this.evaluateExternalCondition(key, field._id, field.name, this.docId || this.id)
+                : this.evaluateExternalCondition(key, field._id, field.name, docOrContextDocId)
               )
               .filter(Boolean);
             results = await Promise.all(promises);
