@@ -44,6 +44,19 @@ export default {
     }
   },
 
+  watch: {
+    'docFields.data.type': {
+      handler(newVal) {
+        if (this.moduleName !== '@apostrophecms/page' || this.docType === newVal) {
+          return;
+        }
+        this.$nextTick(async () => {
+          await this.evaluateExternalConditions();
+        });
+      }
+    }
+  },
+
   async created() {
     await this.evaluateExternalConditions();
   },
@@ -61,6 +74,7 @@ export default {
             .filter(Boolean);
 
           const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
+          console.log('🚀 ~ file: AposEditorMixin.js:64 ~ evaluateExternalConditions ~ uniqExternalConditionKeys:', uniqExternalConditionKeys);
 
           let results = [];
           try {
