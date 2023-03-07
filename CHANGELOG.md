@@ -25,7 +25,26 @@ current selection. Currently this works best with newly inserted documents.
 an interpolated variable. This was accomplished by setting `skipOnVariables` to false
 for i18next, solely on the front end for admin UI purposes.
 
-### Changes
+## 3.41.1 (2023-03-07)
+
+No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2.x.
+
+## 3.41.0 (2023-03-06)
+
+### Adds
+
+* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
+This can be useful for displaying fields according to the result of an external API or any business logic run on the server.
+
+### Fixes
+
+* Replace `deep-get-set` dependency with `lodash`'s `get` and `set` functions to fix the [Prototype Pollution in deep-get-set](https://github.com/advisories/GHSA-mjjj-6p43-vhhv) vulnerability. There was no actual vulnerability in Apostrophe due to the way the module was actually used, and this was done to address vulnerability scan reports.
+* The "soft redirects" for former URLs of documents now work better with localization. Thanks to [Waldemar Pankratz](https://github.com/waldemar-p).
+* Destroy `AreaEditor` Vue apps when the page content is refreshed in edit mode. This avoids a leak of Vue apps components being recreated while instances of old ones are still alive.
+
+### Security
+
+* Upgrades passport to the latest version in order to ensure session regeneration when logging in or out. This adds additional security to logins by mitigating any risks due to XSS attacks. Apostrophe is already robust against XSS attacks. For passport methods that are internally used by Apostrophe everything is still working. For projects that are accessing the passport instance directly through `self.apos.login.passport`, some verifications may be necessary to avoid any compatibility issue. The internally used methods are `authenticate`, `use`, `serializeUser`, `deserializeUser`, `initialize`, `session`.
 
 ## 3.40.1 (2023-02-18)
 

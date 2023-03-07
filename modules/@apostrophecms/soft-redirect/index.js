@@ -21,6 +21,8 @@
 // }
 // ```
 
+const parseurl = require('parseurl');
+
 module.exports = {
   async init(self) {
     self.options.statusCode = self.options.statusCode || 302;
@@ -37,7 +39,7 @@ module.exports = {
     return {
       '@apostrophecms/page:notFound': {
         async notFoundRedirect(req) {
-          const urlPathname = req.url.replace(/\?.*$/, '');
+          const urlPathname = parseurl.original(req).pathname;
 
           const doc = await self.apos.doc
             .find(req, {
@@ -50,9 +52,9 @@ module.exports = {
           if (!(doc && doc._url)) {
             return;
           }
-          if (self.local(doc._url) !== req.url) {
+          if (self.local(doc._url) !== urlPathname) {
             req.statusCode = self.options.statusCode;
-            req.redirect = self.local(doc._url);
+            req.redirect = doc._url;
           }
         }
       },
