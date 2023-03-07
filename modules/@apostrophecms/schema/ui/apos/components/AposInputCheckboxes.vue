@@ -93,11 +93,6 @@ export default {
       } else {
         this.value.data.push(choice.value);
       }
-    },
-    getComponentName() {
-      return this.field?.style === 'combo'
-        ? 'AposCombo'
-        : 'AposCheckbox';
     }
   }
 };
