@@ -24,6 +24,8 @@ current selection. Currently this works best with newly inserted documents.
 * Localized strings in the admin UI can now use `$t(key)` to localize a string inside
 an interpolated variable. This was accomplished by setting `skipOnVariables` to false
 for i18next, solely on the front end for admin UI purposes.
+* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
+This had been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
 
 ## 3.41.1 (2023-03-07)
 
@@ -34,7 +36,7 @@ No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2
 ### Adds
 
 * Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
-This can be useful for displaying fields according to the result of an external API or any business logic run on the server.
+This can be useful for displaying fields according to the result of an external API or any business logic run on the server. See the documentation for more information.
 
 ### Fixes
 

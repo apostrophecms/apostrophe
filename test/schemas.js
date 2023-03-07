@@ -1881,7 +1881,7 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
 
     assert(result === 'yes');
   });
@@ -1896,7 +1896,7 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
 
     assert(result === `yes - ${someReqAttr} - ${docId}`);
   });
@@ -1908,9 +1908,37 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
 
-    assert(warnMessages.includes('Warning in the `if` definition of the "someField" field: "external-condition:externalCondition()" should not be passed any argument.'));
+    assert(warnMessages.includes('The method "external-condition:externalCondition" defined in the "someField" field should be written without argument: "external-condition:externalCondition()".'));
+    assert(result === 'yes');
+  });
+
+  it('should throw when the condition key does not end with parenthesis', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'external-condition:externalCondition';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+
+    try {
+      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+    } catch (error) {
+      assert(error.message === 'The method "external-condition:externalCondition" defined in the "someField" field should be written with parenthesis: "external-condition:externalCondition()".');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should not throw when the condition key does not end with parenthesis with the optionalParenthesis parameter set to true', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'external-condition:externalCondition';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+    const optionalParenthesis = true;
+
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId, optionalParenthesis);
     assert(result === 'yes');
   });
 
@@ -1922,9 +1950,9 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
 
     try {
-      await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
     } catch (error) {
-      assert(error.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      assert(error.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
@@ -1938,9 +1966,9 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
 
     try {
-      await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
     } catch (error) {
-      assert(error.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      assert(error.message === 'The "unknownMethod" method from "external-condition" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
@@ -1966,7 +1994,7 @@ describe('Schemas', function() {
       await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
     } catch (error) {
       assert(error.status = 400);
-      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      assert(error.body.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
@@ -1982,7 +2010,7 @@ describe('Schemas', function() {
       await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=unknownMethod()', {});
     } catch (error) {
       assert(error.status = 400);
-      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      assert(error.body.message === 'The "unknownMethod" method from "external-condition" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
