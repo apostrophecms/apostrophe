@@ -58,12 +58,12 @@ export default {
 
       if (this.field.min) {
         if ((values != null) && (values.length < this.field.min)) {
-          return 'min';
+          return `min ${this.field.min}`;
         }
       }
       if (this.field.max) {
         if ((values != null) && (values.length > this.field.max)) {
-          return 'max';
+          return `max ${this.field.max}`;
         }
       }
 
