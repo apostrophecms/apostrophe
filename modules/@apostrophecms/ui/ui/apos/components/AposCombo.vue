@@ -4,6 +4,7 @@
     :class="{ 'apos-combo--focused': focused }"
   >
     <ul
+      ref="select"
       v-click-outside-element="removeFocus"
       class="apos-input-wrapper apos-combo__select"
       @click="toggleFocus"
@@ -12,7 +13,7 @@
         class="apos-combo__selected"
         v-for="checked in selectedItems"
         :key="checked"
-        @click="$emit('select-item', getSelectedOption(checked))"
+        @click="selectOption(getSelectedOption(checked))"
       >
         {{ getSelectedOption(checked).label }}
         <AposIndicator
@@ -27,12 +28,15 @@
       class="apos-input-icon"
       :icon-size="20"
     />
-    <ul class="apos-combo__list">
+    <ul
+      class="apos-combo__list"
+      :style="{top: boxHeight + 'px'}"
+    >
       <li
         :key="choice.value"
         class="apos-combo__list-item"
         v-for="choice in options"
-        @click="selectOption(choice)"
+        @click.stop="selectOption(choice)"
       >
         <AposIndicator
           v-if="isSelected(choice)"
@@ -68,7 +72,9 @@ export default {
   data () {
     return {
       focused: false,
-      options: this.renderOptions()
+      options: this.renderOptions(),
+      boxHeight: 0,
+      selectAllLabel: this.getSelectAllLabel()
     };
   },
   computed: {
@@ -80,15 +86,20 @@ export default {
       return this.value.data;
     }
   },
+  mounted() {
+    this.computeBoxHeight();
+  },
   methods: {
     renderOptions() {
       if (!this.field.all) {
         return this.choices;
       }
 
+      const { list } = this.getSelectAllLabel();
+
       return [
         {
-          label: 'Select All',
+          label: list,
           value: 'all'
         },
         ...this.choices
@@ -105,20 +116,46 @@ export default {
     },
     getSelectedOption(checked) {
       if (checked === 'all') {
+        const { selected } = this.getSelectAllLabel();
         return {
-          label: 'All Selected',
+          label: selected,
           value: 'all'
         };
       }
 
       return this.choices.find((choice) => choice.value === checked);
     },
-    selectOption(choice) {
+    emitSelectItem(data) {
+      return new Promise((resolve) => {
+        this.$emit('select-item', data);
+        this.$nextTick(resolve);
+      });
+    },
+    async selectOption(choice) {
       const selectedChoice = this.field.all && choice === 'all'
         ? this.getSelectedOption('all')
         : choice;
 
-      this.$emit('select-item', selectedChoice);
+      await this.emitSelectItem(selectedChoice);
+
+      this.computeBoxHeight();
+    },
+    computeBoxHeight() {
+      this.boxHeight = this.$refs.select.offsetHeight;
+    },
+    getSelectAllLabel() {
+      if (this.field.all.label) {
+        const label = this.$t('apostrophe:allItems', { items: this.field.all.label });
+        return {
+          selected: label,
+          list: label
+        };
+      }
+
+      return {
+        selected: this.$t('apostrophe:allSelected'),
+        list: this.$t('apostrophe:selectAll')
+      };
     }
   }
 };
@@ -149,10 +186,10 @@ export default {
 
 .apos-combo__select {
   display: flex;
-
+  flex-wrap: wrap;
   background-color: var(--a-base-9);
-  padding: 15px 30px 15px;
-  min-height: 12px;
+  padding: 10px 30px 10px;
+  min-height: 26px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   cursor: pointer;
@@ -164,7 +201,6 @@ export default {
 }
 
 .apos-combo__selected {
-  flex-wrap: wrap;
   font-size: var(--a-type-base);
   font-weight: var(--a-weight-base);
   font-family: var(--a-family-default);
@@ -172,7 +208,7 @@ export default {
   line-height: var(--a-line-base);
   background-color: var(--a-white);
   padding: 4px;
-  margin-right: 5px;
+  margin: 2px 5px 2px;
   border: 1px solid var(--a-base-8)
 }
 
@@ -187,6 +223,10 @@ export default {
   z-index: 1;
   padding-left: 0;
   margin: 0;
+  max-height: 20vh;
+  overflow-y: auto;
+  box-shadow: 0 0 3px var(--a-base-2);
+  border-radius: var(--a-border-radius);
 }
 
 .apos-combo__list-item {
