@@ -140,7 +140,6 @@
 </template>
 
 <script>
-import { nextTick } from 'vue';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import cuid from 'cuid';
 import { klona } from 'klona';
@@ -269,7 +268,7 @@ export default {
 
             return {
               name: 'duplicate',
-              message: `duplicate ${this.$t(uniqueFieldSchema.label) || uniqueFieldName}`
+              message: `${this.$t('apostrophe:duplicateError')} ${this.$t(uniqueFieldSchema.label) || uniqueFieldName}`
             };
           }
         }
