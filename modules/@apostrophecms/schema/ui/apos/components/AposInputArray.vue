@@ -246,7 +246,7 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
-        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique);
+        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = this.next
             .map(item =>
