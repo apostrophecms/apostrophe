@@ -274,6 +274,28 @@ describe('Schemas', function() {
               }
             };
           }
+        },
+        choices: {
+          methods() {
+            return {
+              async getChoices(req, { docId }) {
+                return [
+                  {
+                    label: 'One',
+                    value: 'one'
+                  },
+                  {
+                    label: 'Two',
+                    value: 'two'
+                  },
+                  {
+                    label: 'DocId',
+                    value: docId
+                  }
+                ];
+              }
+            };
+          }
         }
       }
     });
@@ -1910,7 +1932,7 @@ describe('Schemas', function() {
 
     const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
 
-    assert(warnMessages.includes('The method "external-condition:externalCondition" defined in the "someField" field should be written without argument: "external-condition:externalCondition()".'));
+    assert(warnMessages.pop() === 'The method "external-condition:externalCondition" defined in the "someField" field should be written without argument: "external-condition:externalCondition()".');
     assert(result === 'yes');
   });
 
@@ -1984,6 +2006,18 @@ describe('Schemas', function() {
     assert(res === 'yes');
   });
 
+  it('should warn when an argument is passed in the external condition key via the evaluate-external-condition API', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'external-condition'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition(letsNotArgue)', {});
+
+    assert(warnMessages.pop() === 'The method "externalCondition" defined in the "someField" field should be written without argument: "externalCondition()".');
+    assert(res === 'yes');
+  });
+
   it('should receive a clean error response when the evaluate-external-condition API call fails (module not found)', async function() {
     apos.schema.fieldsById['some-field-id'] = {
       name: 'someField',
@@ -2011,6 +2045,135 @@ describe('Schemas', function() {
     } catch (error) {
       assert(error.status = 400);
       assert(error.body.message === 'The "unknownMethod" method from "external-condition" module defined in the "someField" field does not exist.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should call the choices API successfully, using the field module name by default when the external condition key does not contain it', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'getChoices'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+    assert.deepEqual(res.choices, [
+      {
+        label: 'One',
+        value: 'one'
+      },
+      {
+        label: 'Two',
+        value: 'two'
+      },
+      {
+        label: 'DocId',
+        value: 'some-doc-id'
+      }
+    ]);
+  });
+
+  it('should call the choices API successfully, using parenthesis', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'choices:getChoices()'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+
+    assert.deepEqual(res.choices, [
+      {
+        label: 'One',
+        value: 'one'
+      },
+      {
+        label: 'Two',
+        value: 'two'
+      },
+      {
+        label: 'DocId',
+        value: 'some-doc-id'
+      }
+    ]);
+  });
+
+  it('should warn when an argument is passed in the external condition key via the choices API', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'choices:getChoices(letsNotArgue)'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+
+    assert(warnMessages.pop() === 'The method "choices:getChoices" defined in the "someField" field should be written without argument: "choices:getChoices()".');
+    assert.deepEqual(res.choices, [
+      {
+        label: 'One',
+        value: 'one'
+      },
+      {
+        label: 'Two',
+        value: 'two'
+      },
+      {
+        label: 'DocId',
+        value: 'some-doc-id'
+      }
+    ]);
+  });
+
+  it('should receive a clean error response when the choices API call fails (module not found)', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'unknown-module:getChoices()'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should receive a clean error response when the choices API call fails (external method not found)', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'choices:unknownMethod()'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'The "unknownMethod" method from "choices" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
