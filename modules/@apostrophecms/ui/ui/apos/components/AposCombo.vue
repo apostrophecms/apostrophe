@@ -70,16 +70,19 @@ export default {
 
   emits: [ 'select-item' ],
   data () {
+    const showSelectAll = this.field.all !== false &&
+      (!this.field.max || this.field.max > this.choices.length);
+
     return {
       focused: false,
-      options: this.renderOptions(),
       boxHeight: 0,
-      selectAllLabel: this.getSelectAllLabel()
+      showSelectAll,
+      options: this.renderOptions(showSelectAll)
     };
   },
   computed: {
     selectedItems() {
-      if (this.choices.length === this.value.data.length) {
+      if (this.allItemsSelected()) {
         return [ 'all' ];
       }
 
@@ -90,16 +93,16 @@ export default {
     this.computeBoxHeight();
   },
   methods: {
-    renderOptions() {
-      if (!this.field.all) {
+    renderOptions(showSelectAll) {
+      if (!showSelectAll) {
         return this.choices;
       }
 
-      const { list } = this.getSelectAllLabel();
+      const { listLabel } = this.getSelectAllLabel();
 
       return [
         {
-          label: list,
+          label: listLabel,
           value: 'all'
         },
         ...this.choices
@@ -114,12 +117,15 @@ export default {
     isSelected(choice) {
       return this.value.data.some((val) => val === choice.value);
     },
+    allItemsSelected () {
+      return this.value.data.length === this.choices.length;
+    },
     getSelectedOption(checked) {
       if (checked === 'all') {
-        const { selected } = this.getSelectAllLabel();
+        const { selectedLabel } = this.getSelectAllLabel();
         return {
-          label: selected,
-          value: 'all'
+          label: selectedLabel,
+          value: checked
         };
       }
 
@@ -132,29 +138,38 @@ export default {
       });
     },
     async selectOption(choice) {
-      const selectedChoice = this.field.all && choice === 'all'
+      const selectedChoice = this.showSelectAll && choice === 'all'
         ? this.getSelectedOption('all')
         : choice;
 
       await this.emitSelectItem(selectedChoice);
 
       this.computeBoxHeight();
+      if (this.showSelectAll) {
+        const { listLabel } = this.getSelectAllLabel();
+        this.options[0].label = listLabel;
+      }
     },
     computeBoxHeight() {
       this.boxHeight = this.$refs.select.offsetHeight;
     },
     getSelectAllLabel() {
-      if (this.field.all.label) {
-        const label = this.$t('apostrophe:allItems', { items: this.field.all.label });
+      const allSelected = this.allItemsSelected();
+      const defaultSelectAllListLabel = allSelected
+        ? this.$t('apostrophe:deselectAll')
+        : this.$t('apostrophe:selectAll');
+
+      if (this.field?.all?.label) {
+        const selectAllLabel = this.$t('apostrophe:allItems', { items: this.field.all.label });
         return {
-          selected: label,
-          list: label
+          selectedLabel: selectAllLabel,
+          listLabel: allSelected ? defaultSelectAllListLabel : selectAllLabel
         };
       }
 
       return {
-        selected: this.$t('apostrophe:allSelected'),
-        list: this.$t('apostrophe:selectAll')
+        selectedLabel: this.$t('apostrophe:allSelected'),
+        listLabel: defaultSelectAllListLabel
       };
     }
   }
@@ -162,10 +177,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-combo {
-  font-family: var(--a-family-default);
-}
-
 .apos-combo__check-icon {
   position: absolute;
   left: 5px;
@@ -201,11 +212,8 @@ export default {
 }
 
 .apos-combo__selected {
-  font-size: var(--a-type-base);
-  font-weight: var(--a-weight-base);
-  font-family: var(--a-family-default);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-base);
+  @include type-base;
+
   background-color: var(--a-white);
   padding: 4px;
   margin: 2px 5px 2px;
@@ -223,19 +231,17 @@ export default {
   z-index: 1;
   padding-left: 0;
   margin: 0;
-  max-height: 20vh;
+  max-height: 300px;
   overflow-y: auto;
   box-shadow: 0 0 3px var(--a-base-2);
   border-radius: var(--a-border-radius);
 }
 
 .apos-combo__list-item {
+  @include type-base;
+
   padding: 10px 10px 10px 20px;
   cursor: pointer;
-  font-family: var(--a-family-default);
-  color: var(--a-text-primary);
-  font-size: var(--a-type-label);
-  font-weight: var(--a-weight-base);
 
   &:hover {
     background-color: var(--a-base-9);
