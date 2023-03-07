@@ -68,7 +68,7 @@ export default {
     }
   },
 
-  emits: [ 'select-item' ],
+  emits: [ 'select-items' ],
   data () {
     const showSelectAll = this.field.all !== false &&
       (!this.field.max || this.field.max > this.choices.length);
@@ -131,9 +131,9 @@ export default {
 
       return this.choices.find((choice) => choice.value === checked);
     },
-    emitSelectItem(data) {
+    emitSelectItems(data) {
       return new Promise((resolve) => {
-        this.$emit('select-item', data);
+        this.$emit('select-items', data);
         this.$nextTick(resolve);
       });
     },
@@ -142,7 +142,7 @@ export default {
         ? this.getSelectedOption('all')
         : choice;
 
-      await this.emitSelectItem(selectedChoice);
+      await this.emitSelectItems(selectedChoice);
 
       this.computeBoxHeight();
       if (this.showSelectAll) {

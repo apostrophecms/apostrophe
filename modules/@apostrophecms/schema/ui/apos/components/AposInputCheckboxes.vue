@@ -11,7 +11,7 @@
         :choices="choices"
         :field="field"
         :value="value"
-        @select-item="selectItem"
+        @select-items="selectItems"
       />
 
       <AposCheckbox
@@ -79,7 +79,7 @@ export default {
 
       return false;
     },
-    selectItem(choice) {
+    selectItems(choice) {
       if (choice.value === 'all') {
         this.value.data = this.choices.length === this.value.data.length
           ? []
