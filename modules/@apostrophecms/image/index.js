@@ -57,6 +57,9 @@ module.exports = {
     },
     relationshipPostprocessor: 'autocrop'
   },
+  utilityOperations: {
+    remove: [ 'new' ]
+  },
   fields: {
     remove: [ 'visibility' ],
     add: {

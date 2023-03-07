@@ -1,5 +1,30 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* The `utilityOperations` feature of piece types now supports additional properties:
+`relationship: true` (show the operation only when editing a relationship), `relationship: false` (never show
+the operation when editing a relationship), `button: true`, `icon` and `iconOnly: true`.
+When `button: true` is specified, the operation appears as a standalone button rather than
+being tucked away in the "more" menu.
+* In addition, `utilityOperations` can now specify `eventOptions` with an `event` subproperty
+instead of `modalOptions`. This is useful with the new `edit` event (see below).
+* Those extending our admin UI on the front end can now open a modal to create or edit a page or piece by calling
+`await apos.doc.edit({ type: 'article' })` (the type here is an example). To edit an existing document add an
+`_id` property. To copy an existing document (like our "duplicate" feature) add a `copyOf`
+property. When creating new pages, `type` can be sent to `@apostrophecms/page` for convenience
+(note that the `type` property does not override the default or current page type in the editor).
+* The `edit` Apostrophe event is now available and takes an object with the same properties
+as above. This is useful when configuring `utilityOperations`.
+* The `content-changed` Apostrophe event can now be emitted with a `select: true` property. If a
+document manager for the relevant content type is open, it will attempt to add the document to the
+current selection. Currently this works best with newly inserted documents.
+* Localized strings in the admin UI can now use `$t(key)` to localize a string inside
+an interpolated variable. This was accomplished by setting `skipOnVariables` to false
+for i18next, solely on the front end for admin UI purposes.
+
 ## 3.41.1 (2023-03-07)
 
 No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2.x.
