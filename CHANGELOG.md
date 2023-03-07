@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.41.1 (2023-03-07)
+
+No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2.x.
+
 ## 3.41.0 (2023-03-06)
 
 ### Adds
