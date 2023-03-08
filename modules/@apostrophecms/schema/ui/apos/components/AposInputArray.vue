@@ -31,7 +31,7 @@
         <component
           v-if="items.length"
           :is="field.style === 'table' ? 'table' : 'div'"
-          :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline'"
+          :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline-standard'"
         >
           <thead
             v-if="field.style === 'table'"
@@ -46,7 +46,7 @@
             <th class="apos-table-cell--hidden" />
           </thead>
           <draggable
-            class="apos-input-array-inline-item"
+            class="apos-input-array-inline"
             :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
@@ -57,6 +57,7 @@
               v-for="(item, index) in items"
               :key="item._id"
               :schema="field.schema"
+              class="apos-input-array-inline-item"
               :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
               v-model="item.schemaInput"
               :trigger-validation="triggerValidation"
@@ -244,6 +245,34 @@ export default {
       if (this.field.max && value.length > this.field.max) {
         return 'max';
       }
+      if (value.length && this.field.fields && this.field.fields.add) {
+        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique) || [];
+        if (uniqueFieldName) {
+          const duplicates = this.next
+            .map(item =>
+              Array.isArray(item[uniqueFieldName])
+                ? item[uniqueFieldName].map(i => i._id).sort().join('|')
+                : item[uniqueFieldName])
+            .filter((item, index, array) => array.indexOf(item) !== index);
+
+          if (duplicates.length) {
+            duplicates.forEach(duplicate => {
+              this.items.forEach(item => {
+                uniqueFieldSchema.type === 'relationship'
+                  ? item.schemaInput.data[uniqueFieldName] && item.schemaInput.data[uniqueFieldName].forEach(datum => {
+                    item.schemaInput.fieldState[uniqueFieldName].duplicate = duplicate.split('|').find(i => i === datum._id);
+                  })
+                  : item.schemaInput.fieldState[uniqueFieldName].duplicate = item.schemaInput.data[uniqueFieldName] === duplicate;
+              });
+            });
+
+            return {
+              name: 'duplicate',
+              message: `${this.$t('apostrophe:duplicateError')} ${this.$t(uniqueFieldSchema.label) || uniqueFieldName}`
+            };
+          }
+        }
+      }
       return false;
     },
     async edit() {
@@ -344,6 +373,31 @@ function alwaysExpand(field) {
 }
 </script>
 <style lang="scss" scoped>
+  ::v-deep .apos-field--array.apos-field--error-duplicate {
+    .apos-input {
+      border-color: var(--a-base-8);
+    }
+    .apos-input:focus {
+      box-shadow: 0 0 3px var(--a-base-8);
+    }
+    .apos-input-icon {
+      color: var(--a-base-2);
+    }
+    .apos-input--error {
+      border-color: var(--a-danger);
+    }
+  }
+  ::v-deep .apos-input-relationship {
+    .apos-button__wrapper {
+      display: none;
+    }
+    .apos-input {
+      width: auto;
+    }
+    .apos-slat__main {
+      min-width: 160px;
+    }
+  }
   .apos-is-dragging {
     opacity: 0.5;
     background: var(--a-base-4);
@@ -366,8 +420,7 @@ function alwaysExpand(field) {
   .apos-input-array-inline-table {
     @include type-label;
     position: relative;
-    left: -35px;
-    width: calc(100% + 70px);
+    left: -45px;
     margin: 0 0 $spacing-base;
     border-collapse: collapse;
 
@@ -453,7 +506,7 @@ function alwaysExpand(field) {
     }
   }
 
-  .apos-input-array-inline {
+  .apos-input-array-inline-standard {
     .apos-input-array-inline-collapse {
       position: absolute;
       top: $spacing-quadruple;
@@ -479,7 +532,6 @@ function alwaysExpand(field) {
       }
 
       & > div {
-        display: none;
         grid-column: 2;
         padding-top: $spacing-base;
         padding-bottom: $spacing-base;
