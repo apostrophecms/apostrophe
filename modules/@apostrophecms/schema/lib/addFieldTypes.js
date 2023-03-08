@@ -753,10 +753,6 @@ module.exports = (self) => {
         throw self.apos.error('max');
       }
       if (data.length && field.schema && field.schema.length) {
-        console.log('field.schema', require('util').inspect(field.schema, {
-          colors: true,
-          depth: 1
-        }));
         const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema.find(subfield => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = data
