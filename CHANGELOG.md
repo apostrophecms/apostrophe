@@ -2,11 +2,46 @@
 
 ## UNRELEASED
 
+### Adds
+
+* The `utilityOperations` feature of piece types now supports additional properties:
+`relationship: true` (show the operation only when editing a relationship), `relationship: false` (never show
+the operation when editing a relationship), `button: true`, `icon` and `iconOnly: true`.
+When `button: true` is specified, the operation appears as a standalone button rather than
+being tucked away in the "more" menu.
+* In addition, `utilityOperations` can now specify `eventOptions` with an `event` subproperty
+instead of `modalOptions`. This is useful with the new `edit` event (see below).
+* Those extending our admin UI on the front end can now open a modal to create or edit a page or piece by calling
+`await apos.doc.edit({ type: 'article' })` (the type here is an example). To edit an existing document add an
+`_id` property. To copy an existing document (like our "duplicate" feature) add a `copyOf`
+property. When creating new pages, `type` can be sent to `@apostrophecms/page` for convenience
+(note that the `type` property does not override the default or current page type in the editor).
+* The `edit` Apostrophe event is now available and takes an object with the same properties
+as above. This is useful when configuring `utilityOperations`.
+* The `content-changed` Apostrophe event can now be emitted with a `select: true` property. If a
+document manager for the relevant content type is open, it will attempt to add the document to the
+current selection. Currently this works best with newly inserted documents.
+* Localized strings in the admin UI can now use `$t(key)` to localize a string inside
+an interpolated variable. This was accomplished by setting `skipOnVariables` to false
+for i18next, solely on the front end for admin UI purposes.
+
+## 3.41.1 (2023-03-07)
+
+No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2.x.
+
+## 3.41.0 (2023-03-06)
+
+### Adds
+
+* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
+This can be useful for displaying fields according to the result of an external API or any business logic run on the server.
+
 ### Fixes
 
 * Replace `deep-get-set` dependency with `lodash`'s `get` and `set` functions to fix the [Prototype Pollution in deep-get-set](https://github.com/advisories/GHSA-mjjj-6p43-vhhv) vulnerability. There was no actual vulnerability in Apostrophe due to the way the module was actually used, and this was done to address vulnerability scan reports.
 * The "soft redirects" for former URLs of documents now work better with localization. Thanks to [Waldemar Pankratz](https://github.com/waldemar-p).
 * Destroy `AreaEditor` Vue apps when the page content is refreshed in edit mode. This avoids a leak of Vue apps components being recreated while instances of old ones are still alive.
+* Configure Tiptap Text Align also for `DefaultNode`, not only for `paragraph` and `heading`. This is the default node created on new line.
 
 ### Security
 

@@ -816,6 +816,9 @@ database.`);
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
         browserOptions.localized = true;
         browserOptions.autopublish = false;
+        // A list of all valid page types, including parked pages etc. This is
+        // not a menu of choices for creating a page manually
+        browserOptions.validPageTypes = self.apos.instancesOf('@apostrophecms/page-type').map(module => module.__meta.name);
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit

@@ -102,7 +102,24 @@ module.exports = {
       }
     }
   },
-  utilityOperations: {},
+  utilityOperations(self) {
+    return {
+      add: {
+        new: {
+          canEdit: true,
+          relationship: true,
+          label: {
+            key: 'apostrophe:newDocType',
+            type: `$t(${self.options.label})`
+          },
+          eventOptions: {
+            event: 'edit',
+            type: self.__meta.name
+          }
+        }
+      }
+    };
+  },
   batchOperations: {
     add: {
       publish: {
