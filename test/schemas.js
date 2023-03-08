@@ -2003,7 +2003,7 @@ describe('Schemas', function() {
     };
 
     const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
-    assert(res === 'yes');
+    assert(res.result === 'yes');
   });
 
   it('should warn when an argument is passed in the external condition key via the evaluate-external-condition API', async function() {
