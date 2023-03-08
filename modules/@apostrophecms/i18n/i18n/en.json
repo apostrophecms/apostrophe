@@ -133,6 +133,7 @@
   "draftSavedNoPreview": "Draft saved but could not navigate to a preview.",
   "dropMedia": "Drop new media here",
   "duplicate": "Duplicate...",
+  "duplicateError": "Duplicate",
   "edit": "Edit",
   "editImageAdjustments": "Image Adjustments",
   "editImageRelationshipTitle": "Adjust Image",
