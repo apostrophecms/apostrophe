@@ -338,6 +338,7 @@ module.exports = {
             submitted: context.submitted,
             lastPublishedAt: context.lastPublishedAt,
             _edit: context._edit,
+            _publish: context._publish,
             aposMode: context.aposMode,
             aposLocale: context.aposLocale,
             aposDocId: context.aposDocId

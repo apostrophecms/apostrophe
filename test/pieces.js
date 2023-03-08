@@ -290,6 +290,74 @@ describe('Pieces', function() {
                   action: 'publish',
                   type: 'board'
                 }
+              },
+              _users: {
+                type: 'relationship',
+                label: 'users',
+                withType: '@apostrophecms/user',
+                required: true
+              },
+              array: {
+                type: 'array',
+                label: 'array',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                editPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                fields: {
+                  add: {
+                    title: {
+                      type: 'string',
+                      label: 'title',
+                      required: true
+                    },
+                    description: {
+                      type: 'string',
+                      label: 'description'
+                    },
+                    _users: {
+                      type: 'relationship',
+                      label: 'users',
+                      withType: '@apostrophecms/user',
+                      required: true
+                    }
+                  }
+                }
+              },
+              object: {
+                type: 'object',
+                label: 'object',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                editPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                fields: {
+                  add: {
+                    title: {
+                      type: 'string',
+                      label: 'title',
+                      required: true
+                    },
+                    description: {
+                      type: 'string',
+                      label: 'description'
+                    },
+                    _users: {
+                      type: 'relationship',
+                      label: 'users',
+                      withType: '@apostrophecms/user',
+                      required: true
+                    }
+                  }
+                }
               }
             }
           }
@@ -776,7 +844,6 @@ describe('Pieces', function() {
     });
 
     const actual = response.results.map(result => result.title);
-    console.log(response.results);
     const expected = [
       'Cool Product #9',
       'Cool Product #8',
@@ -1928,13 +1995,13 @@ describe('Pieces', function() {
     });
   });
 
-  describe('field viewPermission', function() {
-    const createUser = (role = 'admin') => async ({
+  describe('field viewPermission|editPermission', function() {
+    const createUser = (role = 'admin') => ({
       title = `test-${role}`,
       username = `test-${role}`,
       password = role
     } = {}) => {
-      await apos.user.insert(
+      return apos.user.insert(
         apos.task.getReq(),
         {
           ...apos.user.newInstance(),
@@ -1981,7 +2048,10 @@ describe('Pieces', function() {
           'discontinued',
           'nickname',
           'sku',
-          'hidden'
+          'hidden',
+          '_users',
+          'array',
+          'object'
         ];
 
         assert.deepEqual(actual, expected);
@@ -2022,6 +2092,8 @@ describe('Pieces', function() {
         await createUser('admin')();
         const jar = await loginAs('admin');
 
+        const editor = await createUser('editor')();
+
         const req = apos.task.getReq();
         const candidate = {
           ...apos.modules.board.newInstance(),
@@ -2031,7 +2103,20 @@ describe('Pieces', function() {
           discontinued: 'April 2077',
           nickname: 'flex',
           sku: 'LI',
-          hidden: false
+          hidden: false,
+          _users: [ editor ],
+          array: [
+            {
+              title: '01',
+              description: 'one',
+              _users: [ editor ]
+            }
+          ],
+          object: {
+            title: '01',
+            description: 'one',
+            _users: [ editor ]
+          }
         };
         const inserted = await apos.modules.board.insert(req, candidate);
         await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
@@ -2114,7 +2199,8 @@ describe('Pieces', function() {
           'visibility',
           'archived',
           'stock',
-          'nickname'
+          'nickname',
+          '_users'
         ];
 
         assert.deepEqual(actual, expected);
@@ -2245,7 +2331,8 @@ describe('Pieces', function() {
           'title',
           'slug',
           'visibility',
-          'archived'
+          'archived',
+          '_users'
         ];
 
         assert.deepEqual(actual, expected);
@@ -2360,6 +2447,78 @@ describe('Pieces', function() {
           slug: 'icarus',
           stock: 99,
           discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit with permission checks during prepareForStorage & updateCacheField handlers', async function() {
+        const contributor = await createUser('contributor')();
+        const jar = await loginAs('contributor');
+
+        const editor = await createUser('editor')();
+        const guest = await createUser('guest')();
+
+        const req = apos.task.getReq({ mode: 'draft' });
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false,
+          _users: [ editor ],
+          array: [
+            {
+              title: '01',
+              description: 'one',
+              _users: [ editor ]
+            }
+          ],
+          object: {
+            title: '01',
+            description: 'one',
+            _users: [ editor ]
+          }
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const insertedDraft = await apos.modules.board.find(apos.task.getReq({ mode: 'draft' }), { _id: inserted._id.replace('published', 'draft') }).toObject();
+        const found = await apos.http.get(`/api/v1/board/${insertedDraft._id}`, { jar });
+        const updated = await apos.http.put(
+          `/api/v1/board/${found._id}`,
+          {
+            body: {
+              ...found,
+              stock: 77,
+              _users: [ guest ],
+              array: [
+                {
+                  title: '02',
+                  _users: [ guest ]
+                }
+              ],
+              object: {
+                title: '02',
+                _users: [ guest ]
+              }
+            },
+            jar
+          }
+        );
+
+        const actual = await apos.modules.board.find(apos.task.getReq({ mode: 'draft' }), { _id: updated._id }).toObject();
+        const expected = {
+          ...insertedDraft,
+          stock: 77,
+          cacheInvalidatedAt: new Date(updated.cacheInvalidatedAt),
+          updatedAt: new Date(updated.updatedAt),
+          updatedBy: {
+            _id: contributor._id,
+            title: contributor.title,
+            username: contributor.username
+          }
         };
 
         assert.deepEqual(actual, expected);

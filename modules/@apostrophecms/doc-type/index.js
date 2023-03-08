@@ -83,7 +83,7 @@ module.exports = {
       self.__meta.name === '@apostrophecms/global' ||
       self.apos.instanceOf(self, '@apostrophecms/any-page-type') ||
       self.apos.instanceOf(self, '@apostrophecms/page-type') ||
-      self.options.canCreate === false ||
+      self.options.showCreate === false ||
       self.options.showPermissions === false
     ) {
       return null;
@@ -220,6 +220,12 @@ module.exports = {
       beforeSave: {
         async updateCacheField(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+
+          // - The current user cannot see the relatioship documents
+          // - We leave the relatedReverseIds & cacheInvalidatedAt untouched
+          if (relatedDocsIds.includes(null)) {
+            return;
+          }
 
           // - Remove current doc reference from docs that include it
           // - Update these docs' cache field
@@ -416,8 +422,21 @@ module.exports = {
       },
       getRelatedDocsIds(req, doc) {
         const relatedDocsIds = [];
+        const can = (field) => {
+          return (!field.withType && !field.editPermission && !field.viewPermission) ||
+            (field.withType && self.apos.permission.can(req, 'edit', field.withType)) ||
+            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            false;
+        };
         const handlers = {
           relationship: (field, doc) => {
+            // Add null to relatedDocsIds if the current user cannot edit the relationship
+            if (!can(field)) {
+              relatedDocsIds.push(null);
+              return;
+            }
+
             relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
           }
         };
@@ -536,7 +555,8 @@ module.exports = {
         const schema = _.filter(self.schema, function (field) {
           return (!field.editPermission && !field.viewPermission) ||
             (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
-            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type));
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            false;
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
