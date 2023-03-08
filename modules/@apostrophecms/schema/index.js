@@ -494,6 +494,11 @@ module.exports = {
             continue;
           }
 
+          const isVisible = await self.isVisible(req, schema, destination, field.name);
+          if (!isVisible) {
+            continue;
+          }
+
           // Fields that are contextual are left alone, not blanked out, if
           // they do not appear at all in the data object.
           if (field.contextual && !_.has(data, field.name)) {
@@ -523,21 +528,7 @@ module.exports = {
           }
         }
 
-        const errorsList = [];
-
-        for (const error of errors) {
-          const isVisible = await self.isVisible(req, schema, destination, error.path);
-
-          if ((error.name === 'required' || error.name === 'mandatory') && !isVisible) {
-            // It is not reasonable to enforce required for
-            // fields hidden via conditional fields
-            continue;
-          }
-
-          errorsList.push(error);
-        }
-
-        if (errorsList.length) {
+        if (errors.length) {
           throw errors;
         }
       },
