@@ -31,6 +31,10 @@ This has been done for consistency with the external conditions syntax shipped i
 
 * Configure Tiptap Text Align also for `DefaultNode`, not only for `paragraph` and `heading`. This is the default node created on new line.
 
+### Fixes
+
+* Send external condition result in an object so that numbers work.
+
 ## 3.41.1 (2023-03-07)
 
 No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2.x.
