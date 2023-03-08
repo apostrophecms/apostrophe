@@ -83,7 +83,7 @@ export default {
   computed: {
     selectedItems() {
       if (this.allItemsSelected()) {
-        return [ 'all' ];
+        return [ '__all' ];
       }
 
       return this.value.data;
@@ -103,7 +103,7 @@ export default {
       return [
         {
           label: listLabel,
-          value: 'all'
+          value: '__all'
         },
         ...this.choices
       ];
@@ -121,7 +121,7 @@ export default {
       return this.value.data.length === this.choices.length;
     },
     getSelectedOption(checked) {
-      if (checked === 'all') {
+      if (checked === '__all') {
         const { selectedLabel } = this.getSelectAllLabel();
         return {
           label: selectedLabel,
@@ -138,8 +138,8 @@ export default {
       });
     },
     async selectOption(choice) {
-      const selectedChoice = this.showSelectAll && choice === 'all'
-        ? this.getSelectedOption('all')
+      const selectedChoice = this.showSelectAll && choice === '__all'
+        ? this.getSelectedOption('__all')
         : choice;
 
       await this.emitSelectItems(selectedChoice);

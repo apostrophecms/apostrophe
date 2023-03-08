@@ -80,7 +80,7 @@ export default {
       return false;
     },
     selectItems(choice) {
-      if (choice.value === 'all') {
+      if (choice.value === '__all') {
         this.value.data = this.choices.length === this.value.data.length
           ? []
           : this.choices.map(({ value }) => value);
