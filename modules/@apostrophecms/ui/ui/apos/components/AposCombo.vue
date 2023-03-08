@@ -158,17 +158,18 @@ export default {
       const defaultSelectAllListLabel = allSelected
         ? this.$t('apostrophe:deselectAll')
         : this.$t('apostrophe:selectAll');
+      const selectedLabel = this.$t('apostrophe:allSelected');
 
       if (this.field?.all?.label) {
-        const selectAllLabel = this.$t('apostrophe:allItems', { items: this.field.all.label });
+        const selectAllLabel = this.$t(this.field.all.label);
         return {
-          selectedLabel: selectAllLabel,
+          selectedLabel,
           listLabel: allSelected ? defaultSelectAllListLabel : selectAllLabel
         };
       }
 
       return {
-        selectedLabel: this.$t('apostrophe:allSelected'),
+        selectedLabel,
         listLabel: defaultSelectAllListLabel
       };
     }
