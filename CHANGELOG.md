@@ -25,7 +25,7 @@ current selection. Currently this works best with newly inserted documents.
 an interpolated variable. This was accomplished by setting `skipOnVariables` to false
 for i18next, solely on the front end for admin UI purposes.
 * The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
-This had been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
+This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
 
 ## 3.41.1 (2023-03-07)
 
