@@ -235,13 +235,39 @@ const hasAreaWithoutWidgets = {
   ]
 };
 
+const warnMessages = [];
+
 describe('Schemas', function() {
 
   this.timeout(t.timeout);
 
   before(async function() {
     apos = await t.create({
-      root: module
+      root: module,
+      modules: {
+        '@apostrophecms/util': {
+          extendMethods() {
+            return {
+              warn(_super, ...args) {
+                warnMessages.push(...args);
+                return _super(...args);
+              }
+            };
+          }
+        },
+        'external-condition': {
+          methods() {
+            return {
+              async externalCondition() {
+                return 'yes';
+              },
+              async externalCondition2(req, { docId }) {
+                return `yes - ${req.someReqAttr} - ${docId}`;
+              }
+            };
+          }
+        }
+      }
     });
   });
 
@@ -1806,6 +1832,163 @@ describe('Schemas', function() {
       doWeCare: true,
       age: null
     }, 'age', 'required');
+  });
+
+  it('should ignore required property when external condition does not match', async function() {
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true,
+          if: {
+            'external-condition:externalCondition()': 'no'
+          }
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        }
+      ]
+    });
+    const output = {};
+    await apos.schema.convert(req, schema, {
+      shoeSize: 20
+    }, output);
+    assert(output.shoeSize === 20);
+  });
+
+  it('should enforce required property when external condition matches', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true,
+          if: {
+            'external-condition:externalCondition()': 'yes'
+          }
+        }
+      ]
+    });
+
+    await testSchemaError(schema, {}, 'age', 'required');
+  });
+
+  it('should use the field module name by default when the external condition key does not contain it', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'externalCondition()';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+
+    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+
+    assert(result === 'yes');
+  });
+
+  it('should pass req and the doc ID to the external condition method', async function() {
+    const someReqAttr = 'some-attribute-on-req';
+    const req = apos.task.getReq({
+      someReqAttr
+    });
+    const conditionKey = 'external-condition:externalCondition2()';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+
+    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+
+    assert(result === `yes - ${someReqAttr} - ${docId}`);
+  });
+
+  it('should warn when an argument is passed in the external condition key', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'external-condition:externalCondition(letsNotArgue)';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+
+    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+
+    assert(warnMessages.includes('Warning in the `if` definition of the "someField" field: "external-condition:externalCondition()" should not be passed any argument.'));
+    assert(result === 'yes');
+  });
+
+  it('should throw when the module defined in the external condition key is not found', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'unknown-module:externalCondition()';
+    const fieldName = 'someField';
+    const fieldModuleName = 'unknown-module';
+    const docId = 'some-doc-id';
+
+    try {
+      await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    } catch (error) {
+      assert(error.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should throw when the method defined in the external condition key is not found', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'external-condition:unknownMethod()';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+
+    try {
+      await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    } catch (error) {
+      assert(error.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should call the evaluate-external-condition API successfully', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'external-condition'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
+    assert(res === 'yes');
+  });
+
+  it('should receive a clean error response when the evaluate-external-condition API call fails (module not found)', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'unknown-module'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should receive a clean error response when the evaluate-external-condition API call fails (external method not found)', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'external-condition'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=unknownMethod()', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      return;
+    }
+    throw new Error('should have thrown');
   });
 
   it('should save date and time with the right format', async function () {

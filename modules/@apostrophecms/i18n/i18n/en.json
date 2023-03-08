@@ -151,6 +151,7 @@
   "errorCount": "{{ count }} error remaining",
   "errorCount_plural": "{{ count }} errors remaining",
   "errorCreatingNewContent": "Error while creating new, empty content.",
+  "errorEvaluatingExternalCondition": "An error occurred while evaluating the external condition for the field \"{{ name }}\"",
   "errorFetchingTitleFieldChoicesByMethod": "An error occurred while fetching the choices for the titleField {{ name }}",
   "errorPageMessage": "An error has occurred",
   "errorPageStatusCode": "500",

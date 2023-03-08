@@ -21,7 +21,8 @@ export default {
       subfields: Object.fromEntries((this.chosen || [])
         .filter(doc => doc._fields)
         .map(doc => [ doc._id, doc._fields ])
-      )
+      ),
+      selectPending: new Set()
     };
   },
   props: {
@@ -82,10 +83,21 @@ export default {
       return this.relationshipIsModified();
     }
   },
+  mounted() {
+    this.docsManagerAddEventHandlers();
+  },
+  destroyed() {
+    this.docsManagerRemoveEventHandlers();
+  },
   watch: {
     items: function(newValue) {
       if (newValue.length) {
         this.generateUi();
+      }
+      if (this.selectPending.size > 0) {
+        const newChecked = [ ...this.checked, ...this.selectPending ];
+        this.checked = [ ...new Set(newChecked) ];
+        this.selectPending = new Set();
       }
     },
     checkedDocs(after, before) {
@@ -223,7 +235,28 @@ export default {
           found && this.checkedDocs.push(found);
         }
       });
-
+    },
+    docsManagerAddEventHandlers() {
+      apos.bus.$on('content-changed', this.docsManagerOnContentChanged);
+    },
+    docsManagerRemoveEventHandlers() {
+      apos.bus.$off('content-changed', this.docsManagerOnContentChanged);
+    },
+    docsManagerOnContentChanged({ doc, select }) {
+      if (!select) {
+        return;
+      }
+      if ((doc.type === this.moduleName) || (doc.slug.startsWith('/') && (this.moduleName === '@apostrophecms/page'))) {
+        // For now we add it to a set of ids to be selected on the next refresh
+        // of the items array, which works well for newly inserted documents.
+        // In the future this will be replaced with logic that can deal with
+        // selecting any document, but we should implement the "Really Select All,
+        // Not Just This Page" action first.
+        //
+        // We know we always work with drafts in the media manager, so let's adapt
+        // a published doc _id without a fuss
+        this.selectPending.add(doc._id.replace(':published', ':draft'));
+      }
     }
   }
 };

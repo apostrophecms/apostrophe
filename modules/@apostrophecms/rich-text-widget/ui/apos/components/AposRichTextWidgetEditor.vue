@@ -138,17 +138,17 @@ export default {
     },
     initialContent() {
       const content = this.transformNamedAnchors(this.stripPlaceholderBrs(this.value.content));
-      if (!content.length) {
-        // If we don't supply a valid instance of the first style, then
-        // the text align control will not work until the user manually
-        // applies a style or refreshes the page
-        const defaultStyle = this.editorOptions.styles.find(style => style.def);
-
-        const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
-        return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
-      } else {
+      if (content.length) {
         return content;
       }
+
+      // If we don't supply a valid instance of the first style, then
+      // the text align control will not work until the user manually
+      // applies a style or refreshes the page
+      const defaultStyle = this.editorOptions.styles.find(style => style.def);
+
+      const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
+      return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
     },
     toolbar() {
       return this.editorOptions.toolbar;
@@ -195,7 +195,7 @@ export default {
         listItem: false
       }),
       TextAlign.configure({
-        types: [ 'heading', 'paragraph' ]
+        types: [ 'heading', 'paragraph', 'defaultNode' ]
       }),
       Highlight,
       Underline,

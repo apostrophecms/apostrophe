@@ -18,11 +18,9 @@
       />
     </template>
     <template #primaryControls>
-      <AposContextMenu
-        v-if="utilityOperations.menu.length"
-        :button="utilityOperations.button"
-        :menu="utilityOperations.menu"
-        @item-clicked="utilityOperationsHandler"
+      <AposUtilityOperations
+        :module-options="moduleOptions"
+        :has-relationship-field="!!relationshipField"
       />
       <AposButton
         v-if="relationshipField"
@@ -149,15 +147,6 @@ export default {
       filterValues: {},
       queryExtras: {},
       holdQueries: false,
-      utilityOperations: {
-        button: {
-          label: 'apostrophe:moreOperations',
-          iconOnly: true,
-          icon: 'dots-vertical-icon',
-          type: 'outline'
-        },
-        menu: []
-      },
       filterChoices: {},
       allPiecesSelection: {
         isSelected: false,
@@ -233,7 +222,6 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-    this.setUtilityOperations();
     await this.getPieces();
     await this.getAllPiecesTotal();
 
@@ -248,14 +236,6 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    utilityOperationsHandler(action) {
-      if (action === 'new') {
-        this.create();
-        return;
-      }
-
-      this.handleUtilityOperation(action);
-    },
     setCheckedDocs(checked) {
       this.checkedDocs = checked;
       this.checked = this.checkedDocs.map(item => {
@@ -264,28 +244,6 @@ export default {
     },
     async create() {
       await this.edit(null);
-    },
-    async handleUtilityOperation(action) {
-      const operation = this.utilityOperations.menu
-        .find((op) => op.action === action);
-
-      if (!operation) {
-        return;
-      }
-
-      const {
-        modal, ...modalOptions
-      } = operation.modalOptions || {};
-
-      if (modal) {
-        await apos.modal.execute(modal, {
-          moduleAction: this.moduleOptions.action,
-          action,
-          labels: this.moduleLabels,
-          messages: operation.messages,
-          ...modalOptions
-        });
-      }
     },
 
     // If pieceOrId is null, a new piece is created
@@ -492,24 +450,6 @@ export default {
           console.error(error);
         }
       }
-    },
-    setUtilityOperations () {
-      const { utilityOperations } = this.moduleOptions;
-
-      const newPiece = {
-        action: 'new',
-        label: {
-          key: 'apostrophe:newDocType',
-          type: this.$t(this.moduleLabels.singular)
-        }
-      };
-
-      this.utilityOperations.menu = [
-        ...this.relationshipField && this.moduleOptions.canEdit
-          ? [ newPiece ] : [],
-        ...this.utilityOperations.menu,
-        ...(!this.relationshipField && Array.isArray(utilityOperations) && utilityOperations) || []
-      ];
     }
   }
 };
