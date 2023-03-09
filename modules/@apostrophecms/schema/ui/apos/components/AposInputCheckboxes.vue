@@ -7,7 +7,7 @@
   >
     <template #body>
       <AposCombo
-        v-if="field?.style === 'combo' && choices.length"
+        v-if="field.style === 'combo' && choices.length"
         :choices="choices"
         :field="field"
         :value="value"
@@ -58,12 +58,12 @@ export default {
 
       if (this.field.min) {
         if ((values != null) && (values.length < this.field.min)) {
-          return `min ${this.field.min}`;
+          return this.$t('apostrophe:minUi', { number: this.field.min });
         }
       }
       if (this.field.max) {
         if ((values != null) && (values.length > this.field.max)) {
-          return `max ${this.field.max}`;
+          return this.$t('apostrophe:maxUi', { number: this.field.max });
         }
       }
 
