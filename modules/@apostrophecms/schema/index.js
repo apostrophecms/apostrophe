@@ -588,7 +588,13 @@ module.exports = {
             //  - `if: { 'moduleName:methodName()': 'expected value' }`
             // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
             if (key.endsWith(')')) {
-              const externalConditionResult = await self.evaluateExternalCondition(req, key, fieldName, fieldModuleName, object._id);
+              let externalConditionResult;
+
+              try {
+                externalConditionResult = await self.evaluateMethod(req, key, fieldName, fieldModuleName, object._id);
+              } catch (error) {
+                throw self.apos.error('invalid', error.message);
+              }
 
               if (externalConditionResult !== val) {
                 result = false;
@@ -613,11 +619,15 @@ module.exports = {
         }
       },
 
-      async evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId = null) {
-        const [ methodDefinition ] = conditionKey.split('(');
+      async evaluateMethod(req, methodKey, fieldName, fieldModuleName, docId = null, optionalParenthesis = false) {
+        const [ methodDefinition, rest ] = methodKey.split('(');
+        const hasParenthesis = rest !== undefined;
 
-        if (!conditionKey.endsWith('()')) {
-          self.apos.util.warn(`Warning in the \`if\` definition of the "${fieldName}" field: "${methodDefinition}()" should not be passed any argument.`);
+        if (!hasParenthesis && !optionalParenthesis) {
+          throw new Error(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written with parenthesis: "${methodDefinition}()".`);
+        }
+        if (hasParenthesis && !methodKey.endsWith('()')) {
+          self.apos.util.warn(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written without argument: "${methodDefinition}()".`);
         }
 
         const [ methodName, moduleName = fieldModuleName ] = methodDefinition
@@ -627,9 +637,9 @@ module.exports = {
         const module = self.apos.modules[moduleName];
 
         if (!module) {
-          throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found.`);
+          throw new Error(`The "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
         } else if (!module[methodName]) {
-          throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module.`);
+          throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
         }
 
         return module[methodName](req, { docId });
@@ -1520,9 +1530,16 @@ module.exports = {
       },
 
       async getChoices(req, field) {
-        return typeof field.choices === 'string'
-          ? self.apos.modules[field.moduleName][field.choices](req)
-          : field.choices;
+        if (typeof field.choices !== 'string') {
+          return field.choices;
+        }
+
+        try {
+          const result = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, null, true);
+          return result;
+        } catch (error) {
+          throw self.apos.error('invalid', error.message);
+        }
       }
 
     };
@@ -1542,7 +1559,11 @@ module.exports = {
           ) {
             throw self.apos.error('invalid');
           }
-          choices = await self.apos.modules[field.moduleName][field.choices](req, { docId });
+          try {
+            choices = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, docId, true);
+          } catch (error) {
+            throw self.apos.error('invalid', error.message);
+          }
           if (Array.isArray(choices)) {
             return {
               choices
@@ -1559,7 +1580,7 @@ module.exports = {
           const field = self.getFieldById(fieldId);
 
           try {
-            const result = await self.evaluateExternalCondition(req, conditionKey, field.name, field.moduleName, docId);
+            const result = await self.evaluateMethod(req, conditionKey, field.name, field.moduleName, docId);
             return result;
           } catch (error) {
             throw self.apos.error('invalid', error.message);
