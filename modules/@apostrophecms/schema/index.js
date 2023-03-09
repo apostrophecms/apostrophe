@@ -1581,7 +1581,7 @@ module.exports = {
 
           try {
             const result = await self.evaluateMethod(req, conditionKey, field.name, field.moduleName, docId);
-            return result;
+            return { result };
           } catch (error) {
             throw self.apos.error('invalid', error.message);
           }
