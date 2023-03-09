@@ -494,11 +494,6 @@ module.exports = {
             continue;
           }
 
-          const isVisible = await self.isVisible(req, schema, destination, field.name);
-          if (!isVisible) {
-            continue;
-          }
-
           // Fields that are contextual are left alone, not blanked out, if
           // they do not appear at all in the data object.
           if (field.contextual && !_.has(data, field.name)) {
@@ -510,20 +505,33 @@ module.exports = {
           if (convert) {
             try {
               await convert(req, field, data, destination);
-            } catch (e) {
-              if (Array.isArray(e)) {
+            } catch (error) {
+              if ((error.name === 'required' || error.name === 'mandatory')) {
+                // `self.isVisible` will throw if an external condition key contains an unknown module
+                // or method, only for required fields
+                const isVisible = await self.isVisible(req, schema, data, field.name);
+                if (!isVisible) {
+                  // It is not reasonable to enforce required for
+                  // fields hidden via conditional fields
+                  continue;
+                }
+              }
+
+              if (Array.isArray(error)) {
                 const invalid = self.apos.error('invalid', {
-                  errors: e
+                  errors: error
                 });
                 invalid.path = field.name;
                 errors.push(invalid);
-              } else {
-                if ((typeof e) !== 'string') {
-                  self.apos.util.error(e + '\n\n' + e.stack);
-                }
-                e.path = field.name;
-                errors.push(e);
+
+                continue;
               }
+
+              if ((typeof error) !== 'string') {
+                self.apos.util.error(error + '\n\n' + error.stack);
+              }
+              error.path = field.name;
+              errors.push(error);
             }
           }
         }
