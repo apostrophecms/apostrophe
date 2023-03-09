@@ -506,38 +506,43 @@ module.exports = {
             try {
               await convert(req, field, data, destination);
             } catch (error) {
-              if ((error.name === 'required' || error.name === 'mandatory')) {
-                // `self.isVisible` will throw if an external condition key contains an unknown module
-                // or method, only for required fields
-                const isVisible = await self.isVisible(req, schema, data, field.name);
-                if (!isVisible) {
-                  // It is not reasonable to enforce required for
-                  // fields hidden via conditional fields
-                  continue;
-                }
-              }
-
               if (Array.isArray(error)) {
                 const invalid = self.apos.error('invalid', {
                   errors: error
                 });
                 invalid.path = field.name;
                 errors.push(invalid);
-
-                continue;
+              } else {
+                error.path = field.name;
+                errors.push(error);
               }
-
-              if ((typeof error) !== 'string') {
-                self.apos.util.error(error + '\n\n' + error.stack);
-              }
-              error.path = field.name;
-              errors.push(error);
             }
           }
         }
 
-        if (errors.length) {
-          throw errors;
+        const errorsList = [];
+
+        for (const error of errors) {
+          if (error.name === 'required' || error.name === 'mandatory') {
+            // `self.isVisible` will only throw for required fields that have
+            // an external condition containing an unknown module or method:
+            const isVisible = await self.isVisible(req, schema, destination, error.path);
+
+            if (!isVisible) {
+              // It is not reasonable to enforce required for
+              // fields hidden via conditional fields
+              continue;
+            }
+          }
+
+          if (!Array.isArray(error) && typeof error !== 'string') {
+            self.apos.util.error(error + '\n\n' + error.stack);
+          }
+          errorsList.push(error);
+        }
+
+        if (errorsList.length) {
+          throw errorsList;
         }
       },
 
