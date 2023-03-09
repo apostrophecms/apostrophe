@@ -101,7 +101,6 @@ export default {
       return new ResizeObserver(([ { target } ]) => {
         if (target.offsetHeight !== this.boxHeight) {
           this.boxHeight = target.offsetHeight;
-          console.log('this.boxHeight', this.boxHeight);
         }
       });
     },
