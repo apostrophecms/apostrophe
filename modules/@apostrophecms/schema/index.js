@@ -523,7 +523,7 @@ module.exports = {
         const errorsList = [];
 
         for (const error of errors) {
-          if (error.name === 'required' || error.name === 'mandatory') {
+          if ((error.name === 'required' || error.name === 'mandatory')) {
             // `self.isVisible` will only throw for required fields that have
             // an external condition containing an unknown module or method:
             const isVisible = await self.isVisible(req, schema, destination, error.path);
@@ -551,18 +551,30 @@ module.exports = {
 
       async isVisible(req, schema, object, name) {
         const conditionalFields = {};
+        const errors = {};
+
         while (true) {
           let change = false;
           for (const field of schema) {
             if (field.if) {
-              const result = await evaluate(field.if, field.name, field.moduleName);
-              const previous = conditionalFields[field.name];
-              if (previous !== result) {
-                change = true;
+              try {
+                const result = await evaluate(field.if, field.name, field.moduleName);
+                const previous = conditionalFields[field.name];
+                if (previous !== result) {
+                  change = true;
+                }
+                conditionalFields[field.name] = result;
+              } catch (error) {
+                errors[field.name] = error;
               }
-              conditionalFields[field.name] = result;
             }
           }
+
+          // send the error related to the given field via the `name` param
+          if (errors[name]) {
+            throw errors[name];
+          }
+
           if (!change) {
             break;
           }
@@ -595,6 +607,8 @@ module.exports = {
               let externalConditionResult;
 
               try {
+                console.log('fieldName', fieldName);
+                console.log('key', key);
                 externalConditionResult = await self.evaluateMethod(req, key, fieldName, fieldModuleName, object._id);
               } catch (error) {
                 throw self.apos.error('invalid', error.message);
