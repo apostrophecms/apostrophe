@@ -2015,7 +2015,7 @@ describe('Schemas', function() {
     const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition(letsNotArgue)', {});
 
     assert(warnMessages.pop() === 'The method "externalCondition" defined in the "someField" field should be written without argument: "externalCondition()".');
-    assert(res === 'yes');
+    assert(res.result === 'yes');
   });
 
   it('should receive a clean error response when the evaluate-external-condition API call fails (module not found)', async function() {
