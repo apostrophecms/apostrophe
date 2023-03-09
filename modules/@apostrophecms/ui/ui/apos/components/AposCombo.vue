@@ -77,7 +77,8 @@ export default {
       focused: false,
       boxHeight: 0,
       showSelectAll,
-      options: this.renderOptions(showSelectAll)
+      options: this.renderOptions(showSelectAll),
+      boxResizeObserver: this.getBoxResizeObserver()
     };
   },
   computed: {
@@ -90,9 +91,20 @@ export default {
     }
   },
   mounted() {
-    this.computeBoxHeight();
+    this.boxResizeObserver.observe(this.$refs.select);
+  },
+  beforeDestroy() {
+    this.boxResizeObserver.unobserve(this.$refs.select);
   },
   methods: {
+    getBoxResizeObserver() {
+      return new ResizeObserver(([ { target } ]) => {
+        if (target.offsetHeight !== this.boxHeight) {
+          this.boxHeight = target.offsetHeight;
+          console.log('this.boxHeight', this.boxHeight);
+        }
+      });
+    },
     renderOptions(showSelectAll) {
       if (!showSelectAll) {
         return this.choices;
@@ -144,15 +156,12 @@ export default {
 
       await this.emitSelectItems(selectedChoice);
 
-      this.computeBoxHeight();
       if (this.showSelectAll) {
         const { listLabel } = this.getSelectAllLabel();
         this.options[0].label = listLabel;
       }
     },
-    computeBoxHeight() {
-      this.boxHeight = this.$refs.select.offsetHeight;
-    },
+
     getSelectAllLabel() {
       const allSelected = this.allItemsSelected();
       const defaultSelectAllListLabel = allSelected
