@@ -2,6 +2,9 @@
 
 ## UNRELEASED
 
+### Fixes
+* Now errors and exits when a piece-type or widget-type module has a field object with the property "type"
+
 ### Adds
 
 * The `utilityOperations` feature of piece types now supports additional properties:

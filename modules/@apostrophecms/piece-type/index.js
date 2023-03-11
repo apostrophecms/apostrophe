@@ -179,6 +179,10 @@ module.exports = {
     if (!self.options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
+    const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
+    if (badFieldName) {
+      throw new Error('@apostrophecms/piece-type field property name cannot be "type"');
+    }
     if (!self.options.label) {
       // Englishify it
       self.options.label = _.startCase(self.options.name);

@@ -103,6 +103,10 @@ module.exports = {
     placeholderClass: 'apos-placeholder'
   },
   init(self) {
+    const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
+    if (badFieldName) {
+      throw new Error('@apostrophecms/widget-type field property name cannot be "type"');
+    }
 
     self.enableBrowserData();
 
