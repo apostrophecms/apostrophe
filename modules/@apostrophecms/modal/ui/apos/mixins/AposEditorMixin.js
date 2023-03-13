@@ -93,7 +93,7 @@ export default {
             };
           } catch (error) {
             await apos.notify(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: field.name }), {
-              type: 'danger',
+              type: 'error',
               icon: 'alert-circle-icon',
               dismiss: true,
               localize: false
@@ -114,7 +114,7 @@ export default {
     },
 
     async evaluateExternalCondition(conditionKey, fieldId, docId) {
-      const response = await apos.http.get(
+      const { result } = await apos.http.get(
         `${apos.schema.action}/evaluate-external-condition`,
         {
           qs: {
@@ -126,7 +126,7 @@ export default {
         }
       );
 
-      return [ conditionKey, response ];
+      return [ conditionKey, result ];
     },
 
     // followedByCategory may be falsy (all fields), "other" or "utility". The returned
