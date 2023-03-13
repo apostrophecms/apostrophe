@@ -486,6 +486,7 @@ function alwaysExpand(field) {
         position: absolute;
         top: 35px;
         width: 100%;
+        min-width: 350px;
       }
       .apos-slat-list .apos-slat,
       .apos-input-relationship__items {
