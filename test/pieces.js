@@ -2508,9 +2508,15 @@ describe('Pieces', function() {
           }
         );
 
+        const expectedUsers = insertedDraft.object._users.map(user => ({
+          ...user,
+          cacheInvalidatedAt: new Date(updated.cacheInvalidatedAt)
+        }));
+
         const actual = await apos.modules.board.find(apos.task.getReq({ mode: 'draft' }), { _id: updated._id }).toObject();
         const expected = {
           ...insertedDraft,
+          _users: expectedUsers,
           stock: 77,
           cacheInvalidatedAt: new Date(updated.cacheInvalidatedAt),
           updatedAt: new Date(updated.updatedAt),
@@ -2518,6 +2524,14 @@ describe('Pieces', function() {
             _id: contributor._id,
             title: contributor.title,
             username: contributor.username
+          },
+          array: insertedDraft.array.map(item => ({
+            ...item,
+            _users: expectedUsers
+          })),
+          object: {
+            ...insertedDraft.object,
+            _users: expectedUsers
           }
         };
 

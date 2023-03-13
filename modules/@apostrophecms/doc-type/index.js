@@ -218,14 +218,11 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
+        prepareForStorage(req, doc) {
+          self.apos.schema.prepareForStorage(req, doc);
+        },
         async updateCacheField(req, doc) {
           const relatedDocsIds = self.getRelatedDocsIds(req, doc);
-
-          // - The current user cannot see the relatioship documents
-          // - We leave the relatedReverseIds & cacheInvalidatedAt untouched
-          if (relatedDocsIds.includes(null)) {
-            return;
-          }
 
           // - Remove current doc reference from docs that include it
           // - Update these docs' cache field
@@ -268,9 +265,6 @@ module.exports = {
               $set: { cacheInvalidatedAt: doc.updatedAt }
             });
           }
-        },
-        prepareForStorage(req, doc) {
-          self.apos.schema.prepareForStorage(req, doc);
         },
         slugPrefix(req, doc) {
           const prefix = self.options.slugPrefix;
@@ -422,22 +416,9 @@ module.exports = {
       },
       getRelatedDocsIds(req, doc) {
         const relatedDocsIds = [];
-        const can = (field) => {
-          return (!field.withType && !field.editPermission && !field.viewPermission) ||
-            (field.withType && self.apos.permission.can(req, 'edit', field.withType)) ||
-            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
-            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
-            false;
-        };
         const handlers = {
           relationship: (field, doc) => {
-            // Add null to relatedDocsIds if the current user cannot edit the relationship
-            if (!can(field)) {
-              relatedDocsIds.push(null);
-              return;
-            }
-
-            relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
+            relatedDocsIds.push(...(doc[field.idsStorage] || []));
           }
         };
 
