@@ -607,8 +607,6 @@ module.exports = {
               let externalConditionResult;
 
               try {
-                console.log('fieldName', fieldName);
-                console.log('key', key);
                 externalConditionResult = await self.evaluateMethod(req, key, fieldName, fieldModuleName, object._id);
               } catch (error) {
                 throw self.apos.error('invalid', error.message);
