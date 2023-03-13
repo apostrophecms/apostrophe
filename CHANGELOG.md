@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add a read-only overlay to prevent users from interacting with areas set as read-only, as it was done for checkboxes and color field types.
+
 ## 2.226.0 (2023-03-06)
 
 ### Adds
