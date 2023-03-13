@@ -26,10 +26,22 @@ an interpolated variable. This was accomplished by setting `skipOnVariables` to 
 for i18next, solely on the front end for admin UI purposes.
 * The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
 This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
+* Add `viewPermission`/`editPermission` property on schema field. You can now decide if a field requires some permission
+    to be visible or editable. See the documentation for more information.
+* We now check the context of the editing document to check the permissions. We can now tell in more places if the
+    current user can edit or publish the current document.
+* Add new icons
+* You can now set `draggable: false` on inline arrays. It will disable to drag and drop feature on inline array. See the array field documentation for more information.
+* You can now set `style: table` on inline arrays. It will display the array as a regular HTML table instead of an
+    accordion. See the array field documentation for more information.
+* TODO when empty
+* TODO relationship properties
+* TODO links in previous items (x3)
 
 ### Fixes 
 
 * Configure Tiptap Text Align also for `DefaultNode`, not only for `paragraph` and `heading`. This is the default node created on new line.
+* Fix typo in `@apostrophecms/doc-type` & `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals. 
 
 ### Fixes
 
