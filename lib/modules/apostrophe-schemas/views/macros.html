@@ -205,6 +205,7 @@
 {%- endmacro -%}
 
 {%- macro singletonBody(field) -%}
+  <div class="apos-field-readonly-overlay"></div>
   {# js adds this singleton to the dialog #}
   <div data-{{ field.name }}-edit-view></div>
 {%- endmacro -%}
