@@ -2669,7 +2669,6 @@ module.exports = {
             if (field.fieldsStorage) {
               add.push(field.fieldsStorage);
             }
-            add.push(field.relatedReverseIds);
             return true;
           }
           return false;
