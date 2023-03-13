@@ -43,7 +43,7 @@
             >
               {{ $t(schema.label) }}
             </th>
-            <th class="apos-table-cell--hidden" />
+            <th />
           </thead>
           <draggable
             class="apos-input-array-inline"
@@ -101,11 +101,11 @@
               <template #after>
                 <component
                   :is="field.style === 'table' ? 'td' : 'div'"
-                  class="apos-input-array-inline-item-controls apos-input-array-inline-item-controls--remove"
+                  class="apos-input-array-inline-item-controls--remove"
                 >
                   <AposButton
                     label="apostrophe:removeItem"
-                    :icon="field.style === 'table' ? 'close-icon' : 'trash-can-outline-icon'"
+                    icon="trash-can-outline-icon"
                     type="subtle"
                     :modifiers="['inline', 'danger', 'no-motion']"
                     :icon-only="true"
@@ -395,7 +395,7 @@ function alwaysExpand(field) {
       width: auto;
     }
     .apos-slat__main {
-      min-width: 160px;
+      min-width: 130px;
     }
   }
   .apos-is-dragging {
@@ -420,7 +420,7 @@ function alwaysExpand(field) {
   .apos-input-array-inline-table {
     @include type-label;
     position: relative;
-    left: -45px;
+    left: -35px;
     margin: 0 0 $spacing-base;
     border-collapse: collapse;
 
@@ -440,7 +440,7 @@ function alwaysExpand(field) {
     }
 
     td, ::v-deep td {
-      padding: 0 $spacing-base $spacing-base;
+      padding: $spacing-base;
       border: 1px solid var(--a-base-9);
       vertical-align: middle;
       text-align: center;
@@ -448,7 +448,8 @@ function alwaysExpand(field) {
       background-color: var(--a-background-primary);
     }
     td.apos-input-array-inline-item-controls {
-      width: 25px;
+      width: 15px;
+      min-width: 15px;
       border: none;
       background-color: transparent;
     }
@@ -468,13 +469,20 @@ function alwaysExpand(field) {
 
     ::v-deep {
       .apos-field__info {
-        padding-top: $spacing-base;
+        padding-top: 0;
       }
       .apos-field__label {
         display: none;
       }
       .apos-input-wrapper {
         padding: 0 4px;
+      }
+      .apos-input--select {
+        min-width: 130px;
+      }
+      .apos-input--relationship {
+        width: 100%;
+        min-width: 150px;
       }
       .apos-schema .apos-field.apos-field--small,
       .apos-schema .apos-field.apos-field--micro,
