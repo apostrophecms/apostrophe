@@ -27,9 +27,10 @@ for i18next, solely on the front end for admin UI purposes.
 * The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
 This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
 * Do not display "required" errors for hidden fields.
-* Add `viewPermission`/`editPermission` property on schema field. You can now decide if a schema field requires
-permissions to be visible or editable. See the documentation for more information.
-* You can now set `draggable: false` on inline arrays. It will disable to drag and drop feature.
+* Added the `viewPermission` property of schema fields, and renamed `permission` to `editPermission` (with backwards
+compatibility) for clarity. You can now decide if a schema field requires permissions to be visible or editable.
+See the documentation for more information.
+* You can now set `draggable: false` on inline arrays. It will disable the drag and drop feature.
 See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#settings) for more information.
 * You can now set `style: table` on inline arrays. It will display the array as a regular HTML table instead of an accordion.
 See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#settings) for more information.
