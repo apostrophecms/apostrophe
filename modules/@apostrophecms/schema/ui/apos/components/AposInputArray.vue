@@ -421,6 +421,7 @@ function alwaysExpand(field) {
     @include type-label;
     position: relative;
     left: -35px;
+    min-width: calc(100% + 35px);
     margin: 0 0 $spacing-base;
     border-collapse: collapse;
 

@@ -1,7 +1,10 @@
 <template>
   <div
     class="apos-field__wrapper"
-    :class="`apos-field__wrapper--${field.type}`"
+    :class="{
+      [`apos-field__wrapper--${field.type}`]: true,
+      'apos-field__wrapper--full-width': field.type === 'array' && field.style === 'table'
+    }"
   >
     <component :is="wrapEl" :class="classList">
       <div class="apos-field__info">
@@ -177,6 +180,9 @@ export default {
 <style lang="scss" scoped>
 .apos-field__wrapper {
   position: relative;
+}
+.apos-field__wrapper.apos-field__wrapper--full-width {
+  max-width: 100%;
 }
 
 .apos-field {
