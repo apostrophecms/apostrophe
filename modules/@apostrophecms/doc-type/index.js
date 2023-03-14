@@ -222,49 +222,7 @@ module.exports = {
           self.apos.schema.prepareForStorage(req, doc);
         },
         async updateCacheField(req, doc) {
-          const relatedDocsIds = self.getRelatedDocsIds(req, doc);
-
-          // - Remove current doc reference from docs that include it
-          // - Update these docs' cache field
-          await self.apos.doc.db.updateMany({
-            relatedReverseIds: { $in: [ doc.aposDocId ] },
-            aposLocale: { $in: [ doc.aposLocale, null ] }
-          }, {
-            $pull: { relatedReverseIds: doc.aposDocId },
-            $set: { cacheInvalidatedAt: doc.updatedAt }
-          });
-
-          if (relatedDocsIds.length) {
-            // - Add current doc reference to related docs
-            // - Update related docs' cache field
-            await self.apos.doc.db.updateMany({
-              aposDocId: { $in: relatedDocsIds },
-              aposLocale: { $in: [ doc.aposLocale, null ] }
-            }, {
-              $push: { relatedReverseIds: doc.aposDocId },
-              $set: { cacheInvalidatedAt: doc.updatedAt }
-            });
-          }
-
-          if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
-            // Update related reverse docs' cache field
-            await self.apos.doc.db.updateMany({
-              aposDocId: { $in: doc.relatedReverseIds },
-              aposLocale: { $in: [ doc.aposLocale, null ] }
-            }, {
-              $set: { cacheInvalidatedAt: doc.updatedAt }
-            });
-          }
-
-          if (doc._parentSlug) {
-            // Update piece index page's cache field
-            await self.apos.doc.db.updateOne({
-              slug: doc._parentSlug,
-              aposLocale: { $in: [ doc.aposLocale, null ] }
-            }, {
-              $set: { cacheInvalidatedAt: doc.updatedAt }
-            });
-          }
+          await self.updateCacheField(req, doc);
         },
         slugPrefix(req, doc) {
           const prefix = self.options.slugPrefix;
@@ -404,6 +362,51 @@ module.exports = {
 
   methods(self) {
     return {
+      async updateCacheField(req, doc) {
+        const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+
+        // - Remove current doc reference from docs that include it
+        // - Update these docs' cache field
+        await self.apos.doc.db.updateMany({
+          relatedReverseIds: { $in: [ doc.aposDocId ] },
+          aposLocale: { $in: [ doc.aposLocale, null ] }
+        }, {
+          $pull: { relatedReverseIds: doc.aposDocId },
+          $set: { cacheInvalidatedAt: doc.updatedAt }
+        });
+
+        if (relatedDocsIds.length) {
+          // - Add current doc reference to related docs
+          // - Update related docs' cache field
+          await self.apos.doc.db.updateMany({
+            aposDocId: { $in: relatedDocsIds },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $push: { relatedReverseIds: doc.aposDocId },
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        }
+
+        if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
+          // Update related reverse docs' cache field
+          await self.apos.doc.db.updateMany({
+            aposDocId: { $in: doc.relatedReverseIds },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        }
+
+        if (doc._parentSlug) {
+          // Update piece index page's cache field
+          await self.apos.doc.db.updateOne({
+            slug: doc._parentSlug,
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        }
+      },
       addContextMenu() {
         self.apos.doc.addContextOperation(self.__meta.name, {
           action: 'shareDraft',
