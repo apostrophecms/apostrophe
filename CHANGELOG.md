@@ -26,6 +26,7 @@ an interpolated variable. This was accomplished by setting `skipOnVariables` to 
 for i18next, solely on the front end for admin UI purposes.
 * The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
 This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
+* Do not display "required" errors for hidden fields.
 * Add `viewPermission`/`editPermission` property on schema field. You can now decide if a field requires some permission
     to be visible or editable. See the documentation for more information.
 * We now check the context of the editing document to check the permissions. We can now tell in more places if the

@@ -505,19 +505,16 @@ module.exports = {
           if (convert) {
             try {
               await convert(req, field, data, destination);
-            } catch (e) {
-              if (Array.isArray(e)) {
+            } catch (error) {
+              if (Array.isArray(error)) {
                 const invalid = self.apos.error('invalid', {
-                  errors: e
+                  errors: error
                 });
                 invalid.path = field.name;
                 errors.push(invalid);
               } else {
-                if ((typeof e) !== 'string') {
-                  self.apos.util.error(e + '\n\n' + e.stack);
-                }
-                e.path = field.name;
-                errors.push(e);
+                error.path = field.name;
+                errors.push(error);
               }
             }
           }
@@ -526,19 +523,26 @@ module.exports = {
         const errorsList = [];
 
         for (const error of errors) {
-          const isVisible = await self.isVisible(req, schema, destination, error.path);
+          if ((error.name === 'required' || error.name === 'mandatory')) {
+            // `self.isVisible` will only throw for required fields that have
+            // an external condition containing an unknown module or method:
+            const isVisible = await self.isVisible(req, schema, destination, error.path);
 
-          if ((error.name === 'required' || error.name === 'mandatory') && !isVisible) {
-            // It is not reasonable to enforce required for
-            // fields hidden via conditional fields
-            continue;
+            if (!isVisible) {
+              // It is not reasonable to enforce required for
+              // fields hidden via conditional fields
+              continue;
+            }
           }
 
+          if (!Array.isArray(error) && typeof error !== 'string') {
+            self.apos.util.error(error + '\n\n' + error.stack);
+          }
           errorsList.push(error);
         }
 
         if (errorsList.length) {
-          throw errors;
+          throw errorsList;
         }
       },
 
@@ -547,18 +551,30 @@ module.exports = {
 
       async isVisible(req, schema, object, name) {
         const conditionalFields = {};
+        const errors = {};
+
         while (true) {
           let change = false;
           for (const field of schema) {
             if (field.if) {
-              const result = await evaluate(field.if, field.name, field.moduleName);
-              const previous = conditionalFields[field.name];
-              if (previous !== result) {
-                change = true;
+              try {
+                const result = await evaluate(field.if, field.name, field.moduleName);
+                const previous = conditionalFields[field.name];
+                if (previous !== result) {
+                  change = true;
+                }
+                conditionalFields[field.name] = result;
+              } catch (error) {
+                errors[field.name] = error;
               }
-              conditionalFields[field.name] = result;
             }
           }
+
+          // send the error related to the given field via the `name` param
+          if (errors[name]) {
+            throw errors[name];
+          }
+
           if (!change) {
             break;
           }

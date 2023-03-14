@@ -93,7 +93,7 @@ export default {
             };
           } catch (error) {
             await apos.notify(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: field.name }), {
-              type: 'error',
+              type: 'danger',
               icon: 'alert-circle-icon',
               dismiss: true,
               localize: false
