@@ -27,17 +27,16 @@ for i18next, solely on the front end for admin UI purposes.
 * The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
 This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
 * Do not display "required" errors for hidden fields.
-* Add `viewPermission`/`editPermission` property on schema field. You can now decide if a field requires some permission
-    to be visible or editable. See the documentation for more information.
-* We now check the context of the editing document to check the permissions. We can now tell in more places if the
-    current user can edit or publish the current document.
-* Add new icons
-* You can now set `draggable: false` on inline arrays. It will disable to drag and drop feature on inline array. See the array field documentation for more information.
-* You can now set `style: table` on inline arrays. It will display the array as a regular HTML table instead of an
-    accordion. See the array field documentation for more information.
-* TODO when empty
-* TODO relationship properties
-* TODO links in previous items (x3)
+* Add `viewPermission`/`editPermission` property on schema field. You can now decide if a schema field requires
+permissions to be visible or editable. See the documentation for more information.
+* You can now set `draggable: false` on inline arrays. It will disable to drag and drop feature.
+See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#settings) for more information.
+* You can now set `style: table` on inline arrays. It will display the array as a regular HTML table instead of an accordion.
+See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#settings) for more information.
+* You can now set the label and icon to display on inline arrays when it is empty.
+See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#whenEmpty) for more information.
+* We have added new relationship properties. `browse` to toggle the Browse button and a new suggestion UI.
+See the [relationship field documentation](https://v3.docs.apostrophecms.org/reference/field-types/relationship.html#settings) for more information.
 
 ### Fixes 
 
