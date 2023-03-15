@@ -15,7 +15,7 @@
         :key="checked"
         @click="selectOption(getSelectedOption(checked))"
       >
-        {{ getSelectedOption(checked).label }}
+        {{ getSelectedOption(checked)?.label }}
         <AposIndicator
           icon="close-icon"
           class="apos-combo__close-icon"
@@ -29,14 +29,21 @@
       :icon-size="20"
     />
     <ul
+      ref="list"
       class="apos-combo__list"
       :style="{top: boxHeight + 'px'}"
+      tabindex="0"
+      @keydown.prevent.enter="selectOption(options[focusedItemIndex])"
+      @keydown.prevent.arrow-down="focusListItem()"
+      @keydown.prevent.arrow-up="focusListItem(true)"
     >
       <li
         :key="choice.value"
         class="apos-combo__list-item"
-        v-for="choice in options"
+        :class="{focused: focusedItemIndex === i}"
+        v-for="(choice, i) in options"
         @click.stop="selectOption(choice)"
+        @mouseover="focusedItemIndex = i"
       >
         <AposIndicator
           v-if="isSelected(choice)"
@@ -78,7 +85,8 @@ export default {
       boxHeight: 0,
       showSelectAll,
       options: this.renderOptions(showSelectAll),
-      boxResizeObserver: this.getBoxResizeObserver()
+      boxResizeObserver: this.getBoxResizeObserver(),
+      focusedItemIndex: null
     };
   },
   computed: {
@@ -121,9 +129,18 @@ export default {
     },
     toggleFocus() {
       this.focused = !this.focused;
+
+      if (this.focused) {
+        this.$nextTick(() => {
+          this.$refs.list.focus();
+        });
+      } else {
+        this.focusedItemIndex = null;
+      }
     },
     removeFocus() {
       this.focused = false;
+      this.focusedItemIndex = null;
     },
     isSelected(choice) {
       return this.value.data.some((val) => val === choice.value);
@@ -180,6 +197,32 @@ export default {
         selectedLabel,
         listLabel: defaultSelectAllListLabel
       };
+    },
+    focusListItem(prev = false) {
+      const destIndex = (i) => prev ? i - 1 : i + 1;
+      const fallback = prev ? this.options.length - 1 : 0;
+      if (this.focusedItemIndex == null) {
+        this.focusedItemIndex = fallback;
+      } else {
+        this.focusedItemIndex = this.options[destIndex(this.focusedItemIndex)]
+          ? destIndex(this.focusedItemIndex)
+          : fallback;
+      }
+
+      const focusedItemPos = 32 * this.focusedItemIndex;
+      const { clientHeight, scrollTop } = this.$refs.list;
+      const listVisibility = clientHeight + scrollTop;
+      if (focusedItemPos + 32 > listVisibility) {
+        this.$refs.list.scrollTo({
+          top: (focusedItemPos + 32) - clientHeight,
+          behavior: 'smooth'
+        });
+      } else if (focusedItemPos < (listVisibility - clientHeight)) {
+        this.$refs.list.scrollTo({
+          top: focusedItemPos,
+          behavior: 'smooth'
+        });
+      }
     }
   }
 };
@@ -266,7 +309,7 @@ export default {
   padding: 10px 10px 10px 20px;
   cursor: pointer;
 
-  &:hover {
+  &.focused {
     background-color: var(--a-base-9);
   }
 }
