@@ -7,7 +7,8 @@ module.exports = {
     autopublish: true,
     editRole: 'editor',
     publishRole: 'editor',
-    shortcut: 'G,g'
+    shortcut: 'G,g',
+    relationshipSuggestionIcon: 'tag-icon'
   },
   fields: {
     remove: [ 'visibility' ]

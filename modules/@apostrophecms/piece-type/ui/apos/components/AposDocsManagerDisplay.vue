@@ -62,7 +62,7 @@
           class="apos-table__cell apos-table__cell--pointer"
           :class="`apos-table__cell--${header.name}`"
           :key="header.name"
-          @click="options.canEdit && $emit('open', item)"
+          @click="canEdit(item) && $emit('open', item)"
         >
           <component
             v-if="header.component" :is="header.component"
@@ -78,7 +78,7 @@
           />
         </td>
         <!-- append the context menu -->
-        <td v-if="options.canEdit" class="apos-table__cell apos-table__cell--context-menu">
+        <td v-if="canEdit(item)" class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :item="item"
             :draft="item"
@@ -162,6 +162,13 @@ export default {
     }
   },
   methods: {
+    canEdit(item) {
+      if (item._id) {
+        return item._edit;
+      }
+
+      return this.options.canEdit;
+    },
     over(id) {
       this.state[id].hover = true;
     },

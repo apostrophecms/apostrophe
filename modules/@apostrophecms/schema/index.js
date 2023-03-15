@@ -936,17 +936,37 @@ module.exports = {
       // Currently `req` does not impact this, but that may change.
 
       prepareForStorage(req, doc) {
+        const can = (field) => {
+          return (!field.withType && !field.editPermission && !field.viewPermission) ||
+            (field.withType && self.apos.permission.can(req, 'edit', field.withType)) ||
+            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            false;
+        };
+
         const handlers = {
           arrayItem: (field, object) => {
+            if (!can(field)) {
+              return;
+            }
+
             object._id = object._id || self.apos.util.generateId();
             object.metaType = 'arrayItem';
             object.scopedArrayName = field.scopedArrayName;
           },
           object: (field, object) => {
+            if (!can(field)) {
+              return;
+            }
+
             object.metaType = 'object';
             object.scopedObjectName = field.scopedObjectName;
           },
           relationship: (field, doc) => {
+            if (!can(field)) {
+              return;
+            }
+
             doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
             if (field.fieldsStorage) {
               const fieldsById = doc[field.fieldsStorage] || {};
@@ -1195,7 +1215,7 @@ module.exports = {
       },
 
       // Validates a single schema field. See `validate`.
-      validateField(field, options) {
+      validateField(field, options, parent = null) {
         const fieldType = self.fieldTypes[field.type];
         if (!fieldType) {
           fail('Unknown schema field type.');
@@ -1209,6 +1229,15 @@ module.exports = {
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
         }
+        if (!field.editPermission && field.permission) {
+          field.editPermission = field.permission;
+        }
+        if (options.type !== 'doc type' && (field.editPermission || field.viewPermission)) {
+          warn(`editPermission or viewPermission must be defined on doc-type schemas only, "${options.type}" provided`);
+        }
+        if (options.type === 'doc type' && (field.editPermission || field.viewPermission) && parent) {
+          warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
+        }
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
         }
@@ -1219,8 +1248,12 @@ module.exports = {
           self.apos.util.error(format(s));
         }
         function format(s) {
+          const fieldName = parent && parent.name
+            ? `${parent.name}.${field.name}`
+            : field.name;
+
           return stripIndents`
-            ${options.type} ${options.subtype}, ${field.type} field "${field.name}":
+            ${options.type} ${options.subtype}, ${field.type} field "${fieldName}":
 
             ${s}
 

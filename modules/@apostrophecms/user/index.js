@@ -46,7 +46,8 @@ module.exports = {
     editRole: 'admin',
     publishRole: 'admin',
     viewRole: 'admin',
-    showPermissions: true
+    showPermissions: true,
+    relationshipSuggestionIcon: 'account-box-icon'
   },
   fields(self) {
     return {
