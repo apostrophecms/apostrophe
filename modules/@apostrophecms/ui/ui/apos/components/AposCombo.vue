@@ -1,6 +1,6 @@
 <template>
   <div
-    class="apos-input-wrapper"
+    class="apos-primary-scrollbar apos-input-wrapper"
     :class="{ 'apos-combo--focused': focused }"
   >
     <ul
@@ -208,7 +208,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   background-color: var(--a-base-9);
-  padding: 10px 30px 10px;
+  padding: 10px 30px 10px 8px;
   min-height: 26px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
@@ -222,11 +222,25 @@ export default {
 
 .apos-combo__selected {
   @include type-base;
-
+  display: flex;
+  align-items: center;
+  gap: 4px;
   background-color: var(--a-white);
-  padding: 4px;
-  margin: 2px 5px 2px;
-  border: 1px solid var(--a-base-8)
+  margin: 2px;
+  padding: 5px 8px;
+  border: 1px solid var(--a-base-8);
+  border-radius: var(--a-border-radius);
+
+  &:hover {
+    background-color: var(--a-base-8);
+    border-color: var(--a-base-3);
+    cursor: not-allowed;
+  }
+
+  ::v-deep .apos-indicator {
+    width: 10px;
+    height: 10px;
+  }
 }
 
 .apos-combo__list {
