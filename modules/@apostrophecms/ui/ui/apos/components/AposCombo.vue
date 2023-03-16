@@ -83,7 +83,6 @@ export default {
       (!this.field.max || this.field.max > this.choices.length);
 
     return {
-      focused: false,
       showedList: false,
       boxHeight: 0,
       showSelectAll,
@@ -220,19 +219,20 @@ export default {
           : fallback;
       }
 
-      const focusedItemPos = 32 * this.focusedItemIndex;
+      const itemHeight = this.$refs.list.querySelector('li')?.clientHeight || 32;
+      const focusedItemPos = itemHeight * this.focusedItemIndex;
       const { clientHeight, scrollTop } = this.$refs.list;
       const listVisibility = clientHeight + scrollTop;
-      if (focusedItemPos + 32 > listVisibility) {
+      const scrollTo = (top) => {
         this.$refs.list.scrollTo({
-          top: (focusedItemPos + 32) - clientHeight,
+          top,
           behavior: 'smooth'
         });
+      };
+      if (focusedItemPos + itemHeight > listVisibility) {
+        scrollTo((focusedItemPos + itemHeight) - clientHeight);
       } else if (focusedItemPos < (listVisibility - clientHeight)) {
-        this.$refs.list.scrollTo({
-          top: focusedItemPos,
-          behavior: 'smooth'
-        });
+        scrollTo(focusedItemPos);
       }
     }
   }
