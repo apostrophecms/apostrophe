@@ -1,13 +1,12 @@
 <template>
-  <div
-    class="apos-primary-scrollbar apos-input-wrapper"
-    :class="{ 'apos-combo--focused': focused }"
-  >
+  <div class="apos-primary-scrollbar apos-input-wrapper">
     <ul
       ref="select"
-      v-click-outside-element="removeFocus"
+      v-click-outside-element="closeList"
       class="apos-input-wrapper apos-combo__select"
-      @click="toggleFocus"
+      @click="toggleList"
+      tabindex="0"
+      @keydown.prevent.space="toggleList"
     >
       <li
         class="apos-combo__selected"
@@ -31,11 +30,14 @@
     <ul
       ref="list"
       class="apos-combo__list"
+      :class="{'apos-combo__list--showed': showedList}"
       :style="{top: boxHeight + 'px'}"
       tabindex="0"
-      @keydown.prevent.enter="selectOption(options[focusedItemIndex])"
+      @keydown.prevent.space="selectOption(options[focusedItemIndex])"
       @keydown.prevent.arrow-down="focusListItem()"
       @keydown.prevent.arrow-up="focusListItem(true)"
+      @keydown.prevent.delete="closeList(null, true)"
+      @blur="closeList()"
     >
       <li
         :key="choice.value"
@@ -82,6 +84,7 @@ export default {
 
     return {
       focused: false,
+      showedList: false,
       boxHeight: 0,
       showSelectAll,
       options: this.renderOptions(showSelectAll),
@@ -105,6 +108,29 @@ export default {
     this.boxResizeObserver.unobserve(this.$refs.select);
   },
   methods: {
+    toggleList() {
+      this.showedList = !this.showedList;
+
+      if (this.showedList) {
+        this.$nextTick(() => {
+          this.$refs.list.focus();
+          this.focusedItemIndex = 0;
+        });
+      } else {
+        this.$refs.select.focus();
+        this.focusedItemIndex = null;
+      }
+    },
+    closeList(_, focusSelect) {
+      this.showedList = false;
+      this.focusedItemIndex = null;
+
+      if (focusSelect) {
+        this.$nextTick(() => {
+          this.$refs.select.focus();
+        });
+      }
+    },
     getBoxResizeObserver() {
       return new ResizeObserver(([ { target } ]) => {
         if (target.offsetHeight !== this.boxHeight) {
@@ -126,21 +152,6 @@ export default {
         },
         ...this.choices
       ];
-    },
-    toggleFocus() {
-      this.focused = !this.focused;
-
-      if (this.focused) {
-        this.$nextTick(() => {
-          this.$refs.list.focus();
-        });
-      } else {
-        this.focusedItemIndex = null;
-      }
-    },
-    removeFocus() {
-      this.focused = false;
-      this.focusedItemIndex = null;
     },
     isSelected(choice) {
       return this.value.data.some((val) => val === choice.value);
@@ -234,14 +245,7 @@ export default {
   left: 5px;
 }
 
-.apos-combo--focused {
-
-  .apos-combo__select {
-    box-shadow: 0 0 3px var(--a-base-2);
-    border-color: var(--a-base-2);
-    background-color: var(--a-base-10);
-  }
-
+.apos-input-wrapper:focus {
   .apos-combo__list {
     display: block;
   }
@@ -260,6 +264,13 @@ export default {
 
   &:hover {
     border-color: var(--a-base-2);
+  }
+
+  &:focus {
+    box-shadow: 0 0 3px var(--a-base-2);
+    border-color: var(--a-base-2);
+    background-color: var(--a-base-10);
+    outline: none;
   }
 }
 
@@ -301,6 +312,11 @@ export default {
   overflow-y: auto;
   box-shadow: 0 0 3px var(--a-base-2);
   border-radius: var(--a-border-radius);
+  outline: none;
+
+  &--showed {
+    display: block;
+  }
 }
 
 .apos-combo__list-item {
