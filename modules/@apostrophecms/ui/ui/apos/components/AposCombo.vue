@@ -1,7 +1,10 @@
 <template>
-  <div class="apos-primary-scrollbar apos-input-wrapper">
+  <div class="apos-primary-scrollbar apos-input-wrapper" aria-haspopup="menu">
     <ul
       ref="select"
+      role="button"
+      :aria-expanded="showedList.toString()"
+      :aria-controls="`${field._id}-combo`"
       v-click-outside-element="closeList"
       class="apos-input-wrapper apos-combo__select"
       @click="toggleList"
@@ -30,7 +33,9 @@
       :icon-size="20"
     />
     <ul
+      :id="`${field._id}-combo`"
       ref="list"
+      role="menu"
       class="apos-combo__list"
       :class="{'apos-combo__list--showed': showedList}"
       :style="{top: boxHeight + 'px'}"
@@ -46,6 +51,7 @@
       <li
         :key="choice.value"
         class="apos-combo__list-item"
+        role="menuitemcheckbox"
         :class="{focused: focusedItemIndex === i}"
         v-for="(choice, i) in options"
         @click.stop="selectOption(choice)"
