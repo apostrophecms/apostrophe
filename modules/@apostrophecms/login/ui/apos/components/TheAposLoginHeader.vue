@@ -110,7 +110,7 @@ export default {
       background: var(--a-danger);
     }
 
-    &--success {
+    &--success, &--staging {
       background: var(--a-warning);
     }
   }
