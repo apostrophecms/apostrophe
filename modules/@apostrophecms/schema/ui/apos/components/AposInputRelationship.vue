@@ -245,7 +245,7 @@ export default {
       const first = this.suggestion;
       const last = this.hint;
       this.searchList = [ first ]
-        .concat(list.results
+        .concat((list.results || [])
           .filter(item => !this.next.map(i => i._id).includes(item._id))
           .map(item => ({
             ...item,

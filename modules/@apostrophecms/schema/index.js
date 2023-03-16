@@ -938,7 +938,7 @@ module.exports = {
       prepareForStorage(req, doc) {
         const can = (field) => {
           return (!field.withType && !field.editPermission && !field.viewPermission) ||
-            (field.withType && self.apos.permission.can(req, 'edit', field.withType)) ||
+            (field.withType && self.apos.permission.can(req, 'view', field.withType)) ||
             (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
             (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
             false;

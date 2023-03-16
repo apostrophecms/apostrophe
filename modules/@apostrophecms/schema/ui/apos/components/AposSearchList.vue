@@ -127,8 +127,7 @@ export default {
 <style lang="scss" scoped>
 .apos-search {
   z-index: $z-index-default;
-  position: relative;
-  top: -4px;
+  position: absolute;
   overflow: auto;
   width: 100%;
   list-style: none;
