@@ -7,6 +7,8 @@
       @click="toggleList"
       tabindex="0"
       @keydown.prevent.space="toggleList"
+      @keydown.prevent.up="toggleList"
+      @keydown.prevent.down="toggleList"
     >
       <li
         class="apos-combo__selected"
@@ -34,9 +36,11 @@
       :style="{top: boxHeight + 'px'}"
       tabindex="0"
       @keydown.prevent.space="selectOption(options[focusedItemIndex])"
+      @keydown.prevent.enter="selectOption(options[focusedItemIndex])"
       @keydown.prevent.arrow-down="focusListItem()"
       @keydown.prevent.arrow-up="focusListItem(true)"
       @keydown.prevent.delete="closeList(null, true)"
+      @keydown.prevent.stop.esc="closeList(null, true)"
       @blur="closeList()"
     >
       <li
@@ -117,18 +121,22 @@ export default {
         });
       } else {
         this.$refs.select.focus();
-        this.focusedItemIndex = null;
+        this.resetList();
       }
     },
     closeList(_, focusSelect) {
       this.showedList = false;
-      this.focusedItemIndex = null;
+      this.resetList();
 
       if (focusSelect) {
         this.$nextTick(() => {
           this.$refs.select.focus();
         });
       }
+    },
+    resetList() {
+      this.focusedItemIndex = null;
+      this.$refs.list.scrollTo({ top: 0 });
     },
     getBoxResizeObserver() {
       return new ResizeObserver(([ { target } ]) => {
