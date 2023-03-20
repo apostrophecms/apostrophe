@@ -1,5 +1,9 @@
 <template>
-  <div class="apos-primary-scrollbar apos-input-wrapper" aria-haspopup="menu">
+  <div
+    class="apos-primary-scrollbar apos-input-wrapper"
+    aria-haspopup="menu"
+    :class="{'apos-input-wrapper--disabled': field.readOnly}"
+  >
     <ul
       ref="select"
       role="button"
@@ -8,7 +12,7 @@
       v-click-outside-element="closeList"
       class="apos-input-wrapper apos-combo__select"
       @click="toggleList"
-      tabindex="0"
+      :tabindex="field.readOnly ? null : 0"
       @keydown.prevent.space="toggleList"
       @keydown.prevent.up="toggleList"
       @keydown.prevent.down="toggleList"
@@ -118,6 +122,9 @@ export default {
   },
   methods: {
     toggleList() {
+      if (this.field.readOnly) {
+        return;
+      }
       this.showedList = !this.showedList;
 
       if (this.showedList) {
@@ -190,6 +197,10 @@ export default {
       });
     },
     async selectOption(choice) {
+      if (this.field.readOnly) {
+        return;
+      }
+
       const selectedChoice = this.showSelectAll && choice === '__all'
         ? this.getSelectedOption('__all')
         : choice;
@@ -285,6 +296,29 @@ export default {
     border-color: var(--a-base-2);
     background-color: var(--a-base-10);
     outline: none;
+  }
+}
+
+.apos-input-wrapper--disabled {
+  .apos-combo__select {
+    color: var(--a-base-4);
+    background: var(--a-base-7);
+    border-color: var(--a-base-4);
+    cursor: not-allowed;
+
+    &:hover {
+      border-color: var(--a-base-4);
+    }
+  }
+
+  .apos-combo__selected {
+    background-color: var(--a-base-8);
+    border-color: var(--a-base-3);
+    opacity: 0.7;
+  }
+
+  .apos-input-icon {
+    opacity: 0.7;
   }
 }
 
