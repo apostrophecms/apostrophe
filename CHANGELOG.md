@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add `_edit: true` to the list of locales the current user can edit.
+
 ## 3.41.1 (2023-03-07)
 
 No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2.x.
