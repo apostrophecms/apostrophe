@@ -78,7 +78,7 @@
           />
         </td>
         <!-- append the context menu -->
-        <td v-if="options.canEdit" class="apos-table__cell apos-table__cell--context-menu">
+        <td v-if="options.canEdit || options.canLocalize" class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :item="item"
             :draft="item"
