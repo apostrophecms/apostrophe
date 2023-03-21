@@ -24,7 +24,7 @@ current selection. Currently this works best with newly inserted documents.
 * Localized strings in the admin UI can now use `$t(key)` to localize a string inside
 an interpolated variable. This was accomplished by setting `skipOnVariables` to false
 for i18next, solely on the front end for admin UI purposes.
-* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
+* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.
 This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
 * Do not display "required" errors for hidden fields.
 * Added the `viewPermission` property of schema fields, and renamed `permission` to `editPermission` (with backwards
@@ -38,11 +38,12 @@ See the [array field documentation](https://v3.docs.apostrophecms.org/reference/
 See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#whenEmpty) for more information.
 * We have added new relationship properties. `browse` to toggle the Browse button and a new suggestion UI.
 See the [relationship field documentation](https://v3.docs.apostrophecms.org/reference/field-types/relationship.html#settings) for more information.
+* Display the right environment label on login page. By default, based on `NODE_ENV`, overriden by `environmentLabel` option in `@apostrophecms/login` module. The environment variable `APOS_ENV_LABEL` will override this.
 
-### Fixes 
+### Fixes
 
 * Configure Tiptap Text Align also for `DefaultNode`, not only for `paragraph` and `heading`. This is the default node created on new line.
-* Fix typo in `@apostrophecms/doc-type` & `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals. 
+* Fix typo in `@apostrophecms/doc-type` & `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals.
 
 ### Fixes
 
@@ -56,7 +57,7 @@ No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2
 
 ### Adds
 
-* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
+* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.
 This can be useful for displaying fields according to the result of an external API or any business logic run on the server. See the documentation for more information.
 
 ### Fixes

@@ -383,17 +383,8 @@ module.exports = {
           }
         }
 
-        let labelEnv;
-        if (self.apos.options.multisite) {
-          const envNames = self.apos.modules.site ? self.apos.modules.site.envNames : self.apos.options.multisite.envNames;
-          const activeEnv = self.apos.modules.site ? self.apos.modules.site.activeEnv : self.apos.options.multisite.activeEnv;
-          labelEnv = activeEnv === envNames[0]
-            ? 'development' : activeEnv === 'prod'
-              ? 'production' : 'staging';
-        }
-
         return {
-          env: process.env.ENV_LABEL || labelEnv || process.env.NODE_ENV || 'development',
+          env: process.env.ENV_LABEL || self.options.environmentLabel || process.env.NODE_ENV || 'development',
           name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
           version: aposPackage.version || '3',
           requirementProps
