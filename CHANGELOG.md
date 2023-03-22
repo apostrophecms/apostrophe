@@ -31,17 +31,18 @@ current selection. Currently this works best with newly inserted documents.
 * Localized strings in the admin UI can now use `$t(key)` to localize a string inside
 an interpolated variable. This was accomplished by setting `skipOnVariables` to false
 for i18next, solely on the front end for admin UI purposes.
-* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
+* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.
 This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
 * Added the `viewPermission` property of schema fields, and renamed `permission` to `editPermission` (with backwards
 compatibility) for clarity. You can now decide if a schema field requires permissions to be visible or editable.
 See the documentation for more information.
+* Display the right environment label on login page. By default, based on `NODE_ENV`, overriden by `environmentLabel` option in `@apostrophecms/login` module. The environment variable `APOS_ENV_LABEL` will override this. Note that `NODE_ENV` should generally only be set to `development` (the default) or `production` as many Node.js modules opt into optimizations suitable for all deployed environments when it is set to `production`. This is why we offer the separate `APOS_ENV_LABEL` variable.
 
-### Fixes 
+### Fixes
 
 * Do not log unnecessary "required" errors for hidden fields.
 * Fixed a bug that prevented "Text Align" from working properly in the rich text editor in certain cases.
-* Fix typo in `@apostrophecms/doc-type` and `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals. 
+* Fix typo in `@apostrophecms/doc-type` and `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals.
 * Send external condition results in an object so that numbers are supported as returned values.
 
 ## 3.41.1 (2023-03-07)
@@ -52,7 +53,7 @@ No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2
 
 ### Adds
 
-* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
+* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.
 This can be useful for displaying fields according to the result of an external API or any business logic run on the server. See the documentation for more information.
 
 ### Fixes
