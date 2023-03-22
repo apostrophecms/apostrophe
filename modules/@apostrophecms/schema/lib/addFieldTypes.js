@@ -752,6 +752,19 @@ module.exports = (self) => {
       if ((field.max !== undefined) && (results.length > field.max)) {
         throw self.apos.error('max');
       }
+      if (data.length && field.schema && field.schema.length) {
+        const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema.find(subfield => subfield.unique) || [];
+        if (uniqueFieldName) {
+          const duplicates = data
+            .map(item => Array.isArray(item[uniqueFieldName])
+              ? item[uniqueFieldName][0]._id
+              : item[uniqueFieldName])
+            .filter((item, index, array) => array.indexOf(item) !== index);
+          if (duplicates.length) {
+            throw self.apos.error('duplicate', `${req.t(uniqueFieldLabel)} in ${req.t(field.label)} must be unique`);
+          }
+        }
+      }
       if (errors.length) {
         throw errors;
       }
@@ -766,7 +779,7 @@ module.exports = (self) => {
     },
     validate: function (field, options, warn, fail) {
       for (const subField of field.schema || field.fields.add) {
-        self.validateField(subField, options);
+        self.validateField(subField, options, field);
       }
     },
     register: function (metaType, type, field) {
@@ -833,7 +846,7 @@ module.exports = (self) => {
     },
     validate: function (field, options, warn, fail) {
       for (const subField of field.schema || field.fields.add) {
-        self.validateField(subField, options);
+        self.validateField(subField, options, field);
       }
     },
     isEqual(req, field, one, two) {
@@ -1042,6 +1055,12 @@ module.exports = (self) => {
         field.postprocessor = field.postprocessor || withTypeManager.options.relationshipPostprocessor;
         field.editorLabel = field.editorLabel || withTypeManager.options.relationshipEditorLabel;
         field.editorIcon = field.editorIcon || withTypeManager.options.relationshipEditorIcon;
+        field.suggestionLabel = field.suggestionLabel || withTypeManager.options.relationshipSuggestionLabel;
+        field.suggestionHelp = field.suggestionHelp || withTypeManager.options.relationshipSuggestionHelp;
+        field.suggestionLimit = field.suggestionLimit || withTypeManager.options.relationshipSuggestionLimit;
+        field.suggestionSort = field.suggestionSort || withTypeManager.options.relationshipSuggestionSort;
+        field.suggestionIcon = field.suggestionIcon || withTypeManager.options.relationshipSuggestionIcon;
+        field.suggestionFields = field.suggestionFields || withTypeManager.options.relationshipSuggestionFields;
 
         if (!field.schema && !Array.isArray(field.withType)) {
           const fieldsOption = withTypeManager.options.relationshipFields;

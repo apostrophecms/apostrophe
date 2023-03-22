@@ -102,7 +102,24 @@ module.exports = {
       }
     }
   },
-  utilityOperations: {},
+  utilityOperations(self) {
+    return {
+      add: {
+        new: {
+          canEdit: true,
+          relationship: true,
+          label: {
+            key: 'apostrophe:newDocType',
+            type: `$t(${self.options.label})`
+          },
+          eventOptions: {
+            event: 'edit',
+            type: self.__meta.name
+          }
+        }
+      }
+    };
+  },
   batchOperations: {
     add: {
       publish: {
@@ -203,7 +220,8 @@ module.exports = {
           }
           result.pages = query.get('totalPages');
           result.currentPage = query.get('page') || 1;
-          result.results = await query.toArray();
+          result.results = (await query.toArray())
+            .map(doc => self.removeForbiddenFields(req, doc));
           if (self.apos.launder.boolean(req.query['render-areas']) === true) {
             await self.apos.area.renderDocsAreas(req, result.results);
           }
@@ -226,7 +244,10 @@ module.exports = {
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           self.publicApiCheck(req);
-          const doc = await self.getRestQuery(req).and({ _id }).toObject();
+          const doc = self.removeForbiddenFields(
+            req,
+            await self.getRestQuery(req).and({ _id }).toObject()
+          );
 
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             const { maxAge } = self.options.cache.api;

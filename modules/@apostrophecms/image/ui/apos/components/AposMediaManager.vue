@@ -23,8 +23,13 @@
         @click="confirmAndCancel"
       />
     </template>
-    <template v-if="relationshipField" #primaryControls>
+    <template #primaryControls>
+      <AposUtilityOperations
+        :module-options="moduleOptions"
+        :has-relationship-field="!!relationshipField"
+      />
       <AposButton
+        v-if="relationshipField"
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"

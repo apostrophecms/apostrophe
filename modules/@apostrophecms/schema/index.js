@@ -505,19 +505,16 @@ module.exports = {
           if (convert) {
             try {
               await convert(req, field, data, destination);
-            } catch (e) {
-              if (Array.isArray(e)) {
+            } catch (error) {
+              if (Array.isArray(error)) {
                 const invalid = self.apos.error('invalid', {
-                  errors: e
+                  errors: error
                 });
                 invalid.path = field.name;
                 errors.push(invalid);
               } else {
-                if ((typeof e) !== 'string') {
-                  self.apos.util.error(e + '\n\n' + e.stack);
-                }
-                e.path = field.name;
-                errors.push(e);
+                error.path = field.name;
+                errors.push(error);
               }
             }
           }
@@ -526,19 +523,26 @@ module.exports = {
         const errorsList = [];
 
         for (const error of errors) {
-          const isVisible = await self.isVisible(req, schema, destination, error.path);
+          if ((error.name === 'required' || error.name === 'mandatory')) {
+            // `self.isVisible` will only throw for required fields that have
+            // an external condition containing an unknown module or method:
+            const isVisible = await self.isVisible(req, schema, destination, error.path);
 
-          if ((error.name === 'required' || error.name === 'mandatory') && !isVisible) {
-            // It is not reasonable to enforce required for
-            // fields hidden via conditional fields
-            continue;
+            if (!isVisible) {
+              // It is not reasonable to enforce required for
+              // fields hidden via conditional fields
+              continue;
+            }
           }
 
+          if (!Array.isArray(error) && typeof error !== 'string') {
+            self.apos.util.error(error + '\n\n' + error.stack);
+          }
           errorsList.push(error);
         }
 
         if (errorsList.length) {
-          throw errors;
+          throw errorsList;
         }
       },
 
@@ -547,18 +551,30 @@ module.exports = {
 
       async isVisible(req, schema, object, name) {
         const conditionalFields = {};
+        const errors = {};
+
         while (true) {
           let change = false;
           for (const field of schema) {
             if (field.if) {
-              const result = await evaluate(field.if, field.name, field.moduleName);
-              const previous = conditionalFields[field.name];
-              if (previous !== result) {
-                change = true;
+              try {
+                const result = await evaluate(field.if, field.name, field.moduleName);
+                const previous = conditionalFields[field.name];
+                if (previous !== result) {
+                  change = true;
+                }
+                conditionalFields[field.name] = result;
+              } catch (error) {
+                errors[field.name] = error;
               }
-              conditionalFields[field.name] = result;
             }
           }
+
+          // send the error related to the given field via the `name` param
+          if (errors[name]) {
+            throw errors[name];
+          }
+
           if (!change) {
             break;
           }
@@ -588,7 +604,13 @@ module.exports = {
             //  - `if: { 'moduleName:methodName()': 'expected value' }`
             // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
             if (key.endsWith(')')) {
-              const externalConditionResult = await self.evaluateExternalCondition(req, key, fieldName, fieldModuleName, object._id);
+              let externalConditionResult;
+
+              try {
+                externalConditionResult = await self.evaluateMethod(req, key, fieldName, fieldModuleName, object._id);
+              } catch (error) {
+                throw self.apos.error('invalid', error.message);
+              }
 
               if (externalConditionResult !== val) {
                 result = false;
@@ -613,11 +635,15 @@ module.exports = {
         }
       },
 
-      async evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId = null) {
-        const [ methodDefinition ] = conditionKey.split('(');
+      async evaluateMethod(req, methodKey, fieldName, fieldModuleName, docId = null, optionalParenthesis = false) {
+        const [ methodDefinition, rest ] = methodKey.split('(');
+        const hasParenthesis = rest !== undefined;
 
-        if (!conditionKey.endsWith('()')) {
-          self.apos.util.warn(`Warning in the \`if\` definition of the "${fieldName}" field: "${methodDefinition}()" should not be passed any argument.`);
+        if (!hasParenthesis && !optionalParenthesis) {
+          throw new Error(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written with parenthesis: "${methodDefinition}()".`);
+        }
+        if (hasParenthesis && !methodKey.endsWith('()')) {
+          self.apos.util.warn(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written without argument: "${methodDefinition}()".`);
         }
 
         const [ methodName, moduleName = fieldModuleName ] = methodDefinition
@@ -627,9 +653,9 @@ module.exports = {
         const module = self.apos.modules[moduleName];
 
         if (!module) {
-          throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${moduleName}" module not found.`);
+          throw new Error(`The "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
         } else if (!module[methodName]) {
-          throw new Error(`Error in the \`if\` definition of the "${fieldName}" field: "${methodName}" method not found in "${moduleName}" module.`);
+          throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
         }
 
         return module[methodName](req, { docId });
@@ -910,17 +936,37 @@ module.exports = {
       // Currently `req` does not impact this, but that may change.
 
       prepareForStorage(req, doc) {
+        const can = (field) => {
+          return (!field.withType && !field.editPermission && !field.viewPermission) ||
+            (field.withType && self.apos.permission.can(req, 'view', field.withType)) ||
+            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            false;
+        };
+
         const handlers = {
           arrayItem: (field, object) => {
+            if (!can(field)) {
+              return;
+            }
+
             object._id = object._id || self.apos.util.generateId();
             object.metaType = 'arrayItem';
             object.scopedArrayName = field.scopedArrayName;
           },
           object: (field, object) => {
+            if (!can(field)) {
+              return;
+            }
+
             object.metaType = 'object';
             object.scopedObjectName = field.scopedObjectName;
           },
           relationship: (field, doc) => {
+            if (!can(field)) {
+              return;
+            }
+
             doc[field.idsStorage] = doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc));
             if (field.fieldsStorage) {
               const fieldsById = doc[field.fieldsStorage] || {};
@@ -1169,7 +1215,7 @@ module.exports = {
       },
 
       // Validates a single schema field. See `validate`.
-      validateField(field, options) {
+      validateField(field, options, parent = null) {
         const fieldType = self.fieldTypes[field.type];
         if (!fieldType) {
           fail('Unknown schema field type.');
@@ -1183,6 +1229,15 @@ module.exports = {
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
         }
+        if (!field.editPermission && field.permission) {
+          field.editPermission = field.permission;
+        }
+        if (options.type !== 'doc type' && (field.editPermission || field.viewPermission)) {
+          warn(`editPermission or viewPermission must be defined on doc-type schemas only, "${options.type}" provided`);
+        }
+        if (options.type === 'doc type' && (field.editPermission || field.viewPermission) && parent) {
+          warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
+        }
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
         }
@@ -1193,8 +1248,12 @@ module.exports = {
           self.apos.util.error(format(s));
         }
         function format(s) {
+          const fieldName = parent && parent.name
+            ? `${parent.name}.${field.name}`
+            : field.name;
+
           return stripIndents`
-            ${options.type} ${options.subtype}, ${field.type} field "${field.name}":
+            ${options.type} ${options.subtype}, ${field.type} field "${fieldName}":
 
             ${s}
 
@@ -1520,9 +1579,16 @@ module.exports = {
       },
 
       async getChoices(req, field) {
-        return typeof field.choices === 'string'
-          ? self.apos.modules[field.moduleName][field.choices](req)
-          : field.choices;
+        if (typeof field.choices !== 'string') {
+          return field.choices;
+        }
+
+        try {
+          const result = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, null, true);
+          return result;
+        } catch (error) {
+          throw self.apos.error('invalid', error.message);
+        }
       }
 
     };
@@ -1542,7 +1608,11 @@ module.exports = {
           ) {
             throw self.apos.error('invalid');
           }
-          choices = await self.apos.modules[field.moduleName][field.choices](req, { docId });
+          try {
+            choices = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, docId, true);
+          } catch (error) {
+            throw self.apos.error('invalid', error.message);
+          }
           if (Array.isArray(choices)) {
             return {
               choices
@@ -1559,8 +1629,8 @@ module.exports = {
           const field = self.getFieldById(fieldId);
 
           try {
-            const result = await self.evaluateExternalCondition(req, conditionKey, field.name, field.moduleName, docId);
-            return result;
+            const result = await self.evaluateMethod(req, conditionKey, field.name, field.moduleName, docId);
+            return { result };
           } catch (error) {
             throw self.apos.error('invalid', error.message);
           }

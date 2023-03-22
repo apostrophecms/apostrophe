@@ -1,5 +1,49 @@
 # Changelog
 
+## 3.42.0 (2023-03-16)
+
+### Adds
+
+* You can now set `style: table` on inline arrays. It will display the array as a regular HTML table instead of an accordion.
+See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#settings) for more information.
+* You can now set `draggable: false` on inline arrays. It will disable the drag and drop feature. Useful when the order is not significant.
+See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#settings) for more information.
+* You can now set the label and icon to display on inline arrays when they are empty.
+See the [array field documentation](https://v3.docs.apostrophecms.org/reference/field-types/array.html#whenEmpty) for more information.
+* We have added a new and improved suggestion UI to relationship fields.
+* The `utilityOperations` feature of piece types now supports additional properties:
+`relationship: true` (show the operation only when editing a relationship), `relationship: false` (never show
+the operation when editing a relationship), `button: true`, `icon` and `iconOnly: true`.
+When `button: true` is specified, the operation appears as a standalone button rather than
+being tucked away in the "more" menu.
+* In addition, `utilityOperations` can now specify `eventOptions` with an `event` subproperty
+instead of `modalOptions`. This is useful with the new `edit` event (see below).
+* Those extending our admin UI on the front end can now open a modal to create or edit a page or piece by calling
+`await apos.doc.edit({ type: 'article' })` (the type here is an example). To edit an existing document add an
+`_id` property. To copy an existing document (like our "duplicate" feature) add a `copyOf`
+property. When creating new pages, `type` can be sent to `@apostrophecms/page` for convenience
+(note that the `type` property does not override the default or current page type in the editor).
+* The `edit` Apostrophe event is now available and takes an object with the same properties
+as above. This is useful when configuring `utilityOperations`.
+* The `content-changed` Apostrophe event can now be emitted with a `select: true` property. If a
+document manager for the relevant content type is open, it will attempt to add the document to the
+current selection. Currently this works best with newly inserted documents.
+* Localized strings in the admin UI can now use `$t(key)` to localize a string inside
+an interpolated variable. This was accomplished by setting `skipOnVariables` to false
+for i18next, solely on the front end for admin UI purposes.
+* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
+This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
+* Added the `viewPermission` property of schema fields, and renamed `permission` to `editPermission` (with backwards
+compatibility) for clarity. You can now decide if a schema field requires permissions to be visible or editable.
+See the documentation for more information.
+
+### Fixes 
+
+* Do not log unnecessary "required" errors for hidden fields.
+* Fixed a bug that prevented "Text Align" from working properly in the rich text editor in certain cases.
+* Fix typo in `@apostrophecms/doc-type` and `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals. 
+* Send external condition results in an object so that numbers are supported as returned values.
+
 ## 3.41.1 (2023-03-07)
 
 No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2.x.
@@ -9,7 +53,7 @@ No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2
 ### Adds
 
 * Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
-This can be useful for displaying fields according to the result of an external API or any business logic run on the server.
+This can be useful for displaying fields according to the result of an external API or any business logic run on the server. See the documentation for more information.
 
 ### Fixes
 

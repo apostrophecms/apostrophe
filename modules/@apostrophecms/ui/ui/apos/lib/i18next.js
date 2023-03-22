@@ -24,6 +24,7 @@ export default {
       interpolation: {
         escapeValue: false
       },
+      skipOnVariables: false,
       appendNamespaceToMissingKey: true,
       defaultNS: [ apos.i18n.defaultNamespace ],
       parseMissingKeyHandler (key) {

@@ -174,6 +174,13 @@ export default {
     followingUtils() {
       return this.followingValues('utility');
     },
+    canPublish() {
+      if (this.original && this.original._id) {
+        return this.original._publish;
+      }
+
+      return this.moduleOptions.canPublish;
+    },
     saveDisabled() {
       if (this.restoreOnly) {
         // Can always restore if it's a read-only view of the archive
@@ -197,7 +204,7 @@ export default {
       if (!this.manuallyPublished) {
         return true;
       }
-      if (this.moduleOptions.canPublish) {
+      if (this.canPublish) {
         // Primary button is "publish". If it is previously published and the
         // draft is not modified since then, don't allow it
         return this.published && !this.isModifiedFromPublished;
@@ -261,7 +268,7 @@ export default {
       if (this.restoreOnly) {
         return 'apostrophe:restore';
       } else if (this.manuallyPublished) {
-        if (this.moduleOptions.canPublish) {
+        if (this.canPublish) {
           if (this.copyOf) {
             return 'apostrophe:publish';
           } else if (this.original && this.original.lastPublishedAt) {
@@ -468,7 +475,7 @@ export default {
       await this.loadDoc();
     },
     async onSave(navigate = false) {
-      if (this.moduleOptions.canPublish || !this.manuallyPublished) {
+      if (this.canPublish || !this.manuallyPublished) {
         await this.save({
           andPublish: this.manuallyPublished,
           navigate
