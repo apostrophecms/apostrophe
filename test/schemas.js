@@ -1,6 +1,6 @@
-const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert').strict;
 const _ = require('lodash');
+const t = require('../test-lib/test.js');
 
 let apos;
 
@@ -241,15 +241,7 @@ describe('Schemas', function() {
 
   this.timeout(t.timeout);
 
-  after(async function() {
-    return t.destroy(apos);
-  });
-
-  /// ///
-  // EXISTENCE
-  /// ///
-
-  it('should be a property of the apos object', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -274,9 +266,42 @@ describe('Schemas', function() {
               }
             };
           }
+        },
+        choices: {
+          methods() {
+            return {
+              async getChoices(req, { docId }) {
+                return [
+                  {
+                    label: 'One',
+                    value: 'one'
+                  },
+                  {
+                    label: 'Two',
+                    value: 'two'
+                  },
+                  {
+                    label: 'DocId',
+                    value: docId
+                  }
+                ];
+              }
+            };
+          }
         }
       }
     });
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  /// ///
+  // EXISTENCE
+  /// ///
+
+  it('should be a property of the apos object', function() {
     assert(apos.schema);
     apos.argv._ = [];
   });
@@ -1353,6 +1378,56 @@ describe('Schemas', function() {
     assert(result.addresses[1].address === '602 test ave');
   });
 
+  it('should check for duplicates in arrays when relevant', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'array',
+          name: 'addresses',
+          label: 'Addresses',
+          schema: [
+            {
+              name: 'address',
+              type: 'string',
+              label: 'Address',
+              unique: true
+            }
+          ]
+        }
+      ]
+    });
+
+    const input = {
+      addresses: [
+        {
+          address: '500 test lane'
+        },
+        {
+          address: '602 test ave'
+        }
+      ]
+    };
+    const result = {};
+    const req = apos.task.getReq();
+    await apos.schema.convert(req, schema, input, result);
+    assert(_.keys(result).length === 1);
+    assert(result.addresses);
+    assert(result.addresses.length === 2);
+    assert(result.addresses[0]._id);
+    assert(result.addresses[1]._id);
+    assert(result.addresses[0].address === '500 test lane');
+    assert(result.addresses[1].address === '602 test ave');
+
+    input.addresses[1] = '500 test lane';
+    await apos.schema.convert(req, schema, input, result);
+    assert.throws(() => {
+      throw apos.error('duplicate', 'Address in Addresses must be unique');
+    }, {
+      name: 'duplicate',
+      message: 'Address in Addresses must be unique'
+    });
+  });
+
   it('should convert string values to areas correctly', async function() {
     const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
@@ -1881,7 +1956,7 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
 
     assert(result === 'yes');
   });
@@ -1896,7 +1971,7 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
 
     assert(result === `yes - ${someReqAttr} - ${docId}`);
   });
@@ -1908,9 +1983,37 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
 
-    assert(warnMessages.includes('Warning in the `if` definition of the "someField" field: "external-condition:externalCondition()" should not be passed any argument.'));
+    assert(warnMessages.pop() === 'The method "external-condition:externalCondition" defined in the "someField" field should be written without argument: "external-condition:externalCondition()".');
+    assert(result === 'yes');
+  });
+
+  it('should throw when the condition key does not end with parenthesis', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'external-condition:externalCondition';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+
+    try {
+      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+    } catch (error) {
+      assert(error.message === 'The method "external-condition:externalCondition" defined in the "someField" field should be written with parenthesis: "external-condition:externalCondition()".');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should not throw when the condition key does not end with parenthesis with the optionalParenthesis parameter set to true', async function() {
+    const req = apos.task.getReq();
+    const conditionKey = 'external-condition:externalCondition';
+    const fieldName = 'someField';
+    const fieldModuleName = 'external-condition';
+    const docId = 'some-doc-id';
+    const optionalParenthesis = true;
+
+    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId, optionalParenthesis);
     assert(result === 'yes');
   });
 
@@ -1922,9 +2025,9 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
 
     try {
-      await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
     } catch (error) {
-      assert(error.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      assert(error.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
@@ -1938,9 +2041,9 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
 
     try {
-      await apos.schema.evaluateExternalCondition(req, conditionKey, fieldName, fieldModuleName, docId);
+      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
     } catch (error) {
-      assert(error.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      assert(error.message === 'The "unknownMethod" method from "external-condition" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
@@ -1953,7 +2056,19 @@ describe('Schemas', function() {
     };
 
     const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
-    assert(res === 'yes');
+    assert(res.result === 'yes');
+  });
+
+  it('should warn when an argument is passed in the external condition key via the evaluate-external-condition API', async function() {
+    apos.schema.fieldsById['some-field-id'] = {
+      name: 'someField',
+      moduleName: 'external-condition'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition(letsNotArgue)', {});
+
+    assert(warnMessages.pop() === 'The method "externalCondition" defined in the "someField" field should be written without argument: "externalCondition()".');
+    assert(res.result === 'yes');
   });
 
   it('should receive a clean error response when the evaluate-external-condition API call fails (module not found)', async function() {
@@ -1966,7 +2081,7 @@ describe('Schemas', function() {
       await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
     } catch (error) {
       assert(error.status = 400);
-      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknown-module" module not found.');
+      assert(error.body.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
@@ -1982,7 +2097,136 @@ describe('Schemas', function() {
       await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=unknownMethod()', {});
     } catch (error) {
       assert(error.status = 400);
-      assert(error.body.message === 'Error in the `if` definition of the "someField" field: "unknownMethod" method not found in "external-condition" module.');
+      assert(error.body.message === 'The "unknownMethod" method from "external-condition" module defined in the "someField" field does not exist.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should call the choices API successfully, using the field module name by default when the external condition key does not contain it', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'getChoices'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+    assert.deepEqual(res.choices, [
+      {
+        label: 'One',
+        value: 'one'
+      },
+      {
+        label: 'Two',
+        value: 'two'
+      },
+      {
+        label: 'DocId',
+        value: 'some-doc-id'
+      }
+    ]);
+  });
+
+  it('should call the choices API successfully, using parenthesis', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'choices:getChoices()'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+
+    assert.deepEqual(res.choices, [
+      {
+        label: 'One',
+        value: 'one'
+      },
+      {
+        label: 'Two',
+        value: 'two'
+      },
+      {
+        label: 'DocId',
+        value: 'some-doc-id'
+      }
+    ]);
+  });
+
+  it('should warn when an argument is passed in the external condition key via the choices API', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'choices:getChoices(letsNotArgue)'
+    };
+
+    const res = await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+
+    assert(warnMessages.pop() === 'The method "choices:getChoices" defined in the "someField" field should be written without argument: "choices:getChoices()".');
+    assert.deepEqual(res.choices, [
+      {
+        label: 'One',
+        value: 'one'
+      },
+      {
+        label: 'Two',
+        value: 'two'
+      },
+      {
+        label: 'DocId',
+        value: 'some-doc-id'
+      }
+    ]);
+  });
+
+  it('should receive a clean error response when the choices API call fails (module not found)', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'unknown-module:getChoices()'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
+      return;
+    }
+    throw new Error('should have thrown');
+  });
+
+  it('should receive a clean error response when the choices API call fails (external method not found)', async function() {
+    apos.schema.fieldTypes.select = {
+      dynamicChoices: true
+    };
+    apos.schema.fieldsById['some-field-id'] = {
+      type: 'select',
+      name: 'someField',
+      moduleName: 'choices',
+      choices: 'choices:unknownMethod()'
+    };
+
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/schema/choices?fieldId=some-field-id&docId=some-doc-id', {});
+    } catch (error) {
+      assert(error.status = 400);
+      assert(error.body.message === 'The "unknownMethod" method from "choices" module defined in the "someField" field does not exist.');
       return;
     }
     throw new Error('should have thrown');
@@ -2011,6 +2255,132 @@ describe('Schemas', function() {
 
     assert(output.emptyValue === null);
     assert(output.goodValue === '2022-05-09T22:36:00.000Z');
+  });
+
+  describe('field editPermission|viewPermission', function() {
+    const schema = [
+      {
+        name: 'legacy',
+        type: 'string',
+        permission: {
+          action: 'edit',
+          type: '@apostrophecms/user'
+        }
+      },
+      {
+        name: 'edit',
+        type: 'string',
+        editPermission: {
+          action: 'edit',
+          type: '@apostrophecms/user'
+        }
+      },
+      {
+        name: 'view',
+        type: 'string',
+        viewPermission: {
+          action: 'edit',
+          type: '@apostrophecms/user'
+        }
+      },
+      {
+        name: 'array',
+        type: 'array',
+        schema: [
+          {
+            name: 'edit',
+            type: 'string',
+            label: 'edit',
+            editPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          },
+          {
+            name: 'view',
+            type: 'string',
+            label: 'view',
+            viewPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          }
+        ]
+      },
+      {
+        name: 'object',
+        type: 'object',
+        schema: [
+          {
+            name: 'edit',
+            type: 'string',
+            label: 'edit',
+            editPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          },
+          {
+            name: 'view',
+            type: 'string',
+            label: 'view',
+            viewPermission: {
+              action: 'edit',
+              type: '@apostrophecms/user'
+            }
+          }
+        ]
+      }
+    ];
+
+    it('validate doc type', function() {
+      const logger = apos.util.error;
+      const options = {
+        type: 'doc type',
+        subtype: 'test'
+      };
+
+      const messages = [];
+      apos.util.error = (message) => messages.push(message);
+      apos.schema.validate(schema, options);
+      apos.util.error = logger;
+
+      const actual = messages;
+      const expected = [
+        'doc type test, string field "array.edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.edit"',
+        'doc type test, string field "array.view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "array.view"',
+        'doc type test, string field "object.edit":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.edit"',
+        'doc type test, string field "object.view":\n\neditPermission or viewPermission must be defined on root fields only, provided on "object.view"'
+      ];
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('validate widget type', function() {
+      const logger = apos.util.error;
+      const options = {
+        type: 'widget type',
+        subtype: 'test'
+      };
+
+      const messages = [];
+      apos.util.error = (message) => messages.push(message);
+      apos.schema.validate(schema, options);
+      apos.util.error = logger;
+
+      const actual = messages;
+      const expected = [
+        'widget type test, string field "legacy":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "array.edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "array.view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "object.edit":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided',
+        'widget type test, string field "object.view":\n\neditPermission or viewPermission must be defined on doc-type schemas only, "widget type" provided'
+      ];
+
+      assert.deepEqual(actual, expected);
+    });
   });
 });
 

@@ -1,13 +1,21 @@
 <template>
   <div
     class="apos-primary-scrollbar apos-input-wrapper"
-    :class="{ 'apos-combo--focused': focused }"
+    aria-haspopup="menu"
+    :class="{'apos-input-wrapper--disabled': field.readOnly}"
   >
     <ul
       ref="select"
-      v-click-outside-element="removeFocus"
+      role="button"
+      :aria-expanded="showedList.toString()"
+      :aria-controls="`${field._id}-combo`"
+      v-click-outside-element="closeList"
       class="apos-input-wrapper apos-combo__select"
-      @click="toggleFocus"
+      @click="toggleList"
+      :tabindex="field.readOnly ? null : 0"
+      @keydown.prevent.space="toggleList"
+      @keydown.prevent.up="toggleList"
+      @keydown.prevent.down="toggleList"
     >
       <li
         class="apos-combo__selected"
@@ -15,7 +23,7 @@
         :key="checked"
         @click="selectOption(getSelectedOption(checked))"
       >
-        {{ getSelectedOption(checked).label }}
+        {{ getSelectedOption(checked)?.label }}
         <AposIndicator
           icon="close-icon"
           class="apos-combo__close-icon"
@@ -29,14 +37,29 @@
       :icon-size="20"
     />
     <ul
+      :id="`${field._id}-combo`"
+      ref="list"
+      role="menu"
       class="apos-combo__list"
+      :class="{'apos-combo__list--showed': showedList}"
       :style="{top: boxHeight + 'px'}"
+      tabindex="0"
+      @keydown.prevent.space="selectOption(options[focusedItemIndex])"
+      @keydown.prevent.enter="selectOption(options[focusedItemIndex])"
+      @keydown.prevent.arrow-down="focusListItem()"
+      @keydown.prevent.arrow-up="focusListItem(true)"
+      @keydown.prevent.delete="closeList(null, true)"
+      @keydown.prevent.stop.esc="closeList(null, true)"
+      @blur="closeList()"
     >
       <li
         :key="choice.value"
         class="apos-combo__list-item"
-        v-for="choice in options"
+        role="menuitemcheckbox"
+        :class="{focused: focusedItemIndex === i}"
+        v-for="(choice, i) in options"
         @click.stop="selectOption(choice)"
+        @mouseover="focusedItemIndex = i"
       >
         <AposIndicator
           v-if="isSelected(choice)"
@@ -74,11 +97,12 @@ export default {
       (!this.field.max || this.field.max > this.choices.length);
 
     return {
-      focused: false,
+      showedList: false,
       boxHeight: 0,
       showSelectAll,
       options: this.renderOptions(showSelectAll),
-      boxResizeObserver: this.getBoxResizeObserver()
+      boxResizeObserver: this.getBoxResizeObserver(),
+      focusedItemIndex: null
     };
   },
   computed: {
@@ -97,6 +121,36 @@ export default {
     this.boxResizeObserver.unobserve(this.$refs.select);
   },
   methods: {
+    toggleList() {
+      if (this.field.readOnly) {
+        return;
+      }
+      this.showedList = !this.showedList;
+
+      if (this.showedList) {
+        this.$nextTick(() => {
+          this.$refs.list.focus();
+          this.focusedItemIndex = 0;
+        });
+      } else {
+        this.$refs.select.focus();
+        this.resetList();
+      }
+    },
+    closeList(_, focusSelect) {
+      this.showedList = false;
+      this.resetList();
+
+      if (focusSelect) {
+        this.$nextTick(() => {
+          this.$refs.select.focus();
+        });
+      }
+    },
+    resetList() {
+      this.focusedItemIndex = null;
+      this.$refs.list.scrollTo({ top: 0 });
+    },
     getBoxResizeObserver() {
       return new ResizeObserver(([ { target } ]) => {
         if (target.offsetHeight !== this.boxHeight) {
@@ -118,12 +172,6 @@ export default {
         },
         ...this.choices
       ];
-    },
-    toggleFocus() {
-      this.focused = !this.focused;
-    },
-    removeFocus() {
-      this.focused = false;
     },
     isSelected(choice) {
       return this.value.data.some((val) => val === choice.value);
@@ -149,6 +197,10 @@ export default {
       });
     },
     async selectOption(choice) {
+      if (this.field.readOnly) {
+        return;
+      }
+
       const selectedChoice = this.showSelectAll && choice === '__all'
         ? this.getSelectedOption('__all')
         : choice;
@@ -180,6 +232,33 @@ export default {
         selectedLabel,
         listLabel: defaultSelectAllListLabel
       };
+    },
+    focusListItem(prev = false) {
+      const destIndex = (i) => prev ? i - 1 : i + 1;
+      const fallback = prev ? this.options.length - 1 : 0;
+      if (this.focusedItemIndex == null) {
+        this.focusedItemIndex = fallback;
+      } else {
+        this.focusedItemIndex = this.options[destIndex(this.focusedItemIndex)]
+          ? destIndex(this.focusedItemIndex)
+          : fallback;
+      }
+
+      const itemHeight = this.$refs.list.querySelector('li')?.clientHeight || 32;
+      const focusedItemPos = itemHeight * this.focusedItemIndex;
+      const { clientHeight, scrollTop } = this.$refs.list;
+      const listVisibility = clientHeight + scrollTop;
+      const scrollTo = (top) => {
+        this.$refs.list.scrollTo({
+          top,
+          behavior: 'smooth'
+        });
+      };
+      if (focusedItemPos + itemHeight > listVisibility) {
+        scrollTo((focusedItemPos + itemHeight) - clientHeight);
+      } else if (focusedItemPos < (listVisibility - clientHeight)) {
+        scrollTo(focusedItemPos);
+      }
     }
   }
 };
@@ -191,14 +270,7 @@ export default {
   left: 5px;
 }
 
-.apos-combo--focused {
-
-  .apos-combo__select {
-    box-shadow: 0 0 3px var(--a-base-2);
-    border-color: var(--a-base-2);
-    background-color: var(--a-base-10);
-  }
-
+.apos-input-wrapper:focus {
   .apos-combo__list {
     display: block;
   }
@@ -217,6 +289,36 @@ export default {
 
   &:hover {
     border-color: var(--a-base-2);
+  }
+
+  &:focus {
+    box-shadow: 0 0 3px var(--a-base-2);
+    border-color: var(--a-base-2);
+    background-color: var(--a-base-10);
+    outline: none;
+  }
+}
+
+.apos-input-wrapper--disabled {
+  .apos-combo__select {
+    color: var(--a-base-4);
+    background: var(--a-base-7);
+    border-color: var(--a-base-4);
+    cursor: not-allowed;
+
+    &:hover {
+      border-color: var(--a-base-4);
+    }
+  }
+
+  .apos-combo__selected {
+    background-color: var(--a-base-8);
+    border-color: var(--a-base-3);
+    opacity: 0.7;
+  }
+
+  .apos-input-icon {
+    opacity: 0.7;
   }
 }
 
@@ -258,6 +360,11 @@ export default {
   overflow-y: auto;
   box-shadow: 0 0 3px var(--a-base-2);
   border-radius: var(--a-border-radius);
+  outline: none;
+
+  &--showed {
+    display: block;
+  }
 }
 
 .apos-combo__list-item {
@@ -266,7 +373,7 @@ export default {
   padding: 10px 10px 10px 20px;
   cursor: pointer;
 
-  &:hover {
+  &.focused {
     background-color: var(--a-base-9);
   }
 }

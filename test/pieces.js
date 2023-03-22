@@ -1,10 +1,10 @@
-const t = require('../test-lib/test.js');
-const assert = require('assert');
-const _ = require('lodash');
-const cuid = require('cuid');
+const assert = require('assert').strict;
 const fs = require('fs');
 const path = require('path');
+const _ = require('lodash');
+const cuid = require('cuid');
 const FormData = require('form-data');
+const t = require('../test-lib/test.js');
 
 let apos;
 let jar;
@@ -14,15 +14,7 @@ describe('Pieces', function() {
 
   this.timeout(t.timeout);
 
-  after(async function () {
-    return t.destroy(apos);
-  });
-
-  /// ///
-  // EXISTENCE
-  /// ///
-
-  it('should initialize with a schema', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
 
@@ -238,9 +230,151 @@ describe('Pieces', function() {
               }
             ]
           }
+        },
+        board: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'board',
+            name: 'board',
+            label: 'Board',
+            editRole: 'contributor',
+            publishRole: 'admin'
+          },
+          fields: {
+            add: {
+              stock: {
+                name: 'stock',
+                type: 'integer',
+                label: 'stock',
+                permission: {
+                  action: 'edit',
+                  type: 'board'
+                }
+              },
+              discontinued: {
+                name: 'discontinued',
+                type: 'string',
+                label: 'Discontinued',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                }
+              },
+              nickname: {
+                name: 'nickname',
+                type: 'string',
+                label: 'nickname',
+                editPermission: {
+                  action: 'edit',
+                  type: 'board'
+                }
+              },
+              sku: {
+                name: 'sku',
+                type: 'string',
+                label: 'SKU',
+                editPermission: {
+                  action: 'publish',
+                  type: 'board'
+                }
+              },
+              hidden: {
+                name: 'hidden',
+                type: 'boolean',
+                label: 'Hidden?',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                editPermission: {
+                  action: 'publish',
+                  type: 'board'
+                }
+              },
+              _users: {
+                type: 'relationship',
+                label: 'users',
+                withType: '@apostrophecms/user',
+                required: true
+              },
+              array: {
+                type: 'array',
+                label: 'array',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                editPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                fields: {
+                  add: {
+                    title: {
+                      type: 'string',
+                      label: 'title',
+                      required: true
+                    },
+                    description: {
+                      type: 'string',
+                      label: 'description'
+                    },
+                    _users: {
+                      type: 'relationship',
+                      label: 'users',
+                      withType: '@apostrophecms/user',
+                      required: true
+                    }
+                  }
+                }
+              },
+              object: {
+                type: 'object',
+                label: 'object',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                editPermission: {
+                  action: 'publish',
+                  type: 'board'
+                },
+                fields: {
+                  add: {
+                    title: {
+                      type: 'string',
+                      label: 'title',
+                      required: true
+                    },
+                    description: {
+                      type: 'string',
+                      label: 'description'
+                    },
+                    _users: {
+                      type: 'relationship',
+                      label: 'users',
+                      withType: '@apostrophecms/user',
+                      required: true
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     });
+  });
+
+  after(function () {
+    return t.destroy(apos);
+  });
+
+  /// ///
+  // EXISTENCE
+  /// ///
+
+  it('should initialize with a schema', function() {
     assert(apos.modules.thing);
     assert(apos.modules.thing.schema);
   });
@@ -685,6 +819,40 @@ describe('Pieces', function() {
     assert(response.results.length === 5);
     assert(response.results[0]._id !== firstId);
     assert(response.pages === 2);
+  });
+
+  it('can GET the results sorted ascending', async function() {
+    const response = await apos.http.get('/api/v1/product?perPage=5&sort[title]=1', {
+      jar
+    });
+
+    const actual = response.results.map(result => result.title);
+    const expected = [
+      'Cool Product #1',
+      'Cool Product #10',
+      'Cool Product #2',
+      'Cool Product #3',
+      'Cool Product #4'
+    ];
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('can GET the results sorted descending', async function() {
+    const response = await apos.http.get('/api/v1/product?perPage=5&sort[title]=-1', {
+      jar
+    });
+
+    const actual = response.results.map(result => result.title);
+    const expected = [
+      'Cool Product #9',
+      'Cool Product #8',
+      'Cool Product #7',
+      'Cool Product #6',
+      'Cool Product #5'
+    ];
+
+    assert.deepEqual(actual, expected);
   });
 
   it('can update a product with PUT', async function() {
@@ -1823,6 +1991,551 @@ describe('Pieces', function() {
           return;
         }
         throw new Error('should have thrown 404 error');
+      });
+    });
+  });
+
+  describe('field viewPermission|editPermission', function() {
+    const createUser = (role = 'admin') => ({
+      title = `test-${role}`,
+      username = `test-${role}`,
+      password = role
+    } = {}) => {
+      return apos.user.insert(
+        apos.task.getReq(),
+        {
+          ...apos.user.newInstance(),
+          title,
+          username,
+          password,
+          email: `${username}@admin.io`,
+          role
+        }
+      );
+    };
+    const loginAs = async (role) => {
+      const jar = apos.http.jar();
+      await apos.http.post('/api/v1/@apostrophecms/login/login', {
+        body: {
+          username: `test-${role}`,
+          password: role,
+          session: true
+        },
+        jar
+      });
+
+      return jar;
+    };
+
+    this.afterEach(async function() {
+      await apos.doc.db.deleteMany({ email: /@admin.io$/ });
+      await apos.db.collection('aposUsersSafe').deleteMany({ email: /@admin.io$/ });
+      await apos.doc.db.deleteMany({ type: 'board' });
+    });
+
+    context('admin', function() {
+      it('getBrowserData', async function() {
+        const req = apos.task.getReq();
+        const { schema } = await apos.modules.board.getBrowserData(req);
+
+        const actual = schema.map(field => field.name);
+        const expected = [
+          'title',
+          'slug',
+          'visibility',
+          'archived',
+          'stock',
+          'discontinued',
+          'nickname',
+          'sku',
+          'hidden',
+          '_users',
+          'array',
+          'object'
+        ];
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials on rest API', async function() {
+        await createUser('admin')();
+        const jar = await loginAs('admin');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
+        await createUser('admin')();
+        const jar = await loginAs('admin');
+
+        const editor = await createUser('editor')();
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false,
+          _users: [ editor ],
+          array: [
+            {
+              title: '01',
+              description: 'one',
+              _users: [ editor ]
+            }
+          ],
+          object: {
+            title: '01',
+            description: 'one',
+            _users: [ editor ]
+          }
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+        const board = await apos.http.put(
+          `/api/v1/board/${inserted._id}`,
+          {
+            body: {
+              ...inserted,
+              slug: 'board-icarus',
+              stock: 77,
+              discontinued: 'May 2049',
+              nickname: 'f1',
+              sku: 'LO-IC',
+              hidden: true
+            },
+            jar
+          }
+        );
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued,
+          nickname: board.nickname,
+          sku: board.sku,
+          hidden: board.hidden
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'board-icarus',
+          stock: 77,
+          discontinued: 'May 2049',
+          nickname: 'f1',
+          sku: 'LO-IC',
+          hidden: true
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getAdminReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+    });
+
+    context('editor', function() {
+      it('getBrowserData', async function() {
+        const req = apos.task.getEditorReq();
+        const { schema } = await apos.modules.board.getBrowserData(req);
+
+        const actual = schema.map(field => field.name);
+        const expected = [
+          'title',
+          'slug',
+          'visibility',
+          'archived',
+          'stock',
+          'nickname',
+          '_users'
+        ];
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
+        await createUser('editor')();
+        const jar = await loginAs('editor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
+        await createUser('editor')();
+        const jar = await loginAs('editor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+        const board = await apos.http.put(
+          `/api/v1/board/${inserted._id}`,
+          {
+            body: {
+              ...inserted,
+              slug: 'board-icarus',
+              stock: 77,
+              discontinued: 'May 2049',
+              nickname: 'f1',
+              sku: 'LO-IC',
+              hidden: true
+            },
+            jar
+          }
+        );
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued,
+          nickname: board.nickname,
+          sku: board.sku,
+          hidden: board.hidden
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'board-icarus',
+          stock: 77,
+          discontinued: 'April 2077',
+          nickname: 'f1',
+          sku: 'LI',
+          hidden: false
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getEditorReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+    });
+
+    context('contributor', function() {
+      it('getBrowserData', async function() {
+        const req = apos.task.getContributorReq();
+        const { schema } = await apos.modules.board.getBrowserData(req);
+
+        const actual = schema.map(field => field.name);
+        const expected = [
+          'title',
+          'slug',
+          'visibility',
+          'archived',
+          '_users'
+        ];
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
+        await createUser('contributor')();
+        const jar = await loginAs('contributor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: undefined
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
+        await createUser('contributor')();
+        const jar = await loginAs('contributor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const found = await apos.http.get(`/api/v1/board/${inserted._id.replace('published', 'draft')}`, { jar });
+        const board = await apos.http.put(
+          `/api/v1/board/${found._id}`,
+          {
+            body: {
+              ...found,
+              slug: 'board-icarus',
+              stock: 77,
+              discontinued: 'May 2049',
+              nickname: 'f1',
+              sku: 'LO-IC',
+              hidden: true
+            },
+            jar
+          }
+        );
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued,
+          nickname: board.nickname,
+          sku: board.sku,
+          hidden: board.hidden
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'board-icarus',
+          stock: 77,
+          discontinued: 'April 2077',
+          nickname: 'f1',
+          sku: 'LI',
+          hidden: false
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to retrieve all fields when using find', async function() {
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const board = await apos.modules.board.find(apos.task.getContributorReq(), { _id: inserted._id }).toObject();
+
+        const actual = {
+          title: board.title,
+          slug: board.slug,
+          stock: board.stock,
+          discontinued: board.discontinued
+        };
+        const expected = {
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077'
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+
+      it('should be able to edit with permission checks during prepareForStorage & updateCacheField handlers', async function() {
+        const contributor = await createUser('contributor')();
+        const jar = await loginAs('contributor');
+
+        const editor = await createUser('editor')();
+        const guest = await createUser('guest')();
+
+        const req = apos.task.getReq({ mode: 'draft' });
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          stock: 99,
+          discontinued: 'April 2077',
+          nickname: 'flex',
+          sku: 'LI',
+          hidden: false,
+          _users: [ editor ],
+          array: [
+            {
+              title: '01',
+              description: 'one',
+              _users: [ editor ]
+            }
+          ],
+          object: {
+            title: '01',
+            description: 'one',
+            _users: [ editor ]
+          }
+        };
+        const inserted = await apos.modules.board.insert(req, candidate);
+        const insertedDraft = await apos.modules.board.find(apos.task.getReq({ mode: 'draft' }), { _id: inserted._id.replace('published', 'draft') }).toObject();
+        const found = await apos.http.get(`/api/v1/board/${insertedDraft._id}`, { jar });
+        const updated = await apos.http.put(
+          `/api/v1/board/${found._id}`,
+          {
+            body: {
+              ...found,
+              stock: 77,
+              _users: [ guest ],
+              array: [
+                {
+                  title: '02',
+                  _users: [ guest ]
+                }
+              ],
+              object: {
+                title: '02',
+                _users: [ guest ]
+              }
+            },
+            jar
+          }
+        );
+
+        const expectedUsers = insertedDraft.object._users.map(user => ({
+          ...user,
+          cacheInvalidatedAt: new Date(updated.cacheInvalidatedAt)
+        }));
+
+        const actual = await apos.modules.board.find(apos.task.getReq({ mode: 'draft' }), { _id: updated._id }).toObject();
+        const expected = {
+          ...insertedDraft,
+          _users: expectedUsers,
+          stock: 77,
+          cacheInvalidatedAt: new Date(updated.cacheInvalidatedAt),
+          updatedAt: new Date(updated.updatedAt),
+          updatedBy: {
+            _id: contributor._id,
+            title: contributor.title,
+            username: contributor.username
+          },
+          array: insertedDraft.array.map(item => ({
+            ...item,
+            _users: expectedUsers
+          })),
+          object: {
+            ...insertedDraft.object,
+            _users: expectedUsers
+          }
+        };
+
+        assert.deepEqual(actual, expected);
       });
     });
   });

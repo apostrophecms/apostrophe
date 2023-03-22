@@ -10,7 +10,13 @@ module.exports = {
     publishRole: 'editor',
     viewRole: false,
     previewDraft: true,
-    relatedDocType: null
+    relatedDocType: null,
+    relationshipSuggestionLabel: 'apostrophe:relationshipSuggestionLabel',
+    relationshipSuggestionHelp: 'apostrophe:relationshipSuggestionHelp',
+    relationshipSuggestionLimit: 25,
+    relationshipSuggestionSort: { updatedAt: -1 },
+    relationshipSuggestionIcon: 'text-box-icon',
+    relationshipSuggestionFields: [ 'slug' ]
   },
   cascades: [ 'fields' ],
   fields(self) {
@@ -77,7 +83,7 @@ module.exports = {
       self.__meta.name === '@apostrophecms/global' ||
       self.apos.instanceOf(self, '@apostrophecms/any-page-type') ||
       self.apos.instanceOf(self, '@apostrophecms/page-type') ||
-      self.options.canCreate === false ||
+      self.options.showCreate === false ||
       self.options.showPermissions === false
     ) {
       return null;
@@ -212,53 +218,11 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        async updateCacheField(req, doc) {
-          const relatedDocsIds = self.getRelatedDocsIds(req, doc);
-
-          // - Remove current doc reference from docs that include it
-          // - Update these docs' cache field
-          await self.apos.doc.db.updateMany({
-            relatedReverseIds: { $in: [ doc.aposDocId ] },
-            aposLocale: { $in: [ doc.aposLocale, null ] }
-          }, {
-            $pull: { relatedReverseIds: doc.aposDocId },
-            $set: { cacheInvalidatedAt: doc.updatedAt }
-          });
-
-          if (relatedDocsIds.length) {
-            // - Add current doc reference to related docs
-            // - Update related docs' cache field
-            await self.apos.doc.db.updateMany({
-              aposDocId: { $in: relatedDocsIds },
-              aposLocale: { $in: [ doc.aposLocale, null ] }
-            }, {
-              $push: { relatedReverseIds: doc.aposDocId },
-              $set: { cacheInvalidatedAt: doc.updatedAt }
-            });
-          }
-
-          if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
-            // Update related reverse docs' cache field
-            await self.apos.doc.db.updateMany({
-              aposDocId: { $in: doc.relatedReverseIds },
-              aposLocale: { $in: [ doc.aposLocale, null ] }
-            }, {
-              $set: { cacheInvalidatedAt: doc.updatedAt }
-            });
-          }
-
-          if (doc._parentSlug) {
-            // Update piece index page's cache field
-            await self.apos.doc.db.updateOne({
-              slug: doc._parentSlug,
-              aposLocale: { $in: [ doc.aposLocale, null ] }
-            }, {
-              $set: { cacheInvalidatedAt: doc.updatedAt }
-            });
-          }
-        },
         prepareForStorage(req, doc) {
           self.apos.schema.prepareForStorage(req, doc);
+        },
+        async updateCacheField(req, doc) {
+          await self.updateCacheField(req, doc);
         },
         slugPrefix(req, doc) {
           const prefix = self.options.slugPrefix;
@@ -398,6 +362,51 @@ module.exports = {
 
   methods(self) {
     return {
+      async updateCacheField(req, doc) {
+        const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+
+        // - Remove current doc reference from docs that include it
+        // - Update these docs' cache field
+        await self.apos.doc.db.updateMany({
+          relatedReverseIds: { $in: [ doc.aposDocId ] },
+          aposLocale: { $in: [ doc.aposLocale, null ] }
+        }, {
+          $pull: { relatedReverseIds: doc.aposDocId },
+          $set: { cacheInvalidatedAt: doc.updatedAt }
+        });
+
+        if (relatedDocsIds.length) {
+          // - Add current doc reference to related docs
+          // - Update related docs' cache field
+          await self.apos.doc.db.updateMany({
+            aposDocId: { $in: relatedDocsIds },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $push: { relatedReverseIds: doc.aposDocId },
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        }
+
+        if (doc.relatedReverseIds && doc.relatedReverseIds.length) {
+          // Update related reverse docs' cache field
+          await self.apos.doc.db.updateMany({
+            aposDocId: { $in: doc.relatedReverseIds },
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        }
+
+        if (doc._parentSlug) {
+          // Update piece index page's cache field
+          await self.apos.doc.db.updateOne({
+            slug: doc._parentSlug,
+            aposLocale: { $in: [ doc.aposLocale, null ] }
+          }, {
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        }
+      },
       addContextMenu() {
         self.apos.doc.addContextOperation(self.__meta.name, {
           action: 'shareDraft',
@@ -412,7 +421,7 @@ module.exports = {
         const relatedDocsIds = [];
         const handlers = {
           relationship: (field, doc) => {
-            relatedDocsIds.push(...doc[field.name].map(relatedDoc => self.apos.doc.toAposDocId(relatedDoc)));
+            relatedDocsIds.push(...(doc[field.idsStorage] || []));
           }
         };
 
@@ -522,13 +531,16 @@ module.exports = {
         change.text = doc.title;
       },
       // Return a new schema containing only fields for which the
-      // current user has the permission specified by the `permission`
-      // property of the schema field, or there is no `permission` property for the field.
+      // current user has the permission specified by the `editPermission`
+      // property of the schema field, or there is no `editPermission`|`viewPermission` property for the field.
       allowedSchema(req) {
         let disabled;
         let type;
         const schema = _.filter(self.schema, function (field) {
-          return !field.permission || self.apos.permission.can(req, field.permission && field.permission.action, field.permission && field.permission.type);
+          return (!field.editPermission && !field.viewPermission) ||
+            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
+            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            false;
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
@@ -1375,6 +1387,25 @@ module.exports = {
         });
 
         return draft;
+      },
+
+      // Remove forbidden fields from document
+      // A forbidden field is a field for which the current user does not have the appropriate viewPermission to see it
+      removeForbiddenFields(req, doc) {
+        if (!doc) {
+          return doc;
+        }
+
+        const forbiddenSchemaFields = Object.values(self.schema)
+          .filter(field => {
+            return field.viewPermission && !self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type);
+          });
+
+        forbiddenSchemaFields.forEach(field => {
+          delete doc[field.name];
+        });
+
+        return doc;
       }
     };
   },

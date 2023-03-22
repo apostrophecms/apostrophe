@@ -66,7 +66,7 @@ export default {
       }
     },
     classes () {
-      return [ 'apos-input', `apos-input--${this.type}` ];
+      return [ 'apos-input', `apos-input--${this.type}`, this.value.duplicate && 'apos-input--error' ];
     },
     icon () {
       if (this.error) {

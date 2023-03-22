@@ -25,7 +25,7 @@
           :key="item._id"
           :item="item"
           :selected="selected === item._id"
-          :class="{'apos-slat-list__item--disabled' : disabled}"
+          :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
           :disabled="disabled"
           :engaged="engaged === item._id"
           :parent="listId"
@@ -75,6 +75,10 @@ export default {
       default: null
     },
     editorIcon: {
+      type: String,
+      default: null
+    },
+    duplicate: {
       type: String,
       default: null
     }

@@ -34,7 +34,8 @@ module.exports = {
         title: 'Archive'
       }
     ],
-    redirectFailedUpperCaseUrls: true
+    redirectFailedUpperCaseUrls: true,
+    relationshipSuggestionIcon: 'web-icon'
   },
   batchOperations: {
     add: {
@@ -138,7 +139,7 @@ module.exports = {
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
-              results: await self.getRestQuery(req).limit(10).relationships(false)
+              results: await self.getRestQuery(req).permission(false).limit(10).relationships(false)
                 .areas(false).toArray()
             };
           }
@@ -147,7 +148,7 @@ module.exports = {
             if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
-            const page = await self.getRestQuery(req).and({ level: 0 }).children({
+            const page = await self.getRestQuery(req).permission(false).and({ level: 0 }).children({
               depth: 1000,
               archived,
               orphan: null,
@@ -215,7 +216,7 @@ module.exports = {
           // Edit access to draft is sufficient to fetch either
           self.publicApiCheck(req);
           const criteria = self.getIdCriteria(_id);
-          const result = await self.getRestQuery(req).and(criteria).toObject();
+          const result = await self.getRestQuery(req).permission(false).and(criteria).toObject();
 
           if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
             const { maxAge } = self.options.cache.api;
@@ -815,6 +816,9 @@ database.`);
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
         browserOptions.localized = true;
         browserOptions.autopublish = false;
+        // A list of all valid page types, including parked pages etc. This is
+        // not a menu of choices for creating a page manually
+        browserOptions.validPageTypes = self.apos.instancesOf('@apostrophecms/page-type').map(module => module.__meta.name);
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
