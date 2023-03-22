@@ -278,7 +278,8 @@ export default {
         ([ locale, options ]) => {
           return {
             name: locale,
-            label: options.label || locale
+            label: options.label || locale,
+            _edit: options._edit
           };
         }
       ),
@@ -382,12 +383,12 @@ export default {
         : apos.modules[this.doc.type].action;
     },
     filteredLocales() {
-      return this.locales.filter(({ name, label }) => {
-        const matches = term =>
-          term
-            .toLowerCase()
-            .includes(this.wizard.sections.selectLocales.filter.toLowerCase());
+      const matches = term =>
+        term
+          .toLowerCase()
+          .includes(this.wizard.sections.selectLocales.filter.toLowerCase());
 
+      return this.locales.filter(({ name, label }) => {
         return matches(name) || matches(label);
       });
     },
@@ -532,6 +533,9 @@ export default {
     isCurrentLocale(locale) {
       return window.apos.i18n.locale === locale.name;
     },
+    canEditLocale(locale) {
+      return !!locale._edit;
+    },
     isSelected(locale) {
       return this.wizard.values.toLocales.data.some(
         ({ name }) => name === locale.name
@@ -547,7 +551,7 @@ export default {
       this.wizard.values.toLocales.data = [];
     },
     toggleLocale(locale) {
-      if (!this.isSelected(locale) && !this.isCurrentLocale(locale)) {
+      if (!this.isSelected(locale) && !this.isCurrentLocale(locale) && this.canEditLocale(locale)) {
         this.wizard.values.toLocales.data.push(locale);
       } else if (this.isSelected(locale)) {
         this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(l => l !== locale);
@@ -589,6 +593,9 @@ export default {
       const classes = {};
       if (this.isCurrentLocale(locale)) {
         classes['apos-current-locale'] = true;
+      }
+      if (!this.canEditLocale(locale)) {
+        classes['apos-disabled-locale'] = true;
       }
       return classes;
     },
@@ -948,15 +955,18 @@ export default {
   line-height: 1;
   border-radius: var(--a-border-radius);
 
-  &:not(.apos-current-locale) {
+  &:not(.apos-current-locale),
+  &:not(.apos-disabled-locale) {
     cursor: pointer;
   }
 
-  &:not(.apos-current-locale):hover {
+  &:not(.apos-current-locale):hover,
+  &:not(.apos-disabled-locale):hover {
     background-color: var(--a-base-10);
   }
 
-  &:not(.apos-current-locale):active {
+  &:not(.apos-current-locale):active,
+  &:not(.apos-disabled-locale):active {
     background-color: var(--a-base-9);
   }
 
@@ -974,11 +984,13 @@ export default {
   }
 
   &.apos-current-locale,
+  &.apos-disabled-locale,
   .apos-current-locale-icon {
     color: var(--a-base-5);
   }
 
-  &.apos-current-locale {
+  &.apos-current-locale,
+  &.apos-disabled-locale {
     font-style: italic;
   }
 

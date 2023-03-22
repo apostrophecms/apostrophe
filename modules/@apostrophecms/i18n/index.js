@@ -584,6 +584,9 @@ module.exports = {
             label: 'English'
           }
         };
+        for (const locale in locales) {
+          locales[locale]._edit = true;
+        }
         verifyLocales(locales, self.apos.options.baseUrl);
         return locales;
       },
