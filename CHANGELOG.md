@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Hide the suggestion help from the relationship input list when the user starts typing a search term.
+
 ## 3.42.0 (2023-03-16)
 
 ### Adds
