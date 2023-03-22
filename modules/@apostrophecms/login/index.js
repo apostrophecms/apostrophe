@@ -384,7 +384,7 @@ module.exports = {
         }
 
         return {
-          env: process.env.ENV_LABEL || self.options.environmentLabel || process.env.NODE_ENV || 'development',
+          env: process.env.APOS_ENV_LABEL || self.options.environmentLabel || process.env.NODE_ENV || 'development',
           name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
           version: aposPackage.version || '3',
           requirementProps

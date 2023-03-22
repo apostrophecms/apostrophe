@@ -36,7 +36,7 @@ This has been done for consistency with the external conditions syntax shipped i
 * Added the `viewPermission` property of schema fields, and renamed `permission` to `editPermission` (with backwards
 compatibility) for clarity. You can now decide if a schema field requires permissions to be visible or editable.
 See the documentation for more information.
-* Display the right environment label on login page. By default, based on `NODE_ENV`, overriden by `environmentLabel` option in `@apostrophecms/login` module. The environment variable `APOS_ENV_LABEL` will override this.
+* Display the right environment label on login page. By default, based on `NODE_ENV`, overriden by `environmentLabel` option in `@apostrophecms/login` module. The environment variable `APOS_ENV_LABEL` will override this. Note that `NODE_ENV` should generally only be set to `development` (the default) or `production` as many Node.js modules opt into optimizations suitable for all deployed environments when it is set to `production`. This is why we offer the separate `APOS_ENV_LABEL` variable.
 
 ### Fixes
 
