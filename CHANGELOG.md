@@ -6,6 +6,7 @@
 
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 * Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
+* Hide context menu on related items when the `relationship` field has no context field.
 
 ## 3.42.0 (2023-03-16)
 
