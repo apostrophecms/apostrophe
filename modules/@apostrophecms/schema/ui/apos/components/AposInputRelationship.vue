@@ -241,20 +241,21 @@ export default {
           qs
         }
       );
-      // filter items already selected
-      const first = !qs.autocomplete && this.suggestion;
-      const last = this.hint;
-      this.searchList = [ first ]
-        .concat((list.results || [])
-          .filter(item => !this.next.map(i => i._id).includes(item._id))
-          .map(item => ({
-            ...item,
-            disabled: this.disableUnpublished && !item.lastPublishedAt
-          }))
-        )
-        .concat(last)
-        .filter(Boolean);
 
+      const removeSelectedItem = item => !this.next.map(i => i._id).includes(item._id);
+      const formatItems = item => ({
+        ...item,
+        disabled: this.disableUnpublished && !item.lastPublishedAt
+      });
+
+      const results = (list.results || [])
+        .filter(removeSelectedItem)
+        .map(formatItems);
+
+      const suggestion = !qs.autocomplete && this.suggestion;
+      const hint = (!qs.autocomplete || !results.length) && this.hint;
+
+      this.searchList = [ suggestion, ...results, hint ].filter(Boolean);
       this.searching = false;
     },
     async input () {
