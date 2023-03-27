@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add the possibility to override the default "Add Item" button label by setting the `itemLabel` option of an `array` field.
+
 ### Fixes
 
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
