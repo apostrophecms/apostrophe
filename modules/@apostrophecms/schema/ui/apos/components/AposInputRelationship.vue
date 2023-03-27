@@ -242,7 +242,7 @@ export default {
         }
       );
       // filter items already selected
-      const first = this.suggestion;
+      const first = !qs.autocomplete && this.suggestion;
       const last = this.hint;
       this.searchList = [ first ]
         .concat((list.results || [])
@@ -252,7 +252,8 @@ export default {
             disabled: this.disableUnpublished && !item.lastPublishedAt
           }))
         )
-        .concat(last);
+        .concat(last)
+        .filter(Boolean);
 
       this.searching = false;
     },
