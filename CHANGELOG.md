@@ -6,6 +6,10 @@
 
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 
+### Adds
+
+* Adds `touch` task for every piece type. It'll perform a database update on all non-archived records of that type trigger the registered for that type relevant events. Example usage: `node app article:touch`.
+
 ## 3.42.0 (2023-03-16)
 
 ### Adds
