@@ -1215,11 +1215,14 @@ module.exports = {
           let errCount = 0;
           let count = 0;
           let cursor;
+          const criteria = self.options.autopublish
+            ? { aposMode: 'draft' }
+            : {};
 
           try {
             // We have 30 minutes (by default) for each iteration.
             // https://www.mongodb.com/docs/manual/reference/method/cursor.noCursorTimeout/#session-idle-timeout-overrides-nocursortimeout
-            cursor = (await self.find(req, {})
+            cursor = (await self.find(req, criteria)
               .locale(null)
               .limit(0)
               .toMongo())

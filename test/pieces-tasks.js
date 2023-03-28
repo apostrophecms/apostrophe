@@ -64,4 +64,31 @@ describe('Pieces - tasks', function() {
       );
     }
   });
+
+  it.only('should touch pieces with autopublish enabled', async function () {
+    apos.article.options.autopublish = true;
+    await apos.task.invoke('article:generate', {
+      total: 10
+    });
+    const docs = await apos.doc.db.find({ type: 'article' }).toArray();
+    assert.equal(docs.length, 30);
+
+    const result = await apos.task.invoke('article:touch');
+    assert.equal(result.touched, 10);
+    assert.equal(result.errors, 0);
+
+    const touched = await apos.doc.db.find({ type: 'article' }).toArray();
+    assert.equal(touched.length, 30);
+
+    for (const doc of touched) {
+      const old = docs.find(d => d._id === doc._id);
+      assert(old);
+      assert(old.updatedAt);
+      assert(doc.updatedAt);
+      assert.equal(
+        new Date(doc.updatedAt) > new Date(old.updatedAt),
+        true
+      );
+    }
+  });
 });
