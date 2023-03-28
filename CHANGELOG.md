@@ -8,7 +8,7 @@
 
 ### Adds
 
-* Adds `touch` task for every piece type. It'll perform a database update on all non-archived records of that type trigger the registered for that type relevant events. Example usage: `node app article:touch`.
+* Adds `touch` task for every piece type. This task invokes update on each piece, which will execute all of the same event handlers that normally execute when a piece of that type is updated. Example usage: `node app article:touch`.
 
 ## 3.42.0 (2023-03-16)
 
