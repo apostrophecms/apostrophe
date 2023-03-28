@@ -65,7 +65,7 @@ describe('Pieces - tasks', function() {
     }
   });
 
-  it.only('should touch pieces with autopublish enabled', async function () {
+  it('should touch pieces with autopublish enabled', async function () {
     apos.article.options.autopublish = true;
     await apos.task.invoke('article:generate', {
       total: 10
