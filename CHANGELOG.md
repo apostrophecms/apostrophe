@@ -11,6 +11,10 @@
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 * Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
 
+### Adds
+
+* Adds `touch` task for every piece type. This task invokes update on each piece, which will execute all of the same event handlers that normally execute when a piece of that type is updated. Example usage: `node app article:touch`.
+
 ## 3.42.0 (2023-03-16)
 
 ### Adds
