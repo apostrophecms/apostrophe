@@ -1217,7 +1217,7 @@ module.exports = {
           let cursor;
 
           try {
-            // We have 30 minutes (by default) for each iterration.
+            // We have 30 minutes (by default) for each iteration.
             // https://www.mongodb.com/docs/manual/reference/method/cursor.noCursorTimeout/#session-idle-timeout-overrides-nocursortimeout
             cursor = (await self.find(req, {})
               .locale(null)
