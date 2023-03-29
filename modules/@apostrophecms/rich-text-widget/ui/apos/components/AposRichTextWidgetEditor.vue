@@ -25,6 +25,9 @@
         </div>
       </AposContextMenuDialog>
     </bubble-menu>
+    <floating-menu :editor="editor" :tippy-options="{ duration: 100 }" v-if="editor">
+      <button>Hello</button>
+    </floating-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
@@ -54,12 +57,14 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
+import FloatingMenu from '@tiptap/extension-floating-menu';
 
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
     EditorContent,
-    BubbleMenu
+    BubbleMenu,
+    FloatingMenu
   },
   props: {
     type: {
@@ -221,7 +226,21 @@ export default {
 
           return this.showPlaceholder ? this.$t(this.placeholderText) : '';
         }
-      })
+      }),
+      FloatingMenu
+      // FloatingMenu.configure({
+      //   shouldShow: ({ editor, view, state, oldState }) => {
+      //     const { $to } = state.selection;
+      //     if (state.selection.empty && $to.nodeBefore && $to.nodeBefore.text) {
+      //       const text = $to.nodeBefore.text;
+      //       // Only show when the user has just entered a '/' character
+      //       if (text.charAt(text.length - 1) === '/') {
+      //         return true;
+      //       }
+      //     }
+      //     return false;
+      //   }
+      // })
     ]
       .filter(Boolean)
       .concat(this.aposTiptapExtensions());
