@@ -10,6 +10,7 @@
 
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 * Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
+* Disable context menu for related items when their `relationship` field has no [`fields`](https://v3.docs.apostrophecms.org/guide/relationships.html#providing-context-with-fields) configured.
 
 ### Adds
 

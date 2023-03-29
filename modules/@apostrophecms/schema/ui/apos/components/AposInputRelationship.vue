@@ -57,7 +57,7 @@
           :value="next"
           :duplicate="duplicate"
           :disabled="field.readOnly"
-          :has-relationship-schema="!!field.schema"
+          :relationship-schema="field.schema"
           :editor-label="field.editorLabel"
           :editor-icon="field.editorIcon"
         />
