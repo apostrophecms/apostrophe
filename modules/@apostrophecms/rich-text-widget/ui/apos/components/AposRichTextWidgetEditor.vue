@@ -25,7 +25,7 @@
         </div>
       </AposContextMenuDialog>
     </bubble-menu>
-    <floating-menu :editor="editor" :tippy-options="{ duration: 100 }" v-if="editor">
+    <floating-menu :should-show="showFloatingMenu" :editor="editor" :tippy-options="{ duration: 100 }" v-if="editor">
       <button>Hello</button>
     </floating-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
@@ -44,7 +44,8 @@
 import {
   Editor,
   EditorContent,
-  BubbleMenu
+  BubbleMenu,
+  FloatingMenu
 } from '@tiptap/vue-2';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
@@ -57,7 +58,9 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
-import FloatingMenu from '@tiptap/extension-floating-menu';
+
+// Cleanly namespace it so we don't conflict with other uses somewhere
+const CustomPlaceholder = Placeholder.extend();
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -171,6 +174,13 @@ export default {
       if (this.isVisuallyEmpty) {
         classes.push('apos-is-visually-empty');
       }
+      // Per Stu's original logic we have to deal with an edge case when the page is
+      // first loading by displaying the initial placeholder then too (showPlaceholder
+      // state not yet computed)
+      if (this.placeholderText && this.isFocused && (this.showPlaceholder !== false)) {
+        classes.push('apos-show-initial-placeholder');
+      }
+      console.log('>>', JSON.stringify(classes));
       return classes;
     },
     tiptapTextCommands() {
@@ -181,7 +191,7 @@ export default {
     },
     placeholderText() {
       return this.moduleOptions.placeholderText;
-    }
+    },
   },
   watch: {
     focused(newVal) {
@@ -212,35 +222,14 @@ export default {
       TableRow,
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
       // since `placeholderText` option is enough to decide whether to display it or not.
-      this.placeholderText && Placeholder.configure({
+      CustomPlaceholder.configure({
         placeholder: () => {
-          // Avoid brief display of the placeholder when loading the page.
-          if (this.isFocused === null) {
-            return '';
-          }
-
-          // Display placeholder after loading the page.
-          if (this.showPlaceholder === null) {
-            return this.$t(this.placeholderText);
-          }
-
-          return this.showPlaceholder ? this.$t(this.placeholderText) : '';
+          const text = this.$t(this.placeholderText);
+          console.log(`>> ${text}`);
+          return text;
         }
       }),
       FloatingMenu
-      // FloatingMenu.configure({
-      //   shouldShow: ({ editor, view, state, oldState }) => {
-      //     const { $to } = state.selection;
-      //     if (state.selection.empty && $to.nodeBefore && $to.nodeBefore.text) {
-      //       const text = $to.nodeBefore.text;
-      //       // Only show when the user has just entered a '/' character
-      //       if (text.charAt(text.length - 1) === '/') {
-      //         return true;
-      //       }
-      //     }
-      //     return false;
-      //   }
-      // })
     ]
       .filter(Boolean)
       .concat(this.aposTiptapExtensions());
@@ -443,6 +432,18 @@ export default {
           styles: this.editorOptions.styles.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
+    },
+    // Per Stu's sample
+    showFloatingMenu({ state }) {
+      const { $to } = state.selection;
+      if (state.selection.empty && $to.nodeBefore && $to.nodeBefore.text) {
+        const text = $to.nodeBefore.text;
+        // Only show when the user has just entered a '/' character
+        if (text.charAt(text.length - 1) === '/') {
+          return true;
+        }
+      }
+      return false;
     }
   }
 };
@@ -561,5 +562,17 @@ function traverseNextNode(node) {
   .apos-rich-text-editor__editor ::v-deep .selectedCell {
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
+  }
+
+  [data-placeholder] {
+    display: none;
+  }
+
+  .apos-show-initial-placeholder [data-placeholder] {
+    display: block;
+  }
+
+  [data-placeholder].apos-empty-node {
+    display: block;
   }
 </style>

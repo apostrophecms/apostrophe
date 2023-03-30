@@ -378,7 +378,7 @@
   "richTextLink": "Link",
   "richTextOrderedList": "Ordered List",
   "richTextParagraph": "Paragraph (P)",
-  "richTextPlaceholder": "Start Typing Here...",
+  "richTextPlaceholder": "Start typing here or press /...",
   "richTextRedo": "Redo",
   "richTextStrikethrough": "Strike",
   "richTextStyleConfigWarning": "Misconfigured rich text style: label: {{ label }}, {{ tag }}",
