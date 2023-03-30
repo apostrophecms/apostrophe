@@ -6,6 +6,19 @@
 
 * Add `_edit: true` to the list of locales the current user can edit in `@apostrophecms/i18n`.
 
+## 3.43.0 (2023-03-29)
+
+### Adds
+
+* Add the possibility to override the default "Add Item" button label by setting the `itemLabel` option of an `array` field.
+* Adds `touch` task for every piece type. This task invokes `update` on each piece, which will execute all of the same event handlers that normally execute when a piece of that type is updated. Example usage: `node app article:touch`.
+
+### Fixes
+
+* Hide the suggestion help from the relationship input list when the user starts typing a search term.
+* Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
+* Disable context menu for related items when their `relationship` field has no sub-[`fields`](https://v3.docs.apostrophecms.org/guide/relationships.html#providing-context-with-fields) configured.
+
 ## 3.42.0 (2023-03-16)
 
 ### Adds
@@ -37,17 +50,18 @@ current selection. Currently this works best with newly inserted documents.
 * Localized strings in the admin UI can now use `$t(key)` to localize a string inside
 an interpolated variable. This was accomplished by setting `skipOnVariables` to false
 for i18next, solely on the front end for admin UI purposes.
-* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.  
+* The syntax of the method defined for dynamic `choices` now accepts a module prefix to get the method from, and the `()` suffix.
 This has been done for consistency with the external conditions syntax shipped in the previous release. See the documentation for more information.
 * Added the `viewPermission` property of schema fields, and renamed `permission` to `editPermission` (with backwards
 compatibility) for clarity. You can now decide if a schema field requires permissions to be visible or editable.
 See the documentation for more information.
+* Display the right environment label on login page. By default, based on `NODE_ENV`, overriden by `environmentLabel` option in `@apostrophecms/login` module. The environment variable `APOS_ENV_LABEL` will override this. Note that `NODE_ENV` should generally only be set to `development` (the default) or `production` as many Node.js modules opt into optimizations suitable for all deployed environments when it is set to `production`. This is why we offer the separate `APOS_ENV_LABEL` variable.
 
-### Fixes 
+### Fixes
 
 * Do not log unnecessary "required" errors for hidden fields.
 * Fixed a bug that prevented "Text Align" from working properly in the rich text editor in certain cases.
-* Fix typo in `@apostrophecms/doc-type` and `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals. 
+* Fix typo in `@apostrophecms/doc-type` and `@apostrophecms/submitted-drafts` where we were using `canCreate` instead of `showCreate` to display the `Create New` button or showing the `Copy` button in `Manager` modals.
 * Send external condition results in an object so that numbers are supported as returned values.
 
 ## 3.41.1 (2023-03-07)
@@ -58,7 +72,7 @@ No changes. Publishing to make sure 3.x is tagged `latest` in npm, rather than 2
 
 ### Adds
 
-* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.  
+* Handle external conditions to display fields according to the result of a module method, or multiple methods from different modules.
 This can be useful for displaying fields according to the result of an external API or any business logic run on the server. See the documentation for more information.
 
 ### Fixes

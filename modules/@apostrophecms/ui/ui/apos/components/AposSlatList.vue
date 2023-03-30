@@ -31,7 +31,7 @@
           :parent="listId"
           :slat-count="next.length"
           :removable="removable"
-          :has-relationship-schema="hasRelationshipSchema"
+          :relationship-schema="relationshipSchema"
           :editor-label="editorLabel"
           :editor-icon="editorIcon"
         />
@@ -66,9 +66,9 @@ export default {
       type: String,
       default: null
     },
-    hasRelationshipSchema: {
-      type: Boolean,
-      default: false
+    relationshipSchema: {
+      type: Array,
+      default: () => null
     },
     editorLabel: {
       type: String,

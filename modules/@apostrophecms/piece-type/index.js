@@ -1207,6 +1207,53 @@ module.exports = {
 
           console.log(`Done unlocalizing module ${self.name}`);
         }
+      },
+
+      touch: {
+        usage: 'Invoke this task to touch (update without any change) all docs of this type.',
+        async task(argv) {
+          const req = self.apos.task.getAdminReq();
+          let errCount = 0;
+          let count = 0;
+          let cursor;
+          const criteria = self.options.autopublish
+            ? { aposMode: 'draft' }
+            : {};
+
+          try {
+            // We have 30 minutes (by default) for each iteration.
+            // https://www.mongodb.com/docs/manual/reference/method/cursor.noCursorTimeout/#session-idle-timeout-overrides-nocursortimeout
+            cursor = (await self.find(req, criteria)
+              .locale(null)
+              .limit(0)
+              .toMongo())
+              .addCursorFlag('noCursorTimeout', true);
+
+            for await (const doc of cursor) {
+              try {
+                await self.update(req, doc);
+                count++;
+              } catch (e) {
+                errCount++;
+                self.apos.util.error(e);
+              }
+            }
+          } catch (error) {
+            self.apos.util.error(error);
+          } finally {
+            if (cursor) {
+              await cursor.close();
+            }
+          }
+          console.log(`Touched ${count} doc(s) with ${errCount} error(s)`);
+
+          // Return, useful for tests and internal API's
+          // It's in effect only when invoked via apos.task.invoke().
+          return {
+            touched: count,
+            errors: errCount
+          };
+        }
       }
     };
   }

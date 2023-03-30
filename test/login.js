@@ -23,7 +23,8 @@ describe('Login', function() {
         },
         '@apostrophecms/login': {
           options: {
-            passwordReset: true
+            passwordReset: true,
+            environmentLabel: 'test'
           }
         }
       }
@@ -43,6 +44,10 @@ describe('Login', function() {
     assert(apos.user.safe.remove);
     const response = await apos.user.safe.removeMany({});
     assert(response.result.ok === 1);
+
+    const loginModule = apos.modules['@apostrophecms/login'];
+    const context = await loginModule.getContext();
+    assert(context.env === 'test');
   });
 
   it('should be able to insert test user', async function() {

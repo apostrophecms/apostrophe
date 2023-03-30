@@ -52,7 +52,7 @@
             @input="setCheckedDocs"
             @item-clicked="editRelationship"
             :value="checkedDocs"
-            :has-relationship-schema="!!(relationshipField && relationshipField.schema)"
+            :relationship-schema="relationshipField?.schema"
           />
         </div>
       </AposModalRail>

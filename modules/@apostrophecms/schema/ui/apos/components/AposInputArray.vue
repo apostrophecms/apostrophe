@@ -118,7 +118,7 @@
         </component>
         <AposButton
           type="primary"
-          label="apostrophe:addItem"
+          :label="itemLabel"
           icon="plus-icon"
           :disabled="disableAdd()"
           :modifiers="['block']"
@@ -178,6 +178,14 @@ export default {
         ghostClass: 'apos-is-dragging',
         handle: '.apos-drag-handle'
       };
+    },
+    itemLabel() {
+      return this.field.itemLabel
+        ? {
+          key: 'apostrophe:addType',
+          type: this.$t(this.field.itemLabel)
+        }
+        : 'apostrophe:addItem';
     },
     editLabel() {
       return {

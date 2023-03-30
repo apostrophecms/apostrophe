@@ -5,6 +5,7 @@
   "addItem": "Add Item",
   "addRowAfter": "Add Row After",
   "addRowBefore": "Add Row Before",
+  "addType": "Add {{ type }}",
   "addWidgetType": "Add {{ label }}",
   "admin": "Admin",
   "affirmativeLabel": "Yes, continue.",
