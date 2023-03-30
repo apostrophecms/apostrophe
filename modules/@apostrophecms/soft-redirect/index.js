@@ -58,8 +58,18 @@ module.exports = {
           }
         }
       },
-      '@apostrophecms/page:beforeSend': {
-        updateHistoricUrls: self.updateHistoricUrls
+      '@apostrophecms/doc-type:beforeSave': {
+        addHistoricUrl(req, doc) {
+          const shouldAddHistoricUrl = doc && doc._url && !(doc.historicUrls || []).includes(self.local(doc._url));
+          if (!shouldAddHistoricUrl) {
+            return;
+          }
+
+          doc.historicUrls = [
+            ...(doc.historicUrls || []),
+            self.local(doc._url)
+          ];
+        }
       }
     };
   },
@@ -71,17 +81,6 @@ module.exports = {
       // Remove any protocol, `//` and host/port/auth from URL
       local(url) {
         return url.replace(/^(https?:)?\/\/[^/]+/, '');
-      },
-      // TODO: call it in doc:beforeSave?
-      async updateHistoricUrls(req) {
-        const docs = [ req.data.page, req.data.piece ]
-          .filter(
-            doc => doc && doc._url && !(doc.historicUrls || []).includes(self.local(doc._url))
-          );
-        for (const doc of docs) {
-          await self.apos.doc.db.updateOne({ _id: doc._id }, { $addToSet: { historicUrls: self.local(doc._url) } });
-          console.log(doc.title, self.local(doc._url));
-        }
       }
     };
   }
