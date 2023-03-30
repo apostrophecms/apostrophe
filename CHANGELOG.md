@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* If the new `guestApiAccess` option is set to `true` for a piece type or for `@apostrophecms/page`,
+Apostrophe will allow all logged-in users to access the GET-method REST APIs of that
+module, not just users with editing privileges, even if `publicApiProjection` is not set.
+This is useful when the goal is to allow REST API access to "guest" users who have
+project-specific reasons to fetch access content via REST APIs.
+
 ## 3.43.0 (2023-03-29)
 
 ### Adds

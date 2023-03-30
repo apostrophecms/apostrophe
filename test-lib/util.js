@@ -58,40 +58,68 @@ async function create(options) {
   return require('../index.js')(config);
 }
 
-// Create an admin user. By default the username and password are both 'admin'
-async function createAdmin(apos, { username, password } = {}) {
-  const user = apos.user.newInstance();
-  const name = username || 'admin';
+// Create an admin user. Invokes createUser with the `admin` role.
+// Accepts the same options.
 
-  user.title = name;
-  user.username = name;
-  user.password = password || 'admin';
-  user.email = `${name}@admin.io`;
-  user.role = 'admin';
-
-  return await apos.user.insert(apos.task.getReq(), user);
+async function createAdmin(apos, { username, password, title, email } = {}) {
+  return createUser(apos, 'admin', { username, password, title, email });
 }
 
-async function getUserJar(apos, { username, password } = {}) {
-  const jar = apos.http.jar();
+// Resolves to a user with the specified `role`. `username` defaults to
+// `role`. `title` defaults to `username` or `role`.
+// `password` defaults to `username` or `role`. `email` defaults to `${username}@test.io`
+// where `username` can also be inferred from `role`.
 
-  // Log in
+async function createUser(apos, role, { username, password, title, email } = {}) {
+  title = title || username || role;
+  username = username || role;
+  password = password || username || role;
+  email = email || `${username}@test.io`;
+
+  return apos.user.insert(
+    apos.task.getReq(),
+    {
+      ...apos.user.newInstance(),
+      title,
+      username,
+      password,
+      email,
+      role
+    }
+  );
+}
+
+// Log in with the specified password. Returns a
+// cookie jar object for use with additional
+// apos.http calls via the `jar` option.
+// `password` defaults to `username`.
+
+async function loginAs(apos, username, password) {
+  password = password || username;
+  const jar = apos.http.jar();
   await apos.http.post('/api/v1/@apostrophecms/login/login', {
     body: {
-      username: username || 'admin',
-      password: password || 'admin',
+      username,
+      password,
       session: true
     },
     jar
   });
 
   return jar;
+};
+
+// Deprecated legacy wrapper for loginAs.
+function getUserJar(apos, { username, password } = {}) {
+  return loginAs(apos, username, password);
 }
 
 module.exports = {
   destroy,
   create,
   createAdmin,
+  createUser,
+  loginAs,
   getUserJar,
   timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };

@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 let apos;
+let guest;
 
 describe('Pieces Public API', function() {
 
@@ -70,6 +71,36 @@ describe('Pieces Public API', function() {
     } catch (e) {
       assert(e.status === 404);
     }
+  });
+
+  it('should not be able to etrieve a piece by id from the database without a public API projection as a guest', async function() {
+    guest = await t.createUser(apos, 'guest');
+    const jar = await t.loginAs(apos, 'guest');
+    try {
+      await apos.http.get('/api/v1/thing');
+      // Bad, we expected a 404
+      assert(false);
+    } catch (e) {
+      assert(e.status === 404);
+    }
+  });
+
+  it('should be able to retrieve a piece by id from the database without a public API projection as a guest if guest API access is enabled', async function() {
+    let response;
+    try {
+      apos.modules.thing.options.guestApiAccess = true;
+      const jar = await t.loginAs(apos, 'guest');
+      response = await apos.http.get('/api/v1/thing', {
+        jar
+      });
+    } finally {
+      apos.modules.thing.options.guestApiAccess = false;
+    }
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 1);
+    assert(response.results[0].title === 'hello');
+    assert(response.results[0].foo === 'bar');
   });
 
   it('should be able to anonymously retrieve a piece by id from the database with a public API projection', async function() {
