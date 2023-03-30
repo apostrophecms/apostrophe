@@ -14,7 +14,6 @@ describe('Pieces', function() {
 
   this.timeout(t.timeout);
 
-  let admin;
   let editor;
   let contributor;
   let guest;

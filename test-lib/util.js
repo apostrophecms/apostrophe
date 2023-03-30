@@ -61,8 +61,15 @@ async function create(options) {
 // Create an admin user. Invokes createUser with the `admin` role.
 // Accepts the same options.
 
-async function createAdmin(apos, { username, password, title, email } = {}) {
-  return createUser(apos, 'admin', { username, password, title, email });
+async function createAdmin(apos, {
+  username, password, title, email
+} = {}) {
+  return createUser(apos, 'admin', {
+    username,
+    password,
+    title,
+    email
+  });
 }
 
 // Resolves to a user with the specified `role`. `username` defaults to
@@ -70,7 +77,9 @@ async function createAdmin(apos, { username, password, title, email } = {}) {
 // `password` defaults to `username` or `role`. `email` defaults to `${username}@test.io`
 // where `username` can also be inferred from `role`.
 
-async function createUser(apos, role, { username, password, title, email } = {}) {
+async function createUser(apos, role, {
+  username, password, title, email
+} = {}) {
   title = title || username || role;
   username = username || role;
   password = password || username || role;

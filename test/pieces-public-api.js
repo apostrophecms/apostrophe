@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 
 let apos;
-let guest;
 
 describe('Pieces Public API', function() {
 
@@ -73,11 +72,13 @@ describe('Pieces Public API', function() {
     }
   });
 
-  it('should not be able to etrieve a piece by id from the database without a public API projection as a guest', async function() {
-    guest = await t.createUser(apos, 'guest');
+  it('should not be able to retrieve a piece by id from the database without a public API projection as a guest', async function() {
+    await t.createUser(apos, 'guest');
     const jar = await t.loginAs(apos, 'guest');
     try {
-      await apos.http.get('/api/v1/thing');
+      await apos.http.get('/api/v1/thing', {
+        jar
+      });
       // Bad, we expected a 404
       assert(false);
     } catch (e) {
