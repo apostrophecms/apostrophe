@@ -119,7 +119,7 @@ async function loginAs(apos, username, password) {
 };
 
 // Deprecated legacy wrapper for loginAs.
-function getUserJar(apos, { username, password } = {}) {
+function getUserJar(apos, { username = 'admin', password } = {}) {
   return loginAs(apos, username, password);
 }
 
