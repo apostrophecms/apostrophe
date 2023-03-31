@@ -254,7 +254,9 @@ export default {
       );
     },
     canLocalize() {
-      return this.canEdit && (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized && this.context._id;
+      return (Object.keys(apos.i18n.locales).length > 1) &&
+        this.moduleOptions.localized && this.context._id &&
+        Object.values(apos.i18n.locales).some(locale => locale._edit);
     },
     canArchive() {
       return (
