@@ -164,10 +164,10 @@ export default {
   methods: {
     canEdit(item) {
       if (item._id) {
-        return item._edit;
+        return item._edit || this.options.canLocalize;
       }
 
-      return this.options.canEdit;
+      return this.options.canEdit || this.options.canLocalize;
     },
     over(id) {
       this.state[id].hover = true;
