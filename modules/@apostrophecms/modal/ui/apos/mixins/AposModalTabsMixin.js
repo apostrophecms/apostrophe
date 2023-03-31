@@ -48,10 +48,11 @@ export default {
         if (key !== 'utility') {
           tabs.push({
             name: key,
-            label: this.groups[key].label
+            label: this.groups[key].label,
+            fields: this.groups[key].fields
           });
         }
-      };
+      }
 
       return tabs;
     }
