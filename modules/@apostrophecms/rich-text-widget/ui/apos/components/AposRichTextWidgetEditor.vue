@@ -32,7 +32,7 @@
       <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
     <div
-      v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
+      v-if="(!placeholderText || !isFocused)"
       class="apos-rich-text-editor__editor_after" :class="editorModifiers"
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
@@ -180,7 +180,6 @@ export default {
       if (this.placeholderText && this.isFocused && (this.showPlaceholder !== false)) {
         classes.push('apos-show-initial-placeholder');
       }
-      console.log('>>', JSON.stringify(classes));
       return classes;
     },
     tiptapTextCommands() {
@@ -223,11 +222,8 @@ export default {
       // For this contextual widget, no need to check `widget.aposPlaceholder` value
       // since `placeholderText` option is enough to decide whether to display it or not.
       CustomPlaceholder.configure({
-        placeholder: () => {
-          const text = this.$t(this.placeholderText);
-          console.log(`>> ${text}`);
-          return text;
-        }
+        emptyNodeClass: 'apos-empty-node',
+        placeholder: this.$t(this.placeholderText),
       }),
       FloatingMenu
     ]
@@ -564,15 +560,12 @@ function traverseNextNode(node) {
     backdrop-filter: invert(0.1);
   }
 
-  [data-placeholder] {
-    display: none;
-  }
-
-  .apos-show-initial-placeholder [data-placeholder] {
+  .apos-show-initial-placeholder ::v-deep .ProseMirror:focus [data-placeholder]::before, .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus [data-placeholder].apos-empty-node::before {
     display: block;
-  }
-
-  [data-placeholder].apos-empty-node {
-    display: block;
+    float: left;
+    height: 0;
+    opacity: 0.5;
+    content: attr(data-placeholder);
+    pointer-events: none;
   }
 </style>
