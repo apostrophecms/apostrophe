@@ -142,10 +142,10 @@ export default {
     },
     autofocus() {
       // Only true for a new rich text widget
-      return !this.stripPlaceholderBrs(this.value.content).length;
+      return !this.value.content.length;
     },
     initialContent() {
-      const content = this.transformNamedAnchors(this.stripPlaceholderBrs(this.value.content));
+      const content = this.transformNamedAnchors(this.value.content);
       if (content.length) {
         return content;
       }
@@ -288,25 +288,25 @@ export default {
         this.pending = null;
       }
       let content = this.editor.getHTML();
-      content = this.restorePlaceholderBrs(content);
+      // content = this.restorePlaceholderBrs(content);
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });
     },
-    // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
-    // temporarily so the editing experience doesn't break due to contenteditable
-    // issues with empty paragraphs, but strips them on save; however
-    // seeing them while editing creates a WYSIWYG expectation
-    // on the user's part, so we must maintain them
-    restorePlaceholderBrs(html) {
-      return html.replace(/<(p[^>]*)>(\s*)<\/p>/gi, '<$1><br /></p>');
-    },
-    // Strip the placeholder BRs again when populating the editor.
-    // Otherwise they get doubled by ProseMirror
-    stripPlaceholderBrs(html) {
-      return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
-    },
+    // // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
+    // // temporarily so the editing experience doesn't break due to contenteditable
+    // // issues with empty paragraphs, but strips them on save; however
+    // // seeing them while editing creates a WYSIWYG expectation
+    // // on the user's part, so we must maintain them
+    // restorePlaceholderBrs(html) {
+    //   return html.replace(/<(p[^>]*)>(\s*)<\/p>/gi, '<$1><br /></p>');
+    // },
+    // // Strip the placeholder BRs again when populating the editor.
+    // // Otherwise they get doubled by ProseMirror
+    // stripPlaceholderBrs(html) {
+    //   return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
+    // },
     // Legacy content may have `id` and `name` attributes on anchor tags
     // but our tiptap anchor extension needs them on a separate `span`, so nest
     // a span to migrate this content for each relevant anchor tag encountered
