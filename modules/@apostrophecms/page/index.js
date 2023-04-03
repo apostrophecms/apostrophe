@@ -819,6 +819,11 @@ database.`);
         // A list of all valid page types, including parked pages etc. This is
         // not a menu of choices for creating a page manually
         browserOptions.validPageTypes = self.apos.instancesOf('@apostrophecms/page-type').map(module => module.__meta.name);
+        browserOptions.canEdit = self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.canLocalize = browserOptions.canEdit &&
+          browserOptions.localized &&
+          Object.keys(self.apos.i18n.locales).length > 1 &&
+          Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
