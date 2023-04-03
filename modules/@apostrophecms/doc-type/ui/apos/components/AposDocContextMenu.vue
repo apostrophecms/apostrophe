@@ -181,6 +181,10 @@ export default {
       return menu;
     },
     customMenusByContext() {
+      if (!this.canEdit) {
+        return [];
+      }
+
       const menus = this.customOperationsByContext
         .map(op => ({
           label: op.label,
@@ -254,9 +258,8 @@ export default {
       );
     },
     canLocalize() {
-      return (Object.keys(apos.i18n.locales).length > 1) &&
-        this.moduleOptions.localized && this.context._id &&
-        Object.values(apos.i18n.locales).some(locale => locale._edit);
+      return this.moduleOptions.canLocalize &&
+        this.context._id;
     },
     canArchive() {
       return (
@@ -278,7 +281,10 @@ export default {
       );
     },
     canCopy() {
-      return this.canEdit && !this.moduleOptions.singleton && this.context._id;
+      return this.canEdit &&
+        this.moduleOptions.canEdit &&
+        !this.moduleOptions.singleton &&
+        this.context._id;
     },
     canRestore() {
       return (
