@@ -101,7 +101,6 @@ module.exports = {
       },
       async redirect(req, pathname) {
         const { aposDocId } = req.query;
-        console.log('aposDocId', aposDocId);
 
         if (!aposDocId) {
           return;
