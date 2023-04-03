@@ -58,26 +58,36 @@ module.exports = {
           }
         }
       },
-      '@apostrophecms/doc-type:beforeSave': {
-        addHistoricUrl(req, doc) {
-          const shouldAddHistoricUrl = doc && doc._url && !(doc.historicUrls || []).includes(self.local(doc._url));
-          if (!shouldAddHistoricUrl) {
-            return;
+      '@apostrophecms/page:beforeSend': {
+        async updateHistoricUrls(req) {
+          let docs = [];
+          if (req.data.page) {
+            docs.push(req.data.page);
           }
-
-          doc.historicUrls = [
-            ...(doc.historicUrls || []),
-            self.local(doc._url)
-          ];
+          if (req.data.piece) {
+            docs.push(req.data.piece);
+          }
+          docs = docs.filter(function (doc) {
+            if (doc._url) {
+              return !(doc.historicUrls || []).includes(self.local(doc._url));
+            } else {
+              return false;
+            }
+          });
+          for (const doc of docs) {
+            await self.apos.doc.db.updateOne({ _id: doc._id }, { $addToSet: { historicUrls: self.local(doc._url) } });
+          }
         }
       }
     };
   },
   methods(self) {
     return {
+
       async createIndexes() {
         return self.apos.doc.db.createIndex({ historicUrls: 1 });
       },
+
       // Remove any protocol, `//` and host/port/auth from URL
       local(url) {
         return url.replace(/^(https?:)?\/\/[^/]+/, '');
