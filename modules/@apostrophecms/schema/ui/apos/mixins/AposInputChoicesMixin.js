@@ -25,9 +25,24 @@ export default {
       );
       if (response.choices) {
         this.choices = response.choices;
+        this.prependEmptyChoice();
       }
     } else {
       this.choices = this.field.choices;
+    }
+  },
+
+  methods: {
+    prependEmptyChoice() {
+      // Add an null option if there isn't one already
+      if (!this.field.required && !this.choices.find(choice => {
+        return choice.value === null;
+      })) {
+        this.choices.unshift({
+          label: '',
+          value: null
+        });
+      }
     }
   }
 };

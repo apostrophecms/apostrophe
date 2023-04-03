@@ -44,15 +44,7 @@ export default {
     }
   },
   async mounted() {
-    // Add an null option if there isn't one already
-    if (!this.field.required && !this.choices.find(choice => {
-      return choice.value === null;
-    })) {
-      this.choices.unshift({
-        label: '',
-        value: null
-      });
-    }
+    this.prependEmptyChoice();
     this.$nextTick(() => {
       // this has to happen on nextTick to avoid emitting before schemaReady is
       // set in AposSchema
