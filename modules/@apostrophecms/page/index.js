@@ -133,7 +133,7 @@ module.exports = {
           const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
           if (autocomplete.length) {
-            if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
+            if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
             return {
@@ -145,7 +145,7 @@ module.exports = {
           }
 
           if (all) {
-            if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
+            if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
             const page = await self.getRestQuery(req).permission(false).and({ level: 0 }).children({
