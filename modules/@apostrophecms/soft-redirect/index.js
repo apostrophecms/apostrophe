@@ -39,22 +39,12 @@ module.exports = {
     return {
       '@apostrophecms/page:notFound': {
         async notFoundRedirect(req) {
-          const urlPathname = parseurl.original(req).pathname;
+          const { pathname } = parseurl.original(req);
 
-          const doc = await self.apos.doc
-            .find(req, {
-              historicUrls: {
-                $in: [ urlPathname ]
-              }
-            })
-            .sort({ updatedAt: -1 })
-            .toObject();
-          if (!(doc && doc._url)) {
-            return;
-          }
-          if (self.local(doc._url) !== urlPathname) {
-            req.statusCode = self.options.statusCode;
-            req.redirect = doc._url;
+          const seoRedirected = await self.seoRedirect(req, pathname);
+
+          if (!seoRedirected) {
+            await self.redirect(req, pathname);
           }
         }
       },
@@ -83,14 +73,53 @@ module.exports = {
   },
   methods(self) {
     return {
-
       async createIndexes() {
         return self.apos.doc.db.createIndex({ historicUrls: 1 });
       },
-
       // Remove any protocol, `//` and host/port/auth from URL
       local(url) {
         return url.replace(/^(https?:)?\/\/[^/]+/, '');
+      },
+      async seoRedirect(req, pathname) {
+        const doc = await self.apos.doc
+          .find(req, {
+            historicUrls: {
+              $in: [ pathname ]
+            }
+          })
+          .sort({ updatedAt: -1 })
+          .toObject();
+
+        if (!doc || !doc._url || self.local(doc._url) === pathname) {
+          return;
+        }
+
+        req.statusCode = self.options.statusCode;
+        req.redirect = doc._url;
+
+        return true;
+      },
+      async redirect(req, pathname) {
+        const { aposDocId } = req.query;
+        console.log('aposDocId', aposDocId);
+
+        if (!aposDocId) {
+          return;
+        }
+
+        const doc = await self.apos.doc
+          .find(req, { aposDocId })
+          .sort({ updatedAt: -1 })
+          .toObject();
+
+        if (!doc || !doc._url || self.local(doc._url) === pathname) {
+          return;
+        }
+
+        req.statusCode = self.options.statusCode;
+        req.redirect = doc._url;
+
+        return true;
       }
     };
   }

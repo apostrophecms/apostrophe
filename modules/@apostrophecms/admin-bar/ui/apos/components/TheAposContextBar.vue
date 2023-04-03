@@ -528,6 +528,7 @@ export default {
       const qs = {
         ...apos.http.parseQuery(window.location.search),
         aposRefresh: '1',
+        aposDocId: this.context.aposDocId,
         aposMode: this.draftMode,
         ...(this.editMode ? {
           aposEdit: '1'
