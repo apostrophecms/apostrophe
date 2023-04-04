@@ -195,7 +195,6 @@ export default {
     },
 
     conditionalFields(followedByCategory) {
-      console.log('conditionalFields');
       const self = this;
       const conditionalFields = {};
 
@@ -253,24 +252,11 @@ export default {
             result = false;
             break;
           }
-
-          const fieldValue = self.getFieldValue(key);
-          const fieldValueOrDef = fieldValue !== undefined
-            ? fieldValue
-            : self.schema.find(field => field.name === key).def;
-
-          console.log('key', key);
-          console.log('val', val);
-          console.log('🚀 ~ file: AposEditorMixin.js:257 ~ evaluate ~ fieldValue:', fieldValue);
-          console.log('fieldValueOrDef', fieldValueOrDef);
-          console.log('---');
-
-          if (Array.isArray(fieldValueOrDef)) {
-            result = fieldValueOrDef.includes(val);
+          if (Array.isArray(self.getFieldValue(key))) {
+            result = self.getFieldValue(key).includes(val);
             break;
           }
-
-          if (val !== fieldValueOrDef) {
+          if (val !== self.getFieldValue(key)) {
             result = false;
             break;
           }

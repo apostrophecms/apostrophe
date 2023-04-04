@@ -114,6 +114,7 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import { has } from 'Modules/@apostrophecms/schema/lib/object';
 
 export default {
   name: 'AposDocEditor',
@@ -463,14 +464,24 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
+
           this.original = klona(docData);
-          this.docFields.data = docData;
+          this.docFields.data = this.schema.reduce(addDefaultValues, docData);
+
           if (this.published) {
             this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
           }
+
           this.docReady = true;
           this.prepErrors();
         }
+      }
+
+      function addDefaultValues(memo, field) {
+        return {
+          ...memo,
+          ...(!has(memo, field.name) && has(field, 'def') && { [field.name]: field.def })
+        };
       }
     },
     async preview() {
