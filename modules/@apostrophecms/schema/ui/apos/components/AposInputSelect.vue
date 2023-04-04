@@ -43,16 +43,6 @@ export default {
       return [ this.value.duplicate && 'apos-input--error' ];
     }
   },
-  async mounted() {
-    this.prependEmptyChoice();
-    this.$nextTick(() => {
-      // this has to happen on nextTick to avoid emitting before schemaReady is
-      // set in AposSchema
-      if (this.field.required && (this.next == null) && (this.choices[0] != null)) {
-        this.next = this.choices[0].value;
-      }
-    });
-  },
   methods: {
     validate(value) {
       if (this.field.required && (value === null)) {

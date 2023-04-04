@@ -25,19 +25,31 @@ export default {
       );
       if (response.choices) {
         this.choices = response.choices;
-        this.prependEmptyChoice();
       }
     } else {
       this.choices = this.field.choices;
     }
+
+    if (this.field.type !== 'select') {
+      return;
+    }
+
+    this.prependEmptyChoice();
+    this.$nextTick(() => {
+      // this has to happen on nextTick to avoid emitting before schemaReady is
+      // set in AposSchema
+      if (this.field.required && this.next == null && this.choices[0] != null) {
+        this.next = this.choices[0].value;
+      }
+    });
   },
 
   methods: {
     prependEmptyChoice() {
+      const hasNullValue = this.choices.find(choice => choice.value === null);
+
       // Add an null option if there isn't one already
-      if (!this.field.required && !this.choices.find(choice => {
-        return choice.value === null;
-      })) {
+      if (!this.field.required && !hasNullValue) {
         this.choices.unshift({
           label: '',
           value: null
