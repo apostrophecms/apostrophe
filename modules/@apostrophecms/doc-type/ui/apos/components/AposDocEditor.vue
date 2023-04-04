@@ -432,10 +432,6 @@ export default {
     async loadDoc() {
       let docData;
       try {
-        if (!await this.lock(this.getOnePath, this.docId)) {
-          await this.lockNotAvailable();
-          return;
-        }
         docData = await apos.http.get(this.getOnePath, {
           busy: true,
           qs: {
@@ -451,6 +447,10 @@ export default {
         }
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
+        if (canEdit && !await this.lock(this.getOnePath, this.docId)) {
+          await this.lockNotAvailable();
+          return;
+        }
       } catch {
         await apos.notify('apostrophe:loadDocFailed', {
           type: 'warning',
