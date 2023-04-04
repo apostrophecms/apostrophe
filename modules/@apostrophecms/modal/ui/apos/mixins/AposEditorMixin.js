@@ -252,11 +252,18 @@ export default {
             result = false;
             break;
           }
-          if (Array.isArray(self.getFieldValue(key))) {
-            result = self.getFieldValue(key).includes(val);
+
+          const fieldValue = self.getFieldValue(key);
+          const fieldValueOrDef = fieldValue !== undefined
+            ? fieldValue
+            : self.schema.find(field => field.name === key).def;
+
+          if (Array.isArray(fieldValueOrDef)) {
+            result = fieldValueOrDef.includes(val);
             break;
           }
-          if (val !== self.getFieldValue(key)) {
+
+          if (val !== fieldValueOrDef) {
             result = false;
             break;
           }
