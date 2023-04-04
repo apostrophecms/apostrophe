@@ -1002,7 +1002,7 @@ module.exports = {
       getRestQuery(req) {
         const query = self.find(req).attachments(true);
         query.applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'view-draft')) {
+        if (!self.canAccessApi(req)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -1024,7 +1024,7 @@ module.exports = {
       // we also want to flunk all public access to REST APIs if not specifically configured.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'view-draft')) {
+          if (!self.canAccessApi(req)) {
             throw self.apos.error('notfound');
           }
         }

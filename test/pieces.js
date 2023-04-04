@@ -14,6 +14,10 @@ describe('Pieces', function() {
 
   this.timeout(t.timeout);
 
+  let editor;
+  let contributor;
+  let guest;
+
   before(async function() {
     apos = await t.create({
       root: module,
@@ -1996,36 +2000,6 @@ describe('Pieces', function() {
   });
 
   describe('field viewPermission|editPermission', function() {
-    const createUser = (role = 'admin') => ({
-      title = `test-${role}`,
-      username = `test-${role}`,
-      password = role
-    } = {}) => {
-      return apos.user.insert(
-        apos.task.getReq(),
-        {
-          ...apos.user.newInstance(),
-          title,
-          username,
-          password,
-          email: `${username}@admin.io`,
-          role
-        }
-      );
-    };
-    const loginAs = async (role) => {
-      const jar = apos.http.jar();
-      await apos.http.post('/api/v1/@apostrophecms/login/login', {
-        body: {
-          username: `test-${role}`,
-          password: role,
-          session: true
-        },
-        jar
-      });
-
-      return jar;
-    };
 
     this.afterEach(async function() {
       await apos.doc.db.deleteMany({ email: /@admin.io$/ });
@@ -2058,8 +2032,8 @@ describe('Pieces', function() {
       });
 
       it('should be able to retrieve fields with viewPermission when having appropriate credentials on rest API', async function() {
-        await createUser('admin')();
-        const jar = await loginAs('admin');
+        // admin user was inserted earlier
+        const jar = await t.loginAs(apos, 'admin');
 
         const req = apos.task.getReq();
         const candidate = {
@@ -2089,10 +2063,8 @@ describe('Pieces', function() {
       });
 
       it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
-        await createUser('admin')();
-        const jar = await loginAs('admin');
-
-        const editor = await createUser('editor')();
+        const jar = await t.loginAs(apos, 'admin');
+        editor = await t.createUser(apos, 'editor');
 
         const req = apos.task.getReq();
         const candidate = {
@@ -2207,8 +2179,7 @@ describe('Pieces', function() {
       });
 
       it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
-        await createUser('editor')();
-        const jar = await loginAs('editor');
+        const jar = await t.loginAs(apos, 'editor');
 
         const req = apos.task.getReq();
         const candidate = {
@@ -2238,8 +2209,7 @@ describe('Pieces', function() {
       });
 
       it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
-        await createUser('editor')();
-        const jar = await loginAs('editor');
+        const jar = await t.loginAs(apos, 'editor');
 
         const req = apos.task.getReq();
         const candidate = {
@@ -2339,8 +2309,8 @@ describe('Pieces', function() {
       });
 
       it('should be able to retrieve fields with viewPermission when having appropriate credentials', async function() {
-        await createUser('contributor')();
-        const jar = await loginAs('contributor');
+        contributor = await t.createUser(apos, 'contributor');
+        const jar = await t.loginAs(apos, 'contributor');
 
         const req = apos.task.getReq();
         const candidate = {
@@ -2370,8 +2340,7 @@ describe('Pieces', function() {
       });
 
       it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
-        await createUser('contributor')();
-        const jar = await loginAs('contributor');
+        const jar = await t.loginAs(apos, 'contributor');
 
         const req = apos.task.getReq();
         const candidate = {
@@ -2453,13 +2422,12 @@ describe('Pieces', function() {
       });
 
       it('should be able to edit with permission checks during prepareForStorage & updateCacheField handlers', async function() {
-        const contributor = await createUser('contributor')();
-        const jar = await loginAs('contributor');
+        const jar = await t.loginAs(apos, 'contributor');
 
-        const editor = await createUser('editor')();
-        const guest = await createUser('guest')();
+        guest = await t.createUser(apos, 'guest');
 
         const req = apos.task.getReq({ mode: 'draft' });
+
         const candidate = {
           ...apos.modules.board.newInstance(),
           title: 'Icarus',
