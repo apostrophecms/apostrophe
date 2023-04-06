@@ -1424,8 +1424,13 @@ module.exports = {
           label,
           pluralLabel,
           relatedDocument: self.options.relatedDocument,
+          canEdit: self.apos.permission.can(req, 'edit', self.name, 'draft'),
           canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
+        browserOptions.canLocalize = browserOptions.canEdit &&
+          self.options.localized &&
+          Object.keys(self.apos.i18n.locales).length > 1 &&
+          Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.action = self.action;
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();

@@ -1074,7 +1074,6 @@ module.exports = {
         browserOptions.showDiscardDraft = self.options.showDiscardDraft;
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
         browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
-        browserOptions.canLocalize = self.options.localized && Object.keys(self.apos.i18n.locales).length > 1 && self.apos.permission.can(req, 'view', self.name, 'publish');
         _.defaults(browserOptions, {
           components: {}
         });

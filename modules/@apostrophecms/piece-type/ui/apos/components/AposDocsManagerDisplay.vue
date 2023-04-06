@@ -78,7 +78,7 @@
           />
         </td>
         <!-- append the context menu -->
-        <td v-if="canEdit(item)" class="apos-table__cell apos-table__cell--context-menu">
+        <td class="apos-table__cell apos-table__cell--context-menu">
           <AposCellContextMenu
             :state="state[item._id]" :item="item"
             :draft="item"
@@ -164,10 +164,10 @@ export default {
   methods: {
     canEdit(item) {
       if (item._id) {
-        return item._edit;
+        return item._edit || this.options.canLocalize;
       }
 
-      return this.options.canEdit;
+      return this.options.canEdit || this.options.canLocalize;
     },
     over(id) {
       this.state[id].hover = true;
