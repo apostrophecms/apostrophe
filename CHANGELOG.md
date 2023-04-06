@@ -4,6 +4,8 @@
 
 ### Adds
 
+* We now check the view permission instead of the edit permission when we load the page tree.
+* The editor modal can now be opened in read-only mode if the current user can not edit the current document.
 * Check appropriate permission for context operation and manager modal action. We now check if the current user can edit
     the document to be able to perform a copy, discard a draft.
 * Add `_edit: true` to the list of locales the current user can edit in `@apostrophecms/i18n`.
