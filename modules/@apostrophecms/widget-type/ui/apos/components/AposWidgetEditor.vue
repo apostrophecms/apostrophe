@@ -142,7 +142,15 @@ export default {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
-    this.original = this.value ? klona(this.value) : this.getDefault();
+    if (this.value) {
+      this.original = klona(this.value);
+      return;
+    }
+
+    const defaults = this.getDefault();
+
+    this.original = defaults;
+    this.docFields.data = defaults;
   },
   methods: {
     updateDocFields(value) {
@@ -177,7 +185,12 @@ export default {
     getDefault() {
       const widget = {};
       this.schema.forEach(field => {
-        widget[field.name] = field.def ? klona(field.def) : field.def;
+        // Do not simply check if `field.def` is truthy, this in not enough
+        // since a def as an empty string must be considered valid:
+        const hasDefaultValue = Object.prototype.hasOwnProperty.call(field, 'def');
+        widget[field.name] = hasDefaultValue
+          ? klona(field.def)
+          : null;
       });
       return widget;
     }
