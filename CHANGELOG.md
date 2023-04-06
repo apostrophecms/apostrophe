@@ -4,6 +4,8 @@
 
 ### Adds
 
+* Check appropriate permission for context operation and manager modal action. We now check if the current user can edit
+    the document to be able to perform a copy, discard a draft.
 * Add `_edit: true` to the list of locales the current user can edit in `@apostrophecms/i18n`.
 
 ## 3.43.0 (2023-03-29)
