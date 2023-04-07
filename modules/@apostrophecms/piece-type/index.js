@@ -1059,11 +1059,12 @@ module.exports = {
   extendMethods(self) {
     return {
       getBrowserData(_super, req) {
+        const userBatchOperations = self.batchOperations.filter(batchOperation => self.apos.permission.can(req, 'edit', self.name, batchOperation.action));
         const browserOptions = _super(req);
         // Options specific to pieces and their manage modal
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
-        browserOptions.batchOperations = self.batchOperations;
+        browserOptions.batchOperations = userBatchOperations;
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
