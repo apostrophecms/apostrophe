@@ -763,6 +763,11 @@ module.exports = {
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
+      // Identical to findOneForEditing by default, but could be
+      // overridden usefully in subclasses.
+      async findOneForLocalizing(req, criteria) {
+        return self.findOneForEditing(req, criteria);
+      },
       // Submit the current draft for review. The identity
       // of `req.user` is associated with the submission.
       // Returns the `submitted` object, with `by`, `byId`,

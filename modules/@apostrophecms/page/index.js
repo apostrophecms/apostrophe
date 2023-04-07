@@ -418,7 +418,7 @@ module.exports = {
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const draft = await self.findOneForEditing(req.clone({
+          const draft = await self.findOneForLocalizing(req.clone({
             mode: 'draft'
           }), {
             aposDocId: _id.split(':')[0]
@@ -2246,6 +2246,9 @@ database.`);
         return query;
       },
       async findOneForEditing(req, criteria, builders) {
+        return self.findForEditing(req, criteria, builders).toObject();
+      },
+      async findOneForLocalizing(req, criteria, builders) {
         return self.findForEditing(req, criteria, builders).toObject();
       },
       // Throws a `notfound` exception if a public API projection is
