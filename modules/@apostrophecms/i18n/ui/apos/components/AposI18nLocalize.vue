@@ -396,7 +396,7 @@ export default {
       return this.wizard.values.toLocales.data;
     },
     allSelected() {
-      return this.selectedLocales.length === this.locales.filter(locale => !this.isCurrentLocale(locale)).length;
+      return this.selectedLocales.length === this.locales.filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale)).length;
     },
     relatedDocTypes() {
       const types = {};
@@ -545,7 +545,7 @@ export default {
       return !!this.localized[locale.name];
     },
     selectAll() {
-      this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale));
+      this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale));
     },
     deselectAll() {
       this.wizard.values.toLocales.data = [];
