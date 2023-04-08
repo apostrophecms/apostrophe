@@ -1,7 +1,7 @@
 const glob = require('glob');
 const fs = require('fs-extra');
 const Promise = require('bluebird');
-const webpackModule = require('webpack');
+const webpackModule = require('@nrwl/rspack');
 const globalIcons = require('./lib/globalIcons');
 const path = require('path');
 const util = require('util');
@@ -364,6 +364,7 @@ module.exports = {
               fs.removeSync(`${bundleDir}/${outputFilename}`);
               const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
               fs.removeSync(cssPath);
+              console.log(webpackModule);
               const webpack = Promise.promisify(webpackModule);
               const webpackBaseConfig = require(`./lib/webpack/${name}/webpack.config`);
 
