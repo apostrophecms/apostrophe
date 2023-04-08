@@ -28,7 +28,7 @@
           :size="13"
         />
         <AposContextMenu
-          v-if="hasRelationshipEditor && more.menu.length"
+          v-if="hasRelationshipFields && more.menu.length"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
@@ -134,9 +134,9 @@ export default {
       type: Boolean,
       default: false
     },
-    hasRelationshipSchema: {
-      type: Boolean,
-      default: false
+    relationshipSchema: {
+      type: Array,
+      default: () => null
     },
     editorLabel: {
       type: String,
@@ -178,9 +178,14 @@ export default {
     },
     hasRelationshipEditor() {
       if (this.item.attachment && this.item.attachment.group === 'images') {
-        return this.hasRelationshipSchema && this.item.attachment._isCroppable;
+        return this.relationshipSchema && this.item.attachment._isCroppable;
       }
-      return this.hasRelationshipSchema;
+      return this.relationshipSchema;
+    },
+    hasRelationshipFields() {
+      return this.hasRelationshipEditor &&
+        Array.isArray(this.relationshipSchema) &&
+        this.relationshipSchema.length;
     }
   },
   methods: {

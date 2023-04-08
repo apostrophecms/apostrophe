@@ -1,19 +1,17 @@
 # Changelog
 
-## UNRELEASED
+## 3.43.0 (2023-03-29)
 
 ### Adds
 
 * Add the possibility to override the default "Add Item" button label by setting the `itemLabel` option of an `array` field.
+* Adds `touch` task for every piece type. This task invokes `update` on each piece, which will execute all of the same event handlers that normally execute when a piece of that type is updated. Example usage: `node app article:touch`.
 
 ### Fixes
 
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 * Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
-
-### Adds
-
-* Adds `touch` task for every piece type. This task invokes update on each piece, which will execute all of the same event handlers that normally execute when a piece of that type is updated. Example usage: `node app article:touch`.
+* Disable context menu for related items when their `relationship` field has no sub-[`fields`](https://v3.docs.apostrophecms.org/guide/relationships.html#providing-context-with-fields) configured.
 
 ## 3.42.0 (2023-03-16)
 
