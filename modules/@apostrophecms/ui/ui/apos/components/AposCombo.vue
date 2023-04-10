@@ -346,14 +346,14 @@ export default {
 }
 
 .apos-combo__list {
-  display: none;
+  z-index: $z-index-default;
   position: absolute;
-  width: 100%;
-  left: 0;
   top: 44px;
+  left: 0;
+  display: none;
+  width: 100%;
   list-style: none;
   background-color: var(--a-white);
-  z-index: 1;
   padding-left: 0;
   margin: 0;
   max-height: 300px;
