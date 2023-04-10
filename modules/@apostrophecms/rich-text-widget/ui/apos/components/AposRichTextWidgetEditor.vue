@@ -25,8 +25,32 @@
         </div>
       </AposContextMenuDialog>
     </bubble-menu>
-    <floating-menu :should-show="showFloatingMenu" :editor="editor" :tippy-options="{ duration: 100 }" v-if="editor">
-      <button>Hello</button>
+    <floating-menu class="apos-rich-text-insert-menu" :should-show="showFloatingMenu" :editor="editor" :tippy-options="{ duration: 100 }" v-if="editor">
+      <div v-if="!activeComponent" v-for="(item, index) in insert"
+        :key="`${item}-${index}`"
+        class="apos-rich-text-insert-menu-item"
+        @click="activateInsertMenuItem(item, insertMenu[item])"
+      >
+        <span class="apos-rich-text-insert-menu-icon">
+          <AposIndicator
+            :icon="insertMenu[item].icon"
+            :icon-size="35"
+            class="apos-button__icon"
+            fill-color="currentColor"
+          />
+        </span>
+        <span class="apos-rich-text-insert-menu-label">
+          <h4>{{ $t(insertMenu[item].label) }}</h4>
+          <p>{{ $t(insertMenu[item].description) }}</p>
+        </span>
+      </div>
+      <component
+        v="else"
+        :is="activeComponent"
+        :active="true"
+        :editor="editor"
+        @close="activeComponent = null"
+      />
     </floating-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="editorOptions.className" />
@@ -108,7 +132,8 @@ export default {
       },
       pending: null,
       isFocused: null,
-      showPlaceholder: null
+      showPlaceholder: null,
+      activeComponent: null
     };
   },
   computed: {
@@ -158,11 +183,21 @@ export default {
       const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
     },
+    // Names of active toolbar items for this particular widget, as an array
     toolbar() {
       return this.editorOptions.toolbar;
     },
+    // Information about all available toolbar items, as an object
     tools() {
       return this.moduleOptions.tools;
+    },
+    // Names of active insert menu items for this particular widget, as an array
+    insert() {
+      return this.editorOptions.insert;
+    },
+    // Information about all available insert menu items, as an object
+    insertMenu() {
+      return this.moduleOptions.insertMenu;
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
@@ -435,6 +470,9 @@ export default {
     },
     // Per Stu's sample
     showFloatingMenu({ state }) {
+      if (!this.insertMenu) {
+        return false;
+      }
       const { $to } = state.selection;
       if (state.selection.empty && $to.nodeBefore && $to.nodeBefore.text) {
         const text = $to.nodeBefore.text;
@@ -444,6 +482,13 @@ export default {
         }
       }
       return false;
+    },
+    activateInsertMenuItem(name, info) {
+      if (info.component) {
+        this.activeComponent = info.component;
+      } else {
+        this.editor.commands[info.action || name]();
+      }
     }
   }
 };

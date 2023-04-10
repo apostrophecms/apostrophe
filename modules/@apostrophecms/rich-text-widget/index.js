@@ -203,6 +203,20 @@ module.exports = {
         icon: 'image-icon'
       }
     },
+    editorInsertMenu: {
+      table: {
+        icon: 'table-icon',
+        label: 'apostrophe:table',
+        action: 'insertTable',
+        description: 'apostrophe:tableDescription'
+      },
+      image: {
+        icon: 'image-icon',
+        label: 'apostrophe:image',
+        description: 'apostrophe:imageDescription',
+        component: 'AposImageControlDialog'
+      }
+    },
     // Additional properties used in executing tiptap commands
     // Will be mixed in automatically for developers
     tiptapTextCommands: {
@@ -243,7 +257,8 @@ module.exports = {
   },
   icons: {
     'format-text-icon': 'FormatText',
-    'format-color-highlight-icon': 'FormatColorHighlight'
+    'format-color-highlight-icon': 'FormatColorHighlight',
+    'table-icon': 'Table'
   },
   methods(self) {
     return {
@@ -355,7 +370,7 @@ module.exports = {
           image: [ 'figure', 'img', 'figcaption' ],
           div: [ 'div' ]
         };
-        for (const item of options.toolbar || []) {
+        for (const item of self.combinedItems(options)) {
           if (simple[item]) {
             for (const tag of simple[item]) {
               allowedTags[tag] = true;
@@ -423,7 +438,7 @@ module.exports = {
             }
           ]
         };
-        for (const item of options.toolbar || []) {
+        for (const item of self.combinedItems(options)) {
           if (simple[item]) {
             const entries = Array.isArray(simple[item]) ? simple[item] : [ simple[item] ];
             for (const entry of entries) {
@@ -466,7 +481,7 @@ module.exports = {
             }
           }
         };
-        for (const item of options.toolbar || []) {
+        for (const item of self.combinedItems(options)) {
           if (simple[item]) {
             if (!allowedStyles[simple[item].selector]) {
               allowedStyles[simple[item].selector] = {};
@@ -487,7 +502,7 @@ module.exports = {
 
       toolbarToAllowedClasses(options) {
         const allowedClasses = {};
-        if ((options.toolbar || []).includes('styles')) {
+        if (self.combinedItems(options).includes('styles')) {
           for (const style of options.styles || []) {
             const tag = style.tag;
             const classes = self.getStyleClasses(style);
@@ -501,6 +516,12 @@ module.exports = {
           allowedClasses[tag] = Object.keys(allowedClasses[tag]);
         }
         return allowedClasses;
+      },
+
+      // Returns a combined array of toolbar and insert menu items from the given
+      // set of rich text widget options
+      combinedItems(options) {
+        return [...(options.toolbar || []), ...(options.insert || [])]
       },
 
       getStyleClasses(heading) {
@@ -700,6 +721,7 @@ module.exports = {
         const finalData = {
           ...initialData,
           tools: self.options.editorTools,
+          insertMenu: self.options.editorInsertMenu,
           defaultOptions: self.options.defaultOptions,
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
