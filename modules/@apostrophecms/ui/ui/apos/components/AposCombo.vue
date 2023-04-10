@@ -177,7 +177,7 @@ export default {
       return this.value.data.some((val) => val === choice.value);
     },
     allItemsSelected () {
-      return this.value.data.length === this.choices.length;
+      return this.choices.length && this.value.data.length === this.choices.length;
     },
     getSelectedOption(checked) {
       if (checked === '__all') {
