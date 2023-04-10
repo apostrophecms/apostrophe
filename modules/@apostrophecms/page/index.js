@@ -2217,7 +2217,7 @@ database.`);
           .applyBuildersSafely(req.query);
         // Minimum standard for a REST query without a public projection
         // is being allowed to view drafts on the site
-        if (!self.apos.permission.can(req, 'view-draft')) {
+        if (!self.canAccessApi(req)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -2258,7 +2258,7 @@ database.`);
       // we also want to flunk all public access to REST APIs if not specifically configured.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'view-draft')) {
+          if (!self.canAccessApi(req)) {
             throw self.apos.error('notfound');
           }
         }

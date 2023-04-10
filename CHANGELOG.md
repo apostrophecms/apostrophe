@@ -9,6 +9,13 @@
 * Check appropriate permission for context operation and manager modal action. We now check if the current user can edit
     the document to be able to perform a copy, discard a draft.
 * Add `_edit: true` to the list of locales the current user can edit in `@apostrophecms/i18n`.
+* If the new `guestApiAccess` option is set to `true` for a piece type or for `@apostrophecms/page`,
+Apostrophe will allow all logged-in users to access the GET-method REST APIs of that
+module, not just users with editing privileges, even if `publicApiProjection` is not set.
+This is useful when the goal is to allow REST API access to "guest" users who have
+project-specific reasons to fetch access content via REST APIs.
+* `test-lib/utils.js` has new `createUser` and `loginAs` methods for the convenience of
+those writing mocha tests of Apostrophe modules.
 
 ## 3.43.0 (2023-03-29)
 

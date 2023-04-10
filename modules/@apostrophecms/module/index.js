@@ -802,6 +802,17 @@ module.exports = {
         }
       },
 
+      // Modules that have REST APIs use this method
+      // to determine if a request is qualified to access
+      // it without restriction to the `publicApiProjection`
+      canAccessApi(req) {
+        if (self.options.guestApiAccess) {
+          return !!req.user;
+        } else {
+          return self.apos.permission.can(req, 'view-draft');
+        }
+      },
+
       // Merge in the event emitter / responder capabilities
       ...require('./lib/events.js')(self)
     };
