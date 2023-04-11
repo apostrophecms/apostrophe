@@ -30,18 +30,9 @@ export default {
       this.choices = this.field.choices;
     }
 
-    if (this.field.type !== 'select') {
-      return;
+    if (this.field.type === 'select') {
+      this.prependEmptyChoice();
     }
-
-    this.prependEmptyChoice();
-    this.$nextTick(() => {
-      // this has to happen on nextTick to avoid emitting before schemaReady is
-      // set in AposSchema
-      if (this.field.required && this.next == null && this.choices[0] != null) {
-        this.next = this.choices[0].value;
-      }
-    });
   },
 
   methods: {
@@ -49,7 +40,7 @@ export default {
       const hasNullValue = this.choices.find(choice => choice.value === null);
 
       // Add an null option if there isn't one already
-      if (!this.field.required && !hasNullValue) {
+      if (!hasNullValue) {
         this.choices.unshift({
           label: '',
           value: null
