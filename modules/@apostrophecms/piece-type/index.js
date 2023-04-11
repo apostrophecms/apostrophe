@@ -1053,18 +1053,20 @@ module.exports = {
           await self.apos.doc.db.deleteMany({ _id: { $in: deletes } });
           deletes.splice(0);
         }
+      },
+      checkBatchOperationsPermissions(req, permission = 'edit') {
+        return self.batchOperations.filter(batchOperation => self.apos.permission.can(req, permission, self.name, batchOperation.action));
       }
     };
   },
   extendMethods(self) {
     return {
       getBrowserData(_super, req) {
-        const userBatchOperations = self.batchOperations.filter(batchOperation => self.apos.permission.can(req, 'edit', self.name, batchOperation.action));
         const browserOptions = _super(req);
         // Options specific to pieces and their manage modal
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
-        browserOptions.batchOperations = userBatchOperations;
+        browserOptions.batchOperations = self.checkBatchOperationsPermissions(req);
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
