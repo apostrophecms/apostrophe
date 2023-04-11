@@ -346,7 +346,7 @@ export default {
 }
 
 .apos-combo__list {
-  z-index: $z-index-default;
+  z-index: $z-index-manager-display;
   position: absolute;
   top: 44px;
   left: 0;
