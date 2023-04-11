@@ -38,9 +38,10 @@ export default {
   methods: {
     prependEmptyChoice() {
       const hasNullValue = this.choices.find(choice => choice.value === null);
+      const hasDefaultValue = Object.prototype.hasOwnProperty.call(this.field, 'def');
 
       // Add an null option if there isn't one already
-      if (!hasNullValue) {
+      if (!hasDefaultValue && !hasNullValue) {
         this.choices.unshift({
           label: '',
           value: null
