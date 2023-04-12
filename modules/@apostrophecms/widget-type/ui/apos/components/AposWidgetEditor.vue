@@ -142,14 +142,18 @@ export default {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
+    const defaults = this.getDefault();
+
     if (this.value) {
       this.original = klona(this.value);
+      this.docFields.data = klona({
+        ...defaults,
+        ...this.value
+      });
       return;
     }
 
-    const defaults = this.getDefault();
-
-    this.original = defaults;
+    this.original = klona(defaults);
     this.docFields.data = defaults;
   },
   methods: {
