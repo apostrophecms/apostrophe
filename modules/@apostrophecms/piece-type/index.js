@@ -133,7 +133,8 @@ module.exports = {
           title: 'apostrophe:publishType',
           description: 'apostrophe:publishingBatchConfirmation',
           confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
-        }
+        },
+        permission: 'edit'
       },
       archive: {
         label: 'apostrophe:archive',
@@ -149,7 +150,8 @@ module.exports = {
           title: 'apostrophe:archiveType',
           description: 'apostrophe:archivingBatchConfirmation',
           confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
-        }
+        },
+        permission: 'edit'
       },
       restore: {
         label: 'apostrophe:restore',
@@ -165,7 +167,8 @@ module.exports = {
           title: 'apostrophe:restoreType',
           description: 'apostrophe:restoreBatchConfirmation',
           confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
-        }
+        },
+        permission: 'edit'
       }
     },
     group: {
@@ -1054,8 +1057,13 @@ module.exports = {
           deletes.splice(0);
         }
       },
-      checkBatchOperationsPermissions(req, permission = 'edit') {
-        return self.batchOperations.filter(batchOperation => self.apos.permission.can(req, permission, self.name, batchOperation.action));
+      checkBatchOperationsPermissions(req) {
+        return self.batchOperations.filter(batchOperation => {
+          if (batchOperation.permission) {
+            return self.apos.permission.can(req, batchOperation.permission, self.name);
+          }
+          return true;
+        });
       }
     };
   },
