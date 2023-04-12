@@ -4,7 +4,7 @@
 
 ### Fixes
 
-* `showFields` with dynamic choices now works as expected.
+* `showFields` with dynamic choices now works as expected for `select` elements.
 
 ## 2.227.0 (2023-03-16)
 
