@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* `showFields` with dynamic choices now works as expected.
+
 ## 2.227.0 (2023-03-16)
 
 ### Adds
