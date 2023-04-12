@@ -162,6 +162,7 @@ export default {
         ref: null
       },
       published: null,
+      readOnly: false,
       restoreOnly: false,
       saveMenu: null,
       generation: 0
@@ -174,14 +175,24 @@ export default {
     followingUtils() {
       return this.followingValues('utility');
     },
+    canEdit() {
+      if (this.original && this.original._id) {
+        return this.original._edit || this.moduleOptions.canEdit;
+      }
+
+      return this.moduleOptions.canEdit;
+    },
     canPublish() {
       if (this.original && this.original._id) {
-        return this.original._publish;
+        return this.original._publish || this.moduleOptions.canPublish;
       }
 
       return this.moduleOptions.canPublish;
     },
     saveDisabled() {
+      if (!this.canEdit) {
+        return true;
+      }
       if (this.restoreOnly) {
         // Can always restore if it's a read-only view of the archive
         return false;
@@ -421,10 +432,6 @@ export default {
     async loadDoc() {
       let docData;
       try {
-        if (!await this.lock(this.getOnePath, this.docId)) {
-          await this.lockNotAvailable();
-          return;
-        }
         docData = await apos.http.get(this.getOnePath, {
           busy: true,
           qs: {
@@ -437,6 +444,12 @@ export default {
           this.restoreOnly = true;
         } else {
           this.restoreOnly = false;
+        }
+        const canEdit = docData._edit || this.moduleOptions.canEdit;
+        this.readOnly = canEdit === false;
+        if (canEdit && !await this.lock(this.getOnePath, this.docId)) {
+          await this.lockNotAvailable();
+          return;
         }
       } catch {
         await apos.notify('apostrophe:loadDocFailed', {

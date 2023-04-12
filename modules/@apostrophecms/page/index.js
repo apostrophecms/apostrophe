@@ -133,7 +133,7 @@ module.exports = {
           const autocomplete = self.apos.launder.string(req.query.autocomplete);
 
           if (autocomplete.length) {
-            if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
+            if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
             return {
@@ -145,7 +145,7 @@ module.exports = {
           }
 
           if (all) {
-            if (!self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type')) {
+            if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
             const page = await self.getRestQuery(req).permission(false).and({ level: 0 }).children({
@@ -418,7 +418,7 @@ module.exports = {
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
-          const draft = await self.findOneForEditing(req.clone({
+          const draft = await self.findOneForLocalizing(req.clone({
             mode: 'draft'
           }), {
             aposDocId: _id.split(':')[0]
@@ -819,6 +819,11 @@ database.`);
         // A list of all valid page types, including parked pages etc. This is
         // not a menu of choices for creating a page manually
         browserOptions.validPageTypes = self.apos.instancesOf('@apostrophecms/page-type').map(module => module.__meta.name);
+        browserOptions.canEdit = self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.canLocalize = browserOptions.canEdit &&
+          browserOptions.localized &&
+          Object.keys(self.apos.i18n.locales).length > 1 &&
+          Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
@@ -2241,6 +2246,9 @@ database.`);
         return query;
       },
       async findOneForEditing(req, criteria, builders) {
+        return self.findForEditing(req, criteria, builders).toObject();
+      },
+      async findOneForLocalizing(req, criteria, builders) {
         return self.findForEditing(req, criteria, builders).toObject();
       },
       // Throws a `notfound` exception if a public API projection is

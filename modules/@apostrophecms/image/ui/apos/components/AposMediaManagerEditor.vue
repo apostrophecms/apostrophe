@@ -158,7 +158,7 @@ export default {
       return window.apos.modules[this.activeMedia.type] || {};
     },
     canLocalize() {
-      return (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized && this.activeMedia._id;
+      return this.moduleOptions.canLocalize && this.activeMedia._id;
     },
     moreMenu() {
       const menu = [ {

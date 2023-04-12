@@ -763,6 +763,11 @@ module.exports = {
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
+      // Identical to findOneForEditing by default, but could be
+      // overridden usefully in subclasses.
+      async findOneForLocalizing(req, criteria) {
+        return self.findOneForEditing(req, criteria);
+      },
       // Submit the current draft for review. The identity
       // of `req.user` is associated with the submission.
       // Returns the `submitted` object, with `by`, `byId`,
@@ -1424,8 +1429,13 @@ module.exports = {
           label,
           pluralLabel,
           relatedDocument: self.options.relatedDocument,
+          canEdit: self.apos.permission.can(req, 'edit', self.name, 'draft'),
           canPublish: self.apos.permission.can(req, 'publish', self.name)
         };
+        browserOptions.canLocalize = browserOptions.canEdit &&
+          self.options.localized &&
+          Object.keys(self.apos.i18n.locales).length > 1 &&
+          Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.action = self.action;
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
