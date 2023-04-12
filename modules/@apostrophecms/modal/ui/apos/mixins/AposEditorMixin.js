@@ -253,6 +253,10 @@ export default {
             break;
           }
 
+          // Use the default values defined in the schema fields
+          // to fix conditional fields not showing up when editing existing docs,
+          // in the case where new fields have been added to the schema
+          // but not (yet) saved to the document:
           const fieldValue = self.getFieldValue(key);
           const fieldValueOrDef = fieldValue !== undefined
             ? fieldValue
