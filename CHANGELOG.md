@@ -17,6 +17,9 @@ project-specific reasons to fetch access content via REST APIs.
 * `test-lib/utils.js` has new `createUser` and `loginAs` methods for the convenience of
 those writing mocha tests of Apostrophe modules.
 
+### Fixes
+* Fix child page slug when title is deleted
+
 ## 3.43.0 (2023-03-29)
 
 ### Adds

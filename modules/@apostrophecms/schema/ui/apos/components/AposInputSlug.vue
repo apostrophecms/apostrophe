@@ -110,7 +110,7 @@ export default {
           if (this.field.page) {
             let parts = this.next.split('/');
             parts = parts.filter(part => part.length > 0);
-            if (parts.length) {
+            if (parts.length && newValue.length) {
               // Remove last path component so we can replace it
               parts.pop();
             }
@@ -132,7 +132,7 @@ export default {
   },
   methods: {
     async watchNext() {
-      this.next = this.slugify(this.next);
+      this.next = this.slugify(this.next, { fullSlug: true });
       this.validateAndEmit();
       try {
         await this.debouncedCheckConflict();
@@ -182,7 +182,7 @@ export default {
     // if componentOnly is true, we are slugifying just one component of
     // a slug as part of following the title field, and so we do *not*
     // want to allow slashes (when editing a page) or set a prefix.
-    slugify(s, { componentOnly = false } = {}) {
+    slugify(s, { componentOnly = false, fullSlug = false } = {}) {
       const options = {
         def: ''
       };
@@ -207,6 +207,12 @@ export default {
         s = s.replace(/\/+/g, '/');
         if (s !== '/') {
           s = s.replace(/\/$/, '');
+        }
+        if (this.field.page && fullSlug) {
+          const slashCount = [ ...s ].filter(character => character === '/').length;
+          if (slashCount === this.field.level - 1) {
+            s += '/';
+          }
         }
       }
       if (!componentOnly) {
