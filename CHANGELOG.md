@@ -11,7 +11,7 @@ This is useful when the goal is to allow REST API access to "guest" users who ha
 project-specific reasons to fetch access content via REST APIs.
 * `test-lib/utils.js` has new `createUser` and `loginAs` methods for the convenience of
 those writing mocha tests of Apostrophe modules.
-* `batchOperations` permissions: if a `permission` property is added to any entry in the `batchOperations` cascade of a piece-type module, this permission will be checked for every user. See `batchOperations` configuration in `modules/@apostrophecms/piece-type/index.js`. The check function `checkBatchOperationsPermissions` can be extended.
+* `batchOperations` permissions: if a `permission` property is added to any entry in the `batchOperations` cascade of a piece-type module, this permission will be checked for every user. See `batchOperations` configuration in `modules/@apostrophecms/piece-type/index.js`. The check function `checkBatchOperationsPermissions` can be extended. Please note that this permission is checked only to determine whether to offer the operation.
 
 ## 3.43.0 (2023-03-29)
 
