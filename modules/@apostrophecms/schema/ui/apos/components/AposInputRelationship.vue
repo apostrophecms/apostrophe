@@ -186,9 +186,12 @@ export default {
         this.subfields[doc._id] = doc._fields;
       }
       for (const doc of after) {
-        if (this.subfields[doc._id] && !Object.keys(doc._fields || {}).length) {
-          doc._fields = this.subfields[doc._id];
+        if (Object.keys(doc._fields || {}).length) {
+          continue;
         }
+        doc._fields = this.subfields[doc._id]
+          ? this.subfields[doc._id]
+          : this.getDefault();
       }
     }
   },
@@ -317,6 +320,18 @@ export default {
       if (this.field.editor === 'AposImageRelationshipEditor') {
         return 'apostrophe:editImageAdjustments';
       }
+    },
+    getDefault() {
+      const object = {};
+      this.field.schema.forEach(field => {
+        // Do not simply check if `field.def` is truthy, this in not enough
+        // since a def as an empty string must be considered valid:
+        const hasDefaultValue = Object.prototype.hasOwnProperty.call(field, 'def');
+        object[field.name] = hasDefaultValue
+          ? klona(field.def)
+          : null;
+      });
+      return object;
     }
   }
 };
