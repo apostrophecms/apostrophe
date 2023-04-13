@@ -1,14 +1,11 @@
 # Changelog
 
-## UNRELEASED
+## 3.44.0 (2023-04-13)
 
 ### Adds
 
-* We now check the view permission instead of the edit permission when we load the page tree.
-* The editor modal can now be opened in read-only mode if the current user can not edit the current document.
-* Check appropriate permission for context operation and manager modal action. We now check if the current user can edit
-    the document to be able to perform a copy, discard a draft.
-* Add `_edit: true` to the list of locales the current user can edit in `@apostrophecms/i18n`.
+* `checkboxes` fields now support a new `style: 'combobox'` option for a better multiple-select experience when there
+are many choices.
 * If the new `guestApiAccess` option is set to `true` for a piece type or for `@apostrophecms/page`,
 Apostrophe will allow all logged-in users to access the GET-method REST APIs of that
 module, not just users with editing privileges, even if `publicApiProjection` is not set.
