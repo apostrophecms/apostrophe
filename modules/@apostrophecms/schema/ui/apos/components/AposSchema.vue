@@ -252,10 +252,6 @@ export default {
       this.next = next;
       this.fieldState = fieldState;
 
-      if (this.fields?.slug?.field?.page && this.value.data.level) {
-        this.fields.slug.field.level = this.value.data.level;
-      }
-
       // Wait until the next tick so the parent editor component is done
       // updating. This is only really a concern in editors that can swap
       // the active doc/object without unmounting AposSchema.

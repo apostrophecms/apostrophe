@@ -50,7 +50,8 @@ export default {
   data() {
     return {
       conflict: false,
-      isArchived: null
+      isArchived: null,
+      originalSlugPartsLength: null
     };
   },
   computed: {
@@ -105,12 +106,12 @@ export default {
         oldValue = Object.values(oldClone).join(' ');
         newValue = Object.values(newClone).join(' ');
 
-        if (this.compatible(oldValue, this.next) && !newValue.archived) {
+        if (this.compatible(oldValue, this.next) && !newValue.archived && newValue.length) {
           // If this is a page slug, we only replace the last section of the slug.
           if (this.field.page) {
             let parts = this.next.split('/');
             parts = parts.filter(part => part.length > 0);
-            if (parts.length === this.field.level) {
+            if ((!this.originalSlugPartsLength && parts.length) || (this.originalSlugPartsLength && parts.length === (this.originalSlugPartsLength - 1))) {
               // Remove last path component so we can replace it
               parts.pop();
             }
@@ -129,6 +130,7 @@ export default {
     if (this.next.length) {
       await this.debouncedCheckConflict();
     }
+    this.originalSlugPartsLength = this.next.split('/').length
   },
   methods: {
     async watchNext() {
@@ -201,6 +203,16 @@ export default {
         s += '-';
       }
       if (this.field.page && !componentOnly) {
+        if (!this.followingValues.title) {
+          const nextParts = this.next.split('/')
+          if (s === nextParts[nextParts.length - 1]) {
+            s = '';
+            if (this.originalSlugPartsLength === nextParts.length) {
+              nextParts.pop();
+            }
+            this.next = nextParts.join('/');
+          }
+        }
         if (!s.charAt(0) !== '/') {
           s = `/${s}`;
         }
@@ -208,11 +220,8 @@ export default {
         if (s !== '/') {
           s = s.replace(/\/$/, '');
         }
-        if (this.field.page && fullSlug) {
-          const slashCount = [ ...s ].filter(character => character === '/').length;
-          if (slashCount === this.field.level - 1) {
-            s += '/';
-          }
+        if (!this.followingValues.title && s.length) {
+          s += '/';
         }
       }
       if (!componentOnly) {
@@ -258,20 +267,22 @@ export default {
       let slug;
       try {
         slug = this.next;
-        await apos.http.post(`${apos.doc.action}/slug-taken`, {
-          body: {
-            slug,
-            _id: this.docId
-          },
-          draft: true
-        });
-        // Still relevant?
-        if (slug === this.next) {
-          this.conflict = false;
-          this.validateAndEmit();
-        } else {
-          // Can ignore it, another request
-          // probably already in-flight
+        if (slug.length) {
+          await apos.http.post(`${apos.doc.action}/slug-taken`, {
+            body: {
+              slug,
+              _id: this.docId
+            },
+            draft: true
+          });
+          // Still relevant?
+          if (slug === this.next) {
+            this.conflict = false;
+            this.validateAndEmit();
+          } else {
+            // Can ignore it, another request
+            // probably already in-flight
+          }
         }
       } catch (e) {
         // 409: Conflict (slug in use)
