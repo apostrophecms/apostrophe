@@ -110,7 +110,7 @@ export default {
           if (this.field.page) {
             let parts = this.next.split('/');
             parts = parts.filter(part => part.length > 0);
-            if (parts.length && newValue.length) {
+            if (parts.length === this.field.level) {
               // Remove last path component so we can replace it
               parts.pop();
             }
