@@ -130,11 +130,11 @@ export default {
     if (this.next.length) {
       await this.debouncedCheckConflict();
     }
-    this.originalSlugPartsLength = this.next.split('/').length
+    this.originalSlugPartsLength = this.next.split('/').length;
   },
   methods: {
     async watchNext() {
-      this.next = this.slugify(this.next, { fullSlug: true });
+      this.next = this.slugify(this.next);
       this.validateAndEmit();
       try {
         await this.debouncedCheckConflict();
@@ -184,7 +184,7 @@ export default {
     // if componentOnly is true, we are slugifying just one component of
     // a slug as part of following the title field, and so we do *not*
     // want to allow slashes (when editing a page) or set a prefix.
-    slugify(s, { componentOnly = false, fullSlug = false } = {}) {
+    slugify(s, { componentOnly = false } = {}) {
       const options = {
         def: ''
       };
@@ -204,7 +204,7 @@ export default {
       }
       if (this.field.page && !componentOnly) {
         if (!this.followingValues.title) {
-          const nextParts = this.next.split('/')
+          const nextParts = this.next.split('/');
           if (s === nextParts[nextParts.length - 1]) {
             s = '';
             if (this.originalSlugPartsLength === nextParts.length) {
