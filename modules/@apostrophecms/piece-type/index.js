@@ -133,7 +133,8 @@ module.exports = {
           title: 'apostrophe:publishType',
           description: 'apostrophe:publishingBatchConfirmation',
           confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
-        }
+        },
+        permission: 'edit'
       },
       archive: {
         label: 'apostrophe:archive',
@@ -149,7 +150,8 @@ module.exports = {
           title: 'apostrophe:archiveType',
           description: 'apostrophe:archivingBatchConfirmation',
           confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
-        }
+        },
+        permission: 'edit'
       },
       restore: {
         label: 'apostrophe:restore',
@@ -165,7 +167,8 @@ module.exports = {
           title: 'apostrophe:restoreType',
           description: 'apostrophe:restoreBatchConfirmation',
           confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
-        }
+        },
+        permission: 'edit'
       }
     },
     group: {
@@ -1053,6 +1056,14 @@ module.exports = {
           await self.apos.doc.db.deleteMany({ _id: { $in: deletes } });
           deletes.splice(0);
         }
+      },
+      checkBatchOperationsPermissions(req) {
+        return self.batchOperations.filter(batchOperation => {
+          if (batchOperation.permission) {
+            return self.apos.permission.can(req, batchOperation.permission, self.name);
+          }
+          return true;
+        });
       }
     };
   },
@@ -1063,7 +1074,7 @@ module.exports = {
         // Options specific to pieces and their manage modal
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
-        browserOptions.batchOperations = self.batchOperations;
+        browserOptions.batchOperations = self.checkBatchOperationsPermissions(req);
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
