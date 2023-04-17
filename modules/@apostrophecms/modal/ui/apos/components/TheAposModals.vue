@@ -1,5 +1,5 @@
 <template>
-  <div id="apos-modals" :class="themeClass">
+  <div id="apos-modals" :class="themeClass" @click.stop>
     <component
       v-for="modal in stack" :key="modal.id"
       :is="modal.componentName"

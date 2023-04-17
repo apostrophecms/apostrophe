@@ -2,7 +2,7 @@
   <div>
     <bubble-menu
       class="bubble-menu"
-      :tippy-options="{ duration: 100 }"
+      :tippy-options="{ duration: 100, zIndex: 2000 }"
       :editor="editor"
       v-if="editor"
     >
@@ -25,32 +25,39 @@
         </div>
       </AposContextMenuDialog>
     </bubble-menu>
-    <floating-menu class="apos-rich-text-insert-menu" :should-show="showFloatingMenu" :editor="editor" :tippy-options="{ duration: 100 }" v-if="editor">
-      <div v-if="!activeComponent" v-for="(item, index) in insert"
+    <floating-menu class="apos-rich-text-insert-menu" :should-show="showFloatingMenu" :editor="editor" :tippy-options="{ duration: 100, zIndex: 2000 }" v-if="editor">
+      <div class="apos-rich-text-insert-menu-heading">
+        {{ $t('apostrophe:richTextInsertMenuHeading')}}
+      </div>
+      <div v-for="(item, index) in insert"
         :key="`${item}-${index}`"
         class="apos-rich-text-insert-menu-item"
-        @click="activateInsertMenuItem(item, insertMenu[item])"
       >
-        <span class="apos-rich-text-insert-menu-icon">
+        <div class="apos-rich-text-insert-menu-icon">
           <AposIndicator
             :icon="insertMenu[item].icon"
             :icon-size="35"
             class="apos-button__icon"
             fill-color="currentColor"
+            @click="activateInsertMenuItem(item, insertMenu[item])"
           />
-        </span>
-        <span class="apos-rich-text-insert-menu-label">
+          <component
+            v-if="item === activeInsertMenuComponent?.name"
+            :is="activeInsertMenuComponent.component"
+            :active="true"
+            :editor="editor"
+            @close="closeInsertMenuItem"
+            @click.stop="$event => null"
+          />
+        </div>
+        <div
+          class="apos-rich-text-insert-menu-label"
+          @click="activateInsertMenuItem(item, insertMenu[item])"
+        >
           <h4>{{ $t(insertMenu[item].label) }}</h4>
           <p>{{ $t(insertMenu[item].description) }}</p>
-        </span>
+        </div>
       </div>
-      <component
-        v="else"
-        :is="activeComponent"
-        :active="true"
-        :editor="editor"
-        @close="activeComponent = null"
-      />
     </floating-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="editorOptions.className" />
@@ -133,7 +140,7 @@ export default {
       pending: null,
       isFocused: null,
       showPlaceholder: null,
-      activeComponent: null
+      activeInsertMenuComponent: null
     };
   },
   computed: {
@@ -470,24 +477,73 @@ export default {
     },
     // Per Stu's sample
     showFloatingMenu({ state }) {
+      console.log('CHECKING');
       if (!this.insertMenu) {
+        console.log('no insert menu');
         return false;
       }
-      const { $to } = state.selection;
-      if (state.selection.empty && $to.nodeBefore && $to.nodeBefore.text) {
-        const text = $to.nodeBefore.text;
-        // Only show when the user has just entered a '/' character
-        if (text.charAt(text.length - 1) === '/') {
-          return true;
+      const { $from, $to } = state.selection;
+      if (state.selection.empty) {
+        if ($to.nodeBefore && $to.nodeBefore.text) {
+          const text = $to.nodeBefore.text;
+          // Only show when the user has just entered a '/' character or
+          // an insert menu component is active
+          if (text.charAt(text.length - 1) === '/') {
+            console.log('found the slash');
+            return true;
+          }
         }
+        console.log('empty, but no slash');
+        return false;
+      } else if (state.doc.textBetween($from, $to, ' ') === '/') {
+        console.log('slash is selected, in the middle of some operation');
+        return true;
       }
+      console.log('**' + state.doc.textBetween($from, $to, ' ') + '**');
+      console.log('default case');
       return false;
     },
     activateInsertMenuItem(name, info) {
+      console.log('activating:', name);
+      // Select the / and remove it
+      const state = this.editor.state;
+      const { $from, $to } = state.selection;
+      console.log(JSON.stringify({ $from, $to }));
+      if (state.selection.empty && $to?.nodeBefore?.text) {
+        const text = $to.nodeBefore.text;
+        if (text === '/') {
+          const pos = this.editor.view.state.selection.$anchor.pos;
+          console.log(`pos is: ${pos}`);
+          console.log('<--', state.doc.textBetween($from, $to, ' '));
+          // Select the slash so an insert operation can replace it
+          this.editor.commands.setTextSelection({
+            from: pos - 1,
+            to: pos
+          });
+          console.log('OFF');
+          console.log('-->', state.doc.textBetween(state.selection.$from, state.selection.$to, ' '));
+          console.log(JSON.stringify({ from: state.selection.$from, to: state.selection.$to }, null, '  '));
+        }
+      }
       if (info.component) {
-        this.activeComponent = info.component;
+        this.activeInsertMenuComponent = {
+          name,
+          ...info
+        };
       } else {
         this.editor.commands[info.action || name]();
+      }
+    },
+    closeInsertMenuItem() {
+      console.log('closing insert menu item');
+      this.activeInsertMenuComponent = null;
+      const state = this.editor.state;
+      const { $from, $to } = state.selection;
+      console.log(state.doc.textBetween($from, $to, ' '));
+      if (state.doc.textBetween($from, $to, ' ') === '/') {
+        // Nothing was inserted, the slash is still selected;
+        // get rid of it
+        this.editor.commands.deleteSelection();
       }
     }
   }
@@ -537,7 +593,7 @@ function traverseNextNode(node) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror p.is-empty:first-child::before {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror p.is-empty::before {
     content: attr(data-placeholder);
     float: left;
     pointer-events: none;
@@ -614,10 +670,52 @@ function traverseNextNode(node) {
   }
 
   .apos-show-initial-placeholder [data-placeholder] {
+    background-color: purple;
     display: block;
   }
 
   [data-placeholder].apos-empty-node {
+    background-color: purple;
     display: block;
+  }
+
+  .apos-rich-text-insert-menu {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    gap: 16px;
+    padding: 16px;
+    border-radius: var(--a-border-radius);
+    box-shadow: var(--a-box-shadow);
+    background-color: var(--a-background-primary);
+    border: 1px solid var(--a-base-8);
+    color: var(--a-base-1);
+    font-family: var(--a-family-default);
+  }
+
+  .apos-rich-text-insert-menu-item {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    &:hover {
+      color: var(--a-text-primary);
+    }
+  }
+
+  .apos-rich-text-insert-menu-label {
+    display: flex;
+    flex-direction: column;
+    h4, p {
+      margin: 4px;
+    }
+  }
+  .apos-rich-text-insert-menu-icon {
+    // Positions the popover meaningfully
+    position: relative;
+  }
+
+  .apos-rich-text-insert-menu-heading {
+    color: var(--a-base-5);
   }
 </style>

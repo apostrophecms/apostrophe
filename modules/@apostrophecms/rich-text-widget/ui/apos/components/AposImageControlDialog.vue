@@ -74,7 +74,7 @@ export default {
           max: 1,
           // Temporary until we fix our modals to
           // stack interchangeably with tiptap's
-          browse: false
+          browse: true
         },
         ...(getOptions().imageStyles ? [
           {
@@ -118,6 +118,7 @@ export default {
   },
   methods: {
     close() {
+      console.log('emitting close');
       this.$emit('close');
     },
     save() {
@@ -199,10 +200,14 @@ function getOptions() {
     position: absolute;
     top: calc(100% + 5px);
     left: -15px;
-    width: 250px;
     opacity: 0;
     pointer-events: none;
   }
+
+  .apos-context-menu__dialog {
+    width: 500px;
+  }
+
 
   .apos-image-control__dialog.apos-is-triggered {
     opacity: 1;
