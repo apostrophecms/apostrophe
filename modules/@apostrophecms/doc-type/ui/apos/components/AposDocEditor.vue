@@ -356,13 +356,17 @@ export default {
       await this.loadDoc();
       try {
         if (this.manuallyPublished) {
-          this.published = await apos.http.get(this.getOnePath, {
+          const published = await apos.http.get(this.getOnePath, {
             busy: true,
             qs: {
               archived: 'any',
               aposMode: 'published'
             }
           });
+          this.published = {
+            ...this.getDefault(),
+            ...published
+          };
         }
       } catch (e) {
         if (e.name !== 'notfound') {
@@ -375,7 +379,10 @@ export default {
         }
       }
     } else if (this.copyOf) {
-      const newInstance = klona(this.copyOf);
+      const newInstance = klona({
+        ...this.getDefault(),
+        ...this.copyOf
+      });
       delete newInstance.parked;
       newInstance.title = `Copy of ${this.copyOf.title}`;
       if (this.copyOf.slug.startsWith('/')) {
@@ -440,6 +447,11 @@ export default {
           draft: true
         });
 
+        docData = {
+          ...this.getDefault(),
+          ...docData
+        };
+
         if (docData.archived) {
           this.restoreOnly = true;
         } else {
@@ -464,10 +476,7 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = {
-            ...this.getDefault(),
-            ...docData
-          };
+          this.docFields.data = docData;
           if (this.published) {
             this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
           }
@@ -639,7 +648,13 @@ export default {
     },
     async loadNewInstance () {
       this.docReady = false;
-      const newInstance = await this.getNewInstance();
+
+      let newInstance = await this.getNewInstance();
+      newInstance = {
+        ...this.getDefault(),
+        ...newInstance
+      };
+
       this.original = newInstance;
       if (newInstance && newInstance.type !== this.docType) {
         this.docType = newInstance.type;
