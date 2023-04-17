@@ -46,6 +46,7 @@
             :is="activeInsertMenuComponent.component"
             :active="true"
             :editor="editor"
+            @beforeCommands="removeSlash"
             @close="closeInsertMenuItem"
             @click.stop="$event => null"
           />
@@ -488,7 +489,7 @@ export default {
           const text = $to.nodeBefore.text;
           // Only show when the user has just entered a '/' character or
           // an insert menu component is active
-          if (text.charAt(text.length - 1) === '/') {
+          if (text === '/') {
             console.log('found the slash');
             return true;
           }
@@ -506,25 +507,6 @@ export default {
     activateInsertMenuItem(name, info) {
       console.log('activating:', name);
       // Select the / and remove it
-      const state = this.editor.state;
-      const { $from, $to } = state.selection;
-      console.log(JSON.stringify({ $from, $to }));
-      if (state.selection.empty && $to?.nodeBefore?.text) {
-        const text = $to.nodeBefore.text;
-        if (text === '/') {
-          const pos = this.editor.view.state.selection.$anchor.pos;
-          console.log(`pos is: ${pos}`);
-          console.log('<--', state.doc.textBetween($from, $to, ' '));
-          // Select the slash so an insert operation can replace it
-          this.editor.commands.setTextSelection({
-            from: pos - 1,
-            to: pos
-          });
-          console.log('OFF');
-          console.log('-->', state.doc.textBetween(state.selection.$from, state.selection.$to, ' '));
-          console.log(JSON.stringify({ from: state.selection.$from, to: state.selection.$to }, null, '  '));
-        }
-      }
       if (info.component) {
         this.activeInsertMenuComponent = {
           name,
@@ -534,17 +516,27 @@ export default {
         this.editor.commands[info.action || name]();
       }
     },
-    closeInsertMenuItem() {
-      console.log('closing insert menu item');
-      this.activeInsertMenuComponent = null;
+    removeSlash() {
+      console.log('removing slash');
       const state = this.editor.state;
       const { $from, $to } = state.selection;
-      console.log(state.doc.textBetween($from, $to, ' '));
-      if (state.doc.textBetween($from, $to, ' ') === '/') {
-        // Nothing was inserted, the slash is still selected;
-        // get rid of it
-        this.editor.commands.deleteSelection();
+      if (state.selection.empty && $to?.nodeBefore?.text) {
+        const text = $to.nodeBefore.text;
+        if (text === '/') {
+          const pos = this.editor.view.state.selection.$anchor.pos;
+          // Select the slash so an insert operation can replace it
+          this.editor.commands.setTextSelection({
+            from: pos - 1,
+            to: pos
+          });
+          this.editor.commands.deleteSelection();
+        }
       }
+    },
+    closeInsertMenuItem() {
+      console.log('closing insert menu item');
+      this.removeSlash();
+      this.activeInsertMenuComponent = null;
     }
   }
 };
@@ -593,7 +585,7 @@ function traverseNextNode(node) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror p.is-empty::before {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus  p.is-empty::before {
     content: attr(data-placeholder);
     float: left;
     pointer-events: none;
@@ -665,18 +657,12 @@ function traverseNextNode(node) {
     backdrop-filter: invert(0.1);
   }
 
+  .apos-rich-text-editor__editor ::v-deep figure.ProseMirror-selectednode {
+    opacity: 0.5;
+  }
+
   [data-placeholder] {
     display: none;
-  }
-
-  .apos-show-initial-placeholder [data-placeholder] {
-    background-color: purple;
-    display: block;
-  }
-
-  [data-placeholder].apos-empty-node {
-    background-color: purple;
-    display: block;
   }
 
   .apos-rich-text-insert-menu {

@@ -45,7 +45,7 @@ import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin
 export default {
   name: 'AposImageControlDialog',
   mixins: [ AposEditorMixin ],
-  emits: [ 'close' ],
+  emits: [ 'beforeCommands', 'close' ],
   props: {
     editor: {
       type: Object,
@@ -96,9 +96,6 @@ export default {
     };
   },
   computed: {
-    buttonActive() {
-      return this.editor.getAttributes('img').src || this.active;
-    },
     lastSelectionTime() {
       return this.editor.view.lastSelectionTime;
     },
@@ -108,6 +105,7 @@ export default {
   },
   watch: {
     active(newVal) {
+      console.log('active state is: ' + !!this.active);
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
         this.populateFields();
@@ -129,6 +127,7 @@ export default {
         }
         const image = this.docFields.data._image[0];
         this.docFields.data.imageId = image && image.aposDocId;
+        this.$emit('beforeCommands');
         this.editor.commands.setImage({
           imageId: this.docFields.data.imageId,
           caption: this.docFields.data.caption,
