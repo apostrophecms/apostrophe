@@ -106,7 +106,7 @@ export default {
         oldValue = Object.values(oldClone).join(' ');
         newValue = Object.values(newClone).join(' ');
 
-        if (this.compatible(oldValue, this.next) && !newValue.archived && newValue.length) {
+        if (this.compatible(oldValue, this.next) && !newValue.archived) {
           // If this is a page slug, we only replace the last section of the slug.
           if (this.field.page) {
             let parts = this.next.split('/');
@@ -116,8 +116,10 @@ export default {
               parts.pop();
             }
             parts.push(this.slugify(newValue, { componentOnly: true }));
-            // TODO: handle page archives.
-            this.next = `/${parts.join('/')}`;
+            if (parts[0].length) {
+              // TODO: handle page archives.
+              this.next = `/${parts.join('/')}`;
+            }
           } else {
             this.next = this.slugify(newValue);
           }
