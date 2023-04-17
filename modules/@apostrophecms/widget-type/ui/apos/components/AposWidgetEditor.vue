@@ -85,7 +85,7 @@ export default {
       id: this.value && this.value._id,
       original: null,
       docFields: {
-        data: {},
+        data: { ...this.value },
         hasErrors: false
       },
       modal: {
@@ -145,14 +145,11 @@ export default {
     const defaults = this.getDefault();
 
     if (this.value) {
-      this.original = klona({
+      this.original = klona(this.value);
+      this.docFields.data = klona({
         ...defaults,
         ...this.value
       });
-      this.docFields.data = {
-        ...defaults,
-        ...this.value
-      };
       return;
     }
 
