@@ -37,8 +37,10 @@ export default {
 
   methods: {
     prependEmptyChoice() {
+      // Using `hasOwn` here, not simply checking if `field.def` is truthy
+      // so that `false`, `null`, `''` or `0` are taken into account:
+      const hasDefaultValue = Object.hasOwn(this.field, 'def');
       const hasNullValue = this.choices.find(choice => choice.value === null);
-      const hasDefaultValue = Object.prototype.hasOwnProperty.call(this.field, 'def');
 
       // Add an null option if there isn't one already
       if (!hasDefaultValue && !hasNullValue) {
