@@ -464,10 +464,7 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = {
-            ...this.getDefault(),
-            ...docData
-          };
+          this.docFields.data = docData;
           if (this.published) {
             this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
           }
@@ -475,18 +472,6 @@ export default {
           this.prepErrors();
         }
       }
-    },
-    getDefault() {
-      const doc = {};
-      this.schema.forEach(field => {
-        // Using `hasOwn` here, not simply checking if `field.def` is truthy
-        // so that `false`, `null`, `''` or `0` are taken into account:
-        const hasDefaultValue = Object.hasOwn(field, 'def');
-        doc[field.name] = hasDefaultValue
-          ? klona(field.def)
-          : null;
-      });
-      return doc;
     },
     async preview() {
       if (!await this.confirmAndCancel()) {
