@@ -25,11 +25,16 @@
         </div>
       </AposContextMenuDialog>
     </bubble-menu>
-    <floating-menu class="apos-rich-text-insert-menu" :should-show="showFloatingMenu" :editor="editor" :tippy-options="{ duration: 100, zIndex: 2000 }" v-if="editor">
+    <floating-menu
+      class="apos-rich-text-insert-menu" :should-show="showFloatingMenu"
+      :editor="editor" :tippy-options="{ duration: 100, zIndex: 2000 }"
+      v-if="editor"
+    >
       <div class="apos-rich-text-insert-menu-heading">
-        {{ $t('apostrophe:richTextInsertMenuHeading')}}
+        {{ $t('apostrophe:richTextInsertMenuHeading') }}
       </div>
-      <div v-for="(item, index) in insert"
+      <div
+        v-for="(item, index) in insert"
         :key="`${item}-${index}`"
         class="apos-rich-text-insert-menu-item"
       >
@@ -47,7 +52,7 @@
             :active="true"
             :editor="editor"
             :options="editorOptions"
-            @beforeCommands="removeSlash"
+            @before-commands="removeSlash"
             @close="closeInsertMenuItem"
             @click.stop="$event => null"
           />
@@ -234,7 +239,7 @@ export default {
     },
     placeholderText() {
       return this.moduleOptions.placeholderText;
-    },
+    }
   },
   watch: {
     focused(newVal) {
@@ -508,7 +513,7 @@ export default {
     },
     removeSlash() {
       const state = this.editor.state;
-      const { $from, $to } = state.selection;
+      const { $to } = state.selection;
       if (state.selection.empty && $to?.nodeBefore?.text) {
         const text = $to.nodeBefore.text;
         if (text === '/') {

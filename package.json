@@ -7,6 +7,7 @@
     "pretest": "npm run lint",
     "test": "nyc --reporter=html mocha -t 10000",
     "eslint": "eslint --ext .js,.vue .",
+    "eslint-fix": "eslint --ext .js,.vue . --fix",
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint"

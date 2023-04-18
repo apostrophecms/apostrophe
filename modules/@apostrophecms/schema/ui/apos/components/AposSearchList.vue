@@ -11,7 +11,7 @@
         v-if="item?.attachment?._urls?.['one-sixth']"
         :src="item.attachment._urls['one-sixth']"
         class="apos-search-image"
-      />
+      >
       <AposIndicator
         v-else-if="getIcon(item).icon"
         :icon="getIcon(item).icon"

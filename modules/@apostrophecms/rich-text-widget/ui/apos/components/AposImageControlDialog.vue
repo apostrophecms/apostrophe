@@ -45,7 +45,6 @@ import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin
 export default {
   name: 'AposImageControlDialog',
   mixins: [ AposEditorMixin ],
-  emits: [ 'beforeCommands', 'close' ],
   props: {
     editor: {
       type: Object,
@@ -56,6 +55,7 @@ export default {
       required: true
     }
   },
+  emits: [ 'before-commands', 'close' ],
   data() {
     return {
       generation: 1,
@@ -127,7 +127,7 @@ export default {
         }
         const image = this.docFields.data._image[0];
         this.docFields.data.imageId = image && image.aposDocId;
-        this.$emit('beforeCommands');
+        this.$emit('before-commands');
         this.editor.commands.setImage({
           imageId: this.docFields.data.imageId,
           caption: this.docFields.data.caption,
@@ -206,7 +206,6 @@ function getOptions() {
   .apos-context-menu__dialog {
     width: 500px;
   }
-
 
   .apos-image-control__dialog.apos-is-triggered {
     opacity: 1;
