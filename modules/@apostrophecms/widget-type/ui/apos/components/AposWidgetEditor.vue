@@ -189,6 +189,9 @@ export default {
     getDefault() {
       const widget = {};
       this.schema.forEach(field => {
+        if (field.name.startsWith('_')) {
+          return;
+        }
         // Using `hasOwn` here, not simply checking if `field.def` is truthy
         // so that `false`, `null`, `''` or `0` are taken into account:
         const hasDefaultValue = Object.hasOwn(field, 'def');

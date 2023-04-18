@@ -479,6 +479,9 @@ export default {
     getDefault() {
       const doc = {};
       this.schema.forEach(field => {
+        if (field.name.startsWith('_')) {
+          return;
+        }
         // Do not simply check if `field.def` is truthy, this in not enough
         // since a def as an empty string must be considered valid:
         const hasDefaultValue = Object.hasOwn(field, 'def');
