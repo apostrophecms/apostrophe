@@ -521,7 +521,7 @@ module.exports = {
       // Returns a combined array of toolbar and insert menu items from the given
       // set of rich text widget options
       combinedItems(options) {
-        return [...(options.toolbar || []), ...(options.insert || [])]
+        return [ ...(options.toolbar || []), ...(options.insert || []) ];
       },
 
       getStyleClasses(heading) {
