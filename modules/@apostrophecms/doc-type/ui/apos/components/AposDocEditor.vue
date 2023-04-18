@@ -464,7 +464,10 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = docData;
+          this.docFields.data = {
+            ...this.getDefault(),
+            ...docData
+          };
           if (this.published) {
             this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
           }
@@ -472,6 +475,18 @@ export default {
           this.prepErrors();
         }
       }
+    },
+    getDefault() {
+      const doc = {};
+      this.schema.forEach(field => {
+        // Do not simply check if `field.def` is truthy, this in not enough
+        // since a def as an empty string must be considered valid:
+        const hasDefaultValue = Object.hasOwn(field, 'def');
+        doc[field.name] = hasDefaultValue
+          ? klona(field.def)
+          : null;
+      });
+      return doc;
     },
     async preview() {
       if (!await this.confirmAndCancel()) {

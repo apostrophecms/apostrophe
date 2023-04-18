@@ -85,7 +85,7 @@ export default {
       id: this.value && this.value._id,
       original: null,
       docFields: {
-        data: { ...this.value },
+        data: {},
         hasErrors: false
       },
       modal: {
@@ -142,11 +142,16 @@ export default {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
+    const defaults = this.getDefault();
+
     if (this.value) {
       this.original = klona(this.value);
+      this.docFields.data = {
+        ...defaults,
+        ...this.value
+      };
       return;
     }
-    const defaults = this.getDefault();
 
     this.original = klona(defaults);
     this.docFields.data = defaults;
