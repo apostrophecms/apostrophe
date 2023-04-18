@@ -6,7 +6,16 @@
     :display-options="displayOptions"
   >
     <template #body>
+      <AposCombo
+        v-if="field.style === 'combo' && choices.length"
+        :choices="choices"
+        :field="field"
+        :value="value"
+        @select-items="selectItems"
+      />
+
       <AposCheckbox
+        v-else
         :for="getChoiceId(uid, choice.value)"
         v-for="choice in choices"
         :key="choice.value"
@@ -26,7 +35,7 @@ import AposInputChoicesMixin from 'Modules/@apostrophecms/schema/mixins/AposInpu
 export default {
   name: 'AposInputCheckboxes',
   mixins: [ AposInputMixin, AposInputChoicesMixin ],
-  beforeMount: function () {
+  beforeMount () {
     this.value.data = Array.isArray(this.value.data) ? this.value.data : [];
   },
   methods: {
@@ -49,12 +58,12 @@ export default {
 
       if (this.field.min) {
         if ((values != null) && (values.length < this.field.min)) {
-          return 'min';
+          return this.$t('apostrophe:minUi', { number: this.field.min });
         }
       }
       if (this.field.max) {
         if ((values != null) && (values.length > this.field.max)) {
-          return 'max';
+          return this.$t('apostrophe:maxUi', { number: this.field.max });
         }
       }
 
@@ -69,6 +78,21 @@ export default {
       }
 
       return false;
+    },
+    selectItems(choice) {
+      if (choice.value === '__all') {
+        this.value.data = this.choices.length === this.value.data.length
+          ? []
+          : this.choices.map(({ value }) => value);
+
+        return;
+      }
+
+      if (this.value.data.includes(choice.value)) {
+        this.value.data = this.value.data.filter((val) => val !== choice.value);
+      } else {
+        this.value.data.push(choice.value);
+      }
     }
   }
 };

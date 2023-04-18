@@ -79,10 +79,11 @@ export default {
   },
   computed: {
     contextBarActive() {
-      return window.apos.adminBar.contextBar && this.canEdit;
+      return window.apos.adminBar.contextBar && (this.canEdit || this.moduleOptions.canLocalize);
     },
     canEdit() {
-      return this.context._edit || ((this.context.aposLocale && this.context.aposLocale.endsWith(':published')) && this.draftIsEditable);
+      return this.context._edit || ((this.context.aposLocale && this.context.aposLocale.endsWith(':published')) &&
+        this.draftIsEditable);
     },
     classes() {
       if (!this.contextBarActive) {

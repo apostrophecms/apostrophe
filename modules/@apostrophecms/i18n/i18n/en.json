@@ -9,6 +9,7 @@
   "addWidgetType": "Add {{ label }}",
   "admin": "Admin",
   "affirmativeLabel": "Yes, continue.",
+  "allSelected": "All Selected",
   "altText": "Alt Text",
   "altTextHelp": "Image description used for accessibility",
   "anchorId": "Anchor ID",

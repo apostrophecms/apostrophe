@@ -181,6 +181,10 @@ export default {
       return menu;
     },
     customMenusByContext() {
+      if (!this.canEdit) {
+        return [];
+      }
+
       const menus = this.customOperationsByContext
         .map(op => ({
           label: op.label,
@@ -233,13 +237,16 @@ export default {
       }
     },
     canDismissSubmission() {
-      return this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
+      return this.canEdit && this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     canDiscardDraft() {
       if (!this.manuallyPublished) {
         return false;
       }
       if (!this.context._id) {
+        return false;
+      }
+      if (!this.canEdit) {
         return false;
       }
       return (
@@ -251,10 +258,12 @@ export default {
       );
     },
     canLocalize() {
-      return (Object.keys(apos.i18n.locales).length > 1) && this.moduleOptions.localized && this.context._id;
+      return this.moduleOptions.canLocalize &&
+        this.context._id;
     },
     canArchive() {
       return (
+        this.canEdit &&
         this.context._id &&
         !this.moduleOptions.singleton &&
         !this.context.archived &&
@@ -264,6 +273,7 @@ export default {
     },
     canUnpublish() {
       return (
+        this.canEdit &&
         !this.context.parked &&
         this.moduleOptions.canPublish &&
         this.context.lastPublishedAt &&
@@ -271,10 +281,14 @@ export default {
       );
     },
     canCopy() {
-      return this.canEdit && !this.moduleOptions.singleton && this.context._id;
+      return this.canEdit &&
+        this.moduleOptions.canEdit &&
+        !this.moduleOptions.singleton &&
+        this.context._id;
     },
     canRestore() {
       return (
+        this.canEdit &&
         this.context._id &&
         this.context.archived &&
         ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)

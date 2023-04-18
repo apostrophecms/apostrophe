@@ -24,6 +24,7 @@ export default {
       },
       serverErrors: null,
       restoreOnly: false,
+      readOnly: false,
       changed: [],
       externalConditionsResults: {}
     };
@@ -32,7 +33,7 @@ export default {
   computed: {
     schema() {
       let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
-      if (this.restoreOnly) {
+      if (this.restoreOnly || this.readOnly) {
         schema = klona(schema);
         for (const field of schema) {
           field.readOnly = true;

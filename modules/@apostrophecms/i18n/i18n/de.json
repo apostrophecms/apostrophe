@@ -4,6 +4,7 @@
   "addWidgetType": "{{ label }} hinzufügen",
   "admin": "Administrator",
   "affirmativeLabel": "Ja, fortsetzen.",
+  "allSelected": "Alle ausgewählt",
   "altText": "Alternativtext",
   "altTextHelp": "Bildbeschreibung oder alternativer Text, der für Bildschirmleser verwendet wird.",
   "any": "Irgendwas",
