@@ -15,6 +15,9 @@ project-specific reasons to fetch access content via REST APIs.
 those writing mocha tests of Apostrophe modules.
 * `batchOperations` permissions: if a `permission` property is added to any entry in the `batchOperations` cascade of a piece-type module, this permission will be checked for every user. See `batchOperations` configuration in `modules/@apostrophecms/piece-type/index.js`. The check function `checkBatchOperationsPermissions` can be extended. Please note that this permission is checked only to determine whether to offer the operation.
 
+### Fixes
+* Fix child page slug when title is deleted
+
 ## 3.43.0 (2023-03-29)
 
 ### Adds
