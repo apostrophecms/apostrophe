@@ -46,6 +46,7 @@
             :is="activeInsertMenuComponent.component"
             :active="true"
             :editor="editor"
+            :options="editorOptions"
             @beforeCommands="removeSlash"
             @close="closeInsertMenuItem"
             @click.stop="$event => null"
@@ -223,7 +224,6 @@ export default {
       if (this.placeholderText && this.isFocused && (this.showPlaceholder !== false)) {
         classes.push('apos-show-initial-placeholder');
       }
-      console.log('>>', JSON.stringify(classes));
       return classes;
     },
     tiptapTextCommands() {
@@ -268,7 +268,6 @@ export default {
       CustomPlaceholder.configure({
         placeholder: () => {
           const text = this.$t(this.placeholderText);
-          console.log(`>> ${text}`);
           return text;
         }
       }),
@@ -476,11 +475,8 @@ export default {
           types: this.tiptapTypes
         }));
     },
-    // Per Stu's sample
     showFloatingMenu({ state }) {
-      console.log('CHECKING');
       if (!this.insertMenu) {
-        console.log('no insert menu');
         return false;
       }
       const { $from, $to } = state.selection;
@@ -490,22 +486,16 @@ export default {
           // Only show when the user has just entered a '/' character or
           // an insert menu component is active
           if (text === '/') {
-            console.log('found the slash');
             return true;
           }
         }
-        console.log('empty, but no slash');
         return false;
       } else if (state.doc.textBetween($from, $to, ' ') === '/') {
-        console.log('slash is selected, in the middle of some operation');
         return true;
       }
-      console.log('**' + state.doc.textBetween($from, $to, ' ') + '**');
-      console.log('default case');
       return false;
     },
     activateInsertMenuItem(name, info) {
-      console.log('activating:', name);
       // Select the / and remove it
       if (info.component) {
         this.activeInsertMenuComponent = {
@@ -517,7 +507,6 @@ export default {
       }
     },
     removeSlash() {
-      console.log('removing slash');
       const state = this.editor.state;
       const { $from, $to } = state.selection;
       if (state.selection.empty && $to?.nodeBefore?.text) {
@@ -534,7 +523,6 @@ export default {
       }
     },
     closeInsertMenuItem() {
-      console.log('closing insert menu item');
       this.removeSlash();
       this.activeInsertMenuComponent = null;
     }

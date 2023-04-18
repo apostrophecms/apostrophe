@@ -44,7 +44,6 @@ export default {
   },
   methods: {
     click() {
-      console.log('toggling active flag');
       this.active = !this.active;
     },
     close() {
