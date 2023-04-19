@@ -482,8 +482,8 @@ export default {
         if (field.name.startsWith('_')) {
           return;
         }
-        // Do not simply check if `field.def` is truthy, this in not enough
-        // since a def as an empty string must be considered valid:
+        // Using `hasOwn` here, not simply checking if `field.def` is truthy
+        // so that `false`, `null`, `''` or `0` are taken into account:
         const hasDefaultValue = Object.hasOwn(field, 'def');
         doc[field.name] = hasDefaultValue
           ? klona(field.def)
