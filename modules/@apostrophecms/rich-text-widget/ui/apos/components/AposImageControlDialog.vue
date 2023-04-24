@@ -115,7 +115,6 @@ export default {
   },
   methods: {
     close() {
-      console.log('emitting close');
       this.$emit('close');
     },
     save() {
