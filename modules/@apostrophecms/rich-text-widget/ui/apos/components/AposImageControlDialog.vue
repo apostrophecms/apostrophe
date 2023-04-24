@@ -105,7 +105,6 @@ export default {
   },
   watch: {
     active(newVal) {
-      console.log('active state is: ' + !!this.active);
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
         this.populateFields();
