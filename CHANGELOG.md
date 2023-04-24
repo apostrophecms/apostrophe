@@ -2,6 +2,9 @@
 
 ## 3.44.0 (2023-04-13)
 
+### Fixes
+* Now errors and exits when a piece-type or widget-type module has a field object with the property "type"
+
 ### Adds
 
 * `checkboxes` fields now support a new `style: 'combobox'` option for a better multiple-select experience when there
