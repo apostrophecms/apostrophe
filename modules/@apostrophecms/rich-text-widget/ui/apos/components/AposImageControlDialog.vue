@@ -142,10 +142,8 @@ export default {
         if (this.docFields.data.href || e.metaKey) {
           this.save();
           this.close();
-          e.preventDefault();
-        } else {
-          e.preventDefault();
         }
+        e.preventDefault();
       }
     },
     async populateFields() {
