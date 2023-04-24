@@ -105,7 +105,6 @@ export default {
   },
   watch: {
     active(newVal) {
-      console.log('active state is: ' + !!this.active);
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
         this.populateFields();
@@ -116,7 +115,6 @@ export default {
   },
   methods: {
     close() {
-      console.log('emitting close');
       this.$emit('close');
     },
     save() {
@@ -144,10 +142,8 @@ export default {
         if (this.docFields.data.href || e.metaKey) {
           this.save();
           this.close();
-          e.preventDefault();
-        } else {
-          e.preventDefault();
         }
+        e.preventDefault();
       }
     },
     async populateFields() {
