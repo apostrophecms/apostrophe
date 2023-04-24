@@ -309,12 +309,19 @@ export default {
         });
       }
     });
+    apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
 
   beforeDestroy() {
     this.editor.destroy();
+    apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    onAposRefreshing(refreshOptions) {
+      if (this.activeInsertMenuComponent) {
+        refreshOptions.refresh = false;
+      }
+    },
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
@@ -508,6 +515,7 @@ export default {
           ...info
         };
       } else {
+        this.removeSlash();
         this.editor.commands[info.action || name]();
       }
     },
