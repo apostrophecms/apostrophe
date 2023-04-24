@@ -462,6 +462,7 @@ module.exports = {
         };
         for (const name of self.__meta.chain.map(entry => entry.name)) {
           const fn = self.queries[name];
+
           if (fn) {
             const result = fn(self, query);
             if (result.builders) {
@@ -471,9 +472,12 @@ module.exports = {
               Object.assign(query.methods, result.methods);
             }
           }
+
           if (self.extendQueries[name]) {
-            wrap(query.builders, self.extendQueries[name].builders || {});
-            wrap(query.methods, self.extendQueries[name].methods || {});
+            // TODO: Pass self from the improved module as parameter as well as the query object
+            const extendedQueries = self.extendQueries[name]();
+            wrap(query.builders, extendedQueries.builders || {});
+            wrap(query.methods, extendedQueries.methods || {});
           }
         }
         Object.assign(query, query.methods);
@@ -2322,8 +2326,18 @@ module.exports = {
               query.and({ $or });
             }
           }
-        }
+        },
 
+        viewContext: {
+          def: null,
+          launder(viewContext) {
+            return [ 'manage', 'relationship' ].includes(viewContext) ? viewContext : null;
+          }
+          /* finalize() { */
+          /*   const res = query.get('viewContext'); */
+          /*   console.log('res', res); */
+          /* } */
+        }
       },
 
       methods: {
@@ -3075,15 +3089,18 @@ module.exports = {
 };
 
 function wrap(context, extensions) {
-  for (const [ name, fn ] of extensions) {
+  for (const [ name, fn ] of Object.entries(extensions)) {
     if ((typeof fn) !== 'function') {
       // Nested structure is allowed
       context[name] = context[name] || {};
       return wrap(context[name], fn);
     }
-    const superMethod = context[name];
-    context[name] = function(...args) {
-      return fn(superMethod, ...args);
+    const superQuery = context[name];
+    context[name] = {
+      ...fn(superQuery)
     };
+    /* context[name] = function(...args) { */
+    /*   return fn(superMethod, ...args); */
+    /* }; */
   }
 }
