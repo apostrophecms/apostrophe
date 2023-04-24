@@ -145,7 +145,9 @@ export default {
       totalPages: 1,
       currentPage: 1,
       filterValues: {},
-      queryExtras: {},
+      queryExtras: {
+        viewContext: this.relationshipField ? 'relationship' : 'manage'
+      },
       holdQueries: false,
       filterChoices: {},
       allPiecesSelection: {
