@@ -207,7 +207,7 @@ export default {
     },
     // Names of active insert menu items for this particular widget, as an array
     insert() {
-      return this.editorOptions.insert;
+      return this.editorOptions.insert || [];
     },
     // Information about all available insert menu items, as an object
     insertMenu() {
@@ -488,7 +488,7 @@ export default {
         }));
     },
     showFloatingMenu({ state }) {
-      if (!this.insertMenu) {
+      if (!this.insertMenu || !this.insert.length) {
         return false;
       }
       const { $from, $to } = state.selection;
