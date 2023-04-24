@@ -205,7 +205,7 @@ export default {
         s += '-';
       }
       if (this.field.page && !componentOnly) {
-        if (!this.followingValues || !this.followingValues.title) {
+        if (!this.followingValues?.title) {
           const nextParts = this.next.split('/');
           if (s === nextParts[nextParts.length - 1]) {
             s = '';
@@ -222,7 +222,7 @@ export default {
         if (s !== '/') {
           s = s.replace(/\/$/, '');
         }
-        if ((!this.followingValues || !this.followingValues.title) && s.length) {
+        if (!this.followingValues?.title && s.length) {
           s += '/';
         }
       }
