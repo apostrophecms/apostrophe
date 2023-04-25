@@ -85,7 +85,7 @@ export default {
       id: this.value && this.value._id,
       original: null,
       docFields: {
-        data: { ...this.value },
+        data: {},
         hasErrors: false
       },
       modal: {
@@ -142,7 +142,19 @@ export default {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
-    this.original = this.value ? klona(this.value) : this.getDefault();
+    const defaults = this.getDefault();
+
+    if (this.value) {
+      this.original = klona(this.value);
+      this.docFields.data = {
+        ...defaults,
+        ...this.value
+      };
+      return;
+    }
+
+    this.original = klona(defaults);
+    this.docFields.data = defaults;
   },
   methods: {
     updateDocFields(value) {
@@ -177,7 +189,15 @@ export default {
     getDefault() {
       const widget = {};
       this.schema.forEach(field => {
-        widget[field.name] = field.def ? klona(field.def) : field.def;
+        if (field.name.startsWith('_')) {
+          return;
+        }
+        // Using `hasOwn` here, not simply checking if `field.def` is truthy
+        // so that `false`, `null`, `''` or `0` are taken into account:
+        const hasDefaultValue = Object.hasOwn(field, 'def');
+        widget[field.name] = hasDefaultValue
+          ? klona(field.def)
+          : null;
       });
       return widget;
     }
