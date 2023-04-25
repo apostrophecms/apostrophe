@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Auto expand inline arrays width if needed using `width: max-content` in the admin UI.
 * Rich text widgets now support the `insert` option, an array
 which currently may contain the strings `image` and `table` in order to add a
 convenient "insert menu" that pops up when the slash key is pressed.
