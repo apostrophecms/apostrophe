@@ -1,5 +1,23 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Rich text widgets now support the `insert` option, an array
+which currently may contain the strings `image` and `table` in order to add a
+convenient "insert menu" that pops up when the slash key is pressed.
+This provides a better user experience for rich text features that shouldn't
+require that the user select existing text before using them.
+* The "browse" button is now available when selecting pages and pieces
+to link to in the rich text editor.
+* The "browse" button is also available when selecting inline images
+in the rich text editor.
+* The new `apos-refreshing` Apostrophe bus event can be used to prevent
+Apostrophe from refreshing the main content zone of the page when images
+and pieces are edited, by clearing the `refresh` property of the object
+passed to the event.
+
 ## 3.44.0 (2023-04-13)
 
 ### Adds

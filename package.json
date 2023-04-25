@@ -7,6 +7,7 @@
     "pretest": "npm run lint",
     "test": "nyc --reporter=html mocha -t 10000",
     "eslint": "eslint --ext .js,.vue .",
+    "eslint-fix": "npm run eslint -- --fix",
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint"
@@ -33,6 +34,7 @@
     "@apostrophecms/vue-color": "^2.8.2",
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
+    "@tiptap/extension-floating-menu": "^2.0.0-beta.220",
     "@tiptap/extension-highlight": "^2.0.0-beta.220",
     "@tiptap/extension-link": "^2.0.0-beta.220",
     "@tiptap/extension-placeholder": "^2.0.0-beta.220",

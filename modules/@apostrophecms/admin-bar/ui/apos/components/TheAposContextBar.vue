@@ -469,7 +469,6 @@ export default {
       }
     },
     async onContentChanged(e) {
-
       if (
         (e.doc && (e.doc._id === this.context._id)) ||
         (e.docIds && e.docIds.includes(this.context._id))
@@ -485,9 +484,15 @@ export default {
           });
         }
       }
-      await this.refresh({
-        scrollcheck: e.action === 'history'
-      });
+      const refreshOptions = {
+        refresh: true
+      };
+      apos.bus.$emit('apos-refreshing', refreshOptions);
+      if (refreshOptions.refresh) {
+        await this.refresh({
+          scrollcheck: e.action === 'history'
+        });
+      }
     },
     async switchEditMode(editing) {
       this.editMode = editing;
