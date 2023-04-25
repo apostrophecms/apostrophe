@@ -475,7 +475,7 @@ module.exports = {
 
           if (self.extendQueries[name]) {
             // TODO: Pass self from the improved module as parameter as well as the query object
-            const extendedQueries = self.extendQueries[name]();
+            const extendedQueries = self.extendQueries[name](self, query);
             wrap(query.builders, extendedQueries.builders || {});
             wrap(query.methods, extendedQueries.methods || {});
           }
@@ -3090,17 +3090,15 @@ module.exports = {
 
 function wrap(context, extensions) {
   for (const [ name, fn ] of Object.entries(extensions)) {
-    if ((typeof fn) !== 'function') {
+    if (typeof fn === 'object' && !Array.isArray(fn) && fn !== null) {
       // Nested structure is allowed
       context[name] = context[name] || {};
       return wrap(context[name], fn);
     }
-    const superQuery = context[name];
-    context[name] = {
-      ...fn(superQuery)
+
+    const superMethod = context[name];
+    context[name] = function(...args) {
+      return fn(superMethod, ...args);
     };
-    /* context[name] = function(...args) { */
-    /*   return fn(superMethod, ...args); */
-    /* }; */
   }
 }
