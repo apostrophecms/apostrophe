@@ -8,10 +8,13 @@
       <div class="apos-input-wrapper">
         <input
           :class="classes"
-          v-model="next.url" type="url"
+          v-model="next.url"
+          type="url"
           :placeholder="$t(field.placeholder)"
-          :disabled="field.readOnly" :required="field.required"
-          :id="uid" :tabindex="tabindex"
+          :disabled="isReadOnly"
+          :required="field.required"
+          :id="uid"
+          :tabindex="tabindex"
         >
         <component
           v-if="icon"
@@ -46,10 +49,14 @@ export default {
         ? this.value.data : {},
       oembedResult: {},
       dynamicRatio: '',
-      oembedError: null
+      oembedError: null,
+      forceReadOnly: false
     };
   },
   computed: {
+    isReadOnly () {
+      return this.field.readOnly || this.forceReadOnly;
+    },
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
     },
@@ -104,7 +111,7 @@ export default {
       this.validateAndEmit();
     },
     async loadOembed () {
-      this.field.readOnly = true;
+      this.forceReadOnly = true;
       this.oembedResult = {};
       this.oembedError = null;
       this.dynamicRatio = '';
@@ -132,7 +139,7 @@ export default {
         this.next.title = '';
         this.next.thumbnail = '';
       } finally {
-        this.field.readOnly = false;
+        this.forceReadOnly = false;
       }
     }
   }
