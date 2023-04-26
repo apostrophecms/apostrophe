@@ -44,7 +44,11 @@ shouldn't close the link dialog etc.
 
 ### Fixes
 
+* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
+Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 * Rich text widgets save more reliably when many actions are taken quickly just before save.
+* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget edition, which resulted in saving the value if the widget was nested and the parent widget was saved.  
+Also improve the field UX by setting the input as readonly when fetching the video metadata in order to avoid losing its focus.
 
 ## 3.44.0 (2023-04-13)
 
@@ -63,11 +67,6 @@ those writing mocha tests of Apostrophe modules.
 
 ### Fixes
 * Fix child page slug when title is deleted
-
-### Fixes
-
-* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
-Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 
 ## 3.43.0 (2023-03-29)
 
