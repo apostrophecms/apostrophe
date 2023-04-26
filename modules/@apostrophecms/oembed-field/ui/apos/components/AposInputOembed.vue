@@ -11,7 +11,8 @@
           v-model="next.url"
           type="url"
           :placeholder="$t(field.placeholder)"
-          :disabled="isReadOnly"
+          :disabled="field.readOnly"
+          :readonly="tempReadOnly"
           :required="field.required"
           :id="uid"
           :tabindex="tabindex"
@@ -50,13 +51,13 @@ export default {
       oembedResult: {},
       dynamicRatio: '',
       oembedError: null,
-      forceReadOnly: false
+
+      // This variable will set the input as readonly,
+      // not disabled, in order to avoid losing focus.
+      tempReadOnly: false
     };
   },
   computed: {
-    isReadOnly () {
-      return this.field.readOnly || this.forceReadOnly;
-    },
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
     },
@@ -111,7 +112,7 @@ export default {
       this.validateAndEmit();
     },
     async loadOembed () {
-      this.forceReadOnly = true;
+      this.tempReadOnly = true;
       this.oembedResult = {};
       this.oembedError = null;
       this.dynamicRatio = '';
@@ -139,7 +140,7 @@ export default {
         this.next.title = '';
         this.next.thumbnail = '';
       } finally {
-        this.forceReadOnly = false;
+        this.tempReadOnly = false;
       }
     }
   }
