@@ -242,7 +242,7 @@ export default {
     }
   },
   watch: {
-    focused(newVal) {
+    isFocused(newVal) {
       if (!newVal) {
         if (this.pending) {
           this.emitWidgetUpdate();
