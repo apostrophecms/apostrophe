@@ -3,11 +3,8 @@ export default {
     Vue.directive('click-outside-element', {
       bind(el, binding) {
         el.aposClickOutsideHandler = (event) => {
-          if ((el !== event.target) && !el.contains(event.target)) {
-            console.log('FIRING');
+          if ((el !== event.target) && !el.contains(event.target) && !apos.modal.onTopOf(event.target, el)) {
             binding.value(event);
-          } else {
-            console.log('NOT FIRING');
           }
         };
         document.body.addEventListener('click', el.aposClickOutsideHandler);
