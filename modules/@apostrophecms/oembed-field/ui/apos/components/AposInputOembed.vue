@@ -46,7 +46,7 @@ export default {
   data () {
     return {
       next: (this.value && this.value.data)
-        ? this.value.data : {},
+        ? { ...this.value.data } : {},
       oembedResult: {},
       dynamicRatio: '',
       oembedError: null,
