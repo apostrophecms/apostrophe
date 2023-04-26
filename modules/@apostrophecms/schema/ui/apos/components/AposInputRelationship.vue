@@ -189,9 +189,9 @@ export default {
         if (Object.keys(doc._fields || {}).length) {
           continue;
         }
-        doc._fields = this.subfields[doc._id]
+        doc._fields = this.field.schema && (this.subfields[doc._id]
           ? this.subfields[doc._id]
-          : this.getDefault();
+          : this.getDefault());
       }
     }
   },
