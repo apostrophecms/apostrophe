@@ -248,7 +248,7 @@ export default {
           this.emitWidgetUpdate();
         }
       }
-    },
+    }
   },
   mounted() {
     const extensions = [
