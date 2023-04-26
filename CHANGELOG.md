@@ -19,6 +19,10 @@ Apostrophe from refreshing the main content zone of the page when images
 and pieces are edited, by clearing the `refresh` property of the object
 passed to the event.
 
+### Fixes
+
+* Rich text widgets save more reliably when many actions are taken quickly just before save.
+
 ## 3.44.0 (2023-04-13)
 
 ### Adds
