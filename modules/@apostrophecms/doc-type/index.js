@@ -1,6 +1,7 @@
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const _ = require('lodash');
 const util = require('util');
+const extendQueries = require('./lib/extendQueries');
 
 module.exports = {
   options: {
@@ -474,10 +475,9 @@ module.exports = {
           }
 
           if (self.extendQueries[name]) {
-            // TODO: Pass self from the improved module as parameter as well as the query object
             const extendedQueries = self.extendQueries[name](self, query);
-            wrap(query.builders, extendedQueries.builders || {});
-            wrap(query.methods, extendedQueries.methods || {});
+            extendQueries(query.builders, extendedQueries.builders || {});
+            extendQueries(query.methods, extendedQueries.methods || {});
           }
         }
         Object.assign(query, query.methods);
@@ -3087,18 +3087,3 @@ module.exports = {
     };
   }
 };
-
-function wrap(context, extensions) {
-  for (const [ name, fn ] of Object.entries(extensions)) {
-    if (typeof fn === 'object' && !Array.isArray(fn) && fn !== null) {
-      // Nested structure is allowed
-      context[name] = context[name] || {};
-      return wrap(context[name], fn);
-    }
-
-    const superMethod = context[name];
-    context[name] = function(...args) {
-      return fn(superMethod, ...args);
-    };
-  }
-}
