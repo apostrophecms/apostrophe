@@ -226,7 +226,7 @@ export default {
       // Per Stu's original logic we have to deal with an edge case when the page is
       // first loading by displaying the initial placeholder then too (showPlaceholder
       // state not yet computed)
-      if (this.placeholderText && this.isFocused && (this.showPlaceholder !== false)) {
+      if ((this.placeholderText || this.insert.length) && this.isFocused && (this.showPlaceholder !== false)) {
         classes.push('apos-show-initial-placeholder');
       }
       return classes;
@@ -238,7 +238,7 @@ export default {
       return this.moduleOptions.tiptapTypes;
     },
     placeholderText() {
-      return this.moduleOptions.placeholderText;
+      return this.insert.length > 0 ? this.moduleOptions.placeholderTextWithInsertMenu : (this.moduleOptions.placeholderText || '');
     }
   },
   watch: {

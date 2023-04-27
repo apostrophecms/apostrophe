@@ -12,6 +12,7 @@ module.exports = {
     contextual: true,
     placeholder: true,
     placeholderText: 'apostrophe:richTextPlaceholder',
+    placeholderTextWithInsertMenu: 'apostrophe:richTextPlaceholderWithInsertMenu',
     defaultData: { content: '' },
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
@@ -726,6 +727,8 @@ module.exports = {
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
           placeholderText: self.options.placeholder && self.options.placeholderText,
+          // Not optional in presence of an insert menu, it's not acceptable UX without it
+          placeholderTextWithInsertMenu: self.options.placeholderTextWithInsertMenu,
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
           imageStyles: self.options.imageStyles
         };
