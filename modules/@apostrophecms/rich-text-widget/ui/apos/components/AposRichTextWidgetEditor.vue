@@ -97,9 +97,6 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 
-// Cleanly namespace it so we don't conflict with other uses somewhere
-const CustomPlaceholder = Placeholder.extend();
-
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -226,7 +223,7 @@ export default {
       // Per Stu's original logic we have to deal with an edge case when the page is
       // first loading by displaying the initial placeholder then too (showPlaceholder
       // state not yet computed)
-      if ((this.placeholderText || this.insert.length) && this.isFocused && (this.showPlaceholder !== false)) {
+      if (((this.placeholderText && this.moduleOptions.placeholder) || this.insert.length) && this.isFocused && (this.showPlaceholder !== false)) {
         classes.push('apos-show-initial-placeholder');
       }
       return classes;
@@ -251,6 +248,8 @@ export default {
     }
   },
   mounted() {
+    // Cleanly namespace it so we don't conflict with other uses and instances
+    const CustomPlaceholder = Placeholder.extend();
     const extensions = [
       StarterKit.configure({
         document: false,
@@ -268,13 +267,12 @@ export default {
       TableCell,
       TableHeader,
       TableRow,
-      // For this contextual widget, no need to check `widget.aposPlaceholder` value
-      // since `placeholderText` option is enough to decide whether to display it or not.
       CustomPlaceholder.configure({
         placeholder: () => {
           const text = this.$t(this.placeholderText);
           return text;
-        }
+        },
+        emptyNodeClass: this.insert.length ? 'apos-is-empty' : 'apos-is-empty-without-insert'
       }),
       FloatingMenu
     ]
@@ -586,7 +584,8 @@ function traverseNextNode(node) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus  p.is-empty::before {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::before,
+  .apos-rich-text-editor__editor.apos-is-visually-empty ::v-deep .ProseMirror:focus p:first-of-type::before {
     content: attr(data-placeholder);
     float: left;
     pointer-events: none;
