@@ -18,10 +18,15 @@ in the rich text editor.
 Apostrophe from refreshing the main content zone of the page when images
 and pieces are edited, by clearing the `refresh` property of the object
 passed to the event.
+* To facilitate custom click handlers, an `apos.modal.onTopOf(el1, el2)` function is now
+available to check whether an element is considered to be "on top of" another element in
+the modal stack.
 
 ### Fixes
 
 * Rich text widgets save more reliably when many actions are taken quickly just before save.
+* Apostrophe now has a custom implementation of `v-click-outside-element` which takes Apostrophe's
+modal stack into account.
 
 ## 3.44.0 (2023-04-13)
 

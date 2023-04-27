@@ -12,6 +12,7 @@
       aria-modal="true"
       :aria-labelledby="id"
       ref="modalEl"
+      data-apos-modal
     >
       <transition :name="transitionType">
         <div
