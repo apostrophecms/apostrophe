@@ -678,6 +678,7 @@ function traverseNextNode(node) {
     border: 1px solid var(--a-base-8);
     color: var(--a-base-1);
     font-family: var(--a-family-default);
+    font-size: var(--a-type-base);
   }
 
   .apos-rich-text-insert-menu-item {
@@ -694,6 +695,11 @@ function traverseNextNode(node) {
     flex-direction: column;
     h4, p {
       margin: 4px;
+      font-family: var(--a-family-default);
+      font-size: var(--a-type-base);
+    }
+    h4 {
+      font-weight: bold;
     }
   }
   .apos-rich-text-insert-menu-icon {

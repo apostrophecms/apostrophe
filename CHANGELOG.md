@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.45.1 (2023-04-28)
+
+### Fixes
+
+* Added missing styles to ensure consistent presentation of the rich text insert menu.
+* Fixed a bug in which clicking on an image in the media manager would close the "insert
+image" dialog box.
+
 ## 3.45.0 (2023-04-27)
 
 ### Adds
