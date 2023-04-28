@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fix
+
+* Check that `e.doc` exists when handling `content-changed` event.
+
 ## 3.45.0 (2023-04-27)
 
 ### Adds
