@@ -80,7 +80,6 @@ module.exports = {
               } else {
                 walk(elem.children, builder);
               }
-              // builder.addInline('!');
               builder.closeBlock({ trailingLineBreaks: formatOptions.trailingLineBreaks || 2 });
             }
           }
