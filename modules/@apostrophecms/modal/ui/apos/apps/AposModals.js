@@ -55,7 +55,6 @@ export default function() {
           // events from firing
           return true;
         }
-        let origEl1 = el1;
         if (!el1.matches('[data-apos-modal]')) {
           el1 = el1.closest('[data-apos-modal]') || document;
         }
