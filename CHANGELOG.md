@@ -1,5 +1,10 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+* Various size and spacing adjustments in the expanded Add Content modal UI
+
 ## 3.45.1 (2023-04-28)
 
 ### Fixes
