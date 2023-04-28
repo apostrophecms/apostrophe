@@ -1,12 +1,13 @@
 {
   "name": "apostrophe",
-  "version": "3.44.0",
+  "version": "3.45.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
     "test": "nyc --reporter=html mocha -t 10000",
     "eslint": "eslint --ext .js,.vue .",
+    "eslint-fix": "npm run eslint -- --fix",
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint"
@@ -33,6 +34,7 @@
     "@apostrophecms/vue-color": "^2.8.2",
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
+    "@tiptap/extension-floating-menu": "^2.0.0-beta.220",
     "@tiptap/extension-highlight": "^2.0.0-beta.220",
     "@tiptap/extension-link": "^2.0.0-beta.220",
     "@tiptap/extension-placeholder": "^2.0.0-beta.220",
@@ -115,7 +117,6 @@
     "v-tooltip": "^2.0.3",
     "vue": "^2.6.14",
     "vue-advanced-cropper": "^1.10.1",
-    "vue-click-outside-element": "^1.0.15",
     "vue-loader": "^15.10.0",
     "vue-material-design-icons": "~4.12.1",
     "vue-style-loader": "^4.1.2",

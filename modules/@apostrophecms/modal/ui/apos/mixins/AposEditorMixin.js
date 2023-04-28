@@ -252,11 +252,14 @@ export default {
             result = false;
             break;
           }
-          if (Array.isArray(self.getFieldValue(key))) {
-            result = self.getFieldValue(key).includes(val);
+
+          const fieldValue = self.getFieldValue(key);
+
+          if (Array.isArray(fieldValue)) {
+            result = fieldValue.includes(val);
             break;
           }
-          if (val !== self.getFieldValue(key)) {
+          if (val !== fieldValue) {
             result = false;
             break;
           }

@@ -120,7 +120,7 @@ export default {
           withType: type,
           required: true,
           max: 1,
-          browse: false,
+          browse: true,
           if: {
             linkTo: type
           }
@@ -307,9 +307,12 @@ function getOptions() {
     position: absolute;
     top: calc(100% + 5px);
     left: -15px;
-    width: 250px;
     opacity: 0;
     pointer-events: none;
+  }
+
+  .apos-context-menu__dialog {
+    width: 500px;
   }
 
   .apos-link-control__dialog.apos-is-triggered.apos-has-selection {

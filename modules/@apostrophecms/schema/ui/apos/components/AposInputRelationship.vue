@@ -186,9 +186,12 @@ export default {
         this.subfields[doc._id] = doc._fields;
       }
       for (const doc of after) {
-        if (this.subfields[doc._id] && !Object.keys(doc._fields || {}).length) {
-          doc._fields = this.subfields[doc._id];
+        if (Object.keys(doc._fields || {}).length) {
+          continue;
         }
+        doc._fields = this.field.schema && (this.subfields[doc._id]
+          ? this.subfields[doc._id]
+          : this.getDefault());
       }
     }
   },
@@ -317,6 +320,21 @@ export default {
       if (this.field.editor === 'AposImageRelationshipEditor') {
         return 'apostrophe:editImageAdjustments';
       }
+    },
+    getDefault() {
+      const object = {};
+      this.field.schema.forEach(field => {
+        if (field.name.startsWith('_')) {
+          return;
+        }
+        // Using `hasOwn` here, not simply checking if `field.def` is truthy
+        // so that `false`, `null`, `''` or `0` are taken into account:
+        const hasDefaultValue = Object.hasOwn(field, 'def');
+        object[field.name] = hasDefaultValue
+          ? klona(field.def)
+          : null;
+      });
+      return object;
     }
   }
 };

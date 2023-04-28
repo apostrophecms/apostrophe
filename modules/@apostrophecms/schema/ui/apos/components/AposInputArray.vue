@@ -430,6 +430,7 @@ function alwaysExpand(field) {
     position: relative;
     left: -35px;
     min-width: calc(100% + 35px);
+    width: max-content;
     margin: 0 0 $spacing-base;
     border-collapse: collapse;
 

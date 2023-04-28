@@ -1,5 +1,38 @@
 # Changelog
 
+## 3.45.0 (2023-04-27)
+
+### Adds
+
+* Rich text widgets now support the `insert` option, an array
+which currently may contain the strings `image` and `table` in order to add a
+convenient "insert menu" that pops up when the slash key is pressed.
+This provides a better user experience for rich text features that shouldn't
+require that the user select existing text before using them.
+* Auto expand inline array width if needed using `width: max-content` in the admin UI.
+* The "browse" button is now available when selecting pages and pieces
+to link to in the rich text editor.
+* The "browse" button is also available when selecting inline images
+in the rich text editor.
+* Images are now previewed in the relationship field's compact list view.
+* The new `apos-refreshing` Apostrophe bus event can be used to prevent
+Apostrophe from refreshing the main content zone of the page when images
+and pieces are edited, by clearing the `refresh` property of the object
+passed to the event.
+* To facilitate custom click handlers, an `apos.modal.onTopOf(el1, el2)` function is now
+available to check whether an element is considered to be "on top of" another element in
+the modal stack.
+
+### Changes
+
+* The `v-click-outside-element` Vue directive now understands that modals "on top of"
+an element should be considered to be "inside" the element, e.g. clicks on them
+shouldn't close the link dialog etc.
+
+### Fixes
+
+* Rich text widgets save more reliably when many actions are taken quickly just before save.
+
 ## 3.44.0 (2023-04-13)
 
 ### Adds
@@ -17,6 +50,11 @@ those writing mocha tests of Apostrophe modules.
 
 ### Fixes
 * Fix child page slug when title is deleted
+
+### Fixes
+
+* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
+Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 
 ## 3.43.0 (2023-03-29)
 
