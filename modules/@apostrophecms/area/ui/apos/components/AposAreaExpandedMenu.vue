@@ -198,7 +198,7 @@ export default {
 
 .apos-widget-group {
   &:not(:last-of-type) {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
   }
 
   .apos-widget__preview {
@@ -206,8 +206,9 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
     height: 135px;
-    border: 1px solid var(--a-base-7);
+    outline: 1px solid var(--a-base-7);
     border-radius: var(--a-border-radius);
     background-color: var(--a-base-10);
   }
@@ -221,7 +222,7 @@ export default {
   &--3-columns {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 15px 10px;
     .apos-widget__preview {
       height: 89px;
     }
@@ -230,7 +231,7 @@ export default {
   &--4-columns {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 5px;
+    gap: 15px 5px;
     .apos-widget__preview {
       height: 66px;
     }
@@ -289,8 +290,18 @@ export default {
 .apos-widget-group__label,
 .apos-widget__help {
   @include type-base;
+  margin-top: 0;
   line-height: var(--a-line-tall);
-  color: var(--a-base-4);
   text-align: left;
+}
+
+.apos-widget__help {
+  color: var(--a-base-2);
+  font-size: var(--a-type-smaller);
+}
+
+.apos-widget__label {
+  line-height: 1.2;
+  margin-bottom: 5px;
 }
 </style>
