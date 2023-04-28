@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Update `html-to-text` package to the latest major version.
+
 ## 3.45.0 (2023-04-27)
 
 ### Adds
