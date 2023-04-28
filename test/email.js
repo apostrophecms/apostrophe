@@ -53,7 +53,7 @@ describe('Email', function() {
     assert(message.match(/\[http:\/\/example\.com\/\]/));
   });
 
-  it.only('should convert html to text', async function () {
+  it('should convert html to text', async function () {
     await t.destroy(apos);
     apos = await t.create({
       root: module
