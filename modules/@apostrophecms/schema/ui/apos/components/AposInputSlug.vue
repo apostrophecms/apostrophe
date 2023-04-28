@@ -190,7 +190,9 @@ export default {
       const options = {
         def: ''
       };
-      if (this.field.page && !componentOnly) {
+      if (this.field.aposIsTemplate) {
+        options.allow = '@';
+      } else if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
       let preserveDash = false;

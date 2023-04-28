@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Allow `@` when a document is a template (doc-template-library module).
+
 ## 3.45.0 (2023-04-27)
 
 ### Adds
@@ -53,7 +59,7 @@ those writing mocha tests of Apostrophe modules.
 
 ### Fixes
 
-* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
+* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.
 Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 
 ## 3.43.0 (2023-03-29)
