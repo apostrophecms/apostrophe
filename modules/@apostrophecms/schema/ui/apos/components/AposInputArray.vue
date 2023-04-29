@@ -288,7 +288,8 @@ export default {
         field: this.field,
         items: this.next,
         serverError: this.serverError,
-        docId: this.docId
+        docId: this.docId,
+        parentFollowingValues: this.followingValues
       });
       if (result) {
         this.next = result;
@@ -342,12 +343,21 @@ export default {
     },
     getFollowingValues(item) {
       const followingValues = {};
+      const parentFollowing = {};
+      for (const [ key, val ] of Object.entries(this.followingValues || {})) {
+        parentFollowing[`<${key}`] = val;
+      }
+
       for (const field of this.field.schema) {
         if (field.following) {
           const following = Array.isArray(field.following) ? field.following : [ field.following ];
           followingValues[field.name] = {};
           for (const name of following) {
-            followingValues[field.name][name] = item.schemaInput.data[name];
+            if (name.startsWith('<')) {
+              followingValues[field.name][name] = parentFollowing[name];
+            } else {
+              followingValues[field.name][name] = item.schemaInput.data[name];
+            }
           }
         }
       }
