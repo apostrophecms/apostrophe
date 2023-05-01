@@ -29,5 +29,26 @@ export default {
     } else {
       this.choices = this.field.choices;
     }
+
+    if (this.field.type === 'select') {
+      this.prependEmptyChoice();
+    }
+  },
+
+  methods: {
+    prependEmptyChoice() {
+      // Using `hasOwn` here, not simply checking if `field.def` is truthy
+      // so that `false`, `null`, `''` or `0` are taken into account:
+      const hasDefaultValue = Object.hasOwn(this.field, 'def');
+      const hasNullValue = this.choices.find(choice => choice.value === null);
+
+      // Add an null option if there isn't one already
+      if (!hasDefaultValue && !hasNullValue) {
+        this.choices.unshift({
+          label: '',
+          value: null
+        });
+      }
+    }
   }
 };

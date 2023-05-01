@@ -7,8 +7,13 @@
       v-apos-tooltip="getTooltip(item)"
       @click="select(item, $event)"
     >
+      <img
+        v-if="item?.attachment?._urls?.['one-sixth']"
+        :src="item.attachment._urls['one-sixth']"
+        class="apos-search-image"
+      >
       <AposIndicator
-        v-if="getIcon(item).icon"
+        v-else-if="getIcon(item).icon"
         :icon="getIcon(item).icon"
         :icon-size="getIcon(item).iconSize"
         class="apos-button__icon"
@@ -133,6 +138,7 @@ export default {
   list-style: none;
   box-shadow: var(--a-box-shadow);
   box-sizing: border-box;
+  min-width: 320px;
   max-height: 300px;
   margin: 0;
   padding: 0;
@@ -230,6 +236,14 @@ export default {
 
   &.apos-search__item--hint {
     @include hint;
+  }
+
+  .apos-search-image {
+    flex-basis: 0;
+    flex-grow: 0;
+    max-width: 32px;
+    max-height: 32px;
+    object-fit: cover;
   }
 }
 </style>
