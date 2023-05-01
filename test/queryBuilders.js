@@ -43,6 +43,20 @@ describe('Query Builders', function() {
                     }
                   }
                 }
+              },
+              methods: {
+                async sortByAge() {
+                  await query.finalize();
+
+                  const pipeline = [
+                    { $match: query.get('criteria') },
+                    { $sort: { age: 1 } }
+                  ];
+
+                  const results = await self.apos.doc.db.aggregate(pipeline).toArray();
+
+                  return results;
+                }
               }
             };
           }
@@ -69,6 +83,22 @@ describe('Query Builders', function() {
                       query.and({ age: { $gt: 60 } });
                     }
                   }
+                }
+              },
+              methods: {
+                async sortByAge(_super) {
+                  assert(typeof _super === 'function');
+
+                  await query.finalize();
+
+                  const pipeline = [
+                    { $match: query.get('criteria') },
+                    { $sort: { age: -1 } }
+                  ];
+
+                  const results = await self.apos.doc.db.aggregate(pipeline).toArray();
+
+                  return results;
                 }
               }
             };
@@ -99,7 +129,7 @@ describe('Query Builders', function() {
     });
   });
 
-  it('should insert seniors and verify the query buildes have been properly extended', async function() {
+  it('should insert seniors and verify the query builders have been properly extended', async function() {
     const req = apos.task.getReq();
     const persons = getPersons(apos.person, true);
     const { insertedCount } = await apos.doc.db.insertMany(persons);
@@ -124,6 +154,22 @@ describe('Query Builders', function() {
     seniors.forEach((senior) => {
       assert(senior.age > 60);
     });
+  });
+
+  it('should verify that query methods work and can be extende', async function() {
+    const req = apos.task.getReq();
+    const youngSorted = await apos.young.find(req).age('adults').sortByAge();
+    assert(youngSorted[0].age === 25);
+    assert(youngSorted[1].age === 32);
+    assert(youngSorted[2].age === 50);
+    assert(youngSorted[3].age === 58);
+
+    const personsSorted = await apos.person.find(req).age('adults').sortByAge();
+    assert(personsSorted[0].age === 80);
+    assert(personsSorted[1].age === 72);
+    assert(personsSorted[2].age === 58);
+    assert(personsSorted[3].age === 50);
+    assert(personsSorted[4].age === 32);
   });
 });
 
