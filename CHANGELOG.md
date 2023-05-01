@@ -8,7 +8,7 @@
 
 ### Fixes
 
-* fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
+* Fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
 
 ## 3.45.1 (2023-04-28)
 
