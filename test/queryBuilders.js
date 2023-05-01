@@ -71,11 +71,17 @@ describe('Query Builders', function() {
               builders: {
                 age: {
                   def: 'adult',
-                  launder(_super, str) {
-                    return _super() || str === 'senior';
+                  launder(_super, val) {
+                    const laundered = _super();
+
+                    if (laundered !== null) {
+                      return laundered;
+                    }
+
+                    return val === 'senior' ? val : null;
                   },
-                  finalize(_super) {
-                    _super();
+                  async finalize(_super) {
+                    await _super();
 
                     const age = query.get('age');
 
