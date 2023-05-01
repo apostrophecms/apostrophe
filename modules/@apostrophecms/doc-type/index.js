@@ -463,7 +463,6 @@ module.exports = {
         };
         for (const name of self.__meta.chain.map(entry => entry.name)) {
           const fn = self.queries[name];
-
           if (fn) {
             const result = fn(self, query);
             if (result.builders) {
@@ -473,7 +472,6 @@ module.exports = {
               Object.assign(query.methods, result.methods);
             }
           }
-
           if (self.extendQueries[name]) {
             const extendedQueries = self.extendQueries[name](self, query);
             extendQueries(query.builders, extendedQueries.builders || {});
@@ -2333,10 +2331,6 @@ module.exports = {
           launder(viewContext) {
             return [ 'manage', 'relationship' ].includes(viewContext) ? viewContext : null;
           }
-          /* finalize() { */
-          /*   const res = query.get('viewContext'); */
-          /*   console.log('res', res); */
-          /* } */
         }
       },
 
