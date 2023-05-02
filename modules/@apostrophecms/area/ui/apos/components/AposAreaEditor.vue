@@ -375,9 +375,6 @@ export default {
         if (result) {
           return this.update(result);
         }
-        function cancelRefresh(refreshOptions) {
-          refreshOptions.refresh = false;
-        }
       }
     },
     clone(index) {
@@ -596,8 +593,11 @@ export default {
       }
     }
   }
-};
+}
 
+function cancelRefresh(refreshOptions) {
+  refreshOptions.refresh = false;
+}
 </script>
 
 <style lang="scss" scoped>
