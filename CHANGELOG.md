@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.45.2 (2023-05-02)
+
+### Fixes
+
+* Adding or editing a piece no longer immediately refreshes the main content area if a widget editor
+is open. This prevents interruption of the widget editing process.
+
 ## 3.45.1 (2023-04-28)
 
 ### Fixes

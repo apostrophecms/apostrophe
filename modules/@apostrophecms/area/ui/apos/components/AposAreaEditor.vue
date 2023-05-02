@@ -363,6 +363,7 @@ export default {
       if (!this.widgetIsContextual(widget.type)) {
         const componentName = this.widgetEditorComponent(widget.type);
         apos.area.activeEditor = this;
+        apos.bus.$on('apos-refreshing', cancelRefresh);
         const result = await apos.modal.execute(componentName, {
           value: widget,
           options: this.widgetOptionsByType(widget.type),
@@ -370,8 +371,12 @@ export default {
           docId: this.docId
         });
         apos.area.activeEditor = null;
+        apos.bus.$off('apos-refreshing', cancelRefresh);
         if (result) {
           return this.update(result);
+        }
+        function cancelRefresh(refreshOptions) {
+          refreshOptions.refresh = false;
         }
       }
     },
