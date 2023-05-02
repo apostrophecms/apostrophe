@@ -3,6 +3,8 @@
 ## UNRELEASED
 
 ### Changes
+
+* Debounce search to prevent calling search on every key stroke in the manager modal.
 * Various size and spacing adjustments in the expanded Add Content modal UI
 
 ## 3.45.1 (2023-04-28)
