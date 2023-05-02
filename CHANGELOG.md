@@ -1,9 +1,17 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
+
+### Changes
+* Various size and spacing adjustments in the expanded Add Content modal UI
+
+## 3.45.1 (2023-04-28)
 
 ### Fixes
 
+* Added missing styles to ensure consistent presentation of the rich text insert menu.
+* Fixed a bug in which clicking on an image in the media manager would close the "insert
+image" dialog box.
 * Update `html-to-text` package to the latest major version.
 
 ## 3.45.0 (2023-04-27)
