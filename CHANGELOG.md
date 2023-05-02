@@ -4,6 +4,7 @@
 
 ### Changes
 
+* Debounce search to prevent calling search on every key stroke in the manager modal.
 * Various size and spacing adjustments in the expanded Add Content modal UI
 
 ### Fix
