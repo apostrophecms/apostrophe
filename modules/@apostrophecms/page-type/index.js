@@ -297,6 +297,11 @@ module.exports = {
       // the `title` property, but since this is a page we are including
       // the slug as well.
       getAutocompleteTitle(doc, query) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-get-autocomplete-title',
+          'self.getAutocompleteTitle() is deprecated. Use the autocomplete({ ... }) query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
+        );
         return doc.title + ' (' + doc.slug + ')';
       },
       // `req` determines what the user is eligible to edit, `criteria`
@@ -404,6 +409,11 @@ module.exports = {
         to.parked = from.parked;
       },
       getAutocompleteProjection(_super, query) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-get-autocomplete-projection',
+          'self.getAutocompleteProjection() is deprecated. Use the autocomplete({ ... }) query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete. Use self.getRelationshipQueryBuilderChoicesProjection() instead if it was used for apos.schema.relationshipQueryBuilderChoices().'
+        );
         const projection = _super(query);
         projection.slug = 1;
         return projection;
