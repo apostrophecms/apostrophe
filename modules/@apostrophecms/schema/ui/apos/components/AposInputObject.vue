@@ -28,10 +28,11 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
 
 export default {
   name: 'AposInputObject',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposInputFollowingMixin ],
   props: {
     generation: {
       type: Number,
@@ -59,27 +60,7 @@ export default {
   },
   computed: {
     followingValuesWithParent() {
-      const followingValues = {};
-      const parentFollowing = {};
-      for (const [ key, val ] of Object.entries(this.followingValues || {})) {
-        parentFollowing[`<${key}`] = val;
-      }
-
-      for (const field of this.field.schema) {
-        if (field.following) {
-          const following = Array.isArray(field.following) ? field.following : [ field.following ];
-          followingValues[field.name] = {};
-          for (const name of following) {
-            if (name.startsWith('<')) {
-              followingValues[field.name][name] = parentFollowing[name];
-            } else {
-              followingValues[field.name][name] = this.schemaInput.data[name];
-            }
-          }
-        }
-      }
-
-      return followingValues;
+      return this.computeFollowingValues(this.schemaInput.data);
     }
   },
   watch: {
