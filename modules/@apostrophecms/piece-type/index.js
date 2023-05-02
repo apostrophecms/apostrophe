@@ -26,6 +26,16 @@ module.exports = {
     // publicApiProjection: {
     //   title: 1,
     //   _url: 1,
+    // },
+    // By default the manager modal will get all the pieces fields below + all manager columns
+    // you can enable a projection using
+    // managerApiProjection: {
+    //   _id: 1,
+    //   aposLocale: 1,
+    //   aposDocId: 1,
+    //   title: 1,
+    //   type: 1,
+    //   _url: 1
     // }
   },
   fields: {
@@ -1064,6 +1074,18 @@ module.exports = {
           }
           return true;
         });
+      },
+      getManagerApiProjection(req) {
+        if (!self.options.managerApiProjection) {
+          return null;
+        }
+
+        const projection = { ...self.options.managerApiProjection };
+        self.columns.forEach(({ name }) => {
+          projection[name] = 1;
+        });
+
+        return projection;
       }
     };
   },
@@ -1092,6 +1114,7 @@ module.exports = {
           editorModal: 'AposDocEditor',
           managerModal: 'AposDocsManager'
         });
+        browserOptions.managerApiProjection = self.getManagerApiProjection(req);
 
         return browserOptions;
       },
