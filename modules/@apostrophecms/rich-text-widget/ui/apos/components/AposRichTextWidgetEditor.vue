@@ -361,7 +361,7 @@ export default {
     // Strip the placeholder BRs again when populating the editor.
     // Otherwise they get doubled by ProseMirror
     stripPlaceholderBrs(html) {
-      return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
+      return html.replace(/<(p[^>]*)>\s*<br(\s?\/?)>\s*<\/p>/gi, '<$1></p>');
     },
     // Legacy content may have `id` and `name` attributes on anchor tags
     // but our tiptap anchor extension needs them on a separate `span`, so nest
