@@ -41,7 +41,20 @@ export default function() {
       // or el2 is not a modal, it is treated as its DOM
       // parent modal, or as `document`. If el1 has no
       // parent modal this method always returns false.
+      //
+      // If el1 is no longer connected to the DOM then it
+      // is also considered to be "on top" e.g. not something
+      // that should concern `v-click-outside-element` and
+      // similar functionality. This is necessary because
+      // sometimes Vue removes elements from the DOM before
+      // we can examine their relationships.
       onTopOf(el1, el2) {
+        if (!el1.isConnected) {
+          // If el1 is no longer in the DOM we can't make a proper determination,
+          // returning true prevents unwanted things like click-outside-element
+          // events from firing
+          return true;
+        }
         if (!el1.matches('[data-apos-modal]')) {
           el1 = el1.closest('[data-apos-modal]') || document;
         }
