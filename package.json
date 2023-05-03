@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "3.45.2",
+  "version": "3.46.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -113,7 +113,7 @@
     "tinycolor2": "^1.4.2",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
-    "uploadfs": "^1.17.1",
+    "uploadfs": "^1.22.1",
     "v-tooltip": "^2.0.3",
     "vue": "^2.6.14",
     "vue-advanced-cropper": "^1.10.1",

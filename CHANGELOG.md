@@ -2,12 +2,18 @@
 
 ## UNRELEASED
 
+### fixes
+
+* Fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
+
+## 3.46.0 (2023-05-03)
+
 ### Fixes
 
 * Adding or editing a piece no longer immediately refreshes the main content area if a widget editor is open. This prevents interruption of the widget editing process
 when working with the `@apostrophecms/ai-helper` module, and also helps in other situations.
 * Check that `e.doc` exists when handling `content-changed` event.
-* Fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
+* Require updated `uploadfs` version with no dependency warnings.
 
 ### Adds
 
