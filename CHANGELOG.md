@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Updated `sluggo` to version 1.0.0.
+
 ## 3.46.0 (2023-05-03)
 
 ### Fixes
