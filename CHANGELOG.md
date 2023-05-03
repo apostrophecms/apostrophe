@@ -7,6 +7,10 @@
 * Debounce search to prevent calling search on every key stroke in the manager modal.
 * Various size and spacing adjustments in the expanded Add Content modal UI
 
+### Fix
+
+* Check that `e.doc` exists when handling `content-changed` event.
+
 ## 3.45.1 (2023-04-28)
 
 ### Fixes
