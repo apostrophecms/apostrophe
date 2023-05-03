@@ -1,11 +1,21 @@
 # Changelog
 
-## 3.45.2 (2023-05-02)
+## UNRELEASED
 
 ### Fixes
 
-* Adding or editing a piece no longer immediately refreshes the main content area if a widget editor
-is open. This prevents interruption of the widget editing process.
+* Adding or editing a piece no longer immediately refreshes the main content area if a widget editor is open. This prevents interruption of the widget editing process
+when working with the `@apostrophecms/ai-helper` module, and also helps in other situations.
+* Check that `e.doc` exists when handling `content-changed` event.
+
+### Adds
+
+* Allow sub-schema fields (array and object) to follow parent schema fields using the newly introduced `following: '<parentField'` syntax, where the starting `<` indicates the parent level. For example `<parentField` follows a field in the parent level, `<<grandParentField` follows a field in the grandparent level, etc. The change is fully backward compatible with the current syntax for following fields from the same schema level.
+
+### Changes
+
+* Debounce search to prevent calling search on every key stroke in the manager modal.
+* Various size and spacing adjustments in the expanded Add Content modal UI
 
 ## 3.45.1 (2023-04-28)
 
@@ -14,6 +24,7 @@ is open. This prevents interruption of the widget editing process.
 * Added missing styles to ensure consistent presentation of the rich text insert menu.
 * Fixed a bug in which clicking on an image in the media manager would close the "insert
 image" dialog box.
+* Update `html-to-text` package to the latest major version.
 
 ## 3.45.0 (2023-04-27)
 
