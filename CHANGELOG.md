@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Allow sub-schema fields (array and object) to follow parent schema fields using the newly introduced `following: '<parentField'` syntax, where the starting `<` indicates the parent level. For example `<parentField` follows a field in the parent level, `<<grandParentField` follows a field in the grandparent level, etc. The change is fully backward compatible with the current syntax for following fields from the same schema level.
+
 ### Changes
 
 * Debounce search to prevent calling search on every key stroke in the manager modal.
