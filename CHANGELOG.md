@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.46.0
 
 ### Fixes
 
