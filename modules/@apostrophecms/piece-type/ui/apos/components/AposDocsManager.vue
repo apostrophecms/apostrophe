@@ -73,7 +73,7 @@
             :checked-count="checked.length"
             :batch-operations="moduleOptions.batchOperations"
             @select-click="selectAll"
-            @search="search"
+            @search="onSearch"
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
@@ -119,6 +119,7 @@
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import { debounce } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposDocsManager',
@@ -211,6 +212,9 @@ export default {
     }
   },
   created() {
+    const DEBOUNCE_TIMEOUT = 500;
+    this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
+
     this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {

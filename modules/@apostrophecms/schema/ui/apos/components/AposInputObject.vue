@@ -17,6 +17,7 @@
             :generation="generation"
             :doc-id="docId"
             v-model="schemaInput"
+            :following-values="followingValuesWithParent"
             ref="schema"
           />
         </div>
@@ -27,10 +28,11 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
 
 export default {
   name: 'AposInputObject',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposInputFollowingMixin ],
   props: {
     generation: {
       type: Number,
@@ -55,6 +57,11 @@ export default {
       },
       next
     };
+  },
+  computed: {
+    followingValuesWithParent() {
+      return this.computeFollowingValues(this.schemaInput.data);
+    }
   },
   watch: {
     schemaInput: {
