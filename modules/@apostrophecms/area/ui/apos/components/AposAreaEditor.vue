@@ -593,7 +593,7 @@ export default {
       }
     }
   }
-}
+};
 
 function cancelRefresh(refreshOptions) {
   refreshOptions.refresh = false;
