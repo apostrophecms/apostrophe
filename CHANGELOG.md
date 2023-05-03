@@ -5,6 +5,7 @@
 ### Changes
 
 * Updated `sluggo` to version 1.0.0.
+* Updated `jsdom` to version `22.0.0` to address an installation warning about the `word-wrap` module.
 
 ## 3.46.0 (2023-05-03)
 
