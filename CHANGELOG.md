@@ -47,8 +47,8 @@ shouldn't close the link dialog etc.
 * Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
 Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 * Rich text widgets save more reliably when many actions are taken quickly just before save.
-* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget edition, which resulted in saving the value if the widget was nested and the parent widget was saved.  
-Also improve the field UX by setting the input as readonly when fetching the video metadata in order to avoid losing its focus.
+* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget editor, which resulted in saving the value if the widget was nested and the parent widget was saved.  
+Also improve the `oembed` field UX by setting the input as `readonly` rather than `disabled` when fetching the video metadata, in order to avoid losing its focus when typing.
 
 ## 3.44.0 (2023-04-13)
 
