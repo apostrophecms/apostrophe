@@ -6,6 +6,10 @@
 
 * Fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
 
+### Changes
+
+* Updated `sluggo` to version 1.0.0.
+
 ## 3.46.0 (2023-05-03)
 
 ### Fixes
