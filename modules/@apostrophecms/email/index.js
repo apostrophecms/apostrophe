@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const htmlToText = require('html-to-text');
+const { htmlToText } = require('html-to-text');
 const _ = require('lodash');
 
 // ## Options
@@ -26,18 +26,61 @@ module.exports = {
       async emailForModule(req, templateName, data, options, module) {
         const transport = self.getTransport();
         const html = await module.render(req, templateName, data);
-        const text = htmlToText.fromString(html, {
-          format: {
-            heading: function (elem, fn, options) {
-              const h = fn(elem.children, options);
-              const split = h.split(/(\[.*?\])/);
-              return split.map(function (s) {
-                if (s.match(/^\[.*\]$/)) {
-                  return s;
-                } else {
-                  return s.toUpperCase();
-                }
-              }).join('') + '\n';
+        const text = htmlToText(html, {
+          selectors: [
+            {
+              selector: 'a',
+              options: { hideLinkHrefIfSameAsText: true }
+            },
+            {
+              selector: 'h1',
+              format: 'customHeading'
+            },
+            {
+              selector: 'h2',
+              format: 'customHeading'
+            },
+            {
+              selector: 'h3',
+              format: 'customHeading'
+            },
+            {
+              selector: 'h4',
+              format: 'customHeading'
+            },
+            {
+              selector: 'h5',
+              format: 'customHeading'
+            },
+            {
+              selector: 'h6',
+              format: 'customHeading'
+            }
+          ],
+          formatters: {
+            // Custom heading formatter, based on the core heading but
+            // no uppercase inside "[ ]" blocks.
+            customHeading: function (elem, walk, builder, formatOptions) {
+              builder.openBlock({ leadingLineBreaks: formatOptions.leadingLineBreaks || 2 });
+              if (formatOptions.uppercase !== false) {
+                // Keep track of [ and ] (no nested support)
+                let ignoreUpper = false;
+                builder.pushWordTransform(str => {
+                  if (str.trim().startsWith('[')) {
+                    ignoreUpper = true;
+                  }
+                  const word = ignoreUpper ? str : str.toUpperCase();
+                  if (str.trim().endsWith(']')) {
+                    ignoreUpper = false;
+                  }
+                  return word;
+                });
+                walk(elem.children, builder);
+                builder.popWordTransform();
+              } else {
+                walk(elem.children, builder);
+              }
+              builder.closeBlock({ trailingLineBreaks: formatOptions.trailingLineBreaks || 2 });
             }
           }
         });
