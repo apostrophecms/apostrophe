@@ -1420,6 +1420,7 @@ module.exports = {
     return {
       getBrowserData(_super, req) {
         const initialBrowserOptions = _super(req);
+        const schemaModule = self.apos.schema;
 
         const {
           name, label, pluralLabel
@@ -1439,10 +1440,12 @@ module.exports = {
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.action = self.action;
-        browserOptions.schema = self.allowedSchema(req);
+        browserOptions.schema = self.apos.schema.stringifyFieldsPatterns(self.allowedSchema(req));
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
-        browserOptions.previewDraft = self.isLocalized() && !browserOptions.autopublish && self.options.previewDraft;
+        browserOptions.previewDraft = self.isLocalized() &&
+          !browserOptions.autopublish &&
+          self.options.previewDraft;
 
         return browserOptions;
       }
