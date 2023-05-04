@@ -2,14 +2,21 @@
 
 ## UNRELEASED
 
-### fixes
+### Changes
+
+* Since Node 14 and MongoDB 4.2 have reached their own end-of-support dates,
+we are **no longer supporting them for A3.** Note that our dependency on
+`jsdom` 22 is incompatible with Node 14. Node 16 and Node 18 are both
+still supported. However, because Node 16 reaches its
+end-of-life date quite soon (September), testing and upgrading directly
+to Node 18 is strongly recommended.
+* Updated `sluggo` to version 1.0.0.
+* Updated `jsdom` to version `22.0.0` to address an installation warning about the `word-wrap` module.
+
+### Fixes
 
 * Fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
 
-### Changes
-
-* Updated `sluggo` to version 1.0.0.
-* Updated `jsdom` to version `22.0.0` to address an installation warning about the `word-wrap` module.
 
 ## 3.46.0 (2023-05-03)
 
