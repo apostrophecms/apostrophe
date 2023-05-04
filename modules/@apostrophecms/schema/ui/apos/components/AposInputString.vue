@@ -11,7 +11,8 @@
           v-if="field.textarea && field.type === 'string'" rows="5"
           v-model="next" :placeholder="$t(field.placeholder)"
           @keydown.enter="enterEmit"
-          :disabled="field.readOnly" :required="field.required"
+          :disabled="field.readOnly"
+          :required="field.required"
           :id="uid" :tabindex="tabindex"
         />
         <input
@@ -123,12 +124,9 @@ export default {
       if (typeof value === 'string' && !value.length) {
         // Also correct for float and integer because Vue coerces
         // number fields to either a number or the empty string
-        if (this.field.required) {
-          return 'required';
-        } else {
-          return false;
-        }
+        return this.field.required ? 'required' : false;
       }
+
       const minMaxFields = [
         'integer',
         'float',
@@ -136,6 +134,13 @@ export default {
         'date',
         'password'
       ];
+
+      if (typeof value === 'string' && this.field.pattern) {
+        const regex = new RegExp(this.field.pattern);
+        if (!value.match(regex)) {
+          return 'invalid';
+        }
+      }
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {
         if ((value != null) && value.length && (this.minMaxComparable(value) < this.field.min)) {
@@ -192,7 +197,7 @@ export default {
     },
     minMaxComparable(s) {
       const converted = this.convert(s);
-      if ((this.field.type === 'integer') || (this.field.type === 'float') || (this.field.type === 'date') || (this.field.type === 'range') || (this.field.type === 'time')) {
+      if ([ 'integer', 'float', 'date', 'range', 'time' ].includes(this.field.type)) {
         // Compare the actual values for these types
         return converted;
       } else {
