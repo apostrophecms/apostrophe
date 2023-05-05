@@ -400,7 +400,6 @@ export default {
 
     // Our widget was hovered
     mouseover(e) {
-      console.log('mouseover');
       if (e) {
         e.stopPropagation();
       }
@@ -440,7 +439,6 @@ export default {
     },
 
     focus(e) {
-      console.log('focus fired');
       if (e) {
         e.stopPropagation();
       }
@@ -449,7 +447,6 @@ export default {
       this.state.controls.show = true;
       // this.state.add.top.show = true;
       // this.state.add.bottom.show = true;
-      console.log('setting top and bottom false');
       this.state.add.top.show = false;
       this.state.add.bottom.show = false;
       this.state.labels.show = true;

@@ -42,9 +42,7 @@
       <div
         class="apos-rich-text-insert-menu-wrapper"
         @keydown.prevent.arrow-up="focusInsertMenuItem(true)"
-        @keydown.prevent.arrow-right="focusInsertMenuItem()"
         @keydown.prevent.arrow-down="focusInsertMenuItem()"
-        @keydown.prevent.arrow-left="focusInsertMenuItem(true)"
         @keydown="closeInsertMenu"
       >
         <button
@@ -54,7 +52,7 @@
           role="option"
           data-insert-menu-item
           data-focus="false"
-          @click="activateInsertMenuItem(item, insertMenu[item])"
+          @click.self="activateInsertMenuItem(item, insertMenu[item])"
         >
           <div class="apos-rich-text-insert-menu-icon">
             <AposIndicator
@@ -71,13 +69,9 @@
               :options="editorOptions"
               @before-commands="removeSlash"
               @close="closeInsertMenuItem"
-              @click.stop="$event => null"
             />
           </div>
-          <div
-            class="apos-rich-text-insert-menu-label"
-            @click="activateInsertMenuItem(item, insertMenu[item])"
-          >
+          <div class="apos-rich-text-insert-menu-label">
             <h4>{{ $t(insertMenu[item].label) }}</h4>
             <p>{{ $t(insertMenu[item].description) }}</p>
           </div>
@@ -268,7 +262,7 @@ export default {
     },
     isShowingInsert(newVal) {
       if (newVal) {
-        this.$refs.insertMenu.$el.querySelector('[data-insert-menu-item]').focus();
+        this.focusInsertMenuItem(false, 0);
       }
     }
   },
@@ -308,10 +302,6 @@ export default {
       content: this.initialContent,
       autofocus: this.autofocus,
       onUpdate: this.editorUpdate,
-      onTransaction: (transaction) => {
-        console.log('transaction', transaction);
-        // this.$emit('input', this.editor.getHTML());
-      },
       extensions,
 
       // The following events are triggered:
@@ -350,7 +340,6 @@ export default {
       }
     },
     async editorUpdate({ editor }) {
-      console.log('update', editor);
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
       if (this.docId === window.apos.adminBar.contextId) {
@@ -517,19 +506,25 @@ export default {
         }));
     },
     showFloatingMenu({ state }) {
-      if (!this.insertMenu || !this.insert.length) {
-        return false;
-      }
-      if (this.dismissedPositions.includes(state.selection.$anchor)) {
-        return false;
-      }
       const { $to } = state.selection;
+      const pos = {
+        pos: state.selection.$anchor.pos,
+        parentOffset: state.selection.$anchor.parentOffset
+      };
+
+      if (
+        !this.insertMenu ||
+        !this.insert.length ||
+        this.dismissedPositions.filter(o => {
+          return o.pos === pos.pos && o.parentOffset === pos.parentOffset;
+        }).length ||
+        ($to.nodeAfter && $to.nodeAfter.text)
+      ) {
+        this.isShowingInsert = false;
+        return false;
+      }
+
       if (state.selection.empty) {
-        // Only open menu if the cursor is at the end of a node
-        if ($to.nodeAfter && $to.nodeAfter.text) {
-          this.isShowingInsert = false;
-          return false;
-        }
         if ($to.nodeBefore && $to.nodeBefore.text) {
           const text = $to.nodeBefore.text;
           if (text.slice(-1) === '/') {
@@ -538,6 +533,7 @@ export default {
           }
         }
       }
+
       this.isShowingInsert = false;
       return false;
     },
@@ -574,19 +570,28 @@ export default {
       this.activeInsertMenuComponent = null;
     },
     closeInsertMenu(e) {
-      // if key is up, down, or return, do nothing
-      if ([ 'ArrowUp', 'ArrowDown', 'Enter' ].includes(e.key)) {
+      if (
+        [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
+        this.activeInsertMenuComponent
+      ) {
         return;
       }
-      this.dismissedPositions.push(this.editor.view.state.selection.$anchor);
+      const pos = this.editor.view.state.selection.$anchor;
+      this.dismissedPositions.push({
+        pos: pos.pos,
+        parentOffset: pos.parentOffset
+      });
       this.editor.commands.focus();
+      this.activeInsertMenuComponent = null;
       // Only insert alpha/numeric and space characters
       if (e.key.match(/^[a-zA-Z0-9]$/) || e.key === ' ') {
         this.editor.commands.insertContent(e.key);
       }
     },
-    focusInsertMenuItem(prev = false) {
-      console.log('focus insert menu');
+    focusInsertMenuItem(prev = false, index) {
+      if (this.activeInsertMenuComponent) {
+        return;
+      }
       const buttons = Array.from(this.$refs.insertMenu.$el.querySelectorAll('[data-insert-menu-item]'));
       const currentIndex = buttons.findIndex(el => el === document.activeElement);
       let targetIndex = prev ? currentIndex - 1 : currentIndex + 1;
@@ -596,7 +601,7 @@ export default {
       if (targetIndex < 0) {
         targetIndex = buttons.length - 1;
       }
-      buttons[targetIndex]?.focus();
+      buttons[index || targetIndex]?.focus();
     }
   }
 };
