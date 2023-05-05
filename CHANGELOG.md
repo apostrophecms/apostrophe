@@ -1,5 +1,17 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+* Updates area UX to not display Add Content controls when a widget is focused
+* Updates area UX to unfocus widget on esc key
+* Updates widget UI to use dashed outlines instead of borders to indicate bounds
+* Updates UI for Insert Menu
+* Updates Insert Menu UX to allow mid-node insertion
+
+### Adds
+* Adds keyboard accessibility to Insert menu
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
