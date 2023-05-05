@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.47.0 (2023-05-05)
 
 ### Changes
 
@@ -16,7 +16,6 @@ to Node 18 is strongly recommended.
 ### Fixes
 
 * Fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
-
 
 ## 3.46.0 (2023-05-03)
 
