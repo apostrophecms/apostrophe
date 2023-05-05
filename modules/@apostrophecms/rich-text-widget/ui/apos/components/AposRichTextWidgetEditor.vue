@@ -51,7 +51,6 @@
           class="apos-rich-text-insert-menu-item"
           role="option"
           data-insert-menu-item
-          data-focus="false"
           @click.self="activateInsertMenuItem(item, insertMenu[item])"
         >
           <div class="apos-rich-text-insert-menu-icon">
