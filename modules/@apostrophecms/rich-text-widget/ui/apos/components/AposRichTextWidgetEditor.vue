@@ -339,7 +339,7 @@ export default {
         refreshOptions.refresh = false;
       }
     },
-    async editorUpdate({ editor }) {
+    async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
       if (this.docId === window.apos.adminBar.contextId) {
@@ -583,8 +583,8 @@ export default {
       });
       this.editor.commands.focus();
       this.activeInsertMenuComponent = null;
-      // Only insert alpha/numeric and space characters
-      if (e.key.match(/^[a-zA-Z0-9]$/) || e.key === ' ') {
+      // Only insert character keys
+      if (e.key.length === 1) {
         this.editor.commands.insertContent(e.key);
       }
     },
@@ -659,7 +659,6 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::after {
-  // .apos-rich-text-editor__editor.apos-is-visually-empty ::v-deep .ProseMirror:focus p:first-of-type::after {
     display: block;
     margin: 5px 0 10px;
     color: var(--a-primary-transparent-50);
@@ -678,10 +677,8 @@ function traverseNextNode(node) {
     position: relative;
     border-radius: var(--a-border-radius);
     background-color: transparent;
-    // box-shadow: 0 0 0 1px transparent;
   }
   .apos-rich-text-editor__editor.apos-is-visually-empty {
-    // box-shadow: 0 0 0 1px var(--a-primary-transparent-50);
     background-color: var(--a-primary-transparent-10);
     min-height: 50px;
   }
@@ -696,9 +693,6 @@ function traverseNextNode(node) {
     width: 200px;
     height: 10px;
     margin: auto;
-    // margin-top: 7.5px;
-    // margin-bottom: 7.5px;
-    // color: var(--a-base-5);
     color: var(--a-primary-transparent-50);
     opacity: 0;
     visibility: hidden;

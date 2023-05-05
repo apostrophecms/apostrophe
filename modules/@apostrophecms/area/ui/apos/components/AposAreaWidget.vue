@@ -445,8 +445,6 @@ export default {
       this.focused = true;
       this.state.container.focus = true;
       this.state.controls.show = true;
-      // this.state.add.top.show = true;
-      // this.state.add.bottom.show = true;
       this.state.add.top.show = false;
       this.state.add.bottom.show = false;
       this.state.labels.show = true;
@@ -535,36 +533,11 @@ export default {
     border-radius: var(--a-border-radius);
     outline: 1px solid transparent;
     transition: outline 0.2s ease;
-    // &:before, &:after {
-    //   content: '';
-    //   position: absolute;
-    //   left: 0;
-    //   width: 100%;
-    //   height: 1px;
-    //   border-top: 1px dashed var(--a-primary);
-    //   opacity: 0;
-    //   transition: opacity 0.2s ease;
-    //   pointer-events: none;
-    // }
-
-    // &:before {
-    //   top: 0;
-    // }
-    // &:after {
-    //   bottom: 0;
-    // }
     &.apos-is-highlighted {
       outline: 1px dashed var(--a-primary-transparent-50);
-      // &:before, &:after {
-      //   opacity: 0.4;
-      // }
     }
     &.apos-is-focused {
       outline: 1px dashed var(--a-primary);
-      // &:before, &:after {
-      //   opacity: 1;
-      //   border-top: 1px solid var(--a-primary);
-      // }
       &::v-deep .apos-rich-text-editor__editor.apos-is-visually-empty {
         box-shadow: none;
       }
