@@ -1,6 +1,6 @@
 <template>
   <div class="apos-media-manager-display">
-    <div class="apos-media-manager-display__grid">
+    <div class="apos-media-manager-display__grid" :class="classes">
       <AposMediaUploader
         v-if="canEdit"
         :disabled="maxReached"
@@ -14,6 +14,7 @@
         class="apos-media-manager-display__cell" v-for="item in items"
         :key="idFor(item)"
         :class="{'apos-is-selected': checked.includes(item._id)}"
+        :style="getCellStyles(item)"
       >
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
@@ -114,6 +115,14 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    classes: {
+      type: String,
+      default: null
+    },
+    template: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [
@@ -162,6 +171,14 @@ export default {
       }
 
     },
+    getCellStyles(item) {
+      if (this.template && item.dimensions) {
+        return {
+          width: `${item.dimensions.width}px`,
+          height: `${item.dimensions.height}px`
+        };
+      }
+    },
     addDragClass(event) {
       event.target.classList.add('apos-is-hovering');
     },
@@ -186,6 +203,13 @@ export default {
       grid-template-columns: repeat(7, 12.22%);
       gap: 2.4% 2.4%;
     }
+  }
+
+  .apos-media-manager-display__flex {
+    display: flex;
+    gap: 35px;
+    max-width: 100%;
+    flex-wrap: wrap;
   }
 
   .apos-media-manager-display__cell {
