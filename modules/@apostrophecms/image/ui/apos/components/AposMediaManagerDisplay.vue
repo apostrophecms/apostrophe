@@ -1,6 +1,6 @@
 <template>
   <div class="apos-media-manager-display">
-    <div class="apos-media-manager-display__grid" :class="classes">
+    <div class="apos-media-manager-display__grid">
       <AposMediaUploader
         v-if="canEdit"
         :disabled="maxReached"
@@ -116,10 +116,6 @@ export default {
       required: false,
       default: null
     },
-    classes: {
-      type: String,
-      default: null
-    },
     template: {
       type: Boolean,
       default: false
@@ -203,13 +199,6 @@ export default {
       grid-template-columns: repeat(7, 12.22%);
       gap: 2.4% 2.4%;
     }
-  }
-
-  .apos-media-manager-display__flex {
-    display: flex;
-    gap: 35px;
-    max-width: 100%;
-    flex-wrap: wrap;
   }
 
   .apos-media-manager-display__cell {
