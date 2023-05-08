@@ -108,8 +108,8 @@ module.exports = (self) => {
       if (
         field.pattern &&
         field.pattern instanceof RegExp &&
-        !destination[field.name].match(field.pattern)
-      ) {
+        !field.pattern.test(destination[field.name]
+        )) {
         throw self.apos.error('invalid');
       }
     },

@@ -137,7 +137,7 @@ export default {
 
       if (typeof value === 'string' && this.field.pattern) {
         const regex = new RegExp(this.field.pattern);
-        if (!value.match(regex)) {
+        if (!regex.test(value)) {
           return 'invalid';
         }
       }
