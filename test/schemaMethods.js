@@ -93,7 +93,18 @@ describe('Schema Methods', function() {
 
   it('should stringify fields patterns', function() {
     const patternSringifiedSchema = apos.schema.stringifyFieldsPatterns(apos.mod.schema);
+    const fieldsWithPattern = [];
     checkStringifiedField(patternSringifiedSchema);
+
+    console.log('rn', fieldsWithPattern);
+    assert.deepEqual(fieldsWithPattern, [
+      'stringField',
+      'name',
+      'type',
+      'sub1',
+      'sub2',
+      'relationField'
+    ]);
 
     function checkStringifiedField(schema) {
       schema.forEach((field) => {
@@ -103,6 +114,7 @@ describe('Schema Methods', function() {
 
         if (field.pattern) {
           assert(field.pattern === '^\\/');
+          fieldsWithPattern.push(field.name);
         }
       });
     }
