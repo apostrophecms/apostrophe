@@ -116,7 +116,7 @@ export default {
       required: false,
       default: null
     },
-    template: {
+    largePreview: {
       type: Boolean,
       default: false
     }
@@ -154,7 +154,7 @@ export default {
       const parentRatio = parentWidth / parentHeight;
       const itemRatio = item.dimensions.width / item.dimensions.height;
 
-      if (parentRatio < itemRatio) {
+      if ((parentRatio < itemRatio) || this.largePreview) {
         return {
           width: `${item.dimensions.width}px`,
           paddingTop: `${(item.dimensions.height / item.dimensions.width) * 100}%`
@@ -168,7 +168,7 @@ export default {
 
     },
     getCellStyles(item) {
-      if (this.template && item.dimensions) {
+      if (this.largePreview && item.dimensions) {
         return {
           width: `${item.dimensions.width}px`,
           height: `${item.dimensions.height}px`
