@@ -105,10 +105,12 @@ module.exports = (self) => {
         throw self.apos.error('required');
       }
 
-      if (field.pattern) {
-        const isRegex = field.pattern instanceof RegExp;
-        const source = field.pattern.source;
-        // TODO throw error if patterns don't match
+      if (
+        field.pattern &&
+        field.pattern instanceof RegExp &&
+        !destination[field.name].match(field.pattern)
+      ) {
+        throw self.apos.error('invalid');
       }
     },
     index: function (value, field, texts) {
