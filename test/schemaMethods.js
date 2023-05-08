@@ -96,7 +96,6 @@ describe('Schema Methods', function() {
     const fieldsWithPattern = [];
     checkStringifiedField(patternSringifiedSchema);
 
-    console.log('rn', fieldsWithPattern);
     assert.deepEqual(fieldsWithPattern, [
       'stringField',
       'name',
