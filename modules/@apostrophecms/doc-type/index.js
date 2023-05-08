@@ -1420,7 +1420,6 @@ module.exports = {
     return {
       getBrowserData(_super, req) {
         const initialBrowserOptions = _super(req);
-        const schemaModule = self.apos.schema;
 
         const {
           name, label, pluralLabel
