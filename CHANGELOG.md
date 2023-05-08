@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Adds regex pattern feature for string fields.
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
