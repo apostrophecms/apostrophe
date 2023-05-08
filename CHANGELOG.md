@@ -1,6 +1,34 @@
 # Changelog
 
-## UNRELEASED
+## 3.47.0 (2023-05-05)
+
+### Changes
+
+* Since Node 14 and MongoDB 4.2 have reached their own end-of-support dates,
+we are **no longer supporting them for A3.** Note that our dependency on
+`jsdom` 22 is incompatible with Node 14. Node 16 and Node 18 are both
+still supported. However, because Node 16 reaches its
+end-of-life date quite soon (September), testing and upgrading directly
+to Node 18 is strongly recommended.
+* Updated `sluggo` to version 1.0.0.
+* Updated `jsdom` to version `22.0.0` to address an installation warning about the `word-wrap` module.
+
+### Fixes
+
+* Fix `extendQueries` to use super pattern for every function in builders and methods (and override properties that are not functions).
+
+## 3.46.0 (2023-05-03)
+
+### Fixes
+
+* Adding or editing a piece no longer immediately refreshes the main content area if a widget editor is open. This prevents interruption of the widget editing process
+when working with the `@apostrophecms/ai-helper` module, and also helps in other situations.
+* Check that `e.doc` exists when handling `content-changed` event.
+* Require updated `uploadfs` version with no dependency warnings.
+
+### Adds
+
+* Allow sub-schema fields (array and object) to follow parent schema fields using the newly introduced `following: '<parentField'` syntax, where the starting `<` indicates the parent level. For example `<parentField` follows a field in the parent level, `<<grandParentField` follows a field in the grandparent level, etc. The change is fully backward compatible with the current syntax for following fields from the same schema level.
 
 ### Changes
 
@@ -15,6 +43,7 @@
 * Added missing styles to ensure consistent presentation of the rich text insert menu.
 * Fixed a bug in which clicking on an image in the media manager would close the "insert
 image" dialog box.
+* Update `html-to-text` package to the latest major version.
 
 ## 3.45.0 (2023-04-27)
 
@@ -47,7 +76,11 @@ shouldn't close the link dialog etc.
 
 ### Fixes
 
+* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
+Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 * Rich text widgets save more reliably when many actions are taken quickly just before save.
+* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget editor, which resulted in saving the value if the widget was nested and the parent widget was saved.  
+Also improve the `oembed` field UX by setting the input as `readonly` rather than `disabled` when fetching the video metadata, in order to avoid losing its focus when typing.
 
 ## 3.44.0 (2023-04-13)
 
@@ -66,11 +99,6 @@ those writing mocha tests of Apostrophe modules.
 
 ### Fixes
 * Fix child page slug when title is deleted
-
-### Fixes
-
-* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
-Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 
 ## 3.43.0 (2023-03-29)
 

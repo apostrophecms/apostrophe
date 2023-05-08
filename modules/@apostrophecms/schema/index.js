@@ -1241,6 +1241,9 @@ module.exports = {
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
         }
+        // Ancestors hoisting should happen AFTER the validation recursion,
+        // so that ancestors are processed as well.
+        self.hoistFollowingFieldsToParent(field, parent);
         function fail(s) {
           throw new Error(format(s));
         }
@@ -1259,6 +1262,28 @@ module.exports = {
 
           `;
         }
+      },
+
+      // If a field has a following property and a parent,
+      // hoist that property values to the parent,
+      // if they start with `<`.
+      hoistFollowingFieldsToParent(field, parent) {
+        if (!parent || !field.following) {
+          return;
+        }
+        const following = typeof field.following === 'string'
+          ? [ field.following ]
+          : field.following;
+        const parentFollowing = typeof parent.following === 'string'
+          ? [ parent.following ]
+          : parent.following;
+        const hoistFollowing = following
+          .filter(f => f.startsWith('<'))
+          .map(f => f.slice(1));
+        parent.following = _.uniq([
+          ...(parentFollowing || []),
+          ...hoistFollowing
+        ]);
       },
 
       // Recursively register the given schema, giving each field an _id and making provision to be able to

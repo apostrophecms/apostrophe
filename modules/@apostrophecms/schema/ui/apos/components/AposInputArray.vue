@@ -141,6 +141,7 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
 import cuid from 'cuid';
 import { klona } from 'klona';
 import { get } from 'lodash';
@@ -149,7 +150,7 @@ import draggable from 'vuedraggable';
 export default {
   name: 'AposInputArray',
   components: { draggable },
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposInputFollowingMixin ],
   props: {
     generation: {
       type: Number,
@@ -288,7 +289,8 @@ export default {
         field: this.field,
         items: this.next,
         serverError: this.serverError,
-        docId: this.docId
+        docId: this.docId,
+        parentFollowingValues: this.followingValues
       });
       if (result) {
         this.next = result;
@@ -341,18 +343,7 @@ export default {
       });
     },
     getFollowingValues(item) {
-      const followingValues = {};
-      for (const field of this.field.schema) {
-        if (field.following) {
-          const following = Array.isArray(field.following) ? field.following : [ field.following ];
-          followingValues[field.name] = {};
-          for (const name of following) {
-            followingValues[field.name][name] = item.schemaInput.data[name];
-          }
-        }
-      }
-
-      return followingValues;
+      return this.computeFollowingValues(item.schemaInput.data);
     }
   }
 };
