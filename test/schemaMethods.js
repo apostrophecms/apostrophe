@@ -94,17 +94,17 @@ describe('Schema Methods', function() {
   it('should stringify fields patterns', function() {
     const patternSringifiedSchema = apos.schema.stringifyFieldsPatterns(apos.mod.schema);
     checkStringifiedField(patternSringifiedSchema);
+
+    function checkStringifiedField(schema) {
+      schema.forEach((field) => {
+        if (field.schema) {
+          checkStringifiedField(field.schema);
+        }
+
+        if (field.pattern) {
+          assert(field.pattern === '^\\/');
+        }
+      });
+    }
   });
-
-  function checkStringifiedField(schema) {
-    schema.forEach((field) => {
-      if (field.schema) {
-        checkStringifiedField(field.schema);
-      }
-
-      if (field.pattern) {
-        assert(field.pattern === '^\\/');
-      }
-    });
-  }
 });
