@@ -509,8 +509,11 @@ module.exports = {
       getRelationshipQueryBuilderChoicesProjection(query) {
         return {
           title: 1,
+          type: 1,
           _id: 1,
-          slug: 1
+          _url: 1,
+          slug: 1,
+          thumbnail: 1
         };
       },
       // Returns a MongoDB projection object to be used when querying
