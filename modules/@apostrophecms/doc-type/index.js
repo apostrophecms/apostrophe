@@ -979,7 +979,10 @@ module.exports = {
       // other locale, it is not overwritten. Use the `update: true` option to change that.
       // You can localize starting from either draft or published content. Either way what
       // gets created or updated in the other locale is a draft.
-      async localize(req, draft, toLocale, options = { update: false }) {
+      async localize(req, draft, toLocale, options = {
+        update: false,
+        transform: _.noop
+      }) {
         if (!self.isLocalized()) {
           throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
         }
@@ -995,6 +998,7 @@ module.exports = {
         // We only want to copy schema properties, leave non-schema
         // properties of the source document alone
         const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
+        await options.transform(data);
         // We need a slug even if removed from the schema for editing purposes
         data.slug = draft.slug;
         let result;
