@@ -9,6 +9,11 @@
     columns.
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`
+* Add tiptap `Gapcursor` extension which allow users to add text before and after inline images and tables.
+
+### Changes
+
+* Remove `stripPlaceholderBrs` and `restorePlaceholderBrs` from `AposRichTextWidgetEditor.vue` component.
 
 ## 3.47.0 (2023-05-05)
 
@@ -42,7 +47,6 @@ when working with the `@apostrophecms/ai-helper` module, and also helps in other
 
 ### Changes
 
-* Include `<br>` and `<br />` to `stripPlaceholderBrs()`. This method is used to remove empty breakpoints added by tiptap to handle inline images.
 * Debounce search to prevent calling search on every key stroke in the manager modal.
 * Various size and spacing adjustments in the expanded Add Content modal UI
 * Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` & `autocomplete` as
