@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add `apos.modules['piece-type']`.`getManagerApiProjection` method to reduce the amount of data returned in the manager
+    modal. The projection will contain the fields returned in the method in addition to the existing manager modal
+    columns.
+* Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
+    `apos.schema.relationshipQueryBuilderChoices`
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
@@ -29,14 +39,6 @@ when working with the `@apostrophecms/ai-helper` module, and also helps in other
 ### Adds
 
 * Allow sub-schema fields (array and object) to follow parent schema fields using the newly introduced `following: '<parentField'` syntax, where the starting `<` indicates the parent level. For example `<parentField` follows a field in the parent level, `<<grandParentField` follows a field in the grandparent level, etc. The change is fully backward compatible with the current syntax for following fields from the same schema level.
-
-### Adds
-
-* Add `apos.modules['piece-type']`.`getManagerApiProjection` method to reduce the amount of data returned in the manager
-    modal. The projection will contains the fields returned in the method in addition to the existing manager modal
-    columns.
-* Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
-    `apos.schema.relationshipQueryBuilderChoices`
 
 ### Changes
 
