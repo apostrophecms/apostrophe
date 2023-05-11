@@ -64,7 +64,7 @@
                     v-if="currentId"
                     :schema="schema"
                     :trigger-validation="triggerValidation"
-=                    :following-values="followingValues()"
+                    :following-values="followingValues()"
                     :conditional-fields="conditionalFields()"
                     :value="currentDoc"
                     @input="currentDocUpdate"
