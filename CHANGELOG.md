@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Print a warning with a clear explanation if a module's `index.js` file contains
+no `module.exports` object (often due to a typo), or it is empty.
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
