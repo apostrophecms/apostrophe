@@ -31,11 +31,15 @@ module.exports = {
     // you can enable a projection using
     // managerApiProjection: {
     //   _id: 1,
-    //   aposLocale: 1,
+    //   _url: 1,
     //   aposDocId: 1,
+    //   aposLocale: 1,
+    //   aposMode: 1,
+    //   docPermissions: 1,
+    //   slug: 1,
     //   title: 1,
     //   type: 1,
-    //   _url: 1
+    //   visibility: 1
     // }
   },
   fields: {

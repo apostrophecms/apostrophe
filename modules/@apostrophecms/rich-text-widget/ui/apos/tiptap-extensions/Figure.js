@@ -157,12 +157,12 @@ export default options => {
                 : []
             })
             // set cursor at end of caption field
-            // .command(({ tr, commands }) => {
-            //   const { doc, selection } = tr;
-            //   const position = doc.resolve(selection.to - 2).end();
+            .command(({ tr, commands }) => {
+              const { doc, selection } = tr;
+              const position = doc.resolve(selection.to - 2).end();
 
-            //   return commands.setTextSelection(position);
-            // })
+              return commands.setTextSelection(position);
+            })
             .run();
         },
         // setFigure: ({ caption, ...attrs }) => ({ chain }) => {
@@ -222,79 +222,77 @@ export default options => {
         //   });
         // },
 
-        // figureToImage: () => ({ tr, commands }) => {
-        //   const { doc, selection } = tr;
-        //   const { from, to } = selection;
-        //   const figures = findChildrenInRange(doc, {
-        //     from,
-        //     to
-        //   }, node => node.type.name === this.name);
+        figureToImage: () => ({ tr, commands }) => {
+          const { doc, selection } = tr;
+          const { from, to } = selection;
+          const figures = findChildrenInRange(doc, {
+            from,
+            to
+          }, node => node.type.name === this.name);
 
-        //   if (!figures.length) {
-        //     return false;
-        //   }
+          if (!figures.length) {
+            return false;
+          }
 
-        //   const tracker = new Tracker(tr);
+          const tracker = new Tracker(tr);
 
-        //   return commands.forEach(figures, ({ node, pos }) => {
-        //     const mapResult = tracker.map(pos);
+          return commands.forEach(figures, ({ node, pos }) => {
+            const mapResult = tracker.map(pos);
 
-        //     if (mapResult.deleted) {
-        //       return false;
-        //     }
+            if (mapResult.deleted) {
+              return false;
+            }
 
-        //     const range = {
-        //       from: mapResult.position,
-        //       to: mapResult.position + node.nodeSize
-        //     };
+            const range = {
+              from: mapResult.position,
+              to: mapResult.position + node.nodeSize
+            };
 
-        //     return commands.insertContentAt(range, {
-        //       type: 'image',
-        //       attrs: {
-        //         src: node.attrs.src
-        //       }
-        //     });
-        //   });
-        // }
+            return commands.insertContentAt(range, {
+              type: 'image',
+              attrs: {
+                src: node.attrs.src
+              }
+            });
+          });
+        }
       };
     },
 
     renderHTML({ HTMLAttributes }) {
-      console.log(HTMLAttributes, this.options.HTMLAttributes);
-      // return [
-      //   'figure', this.options.HTMLAttributes,
-      //   [
-      //     'img',
-      //     mergeAttributes(
-      //       HTMLAttributes,
-      //       {
-      //         src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`,
-      //         draggable: false,
-      //         // contenteditable: false
-      //       }
-      //     )
-      //   ],
-      //   [ 'figcaption', 0 ]
-      // ];
+      console.log(HTMLAttributes);
       return [
-        'figure',
-        {
-          class: HTMLAttributes.style || this.options.HTMLAttributes.style
-        },
+        'figure', this.options.HTMLAttributes,
         [
           'img',
-          {
-            src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`,
-            draggable: false,
-            contenteditable: false
-          }
+          mergeAttributes(
+            HTMLAttributes,
+            {
+              src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`,
+              draggable: false,
+              contenteditable: false
+            }
+          )
         ],
-        [
-          'figcaption',
-          {},
-          HTMLAttributes.caption
-        ]
+        [ 'figcaption', 0 ]
       ];
+      // return [
+      //   'figure',
+      //   {
+      //     class: HTMLAttributes.style || this.options.HTMLAttributes.style
+      //   },
+      //   [
+      //     'img',
+      //     {
+      //       src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`
+      //     }
+      //   ],
+      //   [
+      //     'figcaption',
+      //     {},
+      //     HTMLAttributes.caption
+      //   ]
+      // ];
     }
   });
 };

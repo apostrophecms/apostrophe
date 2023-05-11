@@ -509,9 +509,14 @@ module.exports = {
       // `query.field` will contain the schema field definition for
       // the relationship the user is attempting to match titles from.
       getRelationshipQueryBuilderChoicesProjection(query) {
+        const projection = self.getAutocompleteProjection(query);
+
         return {
+          ...projection,
           title: 1,
+          type: 1,
           _id: 1,
+          _url: 1,
           slug: 1
         };
       },
@@ -524,11 +529,6 @@ module.exports = {
       // `query.field` will contain the schema field definition for
       // the relationship the user is attempting to match titles from.
       getAutocompleteProjection(query) {
-        // TODO Remove in next major version.
-        self.apos.util.warnDevOnce(
-          'deprecate-get-autocomplete-projection',
-          'self.getAutocompleteProjection() is deprecated. Use the autocomplete({ ... }) query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete. Use self.getRelationshipQueryBuilderChoicesProjection() instead if it was used for apos.schema.relationshipQueryBuilderChoices().'
-        );
         return {
           title: 1,
           _id: 1,

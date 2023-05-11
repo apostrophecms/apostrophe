@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add `apos.modules['piece-type']`.`getManagerApiProjection` method to reduce the amount of data returned in the manager
+    modal. The projection will contain the fields returned in the method in addition to the existing manager modal
+    columns.
+* Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
+    `apos.schema.relationshipQueryBuilderChoices`
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
@@ -35,6 +45,9 @@ when working with the `@apostrophecms/ai-helper` module, and also helps in other
 * Include `<br>` and `<br />` to `stripPlaceholderBrs()`. This method is used to remove empty breakpoints added by tiptap to handle inline images.
 * Debounce search to prevent calling search on every key stroke in the manager modal.
 * Various size and spacing adjustments in the expanded Add Content modal UI
+* Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` & `autocomplete` as
+    deprecated. Use the `autocomplete({ ... })` query builder instead. 
+    More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
 
 ## 3.45.1 (2023-04-28)
 
