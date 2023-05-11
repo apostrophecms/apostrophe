@@ -1614,22 +1614,6 @@ module.exports = {
         } catch (error) {
           throw self.apos.error('invalid', error.message);
         }
-      },
-
-      stringifyFieldsPatterns(schema) {
-        return schema.map((field) => {
-          if (!field.pattern && !field.schema) {
-            return field;
-          }
-
-          const fieldPattern = field.pattern instanceof RegExp && field.pattern.source;
-
-          return {
-            ...field,
-            ...field.schema && { schema: self.stringifyFieldsPatterns(field.schema) },
-            ...fieldPattern && { pattern: fieldPattern }
-          };
-        });
       }
     };
   },

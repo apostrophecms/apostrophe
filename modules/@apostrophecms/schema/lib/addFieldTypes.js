@@ -95,7 +95,7 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'string',
-    convert: function (req, field, data, destination) {
+    convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.string(data[field.name], field.def);
       destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
       // If field is required but empty (and client side didn't catch that)
@@ -105,15 +105,15 @@ module.exports = (self) => {
         throw self.apos.error('required');
       }
 
-      if (
-        field.pattern &&
-        field.pattern instanceof RegExp &&
-        !field.pattern.test(destination[field.name]
-        )) {
-        throw self.apos.error('invalid');
+      if (field.pattern) {
+        const regex = new RegExp(field.pattern);
+
+        if (!regex.test(destination[field.name])) {
+          throw self.apos.error('invalid');
+        }
       }
     },
-    index: function (value, field, texts) {
+    index(value, field, texts) {
       const silent = field.silent === undefined ? true : field.silent;
       texts.push({
         weight: field.weight || 15,
@@ -121,10 +121,21 @@ module.exports = (self) => {
         silent: silent
       });
     },
-    isEmpty: function (field, value) {
+    isEmpty(field, value) {
       return !value.length;
     },
-    addQueryBuilder: function (field, query) {
+    validate(field, options, warn, fail) {
+      if (!field.pattern) {
+        return;
+      }
+
+      if (!(field.pattern instanceof RegExp)) {
+        fail('The pattern property must be a RegExp');
+      }
+
+      field.pattern = field.pattern.source;
+    },
+    addQueryBuilder(field, query) {
       query.addBuilder(field.name, {
         finalize: function () {
           if (self.queryBuilderInterested(query, field.name)) {

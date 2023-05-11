@@ -1439,7 +1439,7 @@ module.exports = {
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.action = self.action;
-        browserOptions.schema = self.apos.schema.stringifyFieldsPatterns(self.allowedSchema(req));
+        browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
         browserOptions.previewDraft = self.isLocalized() &&
