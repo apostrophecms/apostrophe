@@ -1086,7 +1086,11 @@ module.exports = {
 
         const projection = { ...self.options.managerApiProjection };
         self.columns.forEach(({ name }) => {
-          projection[name] = 1;
+          const column = (name.startsWith('draft:') || name.stratsWith('published:'))
+            ? name.replace(/^(draft|published):/, '')
+            : name;
+
+          projection[column] = 1;
         });
 
         return projection;
