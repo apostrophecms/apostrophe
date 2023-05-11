@@ -68,11 +68,6 @@ module.exports = {
       // the slug as well. `query.field` will contain the schema field definition
       // for the relationship we're trying to autocomplete.
       getAutocompleteProjection(_super, query) {
-        // TODO Remove in next major version.
-        self.apos.util.warnDevOnce(
-          'deprecate-get-autocomplete-projection',
-          'self.getAutocompleteProjection() is deprecated. Use the autocomplete({ ... }) query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete. Use self.getRelationshipQueryBuilderChoicesProjection() instead if it was used for apos.schema.relationshipQueryBuilderChoices().'
-        );
         const projection = _super(query);
         projection.slug = 1;
         return projection;
