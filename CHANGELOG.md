@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* The `utilityRail` prop of `AposSchema` now defaults to `false`, removing
+the need to explicitly pass it in almost all contexts.
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
