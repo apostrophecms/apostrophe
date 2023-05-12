@@ -104,7 +104,12 @@ export default {
       }
     },
     triggerValidation: Boolean,
-    utilityRail: Boolean,
+    utilityRail: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
     docId: {
       type: String,
       default() {
