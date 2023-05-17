@@ -10,6 +10,14 @@
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`
 
+### Changes
+
+* The `utilityRail` prop of `AposSchema` now defaults to `false`, removing
+the need to explicitly pass it in almost all contexts.
+* Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` & `autocomplete` as
+    deprecated. Use the `autocomplete('...')` query builder instead. 
+    More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
@@ -44,9 +52,6 @@ when working with the `@apostrophecms/ai-helper` module, and also helps in other
 
 * Debounce search to prevent calling search on every key stroke in the manager modal.
 * Various size and spacing adjustments in the expanded Add Content modal UI
-* Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` & `autocomplete` as
-    deprecated. Use the `autocomplete('...')` query builder instead. 
-    More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
 
 ## 3.45.1 (2023-04-28)
 
