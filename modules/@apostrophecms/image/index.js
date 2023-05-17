@@ -467,7 +467,7 @@ module.exports = {
 
         return {
           ...projection,
-          thumbnail: 1
+          attachment: 1
         };
       },
       getBrowserData(_super, req) {

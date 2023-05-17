@@ -1077,6 +1077,7 @@ module.exports = {
             return self.apos.permission.can(req, batchOperation.permission, self.name);
           }
           return true;
+
         });
       },
       getManagerApiProjection(req) {
@@ -1086,7 +1087,11 @@ module.exports = {
 
         const projection = { ...self.options.managerApiProjection };
         self.columns.forEach(({ name }) => {
-          projection[name] = 1;
+          const column = (name.startsWith('draft:') || name.startsWith('published:'))
+            ? name.replace(/^(draft|published):/, '')
+            : name;
+
+          projection[column] = 1;
         });
 
         return projection;

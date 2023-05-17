@@ -13,7 +13,6 @@
           <AposSchema
             :schema="field.schema"
             :trigger-validation="triggerValidation"
-            :utility-rail="false"
             :generation="generation"
             :doc-id="docId"
             v-model="schemaInput"

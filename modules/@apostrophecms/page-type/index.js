@@ -300,7 +300,7 @@ module.exports = {
         // TODO Remove in next major version.
         self.apos.util.warnDevOnce(
           'deprecate-get-autocomplete-title',
-          'self.getAutocompleteTitle() is deprecated. Use the autocomplete({ ... }) query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
+          'self.getAutocompleteTitle() is deprecated. Use the autocomplete(\'...\') query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
         );
         return doc.title + ' (' + doc.slug + ')';
       },

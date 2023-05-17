@@ -64,7 +64,6 @@
                     v-if="currentId"
                     :schema="schema"
                     :trigger-validation="triggerValidation"
-                    :utility-rail="false"
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields()"
                     :value="currentDoc"
