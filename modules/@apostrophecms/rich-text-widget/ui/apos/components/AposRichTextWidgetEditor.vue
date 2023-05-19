@@ -96,7 +96,6 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
-import Gapcursor from '@tiptap/extension-gapcursor';
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -275,8 +274,7 @@ export default {
         },
         emptyNodeClass: this.insert.length ? 'apos-is-empty' : 'apos-is-empty-without-insert'
       }),
-      FloatingMenu,
-      Gapcursor
+      FloatingMenu
     ]
       .filter(Boolean)
       .concat(this.aposTiptapExtensions());

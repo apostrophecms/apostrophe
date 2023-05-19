@@ -35,7 +35,6 @@
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "@tiptap/extension-floating-menu": "^2.0.0-beta.220",
-    "@tiptap/extension-gapcursor": "^2.0.3",
     "@tiptap/extension-highlight": "^2.0.0-beta.220",
     "@tiptap/extension-link": "^2.0.0-beta.220",
     "@tiptap/extension-placeholder": "^2.0.0-beta.220",
