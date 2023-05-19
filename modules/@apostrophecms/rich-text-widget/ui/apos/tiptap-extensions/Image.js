@@ -10,7 +10,7 @@ import {
 export default options => {
   return Node.create({
 
-    name: 'figure',
+    name: 'image',
 
     addOptions() {
       return {
@@ -20,13 +20,9 @@ export default options => {
       };
     },
 
-    // inline: true,
-
     allowGapCursor: true,
-    // allowGapCursor: false,
-    // atom: true,
-    // isolating: false,
-    // selectable: true,
+    atom: true,
+    selectable: true,
 
     group: 'block',
 
@@ -34,24 +30,10 @@ export default options => {
 
     draggable: true,
 
-    isolating: true,
+    isolating: false,
 
     addAttributes() {
       return {
-        // src: {
-        //   default: null,
-        //   parseHTML: element => element.querySelector('img')?.getAttribute('src')
-        // },
-
-        // alt: {
-        //   default: null,
-        //   parseHTML: element => element.querySelector('img')?.getAttribute('alt')
-        // },
-
-        // title: {
-        //   default: null,
-        //   parseHTML: element => element.querySelector('img')?.getAttribute('title')
-        // },
         imageId: {
           default: null,
           parseHTML: element => {
@@ -92,73 +74,9 @@ export default options => {
       return [
         {
           tag: 'figure',
-          contentElement: 'figcaption',
-          // getAttrs: el => {
-          //   const img = el.querySelector('img');
-          //   const src = img.getAttribute('src');
-          //   if (!img || !src) {
-          //     return false;
-          //   }
-          //   const caption = el.querySelector('figcaption');
-          //   const components = src.split('/');
-          //   if (components.length < 2) {
-          //     return false;
-          //   }
-          //   const routeName = components.pop();
-          //   if (routeName !== 'src') {
-          //     return false;
-          //   }
-          //   const imageId = components.pop();
-          //   const style = el.getAttribute('class');
-          //   if (!imageId) {
-          //     return false;
-          //   }
-          //   const result = {
-          //     imageId,
-          //     style,
-          //     caption: (caption && caption.innerText) || ''
-          //   };
-          //   return result;
-          // }
+          contentElement: 'figcaption'
         }
       ];
-      // <figure>
-      //   <img src="/media/cc0-images/elephant-660-480.jpg"
-      //       alt="Elephant at sunset">
-      //   <figcaption>An elephant at sunset</figcaption>
-      // </figure>
-      // return [
-      //   {
-      //     tag: 'figure',
-      //     getAttrs: el => {
-      //       const img = el.querySelector('img');
-      //       const src = img.getAttribute('src');
-      //       if (!img || !src) {
-      //         return false;
-      //       }
-      //       const caption = el.querySelector('figcaption');
-      //       const components = src.split('/');
-      //       if (components.length < 2) {
-      //         return false;
-      //       }
-      //       const routeName = components.pop();
-      //       if (routeName !== 'src') {
-      //         return false;
-      //       }
-      //       const imageId = components.pop();
-      //       const style = el.getAttribute('class');
-      //       if (!imageId) {
-      //         return false;
-      //       }
-      //       const result = {
-      //         imageId,
-      //         style,
-      //         caption: (caption && caption.innerText) || ''
-      //       };
-      //       return result;
-      //     }
-      //   }
-      // ];
     },
 
     renderHTML({ HTMLAttributes }) {
@@ -196,9 +114,9 @@ export default options => {
         ],
         [
           'figcaption',
-          0
-          // {},
-          // HTMLAttributes.caption
+          // 0
+          {},
+          HTMLAttributes.caption
         ]
         // [ 'figcaption', 0 ]
       ];
@@ -232,6 +150,7 @@ export default options => {
         // }
         setImage: ({ caption, ...attrs }) => ({ chain }) => {
           return chain()
+            .focus()
             .insertContent({
               type: this.name,
               attrs,
