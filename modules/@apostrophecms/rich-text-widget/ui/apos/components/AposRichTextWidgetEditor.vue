@@ -696,4 +696,38 @@ function traverseNextNode(node) {
   .apos-rich-text-insert-menu-heading {
     color: var(--a-base-5);
   }
+
+  ::v-deep .ProseMirror {
+    > * + * {
+      margin-top: 0.75em;
+    }
+
+    > :last-child {
+      margin-bottom: 1.75em;
+    }
+  }
+
+  ::v-deep .ProseMirror-gapcursor {
+    position: relative;
+    display: block;
+    height: 20px;
+
+    &:after {
+      width: 1px;
+      height: 20px;
+      border-left: 1px solid #000;
+      border-top: 0 none;
+    }
+  }
+
+  // TODO remove?
+  // ::v-deep .ProseMirror-trailingBreak {
+  //   display: block;
+  //   height: 1.75em;
+  // }
+  // ::v-deep .ProseMirror.ProseMirror-focused {
+  //   table, figure {
+  //     margin-bottom: 1em;
+  //   }
+  // }
 </style>
