@@ -26,6 +26,20 @@ module.exports = {
     // publicApiProjection: {
     //   title: 1,
     //   _url: 1,
+    // },
+    // By default the manager modal will get all the pieces fields below + all manager columns
+    // you can enable a projection using
+    // managerApiProjection: {
+    //   _id: 1,
+    //   _url: 1,
+    //   aposDocId: 1,
+    //   aposLocale: 1,
+    //   aposMode: 1,
+    //   docPermissions: 1,
+    //   slug: 1,
+    //   title: 1,
+    //   type: 1,
+    //   visibility: 1
     // }
   },
   fields: {
@@ -1063,7 +1077,24 @@ module.exports = {
             return self.apos.permission.can(req, batchOperation.permission, self.name);
           }
           return true;
+
         });
+      },
+      getManagerApiProjection(req) {
+        if (!self.options.managerApiProjection) {
+          return null;
+        }
+
+        const projection = { ...self.options.managerApiProjection };
+        self.columns.forEach(({ name }) => {
+          const column = (name.startsWith('draft:') || name.startsWith('published:'))
+            ? name.replace(/^(draft|published):/, '')
+            : name;
+
+          projection[column] = 1;
+        });
+
+        return projection;
       }
     };
   },
@@ -1092,6 +1123,7 @@ module.exports = {
           editorModal: 'AposDocEditor',
           managerModal: 'AposDocsManager'
         });
+        browserOptions.managerApiProjection = self.getManagerApiProjection(req);
 
         return browserOptions;
       },

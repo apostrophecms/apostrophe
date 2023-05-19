@@ -508,6 +508,26 @@ module.exports = {
       //
       // `query.field` will contain the schema field definition for
       // the relationship the user is attempting to match titles from.
+      getRelationshipQueryBuilderChoicesProjection(query) {
+        const projection = self.getAutocompleteProjection(query);
+
+        return {
+          ...projection,
+          title: 1,
+          type: 1,
+          _id: 1,
+          _url: 1,
+          slug: 1
+        };
+      },
+      // Returns a MongoDB projection object to be used when querying
+      // for this type if all that is needed is a title for display
+      // in an autocomplete menu. Default behavior is to
+      // return only the `title`, `_id` and `slug` properties.
+      // Removing any of these three is not recommended.
+      //
+      // `query.field` will contain the schema field definition for
+      // the relationship the user is attempting to match titles from.
       getAutocompleteProjection(query) {
         return {
           title: 1,
@@ -524,6 +544,11 @@ module.exports = {
       // event start dates and similar information that helps the
       // user distinguish between docs.
       getAutocompleteTitle(doc, query) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-get-autocomplete-title',
+          'self.getAutocompleteTitle() is deprecated. Use the autocomplete(\'...\') query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
+        );
         return doc.title;
       },
       // Used by `@apostrophecms/version` to label changes that
@@ -615,6 +640,12 @@ module.exports = {
       //
       // We don't launder the input here, see the 'autocomplete' route.
       async autocomplete(req, query) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-autocomplete',
+          'self.autocomplete() is deprecated. Use the autocomplete(\'...\') query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
+        );
+
         const _query = query.find(req, {}).sort('search');
         if (query.extendAutocompleteQuery) {
           query.extendAutocompleteQuery(_query);

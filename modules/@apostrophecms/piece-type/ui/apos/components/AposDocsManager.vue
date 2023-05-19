@@ -316,6 +316,10 @@ export default {
       const {
         currentPage, pages, results, choices
       } = await this.request({
+        ...(
+          this.moduleOptions.managerApiProjection &&
+          { project: this.moduleOptions.managerApiProjection }
+        ),
         page: this.currentPage
       });
 
