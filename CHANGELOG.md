@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+Does not display `(undefined)` if the outer array item is new when an array is nested in another array and the parent object appears in the
+breadcrumb trail while editing the nested array.
+
 ## 2.227.0 (2023-03-16)
 
 ### Adds
