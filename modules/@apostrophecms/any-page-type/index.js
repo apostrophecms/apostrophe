@@ -26,6 +26,11 @@ module.exports = {
       // titles from. The default behavior is to return the `title` property,
       // but since this is a page we are including the slug as well.
       getAutocompleteTitle(doc, query) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-get-autocomplete-title',
+          'self.getAutocompleteTitle() is deprecated. Use the autocomplete(\'...\') query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
+        );
         return doc.title + ' (' + doc.slug + ')';
       },
       getBrowserData(req) {
