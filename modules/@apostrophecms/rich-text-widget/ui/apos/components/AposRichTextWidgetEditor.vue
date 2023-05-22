@@ -213,6 +213,7 @@ export default {
     isVisuallyEmpty () {
       const div = document.createElement('div');
       div.innerHTML = this.value.content;
+      console.log(this.value, div.innerHTML, !div.textContent);
       return !div.textContent;
     },
     editorModifiers () {

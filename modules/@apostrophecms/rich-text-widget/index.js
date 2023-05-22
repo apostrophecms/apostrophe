@@ -657,6 +657,7 @@ module.exports = {
             // If you can edit the widget, you don't want the link replaced,
             // as that would lose the image if you edit the widget
             const left = content.lastIndexOf('<', i);
+            console.log('alt: ', doc.alt);
             const src = content.indexOf(' src="', left);
             const close = content.indexOf('"', src + 6);
             if (!widget._edit) {

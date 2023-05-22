@@ -1,10 +1,10 @@
 // import { Node } from '@tiptap/core';
 import {
-  findChildrenInRange,
+  // findChildrenInRange,
   mergeAttributes,
-  Node,
+  Node // ,
   // nodeInputRule,
-  Tracker
+  // Tracker
 } from '@tiptap/core';
 
 export default options => {
@@ -61,6 +61,10 @@ export default options => {
         style: {
           default: null,
           parseHTML: element => element.getAttribute('class')
+        },
+        alt: {
+          default: null,
+          parseHTML: element => element.querySelector('img')?.getAttribute('alt')
         }
       };
     },
@@ -94,7 +98,7 @@ export default options => {
             HTMLAttributes,
             {
               src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`,
-              alt: HTMLAttributes.caption,
+              alt: HTMLAttributes.alt,
               draggable: false,
               contenteditable: false
             }
@@ -109,31 +113,18 @@ export default options => {
 
     addCommands() {
       return {
-        // setImage: attrs => ({ commands }) => {
-        //   return commands.insertContent({
-        //     type: this.name,
-        //     attrs
-        //   });
-        // }
-        setImage: ({ caption, ...attrs }) => ({ chain }) => {
+        setImage: (attrs) => ({ chain }) => {
           return chain()
             .insertContent({
               type: this.name,
               attrs,
-              content: caption
+              content: attrs?.caption
                 ? [ {
                   type: 'text',
-                  text: caption
+                  text: attrs.caption
                 } ]
                 : []
             })
-            // set cursor at end of caption field
-            // .command(({ tr, commands }) => {
-            //   const { doc, selection } = tr;
-            //   const position = doc.resolve(selection.to - 2).end();
-
-            //   return commands.setTextSelection(position);
-            // })
             .run();
         }
       };
