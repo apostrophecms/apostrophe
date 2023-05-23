@@ -1,15 +1,10 @@
-// import { Node } from '@tiptap/core';
 import {
-  // findChildrenInRange,
   mergeAttributes,
-  Node // ,
-  // nodeInputRule,
-  // Tracker
+  Node
 } from '@tiptap/core';
 
 export default options => {
   return Node.create({
-
     name: 'image',
 
     addOptions() {
