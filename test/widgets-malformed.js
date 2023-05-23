@@ -16,7 +16,7 @@ describe('Malformed Widgets', function () {
       const errorMatch = errorMsg.match(/(?<error>Error:.*\n)/);
       if (errorMatch) {
         throwsError = true;
-        assert.equal(errorMatch.groups.error, 'Error: Widget type malformed: the field name type is forbidden\n');
+        assert.equal(errorMatch.groups.error, 'Error: @apostrophecms/widget-type field property name cannot be "type"\n');
       } else {
         throwsError = false;
       }
