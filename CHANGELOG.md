@@ -1,9 +1,11 @@
 # Changelog
 
-## 3.44.0 (2023-04-13)
+## UNRELEASED
 
 ### Fixes
+
 * Now errors and exits when a piece-type or widget-type module has a field object with the property "type"
+## 3.44.0 (2023-04-13)
 
 ### Adds
 

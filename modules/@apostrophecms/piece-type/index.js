@@ -184,7 +184,7 @@ module.exports = {
     }
     const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
     if (badFieldName) {
-      throw new Error('@apostrophecms/piece-type field property name cannot be "type"');
+      throw new Error(`The ${self.__meta.name} module contains a forbidden field property name: "type".`);
     }
     if (!self.options.label) {
       // Englishify it

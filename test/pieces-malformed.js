@@ -16,7 +16,7 @@ describe('Malformed Pieces', function () {
       const errorMatch = errorMsg.match(/(?<error>Error:.*\n)/);
       if (errorMatch) {
         throwsError = true;
-        assert.equal(errorMatch.groups.error, 'Error: @apostrophecms/piece-type field property name cannot be "type"\n');
+        assert.equal(errorMatch.groups.error, 'Error: The malformed module contains a forbidden field property name: "type".\n');
       } else {
         throwsError = false;
       }

@@ -105,7 +105,7 @@ module.exports = {
   init(self) {
     const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
     if (badFieldName) {
-      throw new Error('@apostrophecms/widget-type field property name cannot be "type"');
+      throw new Error(`The ${self.__meta.name} module contains a forbidden field property name: "type".`);
     }
 
     self.enableBrowserData();
