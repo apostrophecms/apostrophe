@@ -14,7 +14,7 @@
       </option>
     </select>
     <chevron-down-icon
-      :size="11"
+      :size="11"     
       class="apos-tiptap-select__icon"
       fill-color="currentColor"
     />
