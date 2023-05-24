@@ -1,7 +1,9 @@
+const t = require('../test-lib/test.js');
 const { spawn } = require('child_process');
 const assert = require('assert');
 
 describe('Malformed Pieces', function () {
+  this.timeout(t.timeout);
   it('should fail to initialize with a schema containing a field named "type"', function (done) {
     let throwsError = true;
     const mochaProcess = spawn('node', [ './test/pieces-children/pieces-malformed-child.js' ]);

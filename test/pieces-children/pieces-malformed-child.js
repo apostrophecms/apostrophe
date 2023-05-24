@@ -3,9 +3,6 @@ const t = require('../../test-lib/test.js');
 const apiKey = 'this is a test api key';
 
 (async function () {
-  setTimeout(function () {
-    process.exit(0);
-  }, 3000);
   await t.create({
     root: module,
 
