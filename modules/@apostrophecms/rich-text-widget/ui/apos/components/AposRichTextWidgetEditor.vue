@@ -28,7 +28,7 @@
     <floating-menu
       class="apos-rich-text-insert-menu" :should-show="showFloatingMenu"
       :editor="editor"
-      :tippy-options="{ duration: 200, zIndex: 2000 }"
+      :tippy-options="{ duration: 100, zIndex: 2000 }"
       v-if="editor"
     >
       <div class="apos-rich-text-insert-menu-heading">
