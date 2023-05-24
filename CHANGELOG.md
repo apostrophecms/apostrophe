@@ -9,11 +9,11 @@
     columns.
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`
-* Add tiptap `Gapcursor` extension which allow users to add text before and after inline images and tables.
 
 ### Changes
 
 * Remove `stripPlaceholderBrs` and `restorePlaceholderBrs` from `AposRichTextWidgetEditor.vue` component.
+* Change tiptap `Gapcursor` display to use a vertical blinking cursor instead of an horizontal cursor, which allow users to add text before and after inline images and tables.
 
 ### Changes
 
