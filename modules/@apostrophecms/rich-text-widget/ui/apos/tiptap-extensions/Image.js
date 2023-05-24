@@ -120,6 +120,7 @@ export default options => {
                 } ]
                 : []
             })
+            .createParagraphNear()
             .run();
         }
       };
