@@ -2,7 +2,7 @@
   <div>
     <bubble-menu
       class="bubble-menu"
-      :tippy-options="{ duration: 100, zIndex: 2000 }"
+      :tippy-options="{ maxWidth: 'none', duration: 100, zIndex: 2000 }"
       :editor="editor"
       v-if="editor"
     >
@@ -27,7 +27,8 @@
     </bubble-menu>
     <floating-menu
       class="apos-rich-text-insert-menu" :should-show="showFloatingMenu"
-      :editor="editor" :tippy-options="{ duration: 100, zIndex: 2000 }"
+      :editor="editor"
+      :tippy-options="{ duration: 200, zIndex: 2000 }"
       v-if="editor"
     >
       <div class="apos-rich-text-insert-menu-heading">
@@ -556,8 +557,10 @@ function traverseNextNode(node) {
 
   .apos-rich-text-toolbar__inner {
     display: flex;
+    flex-wrap: wrap;
     align-items: stretch;
-    height: 35px;
+    max-width: $input-max-width;
+    height: auto;
     background-color: var(--a-background-primary);
     color: var(--a-text-primary);
     border-radius: var(--a-border-radius);
@@ -720,15 +723,4 @@ function traverseNextNode(node) {
       border-top: 0 none;
     }
   }
-
-  // TODO remove?
-  // ::v-deep .ProseMirror-trailingBreak {
-  //   display: block;
-  //   height: 1.75em;
-  // }
-  // ::v-deep .ProseMirror.ProseMirror-focused {
-  //   table, figure {
-  //     margin-bottom: 1em;
-  //   }
-  // }
 </style>
