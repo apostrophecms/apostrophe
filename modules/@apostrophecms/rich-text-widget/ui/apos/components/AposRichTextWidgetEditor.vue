@@ -2,7 +2,7 @@
   <div>
     <bubble-menu
       class="bubble-menu"
-      :tippy-options="{ duration: 100 }"
+      :tippy-options="{ duration: 100, zIndex: 2000 }"
       :editor="editor"
       v-if="editor"
     >
@@ -25,6 +25,47 @@
         </div>
       </AposContextMenuDialog>
     </bubble-menu>
+    <floating-menu
+      class="apos-rich-text-insert-menu" :should-show="showFloatingMenu"
+      :editor="editor" :tippy-options="{ duration: 100, zIndex: 2000 }"
+      v-if="editor"
+    >
+      <div class="apos-rich-text-insert-menu-heading">
+        {{ $t('apostrophe:richTextInsertMenuHeading') }}
+      </div>
+      <div
+        v-for="(item, index) in insert"
+        :key="`${item}-${index}`"
+        class="apos-rich-text-insert-menu-item"
+      >
+        <div class="apos-rich-text-insert-menu-icon">
+          <AposIndicator
+            :icon="insertMenu[item].icon"
+            :icon-size="35"
+            class="apos-button__icon"
+            fill-color="currentColor"
+            @click="activateInsertMenuItem(item, insertMenu[item])"
+          />
+          <component
+            v-if="item === activeInsertMenuComponent?.name"
+            :is="activeInsertMenuComponent.component"
+            :active="true"
+            :editor="editor"
+            :options="editorOptions"
+            @before-commands="removeSlash"
+            @close="closeInsertMenuItem"
+            @click.stop="$event => null"
+          />
+        </div>
+        <div
+          class="apos-rich-text-insert-menu-label"
+          @click="activateInsertMenuItem(item, insertMenu[item])"
+        >
+          <h4>{{ $t(insertMenu[item].label) }}</h4>
+          <p>{{ $t(insertMenu[item].description) }}</p>
+        </div>
+      </div>
+    </floating-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="editorOptions.className" />
     </div>
@@ -41,7 +82,8 @@
 import {
   Editor,
   EditorContent,
-  BubbleMenu
+  BubbleMenu,
+  FloatingMenu
 } from '@tiptap/vue-2';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
@@ -59,7 +101,8 @@ export default {
   name: 'AposRichTextWidgetEditor',
   components: {
     EditorContent,
-    BubbleMenu
+    BubbleMenu,
+    FloatingMenu
   },
   props: {
     type: {
@@ -100,7 +143,8 @@ export default {
       },
       pending: null,
       isFocused: null,
-      showPlaceholder: null
+      showPlaceholder: null,
+      activeInsertMenuComponent: null
     };
   },
   computed: {
@@ -150,11 +194,21 @@ export default {
       const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
     },
+    // Names of active toolbar items for this particular widget, as an array
     toolbar() {
       return this.editorOptions.toolbar;
     },
+    // Information about all available toolbar items, as an object
     tools() {
       return this.moduleOptions.tools;
+    },
+    // Names of active insert menu items for this particular widget, as an array
+    insert() {
+      return this.editorOptions.insert || [];
+    },
+    // Information about all available insert menu items, as an object
+    insertMenu() {
+      return this.moduleOptions.insertMenu;
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
@@ -166,6 +220,12 @@ export default {
       if (this.isVisuallyEmpty) {
         classes.push('apos-is-visually-empty');
       }
+      // Per Stu's original logic we have to deal with an edge case when the page is
+      // first loading by displaying the initial placeholder then too (showPlaceholder
+      // state not yet computed)
+      if (((this.placeholderText && this.moduleOptions.placeholder) || this.insert.length) && this.isFocused && (this.showPlaceholder !== false)) {
+        classes.push('apos-show-initial-placeholder');
+      }
       return classes;
     },
     tiptapTextCommands() {
@@ -175,11 +235,11 @@ export default {
       return this.moduleOptions.tiptapTypes;
     },
     placeholderText() {
-      return this.moduleOptions.placeholderText;
+      return this.insert.length > 0 ? this.moduleOptions.placeholderTextWithInsertMenu : (this.moduleOptions.placeholderText || '');
     }
   },
   watch: {
-    focused(newVal) {
+    isFocused(newVal) {
       if (!newVal) {
         if (this.pending) {
           this.emitWidgetUpdate();
@@ -188,6 +248,8 @@ export default {
     }
   },
   mounted() {
+    // Cleanly namespace it so we don't conflict with other uses and instances
+    const CustomPlaceholder = Placeholder.extend();
     const extensions = [
       StarterKit.configure({
         document: false,
@@ -205,23 +267,14 @@ export default {
       TableCell,
       TableHeader,
       TableRow,
-      // For this contextual widget, no need to check `widget.aposPlaceholder` value
-      // since `placeholderText` option is enough to decide whether to display it or not.
-      this.placeholderText && Placeholder.configure({
+      CustomPlaceholder.configure({
         placeholder: () => {
-          // Avoid brief display of the placeholder when loading the page.
-          if (this.isFocused === null) {
-            return '';
-          }
-
-          // Display placeholder after loading the page.
-          if (this.showPlaceholder === null) {
-            return this.$t(this.placeholderText);
-          }
-
-          return this.showPlaceholder ? this.$t(this.placeholderText) : '';
-        }
-      })
+          const text = this.$t(this.placeholderText);
+          return text;
+        },
+        emptyNodeClass: this.insert.length ? 'apos-is-empty' : 'apos-is-empty-without-insert'
+      }),
+      FloatingMenu
     ]
       .filter(Boolean)
       .concat(this.aposTiptapExtensions());
@@ -254,12 +307,19 @@ export default {
         });
       }
     });
+    apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
 
   beforeDestroy() {
     this.editor.destroy();
+    apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    onAposRefreshing(refreshOptions) {
+      if (this.activeInsertMenuComponent) {
+        refreshOptions.refresh = false;
+      }
+    },
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
@@ -424,6 +484,58 @@ export default {
           styles: this.editorOptions.styles.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
+    },
+    showFloatingMenu({ state }) {
+      if (!this.insertMenu || !this.insert.length) {
+        return false;
+      }
+      const { $from, $to } = state.selection;
+      if (state.selection.empty) {
+        if ($to.nodeBefore && $to.nodeBefore.text) {
+          const text = $to.nodeBefore.text;
+          // Only show when the user has just entered a '/' character or
+          // an insert menu component is active
+          if (text === '/') {
+            return true;
+          }
+        }
+        return false;
+      } else if (state.doc.textBetween($from, $to, ' ') === '/') {
+        return true;
+      }
+      return false;
+    },
+    activateInsertMenuItem(name, info) {
+      // Select the / and remove it
+      if (info.component) {
+        this.activeInsertMenuComponent = {
+          name,
+          ...info
+        };
+      } else {
+        this.removeSlash();
+        this.editor.commands[info.action || name]();
+      }
+    },
+    removeSlash() {
+      const state = this.editor.state;
+      const { $to } = state.selection;
+      if (state.selection.empty && $to?.nodeBefore?.text) {
+        const text = $to.nodeBefore.text;
+        if (text === '/') {
+          const pos = this.editor.view.state.selection.$anchor.pos;
+          // Select the slash so an insert operation can replace it
+          this.editor.commands.setTextSelection({
+            from: pos - 1,
+            to: pos
+          });
+          this.editor.commands.deleteSelection();
+        }
+      }
+    },
+    closeInsertMenuItem() {
+      this.removeSlash();
+      this.activeInsertMenuComponent = null;
     }
   }
 };
@@ -472,7 +584,8 @@ function traverseNextNode(node) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror p.is-empty:first-child::before {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::before,
+  .apos-rich-text-editor__editor.apos-is-visually-empty ::v-deep .ProseMirror:focus p:first-of-type::before {
     content: attr(data-placeholder);
     float: left;
     pointer-events: none;
@@ -542,5 +655,59 @@ function traverseNextNode(node) {
   .apos-rich-text-editor__editor ::v-deep .selectedCell {
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
+  }
+
+  .apos-rich-text-editor__editor ::v-deep figure.ProseMirror-selectednode {
+    opacity: 0.5;
+  }
+
+  [data-placeholder] {
+    display: none;
+  }
+
+  .apos-rich-text-insert-menu {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    gap: 16px;
+    padding: 16px;
+    border-radius: var(--a-border-radius);
+    box-shadow: var(--a-box-shadow);
+    background-color: var(--a-background-primary);
+    border: 1px solid var(--a-base-8);
+    color: var(--a-base-1);
+    font-family: var(--a-family-default);
+    font-size: var(--a-type-base);
+  }
+
+  .apos-rich-text-insert-menu-item {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    &:hover {
+      color: var(--a-text-primary);
+    }
+  }
+
+  .apos-rich-text-insert-menu-label {
+    display: flex;
+    flex-direction: column;
+    h4, p {
+      margin: 4px;
+      font-family: var(--a-family-default);
+      font-size: var(--a-type-base);
+    }
+    h4 {
+      font-weight: bold;
+    }
+  }
+  .apos-rich-text-insert-menu-icon {
+    // Positions the popover meaningfully
+    position: relative;
+  }
+
+  .apos-rich-text-insert-menu-heading {
+    color: var(--a-base-5);
   }
 </style>

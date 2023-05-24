@@ -140,13 +140,21 @@ export default {
       const fields = this.getFieldsByCategory(followedByCategory);
 
       const followingValues = {};
+      const parentFollowing = {};
+      for (const [ key, val ] of Object.entries(this.parentFollowingValues || {})) {
+        parentFollowing[`<${key}`] = val;
+      }
 
       for (const field of fields) {
         if (field.following) {
           const following = Array.isArray(field.following) ? field.following : [ field.following ];
           followingValues[field.name] = {};
           for (const name of following) {
-            followingValues[field.name][name] = this.getFieldValue(name);
+            if (name.startsWith('<')) {
+              followingValues[field.name][name] = parentFollowing[name];
+            } else {
+              followingValues[field.name][name] = this.getFieldValue(name);
+            }
           }
         }
       }
@@ -252,11 +260,14 @@ export default {
             result = false;
             break;
           }
-          if (Array.isArray(self.getFieldValue(key))) {
-            result = self.getFieldValue(key).includes(val);
+
+          const fieldValue = self.getFieldValue(key);
+
+          if (Array.isArray(fieldValue)) {
+            result = fieldValue.includes(val);
             break;
           }
-          if (val !== self.getFieldValue(key)) {
+          if (val !== fieldValue) {
             result = false;
             break;
           }

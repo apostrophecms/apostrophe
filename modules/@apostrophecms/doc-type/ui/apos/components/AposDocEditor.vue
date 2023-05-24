@@ -464,7 +464,10 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = docData;
+          this.docFields.data = {
+            ...this.getDefault(),
+            ...docData
+          };
           if (this.published) {
             this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
           }
@@ -472,6 +475,21 @@ export default {
           this.prepErrors();
         }
       }
+    },
+    getDefault() {
+      const doc = {};
+      this.schema.forEach(field => {
+        if (field.name.startsWith('_')) {
+          return;
+        }
+        // Using `hasOwn` here, not simply checking if `field.def` is truthy
+        // so that `false`, `null`, `''` or `0` are taken into account:
+        const hasDefaultValue = Object.hasOwn(field, 'def');
+        doc[field.name] = hasDefaultValue
+          ? klona(field.def)
+          : null;
+      });
+      return doc;
     },
     async preview() {
       if (!await this.confirmAndCancel()) {
@@ -757,7 +775,7 @@ export default {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
     onContentChanged(e) {
-      if (this.original?._id !== e.doc._id) {
+      if (!e.doc || this.original?._id !== e.doc._id) {
         return;
       }
       if (e.doc.type !== this.docType) {

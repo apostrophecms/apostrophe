@@ -44,7 +44,7 @@ export function detectFieldChange(field, v1, v2) {
   if (isEqual(v1, v2)) {
     return false;
   } else if (!v1 && !v2) {
-    return false;
+    return v1 !== v2;
   } else if (!v1 && Array.isArray(v2) && v2.length === 0) {
     return false;
   } else {

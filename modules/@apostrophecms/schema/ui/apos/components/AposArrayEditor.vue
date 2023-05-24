@@ -64,7 +64,6 @@
                     v-if="currentId"
                     :schema="schema"
                     :trigger-validation="triggerValidation"
-                    :utility-rail="false"
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields()"
                     :value="currentDoc"
@@ -113,6 +112,10 @@ export default {
     },
     docId: {
       type: String,
+      default: null
+    },
+    parentFollowingValues: {
+      type: Object,
       default: null
     }
   },
