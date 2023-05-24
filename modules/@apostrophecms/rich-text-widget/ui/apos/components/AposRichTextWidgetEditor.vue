@@ -559,7 +559,7 @@ function traverseNextNode(node) {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
-    max-width: $input-max-width;
+    max-width: 100%;
     height: auto;
     background-color: var(--a-background-primary);
     color: var(--a-text-primary);
