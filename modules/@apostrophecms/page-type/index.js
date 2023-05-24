@@ -22,6 +22,7 @@ module.exports = {
           type: 'select',
           label: 'apostrophe:type',
           required: true,
+          def: self.options.apos.page.typeChoices[0].name,
           choices: self.options.apos.page.typeChoices.map(function (type) {
             return {
               value: type.name,

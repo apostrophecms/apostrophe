@@ -21,6 +21,7 @@ the need to explicitly pass it in almost all contexts.
 ### Fixes
 
 * Now errors and exits when a piece-type or widget-type module has a field object with the property "type" Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
+* Add a default page type value to prevent the dropdown from containing an empty value.
 
 ## 3.47.0 (2023-05-05)
 
