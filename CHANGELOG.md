@@ -18,6 +18,10 @@ the need to explicitly pass it in almost all contexts.
     deprecated. Use the `autocomplete('...')` query builder instead. 
     More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
 
+### Fixes
+
+* Now errors and exits when a piece-type or widget-type module has a field object with the property "type" Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
