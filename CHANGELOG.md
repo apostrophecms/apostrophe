@@ -17,6 +17,8 @@ the need to explicitly pass it in almost all contexts.
 * Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` & `autocomplete` as
     deprecated. Use the `autocomplete('...')` query builder instead. 
     More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
+* Print a warning with a clear explanation if a module's `index.js` file contains
+no `module.exports` object (often due to a typo), or it is empty.
 
 ### Fixes
 
