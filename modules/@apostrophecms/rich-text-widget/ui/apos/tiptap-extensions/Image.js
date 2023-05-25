@@ -9,7 +9,6 @@ export default options => {
 
     addOptions() {
       return {
-        // inline: true,
         addPasteHandler: true,
         HTMLAttributes: {}
       };
