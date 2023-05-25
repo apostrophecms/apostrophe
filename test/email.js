@@ -1,5 +1,5 @@
 const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert').strict;
 let apos;
 
 describe('Email', function() {
@@ -51,5 +51,36 @@ describe('Email', function() {
     assert(message.match(/From: test@example\.com/));
     assert(message.match(/To: recipient@example\.com/));
     assert(message.match(/\[http:\/\/example\.com\/\]/));
+  });
+
+  it('should convert html to text', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module
+    });
+
+    const mockEmail = require('./data/fpw_email_mock.js');
+    const mockTransport = () => ({
+      sendMail: function (args) {
+        return Promise.resolve(args);
+      }
+    });
+    const mockModule = {
+      options: { email: { from: mockEmail.from } },
+      render: async () => mockEmail.html
+    };
+    apos.modules['@apostrophecms/email'].getTransport = mockTransport;
+
+    const result = await apos.modules['@apostrophecms/email'].emailForModule(
+      apos.task.getReq(), // req
+      'anyTemplate', // templateName
+      {}, // data
+      {
+        to: mockEmail.to,
+        subject: mockEmail.subject
+      }, // options
+      mockModule // module
+    );
+    assert.equal(result.text, mockEmail.text);
   });
 });

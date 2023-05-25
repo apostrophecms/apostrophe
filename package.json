@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "3.45.1",
+  "version": "3.47.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,7 @@
     "url": "git@github.com:apostrophecms/apostrophe.git"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=16.0.0"
   },
   "keywords": [
     "apostrophe",
@@ -75,12 +75,12 @@
     "fs-extra": "^7.0.1",
     "glob": "^5.0.15",
     "he": "^0.5.0",
-    "html-to-text": "^5.1.1",
+    "html-to-text": "^9.0.5",
     "i18next": "^20.3.2",
     "i18next-http-middleware": "^3.1.5",
     "import-fresh": "^3.3.0",
     "is-wsl": "^2.2.0",
-    "jsdom": "^17.0.0",
+    "jsdom": "^22.0.0",
     "klona": "^2.0.4",
     "launder": "^1.4.0",
     "lodash": "^4.17.20",
@@ -109,11 +109,11 @@
     "sass": "^1.52.3",
     "sass-loader": "^10.1.1",
     "server-destroy": "^1.0.1",
-    "sluggo": "^0.3.0",
+    "sluggo": "^1.0.0",
     "tinycolor2": "^1.4.2",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
-    "uploadfs": "^1.17.1",
+    "uploadfs": "^1.22.1",
     "v-tooltip": "^2.0.3",
     "vue": "^2.6.14",
     "vue-advanced-cropper": "^1.10.1",

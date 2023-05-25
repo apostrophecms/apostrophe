@@ -16,7 +16,6 @@
         :schema="schema"
         :trigger-validation="triggerValidation"
         v-model="docFields"
-        :utility-rail="false"
         :modifiers="formModifiers"
         :key="lastSelectionTime"
         :generation="generation"
