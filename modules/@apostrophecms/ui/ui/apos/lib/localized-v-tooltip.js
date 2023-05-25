@@ -4,7 +4,7 @@
 import { VTooltip } from 'v-tooltip';
 
 export default {
-  install(Vue, options) {
+  install(app, options) {
 
     const directive = {};
 
@@ -18,7 +18,7 @@ export default {
     extendHandler('componentUpdated');
     extendHandler('unbind');
 
-    Vue.directive('apos-tooltip', directive);
+    app.directive('apos-tooltip', directive);
 
     function extendHandler(name) {
       if (VTooltip[name]) {
@@ -38,7 +38,7 @@ export default {
       if (!instance) {
         // A headless Vue instance to call $t on. We do this late so we
         // know $t is ready
-        instance = new Vue();
+        instance = app;
       }
       // Something stringable
       if (!value) {

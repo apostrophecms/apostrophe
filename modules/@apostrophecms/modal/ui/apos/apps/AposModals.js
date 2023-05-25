@@ -1,7 +1,7 @@
-import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
-  const theAposModals = new Vue({
+  const theAposModals = createApp({
     el: '#apos-modals',
     computed: {
       apos () {

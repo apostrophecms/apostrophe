@@ -1,9 +1,9 @@
-import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
   const el = document.querySelector('#apos-login');
   if (el) {
-    return new Vue({
+    return createApp({
       el,
       render: function (h) {
         return h('TheAposLogin');

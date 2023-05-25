@@ -1,4 +1,4 @@
-import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 import { klona } from 'klona';
 
 export default function() {
@@ -101,7 +101,7 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
-      return new Vue({
+      return createApp({
         el,
         data: function() {
           return {
@@ -133,7 +133,7 @@ export default function() {
 
   function createWidgetClipboardApp() {
   // Headless app to provide simple reactivity for the clipboard state
-    apos.area.widgetClipboard = new Vue({
+    apos.area.widgetClipboard = createApp({
       el: null,
       data: () => {
         const existing = window.localStorage.getItem('aposWidgetClipboard');

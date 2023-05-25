@@ -1310,8 +1310,8 @@ module.exports = {
             apos: true,
             prologue: stripIndent`
               import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-              import Vue from 'Modules/@apostrophecms/ui/lib/vue';
-              window.apos.bus = new Vue();
+              import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+              window.apos.bus = createApp();
             `,
             // Load only in browsers that support ES6 modules
             condition: 'module'

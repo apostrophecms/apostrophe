@@ -1,9 +1,9 @@
-import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
   // Careful, login page is in user scene but has no command menu
   if (apos.commandMenu) {
-    const theAposCommandMenu = new Vue({
+    const theAposCommandMenu = createApp({
       el: '#apos-command-menu',
       computed: {
         apos () {
