@@ -31,7 +31,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
-    "@apostrophecms/vue-color": "^2.8.2",
+    "@ckpack/vue-color": "^1.4.1",
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "@tiptap/extension-floating-menu": "^2.0.3",
@@ -117,7 +117,7 @@
     "underscore.string": "^3.3.4",
     "uploadfs": "^1.22.1",
     "v-tooltip": "^2.0.3",
-    "vue": "^3.2.47",
+    "vue": "^3.3.4",
     "vue-advanced-cropper": "^2.8.8",
     "vue-loader": "^17.1.0",
     "vue-material-design-icons": "^5.2.0",
@@ -142,6 +142,7 @@
     "stylelint-declaration-strict-value": "^1.8.0",
     "stylelint-order": "^5.0.0",
     "vue-eslint-parser": "^7.1.1",
+    "vue-template-compiler": "^2.7.14",
     "webpack-bundle-analyzer": "^3.9.0"
   },
   "browserslist": [
