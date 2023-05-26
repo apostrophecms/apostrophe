@@ -9,6 +9,7 @@
     columns.
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`
+* Rich-text inline images now copies the `alt` attribute from the original image from the Media Library.
 
 ### Changes
 
