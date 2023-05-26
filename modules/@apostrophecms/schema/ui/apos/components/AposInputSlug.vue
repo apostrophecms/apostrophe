@@ -190,11 +190,13 @@ export default {
       const options = {
         def: ''
       };
+
       if (this.field.aposIsTemplate) {
-        options.allow = '@';
+        options.allow = this.field.page ? [ '/', '@' ] : '@';
       } else if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
+
       let preserveDash = false;
       // When you are typing a slug it feels wrong for hyphens you typed
       // to disappear as you go, so if the last character is not valid in a slug,
@@ -202,10 +204,12 @@ export default {
       if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === '')) {
         preserveDash = true;
       }
+
       s = sluggo(s, options);
       if (preserveDash) {
         s += '-';
       }
+
       if (this.field.page && !componentOnly) {
         if (!this.followingValues?.title) {
           const nextParts = this.next.split('/');
@@ -228,6 +232,7 @@ export default {
           s += '/';
         }
       }
+
       if (!componentOnly) {
         s = this.setPrefix(s);
       }
@@ -264,7 +269,20 @@ export default {
         // doc editor modal it will momentarily be tracked as archived but
         // without not have the archive prefix, so check that too.
         updated = this.isArchived && archivePrefix ? `${archivePrefix}${updated}` : updated;
+      } else if (this.field.aposIsTemplate) {
+        let prefix = '';
+        if (this.field.page) {
+          if (!updated.startsWith('/@')) {
+            prefix = '/@';
+          }
+        } else {
+          if (!updated.startsWith('@')) {
+            prefix = '@';
+          }
+        }
+        updated = prefix + updated;
       }
+
       return updated;
     },
     async checkConflict() {

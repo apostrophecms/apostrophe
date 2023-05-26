@@ -9,6 +9,7 @@
     columns.
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`
+* Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
 
 ### Changes
 
@@ -57,10 +58,6 @@ when working with the `@apostrophecms/ai-helper` module, and also helps in other
 
 * Debounce search to prevent calling search on every key stroke in the manager modal.
 * Various size and spacing adjustments in the expanded Add Content modal UI
-
-### Adds
-
-* Allow `@` when a document is a template (doc-template-library module).
 
 ## 3.45.1 (2023-04-28)
 
