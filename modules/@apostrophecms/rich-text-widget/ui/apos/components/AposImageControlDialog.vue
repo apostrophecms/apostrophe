@@ -16,7 +16,6 @@
         :schema="schema"
         :trigger-validation="triggerValidation"
         v-model="docFields"
-        :utility-rail="false"
         :modifiers="formModifiers"
         :key="lastSelectionTime"
         :generation="generation"
@@ -125,11 +124,13 @@ export default {
         }
         const image = this.docFields.data._image[0];
         this.docFields.data.imageId = image && image.aposDocId;
+        this.docFields.data.alt = image && image.alt;
         this.$emit('before-commands');
         this.editor.commands.setImage({
           imageId: this.docFields.data.imageId,
           caption: this.docFields.data.caption,
-          style: this.docFields.data.style
+          style: this.docFields.data.style,
+          alt: this.docFields.data.alt
         });
         this.close();
       });

@@ -462,6 +462,14 @@ module.exports = {
   },
   extendMethods(self) {
     return {
+      getRelationshipQueryBuilderChoicesProjection(_super, query) {
+        const projection = _super(query);
+
+        return {
+          ...projection,
+          attachment: 1
+        };
+      },
       getBrowserData(_super, req) {
         const data = _super(req);
         data.components.managerModal = 'AposMediaManager';

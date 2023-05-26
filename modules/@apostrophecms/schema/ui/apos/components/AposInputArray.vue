@@ -61,7 +61,6 @@
               :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
               v-model="item.schemaInput"
               :trigger-validation="triggerValidation"
-              :utility-rail="false"
               :generation="generation"
               :modifiers="['small', 'inverted']"
               :doc-id="docId"
