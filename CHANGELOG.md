@@ -1,26 +1,26 @@
 # Changelog
 
-## UNRELEASED
+## 3.48.0 (2023-05-26)
 
 ### Adds
 
-* Add `apos.modules['piece-type']`.`getManagerApiProjection` method to reduce the amount of data returned in the manager
+* For performance, add `apos.modules['piece-type']getManagerApiProjection` method to reduce the amount of data returned in the manager
     modal. The projection will contain the fields returned in the method in addition to the existing manager modal
     columns.
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
-    `apos.schema.relationshipQueryBuilderChoices`
+    `apos.schema.relationshipQueryBuilderChoices`.
 
 ### Changes
 
 * The `utilityRail` prop of `AposSchema` now defaults to `false`, removing
 the need to explicitly pass it in almost all contexts.
-* Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` & `autocomplete` as
-    deprecated. Use the `autocomplete('...')` query builder instead. 
+* Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` and `autocomplete` as
+    deprecated. Our admin UI does not use them, it uses the `autocomplete('...')` query builder.
     More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
 
 ### Fixes
 
-* Now errors and exits when a piece-type or widget-type module has a field object with the property "type" Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
+* Now errors and exits when a piece-type or widget-type module has a field object with the property `type`. Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
 * Add a default page type value to prevent the dropdown from containing an empty value.
 
 ## 3.47.0 (2023-05-05)
