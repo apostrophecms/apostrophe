@@ -9,9 +9,14 @@
     columns.
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`
+* Rich-text inline images now copies the `alt` attribute from the original image from the Media Library.
 
 ### Changes
 
+* Remove `stripPlaceholderBrs` and `restorePlaceholderBrs` from `AposRichTextWidgetEditor.vue` component.
+* Change tiptap `Gapcursor` display to use a vertical blinking cursor instead of an horizontal cursor, which allow users to add text before and after inline images and tables.
+* You can set `max-width` on `.apos-rich-text-toolbar__inner` to define the width of the rich-text toolbar. It will now
+    flow on multiple lines if needed.
 * The `utilityRail` prop of `AposSchema` now defaults to `false`, removing
 the need to explicitly pass it in almost all contexts.
 * Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` & `autocomplete` as

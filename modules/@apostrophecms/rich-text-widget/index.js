@@ -435,7 +435,7 @@ module.exports = {
             },
             {
               tag: 'img',
-              attributes: [ 'src' ]
+              attributes: [ 'src', 'alt' ]
             }
           ]
         };
