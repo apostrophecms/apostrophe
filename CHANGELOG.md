@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.227.2 (2023-05-26)
+
+### Fixes
+
+2.227.1 briefly broke the production frontend admin UI build process. This has been corrected.
+
 ## 2.227.1 (2023-05-26)
 
 ### Fixes
