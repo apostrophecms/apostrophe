@@ -832,7 +832,7 @@ module.exports = {
               const find = manager.find;
 
               const options = {
-                find: find,
+                find,
                 builders: { relationships: withRelationshipsNext[relationship._dotPath] || false }
               };
               const subname = relationship.name + ':' + type;
@@ -882,7 +882,7 @@ module.exports = {
           const find = manager.find;
 
           const options = {
-            find: find,
+            find,
             builders: { relationships: withRelationshipsNext[relationship._dotPath] || false }
           };
 
@@ -1090,7 +1090,7 @@ module.exports = {
           const idsStorage = field.idsStorage;
           const ids = await query.toDistinct(idsStorage);
           const manager = self.apos.doc.getManager(field.withType);
-          const relationshipQuery = manager.find(query.req, { aposDocId: { $in: ids } }).project(manager.getRelationshipQueryBuilderChoicesProjection({ field: field }));
+          const relationshipQuery = manager.find(query.req, { aposDocId: { $in: ids } }).project(manager.getRelationshipQueryBuilderChoicesProjection({ field }));
           if (field.builders) {
             relationshipQuery.applyBuilders(field.builders);
           }
@@ -1678,7 +1678,7 @@ module.exports = {
           fields[name] = component;
         }
         browserOptions.action = self.action;
-        browserOptions.components = { fields: fields };
+        browserOptions.components = { fields };
         return browserOptions;
       }
     };

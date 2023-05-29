@@ -141,7 +141,7 @@ module.exports = function(self) {
       }
       eh[eventName].push({
         moduleName: self.__meta.name,
-        handlerName: handlerName
+        handlerName
       });
       self.compiledHandlers = self.compiledHandlers || {};
       self.compiledHandlers[moduleName] = self.compiledHandlers[moduleName] || {};

@@ -423,7 +423,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss" >
+<style scoped lang="scss">
 .apos-schema {
   margin: 30px 15px 0;
 

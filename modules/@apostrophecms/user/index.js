@@ -148,7 +148,7 @@ module.exports = {
       post: {
         async uniqueUsername(req) {
           const username = self.apos.launder.string(req.body.username);
-          const user = self.find(req, { username: username }).project({
+          const user = self.find(req, { username }).project({
             _id: 1,
             username: 1
           }).toObject();
@@ -515,7 +515,7 @@ module.exports = {
         const username = argv._[1];
         const req = self.apos.task.getReq();
 
-        const user = await self.apos.user.find(req, { username: username }).toObject();
+        const user = await self.apos.user.find(req, { username }).toObject();
         if (!user) {
           throw new Error('No such user.');
         }

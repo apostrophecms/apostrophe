@@ -1373,7 +1373,7 @@ database.`);
         }
         async function findPage() {
           // Also checks permissions
-          return self.find(req, { _id: _id }).permission('edit').ancestors({
+          return self.find(req, { _id }).permission('edit').ancestors({
             depth: 1,
             archived: null,
             areas: false
@@ -1998,7 +1998,7 @@ database.`);
           throw new Error('Wrong number of arguments');
         }
         const slug = argv._[1];
-        const count = await self.apos.doc.db.updateOne({ slug: slug }, { $unset: { parked: 1 } });
+        const count = await self.apos.doc.db.updateOne({ slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
         }

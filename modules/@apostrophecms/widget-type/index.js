@@ -188,7 +188,7 @@ module.exports = {
 
         return self.render(req, self.template, {
           widget: effectiveWidget,
-          options: options,
+          options,
           manager: self,
           contextOptions: _with
         });
@@ -396,7 +396,7 @@ module.exports = {
           previewIcon: self.options.previewIcon,
           previewUrl: self.options.previewUrl,
           action: self.action,
-          schema: schema,
+          schema,
           contextual: self.options.contextual,
           placeholderClass: self.options.placeholderClass,
           className: self.options.className,

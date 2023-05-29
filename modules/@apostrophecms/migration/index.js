@@ -71,8 +71,8 @@ module.exports = {
           options = {};
         }
         self.migrations.push({
-          name: name,
-          options: options,
+          name,
+          options,
           fn: migrationFn
         });
       },
@@ -147,8 +147,8 @@ module.exports = {
           const areaInfos = [];
           self.apos.area.walk(doc, function (area, dotPath) {
             areaInfos.push({
-              area: area,
-              dotPath: dotPath
+              area,
+              dotPath
             });
           });
           for (const areaInfo of areaInfos) {
@@ -220,7 +220,7 @@ module.exports = {
           await self.eachDoc({ $and: clauses }, 5, async function (doc) {
             const $set = {};
             $set[field + 'Sortified'] = self.apos.util.sortify(doc[field]);
-            await self.apos.doc.db.updateOne({ _id: doc._id }, { $set: $set });
+            await self.apos.doc.db.updateOne({ _id: doc._id }, { $set });
           });
         });
       },

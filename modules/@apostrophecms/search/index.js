@@ -233,7 +233,7 @@ module.exports = {
               return;
             }
             docs = docs.concat(await manager.find(req, {
-              type: type,
+              type,
               _id: { $in: _.map(byType[type], '_id') }
             }).toArray());
           }
@@ -269,11 +269,11 @@ module.exports = {
 
         // merge our doc with its various search texts
         _.assign(doc, {
-          titleSortified: titleSortified,
+          titleSortified,
           highSearchText: highText,
           highSearchWords: highWords,
           lowSearchText: lowText,
-          searchSummary: searchSummary
+          searchSummary
         });
       },
 

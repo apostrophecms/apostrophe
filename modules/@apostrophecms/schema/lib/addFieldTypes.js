@@ -111,7 +111,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     isEmpty: function (field, value) {
@@ -292,7 +292,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: (value || []).join(' '),
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {
@@ -322,9 +322,9 @@ module.exports = (self) => {
         choices: async function () {
           const values = await query.toDistinct(field.name);
           const choices = _.map(values, function (value) {
-            const choice = _.find(field.choices, { value: value });
+            const choice = _.find(field.choices, { value });
             return {
-              value: value,
+              value,
               label: choice && (choice.label || value)
             };
           });
@@ -355,7 +355,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {
@@ -398,9 +398,9 @@ module.exports = (self) => {
             allChoices = field.choices;
           }
           const choices = _.map(values, function (value) {
-            const choice = _.find(allChoices, { value: value });
+            const choice = _.find(allChoices, { value });
             return {
-              value: value,
+              value,
               label: choice && (choice.label || value)
             };
           });

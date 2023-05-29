@@ -29,7 +29,7 @@
           'aria-expanded': isOpen ? true : false
         }"
       />
-      <template #popover class="apos-popover__slot">
+      <template #popover>
         <AposContextMenuDialog
           :menu-placement="menuPlacement"
           :class-list="classList"

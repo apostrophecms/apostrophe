@@ -163,7 +163,7 @@ module.exports = {
           const manager = self.widgetManagers[name];
           if (manager) {
             choices.push({
-              name: name,
+              name,
               icon: manager.options.icon,
               label: options.addLabel || manager.label || `No label for ${name}`
             });
@@ -379,7 +379,7 @@ module.exports = {
           }
           _.set(doc, dotPath, {
             metaType: 'area',
-            items: items
+            items
           });
           return self.apos.doc.update(req, doc);
         }
@@ -691,7 +691,7 @@ module.exports = {
         } else {
           area = doc[name];
         }
-        return self.isEmpty({ area: area });
+        return self.isEmpty({ area });
       }
     };
   },
