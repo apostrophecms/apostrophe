@@ -196,6 +196,10 @@ module.exports = {
     if (!self.options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
+    const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
+    if (badFieldName) {
+      throw new Error(`The ${self.__meta.name} module contains a forbidden field property name: "type".`);
+    }
     if (!self.options.label) {
       // Englishify it
       self.options.label = _.startCase(self.options.name);

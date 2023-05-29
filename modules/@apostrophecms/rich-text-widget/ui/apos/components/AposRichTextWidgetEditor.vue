@@ -2,7 +2,7 @@
   <div>
     <bubble-menu
       class="bubble-menu"
-      :tippy-options="{ duration: 100, zIndex: 2000 }"
+      :tippy-options="{ maxWidth: 'none', duration: 100, zIndex: 2000 }"
       :editor="editor"
       v-if="editor"
     >
@@ -27,7 +27,8 @@
     </bubble-menu>
     <floating-menu
       class="apos-rich-text-insert-menu" :should-show="showFloatingMenu"
-      :editor="editor" :tippy-options="{ duration: 100, zIndex: 2000 }"
+      :editor="editor"
+      :tippy-options="{ duration: 100, zIndex: 2000 }"
       v-if="editor"
     >
       <div class="apos-rich-text-insert-menu-heading">
@@ -178,10 +179,10 @@ export default {
     },
     autofocus() {
       // Only true for a new rich text widget
-      return !this.stripPlaceholderBrs(this.value.content).length;
+      return !this.value.content.length;
     },
     initialContent() {
-      const content = this.transformNamedAnchors(this.stripPlaceholderBrs(this.value.content));
+      const content = this.transformNamedAnchors(this.value.content);
       if (content.length) {
         return content;
       }
@@ -343,25 +344,11 @@ export default {
         clearTimeout(this.pending);
         this.pending = null;
       }
-      let content = this.editor.getHTML();
-      content = this.restorePlaceholderBrs(content);
+      const content = this.editor.getHTML();
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });
-    },
-    // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
-    // temporarily so the editing experience doesn't break due to contenteditable
-    // issues with empty paragraphs, but strips them on save; however
-    // seeing them while editing creates a WYSIWYG expectation
-    // on the user's part, so we must maintain them
-    restorePlaceholderBrs(html) {
-      return html.replace(/<(p[^>]*)>(\s*)<\/p>/gi, '<$1><br /></p>');
-    },
-    // Strip the placeholder BRs again when populating the editor.
-    // Otherwise they get doubled by ProseMirror
-    stripPlaceholderBrs(html) {
-      return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
     },
     // Legacy content may have `id` and `name` attributes on anchor tags
     // but our tiptap anchor extension needs them on a separate `span`, so nest
@@ -569,8 +556,10 @@ function traverseNextNode(node) {
 
   .apos-rich-text-toolbar__inner {
     display: flex;
+    flex-wrap: wrap;
     align-items: stretch;
-    height: 35px;
+    max-width: 100%;
+    height: auto;
     background-color: var(--a-background-primary);
     color: var(--a-text-primary);
     border-radius: var(--a-border-radius);
@@ -709,5 +698,28 @@ function traverseNextNode(node) {
 
   .apos-rich-text-insert-menu-heading {
     color: var(--a-base-5);
+  }
+
+  ::v-deep .ProseMirror {
+    > * + * {
+      margin-top: 0.75em;
+    }
+
+    > :last-child {
+      margin-bottom: 1.75em;
+    }
+  }
+
+  ::v-deep .ProseMirror-gapcursor {
+    position: relative;
+    display: block;
+    height: 20px;
+
+    &:after {
+      width: 1px;
+      height: 20px;
+      border-left: 1px solid #000;
+      border-top: 0 none;
+    }
   }
 </style>
