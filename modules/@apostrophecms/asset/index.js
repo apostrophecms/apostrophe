@@ -1315,9 +1315,13 @@ module.exports = {
             apos: true,
             prologue: stripIndent`
               import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-              import createApp from 'Modules/@apostrophecms/ui/lib/vue';
-              window.apos.bus = createApp();
-            `,
+              import emitter from 'tiny-emitter/instance';
+              window.apos.bus = {
+                $on: (...args) => emitter.on(...args),
+                $once: (...args) => emitter.once(...args),
+                $off: (...args) => emitter.off(...args),
+                $emit: (...args) => emitter.emit(...args)
+              };`,
             // Load only in browsers that support ES6 modules
             condition: 'module'
           }

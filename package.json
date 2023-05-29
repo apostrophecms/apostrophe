@@ -112,6 +112,7 @@
     "sass-loader": "^10.1.1",
     "server-destroy": "^1.0.1",
     "sluggo": "^1.0.0",
+    "tiny-emitter": "^2.1.0",
     "tinycolor2": "^1.4.2",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
