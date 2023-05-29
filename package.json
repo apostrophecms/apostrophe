@@ -130,7 +130,7 @@
   "devDependencies": {
     "@babel/eslint-parser": "^7.21.8",
     "eslint": "^8.41.0",
-    "eslint-config-apostrophe": "git://github.com/apostrophecms/apostrophe.git#main",
+    "eslint-config-apostrophe": "git://github.com/apostrophecms/apostrophe.git#pro-4227-eslint-config",
     "eslint-plugin-n": "^16.0.0",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-vue": "^9.14.1",
