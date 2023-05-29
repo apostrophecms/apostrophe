@@ -29,7 +29,7 @@ module.exports = ({
 
   const moduleName = es5 ? 'nomodule' : 'module';
   let isPnpm = false;
-  if (fs.existsSync(path.join(self.npmRootDir, 'pnpm-lock.yaml'))) {
+  if (fs.existsSync(path.join(apos.npmRootDir, 'pnpm-lock.yaml'))) {
     isPnpm = true;
   }
   const pnpmModulePath = isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
