@@ -129,11 +129,12 @@ module.exports = (self) => {
         return;
       }
 
-      if (!(field.pattern instanceof RegExp)) {
-        fail('The pattern property must be a RegExp');
+      const isRegexInstance = field.pattern instanceof RegExp;
+      if (!isRegexInstance && typeof field.pattern !== 'string') {
+        fail('The pattern property must be a RegExp or a String');
       }
 
-      field.pattern = field.pattern.source;
+      field.pattern = isRegexInstance ? field.pattern.source : field.pattern;
     },
     addQueryBuilder(field, query) {
       query.addBuilder(field.name, {
