@@ -53,10 +53,6 @@ module.exports = {
     };
     self.configureBuilds();
     self.initUploadfs();
-    console.log('=====> init <=====');
-    console.log('=====> init <=====');
-    console.log('=====> init <=====');
-    console.log('=====> init <=====');
     self.enableBrowserData();
 
     const {
@@ -311,11 +307,12 @@ module.exports = {
 
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.apos) {
-              /* iconImports = getIcons(); */
-              /* componentImports = getImports(`${source}/components`, '*.vue', { */
-              /*   registerComponents: true, */
-              /*   importLastVersion: true */
-              /* }); */
+              iconImports = getIcons();
+              componentImports = getImports(`${source}/components`, '*.vue', {
+                registerComponents: true,
+                importLastVersion: true
+              });
+              /* componentImports = getGlobalVueComponents(self); */
               tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
               appImports = getImports(`${source}/apps`, '*.js', {
                 invokeApps: true,
@@ -355,8 +352,8 @@ module.exports = {
               writeImportFile({
                 importFile,
                 prologue: options.prologue,
-                /* icon: iconImports, */
-                /* components: componentImports, */
+                icon: iconImports,
+                components: componentImports,
                 tiptap: tiptapExtensionImports,
                 app: appImports,
                 indexJs: indexJsImports,
@@ -503,7 +500,6 @@ module.exports = {
           }) {
             fs.writeFileSync(importFile, (prologue || '') + stripIndent`
               ${(icon && icon.importCode) || ''}
-              ${(icon && icon.registerCode) || ''}
               ${(components && components.importCode) || ''}
               ${(tiptap && tiptap.importCode) || ''}
               ${(app && app.importCode) || ''}
@@ -553,7 +549,7 @@ module.exports = {
             // Load global vue icon components.
             const output = {
               importCode: '',
-              registerCode: ''
+              registerCode: 'window.apos.registerIconComponents = (app) => {'
             };
 
             for (const [ registerAs, importFrom ] of Object.entries(self.iconMap)) {
@@ -562,8 +558,10 @@ module.exports = {
               } else {
                 output.importCode += `import ${importFrom}Icon from 'vue-material-design-icons/${importFrom}.vue';\n`;
               }
-              output.registerCode += `Vue.component('${registerAs}', ${importFrom}Icon);\n`;
+              output.registerCode += `app.component('${registerAs}', ${importFrom}Icon);\n`;
             }
+
+            output.registerCode += '}';
 
             return output;
           }
@@ -719,7 +717,9 @@ module.exports = {
           function getImportFileOutput (components, options = {}) {
             const output = {
               importCode: '',
-              registerCode: '',
+              registerCode: options.registerComponents
+                ? 'window.apos.registerVueComponents = (app) => {'
+                : '',
               invokeCode: '',
               paths: []
             };
@@ -746,7 +746,7 @@ module.exports = {
               output.importCode += `${importCode}\n`;
 
               if (options.registerComponents) {
-                output.registerCode += `Vue.component(${jsName}, ${name});\n`;
+                output.registerCode += `app.component(${jsName}, ${name});\n`;
               }
 
               if (options.registerTiptapExtensions) {
@@ -759,6 +759,10 @@ module.exports = {
                 output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
               }
             });
+
+            if (options.registerComponents) {
+              output.registerCode += '}';
+            }
 
             return output;
           }
@@ -1357,28 +1361,6 @@ module.exports = {
       // the release id, uploadfs, etc.
       url(path) {
         return `${self.getAssetBaseUrl()}${path}`;
-      },
-
-      getBrowserData(req) {
-        console.log('=====> BROWSER <=====');
-        return {
-          icons: self.iconMap,
-          vueComponents: getVueGlobalComponents()
-        };
-
-        function getVueGlobalComponents () {
-          const components = [];
-          const seen = {};
-          const modulesToInstantiate = self.apos.modulesToBeInstantiated();
-          for (const name of modulesToInstantiate) {
-            const metadata = self.apos.synth.getMetadata(name);
-            for (const entry of metadata.__meta.chain) {
-              console.log('entry', entry);
-              /* components = components.concat(glob.sync(`${entry.dirname}/ui/${folder}/${pattern}`)); */
-              /* seen[entry.dirname] = true; */
-            }
-          }
-        }
       }
     };
   },
