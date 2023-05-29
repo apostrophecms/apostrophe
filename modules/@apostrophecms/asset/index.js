@@ -774,10 +774,13 @@ module.exports = {
           async function findPackageLock() {
             const packageLockPath = path.join(self.apos.npmRootDir, 'package-lock.json');
             const yarnPath = path.join(self.apos.npmRootDir, 'yarn.lock');
+            const pnpmPath = path.join(self.apos.npmRootDir, 'pnpm-lock.yaml');
             if (await fs.pathExists(packageLockPath)) {
               return packageLockPath;
             } else if (await fs.pathExists(yarnPath)) {
               return yarnPath;
+            } else if (await fs.pathExists(pnpmPath)) {
+              return pnpmPath;
             } else {
               return false;
             }

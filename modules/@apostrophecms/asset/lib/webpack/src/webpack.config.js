@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const merge = require('webpack-merge').merge;
 const scssTask = require('./webpack.scss');
 const srcBuildNames = [ 'src-build', 'src-es5-build' ];
@@ -27,7 +28,11 @@ module.exports = ({
   );
 
   const moduleName = es5 ? 'nomodule' : 'module';
-  const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
+  let isPnpm = false;
+  if (fs.existsSync(path.join(self.npmRootDir, 'pnpm-lock.yaml'))) {
+    isPnpm = true;
+  }
+  const pnpmModulePath = isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     entry: {
       [mainBundleName]: importFile,

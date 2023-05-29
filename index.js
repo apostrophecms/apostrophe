@@ -223,10 +223,6 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.rootDir = options.rootDir || path.dirname(self.root.filename);
     self.npmRootDir = options.npmRootDir || self.rootDir;
     self.selfDir = __dirname;
-    self.isPnpm = false;
-    if (fs.existsSync(self.rootDir + '/pnpm-lock.yaml')) {
-      self.isPnpm = true;
-    }
 
     testModule();
 

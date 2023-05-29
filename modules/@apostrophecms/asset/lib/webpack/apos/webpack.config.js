@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const merge = require('webpack-merge').merge;
 const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
@@ -23,7 +24,11 @@ module.exports = ({
     )
   );
 
-  const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
+  let isPnpm = false;
+  if (fs.existsSync(path.join(self.npmRootDir, 'pnpm-lock.yaml'))) {
+    isPnpm = true;
+  }
+  const pnpmModulePath = isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     entry: importFile,
     // Ensure that the correct version of vue-loader is found
