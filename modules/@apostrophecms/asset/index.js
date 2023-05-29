@@ -53,6 +53,11 @@ module.exports = {
     };
     self.configureBuilds();
     self.initUploadfs();
+    console.log('=====> init <=====');
+    console.log('=====> init <=====');
+    console.log('=====> init <=====');
+    console.log('=====> init <=====');
+    self.enableBrowserData();
 
     const {
       extensions = {},
@@ -306,11 +311,11 @@ module.exports = {
 
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.apos) {
-              iconImports = getIcons();
-              componentImports = getImports(`${source}/components`, '*.vue', {
-                registerComponents: true,
-                importLastVersion: true
-              });
+              /* iconImports = getIcons(); */
+              /* componentImports = getImports(`${source}/components`, '*.vue', { */
+              /*   registerComponents: true, */
+              /*   importLastVersion: true */
+              /* }); */
               tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
               appImports = getImports(`${source}/apps`, '*.js', {
                 invokeApps: true,
@@ -350,8 +355,8 @@ module.exports = {
               writeImportFile({
                 importFile,
                 prologue: options.prologue,
-                icon: iconImports,
-                components: componentImports,
+                /* icon: iconImports, */
+                /* components: componentImports, */
                 tiptap: tiptapExtensionImports,
                 app: appImports,
                 indexJs: indexJsImports,
@@ -1348,6 +1353,28 @@ module.exports = {
       // the release id, uploadfs, etc.
       url(path) {
         return `${self.getAssetBaseUrl()}${path}`;
+      },
+
+      getBrowserData(req) {
+        console.log('=====> BROWSER <=====');
+        return {
+          icons: self.iconMap,
+          vueComponents: getVueGlobalComponents()
+        };
+
+        function getVueGlobalComponents () {
+          const components = [];
+          const seen = {};
+          const modulesToInstantiate = self.apos.modulesToBeInstantiated();
+          for (const name of modulesToInstantiate) {
+            const metadata = self.apos.synth.getMetadata(name);
+            for (const entry of metadata.__meta.chain) {
+              console.log('entry', entry);
+              /* components = components.concat(glob.sync(`${entry.dirname}/ui/${folder}/${pattern}`)); */
+              /* seen[entry.dirname] = true; */
+            }
+          }
+        }
       }
     };
   },
