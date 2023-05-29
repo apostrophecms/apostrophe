@@ -7,7 +7,7 @@ import i18next from 'i18next';
 
 export default {
 
-  install(Vue, options) {
+  install(app, options) {
     const i18n = options.i18n;
 
     const fallbackLng = [ i18n.defaultLocale ];
@@ -67,7 +67,9 @@ export default {
     // property for instance. You may also specify
     // `localize: false` to pass a string through without
     // invoking i18next.
-    Vue.prototype.$t = (key, options = {}) => {
+    app.provide('$t', $t);
+
+    function $t(key, options = {}) {
       if ((key !== null) && ((typeof key) === 'object')) {
         options = key;
         key = options.key;
