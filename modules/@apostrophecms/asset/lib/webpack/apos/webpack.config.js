@@ -23,6 +23,7 @@ module.exports = ({
     )
   );
 
+  const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     entry: importFile,
     // Ensure that the correct version of vue-loader is found
@@ -47,7 +48,11 @@ module.exports = ({
     // at a later date if needed
     resolveLoader: {
       extensions: [ '*', '.js', '.vue', '.json' ],
-      modules: [ 'node_modules/apostrophe/node_modules', 'node_modules' ]
+      modules: [
+        ...pnpmModulePath,
+        'node_modules/apostrophe/node_modules',
+        'node_modules'
+      ]
     },
     resolve: {
       extensions: [ '*', '.js', '.vue', '.json' ],
@@ -58,6 +63,7 @@ module.exports = ({
       },
       modules: [
         'node_modules',
+        ...pnpmModulePath,
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`,
         `${apos.npmRootDir}/node_modules`
       ],
