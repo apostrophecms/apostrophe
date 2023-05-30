@@ -155,7 +155,6 @@ export default {
       pending: null,
       isFocused: null,
       isShowingInsert: false,
-      dismissedPositions: [],
       showPlaceholder: null,
       activeInsertMenuComponent: null
     };
@@ -490,19 +489,16 @@ export default {
           types: this.tiptapTypes
         }));
     },
-    showFloatingMenu({ state }) {
+    showFloatingMenu({
+      state, oldState
+    }) {
+      const hasChanges = JSON.stringify(state?.doc.toJSON()) !== JSON.stringify(oldState?.doc.toJSON());
       const { $to } = state.selection;
-      const pos = {
-        pos: state.selection.$anchor.pos,
-        parentOffset: state.selection.$anchor.parentOffset
-      };
 
       if (
         !this.insertMenu ||
         !this.insert.length ||
-        this.dismissedPositions.filter(o => {
-          return o.pos === pos.pos && o.parentOffset === pos.parentOffset;
-        }).length ||
+        !hasChanges ||
         ($to.nodeAfter && $to.nodeAfter.text)
       ) {
         this.isShowingInsert = false;
@@ -561,11 +557,6 @@ export default {
       ) {
         return;
       }
-      const pos = this.editor.view.state.selection.$anchor;
-      this.dismissedPositions.push({
-        pos: pos.pos,
-        parentOffset: pos.parentOffset
-      });
       this.editor.commands.focus();
       this.activeInsertMenuComponent = null;
       // Only insert character keys
