@@ -23,7 +23,7 @@ module.exports = ({
     )
   );
 
-  const pnpmModulePath = self.apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
+  const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     entry: importFile,
     // Ensure that the correct version of vue-loader is found
