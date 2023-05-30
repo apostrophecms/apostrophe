@@ -35,6 +35,7 @@ no `module.exports` object (often due to a typo), or it is empty.
 
 * Now errors and exits when a piece-type or widget-type module has a field object with the property `type`. Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
 * Add a default page type value to prevent the dropdown from containing an empty value.
+* Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
 
 ## 3.47.0 (2023-05-05)
 
