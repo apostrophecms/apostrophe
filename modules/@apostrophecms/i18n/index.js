@@ -220,7 +220,7 @@ module.exports = {
 
         console.log('🚀 ~ file: index.js:223 ~ locale ~ localesConfiguredWithCurrentHostname:', localesConfiguredWithCurrentHostname);
 
-        if (localesConfiguredWithCurrentHostname.every(locale => locale?.prefix)) {
+        if (localesConfiguredWithCurrentHostname.every(locale => locale.prefix)) {
           // Add / for home page and to avoid being redirected again below:
           const redirectUrl = `${localesConfiguredWithCurrentHostname[0].prefix}/`;
           console.log(`redirecting to ${redirectUrl}`);
@@ -523,7 +523,6 @@ module.exports = {
             }
           }
         }
-        console.log('best', best);
         return best || self.defaultLocale;
       },
       // Infer `req.locale` and `req.mode` from `_id` if they were
