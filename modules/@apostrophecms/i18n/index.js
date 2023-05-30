@@ -160,6 +160,16 @@ module.exports = {
             req.data.localizations.push(info);
           }
         }
+        // async redirectToFirstLocale(req) {
+        //   if (!self.options.redirectToFirstLocale) {
+        //     return;
+        //   }
+        //   console.log(req.path);
+        //   if (req.path !== '/') {
+        //     return;
+        //   }
+        //   // req.redirect = '/en';
+        // }
       }
     };
   },
@@ -203,6 +213,25 @@ module.exports = {
         return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
       },
       locale(req, res, next) {
+        const locales = self.filterPrivateLocales(req, self.locales);
+
+        // console.log('req.path', req.path);
+        // console.log('req.url', req.url);
+
+        if (self.options.redirectToFirstLocale && [ '', '/' ].includes(req.path)) {
+          console.log('locales', locales);
+          const hostnameLocales = Object
+            .values(locales)
+            .filter(locale => locale.hostname.split(':')[0] === req.hostname);
+
+          console.log('🚀 ~ file: index.js:223 ~ locale ~ hostnameLocales:', hostnameLocales);
+
+          if (hostnameLocales.every(locale => locale?.prefix)) {
+            console.log(`redirecting to ${hostnameLocales[0].prefix}/`);
+            return res.redirect(`${hostnameLocales[0].prefix}/`);
+          }
+        }
+
         // Support for a single aposLocale query param that
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
@@ -219,12 +248,14 @@ module.exports = {
         } else {
           locale = self.matchLocale(req);
         }
-        const locales = self.filterPrivateLocales(req, self.locales);
+        console.log('🚀 ~ file: index.js:235 ~ locale ~ locales:', locales);
         const localeOptions = locales[locale];
+        console.log('🚀 ~ file: index.js:237 ~ locale ~ localeOptions:', localeOptions);
         if (localeOptions.prefix) {
           // Remove locale prefix so URL parsing can proceed normally from here
           if (req.path === localeOptions.prefix) {
             // Add / for home page
+            console.log(`==> ${req.url}/`);
             return res.redirect(`${req.url}/`);
           }
           if (req.path.substring(0, localeOptions.prefix.length + 1) === localeOptions.prefix + '/') {
@@ -496,6 +527,7 @@ module.exports = {
             }
           }
         }
+        console.log('best', best);
         return best || self.defaultLocale;
       },
       // Infer `req.locale` and `req.mode` from `_id` if they were
