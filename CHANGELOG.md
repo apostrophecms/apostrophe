@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Bumped the version of `momentjs` that ships with A2 on the front end to the latest 2.x release to address a security warning. There was no actual
+security issue in practice due to the way this module is used on the front end in ApostropheCMS.
+
 ## 2.227.2 (2023-05-26)
 
 ### Fixes
