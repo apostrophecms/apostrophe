@@ -537,7 +537,8 @@ export default {
       const { action } = window.apos.modules[this.context.type];
       const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
         qs: {
-          aposMode: this.draftMode
+          aposMode: this.draftMode,
+          project: { _url: 1 }
         }
       });
 
