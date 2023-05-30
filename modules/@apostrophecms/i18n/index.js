@@ -202,7 +202,18 @@ module.exports = {
         req.session.cookie = new ExpressSessionCookie(aposExpressModule.sessionOptions.cookie);
         return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
       },
-      // Redirect to the first locale TODO: continue doc
+      // If the `redirectToFirstLocale` option is enabled,
+      // redirect to the first locale configured with the
+      // current requested hostname when all of the locales
+      // for that same hostname have a prefix.
+      // The redirection is done only when the homepage is requested.
+      //
+      // TODO: if there are locales configured with a prefix but no hostname, then we apply the following steps:
+      // The request does not match any explicit hostnames assigned to locales.
+      // There is at least one locale configured with no hostname.
+      // All of the locales with no hostname have a prefix.
+      // The request has no path part (or just /).
+      // When all of these conditions are met, the user should be directed to the first configured locale with no hostname.
       redirectToFirstLocale(req, res, next) {
         if (!self.options.redirectToFirstLocale) {
           return next();
@@ -220,13 +231,15 @@ module.exports = {
 
         console.log('🚀 ~ file: index.js:223 ~ locale ~ localesConfiguredWithCurrentHostname:', localesConfiguredWithCurrentHostname);
 
-        if (localesConfiguredWithCurrentHostname.every(locale => locale.prefix)) {
-          // Add / for home page and to avoid being redirected again below:
-          const redirectUrl = `${localesConfiguredWithCurrentHostname[0].prefix}/`;
-          console.log(`redirecting to ${redirectUrl}`);
-          return res.redirect(redirectUrl);
+        if (!localesConfiguredWithCurrentHostname.every(locale => locale.prefix)) {
+          return next();
         }
-        return next();
+
+        // Add / for home page and to avoid being redirected again in the `locale` middleware:
+        const redirectUrl = `${localesConfiguredWithCurrentHostname[0].prefix}/`;
+        console.log(`redirecting to ${redirectUrl}`);
+
+        return res.redirect(redirectUrl);
       },
       locale(req, res, next) {
         // Support for a single aposLocale query param that
