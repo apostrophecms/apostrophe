@@ -1,5 +1,5 @@
 <template>
-  <div :aria-controls="`insert-menu-${value._id}`">
+  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleSupressInsertMenu">
     <bubble-menu
       class="bubble-menu"
       :tippy-options="{ maxWidth: 'none', duration: 100, zIndex: 2000 }"
@@ -156,7 +156,10 @@ export default {
       isFocused: null,
       isShowingInsert: false,
       showPlaceholder: null,
-      activeInsertMenuComponent: null
+      activeInsertMenuComponent: null,
+      supressInsertMenu: false
+      // insertMenuId: null,
+      // dismissedInsertMenuIds: []
     };
   },
   computed: {
@@ -265,6 +268,7 @@ export default {
     }
   },
   mounted() {
+    this.insertMenuId = this.generateKey();
     // Cleanly namespace it so we don't conflict with other uses and instances
     const CustomPlaceholder = Placeholder.extend();
     const extensions = [
@@ -332,6 +336,13 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    handleSupressInsertMenu(e) {
+      if (e.key === 'Escape') {
+        this.supressInsertMenu = true;
+      } else {
+        this.supressInsertMenu = false;
+      }
+    },
     onAposRefreshing(refreshOptions) {
       if (this.activeInsertMenuComponent) {
         refreshOptions.refresh = false;
@@ -499,7 +510,8 @@ export default {
         !this.insertMenu ||
         !this.insert.length ||
         !hasChanges ||
-        ($to.nodeAfter && $to.nodeAfter.text)
+        ($to.nodeAfter && $to.nodeAfter.text) ||
+        this.supressInsertMenu
       ) {
         this.isShowingInsert = false;
         return false;
