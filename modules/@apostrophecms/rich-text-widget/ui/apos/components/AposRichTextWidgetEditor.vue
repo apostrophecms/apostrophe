@@ -575,11 +575,6 @@ export default {
       }
       this.editor.commands.focus();
       this.activeInsertMenuComponent = null;
-      if (e.key === 'Escape') {
-        this.handleSupressInsertMenu({
-          key: 'Escape'
-        });
-      }
       // Only insert character keys
       if (e.key.length === 1) {
         this.editor.commands.insertContent(e.key);
