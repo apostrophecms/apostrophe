@@ -1,5 +1,5 @@
 <template>
-  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleSupressInsertMenu">
+  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleSuppressInsertMenu">
     <bubble-menu
       class="bubble-menu"
       :tippy-options="{ maxWidth: 'none', duration: 100, zIndex: 2000 }"
@@ -158,7 +158,7 @@ export default {
       isShowingInsert: false,
       showPlaceholder: null,
       activeInsertMenuComponent: null,
-      supressInsertMenu: false,
+      suppressInsertMenu: false,
       insertMenuKey: null
     };
   },
@@ -339,12 +339,12 @@ export default {
     generateKey() {
       return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     },
-    handleSupressInsertMenu(e) {
+    handleSuppressInsertMenu(e) {
       if (e.key === 'Escape') {
-        this.supressInsertMenu = true;
+        this.suppressInsertMenu = true;
         this.insertMenuKey = this.generateKey();
       } else {
-        this.supressInsertMenu = false;
+        this.suppressInsertMenu = false;
       }
     },
     onAposRefreshing(refreshOptions) {
@@ -515,7 +515,7 @@ export default {
         !this.insert.length ||
         !hasChanges ||
         ($to.nodeAfter && $to.nodeAfter.text) ||
-        this.supressInsertMenu
+        this.suppressInsertMenu
       ) {
         this.isShowingInsert = false;
         return false;
