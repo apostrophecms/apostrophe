@@ -35,6 +35,7 @@
       tabindex="0"
       ref="insertMenu"
       :id="`insert-menu-${value._id}`"
+      :key="insertMenuKey"
     >
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
@@ -157,7 +158,8 @@ export default {
       isShowingInsert: false,
       showPlaceholder: null,
       activeInsertMenuComponent: null,
-      supressInsertMenu: false
+      supressInsertMenu: false,
+      insertMenuKey: null
     };
   },
   computed: {
@@ -266,6 +268,7 @@ export default {
     }
   },
   mounted() {
+    this.insertMenuKey = this.generateKey();
     // Cleanly namespace it so we don't conflict with other uses and instances
     const CustomPlaceholder = Placeholder.extend();
     const extensions = [
@@ -333,9 +336,13 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    generateKey() {
+      return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    },
     handleSupressInsertMenu(e) {
       if (e.key === 'Escape') {
         this.supressInsertMenu = true;
+        this.insertMenuKey = this.generateKey();
       } else {
         this.supressInsertMenu = false;
       }
@@ -560,6 +567,7 @@ export default {
       this.activeInsertMenuComponent = null;
     },
     closeInsertMenu(e) {
+      console.log('running closeInsertMenu');
       if (
         [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
         this.activeInsertMenuComponent
@@ -568,6 +576,11 @@ export default {
       }
       this.editor.commands.focus();
       this.activeInsertMenuComponent = null;
+      if (e.key === 'Escape') {
+        this.handleSupressInsertMenu({
+          key: 'Escape'
+        });
+      }
       // Only insert character keys
       if (e.key.length === 1) {
         this.editor.commands.insertContent(e.key);
