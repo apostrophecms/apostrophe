@@ -158,8 +158,6 @@ export default {
       showPlaceholder: null,
       activeInsertMenuComponent: null,
       supressInsertMenu: false
-      // insertMenuId: null,
-      // dismissedInsertMenuIds: []
     };
   },
   computed: {
@@ -268,7 +266,6 @@ export default {
     }
   },
   mounted() {
-    this.insertMenuId = this.generateKey();
     // Cleanly namespace it so we don't conflict with other uses and instances
     const CustomPlaceholder = Placeholder.extend();
     const extensions = [
