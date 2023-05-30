@@ -567,7 +567,6 @@ export default {
       this.activeInsertMenuComponent = null;
     },
     closeInsertMenu(e) {
-      console.log('running closeInsertMenu');
       if (
         [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
         this.activeInsertMenuComponent
