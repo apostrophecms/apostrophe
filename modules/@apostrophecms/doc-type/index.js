@@ -1473,7 +1473,9 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
-        browserOptions.previewDraft = self.isLocalized() && !browserOptions.autopublish && self.options.previewDraft;
+        browserOptions.previewDraft = self.isLocalized() &&
+          !browserOptions.autopublish &&
+          self.options.previewDraft;
 
         return browserOptions;
       }
