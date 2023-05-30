@@ -202,26 +202,33 @@ module.exports = {
         req.session.cookie = new ExpressSessionCookie(aposExpressModule.sessionOptions.cookie);
         return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
       },
-      locale(req, res, next) {
-        const locales = self.filterPrivateLocales(req, self.locales);
-
+      // Redirect to the first locale TODO: continue doc
+      redirectToFirstLocale(req, res, next) {
+        if (!self.options.redirectToFirstLocale) {
+          return next();
+        }
+        if (req.path !== '' && req.path !== '/') {
+          return next();
+        }
         console.log('req.path', req.path);
         console.log('req.hostname', req.hostname);
 
-        if (self.options.redirectToFirstLocale && [ '', '/' ].includes(req.path)) {
-          const hostnameLocales = Object
-            .values(locales)
-            .filter(locale => locale.hostname.split(':')[0] === req.hostname);
+        const locales = self.filterPrivateLocales(req, self.locales);
+        const localesConfiguredWithCurrentHostname = Object
+          .values(locales)
+          .filter(locale => locale.hostname.split(':')[0] === req.hostname);
 
-          console.log('🚀 ~ file: index.js:223 ~ locale ~ hostnameLocales:', hostnameLocales);
+        console.log('🚀 ~ file: index.js:223 ~ locale ~ localesConfiguredWithCurrentHostname:', localesConfiguredWithCurrentHostname);
 
-          if (hostnameLocales.every(locale => locale?.prefix)) {
-            console.log(`redirecting to ${hostnameLocales[0].prefix}/`);
-            // Add / for home page and to avoid being redirected again below:
-            return res.redirect(`${hostnameLocales[0].prefix}/`);
-          }
+        if (localesConfiguredWithCurrentHostname.every(locale => locale?.prefix)) {
+          // Add / for home page and to avoid being redirected again below:
+          const redirectUrl = `${localesConfiguredWithCurrentHostname[0].prefix}/`;
+          console.log(`redirecting to ${redirectUrl}`);
+          return res.redirect(redirectUrl);
         }
-
+        return next();
+      },
+      locale(req, res, next) {
         // Support for a single aposLocale query param that
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
@@ -238,6 +245,7 @@ module.exports = {
         } else {
           locale = self.matchLocale(req);
         }
+        const locales = self.filterPrivateLocales(req, self.locales);
         const localeOptions = locales[locale];
         if (localeOptions.prefix) {
           // Remove locale prefix so URL parsing can proceed normally from here
