@@ -1615,7 +1615,6 @@ module.exports = {
           throw self.apos.error('invalid', error.message);
         }
       }
-
     };
   },
   apiRoutes(self) {

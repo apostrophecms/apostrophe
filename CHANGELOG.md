@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
 
 ### Changes
 * Updates area UX to not display Add Content controls when a widget is focused
@@ -11,6 +11,8 @@
 
 ### Adds
 * Adds keyboard accessibility to Insert menu
+* Adds regex pattern feature for string fields.
+
 ## 3.48.0 (2023-05-26)
 
 ### Adds
@@ -40,6 +42,7 @@ no `module.exports` object (often due to a typo), or it is empty.
 
 * Now errors and exits when a piece-type or widget-type module has a field object with the property `type`. Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
 * Add a default page type value to prevent the dropdown from containing an empty value.
+* Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
 
 ## 3.47.0 (2023-05-05)
 
