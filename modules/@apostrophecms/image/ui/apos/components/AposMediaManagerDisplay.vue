@@ -14,6 +14,7 @@
         class="apos-media-manager-display__cell" v-for="item in items"
         :key="idFor(item)"
         :class="{'apos-is-selected': checked.includes(item._id)}"
+        :style="getCellStyles(item)"
       >
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
@@ -114,6 +115,10 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    largePreview: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [
@@ -149,7 +154,7 @@ export default {
       const parentRatio = parentWidth / parentHeight;
       const itemRatio = item.dimensions.width / item.dimensions.height;
 
-      if (parentRatio < itemRatio) {
+      if ((parentRatio < itemRatio) || this.largePreview) {
         return {
           width: `${item.dimensions.width}px`,
           paddingTop: `${(item.dimensions.height / item.dimensions.width) * 100}%`
@@ -161,6 +166,14 @@ export default {
         };
       }
 
+    },
+    getCellStyles(item) {
+      if (this.largePreview && item.dimensions) {
+        return {
+          width: `${item.dimensions.width}px`,
+          height: `${item.dimensions.height}px`
+        };
+      }
     },
     addDragClass(event) {
       event.target.classList.add('apos-is-hovering');

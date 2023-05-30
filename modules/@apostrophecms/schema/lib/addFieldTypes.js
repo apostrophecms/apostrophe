@@ -169,6 +169,9 @@ module.exports = (self) => {
       if (field.page) {
         options.allow = '/';
       }
+      if (data.aposIsTemplate) {
+        options.allow = field.page ? [ '/', '@' ] : '@';
+      }
       destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
 
       if (field.page) {
@@ -775,9 +778,9 @@ module.exports = (self) => {
         const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema.find(subfield => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = data
-            .map(item => Array.isArray(item[uniqueFieldName])
+            .map(item => (Array.isArray(item[uniqueFieldName])
               ? item[uniqueFieldName][0]._id
-              : item[uniqueFieldName])
+              : item[uniqueFieldName]))
             .filter((item, index, array) => array.indexOf(item) !== index);
           if (duplicates.length) {
             throw self.apos.error('duplicate', `${req.t(uniqueFieldLabel)} in ${req.t(field.label)} must be unique`);
