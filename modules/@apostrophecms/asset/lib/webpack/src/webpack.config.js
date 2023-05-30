@@ -1,5 +1,4 @@
 const path = require('path');
-const fs = require('fs');
 const merge = require('webpack-merge').merge;
 const scssTask = require('./webpack.scss');
 const srcBuildNames = [ 'src-build', 'src-es5-build' ];
@@ -11,7 +10,14 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename, bundles = {}, es5, es5TaskFn
+  importFile,
+  modulesDir,
+  outputPath,
+  outputFilename,
+  pnpmModulesResolvePaths,
+  bundles = {},
+  es5,
+  es5TaskFn
 }, apos) => {
   const mainBundleName = outputFilename.replace('.js', '');
   const taskFns = [ scssTask, ...(es5 ? [ es5TaskFn ] : []) ];
@@ -28,11 +34,7 @@ module.exports = ({
   );
 
   const moduleName = es5 ? 'nomodule' : 'module';
-  let isPnpm = false;
-  if (fs.existsSync(path.join(apos.npmRootDir, 'pnpm-lock.yaml'))) {
-    isPnpm = true;
-  }
-  const pnpmModulePath = isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
+  const pnpmModulePath = self.apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     entry: {
       [mainBundleName]: importFile,
@@ -81,6 +83,7 @@ module.exports = ({
         // Make sure core-js and regenerator-runtime can always be found, even
         // if npm didn't hoist them
         ...pnpmModulePath,
+        ...[ ...pnpmModulesResolvePaths ],
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`
       ],
       symlinks: false

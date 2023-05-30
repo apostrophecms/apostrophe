@@ -1,5 +1,4 @@
 const path = require('path');
-const fs = require('fs');
 const merge = require('webpack-merge').merge;
 const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
@@ -12,7 +11,7 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename
+  importFile, modulesDir, outputPath, outputFilename, pnpmModulesResolvePaths
 }, apos) => {
   const tasks = [ scss, vue, js ].map(task =>
     task(
@@ -24,11 +23,7 @@ module.exports = ({
     )
   );
 
-  let isPnpm = false;
-  if (fs.existsSync(path.join(apos.npmRootDir, 'pnpm-lock.yaml'))) {
-    isPnpm = true;
-  }
-  const pnpmModulePath = isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
+  const pnpmModulePath = self.apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     entry: importFile,
     // Ensure that the correct version of vue-loader is found
@@ -69,6 +64,7 @@ module.exports = ({
       modules: [
         'node_modules',
         ...pnpmModulePath,
+        ...[ ...pnpmModulesResolvePaths ],
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`,
         `${apos.npmRootDir}/node_modules`
       ],
