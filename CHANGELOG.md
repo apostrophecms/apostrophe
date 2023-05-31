@@ -9,6 +9,14 @@
 are made before the last `apostrophe:modulesRegistered` handler has fired.
 If you need to call Apostrophe's `find()` methods at startup,
 it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
+* Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
+* Adds a `prefix` option to the http frontend util module.  
+If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
+when making calls with already-prefixed URLs for instance.
+
+### Fixes
+
+* Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
 
 ## 3.48.0 (2023-05-26)
 
@@ -20,7 +28,6 @@ it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`.
 * Rich-text inline images now copies the `alt` attribute from the original image from the Media Library.
-* Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
 
 ### Changes
 
@@ -40,7 +47,6 @@ no `module.exports` object (often due to a typo), or it is empty.
 
 * Now errors and exits when a piece-type or widget-type module has a field object with the property `type`. Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
 * Add a default page type value to prevent the dropdown from containing an empty value.
-* Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
 
 ## 3.47.0 (2023-05-05)
 
