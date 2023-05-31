@@ -1142,6 +1142,7 @@ module.exports = {
             type: module.name
           });
         }
+        self.replicateReached = true;
         // Include the criteria array in the event so that more entries can be pushed to it
         await self.emit('beforeReplicate', criteria);
         // We can skip the core work of this method if there is only one locale,
