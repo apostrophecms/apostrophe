@@ -550,7 +550,7 @@ export default {
         },
         draft: true,
         busy: true,
-        doNotAddPrefix: true
+        prefix: false
       });
 
       refreshable.innerHTML = content;

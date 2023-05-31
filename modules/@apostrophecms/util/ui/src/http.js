@@ -75,7 +75,8 @@ export default () => {
   // `uploadProgress` (may be a function accepting `sent` and `total` parameters. May never be called. If
   // called, `sent` will be the bytes sent so far, and `total` will be the total bytes to be
   // sent. If the total is unknown, it will be `null`)
-  // `doNotAddPrefix`: Do not automatically prefix the url. It can become handy when the given url contains it already,
+  // `prefix`: If explicitly set to `false`, do not automatically prefix the url.
+  // It can become handy when the given url it already prefixed,
   // which is the case when using the documents computed `_url` field for instance.
   //
   // If the status code is >= 400 an error is thrown. The error object will be
@@ -106,7 +107,7 @@ export default () => {
       });
     }
 
-    if (apos.prefix && !options.doNotAddPrefix) {
+    if (apos.prefix && options.prefix !== false) {
       // Prepend the prefix if the URL is absolute:
       if (url.substring(0, 1) === '/') {
         url = apos.prefix + url;

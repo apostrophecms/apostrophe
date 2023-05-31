@@ -10,7 +10,9 @@ are made before the last `apostrophe:modulesRegistered` handler has fired.
 If you need to call Apostrophe's `find()` methods at startup,
 it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 * Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
-* Adds a `doNotAddPrefix` option to frontend http util module in order to avoid adding a prefix to already-prefixed URLs when making frontend calls.
+* Adds a `prefix` option to the http frontend util module.  
+If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
+when making calls with already-prefixed URLs for instance.
 
 ### Fixes
 
