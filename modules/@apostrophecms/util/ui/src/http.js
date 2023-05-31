@@ -107,8 +107,7 @@ export default () => {
     }
 
     if (apos.prefix && !options.doNotAddPrefix) {
-      // Prepend the prefix if the URL is absolute,
-      // and if it does not contain it already
+      // Prepend the prefix if the URL is absolute:
       if (url.substring(0, 1) === '/') {
         url = apos.prefix + url;
       }
