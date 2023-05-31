@@ -1,11 +1,15 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
 
 ### Adds
 
 * Adds regex pattern feature for string fields.
-* Adds `pnpm` support. Be sure to install with peer dependencies - `pnpm install --config.auto-install-peers=true`. Introduces new Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails (usually caused by mono repository tools like `rush`). 
+* Adds `pnpm` support. Be sure to install with peer dependencies - `pnpm install --config.auto-install-peers=true`. Introduces new Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails (usually caused by monorepo tools like `rush`). 
+* Adds a warning if database queries involving relationships
+are made before the last `apostrophe:modulesRegistered` handler has fired.
+If you need to call Apostrophe's `find()` methods at startup,
+it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 
 ## 3.48.0 (2023-05-26)
 
