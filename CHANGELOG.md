@@ -5,6 +5,7 @@
 ### Adds
 
 * Adds regex pattern feature for string fields.
+* Adds `pnpm` support. Be sure to install with peer dependencies - `pnpm install --config.auto-install-peers=true`. Introduces new Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails (usually caused by mono repository tools like `rush`). 
 
 ## 3.48.0 (2023-05-26)
 
