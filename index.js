@@ -297,7 +297,6 @@ async function apostrophe(options, telemetry, rootSpan) {
       // still need to reset parked properties
       await self.apos.page.implementParkAllInOtherLocales();
     });
-    self.ready = true;
     await self.emit('ready'); // formerly afterInit
 
     if (self.taskRan) {
