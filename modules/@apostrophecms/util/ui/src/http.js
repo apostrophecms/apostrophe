@@ -148,7 +148,6 @@ export default () => {
     if (options.qs) {
       url = apos.http.addQueryToUrl(url, options.qs);
     }
-    console.log('--------------');
     if (options.busy) {
       if (!busyActive[busyName]) {
         busyActive[busyName] = 0;
@@ -162,7 +161,6 @@ export default () => {
       // keep track of nested calls
       busyActive[busyName]++;
     }
-    console.log('HTTP call - url', url);
     xmlhttp.open(method, url);
     const formData = window.FormData && (data instanceof window.FormData);
     const sendJson = (options.send === 'json') || (options.body && ((typeof options.body) === 'object') && !formData);
