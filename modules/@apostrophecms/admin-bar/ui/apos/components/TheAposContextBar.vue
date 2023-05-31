@@ -533,7 +533,16 @@ export default {
           aposEdit: '1'
         } : {})
       };
-      const url = apos.http.addQueryToUrl(window.location.href, qs);
+
+      const { action } = window.apos.modules[this.context.type];
+      const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
+        qs: {
+          aposMode: this.draftMode,
+          project: { _url: 1 }
+        }
+      });
+
+      const url = apos.http.addQueryToUrl(doc._url, qs);
       const content = await apos.http.get(url, {
         qs,
         headers: {

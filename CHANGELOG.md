@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Adds regex pattern feature for string fields.
+
 ## 3.48.0 (2023-05-26)
 
 ### Adds
@@ -10,6 +16,7 @@
 * Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
     `apos.schema.relationshipQueryBuilderChoices`.
 * Rich-text inline images now copies the `alt` attribute from the original image from the Media Library.
+* Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
 
 ### Changes
 
@@ -29,6 +36,7 @@ no `module.exports` object (often due to a typo), or it is empty.
 
 * Now errors and exits when a piece-type or widget-type module has a field object with the property `type`. Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
 * Add a default page type value to prevent the dropdown from containing an empty value.
+* Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
 
 ## 3.47.0 (2023-05-05)
 
@@ -105,10 +113,10 @@ shouldn't close the link dialog etc.
 
 ### Fixes
 
-* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
+* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.
 Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 * Rich text widgets save more reliably when many actions are taken quickly just before save.
-* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget editor, which resulted in saving the value if the widget was nested and the parent widget was saved.  
+* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget editor, which resulted in saving the value if the widget was nested and the parent widget was saved.
 Also improve the `oembed` field UX by setting the input as `readonly` rather than `disabled` when fetching the video metadata, in order to avoid losing its focus when typing.
 
 ## 3.44.0 (2023-04-13)
