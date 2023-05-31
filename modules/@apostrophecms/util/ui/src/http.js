@@ -75,6 +75,8 @@ export default () => {
   // `uploadProgress` (may be a function accepting `sent` and `total` parameters. May never be called. If
   // called, `sent` will be the bytes sent so far, and `total` will be the total bytes to be
   // sent. If the total is unknown, it will be `null`)
+  // `doNotAddPrefix`: Do not add prefix, which becomes handy when the given url already contains it,
+  // which is the case with documents' `_url` field for instance.
   //
   // If the status code is >= 400 an error is thrown. The error object will be
   // similar to a `fullResponse` object, with a `status` property.
@@ -104,9 +106,9 @@ export default () => {
       });
     }
 
-    if (apos.prefix) {
-      // We don't need a prefix if the target URL is already prefixed,
-      // which any absolute URL should be
+    if (apos.prefix && !options.doNotAddPrefix) {
+      // Prepend the prefix if the URL is absolute,
+      // and if it does not contain it already
       if (url.substring(0, 1) === '/') {
         url = apos.prefix + url;
       }
@@ -146,6 +148,7 @@ export default () => {
     if (options.qs) {
       url = apos.http.addQueryToUrl(url, options.qs);
     }
+    console.log('--------------');
     if (options.busy) {
       if (!busyActive[busyName]) {
         busyActive[busyName] = 0;
@@ -159,6 +162,7 @@ export default () => {
       // keep track of nested calls
       busyActive[busyName]++;
     }
+    console.log('HTTP call - url', url);
     xmlhttp.open(method, url);
     const formData = window.FormData && (data instanceof window.FormData);
     const sendJson = (options.send === 'json') || (options.body && ((typeof options.body) === 'object') && !formData);
