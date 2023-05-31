@@ -538,11 +538,11 @@ export default {
       const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
         qs: {
           aposMode: this.draftMode,
-          project: { _url: 1 }
+          project: { slug: 1 }
         }
       });
 
-      const url = apos.http.addQueryToUrl(doc._url, qs);
+      const url = apos.http.addQueryToUrl(doc.slug, qs);
       const content = await apos.http.get(url, {
         qs,
         headers: {
