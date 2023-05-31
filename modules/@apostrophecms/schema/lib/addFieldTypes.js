@@ -1000,6 +1000,9 @@ module.exports = (self) => {
     },
 
     relate: async function (req, field, objects, options) {
+      if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
+        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+      }
       return self.relationshipDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
     },
 
@@ -1131,6 +1134,9 @@ module.exports = (self) => {
     name: 'relationshipReverse',
     vueComponent: false,
     relate: async function (req, field, objects, options) {
+      if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
+        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+      }
       return self.relationshipDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
     },
     validate: function (field, options, warn, fail) {
