@@ -11,7 +11,12 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename, pnpmModulesResolvePaths
+  importFile,
+  modulesDir,
+  outputPath,
+  outputFilename,
+  // it's a Set, not an array
+  pnpmModulesResolvePaths
 }, apos) => {
   const tasks = [ scss, vue, js ].map(task =>
     task(
@@ -49,7 +54,12 @@ module.exports = ({
     resolveLoader: {
       extensions: [ '*', '.js', '.vue', '.json' ],
       modules: [
+        // 1. Allow webpack to find loaders from core dependencies (pnpm), empty if not pnpm
         ...pnpmModulePath,
+        // 2. Allow webpack to find loaders from dependencies of any project level packages (pnpm),
+        // empty if not pnpm
+        ...[ ...pnpmModulesResolvePaths ],
+        // 3. npm related paths
         'node_modules/apostrophe/node_modules',
         'node_modules'
       ]
@@ -63,8 +73,12 @@ module.exports = ({
       },
       modules: [
         'node_modules',
+        // 1. Allow webpack to find imports from core dependencies (pnpm), empty if not pnpm
         ...pnpmModulePath,
+        // 2. Allow webpack to find imports from dependencies of any project level packages (pnpm),
+        // empty if not pnpm
         ...[ ...pnpmModulesResolvePaths ],
+        // 3. npm related paths
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`,
         `${apos.npmRootDir}/node_modules`
       ],

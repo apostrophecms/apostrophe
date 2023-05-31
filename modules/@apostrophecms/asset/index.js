@@ -802,7 +802,7 @@ module.exports = {
               return packageLockPath;
             } else if (await fs.pathExists(yarnPath)) {
               return yarnPath;
-            } else if (self.apos.isPnpm) {
+            } else if (await fs.pathExists(pnpmPath)) {
               return pnpmPath;
             } else {
               return false;

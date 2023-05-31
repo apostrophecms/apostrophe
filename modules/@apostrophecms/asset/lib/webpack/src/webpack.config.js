@@ -14,6 +14,7 @@ module.exports = ({
   modulesDir,
   outputPath,
   outputFilename,
+  // it's a Set, not an array
   pnpmModulesResolvePaths,
   bundles = {},
   es5,
@@ -67,7 +68,12 @@ module.exports = ({
       // if npm didn't hoist them
       modules: [
         'node_modules',
+        // 1. Allow webpack to find loaders from dependencies of any project level packages (pnpm),
+        // empty if not pnpm
+        ...[ ...pnpmModulesResolvePaths ],
+        // 2. Allow webpack to find loaders from core dependencies (pnpm), empty if not pnpm
         ...pnpmModulePath,
+        // 3. npm related paths
         'node_modules/apostrophe/node_modules'
       ]
     },
@@ -79,11 +85,15 @@ module.exports = ({
       },
       modules: [
         'node_modules',
+        // 1. Allow webpack to find imports from dependencies of any project level packages (pnpm),
+        // empty if not pnpm
+        ...[ ...pnpmModulesResolvePaths ],
+        // 2. Allow webpack to find imports from core dependencies (pnpm), empty if not pnpm
+        ...pnpmModulePath,
+        // 3. npm related paths
         `${apos.npmRootDir}/node_modules`,
         // Make sure core-js and regenerator-runtime can always be found, even
         // if npm didn't hoist them
-        ...pnpmModulePath,
-        ...[ ...pnpmModulesResolvePaths ],
         `${apos.npmRootDir}/node_modules/apostrophe/node_modules`
       ],
       symlinks: false
