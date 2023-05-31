@@ -52,7 +52,7 @@
           class="apos-rich-text-insert-menu-item"
           role="option"
           data-insert-menu-item
-          @click.self="activateInsertMenuItem(item, insertMenu[item])"
+          @click="activateInsertMenuItem(item, insertMenu[item])"
         >
           <div class="apos-rich-text-insert-menu-icon">
             <AposIndicator
@@ -342,6 +342,7 @@ export default {
     handleSuppressInsertMenu(e) {
       if (e.key === 'Escape') {
         this.suppressInsertMenu = true;
+        this.activeInsertMenuComponent = null;
         this.insertMenuKey = this.generateKey();
       } else {
         this.suppressInsertMenu = false;
@@ -818,10 +819,6 @@ function traverseNextNode(node) {
   ::v-deep .ProseMirror {
     > * + * {
       margin-top: 0.75em;
-    }
-
-    > :last-child {
-      margin-bottom: 1.75em;
     }
   }
 
