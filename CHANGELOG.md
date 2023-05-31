@@ -13,7 +13,9 @@ it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 * Adds a `prefix` option to the http frontend util module.  
 If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
 when making calls with already-prefixed URLs for instance.
-* TODO:
+* Adds the `redirectToFirstLocale` option to the i18n module to prevent users from reaching a version of their site corresponding to no configured locale when using the hostname without a locale prefix, where all the locales configured with that hostname do have a prefix.  
+When this option is enabled, redirect to the first locale configured with the current requested hostname.  
+The redirection is done only when the homepage is requested.
 
 ### Fixes
 
