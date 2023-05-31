@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
 
 ### Adds
 
 * Adds regex pattern feature for string fields.
+* Adds a warning if database queries involving relationships
+are made before the last `apostrophe:modulesRegistered` handler has fired.
+If you need to call Apostrophe's `find()` methods at startup,
+it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 
 ## 3.48.0 (2023-05-26)
 

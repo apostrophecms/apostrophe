@@ -563,12 +563,11 @@ module.exports = {
       // Also see `warnDevOnce` which is less likely to irritate
       // the developer until they stop paying attention.
 
-      warnDev(msg) {
+      warnDev(...args) {
         if (process.env.NODE_ENV === 'production') {
           return;
         }
-        const args = [ '\n⚠️', ...arguments ];
-        self.warn.apply(self, args);
+        self.warn(...[ '\n⚠️ ', ...args, '\n' ]);
       },
 
       // Identical to `apos.util.warnDev`, except that the warning is
@@ -578,7 +577,7 @@ module.exports = {
       // `--all-[name]` is present on the command line. You can
       // also suppress these with `--ignore-[name]`.
 
-      warnDevOnce(name, msg) {
+      warnDevOnce(name, ...args) {
         const always = self.apos.argv[`all-${name}`];
         const hide = self.apos.argv[`ignore-${name}`];
         if (hide) {
@@ -588,13 +587,13 @@ module.exports = {
           return;
         }
         if (always || (!self.warnedDev[name])) {
-          self.warn.apply(self, Array.prototype.slice.call(arguments, 1));
+          self.warnDev(...args);
           if (!always) {
             self.warnedDev[name] = true;
             self.info(stripIndent`
               This warning appears only once to save space. Pass --all-${name}
               on the command line to see the warning for all cases.
-            `);
+            ` + '\n');
           }
         }
       },
