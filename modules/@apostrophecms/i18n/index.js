@@ -239,7 +239,7 @@ module.exports = {
           ? localesWithCurrentHostname
           : localesWithoutHostname;
 
-        console.log('localesToCheck', localesToCheck);
+        console.log('localesToCheck', localesToCheck, localesToCheck.every(locale => locale.prefix));
 
         if (!localesToCheck.length || !localesToCheck.every(locale => locale.prefix)) {
           return next();
