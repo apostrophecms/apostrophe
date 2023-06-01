@@ -81,6 +81,7 @@
               @before-commands="removeSlash"
               @cancel="cancelInsertMenuItem"
               @done="closeInsertMenuItem"
+              @close="closeInsertMenuItem"
             />
           </div>
         </div>

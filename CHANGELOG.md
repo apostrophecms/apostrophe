@@ -8,6 +8,7 @@
 * Updates widget UI to use dashed outlines instead of borders to indicate bounds
 * Updates UI for Insert Menu
 * Updates Insert Menu UX to allow mid-node insertion
+* Rich Text Widget's Insert components are now expected to emit `done` and `cancel` for proper RT cleanup. `close` still supported for BC, acts as `done`.
 
 ### Adds
 * Adds keyboard accessibility to Insert menu
