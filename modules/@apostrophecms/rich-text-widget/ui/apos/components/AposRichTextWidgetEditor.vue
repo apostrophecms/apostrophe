@@ -1,5 +1,5 @@
 <template>
-  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleSuppressInsertMenu">
+  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleUIKeydown">
     <bubble-menu
       class="bubble-menu"
       :tippy-options="{ maxWidth: 'none', duration: 100, zIndex: 2000 }"
@@ -61,6 +61,17 @@
               class="apos-button__icon"
               fill-color="currentColor"
             />
+          </div>
+          <div class="apos-rich-text-insert-menu-label">
+            <h4>{{ $t(insertMenu[item].label) }}</h4>
+            <p>{{ $t(insertMenu[item].description) }}</p>
+          </div>
+        </button>
+        <div class="apos-rich-text-insert-menu-components">
+          <div
+            v-for="(item, index) in insert"
+            :key="`${item}-${index}-component`"
+          >
             <component
               v-if="item === activeInsertMenuComponent?.name"
               :is="activeInsertMenuComponent.component"
@@ -68,14 +79,11 @@
               :editor="editor"
               :options="editorOptions"
               @before-commands="removeSlash"
-              @close="closeInsertMenuItem"
+              @cancel="cancelInsertMenuItem"
+              @done="closeInsertMenuItem"
             />
           </div>
-          <div class="apos-rich-text-insert-menu-label">
-            <h4>{{ $t(insertMenu[item].label) }}</h4>
-            <p>{{ $t(insertMenu[item].description) }}</p>
-          </div>
-        </button>
+        </div>
       </div>
     </floating-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
@@ -339,14 +347,18 @@ export default {
     generateKey() {
       return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     },
-    handleSuppressInsertMenu(e) {
+    handleUIKeydown(e) {
       if (e.key === 'Escape') {
-        this.suppressInsertMenu = true;
-        this.activeInsertMenuComponent = null;
-        this.insertMenuKey = this.generateKey();
+        this.doSuppressInsertMenu();
       } else {
         this.suppressInsertMenu = false;
       }
+    },
+    doSuppressInsertMenu() {
+      this.suppressInsertMenu = true;
+      this.activeInsertMenuComponent = null;
+      this.insertMenuKey = this.generateKey();
+      this.editor.commands.focus();
     },
     onAposRefreshing(refreshOptions) {
       if (this.activeInsertMenuComponent) {
@@ -566,6 +578,9 @@ export default {
     closeInsertMenuItem() {
       this.removeSlash();
       this.activeInsertMenuComponent = null;
+    },
+    cancelInsertMenuItem() {
+      this.doSuppressInsertMenu();
     },
     closeInsertMenu(e) {
       if (
