@@ -264,8 +264,8 @@ module.exports = {
             await fs.remove(modulesDir);
             await fs.mkdirp(modulesDir);
             let names = {};
-            const npmNames = {};
             const directories = {};
+            const pnpmOnly = {};
             // Most other modules are not actually instantiated yet, but
             // we can access their metadata, which is sufficient
             for (const name of modulesToInstantiate) {
@@ -274,7 +274,9 @@ module.exports = {
               for (const entry of metadata.__meta.chain) {
                 const effectiveName = entry.name.replace(/^my-/, '');
                 names[effectiveName] = true;
-                npmNames[effectiveName] = entry.npm;
+                if (entry.npm && !entry.bundled && !entry.my) {
+                  pnpmOnly[entry.dirname] = true;
+                }
                 ancestorDirectories.push(entry.dirname);
                 directories[effectiveName] = directories[effectiveName] || [];
                 for (const dir of ancestorDirectories) {
@@ -293,16 +295,13 @@ module.exports = {
                   if (
                     // is pnpm installation
                     self.apos.isPnpm &&
-                    // is npm module
-                    npmNames[name] &&
-                    // dir.startsWith(path.join(self.apos.npmRootDir, 'node_modules')) &&
-                    // is not apos core module
-                    !dir.startsWith(path.join(self.apos.npmRootDir, 'node_modules/apostrophe')) &&
-                    // is not `my-*` module
-                    dir.endsWith(name) &&
-                    // is not a bundle sub-module
-                    !dir.endsWith(path.join('/modules/', name))
+                    // is npm module and not bundled
+                    pnpmOnly[dir] &&
+                    // isn't apos core module
+                    !dir.startsWith(path.join(self.apos.npmRootDir, 'node_modules/apostrophe/'))
                   ) {
+                    // Ignore further attempts to register this path (performance)
+                    pnpmOnly[dir] = false;
                     // resolve symlinked pnpm path
                     const resolved = fs.realpathSync(dir);
                     // go up to the pnpm node_modules directory
