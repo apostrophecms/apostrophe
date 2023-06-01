@@ -644,7 +644,7 @@ async function apostrophe(options, telemetry, rootSpan) {
             `
           );
         } else {
-          warn('orphan-modules', `You have a ${self.localModules}/${name} folder, but that module is not activated in app.js and it is not a base class of any other active module. Right now that code doesn't do anything.`);
+          warn('orphan-modules', `You have a ${self.localModules}/${name} folder, but that module is not activated in app.js\nand it is not a base class of any other active module. Right now that code doesn't do anything.`);
         }
       }
       function warn(name, message) {
