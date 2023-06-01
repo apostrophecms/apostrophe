@@ -219,8 +219,6 @@ module.exports = {
         if (req.path !== '' && req.path !== '/') {
           return next();
         }
-        console.log('req.path', req.path);
-        console.log('req.hostname', req.hostname);
 
         const locales = Object.values(
           self.filterPrivateLocales(req, self.locales)
@@ -232,14 +230,9 @@ module.exports = {
           locale => locale.hostname && locale.hostname.split(':')[0] === req.hostname
         );
 
-        console.log('localesWithoutHostname', localesWithoutHostname);
-        console.log('localesWithCurrentHostname', localesWithCurrentHostname);
-
         const localesToCheck = localesWithCurrentHostname.length
           ? localesWithCurrentHostname
           : localesWithoutHostname;
-
-        console.log('localesToCheck', localesToCheck, localesToCheck.every(locale => locale.prefix));
 
         if (!localesToCheck.length || !localesToCheck.every(locale => locale.prefix)) {
           return next();
@@ -247,7 +240,6 @@ module.exports = {
 
         // Add / for home page and to avoid being redirected again in the `locale` middleware:
         const redirectUrl = `${localesToCheck[0].prefix}/`;
-        console.log(`redirecting to ${redirectUrl}`);
 
         return res.redirect(redirectUrl);
       },
