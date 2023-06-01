@@ -202,18 +202,16 @@ module.exports = {
         req.session.cookie = new ExpressSessionCookie(aposExpressModule.sessionOptions.cookie);
         return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
       },
-      // If the `redirectToFirstLocale` option is enabled,
-      // redirect to the first locale configured with the
+      // If the `redirectToFirstLocale` option is enabled
+      // and the homepage is requested,
+      // redirects to the first locale configured with the
       // current requested hostname when all of the locales
-      // for that same hostname have a prefix.
-      // The redirection is done only when the homepage is requested.
+      // configured with that hostname do have a prefix.
       //
-      // TODO: if there are locales configured with a prefix but no hostname, then we apply the following steps:
-      // The request does not match any explicit hostnames assigned to locales.
-      // There is at least one locale configured with no hostname.
-      // All of the locales with no hostname have a prefix.
-      // The request has no path part (or just /).
-      // When all of these conditions are met, the user should be directed to the first configured locale with no hostname.
+      // However, if the request does not match any explicit
+      // hostnames assigned to locales, redirects to the first
+      // locale that does not have a configured hostname, if
+      // all the locales without a hostname do have a prefix.
       redirectToFirstLocale(req, res, next) {
         if (!self.options.redirectToFirstLocale) {
           return next();
@@ -224,19 +222,31 @@ module.exports = {
         console.log('req.path', req.path);
         console.log('req.hostname', req.hostname);
 
-        const locales = self.filterPrivateLocales(req, self.locales);
-        const localesConfiguredWithCurrentHostname = Object
-          .values(locales)
-          .filter(locale => locale.hostname.split(':')[0] === req.hostname);
+        const locales = Object.values(
+          self.filterPrivateLocales(req, self.locales)
+        );
+        const localesWithoutHostname = locales.filter(
+          locale => !locale.hostname
+        );
+        const localesWithCurrentHostname = locales.filter(
+          locale => locale.hostname && locale.hostname.split(':')[0] === req.hostname
+        );
 
-        console.log('🚀 ~ file: index.js:223 ~ locale ~ localesConfiguredWithCurrentHostname:', localesConfiguredWithCurrentHostname);
+        console.log('localesWithoutHostname', localesWithoutHostname);
+        console.log('localesWithCurrentHostname', localesWithCurrentHostname);
 
-        if (!localesConfiguredWithCurrentHostname.every(locale => locale.prefix)) {
+        const localesToCheck = localesWithCurrentHostname.length
+          ? localesWithCurrentHostname
+          : localesWithoutHostname;
+
+        console.log('localesToCheck', localesToCheck);
+
+        if (!localesToCheck.length || !localesToCheck.every(locale => locale.prefix)) {
           return next();
         }
 
         // Add / for home page and to avoid being redirected again in the `locale` middleware:
-        const redirectUrl = `${localesConfiguredWithCurrentHostname[0].prefix}/`;
+        const redirectUrl = `${localesToCheck[0].prefix}/`;
         console.log(`redirecting to ${redirectUrl}`);
 
         return res.redirect(redirectUrl);
