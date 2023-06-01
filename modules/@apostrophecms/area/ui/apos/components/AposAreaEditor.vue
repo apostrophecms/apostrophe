@@ -238,6 +238,11 @@ export default {
       }
     },
     focusParentEvent(event) {
+      if (event.key === 'Escape') {
+        if (document.body === document.activeElement) {
+          this.focusedWidget = null;
+        }
+      }
       if (event.metaKey && event.keyCode === 8) {
         // meta + backspace
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);

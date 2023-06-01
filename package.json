@@ -83,7 +83,7 @@
     "jsdom": "^22.0.0",
     "klona": "^2.0.4",
     "launder": "^1.4.0",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "mini-css-extract-plugin": "^1.6.0",
     "minimatch": "^3.0.4",
     "mkdirp": "^0.5.5",

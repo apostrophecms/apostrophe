@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleUIKeydown">
     <bubble-menu
       class="bubble-menu"
       :tippy-options="{ maxWidth: 'none', duration: 100, zIndex: 2000 }"
@@ -26,44 +26,64 @@
       </AposContextMenuDialog>
     </bubble-menu>
     <floating-menu
-      class="apos-rich-text-insert-menu" :should-show="showFloatingMenu"
-      :editor="editor"
-      :tippy-options="{ duration: 100, zIndex: 2000 }"
       v-if="editor"
+      class="apos-rich-text-insert-menu"
+      :tippy-options="{ duration: 100, zIndex: 2000, placement: 'bottom-start' }"
+      :should-show="showFloatingMenu"
+      :editor="editor"
+      role="listbox"
+      tabindex="0"
+      ref="insertMenu"
+      :id="`insert-menu-${value._id}`"
+      :key="insertMenuKey"
     >
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
       </div>
       <div
-        v-for="(item, index) in insert"
-        :key="`${item}-${index}`"
-        class="apos-rich-text-insert-menu-item"
+        class="apos-rich-text-insert-menu-wrapper"
+        @keydown.prevent.arrow-up="focusInsertMenuItem(true)"
+        @keydown.prevent.arrow-down="focusInsertMenuItem()"
+        @keydown="closeInsertMenu"
       >
-        <div class="apos-rich-text-insert-menu-icon">
-          <AposIndicator
-            :icon="insertMenu[item].icon"
-            :icon-size="35"
-            class="apos-button__icon"
-            fill-color="currentColor"
-            @click="activateInsertMenuItem(item, insertMenu[item])"
-          />
-          <component
-            v-if="item === activeInsertMenuComponent?.name"
-            :is="activeInsertMenuComponent.component"
-            :active="true"
-            :editor="editor"
-            :options="editorOptions"
-            @before-commands="removeSlash"
-            @close="closeInsertMenuItem"
-            @click.stop="$event => null"
-          />
-        </div>
-        <div
-          class="apos-rich-text-insert-menu-label"
+        <button
+          v-for="(item, index) in insert"
+          :key="`${item}-${index}`"
+          class="apos-rich-text-insert-menu-item"
+          role="option"
+          data-insert-menu-item
           @click="activateInsertMenuItem(item, insertMenu[item])"
         >
-          <h4>{{ $t(insertMenu[item].label) }}</h4>
-          <p>{{ $t(insertMenu[item].description) }}</p>
+          <div class="apos-rich-text-insert-menu-icon">
+            <AposIndicator
+              :icon="insertMenu[item].icon"
+              :icon-size="24"
+              class="apos-button__icon"
+              fill-color="currentColor"
+            />
+          </div>
+          <div class="apos-rich-text-insert-menu-label">
+            <h4>{{ $t(insertMenu[item].label) }}</h4>
+            <p>{{ $t(insertMenu[item].description) }}</p>
+          </div>
+        </button>
+        <div class="apos-rich-text-insert-menu-components">
+          <div
+            v-for="(item, index) in insert"
+            :key="`${item}-${index}-component`"
+          >
+            <component
+              v-if="item === activeInsertMenuComponent?.name"
+              :is="activeInsertMenuComponent.component"
+              :active="true"
+              :editor="editor"
+              :options="editorOptions"
+              @before-commands="removeSlash"
+              @cancel="cancelInsertMenuItem"
+              @done="closeInsertMenuItem"
+              @close="closeInsertMenuItem"
+            />
+          </div>
         </div>
       </div>
     </floating-menu>
@@ -144,8 +164,11 @@ export default {
       },
       pending: null,
       isFocused: null,
+      isShowingInsert: false,
       showPlaceholder: null,
-      activeInsertMenuComponent: null
+      activeInsertMenuComponent: null,
+      suppressInsertMenu: false,
+      insertMenuKey: null
     };
   },
   computed: {
@@ -246,9 +269,15 @@ export default {
           this.emitWidgetUpdate();
         }
       }
+    },
+    isShowingInsert(newVal) {
+      if (newVal) {
+        this.focusInsertMenuItem(false, 0);
+      }
     }
   },
   mounted() {
+    this.insertMenuKey = this.generateKey();
     // Cleanly namespace it so we don't conflict with other uses and instances
     const CustomPlaceholder = Placeholder.extend();
     const extensions = [
@@ -316,6 +345,22 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    generateKey() {
+      return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    },
+    handleUIKeydown(e) {
+      if (e.key === 'Escape') {
+        this.doSuppressInsertMenu();
+      } else {
+        this.suppressInsertMenu = false;
+      }
+    },
+    doSuppressInsertMenu() {
+      this.suppressInsertMenu = true;
+      this.activeInsertMenuComponent = null;
+      this.insertMenuKey = this.generateKey();
+      this.editor.commands.focus();
+    },
     onAposRefreshing(refreshOptions) {
       if (this.activeInsertMenuComponent) {
         refreshOptions.refresh = false;
@@ -335,6 +380,7 @@ export default {
         // least once per second if the user is actively typing
         return;
       }
+
       this.pending = setTimeout(() => {
         this.emitWidgetUpdate();
       }, 1000);
@@ -472,24 +518,34 @@ export default {
           types: this.tiptapTypes
         }));
     },
-    showFloatingMenu({ state }) {
-      if (!this.insertMenu || !this.insert.length) {
+    showFloatingMenu({
+      state, oldState
+    }) {
+      const hasChanges = JSON.stringify(state?.doc.toJSON()) !== JSON.stringify(oldState?.doc.toJSON());
+      const { $to } = state.selection;
+
+      if (
+        !this.insertMenu ||
+        !this.insert.length ||
+        !hasChanges ||
+        ($to.nodeAfter && $to.nodeAfter.text) ||
+        this.suppressInsertMenu
+      ) {
+        this.isShowingInsert = false;
         return false;
       }
-      const { $from, $to } = state.selection;
+
       if (state.selection.empty) {
         if ($to.nodeBefore && $to.nodeBefore.text) {
           const text = $to.nodeBefore.text;
-          // Only show when the user has just entered a '/' character or
-          // an insert menu component is active
-          if (text === '/') {
+          if (text.slice(-1) === '/') {
+            this.isShowingInsert = true;
             return true;
           }
         }
-        return false;
-      } else if (state.doc.textBetween($from, $to, ' ') === '/') {
-        return true;
       }
+
+      this.isShowingInsert = false;
       return false;
     },
     activateInsertMenuItem(name, info) {
@@ -523,6 +579,38 @@ export default {
     closeInsertMenuItem() {
       this.removeSlash();
       this.activeInsertMenuComponent = null;
+    },
+    cancelInsertMenuItem() {
+      this.doSuppressInsertMenu();
+    },
+    closeInsertMenu(e) {
+      if (
+        [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
+        this.activeInsertMenuComponent
+      ) {
+        return;
+      }
+      this.editor.commands.focus();
+      this.activeInsertMenuComponent = null;
+      // Only insert character keys
+      if (e.key.length === 1) {
+        this.editor.commands.insertContent(e.key);
+      }
+    },
+    focusInsertMenuItem(prev = false, index) {
+      if (this.activeInsertMenuComponent) {
+        return;
+      }
+      const buttons = Array.from(this.$refs.insertMenu.$el.querySelectorAll('[data-insert-menu-item]'));
+      const currentIndex = buttons.findIndex(el => el === document.activeElement);
+      let targetIndex = prev ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex >= buttons.length) {
+        targetIndex = 0;
+      }
+      if (targetIndex < 0) {
+        targetIndex = buttons.length - 1;
+      }
+      buttons[index || targetIndex]?.focus();
     }
   }
 };
@@ -569,27 +657,41 @@ function traverseNextNode(node) {
     background-color: var(--a-base-9);
   }
 
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+    @include apos-transition();
+  }
+
   .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::before,
-  .apos-rich-text-editor__editor.apos-is-visually-empty ::v-deep .ProseMirror:focus p:first-of-type::before {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+    padding: 10px 0;
+  }
+
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::after {
+    display: block;
+    margin: 5px 0 10px;
+    color: var(--a-primary-transparent-50);
+    font-size: var(--a-type-smaller);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    border-top: 1px solid var(--a-primary-transparent-50);
+    padding-top: 5px;
     content: attr(data-placeholder);
-    float: left;
     pointer-events: none;
-    height: 0;
-    color: var(--a-base-4);
   }
 
   .apos-rich-text-editor__editor {
     @include apos-transition();
     position: relative;
     border-radius: var(--a-border-radius);
-    box-shadow: 0 0 0 1px transparent;
+    background-color: transparent;
   }
   .apos-rich-text-editor__editor.apos-is-visually-empty {
-    box-shadow: 0 0 0 1px var(--a-primary-transparent-50);
+    background-color: var(--a-primary-transparent-10);
+    min-height: 50px;
   }
   .apos-rich-text-editor__editor_after {
     @include type-small;
@@ -602,9 +704,7 @@ function traverseNextNode(node) {
     width: 200px;
     height: 10px;
     margin: auto;
-    margin-top: 7.5px;
-    margin-bottom: 7.5px;
-    color: var(--a-base-5);
+    color: var(--a-primary-transparent-50);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -655,12 +755,9 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-insert-menu {
-    display: flex;
-    flex-direction: column;
     cursor: pointer;
     user-select: none;
-    gap: 16px;
-    padding: 16px;
+    min-width: 350px;
     border-radius: var(--a-border-radius);
     box-shadow: var(--a-box-shadow);
     background-color: var(--a-background-primary);
@@ -670,43 +767,74 @@ function traverseNextNode(node) {
     font-size: var(--a-type-base);
   }
 
+  .apos-rich-text-insert-menu-wrapper {
+    display: flex;
+    flex-direction: column;
+  }
+
   .apos-rich-text-insert-menu-item {
+    all: unset;
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--a-base-9);
+    @include apos-transition();
+    &:last-of-type {
+      border-bottom: none;
+    }
     &:hover {
-      color: var(--a-text-primary);
+      background-color: var(--a-primary-transparent-10);
+    }
+    &:active, &:focus {
+      background-color: var(--a-primary);
+      color: var(--a-white);
     }
   }
 
   .apos-rich-text-insert-menu-label {
     display: flex;
     flex-direction: column;
+    gap: 5px;
     h4, p {
-      margin: 4px;
+      margin: 0;
       font-family: var(--a-family-default);
-      font-size: var(--a-type-base);
     }
     h4 {
-      font-weight: bold;
+      font-weight: 500;
+      font-size: var(--a-type-large);
+    }
+    p {
+      font-size: var(--a-type-label);
     }
   }
   .apos-rich-text-insert-menu-icon {
-    // Positions the popover meaningfully
     position: relative;
+    display: flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--a-base-8);
+    color: var(--a-text-primary);
+    background-color: var(--a-white);
+    border-radius: var(--a-border-radius);
   }
 
   .apos-rich-text-insert-menu-heading {
-    color: var(--a-base-5);
+    padding: 12px 16px;
+    background-color: var(--a-base-9);
+    color: var(--a-base-2);
+    font-weight: 500;
+    border-bottom: 1px solid var(--a-base-7);
+    font-size: var(--a-type-label);
+    letter-spacing: 0.25px;
   }
 
   ::v-deep .ProseMirror {
     > * + * {
       margin-top: 0.75em;
-    }
-
-    > :last-child {
-      margin-bottom: 1.75em;
     }
   }
 
