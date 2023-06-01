@@ -266,7 +266,6 @@ module.exports = {
           // Remove locale prefix so URL parsing can proceed normally from here
           if (req.path === localeOptions.prefix) {
             // Add / for home page
-            console.log(`==========> ${req.url}/`);
             return res.redirect(`${req.url}/`);
           }
           if (req.path.substring(0, localeOptions.prefix.length + 1) === localeOptions.prefix + '/') {
