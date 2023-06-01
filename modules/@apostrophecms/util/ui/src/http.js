@@ -75,9 +75,10 @@ export default () => {
   // `uploadProgress` (may be a function accepting `sent` and `total` parameters. May never be called. If
   // called, `sent` will be the bytes sent so far, and `total` will be the total bytes to be
   // sent. If the total is unknown, it will be `null`)
-  // `prefix`: If explicitly set to `false`, do not automatically prefix the url.
-  // It can become handy when the given url it already prefixed,
-  // which is the case when using the documents computed `_url` field for instance.
+  // `prefix`: If explicitly set to `false`, do not automatically prefix the URL,
+  // even if the site has a site-wide prefix or locale prefix.
+  // It can become handy when the given url is already prefixed,
+  // which is the case when using the document's computed `_url` field for instance.
   //
   // If the status code is >= 400 an error is thrown. The error object will be
   // similar to a `fullResponse` object, with a `status` property.
