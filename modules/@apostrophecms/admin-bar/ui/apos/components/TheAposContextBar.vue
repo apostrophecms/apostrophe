@@ -549,7 +549,8 @@ export default {
           'Cache-Control': 'no-cache'
         },
         draft: true,
-        busy: true
+        busy: true,
+        prefix: false
       });
 
       refreshable.innerHTML = content;
