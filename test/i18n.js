@@ -92,193 +92,219 @@ describe('static i18n', function() {
   });
 });
 
-describe('i18n', function() {
+describe('private locales', function() {
   this.timeout(t.timeout);
 
-  describe('private locales', function() {
-    let apos;
+  let apos;
 
-    before(async function() {
-      apos = await t.create({
-        root: module,
-        baseUrl: 'http://localhost:3000',
-        modules: {
-          '@apostrophecms/i18n': {
-            options: {
-              locales: {
-                en: {},
-                sk: {
-                  prefix: '/sk',
-                  private: true
-                }
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      baseUrl: 'http://localhost:3000',
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: {},
+              sk: {
+                prefix: '/sk',
+                private: true
               }
             }
           }
         }
-      });
-    });
-
-    after(async function() {
-      this.timeout(t.timeout);
-      return t.destroy(apos);
-    });
-
-    this.timeout(t.timeout);
-
-    it('should return a 404 HTTP error code when a logged out user tries to access to a content in a private locale', async function() {
-      try {
-        await apos.http.get('/sk');
-      } catch (error) {
-        assert(error.status === 404);
-        return;
       }
-      throw new Error('should have thrown 404 error');
     });
   });
 
-  describe('redirection to first locale', function() {
-    let apos;
+  after(async function() {
+    this.timeout(t.timeout);
+    return t.destroy(apos);
+  });
 
-    before(async function() {
-      apos = await t.create({
-        root: module,
-        baseUrl: 'http://localhost:3000',
-        modules: {
-          '@apostrophecms/i18n': {
-            options: {
-              redirectToFirstLocale: true,
-              locales: {
-                en: {
-                  label: 'English',
-                  hostname: 'en.localhost:3000',
-                  prefix: '/en'
-                },
-                'en-CA': {
-                  label: 'Canada',
-                  hostname: 'ca.localhost:3000',
-                  prefix: '/en-ca'
-                },
-                'fr-CA': {
-                  label: 'French Canada',
-                  hostname: 'ca.localhost:3000',
-                  prefix: '/fr-ca'
-                },
-                es: {
-                  label: 'Spain',
-                  prefix: '/es'
-                },
-                it: {
-                  label: 'Italy',
-                  prefix: '/it'
-                }
+  this.timeout(t.timeout);
+
+  it('should return a 404 HTTP error code when a logged out user tries to access to a content in a private locale', async function() {
+    try {
+      await apos.http.get('/sk');
+    } catch (error) {
+      assert(error.status === 404);
+      return;
+    }
+    throw new Error('should have thrown 404 error');
+  });
+});
+
+describe('redirection to first locale', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      baseUrl: 'http://localhost:3000',
+      modules: {
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-page'
+              }
+            ]
+          }
+        },
+        'default-page': {},
+        '@apostrophecms/i18n': {
+          options: {
+            redirectToFirstLocale: true,
+            locales: {
+              en: {
+                label: 'English',
+                hostname: 'en.localhost:3000',
+                prefix: '/en'
+              },
+              'en-CA': {
+                label: 'Canada',
+                hostname: 'ca.localhost:3000',
+                prefix: '/en-ca'
+              },
+              'fr-CA': {
+                label: 'French Canada',
+                hostname: 'ca.localhost:3000',
+                prefix: '/fr-ca'
+              },
+              es: {
+                label: 'Spain',
+                prefix: '/es'
+              },
+              it: {
+                label: 'Italy',
+                prefix: '/it'
               }
             }
           }
         }
-      });
-    });
-
-    after(async function() {
-      this.timeout(t.timeout);
-      return t.destroy(apos);
-    });
-
-    this.timeout(t.timeout);
-
-    it('should redirect to the first prefixed locale', async function() {
-      const response = await apos.http.get('/', {
-        followRedirect: false,
-        fullResponse: true,
-        redirect: 'manual'
-      });
-
-      assert.strictEqual(response.headers.location, `${apos.http.getBase()}/es/`);
-    });
-
-    it('should redirect to the first prefixed locale that matches the requested hostname', async function() {
-      const server = apos.modules['@apostrophecms/express'].server;
-
-      const response = await apos.http.get(`http://ca.localhost:${server.address().port}`, {
-        followRedirect: false,
-        fullResponse: true,
-        redirect: 'manual'
-      });
-
-      assert.strictEqual(response.headers.location, `http://ca.localhost:${server.address().port}/en-ca/`);
+      }
     });
   });
 
-  describe('no redirection to first locale', function() {
-    let apos;
+  after(async function() {
+    this.timeout(t.timeout);
+    return t.destroy(apos);
+  });
 
-    before(async function() {
-      apos = await t.create({
-        root: module,
-        baseUrl: 'http://localhost:3000',
-        modules: {
-          '@apostrophecms/i18n': {
-            options: {
-              redirectToFirstLocale: true,
-              locales: {
-                en: {
-                  label: 'English',
-                  hostname: 'en.localhost:3000',
-                  prefix: '/en'
-                },
-                'en-CA': {
-                  label: 'Canada',
-                  hostname: 'ca.localhost:3000',
-                  prefix: '/en-ca'
-                },
-                'fr-CA': {
-                  label: 'French Canada',
-                  hostname: 'ca.localhost:3000'
-                  // no prefix
-                },
-                es: {
-                  label: 'Spain',
-                  prefix: '/es'
-                },
-                it: {
-                  label: 'Italy'
-                  // no prefix
-                }
+  this.timeout(t.timeout);
+
+  it('should not redirect to the first prefixed locale when the page requested is not the homepage', async function() {
+    const response = await apos.http.get('/child', {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.headers.location, undefined);
+  });
+
+  it('should redirect to the first prefixed locale', async function() {
+    const response = await apos.http.get('/', {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.headers.location, `${apos.http.getBase()}/es/`);
+  });
+
+  it('should redirect to the first prefixed locale that matches the requested hostname', async function() {
+    const server = apos.modules['@apostrophecms/express'].server;
+
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.headers.location, `http://ca.localhost:${server.address().port}/en-ca/`);
+  });
+});
+
+describe('no redirection to first locale', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      baseUrl: 'http://localhost:3000',
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            redirectToFirstLocale: true,
+            locales: {
+              en: {
+                label: 'English',
+                hostname: 'en.localhost:3000',
+                prefix: '/en'
+              },
+              'en-CA': {
+                label: 'Canada',
+                hostname: 'ca.localhost:3000',
+                prefix: '/en-ca'
+              },
+              'fr-CA': {
+                label: 'French Canada',
+                hostname: 'ca.localhost:3000'
+                // no prefix
+              },
+              es: {
+                label: 'Spain',
+                prefix: '/es'
+              },
+              it: {
+                label: 'Italy'
+                // no prefix
               }
             }
           }
         }
-      });
+      }
     });
+  });
 
-    after(async function() {
-      this.timeout(t.timeout);
-      return t.destroy(apos);
-    });
-
+  after(async function() {
     this.timeout(t.timeout);
+    return t.destroy(apos);
+  });
 
-    it('should not redirect to the first prefixed locale when at least one locale has no prefix', async function() {
-      const response = await apos.http.get('/', {
-        followRedirect: false,
-        fullResponse: true,
-        redirect: 'manual'
-      });
+  this.timeout(t.timeout);
 
-      assert.strictEqual(response.status, 200);
-      assert.strictEqual(response.headers.location, undefined);
+  it('should not redirect to the first prefixed locale when at least one locale has no prefix', async function() {
+    const response = await apos.http.get('/', {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
     });
 
-    it('should not redirect to the first prefixed locale that matches the requested hostname when at least one locale has no prefix', async function() {
-      const server = apos.modules['@apostrophecms/express'].server;
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.headers.location, undefined);
+  });
 
-      const response = await apos.http.get(`http://ca.localhost:${server.address().port}`, {
-        followRedirect: false,
-        fullResponse: true,
-        redirect: 'manual'
-      });
+  it('should not redirect to the first prefixed locale that matches the requested hostname when at least one locale has no prefix', async function() {
+    const server = apos.modules['@apostrophecms/express'].server;
 
-      assert.strictEqual(response.status, 200);
-      assert.strictEqual(response.headers.location, undefined);
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
     });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.headers.location, undefined);
   });
 });
