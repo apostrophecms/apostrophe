@@ -5,7 +5,7 @@
 ### Adds
 
 * Adds regex pattern feature for string fields.
-* Adds `pnpm` support. Be sure to install with peer dependencies - `pnpm install --config.auto-install-peers=true`. Introduces new Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails (usually caused by monorepo tools like `rush`). 
+* Adds `pnpm` support. Introduces new optional Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails. See the [documentation](https://v3.docs.apostrophecms.org/guide/using-pnpm.html) for more details.
 * Adds a warning if database queries involving relationships
 are made before the last `apostrophe:modulesRegistered` handler has fired.
 If you need to call Apostrophe's `find()` methods at startup,
