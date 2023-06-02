@@ -3,7 +3,7 @@
     <AposButton
       :disabled="currentPage == 1"
       class="apos-pager__btn"
-      size="small"
+      :modifiers="['small']"
       type="outline" @click="incrementPage(-1)"
       :icon-only="true" icon="chevron-left-icon"
       :label="prevButtonLabel"
@@ -26,7 +26,7 @@
     <AposButton
       :disabled="currentPage >= totalPages"
       class="apos-pager__btn"
-      size="small"
+      :modifiers="['small']"
       type="outline" @click="incrementPage(1)"
       :icon-only="true" icon="chevron-right-icon"
       :label="nextButtonLabel"

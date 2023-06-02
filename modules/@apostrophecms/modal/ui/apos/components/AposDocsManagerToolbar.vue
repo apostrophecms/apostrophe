@@ -5,7 +5,7 @@
         v-if="canSelectAll"
         label="apostrophe:select"
         type="outline"
-        size="small"
+        :modifiers="['small']"
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
@@ -27,7 +27,7 @@
           :label="label"
           :icon="icon"
           :disabled="!checkedCount"
-          size="small"
+          :modifiers="['small']"
           type="outline"
           @click="confirmOperation({ action, label, ...rest })"
         />

@@ -94,10 +94,6 @@ export default {
       type: String,
       default: null
     },
-    size: {
-      type: String,
-      default: null
-    },
     iconOnly: {
       type: Boolean,
       default: false
@@ -170,10 +166,6 @@ export default {
 
       if (this.type) {
         modifiers.push(`apos-button--${this.type}`);
-      }
-
-      if (this.size) {
-        modifiers.push(`apos-button--${this.size}`);
       }
 
       if (this.iconOnly) {
