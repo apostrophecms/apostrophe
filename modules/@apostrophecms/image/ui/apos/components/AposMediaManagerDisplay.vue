@@ -42,6 +42,7 @@
           @click.meta="$emit('select-another', item._id)"
           ref="btns"
         >
+          <div class="apos-media-manager-display__select-border" v-if="largePreview" />
           <div
             v-if="item.dimensions"
             class="apos-media-manager-display__placeholder"
@@ -55,6 +56,17 @@
             :alt="item.description || item.title"
           >
         </button>
+        <div
+          v-if="largePreview"
+          class="apos-media-manager-display__actions"
+        >
+          <button class="apos-media-manager-display__action">
+            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:settings') }) }}
+          </button>
+          <button class="apos-media-manager-display__action">
+            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:layout') }) }}
+          </button>
+        </div>
       </div>
       <!-- We need a placeholder display cell to generate the first image
       placeholder. -->
@@ -227,6 +239,42 @@ export default {
         opacity: 1;
       }
     }
+
+    &:hover {
+      .apos-media-manager-display__actions {
+        opacity: 1;
+      }
+    }
+
+    &.apos-is-selected {
+      .apos-media-manager-display__select-border {
+        opacity: 1;
+      }
+    }
+  }
+
+  .apos-media-manager-display__actions {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    display: flex;
+    gap: 20px;
+  }
+
+  .apos-media-manager-display__action {
+    font-family: var(--a-family-default);
+    background-color: var(--a-background-primary);
+    color: var(--a-background-inverted);
+    border: 1px solid  var(--a-base-7);
+    font-weight: 600;
+    font-size: 12px;
+    border-radius: 5px;
+    height: 30px;
+    min-width: 90px;
+
+    &:hover {
+      pointer-events: auto;
+    }
   }
 
   .apos-media-manager-display__checkbox {
@@ -272,6 +320,15 @@ export default {
     &[disabled] {
       cursor: not-allowed;
     }
+  }
+
+  .apos-media-manager-display__select-border {
+    opacity: 0;
+    position: absolute;
+    border: 3px solid var(--a-primary);
+    border-radius: 20px;
+    width: 107%;
+    height: 105%;
   }
 
   // The button when hovering/focused
