@@ -5,6 +5,7 @@
         v-if="canSelectAll"
         label="apostrophe:select"
         type="outline"
+        size="small"
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
@@ -24,9 +25,9 @@
         <AposButton
           v-if="!operations"
           :label="label"
-          :icon-only="true"
           :icon="icon"
           :disabled="!checkedCount"
+          size="small"
           type="outline"
           @click="confirmOperation({ action, label, ...rest })"
         />
@@ -64,6 +65,7 @@
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"
         ref="search"
+        class="apos-manager-toolbar__search"
       />
     </template>
   </AposModalToolbar>
@@ -302,7 +304,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-manager-toolbar ::v-deep .apos-field--search {
-    width: 250px;
+  .apos-manager-toolbar ::v-deep {
+    .apos-field--search {
+      width: 250px;
+    }
+    .apos-input {
+      height: 32px;
+    }
   }
 </style>

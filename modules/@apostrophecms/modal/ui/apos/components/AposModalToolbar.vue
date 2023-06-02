@@ -45,5 +45,6 @@ export default {
 
   .apos-toolbar__group {
     display: flex;
+    align-items: center;
   }
 </style>

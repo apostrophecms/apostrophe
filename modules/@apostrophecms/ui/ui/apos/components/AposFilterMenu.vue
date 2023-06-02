@@ -49,7 +49,8 @@ export default {
           label: 'apostrophe:filter',
           icon: 'chevron-down-icon',
           modifiers: [ 'icon-right' ],
-          type: 'outline'
+          type: 'outline',
+          size: 'small'
         };
       }
     }
