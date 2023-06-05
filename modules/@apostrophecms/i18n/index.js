@@ -202,6 +202,47 @@ module.exports = {
         req.session.cookie = new ExpressSessionCookie(aposExpressModule.sessionOptions.cookie);
         return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
       },
+      // If the `redirectToFirstLocale` option is enabled
+      // and the homepage is requested,
+      // redirects to the first locale configured with the
+      // current requested hostname when all of the locales
+      // configured with that hostname do have a prefix.
+      //
+      // However, if the request does not match any explicit
+      // hostnames assigned to locales, redirects to the first
+      // locale that does not have a configured hostname, if
+      // all the locales without a hostname do have a prefix.
+      redirectToFirstLocale(req, res, next) {
+        if (!self.options.redirectToFirstLocale) {
+          return next();
+        }
+        if (req.path !== '' && req.path !== '/') {
+          return next();
+        }
+
+        const locales = Object.values(
+          self.filterPrivateLocales(req, self.locales)
+        );
+        const localesWithoutHostname = locales.filter(
+          locale => !locale.hostname
+        );
+        const localesWithCurrentHostname = locales.filter(
+          locale => locale.hostname && locale.hostname.split(':')[0] === req.hostname
+        );
+
+        const localesToCheck = localesWithCurrentHostname.length
+          ? localesWithCurrentHostname
+          : localesWithoutHostname;
+
+        if (!localesToCheck.length || !localesToCheck.every(locale => locale.prefix)) {
+          return next();
+        }
+
+        // Add / for home page and to avoid being redirected again in the `locale` middleware:
+        const redirectUrl = `${localesToCheck[0].prefix}/`;
+
+        return res.redirect(redirectUrl);
+      },
       locale(req, res, next) {
         // Support for a single aposLocale query param that
         // also contains the mode, which is likely to occur
