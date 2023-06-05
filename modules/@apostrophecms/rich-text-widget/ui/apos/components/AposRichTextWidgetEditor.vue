@@ -302,7 +302,7 @@ export default {
           const text = this.$t(this.placeholderText);
           return text;
         },
-        emptyNodeClass: this.insert.length ? 'apos-is-empty' : 'apos-is-empty-without-insert'
+        emptyNodeClass: 'apos-is-empty'
       }),
       FloatingMenu
     ]
