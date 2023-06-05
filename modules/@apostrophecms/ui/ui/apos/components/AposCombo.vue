@@ -20,7 +20,7 @@
       <li
         class="apos-combo__selected"
         v-for="checked in selectedItems"
-        :key="checked"
+        :key="objectValues ? checked.value : checked"
         @click="selectOption(getSelectedOption(checked))"
       >
         {{ getSelectedOption(checked)?.label }}
@@ -44,14 +44,30 @@
       :class="{'apos-combo__list--showed': showedList}"
       :style="{top: boxHeight + 'px'}"
       tabindex="0"
-      @keydown.prevent.space="selectOption(options[focusedItemIndex])"
-      @keydown.prevent.enter="selectOption(options[focusedItemIndex])"
-      @keydown.prevent.arrow-down="focusListItem()"
-      @keydown.prevent.arrow-up="focusListItem(true)"
-      @keydown.prevent.delete="closeList(null, true)"
-      @keydown.prevent.stop.esc="closeList(null, true)"
+      @keydown="listKeyDown"
       @blur="closeList()"
     >
+      <li
+        v-if="typehead"
+        class="apos-combo__list-typehead"
+        key="__typehead"
+        @click.stop="$refs.input.focus()"
+      >
+        <input
+          class="apos-combo__typehead"
+          type="text"
+          :placeholder="$t('apostrophe:search')"
+          :value="thInput"
+          ref="input"
+          @input="onTypeheadInput"
+          @keydown="onTypeheadKey"
+        >
+        <AposSpinner
+          v-if="busy"
+          class="apos-combo__spinner"
+          color="--a-base-5"
+        />
+      </li>
       <li
         :key="choice.value"
         class="apos-combo__list-item"
@@ -88,26 +104,51 @@ export default {
     value: {
       type: Object,
       required: true
+    },
+    typehead: {
+      type: Boolean,
+      default: false
+    },
+    busy: {
+      type: Boolean,
+      default: false
+    },
+    // When true, indicates that the values and selected items are arrays of objects,
+    // array of primitive values otherwise.
+    objectValues: {
+      type: Boolean,
+      default: false
     }
   },
 
-  emits: [ 'select-items' ],
+  emits: [ 'select-items', 'toggle', 'search' ],
   data () {
-    const showSelectAll = this.field.all !== false &&
-      (!this.field.max || this.field.max > this.choices.length);
 
     return {
       showedList: false,
       boxHeight: 0,
-      showSelectAll,
-      options: this.renderOptions(showSelectAll),
       boxResizeObserver: this.getBoxResizeObserver(),
-      focusedItemIndex: null
+      focusedItemIndex: null,
+      thInput: ''
     };
   },
   computed: {
+    showSelectAll() {
+      return this.field.all !== false &&
+        (!this.field.max || this.field.max > this.choices.length);
+    },
+    options() {
+      return this.renderOptions(this.showSelectAll);
+    },
     selectedItems() {
-      if (this.allItemsSelected()) {
+      if (this.showSelectAll && this.allItemsSelected()) {
+        if (this.objectValues) {
+          const { listLabel } = this.getSelectAllLabel();
+          return [ {
+            label: listLabel,
+            value: '__all'
+          } ];
+        }
         return [ '__all' ];
       }
 
@@ -121,6 +162,37 @@ export default {
     this.boxResizeObserver.unobserve(this.$refs.select);
   },
   methods: {
+    onTypeheadInput(e) {
+      this.thInput = e.target.value;
+      this.$emit('search', this.thInput);
+    },
+    onTypeheadKey(e) {
+      const stop = () => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      switch (e.key) {
+        case 'ArrowDown':
+          stop();
+          this.focusListItem();
+          break;
+
+        case 'ArrowUp':
+          stop();
+          this.focusListItem(true);
+          break;
+
+        case 'Enter':
+          stop();
+          this.selectOption(this.options[this.focusedItemIndex]);
+          break;
+
+        case 'Tab':
+          stop();
+          this.closeList(null, true);
+          break;
+      }
+    },
     toggleList() {
       if (this.field.readOnly) {
         return;
@@ -128,13 +200,68 @@ export default {
       this.showedList = !this.showedList;
 
       if (this.showedList) {
+        this.$emit('toggle', true);
         this.$nextTick(() => {
-          this.$refs.list.focus();
           this.focusedItemIndex = 0;
+          if (this.typehead) {
+            this.$refs.input.focus();
+          } else {
+            this.$refs.list.focus();
+          }
         });
       } else {
         this.$refs.select.focus();
         this.resetList();
+      }
+    },
+    listKeyDown(e) {
+      const stop = () => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      switch (e.key) {
+        case ' ': // Brave issues
+        case 'Space': {
+          if (!this.typehead) {
+            e.preventDefault();
+            e.stopPropagation();
+            stop();
+            this.selectOption(this.options[this.focusedItemIndex]);
+          }
+          break;
+        }
+
+        case 'Enter': {
+          stop();
+          this.selectOption(this.options[this.focusedItemIndex]);
+          break;
+        }
+
+        case 'ArrowDown': {
+          stop();
+          this.focusListItem();
+          break;
+        }
+
+        case 'ArrowUp': {
+          stop();
+          this.focusListItem(true);
+          break;
+        }
+
+        case 'Delete': {
+          if (!this.typehead) {
+            stop();
+            this.closeList(null, true);
+          }
+          break;
+        }
+
+        case 'Escape': {
+          stop();
+          this.closeList(null, true);
+          break;
+        }
       }
     },
     closeList(_, focusSelect) {
@@ -148,8 +275,10 @@ export default {
       }
     },
     resetList() {
+      this.$emit('toggle', false);
       this.focusedItemIndex = null;
       this.$refs.list.scrollTo({ top: 0 });
+      this.thInput = '';
     },
     getBoxResizeObserver() {
       return new ResizeObserver(([ { target } ]) => {
@@ -174,12 +303,18 @@ export default {
       ];
     },
     isSelected(choice) {
+      if (this.objectValues) {
+        return this.value.data.some((val) => val.value === choice.value);
+      }
       return this.value.data.some((val) => val === choice.value);
     },
     allItemsSelected () {
       return this.choices.length && this.value.data.length === this.choices.length;
     },
     getSelectedOption(checked) {
+      if (this.objectValues) {
+        return checked;
+      }
       if (checked === '__all') {
         const { selectedLabel } = this.getSelectAllLabel();
         return {
@@ -365,6 +500,12 @@ export default {
   &--showed {
     display: block;
   }
+
+  &-typehead {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .apos-combo__list-item {
@@ -376,6 +517,22 @@ export default {
   &.focused {
     background-color: var(--a-base-9);
   }
+}
+
+.apos-combo__typehead {
+  flex-grow: 1;
+  margin: 0;
+  padding: 10px 10px 10px 20px;
+  border: none;
+  box-sizing: border-box;
+  outline: none;
+  background-color: transparent;
+  @include type-base;
+}
+
+.apos-combo__spinner {
+  margin-right: 15px;
+  opacity: 0.7;
 }
 
 </style>

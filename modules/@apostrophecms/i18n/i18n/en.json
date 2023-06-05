@@ -399,6 +399,7 @@
   "saveDraftDescription": "Save as a draft to publish later.",
   "saveType": "Save {{ type }}",
   "savingDocument": "Saving document...",
+  "search": "Search",
   "searchDocType": "Search {{ type }}",
   "searchLabel": "Search Page",
   "searchLocales": "Search Locales",
