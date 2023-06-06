@@ -44,7 +44,7 @@
       :class="{'apos-combo__list--showed': showedList}"
       :style="{top: boxHeight + 'px'}"
       tabindex="0"
-      @keydown="listKeyDown"
+      @keydown="onListKey"
       @blur="closeList()"
     >
       <li
@@ -121,7 +121,7 @@ export default {
     }
   },
 
-  emits: [ 'select-items', 'toggle', 'search' ],
+  emits: [ 'select-items', 'toggle', 'input' ],
   data () {
 
     return {
@@ -141,18 +141,17 @@ export default {
       return this.renderOptions(this.showSelectAll);
     },
     selectedItems() {
-      if (this.showSelectAll && this.allItemsSelected()) {
-        if (this.objectValues) {
-          const { listLabel } = this.getSelectAllLabel();
-          return [ {
-            label: listLabel,
-            value: '__all'
-          } ];
-        }
-        return [ '__all' ];
+      if (!this.showSelectAll || !this.allItemsSelected()) {
+        return this.value.data;
       }
-
-      return this.value.data;
+      if (this.objectValues) {
+        const { listLabel } = this.getSelectAllLabel();
+        return [ {
+          label: listLabel,
+          value: '__all'
+        } ];
+      }
+      return [ '__all' ];
     }
   },
   mounted() {
@@ -164,7 +163,7 @@ export default {
   methods: {
     onTypeheadInput(e) {
       this.thInput = e.target.value;
-      this.$emit('search', this.thInput);
+      this.$emit('input', this.thInput);
     },
     onTypeheadKey(e) {
       const stop = () => {
@@ -214,7 +213,7 @@ export default {
         this.resetList();
       }
     },
-    listKeyDown(e) {
+    onListKey(e) {
       const stop = () => {
         e.preventDefault();
         e.stopPropagation();
@@ -223,8 +222,6 @@ export default {
         case ' ': // Brave issues
         case 'Space': {
           if (!this.typehead) {
-            e.preventDefault();
-            e.stopPropagation();
             stop();
             this.selectOption(this.options[this.focusedItemIndex]);
           }
@@ -303,10 +300,13 @@ export default {
       ];
     },
     isSelected(choice) {
-      if (this.objectValues) {
-        return this.value.data.some((val) => val.value === choice.value);
-      }
-      return this.value.data.some((val) => val === choice.value);
+      const condition = (entry) => (
+        this.objectValues
+          ? entry.value === choice.value
+          : entry === choice.value
+      );
+
+      return this.value.data.some(condition);
     },
     allItemsSelected () {
       return this.choices.length && this.value.data.length === this.choices.length;
