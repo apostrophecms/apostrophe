@@ -357,7 +357,6 @@ module.exports = {
 
       addBar(bar) {
         self.bars.push(bar);
-        console.log('self.bars', self.bars);
       }
     };
   }
