@@ -32,17 +32,7 @@
           />
         </div>
 
-        <div
-          v-if="largePreview"
-          class="apos-media-manager-display__actions"
-        >
-          <button class="apos-media-manager-display__action" @click="goToSettings">
-            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:settings') }) }}
-          </button>
-          <button class="apos-media-manager-display__action" @click="goToLayout">
-            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:layout') }) }}
-          </button>
-        </div>
+        <slot name="actions" />
 
         <button
           :disabled="
@@ -55,19 +45,20 @@
           @click.meta="$emit('select-another', item._id)"
           ref="btns"
         >
-          <div class="apos-media-manager-display__select-border" v-if="largePreview" />
-          <div
-            v-else-if="item.dimensions"
-            class="apos-media-manager-display__placeholder"
-            :style="getPlaceholderStyles(item)"
-          />
-          <!-- TODO: make sure using TITLE is the correct alt tag application here. -->
-          <img
-            v-else
-            class="apos-media-manager-display__media"
-            :src="item.attachment._urls['one-sixth']"
-            :alt="item.description || item.title"
-          >
+          <slot name="placeholder">
+            <div
+              v-if="item.dimensions"
+              class="apos-media-manager-display__placeholder"
+              :style="getPlaceholderStyles(item)"
+            />
+            <!-- TODO: make sure using TITLE is the correct alt tag application here. -->
+            <img
+              v-else
+              class="apos-media-manager-display__media"
+              :src="item.attachment._urls['one-sixth']"
+              :alt="item.description || item.title"
+            >
+          </slot>
         </button>
       </div>
       <!-- We need a placeholder display cell to generate the first image
@@ -197,12 +188,6 @@ export default {
     },
     idFor(item) {
       return `${item._id}-${cuid()}`;
-    },
-    goToSettings() {
-      console.log('=================> settings <=================');
-    },
-    goToLayout() {
-      console.log('=================> layout <=================');
     }
   }
 };
@@ -245,45 +230,6 @@ export default {
     &:focus {
       .apos-media-manager-display__media {
         opacity: 1;
-      }
-    }
-
-    &:hover {
-      opacity: 0.8;
-      .apos-media-manager-display__actions {
-        opacity: 1;
-      }
-    }
-
-    &.apos-is-selected {
-      .apos-media-manager-display__select-border {
-        opacity: 1;
-      }
-    }
-  }
-
-  .apos-media-manager-display__actions {
-    position: absolute;
-    opacity: 0;
-    display: flex;
-    gap: 20px;
-    z-index: 1;
-  }
-
-  .apos-media-manager-display__action {
-    font-family: var(--a-family-default);
-    background-color: var(--a-background-primary);
-    color: var(--a-background-inverted);
-    border: 1px solid  var(--a-base-7);
-    font-weight: 600;
-    font-size: 12px;
-    border-radius: 5px;
-    height: 30px;
-    min-width: 90px;
-
-    &:hover {
-      .apos-media-manager-display__cell {
-        opacity: 0.8;
       }
     }
   }
@@ -331,15 +277,6 @@ export default {
     &[disabled] {
       cursor: not-allowed;
     }
-  }
-
-  .apos-media-manager-display__select-border {
-    opacity: 0;
-    position: absolute;
-    border: 3px solid var(--a-primary);
-    border-radius: 24px;
-    width: 107%;
-    height: 105%;
   }
 
   // The button when hovering/focused
