@@ -31,6 +31,19 @@
             v-model="checkedProxy"
           />
         </div>
+
+          <div
+            v-if="largePreview"
+            class="apos-media-manager-display__actions"
+          >
+            <button class="apos-media-manager-display__action" @click="goToSettings">
+              {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:settings') }) }}
+            </button>
+            <button class="apos-media-manager-display__action" @click="goToLayout">
+              {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:layout') }) }}
+            </button>
+          </div>
+
         <button
           :disabled="
             item._id === 'placeholder' ||
@@ -44,7 +57,7 @@
         >
           <div class="apos-media-manager-display__select-border" v-if="largePreview" />
           <div
-            v-if="item.dimensions"
+            v-else-if="item.dimensions"
             class="apos-media-manager-display__placeholder"
             :style="getPlaceholderStyles(item)"
           />
@@ -56,17 +69,6 @@
             :alt="item.description || item.title"
           >
         </button>
-        <div
-          v-if="largePreview"
-          class="apos-media-manager-display__actions"
-        >
-          <button class="apos-media-manager-display__action">
-            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:settings') }) }}
-          </button>
-          <button class="apos-media-manager-display__action">
-            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:layout') }) }}
-          </button>
-        </div>
       </div>
       <!-- We need a placeholder display cell to generate the first image
       placeholder. -->
@@ -195,6 +197,12 @@ export default {
     },
     idFor(item) {
       return `${item._id}-${cuid()}`;
+    },
+    goToSettings() {
+      console.log('=================> settings <=================')
+    },
+    goToLayout() {
+      console.log('=================> layout <=================')
     }
   }
 };
@@ -241,6 +249,7 @@ export default {
     }
 
     &:hover {
+      opacity: 0.8;
       .apos-media-manager-display__actions {
         opacity: 1;
       }
@@ -256,9 +265,9 @@ export default {
   .apos-media-manager-display__actions {
     position: absolute;
     opacity: 0;
-    pointer-events: none;
     display: flex;
     gap: 20px;
+    z-index: 1;
   }
 
   .apos-media-manager-display__action {
@@ -273,7 +282,9 @@ export default {
     min-width: 90px;
 
     &:hover {
-      pointer-events: auto;
+      .apos-media-manager-display__cell {
+        opacity: 0.8;
+      }
     }
   }
 
@@ -326,7 +337,7 @@ export default {
     opacity: 0;
     position: absolute;
     border: 3px solid var(--a-primary);
-    border-radius: 20px;
+    border-radius: 24px;
     width: 107%;
     height: 105%;
   }
