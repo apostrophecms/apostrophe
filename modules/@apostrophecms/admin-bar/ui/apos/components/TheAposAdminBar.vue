@@ -129,8 +129,8 @@ export default {
 }
 
 // make space for a widget's breadcrumbs that are flush with the admin bar
-.apos-admin-bar-spacer {
-  margin-bottom: 25px;
-}
+// .apos-admin-bar-spacer {
+//   margin-bottom: 25px;
+// }
 
 </style>
