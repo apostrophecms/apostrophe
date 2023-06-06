@@ -276,6 +276,7 @@ export default {
       this.focusedItemIndex = null;
       this.$refs.list.scrollTo({ top: 0 });
       this.thInput = '';
+      this.$emit('input', this.thInput);
     },
     getBoxResizeObserver() {
       return new ResizeObserver(([ { target } ]) => {
