@@ -32,17 +32,17 @@
           />
         </div>
 
-          <div
-            v-if="largePreview"
-            class="apos-media-manager-display__actions"
-          >
-            <button class="apos-media-manager-display__action" @click="goToSettings">
-              {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:settings') }) }}
-            </button>
-            <button class="apos-media-manager-display__action" @click="goToLayout">
-              {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:layout') }) }}
-            </button>
-          </div>
+        <div
+          v-if="largePreview"
+          class="apos-media-manager-display__actions"
+        >
+          <button class="apos-media-manager-display__action" @click="goToSettings">
+            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:settings') }) }}
+          </button>
+          <button class="apos-media-manager-display__action" @click="goToLayout">
+            {{ $t({ key: 'apostrophe:editType', type: $t('apostrophe:layout') }) }}
+          </button>
+        </div>
 
         <button
           :disabled="
@@ -199,10 +199,10 @@ export default {
       return `${item._id}-${cuid()}`;
     },
     goToSettings() {
-      console.log('=================> settings <=================')
+      console.log('=================> settings <=================');
     },
     goToLayout() {
-      console.log('=================> layout <=================')
+      console.log('=================> layout <=================');
     }
   }
 };
