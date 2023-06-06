@@ -91,6 +91,7 @@ module.exports = {
     self.items = [];
     self.groups = [];
     self.groupLabels = {};
+    self.bars = [];
     self.enableBrowserData();
   },
   handlers(self) {
@@ -349,8 +350,14 @@ module.exports = {
           contextId: context && context._id,
           tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft')
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft'),
+          bars: self.bars
         };
+      },
+
+      addBar(bar) {
+        self.bars.push(bar);
+        console.log('self.bars', self.bars);
       }
     };
   }
