@@ -13,6 +13,7 @@
 ### Adds
 * Adds keyboard accessibility to Insert menu
 * Adds regex pattern feature for string fields.
+* Adds `pnpm` support. Introduces new optional Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails. See the [documentation](https://v3.docs.apostrophecms.org/guide/using-pnpm.html) for more details.
 * Adds a warning if database queries involving relationships
 are made before the last `apostrophe:modulesRegistered` handler has fired.
 If you need to call Apostrophe's `find()` methods at startup,
@@ -21,6 +22,7 @@ it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 * Adds a `prefix` option to the http frontend util module.  
 If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
 when making calls with already-prefixed URLs for instance.
+* Adds the `redirectToFirstLocale` option to the `i18n` module to prevent users from reaching a version of their site that would not match any locale when requesting the site without a locale prefix in the URL.
 
 ### Fixes
 
