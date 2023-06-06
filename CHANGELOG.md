@@ -13,6 +13,7 @@
 ### Adds
 * Adds keyboard accessibility to Insert menu
 * Adds regex pattern feature for string fields.
+* Adds `pnpm` support. Introduces new optional Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails. See the [documentation](https://v3.docs.apostrophecms.org/guide/using-pnpm.html) for more details.
 * Adds a warning if database queries involving relationships
 are made before the last `apostrophe:modulesRegistered` handler has fired.
 If you need to call Apostrophe's `find()` methods at startup,

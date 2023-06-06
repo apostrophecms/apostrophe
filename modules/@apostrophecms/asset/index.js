@@ -260,11 +260,12 @@ module.exports = {
             });
           }
 
-          async function moduleOverrides(modulesDir, source) {
+          async function moduleOverrides(modulesDir, source, pnpmPaths) {
             await fs.remove(modulesDir);
             await fs.mkdirp(modulesDir);
             let names = {};
             const directories = {};
+            const pnpmOnly = {};
             // Most other modules are not actually instantiated yet, but
             // we can access their metadata, which is sufficient
             for (const name of modulesToInstantiate) {
@@ -273,6 +274,9 @@ module.exports = {
               for (const entry of metadata.__meta.chain) {
                 const effectiveName = entry.name.replace(/^my-/, '');
                 names[effectiveName] = true;
+                if (entry.npm && !entry.bundled && !entry.my) {
+                  pnpmOnly[entry.dirname] = true;
+                }
                 ancestorDirectories.push(entry.dirname);
                 directories[effectiveName] = directories[effectiveName] || [];
                 for (const dir of ancestorDirectories) {
@@ -288,6 +292,21 @@ module.exports = {
               for (const dir of directories[name]) {
                 const srcDir = `${dir}/${source}`;
                 if (fs.existsSync(srcDir)) {
+                  if (
+                    // is pnpm installation
+                    self.apos.isPnpm &&
+                    // is npm module and not bundled
+                    pnpmOnly[dir] &&
+                    // isn't apos core module
+                    !dir.startsWith(path.join(self.apos.npmRootDir, 'node_modules/apostrophe/'))
+                  ) {
+                    // Ignore further attempts to register this path (performance)
+                    pnpmOnly[dir] = false;
+                    // resolve symlinked pnpm path
+                    const resolved = fs.realpathSync(dir);
+                    // go up to the pnpm node_modules directory
+                    pnpmPaths.add(resolved.split(name)[0]);
+                  }
                   await fs.copy(srcDir, moduleDir);
                 }
               }
@@ -302,7 +321,9 @@ module.exports = {
             }));
             const modulesDir = `${buildDir}/${name}/modules`;
             const source = options.source || name;
-            await moduleOverrides(modulesDir, `ui/${source}`);
+            // Gather pnpm modules that are used in the build to be added as resolve paths
+            const pnpmModules = new Set();
+            await moduleOverrides(modulesDir, `ui/${source}`, pnpmModules);
 
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.apos) {
@@ -382,6 +403,7 @@ module.exports = {
                 outputPath: bundleDir,
                 outputFilename,
                 bundles: webpackExtraBundles,
+                pnpmModulesResolvePaths: pnpmModules,
                 // Added on the fly by the
                 // @apostrophecms/asset-es5 module,
                 // if it is present
@@ -774,10 +796,13 @@ module.exports = {
           async function findPackageLock() {
             const packageLockPath = path.join(self.apos.npmRootDir, 'package-lock.json');
             const yarnPath = path.join(self.apos.npmRootDir, 'yarn.lock');
+            const pnpmPath = path.join(self.apos.npmRootDir, 'pnpm-lock.yaml');
             if (await fs.pathExists(packageLockPath)) {
               return packageLockPath;
             } else if (await fs.pathExists(yarnPath)) {
               return yarnPath;
+            } else if (await fs.pathExists(pnpmPath)) {
+              return pnpmPath;
             } else {
               return false;
             }
