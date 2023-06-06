@@ -198,8 +198,16 @@ export default {
   methods: {
     onKeydown (e) {
       const hasPressedEsc = e.keyCode === 27;
-      if (hasPressedEsc) {
-        this.close(e);
+      const isTopModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id === this.id : false;
+      if (isTopModal && hasPressedEsc) {
+        if (window.apos.focusedWidget) {
+          const _id = window.apos.focusedWidget;
+          apos.bus.$emit('widget-focus', null);
+          apos.bus.$emit('widget-hover', { _id });
+          window.apos.focusedWidget = null;
+        } else {
+          this.close(e);
+        }
       }
     },
     onEnter () {

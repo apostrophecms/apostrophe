@@ -239,8 +239,14 @@ export default {
     },
     focusParentEvent(event) {
       if (event.key === 'Escape') {
-        if (document.body === document.activeElement) {
+        const activeEl = document.activeElement;
+        if (
+          document.body === activeEl ||
+          (activeEl.hasAttribute('contenteditable') && activeEl.classList.contains('ProseMirror'))
+        ) {
+          const id = this.focusedWidget;
           this.focusedWidget = null;
+          this.hoveredWidget = id;
         }
       }
       if (event.metaKey && event.keyCode === 8) {
@@ -254,6 +260,8 @@ export default {
     },
     updateWidgetFocused(widgetId) {
       this.focusedWidget = widgetId;
+      // Attached to window so that modals can see the area is active
+      window.apos.focusedWidget = widgetId;
     },
     async up(i) {
       if (this.docId === window.apos.adminBar.contextId) {

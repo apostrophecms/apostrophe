@@ -330,6 +330,11 @@ export default {
     }
   },
   watch: {
+    focused (newVal) {
+      if (!newVal && this.widgetHovered === this.widget._id) {
+        this.mouseover();
+      }
+    },
     widgetFocused (newVal) {
       if (newVal === this.widget._id) {
         this.focus();
