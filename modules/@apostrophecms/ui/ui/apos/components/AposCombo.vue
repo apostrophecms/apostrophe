@@ -21,7 +21,7 @@
         class="apos-combo__selected"
         v-for="checked in selectedItems"
         :key="objectValues ? checked.value : checked"
-        @click="selectOption(getSelectedOption(checked))"
+        @click.stop="selectOption(getSelectedOption(checked))"
       >
         {{ getSelectedOption(checked)?.label }}
         <AposIndicator
