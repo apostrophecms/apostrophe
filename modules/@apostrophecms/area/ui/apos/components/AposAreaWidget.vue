@@ -445,8 +445,8 @@ export default {
       this.focused = true;
       this.state.container.focus = true;
       this.state.controls.show = true;
-      this.state.add.top.show = false;
-      this.state.add.bottom.show = false;
+      this.state.add.top.show = true;
+      this.state.add.bottom.show = true;
       this.state.labels.show = true;
       document.addEventListener('click', this.unfocus);
     },
