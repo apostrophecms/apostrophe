@@ -9,6 +9,10 @@
 * Updates UI for Insert Menu
 * Updates Insert Menu UX to allow mid-node insertion
 * Rich Text Widget's Insert components are now expected to emit `done` and `cancel` for proper RT cleanup. `close` still supported for BC, acts as `done`.
+* Migrated the business logic of the login-related Vue components to external mixins, so that the templates and styles can be overridden by
+copying the component `.vue` file to project level without copying all of the business logic. If you have already copied the components to style them,
+we encourage you to consider replacing your `script` tag with the new version, which just imports the mixin, so that fixes we make there will be
+available in your project
 
 ### Adds
 * Adds keyboard accessibility to Insert menu
