@@ -22,10 +22,18 @@ it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
 when making calls with already-prefixed URLs for instance.
 * Adds the `redirectToFirstLocale` option to the `i18n` module to prevent users from reaching a version of their site that would not match any locale when requesting the site without a locale prefix in the URL.
+* If just one instance of a piece type should always exist (per locale if localized), the
+`singleton` option may now be set to `{ auto: true }` to guarantee it. This is now used
+by `@apostrophecms/global` as well as the optional `@apostrophecms-pro/palette` module.
 
 ### Fixes
-
 * Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
+* Fixed a bug where multiple home pages can potentially be inserted into the database if the
+default locale is renamed. Introduced the `async apos.doc.bestAposDocId(criteria)` method to
+help identify the right `aposDocId` when inserting a document that might exist in
+other locales.
+* Fixed a bug where singletons like the global doc might not be inserted at all if they
+exist under the former name of the default locale and there are no other locales.
 
 ## 3.48.0 (2023-05-26)
 
