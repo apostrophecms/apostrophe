@@ -3,6 +3,7 @@
     <AposButton
       :disabled="currentPage == 1"
       class="apos-pager__btn"
+      :modifiers="['small']"
       type="outline" @click="incrementPage(-1)"
       :icon-only="true" icon="chevron-left-icon"
       :label="prevButtonLabel"
@@ -10,7 +11,7 @@
     <div class="apos-input-wrapper">
       <select
         :disabled="totalPages <= 1"
-        class="apos-input apos-input--select"
+        class="apos-pager__page-select apos-input apos-input--select"
         v-model="selectedPage" :aria-label="$t('apostrophe:selectPage')"
       >
         <option
@@ -25,6 +26,7 @@
     <AposButton
       :disabled="currentPage >= totalPages"
       class="apos-pager__btn"
+      :modifiers="['small']"
       type="outline" @click="incrementPage(1)"
       :icon-only="true" icon="chevron-right-icon"
       :label="nextButtonLabel"
@@ -94,13 +96,9 @@ export default {
     align-items: center;
   }
 
-  .apos-input-wrapper {
-    display: inline-flex;
-    align-self: stretch;
-  }
-
   .apos-input--select {
     background-color: transparent;
+    height: 32px;
     padding: 0 $spacing-double 0 $spacing-base;
   }
 
