@@ -65,7 +65,6 @@
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"
         ref="search"
-        class="apos-manager-toolbar__search"
       />
     </template>
   </AposModalToolbar>
