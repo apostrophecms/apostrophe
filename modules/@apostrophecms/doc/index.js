@@ -314,7 +314,7 @@ module.exports = {
       // If `keep` is not set, a `conflict` error is thrown in the
       // event of a conflict.
 
-      async changeDocIds(pairs, { keep }) {
+      async changeDocIds(pairs, { keep } = {}) {
         let kept = 0;
         // Get page paths up front so we can avoid multiple queries when working on path changes
         const pages = await self.apos.doc.db.find({

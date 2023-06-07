@@ -100,6 +100,7 @@ module.exports = {
     self.enableBrowserData();
     self.addLegacyMigrations();
     self.addMisreplicatedParkedPagesMigration();
+    self.addDuplicateParkedPagesMigration();
     await self.createIndexes();
   },
   restApiRoutes(self) {
@@ -2387,7 +2388,7 @@ database.`);
           const winners = new Map();
           for (const locale of locales) {
             for (const parkedId of parkedIds) {
-              let matches = parkedPages.find(page =>
+              let matches = parkedPages.filter(page =>
                 (page.parkedId === parkedId) &&
                 (page.aposLocale === locale)
               );
@@ -2399,7 +2400,7 @@ database.`);
               if (matches.length > 1) {
                 matches = matches.sort((a, b) => a.createdAt - b.createdAt);
                 const ids = matches.slice(1).map(page => page._id);
-                await self.apos.doc.removeMany({
+                await self.apos.doc.db.removeMany({
                   _id: {
                     $in: ids
                   }
@@ -2412,7 +2413,7 @@ database.`);
           const idChanges = [];
           for (const parkedId of parkedIds) {
             const aposDocId = winners.get(parkedId);
-            const matches = parkedPages.find(page => page.parkedId === parkedId);
+            const matches = parkedPages.filter(page => page.parkedId === parkedId);
             for (const match of matches) {
               if (match.aposDocId !== aposDocId) {
                 idChanges.push([ match._id, match._id.replace(match.aposDocId, aposDocId) ]);
