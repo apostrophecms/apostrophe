@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 ### Changes
+
 * Updates area UX to not display Add Content controls when a widget is focused
 * Updates area UX to unfocus widget on esc key
 * Updates widget UI to use dashed outlines instead of borders to indicate bounds
@@ -11,6 +12,7 @@
 * Rich Text Widget's Insert components are now expected to emit `done` and `cancel` for proper RT cleanup. `close` still supported for BC, acts as `done`.
 
 ### Adds
+
 * Adds keyboard accessibility to Insert menu
 * Adds regex pattern feature for string fields.
 * Adds a warning if database queries involving relationships
@@ -22,6 +24,7 @@ it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
 when making calls with already-prefixed URLs for instance.
 * Adds the `redirectToFirstLocale` option to the `i18n` module to prevent users from reaching a version of their site that would not match any locale when requesting the site without a locale prefix in the URL.
+* Adds the possibility to add custom admin bars via the `addBar()` method from the `admin-bar` module.
 
 ### Fixes
 
