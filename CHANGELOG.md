@@ -23,8 +23,9 @@ If explicitly set to `false`, prevents the prefix from being automatically added
 when making calls with already-prefixed URLs for instance.
 * Adds the `redirectToFirstLocale` option to the `i18n` module to prevent users from reaching a version of their site that would not match any locale when requesting the site without a locale prefix in the URL.
 * If just one instance of a piece type should always exist (per locale if localized), the
-`singleton` option may now be set to `{ auto: true }` to guarantee it. This is now used
-by `@apostrophecms/global` as well as the optional `@apostrophecms-pro/palette` module.
+`singletonAuto` option may now be set to `true` or to an object with a `slug` option in
+order to guarantee it. This implicitly sets `singleton: true` as well. This is now used
+internally by `@apostrophecms/global` as well as the optional `@apostrophecms-pro/palette` module.
 
 ### Fixes
 * Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
