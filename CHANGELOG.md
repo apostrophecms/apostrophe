@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.49.0 (2023-06-08)
 
 ### Changes
 * Updates area UX to not display Add Content controls when a widget is focused.
