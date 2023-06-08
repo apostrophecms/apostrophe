@@ -525,14 +525,8 @@ export default {
         return;
       }
 
-      const qs = {
-        ...apos.http.parseQuery(window.location.search),
-        aposRefresh: '1',
-        aposMode: this.draftMode,
-        ...(this.editMode ? {
-          aposEdit: '1'
-        } : {})
-      };
+      console.log('debug: ---');
+      console.log('debug: this.draftMode', this.draftMode);
 
       const { action } = window.apos.modules[this.context.type];
       const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
@@ -541,6 +535,22 @@ export default {
           project: { _url: 1 }
         }
       });
+
+      if (this.urlDiffers(doc._url)) {
+        console.log('debug: ==> REDIRECTING TO', doc._url);
+        // Slug changed, must navigate
+        window.location.assign(doc._url);
+        return;
+      }
+
+      const qs = {
+        ...apos.http.parseQuery(window.location.search),
+        aposRefresh: '1',
+        aposMode: this.draftMode,
+        ...(this.editMode ? {
+          aposEdit: '1'
+        } : {})
+      };
 
       const url = apos.http.addQueryToUrl(doc._url, qs);
       const content = await apos.http.get(url, {
@@ -679,6 +689,8 @@ export default {
     urlDiffers(url) {
       // URL might or might not include hostname part
       url = url.replace(/^https?:\/\/.*?\//, '/');
+      console.log('debug: url', url);
+      console.log('debug: browser url', window.location.pathname + (window.location.search || ''));
       if (url === (window.location.pathname + (window.location.search || ''))) {
         return false;
       } else {
