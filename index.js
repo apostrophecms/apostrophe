@@ -293,7 +293,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       // Inserts the global doc in the default locale if it does not exist; same for other
       // singleton piece types registered by other modules
       for (const module of Object.values(self.modules)) {
-        if (self.instanceOf(module, '@apostrophecms/piece-type') && module.options.singleton?.auto) {
+        if (self.instanceOf(module, '@apostrophecms/piece-type') && module.options.singletonAuto) {
           await module.insertIfMissing();
         }
       }

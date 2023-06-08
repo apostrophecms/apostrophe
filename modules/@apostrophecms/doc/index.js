@@ -315,6 +315,7 @@ module.exports = {
       // event of a conflict.
 
       async changeDocIds(pairs, { keep } = {}) {
+        let renamed = 0;
         let kept = 0;
         // Get page paths up front so we can avoid multiple queries when working on path changes
         const pages = await self.apos.doc.db.find({
@@ -346,6 +347,7 @@ module.exports = {
           }
           try {
             await self.apos.doc.db.insertOne(replacement);
+            renamed++;
           } catch (e) {
             // First reinsert old doc to prevent content loss on new doc insert failure
             await self.apos.doc.db.insertOne(existing);
@@ -371,6 +373,7 @@ module.exports = {
                 await self.apos.doc.db.deleteOne({ _id: existing._id });
                 await self.apos.doc.db.deleteOne({ _id: replacement._id });
                 await self.apos.doc.db.insertOne(replacement);
+                renamed++;
               } catch (e) {
                 // Reinsert old doc to prevent content loss on new doc insert failure
                 await self.apos.doc.db.insertOne(existing);
@@ -417,6 +420,7 @@ module.exports = {
         }
         await self.apos.attachment.recomputeAllDocReferences();
         return {
+          renamed,
           kept
         };
         function replaceId(obj, oldId, newId) {

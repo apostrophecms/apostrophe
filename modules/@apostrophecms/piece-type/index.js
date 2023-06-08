@@ -52,7 +52,7 @@ module.exports = {
           required: true
         }
       },
-      remove: self.options.singleton?.auto ? [
+      remove: self.options.singletonAuto ? [
         'title',
         'slug',
         'archived',
@@ -1109,7 +1109,7 @@ module.exports = {
         return projection;
       },
       async insertIfMissing() {
-        if (!self.options.singleton?.auto) {
+        if (!self.options.singletonAuto) {
           return;
         }
         // Insert at startup
@@ -1168,10 +1168,10 @@ module.exports = {
         return _super(req, criteria, projection).defaultSort(self.options.sort || { updatedAt: -1 });
       },
       newInstance(_super) {
-        if (!self.options.singleton?.auto) {
+        if (!self.options.singletonAuto) {
           return _super();
         }
-        const slug = self.apos.util.slugify(self.options.singleton?.slug || self.name);
+        const slug = self.apos.util.slugify(self.options.singletonAuto?.slug || self.name);
         return {
           ..._super(),
           // These fields are removed from the editable schema of singletons,

@@ -42,8 +42,7 @@ module.exports = {
     // Intentionally the same
     pluralLabel: 'apostrophe:globalDocLabel',
     searchable: false,
-    singleton: {
-      auto: true,
+    singletonAuto: {
       slug: 'palette'
     },
     showPermissions: true,
