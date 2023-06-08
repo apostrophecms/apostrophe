@@ -55,6 +55,13 @@ let defaults = require('./defaults.js');
 // If set, Apostrophe will invoke it (await) before invoking process.exit.
 // `beforeExit` may be an async function, will be awaited, and takes no arguments.
 //
+// `pnpm`
+// A boolean to force on or off the pnpm related build routines. If not set,
+// an automated check will be performed to determine if pnpm is in use. We offer
+// an option, because automated check is not 100% reliable. Monorepo tools are
+// often hiding package management specifics (lock files, node_module structure, etc.)
+// in a centralized store.
+//
 // ## Awaiting the Apostrophe function
 //
 // The apos function is async, but in typical cases you do not
@@ -222,6 +229,11 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.root = options.root || getRoot();
     self.rootDir = options.rootDir || path.dirname(self.root.filename);
     self.npmRootDir = options.npmRootDir || self.rootDir;
+    self.selfDir = __dirname;
+    // Signals to various (build related) places that we are running a pnpm installation.
+    // The relevant option, if set, has a higher precedence over the automated check.
+    self.isPnpm = options.pnpm ??
+      fs.existsSync(path.join(self.npmRootDir, 'pnpm-lock.yaml'));
 
     testModule();
 
@@ -290,7 +302,13 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.apos.schema.registerAllSchemas();
     await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
       await self.apos.migration.migrate(); // emits before and after events, inside the lock
-      await self.apos.global.insertIfMissing();
+      // Inserts the global doc in the default locale if it does not exist; same for other
+      // singleton piece types registered by other modules
+      for (const module of Object.values(self.modules)) {
+        if (self.instanceOf(module, '@apostrophecms/piece-type') && module.options.singletonAuto) {
+          await module.insertIfMissing();
+        }
+      }
       await self.apos.page.implementParkAllInDefaultLocale();
       await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
       // Replicate will have created the parked pages across locales if needed, but we may

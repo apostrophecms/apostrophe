@@ -100,6 +100,7 @@ module.exports = {
     self.enableBrowserData();
     self.addLegacyMigrations();
     self.addMisreplicatedParkedPagesMigration();
+    self.addDuplicateParkedPagesMigration();
     await self.createIndexes();
   },
   restApiRoutes(self) {
@@ -1959,7 +1960,10 @@ database.`);
           delete _item._children;
           if (!parent) {
             // Parking the home page for the first time
-            _item.aposDocId = self.apos.util.generateId();
+            _item.aposDocId = await self.apos.doc.bestAposDocId({
+              level: 0,
+              slug: '/'
+            });
             _item.path = _item.aposDocId;
             _item.lastPublishedAt = new Date();
             return self.apos.doc.insert(req, _item);
@@ -2363,6 +2367,64 @@ database.`);
                 }
               }
             }
+          }
+        });
+      },
+      addDuplicateParkedPagesMigration() {
+        self.apos.migration.add('duplicate-parked-pages', async () => {
+          let parkedPages = await self.apos.doc.db.find({
+            parkedId: {
+              $ne: null
+            }
+          }).toArray();
+          const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
+          const names = Object.keys(self.apos.i18n.locales);
+          const locales = [
+            ...names.map(locale => `${locale}:draft`),
+            ...names.map(locale => `${locale}:published`),
+            ...names.map(locale => `${locale}:previous`)
+          ];
+          let changes = 0;
+          const winners = new Map();
+          for (const locale of locales) {
+            for (const parkedId of parkedIds) {
+              let matches = parkedPages.filter(page =>
+                (page.parkedId === parkedId) &&
+                (page.aposLocale === locale)
+              );
+              if (matches.length > 0) {
+                if (!winners.has(parkedId)) {
+                  winners.set(parkedId, matches[0].aposDocId);
+                }
+              }
+              if (matches.length > 1) {
+                matches = matches.sort((a, b) => a.createdAt - b.createdAt);
+                const ids = matches.slice(1).map(page => page._id);
+                await self.apos.doc.db.removeMany({
+                  _id: {
+                    $in: ids
+                  }
+                });
+                parkedPages = parkedPages.filter(page => !ids.includes(page._id));
+                changes++;
+              }
+            }
+          }
+          const idChanges = [];
+          for (const parkedId of parkedIds) {
+            const aposDocId = winners.get(parkedId);
+            const matches = parkedPages.filter(page => page.parkedId === parkedId);
+            for (const match of matches) {
+              if (match.aposDocId !== aposDocId) {
+                idChanges.push([ match._id, match._id.replace(match.aposDocId, aposDocId) ]);
+              }
+            }
+          }
+          if (idChanges.length) {
+            // Also calls self.apos.attachment.recomputeAllDocReferences
+            await self.apos.doc.changeDocIds(idChanges);
+          } else if (changes > 0) {
+            await self.apos.attachment.recomputeAllDocReferences();
           }
         });
       }

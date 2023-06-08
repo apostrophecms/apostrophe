@@ -48,7 +48,7 @@ export default {
         return {
           label: 'apostrophe:filter',
           icon: 'chevron-down-icon',
-          modifiers: [ 'icon-right' ],
+          modifiers: [ 'icon-right', 'small' ],
           type: 'outline'
         };
       }

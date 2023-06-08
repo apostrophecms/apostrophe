@@ -42,7 +42,9 @@ module.exports = {
     // Intentionally the same
     pluralLabel: 'apostrophe:globalDocLabel',
     searchable: false,
-    singleton: true,
+    singletonAuto: {
+      slug: 'global'
+    },
     showPermissions: true,
     replicate: true
   },
@@ -77,23 +79,10 @@ module.exports = {
   },
   methods(self) {
     return {
-      async insertIfMissing() {
-        // Insert at startup
-        const req = self.apos.task.getReq();
-        const existing = await self.apos.doc.db.findOne({ slug: self.slug });
-        if (!existing) {
-          const _new = self.newInstance();
-          Object.assign(_new, {
-            slug: self.slug,
-            type: self.name
-          });
-          await self.insert(req, _new);
-        }
-      },
       // Fetch and return the `global` doc object. You probably don't need to call this,
       // because middleware has already populated `req.data.global` for you.
       async findGlobal(req) {
-        return self.find(req, { slug: self.slug }).permission(false).toObject();
+        return self.find(req, { type: self.name }).permission(false).toObject();
       },
       // Fetch the global doc and add it to `req.data` as `req.data.global`, if it
       // is not already present. If it is already present, skip the
