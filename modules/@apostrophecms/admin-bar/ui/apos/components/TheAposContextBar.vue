@@ -537,9 +537,10 @@ export default {
       });
 
       if (this.urlDiffers(doc._url)) {
-        console.log('debug: ==> REDIRECTING TO', doc._url);
-        // Slug changed, must navigate
-        window.location.assign(doc._url);
+        console.log('debug: ==> CHANGING BROWSER URL TO', doc._url);
+        // Slug changed, change browser URL to reflect the actual url of the doc
+        // window.location.assign(doc._url);
+        history.replaceState(null, '', doc._url);
         return;
       }
 
