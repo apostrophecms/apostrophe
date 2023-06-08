@@ -355,8 +355,30 @@ module.exports = {
         };
       },
 
+      // Add custom bars and place the ones
+      // that have `last: true` at the end
+      // of the list so that they will be
+      // displayed below the others.
+      //
+      // Example:
+      //
+      // ```js
+      // self.addBar({
+      //   id: 'template',
+      //   componentName: 'TheAposTemplateBar',
+      //   props: { content: 'Some content' },
+      //   last: true
+      // });
+      // ```
       addBar(bar) {
         self.bars.push(bar);
+
+        self.bars.sort((a, b) => {
+          if (a.last === true && b.last === true) {
+            return 0;
+          }
+          return b.last === true ? -1 : 1;
+        });
       }
     };
   }
