@@ -43,7 +43,7 @@ module.exports = {
     pluralLabel: 'apostrophe:globalDocLabel',
     searchable: false,
     singletonAuto: {
-      slug: 'palette'
+      slug: 'global'
     },
     showPermissions: true,
     replicate: true
