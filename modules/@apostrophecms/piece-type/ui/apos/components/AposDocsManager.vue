@@ -59,7 +59,7 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader>
+        <template v-if="items.length" #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
             :total-pages="totalPages"
