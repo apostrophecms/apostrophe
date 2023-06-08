@@ -3,19 +3,19 @@
 ## UNRELEASED
 
 ### Changes
-* Updates area UX to not display Add Content controls when a widget is focused
-* Updates area UX to unfocus widget on esc key
-* Updates widget UI to use dashed outlines instead of borders to indicate bounds
-* Updates UI for Insert Menu
-* Updates Insert Menu UX to allow mid-node insertion
+* Updates area UX to not display Add Content controls when a widget is focused.
+* Updates area UX to unfocus widget on esc key.
+* Updates widget UI to use dashed outlines instead of borders to indicate bounds.
+* Updates UI for Insert Menu.
+* Updates Insert Menu UX to allow mid-node insertion.
 * Rich Text Widget's Insert components are now expected to emit `done` and `cancel` for proper RT cleanup. `close` still supported for BC, acts as `done`.
 * Migrated the business logic of the login-related Vue components to external mixins, so that the templates and styles can be overridden by
 copying the component `.vue` file to project level without copying all of the business logic. If you have already copied the components to style them,
 we encourage you to consider replacing your `script` tag with the new version, which just imports the mixin, so that fixes we make there will be
-available in your project
+available in your project.
 
 ### Adds
-* Adds keyboard accessibility to Insert menu
+* Adds keyboard accessibility to Insert menu.
 * Adds regex pattern feature for string fields.
 * Adds `pnpm` support. Introduces new optional Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails. See the [documentation](https://v3.docs.apostrophecms.org/guide/using-pnpm.html) for more details.
 * Adds a warning if database queries involving relationships
