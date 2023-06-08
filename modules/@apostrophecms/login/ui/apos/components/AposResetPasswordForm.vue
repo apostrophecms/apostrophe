@@ -51,7 +51,8 @@ import AposResetPasswordFormLogic from 'Modules/@apostrophecms/login/logic/AposR
 
 export default {
   name: 'AposResetPasswordForm',
-  mixins: [ AposResetPasswordFormLogic ]
+  mixins: [ AposResetPasswordFormLogic ],
+  emits: [ 'set-stage' ]
 };
 </script>
 

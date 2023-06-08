@@ -47,7 +47,8 @@ import AposForgotPasswordFormLogic from 'Modules/@apostrophecms/login/logic/Apos
 
 export default {
   name: 'AposForgotPasswordForm',
-  mixins: [ AposForgotPasswordFormLogic ]
+  mixins: [ AposForgotPasswordFormLogic ],
+  emits: [ 'set-stage' ]
 };
 </script>
 
