@@ -7,6 +7,7 @@
       :label="tool.label"
       :icon-only="!!tool.icon"
       :icon="tool.icon || false"
+      :icon-size="tool.iconSize || 16"
       :modifiers="['no-border', 'no-motion']"
     />
     <div

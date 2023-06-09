@@ -8,20 +8,32 @@
         v-bind="upButton"
         :disabled="first || disabled"
         @click="$emit('up')"
-        :tooltip="(!disabled && !first) ? 'apostrophe:nudgeUp' : null"
+        :tooltip="{
+          content: (!disabled && !first) ? 'apostrophe:nudgeUp' : null,
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-bind="editButton"
         :disabled="disabled"
         v-if="!foreign && !options.contextual"
         @click="$emit('edit')"
-        tooltip="apostrophe:editWidget"
+        :tooltip="{
+          content: 'apostrophe:editWidget',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-bind="cutButton"
         v-if="!foreign"
         @click="$emit('cut')"
-        tooltip="apostrophe:cut"
+        :tooltip="{
+          content: 'apostrophe:cut',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <!-- <AposButton
         v-bind="copyButton"
@@ -34,21 +46,33 @@
         :disabled="disabled || maxReached"
         v-bind="cloneButton"
         @click="$emit('clone')"
-        tooltip="apostrophe:duplicate"
+        :tooltip="{
+          content: 'apostrophe:duplicate',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-if="!foreign"
         :disabled="disabled"
         v-bind="removeButton"
         @click="$emit('remove')"
-        tooltip="apostrophe:delete"
+        :tooltip="{
+          content: 'apostrophe:delete',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-if="!foreign"
         v-bind="downButton"
         :disabled="last || disabled"
         @click="$emit('down')"
-        :tooltip="(!disabled && !last) ? 'apostrophe:nudgeDown' : null"
+        :tooltip="{
+          content: (!disabled && !last) ? 'apostrophe:nudgeDown' : null,
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
     </AposButtonGroup>
   </div>
@@ -161,3 +185,9 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+.apos-area-modify-controls {
+  box-shadow: var(--a-box-shadow);
+}
+</style>

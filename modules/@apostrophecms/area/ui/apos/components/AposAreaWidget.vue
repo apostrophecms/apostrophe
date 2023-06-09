@@ -587,30 +587,93 @@ export default {
     }
   }
 
-  // TODO commented code awaiting the triumphant return of the canvas -SR
-
   .apos-area-widget-controls--modify {
     right: 0;
-    // transform: translate3d(calc(100% + 5px), 0, 0);
-    // @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
-    // transform: translate3d(-10px, 30px, 0);
     transform: translate3d(-10px, 30px, 0);
-    // }
+    ::v-deep .apos-button-group__inner {
+      border: 1px solid var(--a-primary-transparent-25);
+    }
+    ::v-deep .apos-button-group .apos-button {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: none;
+      border-radius: var(--a-border-radius);
+      background-color: transparent;
+      color: var(--a-base-1);
+      &:hover[disabled] {
+        background-color: transparent;
+      }
+      &:hover:not([disabled]), &:active:not([disabled]), &:focus:not([disabled]) {
+        background-color: var(--a-primary-transparent-10);
+        color: var(--a-primary);
+      }
+      &[disabled] {
+        color: var(--a-base-6);
+      }
+    }
   }
-
-  // .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
-  // right: auto;
-  // left: 0;
-  // transform: translate3d(calc(-100% - 5px), 0, 0);
-  // @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
-  // transform: translate3d(5px, 30px, 0);
-  // }
-  // }
 
   .apos-area-widget-controls--add {
     top: 0;
     left: 50%;
     transform: translate(-50%, -50%);
+  }
+
+  .apos-area-widget-controls--add ::v-deep {
+
+    .apos-button__wrapper {
+      padding: 8px;
+
+      &:hover .apos-button:not([disabled]) {
+        transform: scale(1.15);
+        background-size: 150% 100%;
+        border-radius: 10px;
+        transition-duration: 0.5s;
+
+        /* stylelint-disable-next-line max-nesting-depth */
+        .apos-button__label {
+          max-width: 100px;
+          max-height: 100px;
+          transition-duration: 0.5s;
+          padding: 0 5px 0 0;
+        }
+
+        /* stylelint-disable-next-line max-nesting-depth */
+        .apos-button__icon {
+          margin-right: 5px;
+        }
+      }
+    }
+
+    .apos-button__icon {
+      margin-right: 0;
+    }
+
+    .apos-button__label {
+      display: inline-block;
+      overflow: hidden;
+      max-width: 0;
+      max-height: 0;
+      transition: max-width 0.2s var(--a-transition-timing-bounce);
+      white-space: nowrap;
+      font-size: var(--a-type-small);
+    }
+
+    .apos-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: linear-gradient( 45deg, var(--a-primary), var(--a-primary-dark-15), var(--a-primary-light-40), var(--a-primary) );
+      background-size: 200% 100%;
+      transition: all 0.2s var(--a-transition-timing-bounce);
+      padding: 5px;
+      border-radius: 12px;
+
+      // &:hover:not([disabled]) {
+
+      // }
+    }
   }
 
   .apos-area-widget-controls--add--bottom {

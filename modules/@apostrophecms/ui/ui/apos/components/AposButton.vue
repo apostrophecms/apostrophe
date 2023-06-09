@@ -536,16 +536,16 @@ export default {
     }
   }
 
-  .apos-button--rich-text {
-    background-color: var(--a-background);
-    border-radius: 0;
-    &:hover {
-      background-color: var(--a-base-8);
-    }
-    &:focus, &:active {
-      background-color: var(--a-base-9);
-    }
-  }
+  // .apos-button--rich-text {
+  //   background-color: var(--a-background);
+  //   border-radius: 0;
+  //   &:hover {
+  //     background-color: var(--a-base-8);
+  //   }
+  //   &:focus, &:active {
+  //     background-color: var(--a-base-9);
+  //   }
+  // }
 
   .apos-button--icon.apos-button--small {
     padding: 7.5px 10px;

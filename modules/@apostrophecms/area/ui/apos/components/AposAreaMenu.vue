@@ -61,7 +61,7 @@ export default {
     buttonOptions() {
       return {
         label: 'apostrophe:addContent',
-        iconOnly: this.empty === false,
+        // iconOnly: this.empty === false,
         icon: 'plus-icon',
         type: 'primary',
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],

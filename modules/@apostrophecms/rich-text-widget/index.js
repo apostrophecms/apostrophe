@@ -77,7 +77,8 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextBold',
         icon: 'format-bold-icon',
-        command: 'toggleBold'
+        command: 'toggleBold',
+        iconSize: 18
       },
       italic: {
         component: 'AposTiptapButton',
@@ -95,7 +96,8 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextStrikethrough',
         icon: 'format-strikethrough-variant-icon',
-        command: 'toggleStrike'
+        command: 'toggleStrike',
+        iconSize: 14
       },
       superscript: {
         component: 'AposTiptapButton',
@@ -119,7 +121,8 @@ module.exports = {
       link: {
         component: 'AposTiptapLink',
         label: 'apostrophe:richTextLink',
-        icon: 'link-icon'
+        icon: 'link-icon',
+        iconSize: 18
       },
       anchor: {
         component: 'AposTiptapAnchor',
@@ -142,7 +145,8 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextBlockquote',
         icon: 'format-quote-close-icon',
-        command: 'toggleBlockquote'
+        command: 'toggleBlockquote',
+        iconSize: 20
       },
       codeBlock: {
         component: 'AposTiptapButton',
