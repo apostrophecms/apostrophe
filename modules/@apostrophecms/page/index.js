@@ -2007,30 +2007,57 @@ database.`);
           throw 'No page with that slug was found.';
         }
       },
+      // Reattach a page as the last child of the home page even if
+      // the page tree properties are corrupted
       async reattachTask(argv) {
         if (argv._.length !== 2) {
           throw new Error('Wrong number of arguments');
         }
+        const modes = [ 'draft', 'published' ];
         const slugOrId = argv._[1];
-        // Note that page moves are autopublished
-        const req = self.apos.task.getReq({
-          mode: 'draft'
-        });
-        const page = await self.findOneForEditing(req, {
-          $or: [
-            {
-              slug: slugOrId
-            },
-            {
-              _id: slugOrId
-            }
-          ]
-        });
-        if (!page) {
-          console.log(`No page with that slug or _id was found in ${req.locale}.`);
-        } else {
-          await self.move(req, page._id, '_home', 'lastChild');
-          console.log(`Reattached as the last child of the home page in ${req.locale}.`);
+        for (const mode of modes) {
+          // Note that page moves are autopublished
+          const req = self.apos.task.getReq({
+            mode
+          });
+          const home = await self.findOneForEditing(req, {
+            slug: '/'
+          });
+          if (!home) {
+            throw `No home page was found in ${req.locale}. Exiting.`;
+          }
+          const page = await self.findOneForEditing(req, {
+            $or: [
+              {
+                slug: slugOrId
+              },
+              {
+                _id: slugOrId
+              }
+            ]
+          });
+          if (!page) {
+            console.log(`No page with that slug or _id was found in ${req.locale}:${req.mode}.`);
+          } else {
+            const rank = (await self.apos.doc.db.find({
+              path: self.matchDescendants(home),
+              aposLocale: req.locale,
+              level: home.level + 1
+            }).project({ rank: 1 }).sort({ rank: 1 }).toArray()).reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
+            page.path = `${home.path}/${page.aposDocId}`;
+            page.rank = rank;
+            await self.apos.doc.db.updateOne({
+              _id: page._id
+            }, {
+              $set: {
+                path: page.path,
+                rank: page.rank,
+                aposLastTargetId: home.aposDocId,
+                aposLastPosition: 'lastChild'
+              }
+            });
+            console.log(`Reattached as the last child of the home page in ${req.locale}:${req.mode}.`);
+          }
         }
       },
       // Invoked by the @apostrophecms/version module.

@@ -8,8 +8,9 @@
 to locale renaming support that were released in 3.49.0, an
 `@apostrophecms/page:reattach` task has been added. This command line task
 takes the `_id` or `slug` of a page and reattaches it to the page tree as
-the last child of the home page. This task should not be needed in normal
-circumstances.
+the last child of the home page, even if page tree data for that page
+is corrupted. You may wish to use the `--locale` option. This task should not
+be needed in normal circumstances.
 
 ## 3.49.0 (2023-06-08)
 
