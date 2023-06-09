@@ -2007,6 +2007,32 @@ database.`);
           throw 'No page with that slug was found.';
         }
       },
+      async reattachTask(argv) {
+        if (argv._.length !== 2) {
+          throw new Error('Wrong number of arguments');
+        }
+        const slugOrId = argv._[1];
+        // Note that page moves are autopublished
+        const req = self.apos.task.getReq({
+          mode: 'draft'
+        });
+        const page = await self.findOneForEditing(req, {
+          $or: [
+            {
+              slug: slugOrId
+            },
+            {
+              _id: slugOrId
+            }
+          ]
+        });
+        if (!page) {
+          console.log(`No page with that slug or _id was found in ${req.locale}.`);
+        } else {
+          await self.move(req, page._id, '_home', 'lastChild');
+          console.log(`Reattached as the last child of the home page in ${req.locale}.`);
+        }
+      },
       // Invoked by the @apostrophecms/version module.
       //
       // Your module can add additional doc properties that should never be rolled back by pushing
@@ -2442,6 +2468,10 @@ database.`);
       unpark: {
         usage: 'Usage: node app @apostrophecms/page:unpark /page/slug\n\nThis unparks a page that was formerly locked in a specific\nposition in the page tree.',
         task: self.unparkTask
+      },
+      reattach: {
+        usage: 'Usage: node app @apostrophecms/page:reattach _id-or-slug',
+        task: self.reattachTask
       }
     };
   }
