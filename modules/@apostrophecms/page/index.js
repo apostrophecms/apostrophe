@@ -2007,6 +2007,63 @@ database.`);
           throw 'No page with that slug was found.';
         }
       },
+      // Reattach a page as the last child of the home page even if
+      // the page tree properties are corrupted
+      async reattachTask(argv) {
+        if (argv._.length !== 2) {
+          throw new Error('Wrong number of arguments');
+        }
+        const modes = [ 'draft', 'published' ];
+        const slugOrId = argv._[1];
+        for (const mode of modes) {
+          // Note that page moves are autopublished
+          const req = self.apos.task.getReq({
+            mode
+          });
+          const home = await self.findOneForEditing(req, {
+            slug: '/'
+          });
+          if (!home) {
+            throw `No home page was found in ${req.locale}. Exiting.`;
+          }
+          const page = await self.findOneForEditing(req, {
+            $or: [
+              {
+                slug: slugOrId
+              },
+              {
+                _id: slugOrId
+              }
+            ]
+          });
+          if (!page) {
+            console.log(`No page with that slug or _id was found in ${req.locale}:${req.mode}.`);
+          } else {
+            const rank = (await self.apos.doc.db.find({
+              path: self.matchDescendants(home),
+              aposLocale: req.locale,
+              level: home.level + 1
+            }).project({ rank: 1 }).sort({ rank: 1 }).toArray()).reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
+            page.path = `${home.path}/${page.aposDocId}`;
+            page.rank = rank;
+            const $set = {
+              path: page.path,
+              rank: page.rank,
+              aposLastTargetId: home.aposDocId,
+              aposLastPosition: 'lastChild'
+            };
+            if (argv['new-slug']) {
+              $set.slug = argv['new-slug'];
+            }
+            await self.apos.doc.db.updateOne({
+              _id: page._id
+            }, {
+              $set
+            });
+            console.log(`Reattached as the last child of the home page in ${req.locale}:${req.mode}.`);
+          }
+        }
+      },
       // Invoked by the @apostrophecms/version module.
       //
       // Your module can add additional doc properties that should never be rolled back by pushing
@@ -2442,6 +2499,10 @@ database.`);
       unpark: {
         usage: 'Usage: node app @apostrophecms/page:unpark /page/slug\n\nThis unparks a page that was formerly locked in a specific\nposition in the page tree.',
         task: self.unparkTask
+      },
+      reattach: {
+        usage: 'Usage: node app @apostrophecms/page:reattach _id-or-slug',
+        task: self.reattachTask
       }
     };
   }
