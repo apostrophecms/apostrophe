@@ -74,7 +74,8 @@ import AposLoginFormLogic from 'Modules/@apostrophecms/login/logic/AposLoginForm
 
 export default {
   name: 'AposLoginForm',
-  mixins: [ AposLoginFormLogic ]
+  mixins: [ AposLoginFormLogic ],
+  emits: [ 'set-stage' ]
 };
 </script>
 

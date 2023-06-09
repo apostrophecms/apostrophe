@@ -193,6 +193,12 @@ module.exports = {
     if (!self.options.name) {
       self.options.name = self.__meta.name;
     }
+    if (self.options.singletonAuto) {
+      self.options.singleton = true;
+    }
+    if (self.options.replicate === undefined) {
+      self.options.replicate = self.options.localized && self.options.singletonAuto;
+    }
     self.name = self.options.name;
     // Each doc-type has an array of fields which will be updated
     // if the document is moved to the archive. In most cases 'slug'

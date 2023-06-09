@@ -707,6 +707,37 @@ module.exports = {
               .entries(locales)
               .filter(([ name, options ]) => options.private !== true)
           );
+      },
+      // Rename a locale. This is time consuming and should be
+      // avoided when possible. If `keep` is present it must be set
+      // to either `oldLocale` or `newLocale` and indicates which version
+      // is kept in the event of a conflict
+      async rename(oldLocale, newLocale, { keep } = {}) {
+        let renamed = 0;
+        let kept = 0;
+        if (!oldLocale) {
+          throw new Error('You must specify --old');
+        }
+        if (!newLocale) {
+          throw new Error('You must specify --new');
+        }
+        if (oldLocale === newLocale) {
+          throw new Error('The old and new locales must be different');
+        }
+        if (keep && (!(keep === oldLocale) && !(keep === newLocale))) {
+          throw new Error('--keep must match --old or --new');
+        }
+        const ids = await self.apos.doc.db.find({ aposLocale: new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`) }).project({ _id: 1 }).toArray();
+        ({
+          renamed,
+          kept
+        } = await self.apos.doc.changeDocIds(ids.map(doc => [ doc._id, doc._id.replace(`:${oldLocale}`, `:${newLocale}`) ]), {
+          keep: (keep === oldLocale) ? 'old' : (keep === newLocale) ? 'new' : false
+        }));
+        return {
+          renamed,
+          kept
+        };
       }
     };
   },
@@ -718,67 +749,10 @@ module.exports = {
           const oldLocale = self.apos.launder.string(argv.old);
           const newLocale = self.apos.launder.string(argv.new);
           const keep = self.apos.launder.string(argv.keep);
-          let renamed = 0;
-          let kept = 0;
-          if (!oldLocale) {
-            throw new Error('You must specify --old');
-          }
-          if (!newLocale) {
-            throw new Error('You must specify --new');
-          }
-          if (oldLocale === newLocale) {
-            throw new Error('The old and new locales must be different');
-          }
-          if (keep && (!(keep === oldLocale) && !(keep === newLocale))) {
-            throw new Error('--keep must match --old or --new');
-          }
-          await self.apos.migration.eachDoc({ aposLocale: new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`) }, async doc => {
-            const newDoc = {
-              ...doc,
-              aposLocale: doc.aposLocale.replace(oldLocale, newLocale),
-              _id: doc._id.replace(`:${oldLocale}`, `:${newLocale}`)
-            };
-            try {
-              // Remove old first to cut down on duplicate key conflicts due to
-              // custom properties
-              await self.apos.doc.db.removeOne({ _id: doc._id });
-              await self.apos.doc.db.insertOne(newDoc);
-              renamed++;
-            } catch (e) {
-              // First reinsert old doc to prevent content loss on new doc insert failure
-              await self.apos.doc.db.insertOne(doc);
-              if (!self.apos.doc.isUniqueError(e)) {
-                throw e;
-              }
-              const existing = await self.apos.doc.db.findOne({ _id: newDoc._id });
-              if (!existing) {
-                // We don't know the cause of this error
-                throw e;
-              }
-              if (keep === newLocale) {
-                // New content already exists in new locale, delete old locale
-                // and keep new
-                await self.apos.doc.db.removeOne({ _id: doc._id });
-                kept++;
-              } else if (keep === oldLocale) {
-                // We want to keep the old locale's content. Once again we
-                // need to remove the old doc first to cut down on conflicts
-                try {
-                  await self.apos.doc.db.removeOne({ _id: doc._id });
-                  await self.apos.doc.db.deleteOne({ _id: newDoc._id });
-                  await self.apos.doc.db.insertOne(newDoc);
-                } catch (e) {
-                  // Reinsert old doc to prevent content loss on new doc insert failure
-                  await self.apos.doc.db.insertOne(doc);
-                  throw e;
-                }
-                kept++;
-              } else {
-                console.error('A conflict occurred. Use --keep to specify a locale to keep and retry');
-                throw e;
-              }
-            }
-          });
+          const {
+            renamed,
+            kept
+          } = await self.rename(oldLocale, newLocale, { keep });
           console.log(`Renamed ${renamed} documents from ${oldLocale} to ${newLocale}`);
           if (keep) {
             console.log(`Due to conflicts, kept ${kept} documents from ${keep}`);

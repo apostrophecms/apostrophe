@@ -42,15 +42,23 @@ module.exports = {
     //   visibility: 1
     // }
   },
-  fields: {
-    add: {
-      slug: {
-        type: 'slug',
-        label: 'apostrophe:slug',
-        following: [ 'title', 'archived' ],
-        required: true
-      }
-    }
+  fields(self) {
+    return {
+      add: {
+        slug: {
+          type: 'slug',
+          label: 'apostrophe:slug',
+          following: [ 'title', 'archived' ],
+          required: true
+        }
+      },
+      remove: self.options.singletonAuto ? [
+        'title',
+        'slug',
+        'archived',
+        'visibility'
+      ] : []
+    };
   },
   columns(self) {
     return {
@@ -1099,6 +1107,31 @@ module.exports = {
         });
 
         return projection;
+      },
+      async insertIfMissing() {
+        if (!self.options.singletonAuto) {
+          return;
+        }
+        // Insert at startup
+        const req = self.apos.task.getReq();
+        const criteria = {
+          type: self.name
+        };
+        if (self.options.localized) {
+          criteria.aposLocale = {
+            $in: Object.keys(self.apos.i18n.locales).map(locale => [ `${locale}:published`, `${locale}:draft` ]).flat()
+          };
+        }
+        const existing = await self.apos.doc.db.findOne(criteria, { _id: 1 });
+        if (!existing) {
+          const _new = {
+            ...self.newInstance(),
+            aposDocId: await self.apos.doc.bestAposDocId({
+              type: self.name
+            })
+          };
+          await self.insert(req, _new);
+        }
       }
     };
   },
@@ -1133,6 +1166,21 @@ module.exports = {
       },
       find(_super, req, criteria, projection) {
         return _super(req, criteria, projection).defaultSort(self.options.sort || { updatedAt: -1 });
+      },
+      newInstance(_super) {
+        if (!self.options.singletonAuto) {
+          return _super();
+        }
+        const slug = self.apos.util.slugify(self.options.singletonAuto?.slug || self.name);
+        return {
+          ..._super(),
+          // These fields are removed from the editable schema of singletons,
+          // but we assign them directly for broader compatibility
+          slug,
+          title: slug,
+          archived: false,
+          visibility: 'public'
+        };
       }
     };
   },

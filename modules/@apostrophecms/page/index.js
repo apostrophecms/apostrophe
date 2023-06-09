@@ -100,6 +100,7 @@ module.exports = {
     self.enableBrowserData();
     self.addLegacyMigrations();
     self.addMisreplicatedParkedPagesMigration();
+    self.addDuplicateParkedPagesMigration();
     await self.createIndexes();
   },
   restApiRoutes(self) {
@@ -1959,7 +1960,10 @@ database.`);
           delete _item._children;
           if (!parent) {
             // Parking the home page for the first time
-            _item.aposDocId = self.apos.util.generateId();
+            _item.aposDocId = await self.apos.doc.bestAposDocId({
+              level: 0,
+              slug: '/'
+            });
             _item.path = _item.aposDocId;
             _item.lastPublishedAt = new Date();
             return self.apos.doc.insert(req, _item);
@@ -2001,6 +2005,63 @@ database.`);
         const count = await self.apos.doc.db.updateOne({ slug: slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
+        }
+      },
+      // Reattach a page as the last child of the home page even if
+      // the page tree properties are corrupted
+      async reattachTask(argv) {
+        if (argv._.length !== 2) {
+          throw new Error('Wrong number of arguments');
+        }
+        const modes = [ 'draft', 'published' ];
+        const slugOrId = argv._[1];
+        for (const mode of modes) {
+          // Note that page moves are autopublished
+          const req = self.apos.task.getReq({
+            mode
+          });
+          const home = await self.findOneForEditing(req, {
+            slug: '/'
+          });
+          if (!home) {
+            throw `No home page was found in ${req.locale}. Exiting.`;
+          }
+          const page = await self.findOneForEditing(req, {
+            $or: [
+              {
+                slug: slugOrId
+              },
+              {
+                _id: slugOrId
+              }
+            ]
+          });
+          if (!page) {
+            console.log(`No page with that slug or _id was found in ${req.locale}:${req.mode}.`);
+          } else {
+            const rank = (await self.apos.doc.db.find({
+              path: self.matchDescendants(home),
+              aposLocale: req.locale,
+              level: home.level + 1
+            }).project({ rank: 1 }).sort({ rank: 1 }).toArray()).reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
+            page.path = `${home.path}/${page.aposDocId}`;
+            page.rank = rank;
+            const $set = {
+              path: page.path,
+              rank: page.rank,
+              aposLastTargetId: home.aposDocId,
+              aposLastPosition: 'lastChild'
+            };
+            if (argv['new-slug']) {
+              $set.slug = argv['new-slug'];
+            }
+            await self.apos.doc.db.updateOne({
+              _id: page._id
+            }, {
+              $set
+            });
+            console.log(`Reattached as the last child of the home page in ${req.locale}:${req.mode}.`);
+          }
         }
       },
       // Invoked by the @apostrophecms/version module.
@@ -2365,6 +2426,64 @@ database.`);
             }
           }
         });
+      },
+      addDuplicateParkedPagesMigration() {
+        self.apos.migration.add('duplicate-parked-pages', async () => {
+          let parkedPages = await self.apos.doc.db.find({
+            parkedId: {
+              $ne: null
+            }
+          }).toArray();
+          const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
+          const names = Object.keys(self.apos.i18n.locales);
+          const locales = [
+            ...names.map(locale => `${locale}:draft`),
+            ...names.map(locale => `${locale}:published`),
+            ...names.map(locale => `${locale}:previous`)
+          ];
+          let changes = 0;
+          const winners = new Map();
+          for (const locale of locales) {
+            for (const parkedId of parkedIds) {
+              let matches = parkedPages.filter(page =>
+                (page.parkedId === parkedId) &&
+                (page.aposLocale === locale)
+              );
+              if (matches.length > 0) {
+                if (!winners.has(parkedId)) {
+                  winners.set(parkedId, matches[0].aposDocId);
+                }
+              }
+              if (matches.length > 1) {
+                matches = matches.sort((a, b) => a.createdAt - b.createdAt);
+                const ids = matches.slice(1).map(page => page._id);
+                await self.apos.doc.db.removeMany({
+                  _id: {
+                    $in: ids
+                  }
+                });
+                parkedPages = parkedPages.filter(page => !ids.includes(page._id));
+                changes++;
+              }
+            }
+          }
+          const idChanges = [];
+          for (const parkedId of parkedIds) {
+            const aposDocId = winners.get(parkedId);
+            const matches = parkedPages.filter(page => page.parkedId === parkedId);
+            for (const match of matches) {
+              if (match.aposDocId !== aposDocId) {
+                idChanges.push([ match._id, match._id.replace(match.aposDocId, aposDocId) ]);
+              }
+            }
+          }
+          if (idChanges.length) {
+            // Also calls self.apos.attachment.recomputeAllDocReferences
+            await self.apos.doc.changeDocIds(idChanges);
+          } else if (changes > 0) {
+            await self.apos.attachment.recomputeAllDocReferences();
+          }
+        });
       }
     };
   },
@@ -2380,6 +2499,10 @@ database.`);
       unpark: {
         usage: 'Usage: node app @apostrophecms/page:unpark /page/slug\n\nThis unparks a page that was formerly locked in a specific\nposition in the page tree.',
         task: self.unparkTask
+      },
+      reattach: {
+        usage: 'Usage: node app @apostrophecms/page:reattach _id-or-slug',
+        task: self.reattachTask
       }
     };
   }
