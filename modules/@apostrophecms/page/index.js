@@ -2046,15 +2046,19 @@ database.`);
             }).project({ rank: 1 }).sort({ rank: 1 }).toArray()).reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
             page.path = `${home.path}/${page.aposDocId}`;
             page.rank = rank;
+            const $set = {
+              path: page.path,
+              rank: page.rank,
+              aposLastTargetId: home.aposDocId,
+              aposLastPosition: 'lastChild'
+            };
+            if (argv['new-slug']) {
+              $set.slug = argv['new-slug'];
+            }
             await self.apos.doc.db.updateOne({
               _id: page._id
             }, {
-              $set: {
-                path: page.path,
-                rank: page.rank,
-                aposLastTargetId: home.aposDocId,
-                aposLastPosition: 'lastChild'
-              }
+              $set
             });
             console.log(`Reattached as the last child of the home page in ${req.locale}:${req.mode}.`);
           }
