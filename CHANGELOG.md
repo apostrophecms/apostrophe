@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adds the possibility to add custom admin bars via the `addBar()` method from the `admin-bar` module.
+
 ## 3.50.0 (2023-06-09)
 
 ### Adds
@@ -15,6 +21,7 @@ be needed in normal circumstances.
 ## 3.49.0 (2023-06-08)
 
 ### Changes
+
 * Updates area UX to not display Add Content controls when a widget is focused.
 * Updates area UX to unfocus widget on esc key.
 * Updates widget UI to use dashed outlines instead of borders to indicate bounds.
@@ -27,6 +34,7 @@ we encourage you to consider replacing your `script` tag with the new version, w
 available in your project.
 
 ### Adds
+
 * Adds keyboard accessibility to Insert menu.
 * Adds regex pattern feature for string fields.
 * Adds `pnpm` support. Introduces new optional Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails. See the [documentation](https://v3.docs.apostrophecms.org/guide/using-pnpm.html) for more details.
@@ -45,6 +53,7 @@ order to guarantee it. This implicitly sets `singleton: true` as well. This is n
 internally by `@apostrophecms/global` as well as the optional `@apostrophecms-pro/palette` module.
 
 ### Fixes
+
 * Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
 * Fixed a bug where multiple home pages can potentially be inserted into the database if the
 default locale is renamed. Introduced the `async apos.doc.bestAposDocId(criteria)` method to
