@@ -6,6 +6,10 @@
 
 * Adds the possibility to add custom admin bars via the `addBar()` method from the `admin-bar` module.
 
+### Changes
+
+* Browser URL now changes to reflect the slug of the document according to the mode that is being viewed.
+
 ## 3.50.0 (2023-06-09)
 
 ### Adds
