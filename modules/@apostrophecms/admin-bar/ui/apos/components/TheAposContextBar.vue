@@ -547,8 +547,7 @@ export default {
         } : {})
       };
 
-      const url = apos.http.addQueryToUrl(doc._url, qs);
-      const content = await apos.http.get(url, {
+      const content = await apos.http.get(doc._url, {
         qs,
         headers: {
           'Cache-Control': 'no-cache'
