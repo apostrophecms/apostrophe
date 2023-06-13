@@ -525,9 +525,6 @@ export default {
         return;
       }
 
-      console.log('debug: ---');
-      console.log('debug: this.draftMode', this.draftMode);
-
       const { action } = window.apos.modules[this.context.type];
       const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
         qs: {
@@ -537,11 +534,8 @@ export default {
       });
 
       if (this.urlDiffers(doc._url)) {
-        console.log('debug: ==> CHANGING BROWSER URL TO', doc._url);
         // Slug changed, change browser URL to reflect the actual url of the doc
-        // window.location.assign(doc._url);
         history.replaceState(null, '', doc._url);
-        return;
       }
 
       const qs = {
