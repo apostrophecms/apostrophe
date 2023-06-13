@@ -389,7 +389,18 @@ export default {
         } else {
           this.$emit('close', doc);
         }
+      } else if (doc.slug.startsWith('/')) {
+        // If doc is a page and `this.current` is `null` (ie. we are on Pages manager modal),
+        // load the whole page to duplicate the page AND its whole content:
+        const page = await apos.http.get(`/api/v1/@apostrophecms/page/${doc._id}`, {
+          busy: true
+        });
+        console.log('LOAD FULL DOC');
+        console.log('page', page);
+        Object.assign(doc, page);
+        console.log('doc', doc);
       }
+
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`,
         props: {
