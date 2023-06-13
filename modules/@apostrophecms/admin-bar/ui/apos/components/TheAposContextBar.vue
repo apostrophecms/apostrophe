@@ -684,8 +684,6 @@ export default {
     urlDiffers(url) {
       // URL might or might not include hostname part
       url = url.replace(/^https?:\/\/.*?\//, '/');
-      console.log('debug: url', url);
-      console.log('debug: browser url', window.location.pathname + (window.location.search || ''));
       if (url === (window.location.pathname + (window.location.search || ''))) {
         return false;
       } else {
