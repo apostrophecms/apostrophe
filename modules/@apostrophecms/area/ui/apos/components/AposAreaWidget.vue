@@ -271,7 +271,7 @@ export default {
       };
     },
     widgetIcon() {
-      return this.contextMenuOptions.menu.filter(item => item.name === this.widget.type)[0].icon || 'shape-icon';
+      return this.contextMenuOptions.menu.filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
