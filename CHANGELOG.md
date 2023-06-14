@@ -10,6 +10,10 @@
 
 * Browser URL now changes to reflect the slug of the document according to the mode that is being viewed.
 
+### Fixes
+
+* The whole content of a page is now fully duplicated, not only the minimal data that reside inside the context of each page from the pages manager.
+
 ## 3.50.0 (2023-06-09)
 
 ### Adds
