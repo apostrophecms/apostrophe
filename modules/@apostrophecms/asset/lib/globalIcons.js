@@ -103,6 +103,7 @@ module.exports = {
   'plus-icon': 'Plus',
   'redo-icon': 'RedoVariant',
   'refresh-icon': 'Refresh',
+  'shape-icon': 'Shape',
   'sign-text-icon': 'SignText',
   'tag-icon': 'Tag',
   'text-box-icon': 'TextBox',

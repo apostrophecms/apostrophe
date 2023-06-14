@@ -20,6 +20,9 @@
         :class="ui.labels"
       >
         <ol class="apos-area-widget__breadcrumbs">
+          <li class="apos-area-widget__breadcrumb apos-area-widget__breadcrumb--widget-icon">
+            <AposIndicator :icon="widgetIcon" :icon-size="13" />
+          </li>
           <li
             v-for="item in breadcrumbs.list"
             :key="item.id"
@@ -266,6 +269,9 @@ export default {
         ...this.contextMenuOptions,
         menuPlacement: 'top'
       };
+    },
+    widgetIcon() {
+      return this.contextMenuOptions.menu.filter(item => item.name === this.widget.type)[0].icon || 'shape-icon';
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
@@ -592,6 +598,7 @@ export default {
     transform: translate3d(-10px, 30px, 0);
     ::v-deep .apos-button-group__inner {
       border: 1px solid var(--a-primary-transparent-25);
+      box-shadow: var(--a-box-shadow);
     }
     ::v-deep .apos-button-group .apos-button {
       width: 32px;
@@ -690,7 +697,7 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
-    top: 1px;
+    top: -8px;
     right: 0;
     display: flex;
     transform: translateY(-100%);
@@ -706,9 +713,10 @@ export default {
     display: flex;
     align-items: center;
     margin: 0;
-    padding: 2px;
+    padding: 4px 6px;
     background-color: var(--a-background-primary);
-    border: 1px solid var(--a-primary-dark-10);
+    border: 1px solid var(--a-primary-transparent-50);
+    border-radius: 8px;
   }
 
   .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
@@ -723,13 +731,34 @@ export default {
     @include type-help;
     padding: 2px;
     white-space: nowrap;
+    color: var(--a-base-1);
+    transition: background-color 0.3s var(--a-transition-timing-bounce);
     &:hover {
       cursor: pointer;
     }
   }
 
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
+    color: var(--a-text-primary);
+  }
+
+  .apos-area-widget__breadcrumb--widget-icon {
+    padding: 3px 2px 2px;
+    background-color: var(--a-primary-transparent-10);
+    color: var(--a-primary);
+    border-radius: 4px;
+    margin-right: 2px;
+    transition: background-color 0.3s var(--a-transition-timing-bounce);
+  }
+
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb--widget-icon {
+    background-color: var(--a-primary-transparent-25);
+  }
+
   .apos-area-widget__breadcrumb--icon {
     padding: 2px;
+    color: var(--a-text-primary);
   }
 
   .apos-area-widget__breadcrumb ::v-deep .apos-button {

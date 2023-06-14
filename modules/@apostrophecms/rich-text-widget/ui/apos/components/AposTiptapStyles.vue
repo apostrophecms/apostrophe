@@ -6,6 +6,11 @@
       fill-color="currentColor"
     />
     <select
+      v-apos-tooltip="{
+        content: 'apostrophe:richTextStyles',
+        placement: 'top',
+        delay: 650
+      }"
       :value="active"
       @change="setStyle"
       class="apos-tiptap-control apos-tiptap-control--select"
@@ -94,13 +99,13 @@ export default {
   }
 
   .apos-tiptap-select {
-    @include apos-transition();
     position: relative;
     display: flex;
     align-items: center;
     padding: 0 4px;
     color: var(--a-base-1);
     border-radius: var(--a-border-radius);
+    transition: all 0.5s ease;
     &:hover {
       color: var(--a-text-primary);
       background-color: var(--a-base-9);

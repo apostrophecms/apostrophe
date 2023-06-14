@@ -9,6 +9,11 @@
       :icon="tool.icon || false"
       :icon-size="tool.iconSize || 16"
       :modifiers="['no-border', 'no-motion']"
+      :tooltip="{
+        content: tool.label,
+        placement: 'top',
+        delay: 650
+      }"
     />
     <div
       v-if="active"

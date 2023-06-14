@@ -4,6 +4,8 @@
   z-index: $z-index-notifications;
   display: block;
   max-width: 285px;
+  /* stylelint-disable-next-line time-min-milliseconds */
+  transition-delay: 0.1s;
 
   .apos-info {
     max-width: 330px;
@@ -100,12 +102,25 @@
   &[aria-hidden='true'] {
     visibility: hidden;
     opacity: 0;
-    transition: opacity 0.15s, visibility 0.15s;
+    transition: opacity 0.15s, visibilty 0.15s;
+    .apos-tooltip__wrapper {
+      transform: scale(0.8);
+    }
   }
 
   &[aria-hidden='false'] {
     visibility: visible;
     opacity: 1;
     transition: opacity 0.15s;
+    .apos-tooltip__wrapper {
+      transform: scale(1);
+    }
   }
+}
+
+.apos-tooltip__wrapper {
+  transition: all 0.2s var(--a-transition-timing-bounce);
+  /* stylelint-disable-next-line time-min-milliseconds */
+  transition-delay: 0.1s;
+  transform: scale(0.8);
 }

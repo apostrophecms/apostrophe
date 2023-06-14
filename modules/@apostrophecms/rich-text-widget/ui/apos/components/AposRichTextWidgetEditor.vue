@@ -673,29 +673,34 @@ function traverseNextNode(node) {
 
   .apos-rich-text-toolbar ::v-deep {
 
-    .apos-context-menu__pane {
+    & > .apos-context-menu__pane {
       padding: 8px;
       border: 1px solid var(--a-primary-transparent-25);
       background-color: var(--a-background-primary);
       border-radius: var(--a-border-radius-large);
     }
 
-    .apos-is-active .apos-button:after,
-    .apos-button:hover:after {
+    .apos-is-active .apos-button--rich-text:after,
+    .apos-button--rich-text:hover:after,
+    .apos-button--rich-text:active:after,
+    .apos-button--rich-text:focus:after {
       opacity: 1;
       transform: scale(1.15) translateY(0);
     }
 
-    .apos-is-active .apos-button:after {
-    // .apos-is-active .apos-button:hover:after {
+    .apos-is-active .apos-button--rich-text:after {
       background-color: var(--a-primary-transparent-10);
     }
 
-    .apos-is-active .apos-button:hover:after {
+    .apos-is-active .apos-button--rich-text:hover:after {
       background-color: var(--a-primary-transparent-15);
     }
 
-    .apos-button {
+    .apos-button--rich-text .apos-button__icon {
+      transition: all 0.3s var(--a-transition-timing-bounce);
+    }
+
+    .apos-button--rich-text {
       position: relative;
       width: 24px;
       height: 24px;
@@ -710,6 +715,15 @@ function traverseNextNode(node) {
       &:hover:after {
         background-color: var(--a-base-9);
       }
+      &:active {
+        background-color: transparent;
+      }
+      &:active .apos-button__icon {
+        transform: scale(0.8);
+      }
+      &:active:after, &:focus:after {
+        background-color: var(--a-primary-transparent-25);
+      }
       &:after {
         content: '';
         z-index: $z-index-button-background;
@@ -719,14 +733,17 @@ function traverseNextNode(node) {
         display: block;
         width: 100%;
         height: 100%;
-        background-color: var(--a-base-9);
-        transition: all 0.5s var(--a-transition-timing-bounce);
+        background-color: transparent;
+        transition:
+          opacity 0.5s var(--a-transition-timing-bounce),
+          transform 0.5s var(--a-transition-timing-bounce),
+          background-color 0.5s ease;
         opacity: 0;
         transform: scale(0.3) translateY(-4px);
       }
     }
 
-    .apos-button__content {
+    .apos-button--rich-text .apos-button__content {
       z-index: $z-index-button-foreground;
       position: relative;
     }
@@ -734,7 +751,6 @@ function traverseNextNode(node) {
     .apos-is-active {
       background-color: transparent;
     }
-
   }
 
   .apos-rich-text-toolbar.editor-menu-bar {
