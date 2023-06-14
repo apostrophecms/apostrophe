@@ -13,6 +13,12 @@
         <TheAposAdminBarUser data-apos-test="authenticatedUserMenuTrigger" class="apos-admin-bar__user" />
       </div>
       <TheAposContextBar @mounted="setSpacer" />
+      <component
+        v-for="bar in bars"
+        v-bind="bar.props || {}"
+        :key="bar.id"
+        :is="bar.componentName"
+      />
     </nav>
   </div>
 </template>
@@ -29,6 +35,14 @@ export default {
       default: function () {
         return [];
       }
+    }
+  },
+  computed: {
+    moduleOptions() {
+      return window.apos.adminBar;
+    },
+    bars() {
+      return this.moduleOptions.bars;
     }
   },
   async mounted() {

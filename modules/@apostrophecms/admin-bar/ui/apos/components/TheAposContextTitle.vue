@@ -33,8 +33,9 @@
       />
       <AposLabel
         v-else
-        label="apostrophe:draft" :modifiers="['apos-is-warning', 'apos-is-filled']"
-        tooltip="apostrophe:notYetPublished"
+        :label="unpublishedLabel"
+        :tooltip="unpublishedTooltip"
+        :modifiers="['apos-is-warning', 'apos-is-filled']"
       />
     </span>
   </transition-group>
@@ -105,6 +106,15 @@ export default {
     },
     canTogglePublishDraftMode() {
       return !this.isUnpublished && !this.hasCustomUi;
+    },
+    moduleOptions() {
+      return window.apos.adminBar;
+    },
+    unpublishedLabel() {
+      return this.moduleOptions.unpublishedLabel || 'apostrophe:draft';
+    },
+    unpublishedTooltip() {
+      return this.moduleOptions.unpublishedTooltip || 'apostrophe:notYetPublished';
     }
   },
   mounted() {
