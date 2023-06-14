@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.51.0 (2023-06-14)
+
+### Adds
+
+* When duplicating another document, the `_id` properties of
+array items, widgets and areas are still regenerated to ensure
+uniqueness across documents. However, an `_originalId` property
+is now available for reference while the document remains in memory.
+This facilitates change detection within array items in
+`beforeSave` handlers and the like.
+
 ## 3.50.0 (2023-06-09)
 
 ### Adds
