@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Uses `findForEditing` method in the page put route.
+
 ### Adds
 
 * Adds the possibility to add custom admin bars via the `addBar()` method from the `admin-bar` module.
