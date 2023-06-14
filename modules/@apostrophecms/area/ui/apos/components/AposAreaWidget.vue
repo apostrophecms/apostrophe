@@ -676,10 +676,6 @@ export default {
       transition: all 0.2s var(--a-transition-timing-bounce);
       padding: 5px;
       border-radius: 12px;
-
-      // &:hover:not([disabled]) {
-
-      // }
     }
   }
 
