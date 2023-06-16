@@ -8,9 +8,9 @@
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
-        <TheAposAdminBarMenu :items="items" />
+        <TheAposAdminBarMenu :items="menuItems" />
         <TheAposAdminBarLocale v-if="hasLocales()" />
-        <TheAposAdminBarUser data-apos-test="authenticatedUserMenuTrigger" class="apos-admin-bar__user" />
+        <TheAposAdminBarUser data-apos-test="authenticatedUserMenuTrigger" class="apos-admin-bar__user" :items="userItems" />
       </div>
       <TheAposContextBar @mounted="setSpacer" />
     </nav>
@@ -42,6 +42,14 @@ export default {
     },
     hasLocales() {
       return Object.keys(window.apos.i18n.locales).length > 1;
+    }
+  },
+  computed: {
+    menuItems() {
+      return this.items.filter(item => !item.options?.user);
+    },
+    userItems() {
+      return this.items.filter(item => item.options?.user);
     }
   }
 };

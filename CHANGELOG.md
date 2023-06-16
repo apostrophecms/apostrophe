@@ -1,5 +1,14 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Items can now be added to the user's personal menu in the
+admin bar, alongside the "Log Out" option. To do so, specify
+the `user: true` option when calling `self.apos.adminBar.add`.
+This should be reserved for items that manage personal settings.
+
 ## 3.50.0 (2023-06-09)
 
 ### Adds
