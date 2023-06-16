@@ -10,7 +10,11 @@
         <AposLogoPadless class="apos-admin-bar__logo" />
         <TheAposAdminBarMenu :items="menuItems" />
         <TheAposAdminBarLocale v-if="hasLocales()" />
-        <TheAposAdminBarUser data-apos-test="authenticatedUserMenuTrigger" class="apos-admin-bar__user" :items="userItems" />
+        <TheAposAdminBarUser
+          data-apos-test="authenticatedUserMenuTrigger"
+          class="apos-admin-bar__user"
+          :items="userItems"
+        />
       </div>
       <TheAposContextBar @mounted="setSpacer" />
     </nav>
@@ -31,6 +35,14 @@ export default {
       }
     }
   },
+  computed: {
+    menuItems() {
+      return this.items.filter(item => !item.options?.user);
+    },
+    userItems() {
+      return this.items.filter(item => item.options?.user);
+    }
+  },
   async mounted() {
     this.setSpacer();
   },
@@ -42,14 +54,6 @@ export default {
     },
     hasLocales() {
       return Object.keys(window.apos.i18n.locales).length > 1;
-    }
-  },
-  computed: {
-    menuItems() {
-      return this.items.filter(item => !item.options?.user);
-    },
-    userItems() {
-      return this.items.filter(item => item.options?.user);
     }
   }
 };
