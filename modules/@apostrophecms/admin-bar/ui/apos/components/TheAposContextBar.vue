@@ -525,6 +525,19 @@ export default {
         return;
       }
 
+      const { action } = window.apos.modules[this.context.type];
+      const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
+        qs: {
+          aposMode: this.draftMode,
+          project: { _url: 1 }
+        }
+      });
+
+      if (this.urlDiffers(doc._url)) {
+        // Slug changed, change browser URL to reflect the actual url of the doc
+        history.replaceState(null, '', doc._url);
+      }
+
       const qs = {
         ...apos.http.parseQuery(window.location.search),
         aposRefresh: '1',
@@ -534,16 +547,7 @@ export default {
         } : {})
       };
 
-      const { action } = window.apos.modules[this.context.type];
-      const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
-        qs: {
-          aposMode: this.draftMode,
-          project: { _url: 1 }
-        }
-      });
-
-      const url = apos.http.addQueryToUrl(doc._url, qs);
-      const content = await apos.http.get(url, {
+      const content = await apos.http.get(doc._url, {
         qs,
         headers: {
           'Cache-Control': 'no-cache'

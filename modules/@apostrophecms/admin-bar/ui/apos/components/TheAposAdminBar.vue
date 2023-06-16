@@ -17,6 +17,12 @@
         />
       </div>
       <TheAposContextBar @mounted="setSpacer" />
+      <component
+        v-for="bar in bars"
+        v-bind="bar.props || {}"
+        :key="bar.id"
+        :is="bar.componentName"
+      />
     </nav>
   </div>
 </template>
@@ -41,6 +47,12 @@ export default {
     },
     userItems() {
       return this.items.filter(item => item.options?.user);
+    },
+    moduleOptions() {
+      return window.apos.adminBar;
+    },
+    bars() {
+      return this.moduleOptions.bars;
     }
   },
   async mounted() {
