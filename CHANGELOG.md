@@ -5,6 +5,7 @@
 ### Adds
 
 * Adds the possibility to add custom admin bars via the `addBar()` method from the `admin-bar` module.
+* Adds support for conditional fields within `array` and `object` field schema. See the [documentation](https://v3.docs.apostrophecms.org/guide/conditional-fields/) for more information.
 
 ### Changes
 
