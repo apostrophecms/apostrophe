@@ -335,8 +335,9 @@ module.exports = {
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         self.publicApiCheck(req);
+
         return self.withLock(req, async () => {
-          const page = await self.find(req, { _id }).toObject();
+          const page = await self.findForEditing(req, { _id }).toObject();
           if (!page) {
             throw self.apos.error('notfound');
           }

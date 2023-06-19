@@ -122,4 +122,47 @@ describe('Admin bar', function() {
       t.destroy(apos);
     }
   });
+
+  it('should add custom bars and place the ones with `last: true` at the end', async function() {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module
+      });
+
+      apos.adminBar.addBar({
+        id: 'bar1',
+        componentName: 'Bar1'
+      });
+      apos.adminBar.addBar({
+        id: 'bar2',
+        componentName: 'Bar2',
+        last: true
+      });
+      apos.adminBar.addBar({
+        id: 'bar3',
+        componentName: 'Bar3'
+      });
+
+      const expected = [
+        {
+          id: 'bar1',
+          componentName: 'Bar1'
+        },
+        {
+          id: 'bar3',
+          componentName: 'Bar3'
+        },
+        {
+          id: 'bar2',
+          componentName: 'Bar2',
+          last: true
+        }
+      ];
+
+      assert.deepEqual(apos.adminBar.bars, expected);
+    } finally {
+      t.destroy(apos);
+    }
+  });
 });
