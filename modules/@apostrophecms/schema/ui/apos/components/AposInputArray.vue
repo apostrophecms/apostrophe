@@ -38,10 +38,10 @@
           >
             <th class="apos-table-cell--hidden" />
             <th
-              v-for="schema in field.schema"
-              :key="schema._id"
+              v-for="s in visibleSchema()"
+              :key="s._id"
             >
-              {{ $t(schema.label) }}
+              {{ $t(s.label) }}
             </th>
             <th />
           </thead>
@@ -56,7 +56,7 @@
             <AposSchema
               v-for="(item, index) in items"
               :key="item._id"
-              :schema="field.schema"
+              :schema="schema"
               class="apos-input-array-inline-item"
               :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
               v-model="item.schemaInput"
@@ -65,6 +65,7 @@
               :modifiers="['small', 'inverted']"
               :doc-id="docId"
               :following-values="getFollowingValues(item)"
+              :conditional-fields="conditionalFields(item.schemaInput?.data || {})"
               :field-style="field.style"
             >
               <template #before>
@@ -141,6 +142,8 @@
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
+import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
+
 import cuid from 'cuid';
 import { klona } from 'klona';
 import { get } from 'lodash';
@@ -149,7 +152,11 @@ import draggable from 'vuedraggable';
 export default {
   name: 'AposInputArray',
   components: { draggable },
-  mixins: [ AposInputMixin, AposInputFollowingMixin ],
+  mixins: [
+    AposInputMixin,
+    AposInputFollowingMixin,
+    AposInputConditionalFieldsMixin
+  ],
   props: {
     generation: {
       type: Number,
@@ -166,6 +173,10 @@ export default {
     return data;
   },
   computed: {
+    // required by the conditional fields mixin
+    schema() {
+      return this.field.schema;
+    },
     alwaysExpand() {
       return alwaysExpand(this.field);
     },
@@ -237,6 +248,11 @@ export default {
           this.validateAndEmit();
         }
       }
+    }
+  },
+  async created() {
+    if (this.field.inline) {
+      await this.evaluateExternalConditions();
     }
   },
   methods: {
@@ -343,6 +359,18 @@ export default {
     },
     getFollowingValues(item) {
       return this.computeFollowingValues(item.schemaInput.data);
+    },
+    // Retrieve table heading fields from the schema, based on the currently
+    // opened item. Available only when the field style is `table`.
+    visibleSchema() {
+      if (this.field.style !== 'table') {
+        return this.schema;
+      }
+      const currentItem = this.items.find(item => item.open) || this.items[this.items.length - 1];
+      const conditions = this.conditionalFields(currentItem?.schemaInput?.data || {});
+      return this.schema.filter(
+        field => conditions[field.name] !== false
+      );
     }
   }
 };
