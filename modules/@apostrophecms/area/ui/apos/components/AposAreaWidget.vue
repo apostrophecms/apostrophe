@@ -24,9 +24,10 @@
             <AposIndicator :icon="widgetIcon" :icon-size="13" />
           </li>
           <li
-            v-for="item in breadcrumbs.list"
+            v-for="(item, index) in breadcrumbs.list"
             :key="item.id"
             class="apos-area-widget__breadcrumb"
+            :data-apos-widget-breadcrumb="breadcrumbs.list.length - index"
           >
             <AposButton
               type="quiet"
@@ -37,7 +38,7 @@
               :modifiers="['icon-right', 'no-motion']"
             />
           </li>
-          <li class="apos-area-widget__breadcrumb">
+          <li class="apos-area-widget__breadcrumb" data-apos-widget-breadcrumb="0">
             <AposButton
               type="quiet"
               @click="foreign ? $emit('edit', i) : false"
