@@ -2,9 +2,9 @@
 // via API calls - made in parallel for performance-
 // and store their result for reusability.
 // `schema` - the fields schema
-// `docIdOrContextDocId` - the current docId
+// `docId` - the current docId (from prop or context)
 // `$t` - the i18n function (usually `this.$t`)
-export async function evaluateExternalConditions(schema, docIdOrContextDocId, $t) {
+export async function evaluateExternalConditions(schema, docId, $t) {
   let externalConditionsResults = {};
 
   for (const field of schema) {
@@ -22,7 +22,7 @@ export async function evaluateExternalConditions(schema, docIdOrContextDocId, $t
         const promises = uniqExternalConditionKeys
           .map(key => externalConditionsResults[key] !== undefined
             ? null
-            : evaluateExternalCondition(key, field._id, docIdOrContextDocId)
+            : evaluateExternalCondition(key, field._id, docId)
           )
           .filter(Boolean);
 
