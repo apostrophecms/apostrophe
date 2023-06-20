@@ -8,7 +8,18 @@
 admin bar, alongside the "Log Out" option. To do so, specify
 the `user: true` option when calling `self.apos.adminBar.add`.
 This should be reserved for items that manage personal settings.
+* When duplicating another document, the `_id` properties of
+array items, widgets and areas are still regenerated to ensure
+uniqueness across documents. However, an `_originalId` property
+is now available for reference while the document remains in memory.
+This facilitates change detection within array items in
+`beforeSave` handlers and the like.
 * Adds the possibility to add custom admin bars via the `addBar()` method from the `admin-bar` module.
+
+### Fixes
+
+* Uses `findForEditing` method in the page put route.
+
 
 ### Changes
 
