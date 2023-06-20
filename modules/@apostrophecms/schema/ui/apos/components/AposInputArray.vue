@@ -38,7 +38,7 @@
           >
             <th class="apos-table-cell--hidden" />
             <th
-              v-for="subfield in visibleSubFields()"
+              v-for="subfield in visibleSchema()"
               :key="subfield._id"
             >
               {{ $t(subfield.label) }}
@@ -362,7 +362,7 @@ export default {
     },
     // Retrieve table heading fields from the schema, based on the currently
     // opened item. Available only when the field style is `table`.
-    visibleSubFields() {
+    visibleSchema() {
       if (this.field.style !== 'table') {
         return this.schema;
       }
