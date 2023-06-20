@@ -74,6 +74,7 @@ module.exports = {
     }
     self.enableBrowserData();
     await self.enableBearerTokens();
+    self.addToAdminBar();
   },
   handlers(self) {
     return {
@@ -850,7 +851,20 @@ module.exports = {
           namespace,
           key: username
         });
+      },
+
+      addToAdminBar() {
+        self.apos.adminBar.add(
+          `${self.__meta.name}-logout`,
+          'apostrophe:logOut',
+          false,
+          {
+            user: true,
+            last: true
+          }
+        );
       }
+
     };
   },
 
