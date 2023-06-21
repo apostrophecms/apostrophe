@@ -2,7 +2,13 @@
   <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleUIKeydown">
     <bubble-menu
       class="bubble-menu"
-      :tippy-options="{ maxWidth: 'none', duration: 100, zIndex: 2000 }"
+      :tippy-options="{
+        maxWidth: 'none',
+        duration: 300,
+        zIndex: 2000,
+        animation: 'fade',
+        inertia: true
+      }"
       :editor="editor"
       v-if="editor"
     >
@@ -10,7 +16,6 @@
         menu-placement="top"
         class-list="apos-rich-text-toolbar"
         :has-tip="false"
-        :modifiers="['unpadded']"
       >
         <div class="apos-rich-text-toolbar__inner">
           <component
@@ -657,10 +662,95 @@ function traverseNextNode(node) {
 
 <style lang="scss" scoped>
 
+  $z-index-button-background: 1;
+  $z-index-button-foreground: 2;
+
   .apos-rich-text-toolbar.editor-menu-bubble {
     z-index: $z-index-manager-toolbar;
     position: absolute;
     transform: translate3d(-50%, -50%, 0);
+  }
+
+  .apos-rich-text-toolbar ::v-deep {
+
+    & > .apos-context-menu__pane {
+      padding: 8px;
+      border: 1px solid var(--a-primary-transparent-25);
+      background-color: var(--a-background-primary);
+      border-radius: var(--a-border-radius-large);
+    }
+
+    .apos-is-active .apos-button--rich-text:after,
+    .apos-button--rich-text:hover:after,
+    .apos-button--rich-text:active:after,
+    .apos-button--rich-text:focus:after {
+      opacity: 1;
+      transform: scale(1.15) translateY(0);
+    }
+
+    .apos-is-active .apos-button--rich-text:after {
+      background-color: var(--a-primary-transparent-10);
+    }
+
+    .apos-is-active .apos-button--rich-text:hover:after {
+      background-color: var(--a-primary-transparent-15);
+    }
+
+    .apos-button--rich-text .apos-button__icon {
+      transition: all 0.3s var(--a-transition-timing-bounce);
+    }
+
+    .apos-button--rich-text {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: var(--a-border-radius);
+      background-color: transparent;
+      color: var(--a-base-1);
+      &:hover {
+        background-color: transparent;
+      }
+      &:hover:after {
+        background-color: var(--a-base-9);
+      }
+      &:active {
+        background-color: transparent;
+      }
+      &:active .apos-button__icon {
+        transform: scale(0.8);
+      }
+      &:active:after, &:focus:after {
+        background-color: var(--a-primary-transparent-25);
+      }
+      &:after {
+        content: '';
+        z-index: $z-index-button-background;
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        background-color: transparent;
+        transition:
+          opacity 0.5s var(--a-transition-timing-bounce),
+          transform 0.5s var(--a-transition-timing-bounce),
+          background-color 0.5s ease;
+        opacity: 0;
+        transform: scale(0.3) translateY(-4px);
+      }
+    }
+
+    .apos-button--rich-text .apos-button__content {
+      z-index: $z-index-button-foreground;
+      position: relative;
+    }
+
+    .apos-is-active {
+      background-color: transparent;
+    }
   }
 
   .apos-rich-text-toolbar.editor-menu-bar {
@@ -674,13 +764,7 @@ function traverseNextNode(node) {
     align-items: stretch;
     max-width: 100%;
     height: auto;
-    background-color: var(--a-background-primary);
-    color: var(--a-text-primary);
-    border-radius: var(--a-border-radius);
-  }
-
-  .apos-rich-text-toolbar ::v-deep .apos-is-active {
-    background-color: var(--a-base-9);
+    gap: 4px;
   }
 
   .apos-rich-text-editor__editor ::v-deep .ProseMirror {
@@ -715,6 +799,18 @@ function traverseNextNode(node) {
     border-radius: var(--a-border-radius);
     background-color: transparent;
   }
+
+  .apos-rich-text-editor__editor ::v-deep [data-tippy-root] {
+    transition: all 0.4s var(--a-transition-timing-bounce);
+    /* stylelint-disable-next-line time-min-milliseconds */
+    transition-delay: 0.1s;
+  }
+
+  .apos-rich-text-editor__editor ::v-deep .tippy-box[data-animation='fade'][data-state='hidden'] {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
   .apos-rich-text-editor__editor.apos-is-visually-empty {
     background-color: var(--a-primary-transparent-10);
     min-height: 50px;
