@@ -20,7 +20,9 @@ This facilitates change detection within array items in
 ### Fixes
 
 * Uses `findForEditing` method in the page put route.
-
+* The "Duplicate" option in the page or piece manager now correctly duplicates the
+entire document. This was a regression introduced in 3.48.0. The "Duplicate" option
+in the editor dialog box always worked correctly.
 
 ### Changes
 
