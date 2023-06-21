@@ -28,9 +28,6 @@ in the editor dialog box always worked correctly.
 
 * Browser URL now changes to reflect the slug of the document according to the mode that is being viewed.
 
-### Fixes
-
-
 ## 3.50.0 (2023-06-09)
 
 ### Adds
