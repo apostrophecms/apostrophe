@@ -389,14 +389,13 @@ export default {
         } else {
           this.$emit('close', doc);
         }
-      } else if (doc.slug.startsWith('/')) {
-        // If doc is a page and `this.current` is `null` (ie. we are on Pages manager modal),
-        // load the whole page to duplicate the page AND its whole content:
-        const page = await apos.http.get(`${apos.page.action}/${doc._id}`, {
-          busy: true
-        });
-        Object.assign(doc, page);
       }
+      // Because the page or piece manager might give us just a projected,
+      // minimum number of properties otherwise
+      const complete = await apos.http.get(`${this.moduleOptions.action}/${doc._id}`, {
+        busy: true
+      });
+      Object.assign(doc, complete);
 
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`,
