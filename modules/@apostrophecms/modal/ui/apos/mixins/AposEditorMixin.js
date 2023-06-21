@@ -15,6 +15,7 @@
  */
 
 import { klona } from 'klona';
+import { evaluateExternalConditions, conditionalFields } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
   data() {
@@ -65,69 +66,11 @@ export default {
     // via API calls -made in parallel for performance-
     // and store their result for reusability.
     async evaluateExternalConditions() {
-      const self = this;
-      for (const field of this.schema) {
-        if (field.if) {
-          const externalConditionKeys = Object
-            .entries(field.if)
-            .flatMap(getExternalConditionKeys)
-            .filter(Boolean);
-
-          const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
-
-          let results = [];
-
-          try {
-            const docOrContextDocId = this.docId || this.docFields.data._docId;
-            const promises = uniqExternalConditionKeys
-              .map(key => this.externalConditionsResults[key] !== undefined
-                ? null
-                : this.evaluateExternalCondition(key, field._id, docOrContextDocId)
-              )
-              .filter(Boolean);
-
-            results = await Promise.all(promises);
-
-            this.externalConditionsResults = {
-              ...this.externalConditionsResults,
-              ...Object.fromEntries(results)
-            };
-          } catch (error) {
-            await apos.notify(this.$t('apostrophe:errorEvaluatingExternalCondition', { name: field.name }), {
-              type: 'danger',
-              icon: 'alert-circle-icon',
-              dismiss: true,
-              localize: false
-            });
-          }
-        }
-      }
-
-      function getExternalConditionKeys([ key, val ]) {
-        if (key === '$or') {
-          return val.flatMap(nested => Object.entries(nested).map(getExternalConditionKeys));
-        }
-        if (self.isExternalCondition(key)) {
-          return key;
-        }
-        return null;
-      }
-    },
-
-    async evaluateExternalCondition(conditionKey, fieldId, docId) {
-      const { result } = await apos.http.get(
-        `${apos.schema.action}/evaluate-external-condition`,
-        {
-          qs: {
-            fieldId,
-            docId,
-            conditionKey
-          },
-          busy: true
-        }
+      this.externalConditionsResults = await evaluateExternalConditions(
+        this.schema,
+        this.docId || this.docFields?.data?._docId,
+        this.$t
       );
-
-      return [ conditionKey, result ];
     },
 
     // followedByCategory may be falsy (all fields), "other" or "utility". The returned
@@ -186,94 +129,13 @@ export default {
     // the returned object will contain properties only for conditional fields
     // in that category, although they may be conditional upon fields in either
     // category.
-
-    // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
-    isExternalCondition(conditionKey) {
-      if (!conditionKey.endsWith(')')) {
-        return false;
-      }
-
-      const [ methodDefinition ] = conditionKey.split('(');
-
-      if (!conditionKey.endsWith('()')) {
-        console.warn(`Warning in \`if\` definition: "${methodDefinition}()" should not be passed any argument.`);
-      }
-
-      return true;
-    },
-
     conditionalFields(followedByCategory) {
-      const self = this;
-      const conditionalFields = {};
-
-      while (true) {
-        let change = false;
-        for (const field of this.schema) {
-          if (field.if) {
-            const result = evaluate(field.if);
-            const previous = conditionalFields[field.name];
-            if (previous !== result) {
-              change = true;
-            }
-            conditionalFields[field.name] = result;
-          }
-        }
-        if (!change) {
-          break;
-        }
-      }
-
-      const fields = this.getFieldsByCategory(followedByCategory);
-      const result = {};
-      for (const field of fields) {
-        if (field.if) {
-          result[field.name] = conditionalFields[field.name];
-        }
-      }
-      return result;
-
-      function evaluate(clause) {
-        let result = true;
-        for (const [ key, val ] of Object.entries(clause)) {
-          if (key === '$or') {
-            if (!val.some(clause => evaluate(clause))) {
-              result = false;
-              break;
-            }
-
-            // No need to go further here, the key is an "$or" condition...
-            continue;
-          }
-
-          if (self.isExternalCondition(key)) {
-            if (self.externalConditionsResults[key] !== val) {
-              result = false;
-              break;
-            }
-
-            // Stop there, this is an external condition thus
-            // does not need to be checked against doc fields.
-            continue;
-          }
-
-          if (conditionalFields[key] === false) {
-            result = false;
-            break;
-          }
-
-          const fieldValue = self.getFieldValue(key);
-
-          if (Array.isArray(fieldValue)) {
-            result = fieldValue.includes(val);
-            break;
-          }
-          if (val !== fieldValue) {
-            result = false;
-            break;
-          }
-        }
-        return result;
-      }
+      return conditionalFields(
+        this.schema,
+        this.getFieldsByCategory(followedByCategory),
+        this.docFields.data,
+        this.externalConditionsResults
+      );
     },
 
     // Overridden by components that split the fields into several AposSchemas

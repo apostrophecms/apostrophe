@@ -1,9 +1,20 @@
 <template>
   <div class="apos-tiptap-select">
+    <format-text-icon
+      :size="16"
+      class="apos-tiptap-select__type-icon"
+      fill-color="currentColor"
+    />
     <select
+      v-apos-tooltip="{
+        content: 'apostrophe:richTextStyles',
+        placement: 'top',
+        delay: 650
+      }"
       :value="active"
       @change="setStyle"
       class="apos-tiptap-control apos-tiptap-control--select"
+      :style="`width:${options.styles[active].label.length * 6.5}px`"
     >
       <option
         v-for="(style, i) in options.styles"
@@ -77,29 +88,32 @@ export default {
   // If another select el is needed for the rich-text toolbar these styles should be made global
   .apos-tiptap-control--select {
     @include apos-button-reset();
-    @include type-small;
+    @include apos-transition();
     height: 100%;
-    padding: 0 15px 0 10px;
+    padding: 0 10px;
+    font-size: var(--a-type-smaller);
 
     &:focus, &:active {
-      background-color: var(--a-base-9);
       outline: none;
-    }
-    &:hover {
-      background-color: var(--a-base-8);
     }
   }
 
   .apos-tiptap-select {
     position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    color: var(--a-base-1);
+    border-radius: var(--a-border-radius);
+    transition: all 0.5s ease;
+    &:hover {
+      color: var(--a-text-primary);
+      background-color: var(--a-base-9);
+    }
   }
 
-  .apos-tiptap-select ::v-deep .apos-tiptap-select__icon {
-    position: absolute;
-    top: 50%;
-    right: 5px;
-    transform: translateY(-50%);
-    height: 11px;
-    pointer-events: none;
+  .apos-tiptap-select__type-icon {
+    padding-top: 2px;
   }
+
 </style>

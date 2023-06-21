@@ -8,20 +8,32 @@
         v-bind="upButton"
         :disabled="first || disabled"
         @click="$emit('up')"
-        :tooltip="(!disabled && !first) ? 'apostrophe:nudgeUp' : null"
+        :tooltip="{
+          content: (!disabled && !first) ? 'apostrophe:nudgeUp' : null,
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-bind="editButton"
         :disabled="disabled"
         v-if="!foreign && !options.contextual"
         @click="$emit('edit')"
-        tooltip="apostrophe:editWidget"
+        :tooltip="{
+          content: 'apostrophe:editWidget',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-bind="cutButton"
         v-if="!foreign"
         @click="$emit('cut')"
-        tooltip="apostrophe:cut"
+        :tooltip="{
+          content: 'apostrophe:cut',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <!-- <AposButton
         v-bind="copyButton"
@@ -34,21 +46,33 @@
         :disabled="disabled || maxReached"
         v-bind="cloneButton"
         @click="$emit('clone')"
-        tooltip="apostrophe:duplicate"
+        :tooltip="{
+          content: 'apostrophe:duplicate',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-if="!foreign"
         :disabled="disabled"
         v-bind="removeButton"
         @click="$emit('remove')"
-        tooltip="apostrophe:delete"
+        :tooltip="{
+          content: 'apostrophe:delete',
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
       <AposButton
         v-if="!foreign"
         v-bind="downButton"
         :disabled="last || disabled"
         @click="$emit('down')"
-        :tooltip="(!disabled && !last) ? 'apostrophe:nudgeDown' : null"
+        :tooltip="{
+          content: (!disabled && !last) ? 'apostrophe:nudgeDown' : null,
+          placement: 'left'
+        }"
+        :modifiers="[ 'inline' ]"
       />
     </AposButtonGroup>
   </div>
@@ -161,3 +185,58 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+$z-index-button-background: 1;
+$z-index-button-foreground: 2;
+
+.apos-area-modify-controls ::v-deep {
+  .apos-button__content {
+    z-index: $z-index-button-foreground;
+    position: relative;
+  }
+  .apos-button__icon {
+    transition: all 0.3s var(--a-transition-timing-bounce);
+  }
+  .apos-button {
+    background-color: transparent;
+
+    &:not([disabled]):hover:after {
+      background-color: var(--a-base-9);
+    }
+    &:active {
+      background-color: transparent;
+    }
+    &:active .apos-button__icon {
+      transform: scale(0.8);
+    }
+    &:active:after, &:focus:after {
+      background-color: var(--a-primary-transparent-25);
+    }
+    &:after,
+    &:not([disabled]):hover:after,
+    &:not([disabled]):active:after,
+    &:not([disabled]):focus:after {
+      opacity: 1;
+      transform: scale(1.15) translateY(0);
+    }
+    &:after {
+      content: '';
+      z-index: $z-index-button-background;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: transparent;
+      transition:
+        opacity 0.5s var(--a-transition-timing-bounce),
+        transform 0.5s var(--a-transition-timing-bounce),
+        background-color 0.5s ease;
+      opacity: 0;
+      transform: scale(0.3) translateY(-4px);
+    }
+  }
+}
+</style>

@@ -54,10 +54,11 @@
         <Component
           v-if="item.options.component"
           :is="item.options.component"
-          :key="item.name"
+          :key="`${item.name}.component`"
         />
         <AposButton
-          v-else :key="item.name"
+          v-else
+          :key="`${item.name}.fallback`"
           type="subtle" :modifiers="['small', 'no-motion']"
           :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
           :icon="item.options.icon" :icon-only="true"

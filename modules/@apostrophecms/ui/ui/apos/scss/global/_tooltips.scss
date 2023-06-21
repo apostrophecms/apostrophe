@@ -4,6 +4,8 @@
   z-index: $z-index-notifications;
   display: block;
   max-width: 285px;
+  /* stylelint-disable-next-line time-min-milliseconds */
+  transition-delay: 0.1s;
 
   .apos-info {
     max-width: 330px;
@@ -32,7 +34,7 @@
     @include type-small;
     z-index: $z-index-default;
     position: relative;
-    padding: 10px;
+    padding: 8px 10px;
     border-radius: 3px;
     border-width: 0;
     color: var(--a-text-inverted);
@@ -42,10 +44,10 @@
   .apos-tooltip__arrow {
     z-index: $z-index-base;
     position: absolute;
-    width: 16px;
-    height: 16px;
+    width: 8px;
+    height: 8px;
     margin: 5px;
-    border-radius: 3px;
+    border-radius: 1px;
     // Solid border style needed to work with v-apos-tooltip placement.
     border-style: solid;
     border-color: var(--a-background-inverted);
@@ -57,7 +59,7 @@
     margin-bottom: 5px;
 
     .apos-tooltip__arrow {
-      bottom: -7px;
+      bottom: -4px;
       left: calc(50% - 5px);
       margin-top: 0;
       margin-bottom: 0;
@@ -68,7 +70,7 @@
     margin-top: 5px;
 
     .apos-tooltip__arrow {
-      top: -5px;
+      top: -3px;
       left: calc(50% - 5px);
       margin-top: 0;
       margin-bottom: 0;
@@ -80,7 +82,7 @@
 
     .apos-tooltip__arrow {
       top: calc(50% - 5px);
-      left: -5px;
+      left: -3px;
       margin-left: 0;
       margin-right: 0;
     }
@@ -91,7 +93,7 @@
 
     .apos-tooltip__arrow {
       top: calc(50% - 5px);
-      right: -5px;
+      right: -3px;
       margin-left: 0;
       margin-right: 0;
     }
@@ -100,12 +102,25 @@
   &[aria-hidden='true'] {
     visibility: hidden;
     opacity: 0;
-    transition: opacity 0.15s, visibility 0.15s;
+    transition: opacity 0.15s, visibilty 0.15s;
+    .apos-tooltip__wrapper {
+      transform: scale(0.8);
+    }
   }
 
   &[aria-hidden='false'] {
     visibility: visible;
     opacity: 1;
     transition: opacity 0.15s;
+    .apos-tooltip__wrapper {
+      transform: scale(1);
+    }
   }
+}
+
+.apos-tooltip__wrapper {
+  transition: all 0.2s var(--a-transition-timing-bounce);
+  /* stylelint-disable-next-line time-min-milliseconds */
+  transition-delay: 0.1s;
+  transform: scale(0.8);
 }

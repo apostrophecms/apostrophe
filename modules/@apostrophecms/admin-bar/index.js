@@ -143,6 +143,10 @@ module.exports = {
       // for screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
       //
+      // If `options.user` is true, the menu bar item will appear
+      // on the user's personal dropdown, where "Log Out" appears. Such items
+      // cannot be grouped further.
+
       // If an `options.when` function is provided, it will be invoked with
       // `req` to test whether this admin bar item should be displayed or not.
 

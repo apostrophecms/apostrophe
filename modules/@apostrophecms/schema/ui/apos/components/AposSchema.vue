@@ -32,6 +32,7 @@
       v-for="field in schema" :key="field.name"
       :data-apos-field="field.name"
       :is="fieldStyle === 'table' ? 'td' : 'div'"
+      v-show="displayComponent(field.name)"
     >
       <component
         v-show="displayComponent(field.name)"

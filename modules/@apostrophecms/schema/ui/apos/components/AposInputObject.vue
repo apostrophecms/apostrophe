@@ -11,11 +11,12 @@
       <div class="apos-input-object">
         <div class="apos-input-wrapper">
           <AposSchema
-            :schema="field.schema"
+            :schema="schema"
             :trigger-validation="triggerValidation"
             :generation="generation"
             :doc-id="docId"
             v-model="schemaInput"
+            :conditional-fields="conditionalFields(values)"
             :following-values="followingValuesWithParent"
             ref="schema"
           />
@@ -28,10 +29,15 @@
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
+import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
 
 export default {
   name: 'AposInputObject',
-  mixins: [ AposInputMixin, AposInputFollowingMixin ],
+  mixins: [
+    AposInputMixin,
+    AposInputFollowingMixin,
+    AposInputConditionalFieldsMixin
+  ],
   props: {
     generation: {
       type: Number,
@@ -60,6 +66,13 @@ export default {
   computed: {
     followingValuesWithParent() {
       return this.computeFollowingValues(this.schemaInput.data);
+    },
+    // Reqiured for AposInputConditionalFieldsMixin
+    schema() {
+      return this.field.schema;
+    },
+    values() {
+      return this.schemaInput.data;
     }
   },
   watch: {
@@ -83,6 +96,9 @@ export default {
         data: this.next
       };
     }
+  },
+  async created() {
+    await this.evaluateExternalConditions();
   },
   methods: {
     validate (value) {
