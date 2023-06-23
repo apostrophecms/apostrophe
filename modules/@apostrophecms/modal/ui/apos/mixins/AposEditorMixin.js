@@ -133,7 +133,8 @@ export default {
       return conditionalFields(
         this.schema,
         this.getFieldsByCategory(followedByCategory),
-        this.docFields.data,
+        // currentDoc for arrays, docFields for all other editors
+        this.currentDoc ? this.currentDoc.data : this.docFields.data,
         this.externalConditionsResults
       );
     },
