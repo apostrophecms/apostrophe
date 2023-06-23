@@ -1,10 +1,10 @@
 # Changelog
 
-## UNRELEASED
+## 3.51.1 (2023-06-23)
 
 ## Fixes
 
-* Fix a regression - conditional fields in Array Editor modal are working again.
+* Fix a regression introduced in 3.51.0 - conditional fields work again in the array editor dialog box.
 
 ## 3.51.0 (2023-06-21)
 
