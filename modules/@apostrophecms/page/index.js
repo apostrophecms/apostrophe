@@ -1224,7 +1224,6 @@ database.`);
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
-        console.log('criteria', criteria);
         const target = await self.find(req, criteria).permission(false).archived(null).areas(false).ancestors({
           depth: 1,
           archived: null,
@@ -1254,9 +1253,6 @@ database.`);
       async getTargetIdAndPosition(req, pageId, targetId, position) {
         targetId = self.apos.launder.id(targetId);
         position = self.apos.launder.string(position);
-
-        console.log('targetId', targetId);
-        console.log('position', position);
 
         if (isNaN(parseInt(position)) || parseInt(position) < 0) {
           // Return an already-valid position or a potentially invalid, but
