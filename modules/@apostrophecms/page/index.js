@@ -254,9 +254,8 @@ module.exports = {
       // This call is atomic with respect to other REST write operations on pages.
       async post(req) {
         self.publicApiCheck(req);
-        req.body._position = req.body._position || 'lastChild';
         let targetId = self.apos.launder.string(req.body._targetId);
-        let position = self.apos.launder.string(req.body._position);
+        let position = self.apos.launder.string(req.body._position || 'lastChild');
         // Here we have to normalize before calling insert because we
         // need the parent page to call newChild(). insert calls again but
         // sees there's no work to be done, so no performance hit
