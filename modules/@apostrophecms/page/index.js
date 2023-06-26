@@ -261,7 +261,7 @@ module.exports = {
         // need the parent page to call newChild(). insert calls again but
         // sees there's no work to be done, so no performance hit
         const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
-        targetId = normalized.targetId;
+        targetId = normalized.targetId || '_home';
         position = normalized.position;
         const copyingId = self.apos.launder.id(req.body._copyingId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
@@ -273,7 +273,7 @@ module.exports = {
         if (req.body._newInstance) {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return it
-          const parentPage = await self.findForEditing(req, { _id: targetId })
+          const parentPage = await self.findForEditing(req, self.getIdCriteria(targetId))
             .permission('edit', '@apostrophecms/any-page-type').toObject();
           const newChild = self.newChild(parentPage);
           newChild._previewable = true;
@@ -281,7 +281,12 @@ module.exports = {
         }
 
         return self.withLock(req, async () => {
-          const targetPage = await self.findForEditing(req, targetId ? self.getIdCriteria(targetId) : { level: 0 }).ancestors(true).permission('edit').toObject();
+          const targetPage = await self
+            .findForEditing(req, self.getIdCriteria(targetId))
+            .ancestors(true)
+            .permission('edit')
+            .toObject();
+
           if (!targetPage) {
             throw self.apos.error('notfound');
           }
@@ -1219,6 +1224,7 @@ database.`);
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
+        console.log('criteria', criteria);
         const target = await self.find(req, criteria).permission(false).archived(null).areas(false).ancestors({
           depth: 1,
           archived: null,
@@ -1248,6 +1254,9 @@ database.`);
       async getTargetIdAndPosition(req, pageId, targetId, position) {
         targetId = self.apos.launder.id(targetId);
         position = self.apos.launder.string(position);
+
+        console.log('targetId', targetId);
+        console.log('position', position);
 
         if (isNaN(parseInt(position)) || parseInt(position) < 0) {
           // Return an already-valid position or a potentially invalid, but
