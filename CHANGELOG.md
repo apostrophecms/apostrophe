@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Adds
+
+* Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
+* Allow support for `false` value in conditional `if` checks
+* Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
+
 ### Fixes
 
 * Allows to create page without defining the page target ID, by default it takes the Home page.
