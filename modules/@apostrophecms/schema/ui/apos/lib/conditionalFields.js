@@ -160,7 +160,7 @@ export function conditionalFields(
         continue;
       }
 
-      if (conditionalFields[key] === false) {
+      if (conditionalFields[key] === false && val !== false) {
         result = false;
         break;
       }
