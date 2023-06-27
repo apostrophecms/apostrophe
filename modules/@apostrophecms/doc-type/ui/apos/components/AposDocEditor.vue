@@ -404,9 +404,11 @@ export default {
         this.loadNewInstance();
       });
     }
+    apos.bus.$on('update-doc-fields', this.updateDocFields);
     apos.bus.$on('content-changed', this.onContentChanged);
   },
   destroyed() {
+    apos.bus.$off('update-doc-fields', this.updateDocFields);
     apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
