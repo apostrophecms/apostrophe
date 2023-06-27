@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Allows to create page without defining the page target ID, by default it takes the Home page.
+
 ## 3.51.1 (2023-06-23)
 
 ## Fixes
