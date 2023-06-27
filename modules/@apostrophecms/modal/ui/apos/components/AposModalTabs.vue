@@ -2,8 +2,10 @@
   <div class="apos-modal-tabs">
     <ul class="apos-modal-tabs__tabs">
       <li
-        class="apos-modal-tabs__tab" v-for="tab in tabs"
+        class="apos-modal-tabs__tab"
+        v-for="tab in tabs"
         :key="tab.name"
+        v-show="tab.isVisible"
       >
         <button
           :id="tab.name" class="apos-modal-tabs__btn"
@@ -42,7 +44,7 @@ export default {
   emits: [ 'select-tab' ],
   computed: {
     currentTab() {
-      return this.current || this.tabs[0].name;
+      return this.current || this.tabs.find(tab => tab.isVisible).name;
     },
     tabErrors() {
       const errors = {};
