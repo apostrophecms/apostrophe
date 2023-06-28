@@ -1,10 +1,15 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
 
 ### Fixes
 
 * Allows to create page without defining the page target ID, by default it takes the Home page.
+* Users are no longer blocked from saving documents when a field hidden
+by an `if` condition fails to satisfy a condition such as `min` or `max`
+or is otherwise invalid. Instead the invalid value is discarded for safety.
+Note that `required` has always been ignored when an `if` condition is not
+satisfied.
 
 ## 3.51.1 (2023-06-23)
 
