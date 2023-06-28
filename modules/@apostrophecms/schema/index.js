@@ -543,7 +543,7 @@ module.exports = {
                 // for a field that is not visible should be quietly discarded.
                 // We only worry about this if the value is not valid, as otherwise
                 // it's a kindness to save the work so the user can toggle back to it
-                destination[field.name] = (field.def != undefined) ? field.def : self.fieldTypes[field.type]?.def;
+                destination[field.name] = klona((field.def !== undefined) ? field.def : self.fieldTypes[field.type]?.def);
                 continue;
               }
             }
