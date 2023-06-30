@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adds support for `permission` property in `addContextOperation`, this one can be a string or an array. Validates `addContextOperation` configuration.
+
 ### Fixes
 
 * Allows to create page without defining the page target ID, by default it takes the Home page.
