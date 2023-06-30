@@ -195,21 +195,32 @@ export default {
       return menus;
     },
     customOperationsByContext() {
-      return this.customOperations.filter(op => {
-        if (typeof op.manuallyPublished === 'boolean' && op.manuallyPublished !== this.manuallyPublished) {
+      return this.customOperations.filter(({
+        manuallyPublished, hasUrl, permission, context
+      }) => {
+        if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
         }
 
-        if (typeof op.hasUrl === 'boolean' && op.hasUrl !== this.hasUrl) {
+        if (typeof hasUrl === 'boolean' && hasUrl !== this.hasUrl) {
           return false;
         }
 
-        if (op.permission) {
-          const computed = `can${op.permission.charAt(0).toUpperCase()}${op.permission.substr(1)}`;
-          return this[computed];
+        if (permission) {
+          const permissions = typeof permission === 'string' ? [ permission ] : permission;
+          const notAllowed = permissions.some((perm) => {
+            const formatted = perm.split('-')
+              .map((part) => part.charAt(0).toUpperCase() + part.substr(1))
+              .join('');
+            return !this[`can${formatted}`];
+          });
+
+          if (notAllowed) {
+            return false;
+          }
         }
 
-        return op.context === 'update' && this.isUpdateOperation;
+        return context === 'update' && this.isUpdateOperation;
       });
     },
     moduleName() {
