@@ -1153,9 +1153,10 @@ module.exports = {
       //   context: 'update',
       //   action: 'someAction',
       //   modal: 'ModalComponent',
-      //   label: 'Context Menu Label'
+      //   label: 'Context Menu Label',
+      //   permission: 'edit'
       // }
-      // All properties are required.
+      // All properties are required except permission.
       // The only supported `context` for now is `update`.
       // `action` is the operation identifier and should be globally unique.
       // Overriding existing custom actions is possible (the last wins).
@@ -1166,7 +1167,10 @@ module.exports = {
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
+      // `permission` defines the needed permission for the current doc to display
+      // the operation, available values are `edit` and `publish`.
       addContextOperation(moduleName, operation) {
+        validate(operation);
         self.contextOperations = [
           ...self.contextOperations
             .filter(op => op.action !== operation.action),
@@ -1175,6 +1179,16 @@ module.exports = {
             moduleName
           }
         ];
+
+        function validate (op) {
+          const allowedPermissions = [ 'edit', 'publish' ];
+          if (!op.action || !op.context || !op.label || !op.modal) {
+            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties');
+          }
+          if (op.permission && !allowedPermissions.includes(op.permission)) {
+            throw self.apos.error('invalid', `The permission property in addContextOperation can only be set to edit or publish, ${op.permission} is not allowed`);
+          }
+        }
       },
       getBrowserData(req) {
         return {
