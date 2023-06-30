@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Changes
+* Foreign widget UI no longer uses inverted theme styles.
+### Adds
+* Allows users to double-click a widgets's breadcrumb type and open it's editor.
+
 ### Fixes
 
 * Allows to create page without defining the page target ID, by default it takes the Home page.

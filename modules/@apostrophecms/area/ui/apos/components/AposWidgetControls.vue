@@ -1,7 +1,7 @@
 <template>
   <div class="apos-area-modify-controls">
     <AposButtonGroup
-      :modifiers="groupModifiers"
+      :modifiers="[ 'vertical' ]"
     >
       <AposButton
         v-if="!foreign"
@@ -124,15 +124,6 @@ export default {
     };
   },
   computed: {
-    groupModifiers() {
-      const mods = [ 'vertical' ];
-
-      if (this.foreign) {
-        mods.push('invert');
-      }
-
-      return mods;
-    },
     upButton() {
       return {
         ...this.buttonDefaults,
