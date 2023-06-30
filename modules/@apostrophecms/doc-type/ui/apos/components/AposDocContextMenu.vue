@@ -199,8 +199,14 @@ export default {
         if (typeof op.manuallyPublished === 'boolean' && op.manuallyPublished !== this.manuallyPublished) {
           return false;
         }
+
         if (typeof op.hasUrl === 'boolean' && op.hasUrl !== this.hasUrl) {
           return false;
+        }
+
+        if (op.permission) {
+          const computed = `can${op.permission.charAt(0).toUpperCase()}${op.permission.substr(1)}`;
+          return this[computed];
         }
 
         return op.context === 'update' && this.isUpdateOperation;
