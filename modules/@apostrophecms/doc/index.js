@@ -1168,7 +1168,9 @@ module.exports = {
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
       // `permission` defines the needed permission for the current doc to display
-      // the operation, available values are `edit` and `publish`.
+      // the operation, it can be a string or an array of these available values:
+      // 'publish', 'edit', 'dismiss-submission', 'discard-draft', 'localize',
+      // 'archive', 'unpublish', 'copy', 'restore'.
       addContextOperation(moduleName, operation) {
         validate(operation);
         self.contextOperations = [
@@ -1181,12 +1183,34 @@ module.exports = {
         ];
 
         function validate (op) {
-          const allowedPermissions = [ 'edit', 'publish' ];
+          const allowedPermissions = [
+            'publish',
+            'edit',
+            'dismiss-submission',
+            'discard-draft',
+            'localize',
+            'archive',
+            'unpublish',
+            'copy',
+            'restore'
+          ];
+
           if (!op.action || !op.context || !op.label || !op.modal) {
             throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties');
           }
-          if (op.permission && !allowedPermissions.includes(op.permission)) {
-            throw self.apos.error('invalid', `The permission property in addContextOperation can only be set to edit or publish, ${op.permission} is not allowed`);
+          if (!op.permission) {
+            return;
+          }
+
+          if (typeof op.permission !== 'string' && !Array.isArray(op.permission)) {
+            throw self.apos.error('invalid', 'The permission property in addContextOperation must be a string or an array.');
+          }
+
+          if (
+            (typeof op.permission === 'string' && !allowedPermissions.includes(op.permission)) ||
+            (Array.isArray(op.permission) && op.permission.some((perm) => !allowedPermissions.includes(perm)))
+          ) {
+            throw self.apos.error('invalid', `The permission property in addContextOperation can only be set to a string or an array of these values: \n${allowedPermissions.join('\n')}.`);
           }
         }
       },
