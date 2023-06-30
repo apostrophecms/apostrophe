@@ -1167,8 +1167,8 @@ module.exports = {
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
-      // `permission` defines the needed permission for the current doc to display
-      // the operation, it can be a string or an array of these available values:
+      // `permission` defines the needed permission action to be run on the current doc
+      // in order to display the operation. It can be a string or an array of these available values:
       // 'publish', 'edit', 'dismiss-submission', 'discard-draft', 'localize',
       // 'archive', 'unpublish', 'copy', 'restore'.
       addContextOperation(moduleName, operation) {
