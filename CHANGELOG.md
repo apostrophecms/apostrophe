@@ -5,7 +5,7 @@
 ### Adds
 
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
-* Allow support for `false` value in conditional `if` checks
+* Allow support for `false` value in schema conditional `if` checks
 * Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
 
 ### Fixes
