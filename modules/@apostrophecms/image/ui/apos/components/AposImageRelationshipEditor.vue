@@ -148,6 +148,8 @@ export default {
       errors: {},
       modal: {
         active: false,
+        mounted: false,
+        trapFocus: true,
         type: 'overlay',
         showModal: true
       },
@@ -177,6 +179,8 @@ export default {
 
     this.computeMaxSizes();
     this.computeMinSizes();
+
+    this.modal.mounted = true;
   },
   methods: {
     computeMaxSizes() {

@@ -91,6 +91,7 @@ export default {
     return {
       modal: {
         active: false,
+        mounted: false,
         type: 'overlay',
         showModal: false,
         disableHeader: true,
@@ -104,6 +105,7 @@ export default {
     this.modal.active = true;
     await this.checkUrlProp();
     await this.getAposShareKey();
+    this.modal.mounted = true;
   },
   methods: {
     async copy() {

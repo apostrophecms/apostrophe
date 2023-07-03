@@ -124,7 +124,7 @@ export default {
       }
     },
     modalReady () {
-      return this.modal.active;
+      return this.modal.mounted;
     },
     hasBeenLocalized: function() {
       return Object.keys(apos.i18n.locales).length > 1;
@@ -231,6 +231,9 @@ export default {
       e.stopPropagation();
       this.$emit('esc');
     },
+    // FIXME: focus is lost on new doc instances
+    // FIXME: not every checkbox can be focuses (selecting pages via SEO Canonical Link)
+    // TODO: handle focus for tooltips elements
     trapFocus () {
       // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
       // All the elements inside modal which you want to make focusable.
@@ -245,6 +248,7 @@ export default {
       const focusableString = focusableElements.join(', ');
       const modalEl = this.$refs.modalEl;
       const focusables = modalEl.querySelectorAll(focusableString);
+      console.log('🚀 ~ file: AposModal.vue:251 ~ trapFocus ~ focusables:', focusables);
       const firstFocusableElement = focusables[0];
       const lastFocusableElement = focusables[focusables.length - 1];
 

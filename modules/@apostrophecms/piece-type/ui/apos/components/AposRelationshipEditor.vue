@@ -108,6 +108,8 @@ export default {
       },
       modal: {
         active: false,
+        mounted: false,
+        trapFocus: true,
         type: 'overlay',
         showModal: true
       },
@@ -121,6 +123,7 @@ export default {
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
+    this.modal.mounted = true;
   },
   methods: {
     async submit() {

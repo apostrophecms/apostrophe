@@ -137,6 +137,8 @@ export default {
       filterValues: {},
       modal: {
         active: false,
+        mounted: false,
+        trapFocus: true,
         type: 'overlay',
         showModal: false
       },
@@ -232,6 +234,7 @@ export default {
     await this.getMedia({ tags: true });
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
+    this.modal.mounted = true;
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);

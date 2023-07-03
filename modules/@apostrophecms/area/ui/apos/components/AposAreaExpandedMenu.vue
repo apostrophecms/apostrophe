@@ -81,6 +81,8 @@ export default {
     return {
       modal: {
         active: false,
+        mounted: false,
+        trapFocus: true,
         type: 'slide',
         origin: 'left',
         showModal: false,
@@ -122,6 +124,8 @@ export default {
     this.groups = clipboard
       ? [ clipboard ].concat(this.groups)
       : this.groups;
+
+    this.modal.mounted = true;
   },
   methods: {
     isValidColumn(count) {

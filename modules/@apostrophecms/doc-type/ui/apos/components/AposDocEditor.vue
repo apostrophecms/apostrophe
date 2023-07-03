@@ -153,6 +153,8 @@ export default {
       fieldErrors: {},
       modal: {
         active: false,
+        mounted: false,
+        trapFocus: true,
         type: 'overlay',
         showModal: false
       },
@@ -402,9 +404,12 @@ export default {
     } else {
       this.$nextTick(() => {
         this.loadNewInstance();
+        // TODO: handle new instance
       });
     }
     apos.bus.$on('content-changed', this.onContentChanged);
+
+    this.modal.mounted = true;
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);

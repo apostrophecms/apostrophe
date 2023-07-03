@@ -99,6 +99,8 @@ export default {
       moduleName: '@apostrophecms/page',
       modal: {
         active: false,
+        mounted: false,
+        trapFocus: true,
         type: 'slide',
         showModal: false,
         width: 'two-thirds'
@@ -224,6 +226,8 @@ export default {
     apos.bus.$on('content-changed', this.getPages);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
+    this.modal.mounted = true;
+
   },
   destroyed() {
     apos.bus.$off('content-changed', this.getPages);

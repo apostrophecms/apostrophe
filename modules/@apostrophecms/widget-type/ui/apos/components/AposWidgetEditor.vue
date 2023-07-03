@@ -91,6 +91,8 @@ export default {
       modal: {
         title: this.editLabel,
         active: false,
+        mounted: false,
+        trapFocus: true,
         type: 'slide',
         showModal: false
       },
@@ -137,6 +139,7 @@ export default {
       ...apos.area.widgetOptions
     ];
     this.modal.active = true;
+    this.modal.mounted = true;
   },
   destroyed() {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);

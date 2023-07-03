@@ -272,6 +272,8 @@ export default {
         busyTitle: this.$t('apostrophe:localizingBusy'),
         disableHeader: true,
         active: false,
+        mounted: false,
+        trapFocus: true,
         showModal: false
       },
       locales: Object.entries(window.apos.i18n.locales).map(
@@ -505,6 +507,7 @@ export default {
       this.wizard.step = this.visibleStepNames[0];
       this.wizard.busy = false;
     }
+    this.modal.mounted = true;
   },
   methods: {
     close() {
