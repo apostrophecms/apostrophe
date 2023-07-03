@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Adds support for `permission` property in `addContextOperation`, this one can be a string or an array. Validates `addContextOperation` configuration.
+* Adds support for `conditions` property in `addContextOperation`, this one must be an array. Validates `addContextOperation` configuration.
 
 ### Fixes
 

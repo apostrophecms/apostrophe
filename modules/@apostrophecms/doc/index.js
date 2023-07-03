@@ -1154,9 +1154,9 @@ module.exports = {
       //   action: 'someAction',
       //   modal: 'ModalComponent',
       //   label: 'Context Menu Label',
-      //   permission: 'edit'
+      //   conditions: ['canEdit']
       // }
-      // All properties are required except permission.
+      // All properties are required except conditions.
       // The only supported `context` for now is `update`.
       // `action` is the operation identifier and should be globally unique.
       // Overriding existing custom actions is possible (the last wins).
@@ -1167,10 +1167,11 @@ module.exports = {
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
-      // `permission` defines the needed permission action to be run on the current doc
-      // in order to display the operation. It can be a string or an array of these available values:
-      // 'publish', 'edit', 'dismiss-submission', 'discard-draft', 'localize',
-      // 'archive', 'unpublish', 'copy', 'restore'.
+      // `conditions` defines the needed permission actions to be run on the current doc
+      // in order to display the operation.
+      // It must be an array containing one or multiple of these available values:
+      // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
+      // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore'.
       addContextOperation(moduleName, operation) {
         validate(operation);
         self.contextOperations = [
@@ -1182,35 +1183,36 @@ module.exports = {
           }
         ];
 
-        function validate (op) {
-          const allowedPermissions = [
-            'publish',
-            'edit',
-            'dismiss-submission',
-            'discard-draft',
-            'localize',
-            'archive',
-            'unpublish',
-            'copy',
-            'restore'
+        function validate ({
+          action, context, label, modal, conditions
+        }) {
+          const allowedConditions = [
+            'canPublish',
+            'canEdit',
+            'canDismissSubmission',
+            'canDiscardDraft',
+            'canLocalize',
+            'canArchive',
+            'canUnpublish',
+            'canCopy',
+            'canRestore'
           ];
 
-          if (!op.action || !op.context || !op.label || !op.modal) {
+          if (!action || !context || !label || !modal) {
             throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties');
           }
-          if (!op.permission) {
+
+          if (!conditions) {
             return;
           }
 
-          if (typeof op.permission !== 'string' && !Array.isArray(op.permission)) {
-            throw self.apos.error('invalid', 'The permission property in addContextOperation must be a string or an array.');
-          }
-
           if (
-            (typeof op.permission === 'string' && !allowedPermissions.includes(op.permission)) ||
-            (Array.isArray(op.permission) && op.permission.some((perm) => !allowedPermissions.includes(perm)))
+            !Array.isArray(conditions) ||
+            conditions.some((perm) => !allowedConditions.includes(perm))
           ) {
-            throw self.apos.error('invalid', `The permission property in addContextOperation can only be set to a string or an array of these values: \n${allowedPermissions.join('\n')}.`);
+            throw self.apos.error(
+              'invalid', `The conditions property in addContextOperation must be an array containing one or multiple of these values:\n\t${allowedConditions.join('\n\t')}.`
+            );
           }
         }
       },

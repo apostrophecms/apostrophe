@@ -196,7 +196,7 @@ export default {
     },
     customOperationsByContext() {
       return this.customOperations.filter(({
-        manuallyPublished, hasUrl, permission, context
+        manuallyPublished, hasUrl, conditions, context
       }) => {
         if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
@@ -206,14 +206,8 @@ export default {
           return false;
         }
 
-        if (permission) {
-          const permissions = typeof permission === 'string' ? [ permission ] : permission;
-          const notAllowed = permissions.some((perm) => {
-            const formatted = perm.split('-')
-              .map((part) => part.charAt(0).toUpperCase() + part.substr(1))
-              .join('');
-            return !this[`can${formatted}`];
-          });
+        if (conditions) {
+          const notAllowed = conditions.some((action) => !this[action]);
 
           if (notAllowed) {
             return false;
