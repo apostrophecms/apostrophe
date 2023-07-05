@@ -47,7 +47,7 @@
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)
               } : widgetLabel"
-              :tooltip="foreign && 'apostrophe:editWidgetForeignTooltip'"
+              :tooltip="!isContextual && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
             />
