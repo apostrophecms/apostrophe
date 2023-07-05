@@ -7,6 +7,7 @@
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
 * Add schema field `hidden` property to always hide a field
 * Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
+* Adds support for `conditions` property in `addContextOperation`, this one must be an array. Validates `addContextOperation` configuration.
 
 ### Fixes
 
