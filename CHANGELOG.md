@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adds support for `conditions` property in `addContextOperation`, this one must be an array. Validates `addContextOperation` configuration.
+
 ### Fixes
 
 * Allows to create page without defining the page target ID, by default it takes the Home page.

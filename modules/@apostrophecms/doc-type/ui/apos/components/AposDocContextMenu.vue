@@ -195,15 +195,26 @@ export default {
       return menus;
     },
     customOperationsByContext() {
-      return this.customOperations.filter(op => {
-        if (typeof op.manuallyPublished === 'boolean' && op.manuallyPublished !== this.manuallyPublished) {
-          return false;
-        }
-        if (typeof op.hasUrl === 'boolean' && op.hasUrl !== this.hasUrl) {
+      return this.customOperations.filter(({
+        manuallyPublished, hasUrl, conditions, context
+      }) => {
+        if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
         }
 
-        return op.context === 'update' && this.isUpdateOperation;
+        if (typeof hasUrl === 'boolean' && hasUrl !== this.hasUrl) {
+          return false;
+        }
+
+        if (conditions) {
+          const notAllowed = conditions.some((action) => !this[action]);
+
+          if (notAllowed) {
+            return false;
+          }
+        }
+
+        return context === 'update' && this.isUpdateOperation;
       });
     },
     moduleName() {
