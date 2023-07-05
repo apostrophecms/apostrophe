@@ -1153,9 +1153,10 @@ module.exports = {
       //   context: 'update',
       //   action: 'someAction',
       //   modal: 'ModalComponent',
-      //   label: 'Context Menu Label'
+      //   label: 'Context Menu Label',
+      //   conditions: ['canEdit']
       // }
-      // All properties are required.
+      // All properties are required except conditions.
       // The only supported `context` for now is `update`.
       // `action` is the operation identifier and should be globally unique.
       // Overriding existing custom actions is possible (the last wins).
@@ -1166,7 +1167,13 @@ module.exports = {
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
+      // `conditions` defines the needed permission actions to be run on the current doc
+      // in order to display the operation.
+      // It must be an array containing one or multiple of these available values:
+      // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
+      // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore'.
       addContextOperation(moduleName, operation) {
+        validate(operation);
         self.contextOperations = [
           ...self.contextOperations
             .filter(op => op.action !== operation.action),
@@ -1175,6 +1182,39 @@ module.exports = {
             moduleName
           }
         ];
+
+        function validate ({
+          action, context, label, modal, conditions
+        }) {
+          const allowedConditions = [
+            'canPublish',
+            'canEdit',
+            'canDismissSubmission',
+            'canDiscardDraft',
+            'canLocalize',
+            'canArchive',
+            'canUnpublish',
+            'canCopy',
+            'canRestore'
+          ];
+
+          if (!action || !context || !label || !modal) {
+            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties');
+          }
+
+          if (!conditions) {
+            return;
+          }
+
+          if (
+            !Array.isArray(conditions) ||
+            conditions.some((perm) => !allowedConditions.includes(perm))
+          ) {
+            throw self.apos.error(
+              'invalid', `The conditions property in addContextOperation must be an array containing one or multiple of these values:\n\t${allowedConditions.join('\n\t')}.`
+            );
+          }
+        }
       },
       getBrowserData(req) {
         return {

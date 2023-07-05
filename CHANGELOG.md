@@ -4,13 +4,15 @@
 
 ### Changes
 * Foreign widget UI no longer uses inverted theme styles.
+
 ### Adds
-* Allows users to double-click a widget's breadcrumb type and open its editor.
+* Allows users to double-click a nested widget's breadcrumb entry and open its editor.
+* Adds support for a new `conditions` property in `addContextOperation` and validation of `addContextOperation` configuration.
 
 ### Fixes
 
-* Allows to create page without defining the page target ID, by default it takes the Home page.
-* Users are no longer blocked from saving documents when a field hidden
+* The API now allows the user to create a page without defining the page target ID. By default it takes the Home page.
+* Users are no longer blocked from saving documents when a field is hidden
 by an `if` condition fails to satisfy a condition such as `min` or `max`
 or is otherwise invalid. Instead the invalid value is discarded for safety.
 Note that `required` has always been ignored when an `if` condition is not
