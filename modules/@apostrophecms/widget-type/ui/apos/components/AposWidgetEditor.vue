@@ -92,7 +92,6 @@ export default {
         title: this.editLabel,
         active: false,
         mounted: false,
-        trapFocus: true,
         type: 'slide',
         showModal: false
       },

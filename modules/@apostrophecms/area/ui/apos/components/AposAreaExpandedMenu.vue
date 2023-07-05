@@ -82,7 +82,6 @@ export default {
       modal: {
         active: false,
         mounted: false,
-        trapFocus: true,
         type: 'slide',
         origin: 'left',
         showModal: false,

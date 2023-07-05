@@ -154,7 +154,6 @@ export default {
       modal: {
         active: false,
         mounted: false,
-        trapFocus: true,
         type: 'overlay',
         showModal: false
       },

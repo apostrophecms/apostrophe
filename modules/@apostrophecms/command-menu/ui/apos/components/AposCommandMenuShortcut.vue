@@ -63,7 +63,7 @@ export default {
         busy: false,
         active: false,
         mounted: false,
-        trapFocus: true,
+        trapFocus: false,
         type: 'overlay',
         showModal: false,
         disableHeader: true

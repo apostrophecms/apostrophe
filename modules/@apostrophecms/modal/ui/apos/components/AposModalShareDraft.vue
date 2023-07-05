@@ -94,8 +94,7 @@ export default {
         mounted: false,
         type: 'overlay',
         showModal: false,
-        disableHeader: true,
-        trapFocus: true
+        disableHeader: true
       },
       shareUrl: '',
       disabled: true

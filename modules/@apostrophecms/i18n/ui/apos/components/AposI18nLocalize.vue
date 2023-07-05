@@ -273,7 +273,6 @@ export default {
         disableHeader: true,
         active: false,
         mounted: false,
-        trapFocus: true,
         showModal: false
       },
       locales: Object.entries(window.apos.i18n.locales).map(

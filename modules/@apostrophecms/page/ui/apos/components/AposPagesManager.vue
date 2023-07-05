@@ -100,7 +100,6 @@ export default {
       modal: {
         active: false,
         mounted: false,
-        trapFocus: true,
         type: 'slide',
         showModal: false,
         width: 'two-thirds'
