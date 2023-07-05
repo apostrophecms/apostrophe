@@ -32,10 +32,10 @@
       v-for="field in schema" :key="field.name"
       :data-apos-field="field.name"
       :is="fieldStyle === 'table' ? 'td' : 'div'"
-      v-show="displayComponent(field.name)"
+      v-show="displayComponent(field)"
     >
       <component
-        v-show="displayComponent(field.name)"
+        v-show="displayComponent(field)"
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
@@ -282,7 +282,7 @@ export default {
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
 
-      this.schema.filter(field => this.displayComponent(field.name)).forEach(field => {
+      this.schema.filter(field => this.displayComponent(field)).forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
@@ -309,18 +309,23 @@ export default {
         this.$emit('input', { ...this.next });
       }
     },
-    displayComponent(fieldName) {
-      if (this.currentFields) {
-        if (!this.currentFields.includes(fieldName)) {
-          return false;
-        }
-      }
-      // Might not be a conditional field at all, so test explicitly for false
-      if (this.conditionalFields[fieldName] === false) {
+    displayComponent(field) {
+      const { name, hidden = false } = field;
+
+      if (hidden === true) {
         return false;
-      } else {
-        return true;
       }
+
+      if (this.currentFields && !this.currentFields.includes(name)) {
+        return false;
+      }
+
+      // Might not be a conditional field at all, so test explicitly for false
+      if (this.conditionalFields[name] === false) {
+        return false;
+      }
+
+      return true;
     },
     scrollFieldIntoView(fieldName) {
       // The refs for a name are an array if that ref was assigned
