@@ -62,7 +62,6 @@ export default {
       modal: {
         busy: false,
         active: false,
-        mounted: false,
         trapFocus: false,
         type: 'overlay',
         showModal: false,
@@ -88,8 +87,6 @@ export default {
     if (!this.hasCommands) {
       this.$emit('safe-close');
     }
-
-    this.modal.mounted = true;
   },
   beforeDestroy() {
     apos.bus.$off('modal-launched', this.autoCloseWhenHidden);

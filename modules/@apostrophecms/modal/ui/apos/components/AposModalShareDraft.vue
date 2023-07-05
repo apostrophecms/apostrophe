@@ -17,6 +17,7 @@
             </h2>
             <Close
               class="apos-share-draft__close"
+              tabindex="0"
               :title="$t('apostrophe:close')"
               :size="18"
               @click.prevent="close"
@@ -48,6 +49,7 @@
                   v-model="shareUrl"
                   type="text"
                   disabled
+                  tabindex="-1"
                   class="apos-share-draft__url"
                 >
                 <a
@@ -91,7 +93,6 @@ export default {
     return {
       modal: {
         active: false,
-        mounted: false,
         type: 'overlay',
         showModal: false,
         disableHeader: true
@@ -104,7 +105,6 @@ export default {
     this.modal.active = true;
     await this.checkUrlProp();
     await this.getAposShareKey();
-    this.modal.mounted = true;
   },
   methods: {
     async copy() {

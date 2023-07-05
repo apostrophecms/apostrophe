@@ -123,8 +123,11 @@ export default {
         return 'fade';
       }
     },
-    modalReady () {
-      return this.modal.mounted;
+    shouldTrapFocus() {
+      return this.modal.trapFocus || this.modal.trapFocus === undefined;
+    },
+    triggerFocusRefresh () {
+      return this.modal.triggerFocusRefresh;
     },
     hasBeenLocalized: function() {
       return Object.keys(apos.i18n.locales).length > 1;
@@ -187,15 +190,16 @@ export default {
     }
   },
   watch: {
-    modalReady (newVal) {
-      if (!this.modal.trapFocus && this.modal.trapFocus !== undefined) {
-        return;
+    triggerFocusRefresh (newVal) {
+      console.log('triggerFocusRefresh: ', newVal);
+      if (this.shouldTrapFocus) {
+        this.$nextTick(this.trapFocus);
       }
-      this.$nextTick(() => {
-        if (newVal && this.$refs.modalEl) {
-          this.trapFocus();
-        }
-      });
+    }
+  },
+  mounted() {
+    if (this.shouldTrapFocus) {
+      this.$nextTick(this.trapFocus);
     }
   },
   methods: {
@@ -220,12 +224,19 @@ export default {
       // pop doesn't quite suffice because of race conditions when
       // closing one and opening another
       apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
+
+      // TODO: focus back previous modal
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.onKeydown);
     },
     removeEventListeners () {
       window.removeEventListener('keydown', this.onKeydown);
+
+      if (this.cycleElementsToFocus) {
+        console.log('removing listener', this.cycleElementsToFocus);
+        this.$refs.modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
+      }
     },
     close (e) {
       if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
@@ -235,54 +246,76 @@ export default {
       this.$emit('esc');
     },
     trapFocus () {
+      const { modalEl } = this.$refs;
+      if (!modalEl) {
+        return;
+      }
+
+      // remove previous listener so that refresh focus takes new elements inside the modal
+      if (this.cycleElementsToFocus) {
+        console.log('removing previous listener', this.cycleElementsToFocus);
+        modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
+      }
+
       // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
       // All the elements inside modal which you want to make focusable.
-      const focusableElements = [
+      const elementSelectors = [
         'button',
         '[href]',
         'input',
         'select',
         'textarea',
-        '[tabindex]:not([tabindex="-1"]'
+        '[tabindex]'
       ];
-      const focusableString = focusableElements.join(', ');
-      const modalEl = this.$refs.modalEl;
-      const focusables = modalEl.querySelectorAll(focusableString);
-      console.log('🚀 ~ file: AposModal.vue:251 ~ trapFocus ~ focusables:', focusables);
+      const selector = elementSelectors
+        .map(element => `${element}:not([tabindex="-1"])`)
+        .join(', ');
 
-      if (!focusables.length) {
+      const elementsToFocus = modalEl.querySelectorAll(selector);
+
+      // console.log('modalEl', modalEl);
+      console.log('elementsToFocus', elementsToFocus);
+
+      if (!elementsToFocus.length) {
+        console.log('nothing to focus');
         return;
       }
 
-      const firstFocusableElement = focusables[0];
-      const lastFocusableElement = focusables[focusables.length - 1];
+      const firstElementToFocus = elementsToFocus[0];
+      const lastElementToFocus = elementsToFocus[elementsToFocus.length - 1];
 
-      modalEl.addEventListener('keydown', cycleFocusables);
+      // attach listener to the current modal in order to remove it
+      // when refreshing focus and leaving the modal
+      this.cycleElementsToFocus = cycleElementsToFocus;
 
-      firstFocusableElement.focus();
+      modalEl.addEventListener('keydown', this.cycleElementsToFocus);
+      firstElementToFocus.focus();
 
-      function cycleFocusables (e) {
+      function cycleElementsToFocus(e) {
         const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
         if (!isTabPressed) {
           return;
         }
 
         if (e.shiftKey) {
+          // TODO: fix focus lost when AposDocManager has no doc
           // If shift key pressed for shift + tab combination
-          if (document.activeElement === firstFocusableElement) {
+          if (document.activeElement === firstElementToFocus) {
             // Add focus for the last focusable element
-            lastFocusableElement.focus();
+            console.log('lastElementToFocus', lastElementToFocus);
+            lastElementToFocus.focus();
             e.preventDefault();
           }
         } else {
           // If tab key is pressed
-          if (document.activeElement === lastFocusableElement) {
+          if (document.activeElement === lastElementToFocus) {
             // Add focus for the first focusable element
-            firstFocusableElement.focus();
+            console.log('firstElementToFocus', firstElementToFocus);
+            firstElementToFocus.focus();
             e.preventDefault();
           }
         }
-      }
+      };
     }
   }
 };

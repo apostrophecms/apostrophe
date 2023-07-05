@@ -93,7 +93,6 @@ export default {
       modal: {
         title: '',
         active: false,
-        mounted: false,
         type: 'overlay',
         showModal: false,
         disableHeader: true
@@ -132,7 +131,6 @@ export default {
     if (this.content.form) {
       this.formValues = this.content.form.value;
     }
-    this.modal.mounted = true;
   },
   methods: {
     ready() {

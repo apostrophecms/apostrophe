@@ -272,7 +272,7 @@ export default {
         busyTitle: this.$t('apostrophe:localizingBusy'),
         disableHeader: true,
         active: false,
-        mounted: false,
+        triggerFocusRefresh: 0,
         showModal: false
       },
       locales: Object.entries(window.apos.i18n.locales).map(
@@ -506,7 +506,9 @@ export default {
       this.wizard.step = this.visibleStepNames[0];
       this.wizard.busy = false;
     }
-    this.modal.mounted = true;
+
+    // TODO: fix focus lost after cycling through all focusable elements in this modal:
+    // this.modal.triggerFocusRefresh++;
   },
   methods: {
     close() {

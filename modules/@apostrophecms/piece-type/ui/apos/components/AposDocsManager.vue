@@ -137,7 +137,7 @@ export default {
     return {
       modal: {
         active: false,
-        mounted: false,
+        triggerFocusRefresh: 0,
         type: 'overlay',
         showModal: false
       },
@@ -231,12 +231,11 @@ export default {
     this.modal.active = true;
     await this.getPieces();
     await this.getAllPiecesTotal();
+    this.modal.triggerFocusRefresh++;
 
     apos.bus.$on('content-changed', this.getPieces);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
-
-    this.modal.mounted = true;
   },
   destroyed() {
     this.destroyShortcuts();

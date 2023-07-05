@@ -132,7 +132,7 @@ export default {
       currentDoc: null,
       modal: {
         active: false,
-        mounted: false,
+        // triggerFocusRefresh: 0,
         type: 'overlay',
         showModal: false
       },
@@ -231,7 +231,7 @@ export default {
       aposSchema.scrollFieldIntoView(name);
     }
     this.titleFieldChoices = await this.getTitleFieldChoices();
-    this.modal.mounted = true;
+    // this.modal.triggerFocusRefresh++;
   },
   methods: {
     async select(_id) {
@@ -276,6 +276,8 @@ export default {
         this.select(item._id);
         this.updateMinMax();
       }
+      // TODO: make it work:
+      // this.modal.triggerFocusRefresh++;
     },
     updateMinMax() {
       let minError = false;

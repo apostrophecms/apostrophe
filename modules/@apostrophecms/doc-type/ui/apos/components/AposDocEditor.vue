@@ -153,7 +153,7 @@ export default {
       fieldErrors: {},
       modal: {
         active: false,
-        mounted: false,
+        triggerFocusRefresh: 0,
         type: 'overlay',
         showModal: false
       },
@@ -375,6 +375,7 @@ export default {
           });
         }
       }
+      this.modal.triggerFocusRefresh++;
     } else if (this.copyOf) {
       const newInstance = klona(this.copyOf);
       delete newInstance.parked;
@@ -400,15 +401,15 @@ export default {
       this.docFields.data = newInstance;
       this.prepErrors();
       this.docReady = true;
+      this.modal.triggerFocusRefresh++;
     } else {
       this.$nextTick(() => {
         this.loadNewInstance();
-        // TODO: handle new instance
+        // TODO: make it work with new instances:
+        this.modal.triggerFocusRefresh++;
       });
     }
     apos.bus.$on('content-changed', this.onContentChanged);
-
-    this.modal.mounted = true;
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);
