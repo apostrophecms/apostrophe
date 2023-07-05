@@ -12,6 +12,7 @@
   "rules": {
     "no-var": "error",
     "no-console": 0,
+    "vue/no-deprecated-v-on-native-modifier": 0,
     "multiline-ternary": "off",
     "no-unused-vars": [
       "error",
