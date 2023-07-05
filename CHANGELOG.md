@@ -5,7 +5,7 @@
 ### Changes
 * Foreign widget UI no longer uses inverted theme styles.
 ### Adds
-* Allows users to double-click a widgets's breadcrumb type and open it's editor.
+* Allows users to double-click a widget's breadcrumb type and open its editor.
 
 ### Fixes
 
