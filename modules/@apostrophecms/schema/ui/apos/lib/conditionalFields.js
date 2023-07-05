@@ -160,11 +160,6 @@ export function conditionalFields(
         continue;
       }
 
-      if (conditionalFields[key] === false && val !== false) {
-        result = false;
-        break;
-      }
-
       const fieldValue = values[key];
 
       if (Array.isArray(fieldValue)) {
