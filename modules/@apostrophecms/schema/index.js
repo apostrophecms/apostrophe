@@ -1240,6 +1240,9 @@ module.exports = {
         if (!field.label && !field.contextual) {
           field.label = _.startCase(field.name.replace(/^_/, ''));
         }
+        if (field.hidden && field.hidden !== true && field.hidden !== false) {
+          fail(`hidden must be a boolean, "${field.hidden}" provided.`);
+        }
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
         }

@@ -52,27 +52,33 @@ export default {
             name: key,
             label: this.groups[key].label,
             fields,
-            isVisible: fields.filter(field => conditionalFields[field] !== false).length > 0
+            isVisible: fields.some(field => conditionalFields[field] !== false)
           });
         }
       }
 
       return tabs;
+    },
+    firstVisibleTabName() {
+      const { name = null } = this.tabs.find(tab => tab.isVisible === true) || {};
+
+      return name;
     }
   },
 
   watch: {
     tabs() {
-      if ((!this.currentTab) || (!this.tabs.find(tab => tab.isVisible === true && tab.name === this.currentTab))) {
-        const firstVisibleTab = this.tabs.find(tab => tab.isVisible === true);
-        this.currentTab = firstVisibleTab && firstVisibleTab.name;
+      if (
+        !this.currentTab ||
+        !this.tabs.find(tab => tab.isVisible === true && tab.name === this.currentTab)
+      ) {
+        this.currentTab = this.firstVisibleTabName;
       }
     }
   },
 
   mounted() {
-    const firstVisibleTab = this.tabs.find(tab => tab.isVisible === true);
-    this.currentTab = (firstVisibleTab && firstVisibleTab.name) || null;
+    this.currentTab = this.firstVisibleTabName;
   },
   methods: {
     switchPane(id) {
