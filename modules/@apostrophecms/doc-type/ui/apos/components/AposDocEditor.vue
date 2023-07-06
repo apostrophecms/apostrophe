@@ -403,9 +403,8 @@ export default {
       this.docReady = true;
       this.modal.triggerFocusRefresh++;
     } else {
-      this.$nextTick(() => {
-        this.loadNewInstance();
-        // TODO: make it work with new instances:
+      this.$nextTick(async () => {
+        await this.loadNewInstance();
         this.modal.triggerFocusRefresh++;
       });
     }
