@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.52.0 (2023-07-06)
 
 ### Changes
 * Foreign widget UI no longer uses inverted theme styles.
