@@ -271,7 +271,8 @@ export default {
         .map(element => `${element}:not([tabindex="-1"])`)
         .join(', ');
 
-      const elementsToFocus = modalEl.querySelectorAll(selector);
+      const domElementsToFocus = modalEl.querySelectorAll(selector);
+      const elementsToFocus = [ ...domElementsToFocus ].filter(isElementVisible);
 
       // console.log('modalEl', modalEl);
       console.log('elementsToFocus', elementsToFocus);
@@ -291,6 +292,10 @@ export default {
       modalEl.addEventListener('keydown', this.cycleElementsToFocus);
       firstElementToFocus.focus();
 
+      function isElementVisible(element) {
+        return element.offsetParent !== null;
+      };
+
       function cycleElementsToFocus(e) {
         const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
         if (!isTabPressed) {
@@ -298,7 +303,6 @@ export default {
         }
 
         if (e.shiftKey) {
-          // TODO: fix focus lost when AposDocManager has no doc
           // If shift key pressed for shift + tab combination
           if (document.activeElement === firstElementToFocus) {
             // Add focus for the last focusable element
