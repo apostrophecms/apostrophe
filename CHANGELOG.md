@@ -2,17 +2,22 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Foreign widget UI no longer uses inverted theme styles.
+
 ### Adds
 
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
 * Add schema field `hidden` property to always hide a field
 * Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
-* Adds support for `conditions` property in `addContextOperation`, this one must be an array. Validates `addContextOperation` configuration.
+* Allows users to double-click a nested widget's breadcrumb entry and open its editor.
+* Adds support for a new `conditions` property in `addContextOperation` and validation of `addContextOperation` configuration.
 
 ### Fixes
 
-* Allows to create page without defining the page target ID, by default it takes the Home page.
-* Users are no longer blocked from saving documents when a field hidden
+* The API now allows the user to create a page without defining the page target ID. By default it takes the Home page.
+* Users are no longer blocked from saving documents when a field is hidden
 by an `if` condition fails to satisfy a condition such as `min` or `max`
 or is otherwise invalid. Instead the invalid value is discarded for safety.
 Note that `required` has always been ignored when an `if` condition is not

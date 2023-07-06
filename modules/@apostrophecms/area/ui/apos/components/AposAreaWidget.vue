@@ -41,13 +41,13 @@
           <li class="apos-area-widget__breadcrumb" data-apos-widget-breadcrumb="0">
             <AposButton
               type="quiet"
-              @click="foreign ? $emit('edit', i) : false"
+              @click="foreign ? $emit('edit', i) : null"
+              @dblclick.native="(!foreign && !isContextual) ? $emit('edit', i) : null"
               :label="foreign ? {
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)
               } : widgetLabel"
-              tooltip="apostrophe:editWidgetForeignTooltip"
-              :icon="foreign ? 'earth-icon' : null"
+              :tooltip="!isContextual && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
             />
@@ -76,6 +76,7 @@
         :class="ui.controls"
       >
         <AposWidgetControls
+          v-if="!foreign"
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
@@ -272,7 +273,8 @@ export default {
       };
     },
     widgetIcon() {
-      return this.contextMenuOptions.menu.filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
+      const natural = this.contextMenuOptions.menu.filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
+      return this.foreign ? 'earth-icon' : natural;
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
@@ -694,7 +696,7 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
-    top: -8px;
+    top: 0;
     right: 0;
     display: flex;
     transform: translateY(-100%);
@@ -709,18 +711,11 @@ export default {
     @include apos-list-reset();
     display: flex;
     align-items: center;
-    margin: 0;
+    margin: 0 0 8px;
     padding: 4px 6px;
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-primary-transparent-50);
     border-radius: 8px;
-  }
-
-  .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-background-inverted);
-    & ::v-deep .apos-button__content {
-      color: var(--a-text-inverted);
-    }
   }
 
   .apos-area-widget__breadcrumb,
@@ -730,9 +725,6 @@ export default {
     white-space: nowrap;
     color: var(--a-base-1);
     transition: background-color 0.3s var(--a-transition-timing-bounce);
-    &:hover {
-      cursor: pointer;
-    }
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
