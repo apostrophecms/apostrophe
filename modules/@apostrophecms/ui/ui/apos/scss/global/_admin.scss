@@ -12,3 +12,10 @@
   min-height: 100vh;
   background-color: var(--a-background-primary);
 }
+
+/* TODO: for testing, to visually see focused elements
+that may not have the browser-native blue outline when focused */
+*:focus, *:focus-visible {
+  outline: blue solid 2px!important;
+  background-color: rgba(0,0,255,0.3)!important;
+}
