@@ -240,11 +240,7 @@ export default {
       const { focusedElement, elementsToFocus } = previousModal;
       console.log('🚀 ~ file: AposModal.vue:235 ~ onLeave ~ focusedElement:', focusedElement);
 
-      if (focusedElement) {
-        focusedElement.focus();
-      } else if (elementsToFocus[0]) {
-        elementsToFocus[0].focus();
-      }
+      (focusedElement || elementsToFocus[0]).focus();
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.onKeydown);
@@ -320,7 +316,11 @@ export default {
       modalEl.addEventListener('keydown', this.cycleElementsToFocus);
       modalEl.addEventListener('focus', this.storeFocusedElement, true);
 
-      firstElementToFocus.focus();
+      if (this.focusedElement) {
+        this.focusedElement.focus();
+      } else {
+        firstElementToFocus.focus();
+      }
 
       function isElementVisible(element) {
         return element.offsetParent !== null;
