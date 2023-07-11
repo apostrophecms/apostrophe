@@ -108,7 +108,9 @@ export default {
   data() {
     return {
       // For aria purposes
-      id: 'modal:' + Math.random().toString().replace('.', '')
+      id: 'modal:' + Math.random().toString().replace('.', ''),
+      focusedElement: null,
+      elementsToFocus: []
     };
   },
   computed: {
@@ -190,6 +192,10 @@ export default {
     }
   },
   watch: {
+    // Simple way to re-trigger focusable elements
+    // that might have been created or removed
+    // after an update, like an XHR call to get the
+    // pieces list in the Doc Manager modal, for instance.
     triggerFocusRefresh (newVal) {
       console.log('triggerFocusRefresh: ', newVal);
       if (this.shouldTrapFocus) {
@@ -225,17 +231,36 @@ export default {
       // closing one and opening another
       apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
 
-      // TODO: focus back previous modal
+      const previousModal = apos.modal.stack.at(-1);
+      console.log('🚀 ~ file: AposModal.vue:230 ~ onLeave ~ previousModal:', previousModal);
+      if (!previousModal) {
+        return;
+      }
+
+      const { focusedElement, elementsToFocus } = previousModal;
+      console.log('🚀 ~ file: AposModal.vue:235 ~ onLeave ~ focusedElement:', focusedElement);
+
+      if (focusedElement) {
+        focusedElement.focus();
+      } else if (elementsToFocus[0]) {
+        elementsToFocus[0].focus();
+      }
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.onKeydown);
     },
     removeEventListeners () {
+      const { modalEl } = this.$refs;
+
       window.removeEventListener('keydown', this.onKeydown);
 
       if (this.cycleElementsToFocus) {
         console.log('removing listener', this.cycleElementsToFocus);
-        this.$refs.modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
+        modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
+      }
+      if (this.storeFocusedElement) {
+        console.log('removing previous listener', this.storeFocusedElement);
+        modalEl.removeEventListener('focus', this.storeFocusedElement);
       }
     },
     close (e) {
@@ -246,10 +271,12 @@ export default {
       this.$emit('esc');
     },
     trapFocus () {
+      const self = this;
       const { modalEl } = this.$refs;
-      if (!modalEl) {
-        return;
-      }
+
+      // if (!modalEl) {
+      //   return;
+      // }
 
       // remove previous listener so that refresh focus takes new elements inside the modal
       if (this.cycleElementsToFocus) {
@@ -272,24 +299,27 @@ export default {
         .join(', ');
 
       const domElementsToFocus = modalEl.querySelectorAll(selector);
-      const elementsToFocus = [ ...domElementsToFocus ].filter(isElementVisible);
+      this.elementsToFocus = [ ...domElementsToFocus ].filter(isElementVisible);
 
       // console.log('modalEl', modalEl);
-      console.log('elementsToFocus', elementsToFocus);
+      console.log('this.elementsToFocus', this.elementsToFocus);
 
-      if (!elementsToFocus.length) {
+      if (!this.elementsToFocus.length) {
         console.log('nothing to focus');
         return;
       }
 
-      const firstElementToFocus = elementsToFocus[0];
-      const lastElementToFocus = elementsToFocus[elementsToFocus.length - 1];
+      const firstElementToFocus = this.elementsToFocus[0];
+      const lastElementToFocus = this.elementsToFocus.at(-1);
 
-      // attach listener to the current modal in order to remove it
+      // attach listeners to the current modal in order to remove it
       // when refreshing focus and leaving the modal
       this.cycleElementsToFocus = cycleElementsToFocus;
+      this.storeFocusedElement = storeFocusedElement;
 
       modalEl.addEventListener('keydown', this.cycleElementsToFocus);
+      modalEl.addEventListener('focus', this.storeFocusedElement, true);
+
       firstElementToFocus.focus();
 
       function isElementVisible(element) {
@@ -319,6 +349,11 @@ export default {
             e.preventDefault();
           }
         }
+      };
+
+      function storeFocusedElement(e) {
+        console.log('self.focusedElement = e.target', e.target);
+        self.focusedElement = e.target;
       };
     }
   }
