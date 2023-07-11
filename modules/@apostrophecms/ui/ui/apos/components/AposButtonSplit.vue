@@ -16,7 +16,8 @@
       menu-offset="1, 10"
       menu-placement="bottom-end"
       ref="contextMenu"
-      @open="focus"
+      @open="menuOpen"
+      @close="menuClose"
     >
       <dl
         class="apos-button-split__menu__dialog" role="menu"
@@ -133,11 +134,64 @@ export default {
       }
       this.setButton(initial);
     },
-    focus() {
+    trapFocus() {
+      console.log('trapFocus AposButtonSplit');
       // takes a moment to be on screen and focusable
       setTimeout(() => {
-        this.$refs.choices[0].focus();
+        const firstElementToFocus = this.$refs.choices[0];
+        const lastElementToFocus = this.$refs.choices.at(-1);
+
+        this.cycleElementsToFocus = cycleElementsToFocus;
+
+        this.$refs.choices.forEach(choice => {
+          console.log(choice);
+          choice.addEventListener('keydown', this.cycleElementsToFocus);
+        });
+
+        firstElementToFocus.focus();
+
+        function cycleElementsToFocus(e) {
+          const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
+          if (!isTabPressed) {
+            return;
+          }
+
+          if (e.shiftKey) {
+            // If shift key pressed for shift + tab combination
+            if (document.activeElement === firstElementToFocus) {
+              // Add focus for the last focusable element
+              console.log('lastElementToFocus', lastElementToFocus);
+              lastElementToFocus.focus();
+              e.preventDefault();
+            }
+          } else {
+            // If tab key is pressed
+            if (document.activeElement === lastElementToFocus) {
+              // Add focus for the first focusable element
+              console.log('firstElementToFocus', firstElementToFocus);
+              firstElementToFocus.focus();
+              e.preventDefault();
+            }
+          }
+        };
       }, 200);
+    },
+    // TODO: add `esc` key listener to close the menu
+    // when pressing Escape button.
+    menuOpen() {
+      this.trapFocus();
+    },
+    menuClose() {
+      const previousModal = apos.modal.stack.at(-1);
+      console.log('🚀 ~ file: AposButtonSplit.vue:184 ~ menuClose ~ previousModal:', previousModal);
+      if (!previousModal) {
+        return;
+      }
+
+      const { focusedElement, elementsToFocus } = previousModal;
+      console.log('🚀 ~ file: AposButtonSplit.vue:190 ~ menuClose ~ focusedElement:', focusedElement);
+
+      (focusedElement || elementsToFocus[0]).focus();
     }
   }
 };
