@@ -115,9 +115,7 @@ export default {
   data() {
     return {
       // For aria purposes
-      id: 'modal:' + Math.random().toString().replace('.', ''),
-      focusedElement: null,
-      elementsToFocus: []
+      id: 'modal:' + Math.random().toString().replace('.', '')
     };
   },
   computed: {
@@ -237,7 +235,7 @@ export default {
       // pop doesn't quite suffice because of race conditions when
       // closing one and opening another
       apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
-      this.focusPreviousElement();
+      this.focusLastModalFocusedElement();
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.onKeydown);
@@ -263,32 +261,23 @@ export default {
       ];
 
       const selector = elementSelectors
-        .map(element => `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`)
+        .map(addExcludingAttributes)
         .join(', ');
 
-      const domElementsToFocus = this.$refs.modalEl.querySelectorAll(selector);
-      this.elementsToFocus = [ ...domElementsToFocus ].filter(isElementVisible);
+      this.elementsToFocus = [ ...this.$refs.modalEl.querySelectorAll(selector) ]
+        .filter(isElementVisible);
+      console.log('🚀 ~ file: AposModal.vue:269 ~ trapFocus ~ this.focusedElement:', this.focusedElement);
+      console.log('🚀 ~ file: AposModal.vue:269 ~ trapFocus ~ this.elementsToFocus:', this.elementsToFocus);
 
-      console.log('this.elementsToFocus', this.elementsToFocus);
+      // Focus focusedElement in priority to keep it selected after a refresh:
+      (this.focusedElement || this.elementsToFocus[0]).focus();
 
-      if (!this.elementsToFocus.length) {
-        console.log('nothing to focus');
-        return;
+      function addExcludingAttributes(element) {
+        return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
       }
-
-      // First and last elements to focus updated in the mixin
-      this.firstElementToFocus = this.elementsToFocus[0];
-      this.lastElementToFocus = this.elementsToFocus.at(-1);
-
-      (this.focusedElement || this.firstElementToFocus).focus();
-
       function isElementVisible(element) {
         return element.offsetParent !== null;
-      };
-    },
-    storeFocusedElement(e) {
-      console.log('storeFocusedElement', e.target);
-      this.focusedElement = e.target;
+      }
     }
   }
 };

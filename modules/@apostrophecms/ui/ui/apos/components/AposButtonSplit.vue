@@ -141,10 +141,11 @@ export default {
     },
     trapFocus() {
       const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
-      this.$refs.choices[selectedElementIndex].focus();
 
-      this.firstElementToFocus = this.$refs.choices[0];
-      this.lastElementToFocus = this.$refs.choices.at(-1);
+      this.elementsToFocus = this.$refs.choices;
+      console.log('🚀 ~ file: AposButtonSplit.vue:146 ~ trapFocus ~ this.elementsToFocus:', this.elementsToFocus);
+
+      this.$refs.choices[selectedElementIndex].focus();
     },
     menuOpen() {
       // TODO: find another way to wait for elements to be visible
@@ -153,7 +154,7 @@ export default {
       }, 200);
     },
     menuClose() {
-      this.focusPreviousElement();
+      this.focusLastModalFocusedElement();
     }
   }
 };
