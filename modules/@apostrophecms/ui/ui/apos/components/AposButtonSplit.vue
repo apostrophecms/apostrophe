@@ -135,46 +135,47 @@ export default {
       this.setButton(initial);
     },
     trapFocus() {
-      console.log('trapFocus AposButtonSplit');
+      // TODO: find another way to wait for elements to be on screen:
       // takes a moment to be on screen and focusable
       setTimeout(() => {
-        const firstElementToFocus = this.$refs.choices[0];
-        const lastElementToFocus = this.$refs.choices.at(-1);
+        console.log('this.selected', this.selected);
+        console.log(this.$refs);
+        console.log(this.menu);
 
-        this.cycleElementsToFocus = cycleElementsToFocus;
+        const selectedElementIndex = this.menu.findIndex(i => i.action === this.action);
+        this.$refs.choices[selectedElementIndex].focus();
 
         this.$refs.choices.forEach(choice => {
-          console.log(choice);
           choice.addEventListener('keydown', this.cycleElementsToFocus);
         });
-
-        firstElementToFocus.focus();
-
-        function cycleElementsToFocus(e) {
-          const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
-          if (!isTabPressed) {
-            return;
-          }
-
-          if (e.shiftKey) {
-            // If shift key pressed for shift + tab combination
-            if (document.activeElement === firstElementToFocus) {
-              // Add focus for the last focusable element
-              console.log('lastElementToFocus', lastElementToFocus);
-              lastElementToFocus.focus();
-              e.preventDefault();
-            }
-          } else {
-            // If tab key is pressed
-            if (document.activeElement === lastElementToFocus) {
-              // Add focus for the first focusable element
-              console.log('firstElementToFocus', firstElementToFocus);
-              firstElementToFocus.focus();
-              e.preventDefault();
-            }
-          }
-        };
       }, 200);
+    },
+    cycleElementsToFocus(e) {
+      const firstElementToFocus = this.$refs.choices[0];
+      const lastElementToFocus = this.$refs.choices.at(-1);
+
+      const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
+      if (!isTabPressed) {
+        return;
+      }
+
+      if (e.shiftKey) {
+        // If shift key pressed for shift + tab combination
+        if (document.activeElement === firstElementToFocus) {
+          // Add focus for the last focusable element
+          console.log('lastElementToFocus', lastElementToFocus);
+          lastElementToFocus.focus();
+          e.preventDefault();
+        }
+      } else {
+        // If tab key is pressed
+        if (document.activeElement === lastElementToFocus) {
+          // Add focus for the first focusable element
+          console.log('firstElementToFocus', firstElementToFocus);
+          firstElementToFocus.focus();
+          e.preventDefault();
+        }
+      }
     },
     // TODO: add `esc` key listener to close the menu
     // when pressing Escape button.
