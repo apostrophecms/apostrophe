@@ -143,15 +143,12 @@ export default {
       const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
 
       this.elementsToFocus = this.$refs.choices;
-      console.log('🚀 ~ file: AposButtonSplit.vue:146 ~ trapFocus ~ this.elementsToFocus:', this.elementsToFocus);
 
       this.focusElement(this.elementsToFocus[selectedElementIndex]);
     },
     menuOpen() {
       // TODO: find another way to wait for elements to be visible
-      setTimeout(() => {
-        this.trapFocus();
-      }, 200);
+      setTimeout(this.trapFocus, 200);
     },
     menuClose() {
       this.focusLastModalFocusedElement();

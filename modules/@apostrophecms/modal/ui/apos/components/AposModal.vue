@@ -202,7 +202,6 @@ export default {
     // after an update, like an XHR call to get the
     // pieces list in the Doc Manager modal, for instance.
     triggerFocusRefresh (newVal) {
-      console.log('triggerFocusRefresh: ', newVal);
       if (this.shouldTrapFocus) {
         this.$nextTick(this.trapFocus);
       }
@@ -266,9 +265,6 @@ export default {
 
       this.elementsToFocus = [ ...this.$refs.modalEl.querySelectorAll(selector) ]
         .filter(this.isElementVisible);
-
-      console.log('🚀 ~ file: AposModal.vue:269 ~ trapFocus ~ this.focusedElement:', this.focusedElement);
-      console.log('🚀 ~ file: AposModal.vue:269 ~ trapFocus ~ this.elementsToFocus:', this.elementsToFocus);
 
       this.focusElement(this.focusedElement, this.elementsToFocus[0]);
 
