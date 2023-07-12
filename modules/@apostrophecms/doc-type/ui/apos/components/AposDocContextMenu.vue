@@ -196,7 +196,7 @@ export default {
     },
     customOperationsByContext() {
       return this.customOperations.filter(({
-        manuallyPublished, hasUrl, conditions, context
+        manuallyPublished, hasUrl, conditions, context, if
       }) => {
         if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
@@ -213,6 +213,11 @@ export default {
             return false;
           }
         }
+
+        /* if (if) { */
+        /**/
+        /*     const props = Object. */
+        /*   } */
 
         return context === 'update' && this.isUpdateOperation;
       });
@@ -443,6 +448,45 @@ export default {
     },
     close() {
       this.$emit('close', this.doc);
+    },
+    checkAnd(doc, conditions) {
+      return Object.entries(conditions).every(([key, value]) => {
+        if (key === '$or') {
+          return checkOr(doc, value)
+        }
+
+        const isNotEqualCondition = typeof value === 'object' &&
+          !Array.isArray(value) &&
+          value !== null &&
+          Object.hasOwn(value, '$ne')
+
+        if (isNotEqualCondition) {
+          return getPropValue(doc, key) !== value['$ne']
+        }
+
+        return getPropValue(doc, key) === value
+      })
+    },
+
+    checkNe(doc, conditions) {
+      return Object.entries(conditions).every(([key, value]) => {
+        return getPropValue(doc, key) !== value
+      })
+    },
+
+    checkOr(doc, conditions) {
+      return conditions.some((condition) => {
+        return checkAnd(doc, condition)
+      })
+    },
+
+    getPropValue(doc, key) {
+      if (key.includes('.')) {
+        const keys = key.split('.')
+        return keys.reduce((acc, cur) => acc[cur], doc)
+      }
+
+        return doc[key]
     }
   }
 };
