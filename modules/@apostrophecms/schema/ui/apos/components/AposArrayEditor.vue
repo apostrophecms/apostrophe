@@ -231,6 +231,8 @@ export default {
       aposSchema.scrollFieldIntoView(name);
     }
     this.titleFieldChoices = await this.getTitleFieldChoices();
+
+    // FIXME: manage to focus array items elements:
     // this.modal.triggerFocusRefresh++;
   },
   methods: {
@@ -276,7 +278,7 @@ export default {
         this.select(item._id);
         this.updateMinMax();
       }
-      // TODO: make it work:
+      // FIXME: manage to focus new array item elements:
       // this.modal.triggerFocusRefresh++;
     },
     updateMinMax() {

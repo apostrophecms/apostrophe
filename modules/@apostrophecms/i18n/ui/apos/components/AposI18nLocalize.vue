@@ -507,7 +507,7 @@ export default {
       this.wizard.busy = false;
     }
 
-    // TODO: fix focus lost after cycling through all focusable elements in this modal:
+    // FIXME: fix focus lost after cycling through all focusable elements in this modal:
     // this.modal.triggerFocusRefresh++;
   },
   methods: {

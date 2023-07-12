@@ -233,7 +233,8 @@ export default {
     await this.getMedia({ tags: true });
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
-    // TODO: fix focus lost
+
+    // FIXME: fix focus lost after cycling through all focusable elements in this modal:
     // this.modal.triggerFocusRefresh++;
   },
   destroyed() {
