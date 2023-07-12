@@ -404,11 +404,11 @@ export default {
         this.loadNewInstance();
       });
     }
-    apos.bus.$on('update-doc-fields', this.updateDocFields);
+    apos.bus.$on('update-doc-fields', this.onUpdateDocFields);
     apos.bus.$on('content-changed', this.onContentChanged);
   },
   destroyed() {
-    apos.bus.$off('update-doc-fields', this.updateDocFields);
+    apos.bus.$off('update-doc-fields', this.onUpdateDocFields);
     apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
@@ -666,6 +666,10 @@ export default {
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`
       });
+    },
+    onUpdateDocFields(value) {
+      this.updateDocFields(value);
+      this.generation++;
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
