@@ -265,18 +265,15 @@ export default {
         .join(', ');
 
       this.elementsToFocus = [ ...this.$refs.modalEl.querySelectorAll(selector) ]
-        .filter(isElementVisible);
+        .filter(this.isElementVisible);
+
       console.log('🚀 ~ file: AposModal.vue:269 ~ trapFocus ~ this.focusedElement:', this.focusedElement);
       console.log('🚀 ~ file: AposModal.vue:269 ~ trapFocus ~ this.elementsToFocus:', this.elementsToFocus);
 
-      // Focus focusedElement in priority to keep it selected after a refresh:
-      (this.focusedElement || this.elementsToFocus[0]).focus();
+      this.focusElement(this.focusedElement, this.elementsToFocus[0]);
 
       function addExcludingAttributes(element) {
         return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
-      }
-      function isElementVisible(element) {
-        return element.offsetParent !== null;
       }
     }
   }

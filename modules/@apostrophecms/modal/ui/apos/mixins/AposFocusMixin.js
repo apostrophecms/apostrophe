@@ -61,11 +61,31 @@ export default {
       const { focusedElement, elementsToFocus } = lastModal;
       console.log('🚀 ~ file: AposModal.vue:235 ~ onLeave ~ focusedElement:', focusedElement);
 
-      (focusedElement || elementsToFocus[0]).focus();
+      this.focusElement(focusedElement, elementsToFocus[0]);
     },
     storeFocusedElement(e) {
       console.log('storeFocusedElement', e.target);
       this.focusedElement = e.target;
+    },
+    // Iterate through elements given in arguments and
+    // focus the first element that exists in the DOM.
+    focusElement(...elementsToFocus) {
+      console.log('🚀 ~ file: AposFocusMixin.js:72 ~ focusElement ~ elementsToFocus:', elementsToFocus);
+      for (const element of elementsToFocus) {
+        const isAlreadySelected = document.activeElement === element;
+
+        if (!element || !this.isElementVisible(element)) {
+          continue;
+        }
+        if (!isAlreadySelected) {
+          element.focus();
+        }
+        // Element exists in the DOM and is focused, stop iterating.
+        return;
+      }
+    },
+    isElementVisible(element) {
+      return element.offsetParent !== null;
     }
   }
 };

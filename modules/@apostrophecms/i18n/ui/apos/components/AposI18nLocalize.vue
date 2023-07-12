@@ -272,7 +272,7 @@ export default {
         busyTitle: this.$t('apostrophe:localizingBusy'),
         disableHeader: true,
         active: false,
-        triggerFocusRefresh: 0,
+        // triggerFocusRefresh: 0,
         showModal: false
       },
       locales: Object.entries(window.apos.i18n.locales).map(

@@ -228,6 +228,8 @@ export default {
         }
       }
     },
+    // Trigger the file input click (via `this.create`) when pressing Enter or Space
+    // of the drag&drop area, which is made focusable unlike the input file.
     onUploadDragAndDropKeyDown(e) {
       const isEnterPressed = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
       const isSpaceBarPressed = e.keyCode === 32 || e.code === 'Space';

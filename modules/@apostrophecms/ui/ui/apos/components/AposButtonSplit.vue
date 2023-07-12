@@ -145,7 +145,7 @@ export default {
       this.elementsToFocus = this.$refs.choices;
       console.log('🚀 ~ file: AposButtonSplit.vue:146 ~ trapFocus ~ this.elementsToFocus:', this.elementsToFocus);
 
-      this.$refs.choices[selectedElementIndex].focus();
+      this.focusElement(this.elementsToFocus[selectedElementIndex]);
     },
     menuOpen() {
       // TODO: find another way to wait for elements to be visible

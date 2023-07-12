@@ -234,7 +234,7 @@ export default {
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
     // TODO: fix focus lost
-    this.modal.triggerFocusRefresh++;
+    // this.modal.triggerFocusRefresh++;
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);
