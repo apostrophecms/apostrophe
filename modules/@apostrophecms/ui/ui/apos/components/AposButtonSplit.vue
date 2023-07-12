@@ -134,17 +134,18 @@ export default {
       }
       this.setButton(initial);
     },
+    removeEventListeners () {
+      this.$refs.choices.forEach(choice => {
+        choice.removeEventListener('keydown', this.cycleElementsToFocus);
+      });
+    },
     trapFocus() {
       // TODO: find another way to wait for elements to be on screen:
       // takes a moment to be on screen and focusable
       setTimeout(() => {
-        console.log('this.selected', this.selected);
-        console.log(this.$refs);
-        console.log(this.menu);
+        const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
 
-        const selectedElementIndex = this.menu.findIndex(i => i.action === this.action);
         this.$refs.choices[selectedElementIndex].focus();
-
         this.$refs.choices.forEach(choice => {
           choice.addEventListener('keydown', this.cycleElementsToFocus);
         });
@@ -177,22 +178,12 @@ export default {
         }
       }
     },
-    // TODO: add `esc` key listener to close the menu
-    // when pressing Escape button.
     menuOpen() {
       this.trapFocus();
     },
     menuClose() {
-      const previousModal = apos.modal.stack.at(-1);
-      console.log('🚀 ~ file: AposButtonSplit.vue:184 ~ menuClose ~ previousModal:', previousModal);
-      if (!previousModal) {
-        return;
-      }
-
-      const { focusedElement, elementsToFocus } = previousModal;
-      console.log('🚀 ~ file: AposButtonSplit.vue:190 ~ menuClose ~ focusedElement:', focusedElement);
-
-      (focusedElement || elementsToFocus[0]).focus();
+      this.removeEventListeners();
+      apos.modal.stack.at(-1)?.focusPreviousElement();
     }
   }
 };

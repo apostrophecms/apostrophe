@@ -230,17 +230,7 @@ export default {
       // pop doesn't quite suffice because of race conditions when
       // closing one and opening another
       apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
-
-      const previousModal = apos.modal.stack.at(-1);
-      console.log('🚀 ~ file: AposModal.vue:230 ~ onLeave ~ previousModal:', previousModal);
-      if (!previousModal) {
-        return;
-      }
-
-      const { focusedElement, elementsToFocus } = previousModal;
-      console.log('🚀 ~ file: AposModal.vue:235 ~ onLeave ~ focusedElement:', focusedElement);
-
-      (focusedElement || elementsToFocus[0]).focus();
+      this.focusPreviousElement();
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.onKeydown);
@@ -269,10 +259,6 @@ export default {
     trapFocus () {
       const self = this;
       const { modalEl } = this.$refs;
-
-      // if (!modalEl) {
-      //   return;
-      // }
 
       // remove previous listener so that refresh focus takes new elements inside the modal
       if (this.cycleElementsToFocus) {
@@ -355,6 +341,19 @@ export default {
         console.log('self.focusedElement = e.target', e.target);
         self.focusedElement = e.target;
       };
+    },
+    focusPreviousElement() {
+      const previousModal = apos.modal.stack.at(-1);
+      console.log('🚀 ~ file: AposModal.vue:230 ~ onLeave ~ previousModal:', previousModal);
+
+      if (!previousModal) {
+        return;
+      }
+
+      const { focusedElement, elementsToFocus } = previousModal;
+      console.log('🚀 ~ file: AposModal.vue:235 ~ onLeave ~ focusedElement:', focusedElement);
+
+      (focusedElement || elementsToFocus[0]).focus();
     }
   }
 };
