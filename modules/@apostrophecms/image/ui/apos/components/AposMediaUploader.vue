@@ -7,7 +7,11 @@
     @dragenter="incrementDragover"
     @dragleave="decrementDragover"
   >
-    <div class="apos-media-uploader__inner">
+    <div
+      class="apos-media-uploader__inner"
+      tabindex="0"
+      ref="uploadDragAndDrop"
+    >
       <AposCloudUploadIcon
         class="apos-media-uploader__icon"
       />
@@ -30,6 +34,7 @@
       :accept="accept"
       multiple="true"
       :disabled="disabled"
+      tabindex="-1"
     >
   </label>
 </template>
@@ -75,9 +80,13 @@ export default {
     }
   },
   mounted() {
+    this.$refs.uploadDragAndDrop.addEventListener('keydown', this.onUploadDragAndDropKeyDown);
+
     apos.bus.$on('command-menu-manager-create-new', this.create);
   },
   destroyed() {
+    this.$refs.uploadDragAndDrop.removeEventListener('click', this.onUploadDragAndDropKeyDown);
+
     apos.bus.$off('command-menu-manager-create-new', this.create);
   },
   methods: {
@@ -221,6 +230,14 @@ export default {
             localize: false
           });
         }
+      }
+    },
+    onUploadDragAndDropKeyDown(e) {
+      const isEnterPressed = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
+      const isSpaceBarPressed = e.keyCode === 32 || e.code === 'Space';
+
+      if (isEnterPressed || isSpaceBarPressed) {
+        this.create();
       }
     }
   }

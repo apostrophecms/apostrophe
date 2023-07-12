@@ -258,15 +258,16 @@ export default {
       const { modalEl } = this.$refs;
 
       const elementSelectors = [
-        'button',
+        '[tabindex]',
         '[href]',
         'input',
         'select',
         'textarea',
-        '[tabindex]'
+        'button'
       ];
+
       const selector = elementSelectors
-        .map(element => `${element}:not([tabindex="-1"])`)
+        .map(element => `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`)
         .join(', ');
 
       const domElementsToFocus = modalEl.querySelectorAll(selector);
