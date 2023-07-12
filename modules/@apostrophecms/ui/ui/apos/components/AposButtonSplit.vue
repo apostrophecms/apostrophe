@@ -32,6 +32,7 @@
           role="menuitemradio"
           :value="item.action"
           ref="choices"
+          @keydown="cycleElementsToFocus"
         >
           <AposIndicator
             v-if="action === item.action"
@@ -138,29 +139,20 @@ export default {
       }
       this.setButton(initial);
     },
-    removeEventListeners () {
-      this.$refs.choices.forEach(choice => {
-        choice.removeEventListener('keydown', this.cycleElementsToFocus);
-      });
-    },
     trapFocus() {
-      setTimeout(() => {
-        const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
-        this.$refs.choices[selectedElementIndex].focus();
+      const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
+      this.$refs.choices[selectedElementIndex].focus();
 
-        this.firstElementToFocus = this.$refs.choices[0];
-        this.lastElementToFocus = this.$refs.choices.at(-1);
-
-        this.$refs.choices.forEach(choice => {
-          choice.addEventListener('keydown', this.cycleElementsToFocus);
-        });
-      }, 200);
+      this.firstElementToFocus = this.$refs.choices[0];
+      this.lastElementToFocus = this.$refs.choices.at(-1);
     },
     menuOpen() {
-      this.trapFocus();
+      // TODO: find another way to wait for elements to be visible
+      setTimeout(() => {
+        this.trapFocus();
+      }, 200);
     },
     menuClose() {
-      this.removeEventListeners();
       this.focusPreviousElement();
     }
   }

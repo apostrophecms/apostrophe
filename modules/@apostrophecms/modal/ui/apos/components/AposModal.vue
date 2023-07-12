@@ -12,6 +12,8 @@
       aria-modal="true"
       :aria-labelledby="id"
       ref="modalEl"
+      @keydown="cycleElementsToFocus"
+      @focus.capture="storeFocusedElement"
       data-apos-modal
     >
       <transition :name="transitionType">
@@ -241,11 +243,7 @@ export default {
       window.addEventListener('keydown', this.onKeydown);
     },
     removeEventListeners () {
-      const { modalEl } = this.$refs;
-
       window.removeEventListener('keydown', this.onKeydown);
-      modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
-      modalEl.removeEventListener('focus', this.storeFocusedElement, true);
     },
     close (e) {
       if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
@@ -255,8 +253,6 @@ export default {
       this.$emit('esc');
     },
     trapFocus () {
-      const { modalEl } = this.$refs;
-
       const elementSelectors = [
         '[tabindex]',
         '[href]',
@@ -270,7 +266,7 @@ export default {
         .map(element => `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`)
         .join(', ');
 
-      const domElementsToFocus = modalEl.querySelectorAll(selector);
+      const domElementsToFocus = this.$refs.modalEl.querySelectorAll(selector);
       this.elementsToFocus = [ ...domElementsToFocus ].filter(isElementVisible);
 
       console.log('this.elementsToFocus', this.elementsToFocus);
@@ -280,14 +276,9 @@ export default {
         return;
       }
 
+      // First and last elements to focus updated in the mixin
       this.firstElementToFocus = this.elementsToFocus[0];
       this.lastElementToFocus = this.elementsToFocus.at(-1);
-
-      modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
-      modalEl.removeEventListener('focus', this.storeFocusedElement, true);
-
-      modalEl.addEventListener('keydown', this.cycleElementsToFocus);
-      modalEl.addEventListener('focus', this.storeFocusedElement, true);
 
       (this.focusedElement || this.firstElementToFocus).focus();
 

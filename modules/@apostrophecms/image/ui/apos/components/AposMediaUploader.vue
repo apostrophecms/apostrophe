@@ -10,7 +10,7 @@
     <div
       class="apos-media-uploader__inner"
       tabindex="0"
-      ref="uploadDragAndDrop"
+      @keydown="onUploadDragAndDropKeyDown"
     >
       <AposCloudUploadIcon
         class="apos-media-uploader__icon"
@@ -80,13 +80,9 @@ export default {
     }
   },
   mounted() {
-    this.$refs.uploadDragAndDrop.addEventListener('keydown', this.onUploadDragAndDropKeyDown);
-
     apos.bus.$on('command-menu-manager-create-new', this.create);
   },
   destroyed() {
-    this.$refs.uploadDragAndDrop.removeEventListener('click', this.onUploadDragAndDropKeyDown);
-
     apos.bus.$off('command-menu-manager-create-new', this.create);
   },
   methods: {
