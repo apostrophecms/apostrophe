@@ -142,7 +142,10 @@ export default {
     trapFocus() {
       const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
 
-      this.elementsToFocus = this.$refs.choices;
+      // use map to keep items order:
+      this.elementsToFocus = this.menu.map(
+        i => this.$refs.choices.find(choice => choice.value === i.action)
+      );
 
       this.focusElement(this.elementsToFocus[selectedElementIndex]);
     },
