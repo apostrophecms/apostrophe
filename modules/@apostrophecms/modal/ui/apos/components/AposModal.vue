@@ -92,8 +92,13 @@
 // So as the modal exits, they should change in reverse. `showModal` becomes
 // `false`, then `active` is set to `false` once the modal has finished its
 // transition.
+import AposFocusMixin from 'Modules/@apostrophecms/modal/mixins/AposFocusMixin';
+
 export default {
   name: 'AposModal',
+  mixins: [
+    AposFocusMixin
+  ],
   props: {
     modal: {
       type: Object,
@@ -239,15 +244,8 @@ export default {
       const { modalEl } = this.$refs;
 
       window.removeEventListener('keydown', this.onKeydown);
-
-      if (this.cycleElementsToFocus) {
-        console.log('removing listener', this.cycleElementsToFocus);
-        modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
-      }
-      if (this.storeFocusedElement) {
-        console.log('removing previous listener', this.storeFocusedElement);
-        modalEl.removeEventListener('focus', this.storeFocusedElement);
-      }
+      modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
+      modalEl.removeEventListener('focus', this.storeFocusedElement, true);
     },
     close (e) {
       if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
@@ -257,17 +255,8 @@ export default {
       this.$emit('esc');
     },
     trapFocus () {
-      const self = this;
       const { modalEl } = this.$refs;
 
-      // remove previous listener so that refresh focus takes new elements inside the modal
-      if (this.cycleElementsToFocus) {
-        console.log('removing previous listener', this.cycleElementsToFocus);
-        modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
-      }
-
-      // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
-      // All the elements inside modal which you want to make focusable.
       const elementSelectors = [
         'button',
         '[href]',
@@ -283,7 +272,6 @@ export default {
       const domElementsToFocus = modalEl.querySelectorAll(selector);
       this.elementsToFocus = [ ...domElementsToFocus ].filter(isElementVisible);
 
-      // console.log('modalEl', modalEl);
       console.log('this.elementsToFocus', this.elementsToFocus);
 
       if (!this.elementsToFocus.length) {
@@ -291,69 +279,24 @@ export default {
         return;
       }
 
-      const firstElementToFocus = this.elementsToFocus[0];
-      const lastElementToFocus = this.elementsToFocus.at(-1);
+      this.firstElementToFocus = this.elementsToFocus[0];
+      this.lastElementToFocus = this.elementsToFocus.at(-1);
 
-      // attach listeners to the current modal in order to remove it
-      // when refreshing focus and leaving the modal
-      this.cycleElementsToFocus = cycleElementsToFocus;
-      this.storeFocusedElement = storeFocusedElement;
+      modalEl.removeEventListener('keydown', this.cycleElementsToFocus);
+      modalEl.removeEventListener('focus', this.storeFocusedElement, true);
 
       modalEl.addEventListener('keydown', this.cycleElementsToFocus);
       modalEl.addEventListener('focus', this.storeFocusedElement, true);
 
-      if (this.focusedElement) {
-        this.focusedElement.focus();
-      } else {
-        firstElementToFocus.focus();
-      }
+      (this.focusedElement || this.firstElementToFocus).focus();
 
       function isElementVisible(element) {
         return element.offsetParent !== null;
       };
-
-      function cycleElementsToFocus(e) {
-        const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
-        if (!isTabPressed) {
-          return;
-        }
-
-        if (e.shiftKey) {
-          // If shift key pressed for shift + tab combination
-          if (document.activeElement === firstElementToFocus) {
-            // Add focus for the last focusable element
-            console.log('lastElementToFocus', lastElementToFocus);
-            lastElementToFocus.focus();
-            e.preventDefault();
-          }
-        } else {
-          // If tab key is pressed
-          if (document.activeElement === lastElementToFocus) {
-            // Add focus for the first focusable element
-            console.log('firstElementToFocus', firstElementToFocus);
-            firstElementToFocus.focus();
-            e.preventDefault();
-          }
-        }
-      };
-
-      function storeFocusedElement(e) {
-        console.log('self.focusedElement = e.target', e.target);
-        self.focusedElement = e.target;
-      };
     },
-    focusPreviousElement() {
-      const previousModal = apos.modal.stack.at(-1);
-      console.log('🚀 ~ file: AposModal.vue:230 ~ onLeave ~ previousModal:', previousModal);
-
-      if (!previousModal) {
-        return;
-      }
-
-      const { focusedElement, elementsToFocus } = previousModal;
-      console.log('🚀 ~ file: AposModal.vue:235 ~ onLeave ~ focusedElement:', focusedElement);
-
-      (focusedElement || elementsToFocus[0]).focus();
+    storeFocusedElement(e) {
+      console.log('storeFocusedElement', e.target);
+      this.focusedElement = e.target;
     }
   }
 };

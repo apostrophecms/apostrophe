@@ -53,9 +53,13 @@
 </template>
 
 <script>
+import AposFocusMixin from 'Modules/@apostrophecms/modal/mixins/AposFocusMixin';
 
 export default {
   name: 'AposButtonSplit',
+  mixins: [
+    AposFocusMixin
+  ],
   props: {
     menu: {
       type: Array,
@@ -140,50 +144,24 @@ export default {
       });
     },
     trapFocus() {
-      // TODO: find another way to wait for elements to be on screen:
-      // takes a moment to be on screen and focusable
       setTimeout(() => {
         const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
-
         this.$refs.choices[selectedElementIndex].focus();
+
+        this.firstElementToFocus = this.$refs.choices[0];
+        this.lastElementToFocus = this.$refs.choices.at(-1);
+
         this.$refs.choices.forEach(choice => {
           choice.addEventListener('keydown', this.cycleElementsToFocus);
         });
       }, 200);
-    },
-    cycleElementsToFocus(e) {
-      const firstElementToFocus = this.$refs.choices[0];
-      const lastElementToFocus = this.$refs.choices.at(-1);
-
-      const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
-      if (!isTabPressed) {
-        return;
-      }
-
-      if (e.shiftKey) {
-        // If shift key pressed for shift + tab combination
-        if (document.activeElement === firstElementToFocus) {
-          // Add focus for the last focusable element
-          console.log('lastElementToFocus', lastElementToFocus);
-          lastElementToFocus.focus();
-          e.preventDefault();
-        }
-      } else {
-        // If tab key is pressed
-        if (document.activeElement === lastElementToFocus) {
-          // Add focus for the first focusable element
-          console.log('firstElementToFocus', firstElementToFocus);
-          firstElementToFocus.focus();
-          e.preventDefault();
-        }
-      }
     },
     menuOpen() {
       this.trapFocus();
     },
     menuClose() {
       this.removeEventListeners();
-      apos.modal.stack.at(-1)?.focusPreviousElement();
+      this.focusPreviousElement();
     }
   }
 };
