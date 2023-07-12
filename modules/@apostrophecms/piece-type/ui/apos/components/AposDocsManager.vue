@@ -389,7 +389,6 @@ export default {
     },
     shortcutNew(event) {
       const interesting = event.keyCode === 78; // N(ew)
-      // TODO: check there
       const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
       if (
         interesting &&

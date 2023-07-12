@@ -87,7 +87,6 @@ export default {
       }
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
     },
-    // TODO: check there
     getAt(index) {
       const last = this.stack.length - 1;
       const target = index < 0
