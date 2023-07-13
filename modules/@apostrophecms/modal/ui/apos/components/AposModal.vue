@@ -200,7 +200,7 @@ export default {
     // Simple way to re-trigger focusable elements
     // that might have been created or removed
     // after an update, like an XHR call to get the
-    // pieces list in the Doc Manager modal, for instance.
+    // pieces list in the AposDocsManager modal, for instance.
     triggerFocusRefresh (newVal) {
       if (this.shouldTrapFocus) {
         this.$nextTick(this.trapFocus);

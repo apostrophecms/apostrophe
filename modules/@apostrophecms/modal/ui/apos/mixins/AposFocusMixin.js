@@ -15,6 +15,12 @@ export default {
   methods: {
     // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
     // All the elements inside modal which you want to make focusable.
+    //
+    // This has been adapted to Vue logic with `this.elementsToFocus` array as a data
+    // so that any elements, not only from a modal but a menu for instance, can be focusable.
+    // `cycleElementsToFocus` listeners relies on this dynamic list which has the advantage of
+    // taking new or less elements to focus, after an update has happened inside a modal,
+    // like an XHR call to get the pieces list in the AposDocsManager modal, for instance.
     cycleElementsToFocus(e) {
       if (!this.elementsToFocus.length) {
         return;
@@ -45,6 +51,9 @@ export default {
         e.preventDefault();
       }
     },
+    // Focus the last focused element from the last modal.
+    // If it is not focusable (not visible/not in the DOM),
+    // fallbacks to the first focusable element from the last modal.
     focusLastModalFocusedElement() {
       const lastModal = apos.modal.stack.at(-1);
 

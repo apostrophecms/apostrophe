@@ -137,7 +137,6 @@ export default {
       filterValues: {},
       modal: {
         active: false,
-        triggerFocusRefresh: 0,
         type: 'overlay',
         showModal: false
       },
@@ -233,9 +232,6 @@ export default {
     await this.getMedia({ tags: true });
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
-
-    // FIXME: fix focus lost after cycling through all focusable elements in this modal:
-    // this.modal.triggerFocusRefresh++;
   },
   destroyed() {
     apos.bus.$off('content-changed', this.onContentChanged);
