@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties. 
+
 ## 3.52.0 (2023-07-06)
 
 ### Changes
