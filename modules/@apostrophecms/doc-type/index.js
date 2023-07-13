@@ -421,7 +421,10 @@ module.exports = {
           label: 'apostrophe:shareDraft',
           modal: 'AposModalShareDraft',
           manuallyPublished: true,
-          hasUrl: true
+          hasUrl: true,
+          if: {
+            aposIsTemplate: { $ne: true }
+          }
         });
       },
       getRelatedDocsIds(req, doc) {
