@@ -196,7 +196,7 @@ export default {
     },
     customOperationsByContext() {
       return this.customOperations.filter(({
-        manuallyPublished, hasUrl, conditions, context, if
+        manuallyPublished, hasUrl, conditions, context, if: ifProps
       }) => {
         if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
@@ -214,10 +214,13 @@ export default {
           }
         }
 
-        /* if (if) { */
-        /**/
-        /*     const props = Object. */
-        /*   } */
+        if (ifProps) {
+          const canSeeOperation = this.checkIfConditions(this.doc, ifProps);
+
+          if (!canSeeOperation) {
+            return false;
+          }
+        }
 
         return context === 'update' && this.isUpdateOperation;
       });
@@ -449,48 +452,39 @@ export default {
     close() {
       this.$emit('close', this.doc);
     },
-    checkAnd(doc, conditions) {
-      return Object.entries(conditions).every(([key, value]) => {
+    checkIfConditions(doc, conditions) {
+      return Object.entries(conditions).every(([ key, value ]) => {
         if (key === '$or') {
-          return checkOr(doc, value)
+          return this.checkOrConditions(doc, value);
         }
 
         const isNotEqualCondition = typeof value === 'object' &&
           !Array.isArray(value) &&
           value !== null &&
-          Object.hasOwn(value, '$ne')
+          Object.hasOwn(value, '$ne');
 
         if (isNotEqualCondition) {
-          return getPropValue(doc, key) !== value['$ne']
+          return this.getNestedPropValue(doc, key) !== value.$ne;
         }
 
-        return getPropValue(doc, key) === value
-      })
+        return this.getNestedPropValue(doc, key) === value;
+      });
     },
 
-    checkNe(doc, conditions) {
-      return Object.entries(conditions).every(([key, value]) => {
-        return getPropValue(doc, key) !== value
-      })
-    },
-
-    checkOr(doc, conditions) {
+    checkOrConditions(doc, conditions) {
       return conditions.some((condition) => {
-        return checkAnd(doc, condition)
-      })
+        return this.checkIfConditions(doc, condition);
+      });
     },
 
-    getPropValue(doc, key) {
+    getNestedPropValue(doc, key) {
       if (key.includes('.')) {
-        const keys = key.split('.')
-        return keys.reduce((acc, cur) => acc[cur], doc)
+        const keys = key.split('.');
+        return keys.reduce((acc, cur) => acc[cur], doc);
       }
 
-        return doc[key]
+      return doc[key];
     }
   }
 };
 </script>
-
-<style lang="scss" scoped>
-</style>
