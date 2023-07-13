@@ -1214,12 +1214,10 @@ module.exports = {
 
           if (
             ifProps &&
-            (typeof isProps !== 'object' ||
-             Array.isArray(ifProps) ||
-             ifProps === null)
+            (typeof ifProps !== 'object' || Array.isArray(ifProps))
           ) {
             throw self.apos.error(
-              'invalid', 'The ifProps property in addContextOperation must be an object containing properties and values to check for a document in order to show the context operation.'
+              'invalid', 'The if property in addContextOperation must be an object containing properties and values that will be checked against the current document in order to show or not the context operation.'
             );
           }
         }
