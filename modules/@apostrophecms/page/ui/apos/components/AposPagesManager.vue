@@ -1,8 +1,11 @@
 <template>
   <AposModal
-    :modal="modal" modal-title="apostrophe:managePages"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    :modal="modal"
+    modal-title="apostrophe:managePages"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
@@ -99,6 +102,7 @@ export default {
       moduleName: '@apostrophecms/page',
       modal: {
         active: false,
+        triggerFocusRefresh: 0,
         type: 'slide',
         showModal: false,
         width: 'two-thirds'
@@ -221,6 +225,8 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     await this.getPages();
+    this.modal.triggerFocusRefresh++;
+
     apos.bus.$on('content-changed', this.getPages);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);

@@ -1,5 +1,13 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Accessibility improved for navigation inside modals and various UI elements.  
+Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
+They keep the focus on elements inside modals and give it back to their parent modal when closed.
+
 ## 3.52.0 (2023-07-06)
 
 ### Changes

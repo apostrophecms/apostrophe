@@ -62,6 +62,7 @@ export default {
       modal: {
         busy: false,
         active: false,
+        trapFocus: false,
         type: 'overlay',
         showModal: false,
         disableHeader: true
