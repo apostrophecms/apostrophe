@@ -23,6 +23,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
+import checkIfConditions from '../../../../../../lib/check-if-conditions';
 
 export default {
   name: 'AposDocContextMenu',
@@ -215,7 +216,7 @@ export default {
         }
 
         if (ifProps) {
-          const canSeeOperation = this.checkIfConditions(this.doc, ifProps);
+          const canSeeOperation = checkIfConditions(this.doc, ifProps);
 
           if (!canSeeOperation) {
             return false;
@@ -451,39 +452,6 @@ export default {
     },
     close() {
       this.$emit('close', this.doc);
-    },
-    checkIfConditions(doc, conditions) {
-      return Object.entries(conditions).every(([ key, value ]) => {
-        if (key === '$or') {
-          return this.checkOrConditions(doc, value);
-        }
-
-        const isNotEqualCondition = typeof value === 'object' &&
-          !Array.isArray(value) &&
-          value !== null &&
-          Object.hasOwn(value, '$ne');
-
-        if (isNotEqualCondition) {
-          return this.getNestedPropValue(doc, key) !== value.$ne;
-        }
-
-        return this.getNestedPropValue(doc, key) === value;
-      });
-    },
-
-    checkOrConditions(doc, conditions) {
-      return conditions.some((condition) => {
-        return this.checkIfConditions(doc, condition);
-      });
-    },
-
-    getNestedPropValue(doc, key) {
-      if (key.includes('.')) {
-        const keys = key.split('.');
-        return keys.reduce((acc, cur) => acc[cur], doc);
-      }
-
-      return doc[key];
     }
   }
 };
