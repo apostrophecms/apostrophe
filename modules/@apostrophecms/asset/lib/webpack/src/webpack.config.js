@@ -81,7 +81,8 @@ module.exports = ({
       extensions: [ '*', '.js' ],
       alias: {
         // resolve apostrophe modules
-        Modules: path.resolve(modulesDir)
+        Modules: path.resolve(modulesDir),
+        Root: path.resolve(__dirname, '../../../../../..')
       },
       modules: [
         'node_modules',
