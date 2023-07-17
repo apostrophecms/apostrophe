@@ -892,7 +892,11 @@ module.exports = {
               if (err) {
                 return callback(err);
               }
-              await self.emit('afterSessionLogin', req);
+              try {
+                await self.emit('afterSessionLogin', req);
+              } catch (e) {
+                return callback(e);
+              }
               // Make sure no handler removed req.user
               if (req.user) {
                 // Mark the login timestamp. Middleware takes care of ensuring

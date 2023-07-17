@@ -28,6 +28,7 @@ by an `if` condition fails to satisfy a condition such as `min` or `max`
 or is otherwise invalid. Instead the invalid value is discarded for safety.
 Note that `required` has always been ignored when an `if` condition is not
 satisfied.
+* Errors thrown in `@apostrophecms/login:afterSessionLogin` event handlers are now properly passed back to Passport as such, avoiding a process restart.
 
 ## 3.51.1 (2023-06-23)
 
