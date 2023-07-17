@@ -230,7 +230,6 @@ export default {
       aposSchema.scrollFieldIntoView(name);
     }
     this.titleFieldChoices = await this.getTitleFieldChoices();
-
   },
   methods: {
     async select(_id) {

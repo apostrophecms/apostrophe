@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
 
 ### Adds
 
+* Accessibility improved for navigation inside modals and various UI elements.  
+Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
+They keep the focus on elements inside modals and give it back to their parent modal when closed.
 * Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties. 
 
 ## 3.52.0 (2023-07-06)

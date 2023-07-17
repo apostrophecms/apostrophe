@@ -24,7 +24,7 @@
                 }`
               ]"
             >
-              <div
+              <button
                 v-for="(item, itemIndex) in group.widgets"
                 :key="itemIndex"
                 class="apos-widget"
@@ -54,7 +54,7 @@
                 <p v-if="item.description" class="apos-widget__help">
                   {{ $t(item.description) }}
                 </p>
-              </div>
+              </button>
             </div>
           </div>
         </template>
@@ -239,6 +239,12 @@ export default {
 }
 
 .apos-widget {
+  @include type-base;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: inherit;
+
   .apos-widget__preview {
     transition: opacity 250ms ease-in-out;
     .apos-icon--add {
