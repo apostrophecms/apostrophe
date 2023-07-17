@@ -69,8 +69,7 @@ module.exports = ({
       alias: {
         vue$: 'vue/dist/vue.runtime.esm.js',
         // resolve apostrophe modules
-        Modules: path.resolve(modulesDir),
-        Root: path.resolve(__dirname, '../../../../../..')
+        Modules: path.resolve(modulesDir)
       },
       modules: [
         'node_modules',
