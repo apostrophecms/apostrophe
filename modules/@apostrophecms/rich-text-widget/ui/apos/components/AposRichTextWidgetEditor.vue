@@ -596,7 +596,7 @@ export default {
       const { $to } = state.selection;
       if (state.selection.empty && $to?.nodeBefore?.text) {
         const text = $to.nodeBefore.text;
-        if (text === '/') {
+        if (text.slice(-1) === '/') {
           const pos = this.editor.view.state.selection.$anchor.pos;
           // Select the slash so an insert operation can replace it
           this.editor.commands.setTextSelection({
