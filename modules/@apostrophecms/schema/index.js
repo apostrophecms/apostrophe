@@ -1634,6 +1634,16 @@ module.exports = {
         } catch (error) {
           throw self.apos.error('invalid', error.message);
         }
+      },
+
+      getSlugFieldOptions(field, data) {
+        const options = {
+          def: field.def
+        };
+        if (field.page) {
+          options.allow = '/';
+        }
+        return options;
       }
     };
   },
