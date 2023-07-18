@@ -309,9 +309,7 @@ export default {
         this.$emit('input', { ...this.next });
       }
     },
-    displayComponent(field) {
-      const { name, hidden = false } = field;
-
+    displayComponent({ name, hidden = false }) {
       if (hidden === true) {
         return false;
       }
