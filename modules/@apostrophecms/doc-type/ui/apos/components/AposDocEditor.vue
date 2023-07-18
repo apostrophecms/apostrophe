@@ -153,6 +153,7 @@ export default {
       fieldErrors: {},
       modal: {
         active: false,
+        triggerFocusRefresh: 0,
         type: 'overlay',
         showModal: false
       },
@@ -374,6 +375,7 @@ export default {
           });
         }
       }
+      this.modal.triggerFocusRefresh++;
     } else if (this.copyOf) {
       const newInstance = klona(this.copyOf);
       delete newInstance.parked;
@@ -399,9 +401,11 @@ export default {
       this.docFields.data = newInstance;
       this.prepErrors();
       this.docReady = true;
+      this.modal.triggerFocusRefresh++;
     } else {
-      this.$nextTick(() => {
-        this.loadNewInstance();
+      this.$nextTick(async () => {
+        await this.loadNewInstance();
+        this.modal.triggerFocusRefresh++;
       });
     }
     apos.bus.$on('update-doc-fields', this.onUpdateDocFields);

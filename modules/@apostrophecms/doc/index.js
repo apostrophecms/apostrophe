@@ -1184,7 +1184,7 @@ module.exports = {
         ];
 
         function validate ({
-          action, context, label, modal, conditions
+          action, context, label, modal, conditions, if: ifProps
         }) {
           const allowedConditions = [
             'canPublish',
@@ -1199,19 +1199,25 @@ module.exports = {
           ];
 
           if (!action || !context || !label || !modal) {
-            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties');
-          }
-
-          if (!conditions) {
-            return;
+            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties.');
           }
 
           if (
-            !Array.isArray(conditions) ||
-            conditions.some((perm) => !allowedConditions.includes(perm))
+            conditions &&
+            (!Array.isArray(conditions) ||
+            conditions.some((perm) => !allowedConditions.includes(perm)))
           ) {
             throw self.apos.error(
               'invalid', `The conditions property in addContextOperation must be an array containing one or multiple of these values:\n\t${allowedConditions.join('\n\t')}.`
+            );
+          }
+
+          if (
+            ifProps &&
+            (typeof ifProps !== 'object' || Array.isArray(ifProps))
+          ) {
+            throw self.apos.error(
+              'invalid', 'The if property in addContextOperation must be an object containing properties and values that will be checked against the current document in order to show or not the context operation.'
             );
           }
         }

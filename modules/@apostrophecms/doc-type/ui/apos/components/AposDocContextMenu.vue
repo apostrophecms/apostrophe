@@ -23,6 +23,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
+import checkIfConditions from 'apostrophe/lib/check-if-conditions';
 
 export default {
   name: 'AposDocContextMenu',
@@ -196,7 +197,7 @@ export default {
     },
     customOperationsByContext() {
       return this.customOperations.filter(({
-        manuallyPublished, hasUrl, conditions, context
+        manuallyPublished, hasUrl, conditions, context, if: ifProps
       }) => {
         if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
@@ -210,6 +211,14 @@ export default {
           const notAllowed = conditions.some((action) => !this[action]);
 
           if (notAllowed) {
+            return false;
+          }
+        }
+
+        if (ifProps) {
+          const canSeeOperation = checkIfConditions(this.doc, ifProps);
+
+          if (!canSeeOperation) {
             return false;
           }
         }
@@ -447,6 +456,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-</style>

@@ -12,6 +12,8 @@
       aria-modal="true"
       :aria-labelledby="id"
       ref="modalEl"
+      @keydown="cycleElementsToFocus"
+      @focus.capture="storeFocusedElement"
       data-apos-modal
     >
       <transition :name="transitionType">
@@ -92,8 +94,13 @@
 // So as the modal exits, they should change in reverse. `showModal` becomes
 // `false`, then `active` is set to `false` once the modal has finished its
 // transition.
+import AposFocusMixin from 'Modules/@apostrophecms/modal/mixins/AposFocusMixin';
+
 export default {
   name: 'AposModal',
+  mixins: [
+    AposFocusMixin
+  ],
   props: {
     modal: {
       type: Object,
@@ -123,8 +130,11 @@ export default {
         return 'fade';
       }
     },
-    modalReady () {
-      return this.modal.active;
+    shouldTrapFocus() {
+      return this.modal.trapFocus || this.modal.trapFocus === undefined;
+    },
+    triggerFocusRefresh () {
+      return this.modal.triggerFocusRefresh;
     },
     hasBeenLocalized: function() {
       return Object.keys(apos.i18n.locales).length > 1;
@@ -187,12 +197,19 @@ export default {
     }
   },
   watch: {
-    modalReady (newVal) {
-      this.$nextTick(() => {
-        if (newVal && this.modal.trapFocus && this.$refs.modalEl) {
-          this.trapFocus();
-        }
-      });
+    // Simple way to re-trigger focusable elements
+    // that might have been created or removed
+    // after an update, like an XHR call to get the
+    // pieces list in the AposDocsManager modal, for instance.
+    triggerFocusRefresh (newVal) {
+      if (this.shouldTrapFocus) {
+        this.$nextTick(this.trapFocus);
+      }
+    }
+  },
+  mounted() {
+    if (this.shouldTrapFocus) {
+      this.$nextTick(this.trapFocus);
     }
   },
   methods: {
@@ -217,6 +234,7 @@ export default {
       // pop doesn't quite suffice because of race conditions when
       // closing one and opening another
       apos.modal.stack = apos.modal.stack.filter(modal => modal !== this);
+      this.focusLastModalFocusedElement();
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.onKeydown);
@@ -232,47 +250,26 @@ export default {
       this.$emit('esc');
     },
     trapFocus () {
-      // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
-      // All the elements inside modal which you want to make focusable.
-      const focusableElements = [
-        'button',
+      const elementSelectors = [
+        '[tabindex]',
         '[href]',
         'input',
         'select',
         'textarea',
-        '[tabindex]:not([tabindex="-1"]'
+        'button'
       ];
-      const focusableString = focusableElements.join(', ');
-      const modalEl = this.$refs.modalEl;
-      const focusables = modalEl.querySelectorAll(focusableString);
-      const firstFocusableElement = focusables[0];
-      const lastFocusableElement = focusables[focusables.length - 1];
 
-      modalEl.addEventListener('keydown', cycleFocusables);
+      const selector = elementSelectors
+        .map(addExcludingAttributes)
+        .join(', ');
 
-      firstFocusableElement.focus();
+      this.elementsToFocus = [ ...this.$refs.modalEl.querySelectorAll(selector) ]
+        .filter(this.isElementVisible);
 
-      function cycleFocusables (e) {
-        const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
-        if (!isTabPressed) {
-          return;
-        }
+      this.focusElement(this.focusedElement, this.elementsToFocus[0]);
 
-        if (e.shiftKey) {
-          // If shift key pressed for shift + tab combination
-          if (document.activeElement === firstFocusableElement) {
-            // Add focus for the last focusable element
-            lastFocusableElement.focus();
-            e.preventDefault();
-          }
-        } else {
-          // If tab key is pressed
-          if (document.activeElement === lastFocusableElement) {
-            // Add focus for the first focusable element
-            firstFocusableElement.focus();
-            e.preventDefault();
-          }
-        }
+      function addExcludingAttributes(element) {
+        return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
       }
     }
   }

@@ -7,7 +7,11 @@
     @dragenter="incrementDragover"
     @dragleave="decrementDragover"
   >
-    <div class="apos-media-uploader__inner">
+    <div
+      class="apos-media-uploader__inner"
+      tabindex="0"
+      @keydown="onUploadDragAndDropKeyDown"
+    >
       <AposCloudUploadIcon
         class="apos-media-uploader__icon"
       />
@@ -30,6 +34,7 @@
       :accept="accept"
       multiple="true"
       :disabled="disabled"
+      tabindex="-1"
     >
   </label>
 </template>
@@ -221,6 +226,16 @@ export default {
             localize: false
           });
         }
+      }
+    },
+    // Trigger the file input click (via `this.create`) when pressing Enter or Space
+    // of the drag&drop area, which is made focusable unlike the input file.
+    onUploadDragAndDropKeyDown(e) {
+      const isEnterPressed = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
+      const isSpaceBarPressed = e.keyCode === 32 || e.code === 'Space';
+
+      if (isEnterPressed || isSpaceBarPressed) {
+        this.create();
       }
     }
   }
