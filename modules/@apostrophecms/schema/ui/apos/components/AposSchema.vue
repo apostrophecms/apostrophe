@@ -159,7 +159,6 @@ export default {
       this.schema.forEach(item => {
         fields[item.name] = {};
         fields[item.name].field = item;
-        fields[item.name].field.aposIsTemplate = this.value?.data?.aposIsTemplate;
         fields[item.name].value = {
           data: this.value[item.name]
         };
