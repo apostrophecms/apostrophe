@@ -48,6 +48,7 @@
         :doc-id="docId"
         :ref="field.name"
         :generation="generation"
+        @update-doc-data="onUpdateDocData"
       />
     </component>
     <slot name="after" />
@@ -139,7 +140,8 @@ export default {
   emits: [
     'input',
     'reset',
-    'validate'
+    'validate',
+    'update-doc-data'
   ],
   data() {
     return {
@@ -329,6 +331,9 @@ export default {
       // in a v-for. We know there is only one in this case
       // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
       this.$refs[fieldName][0].$el.scrollIntoView();
+    },
+    onUpdateDocData(data) {
+      this.$emit('update-doc-data', data);
     }
   }
 };
