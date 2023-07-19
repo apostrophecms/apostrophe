@@ -728,8 +728,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       if (code) {
         return true;
       }
-      if (d.__meta.dirname && (fs.existsSync(`${d.__meta.dirname}/ui/apos`) || fs.existsSync(`${d.__meta.dirname}/ui/src`) || fs.existsSync(`${d.__meta.dirname}/ui/public`))) {
-        // Assets that will be bundled, instead of server code
+      const subdirs = [ 'ui/apos', 'ui/src', 'ui/public', 'public', 'i18n' ];
+      if (d.__meta.dirname && subdirs.find(dir => fs.existsSync(`${d.__meta.dirname}/${dir}`))) {
+        // Assets that will be bundled, or localizations, instead of server code
         return true;
       }
       return false;
