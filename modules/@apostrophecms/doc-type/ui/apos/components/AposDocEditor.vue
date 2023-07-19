@@ -67,11 +67,12 @@
               :conditional-fields="conditionalFields('other')"
               :doc-id="docId"
               :value="docFields"
-              @input="updateDocFields"
-              @validate="triggerValidate"
               :server-errors="serverErrors"
               :ref="tab.name"
               :generation="generation"
+              @input="updateDocFields"
+              @validate="triggerValidate"
+              @update-doc-data="onUpdateDocFields"
             />
           </div>
         </template>
@@ -408,11 +409,9 @@ export default {
         this.modal.triggerFocusRefresh++;
       });
     }
-    apos.bus.$on('update-doc-fields', this.onUpdateDocFields);
     apos.bus.$on('content-changed', this.onContentChanged);
   },
   destroyed() {
-    apos.bus.$off('update-doc-fields', this.onUpdateDocFields);
     apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
