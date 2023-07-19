@@ -10,7 +10,17 @@ They keep the focus on elements inside modals and give it back to their parent m
 * Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties. 
 
 ### Fixes
-- Fixes a problem in the rich text editor where the slash would not be deleted after item selectin from the insert menu.
+
+* Fixes a problem in the rich text editor where the slash would not be deleted after item selectin from the insert menu.
+* Modules that have a `public` or `i18n` subdirectory no longer generate a
+warning if they export no code.
+
+### Changes
+
+* To make life easier for module developers, modules that are `npm link`ed to
+the project no longer have to be listed in `package.json` as
+dependencies. To prevent surprises this is still a requirement for modules
+that are not symlinked.
 
 ## 3.52.0 (2023-07-06)
 
