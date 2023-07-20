@@ -392,9 +392,15 @@ export default {
       this[action](this.context);
     },
     async edit(doc) {
+      // TODO: Use this line to use the right editor
+      /* await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, { */
       await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
         docId: doc._id
+        // TODO: we use editMode in template to now we edit and not copy but still having a this.doc set.
+        // Type is useful for computed that need the schema when module name is @apostrophecms/page (no schema)
+        /* type: doc.type, */
+        /* editMode: true */
       });
     },
     preview(doc) {
