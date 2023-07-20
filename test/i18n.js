@@ -174,6 +174,18 @@ describe('static i18n', function() {
       assert.strictEqual(browserData.locale, 'fr');
       assert.strictEqual(browserData.adminLocale, 'en');
     }
+
+    {
+      // When user sets Same as Website
+      const browserData = apos.i18n.getBrowserData(apos.task.getReq({
+        locale: 'fr',
+        user: {
+          adminLocale: ''
+        }
+      }));
+      assert.strictEqual(browserData.locale, 'fr');
+      assert.strictEqual(browserData.adminLocale, 'fr');
+    }
   });
 
   it('should respect defaultAdminLocale when adminLocales are configured', async function () {
@@ -205,10 +217,24 @@ describe('static i18n', function() {
     assert(field);
     assert.strictEqual(field.def, 'fr');
 
-    // adminLocale is defaultAdminLocale even if user.adminLocale is not present
-    const browserData = apos.i18n.getBrowserData(apos.task.getReq());
-    assert.strictEqual(browserData.locale, 'en');
-    assert.strictEqual(browserData.adminLocale, 'fr');
+    {
+      // adminLocale is defaultAdminLocale even if user.adminLocale is not present
+      const browserData = apos.i18n.getBrowserData(apos.task.getReq());
+      assert.strictEqual(browserData.locale, 'en');
+      assert.strictEqual(browserData.adminLocale, 'fr');
+    }
+
+    {
+      // adminLocale is set to Same as Website
+      const browserData = apos.i18n.getBrowserData(apos.task.getReq({
+        locale: 'en',
+        user: {
+          adminLocale: ''
+        }
+      }));
+      assert.strictEqual(browserData.locale, 'en');
+      assert.strictEqual(browserData.adminLocale, 'en');
+    }
   });
 
   it('should respect defaultAdminLocale when adminLocales are NOT configured', async function () {
