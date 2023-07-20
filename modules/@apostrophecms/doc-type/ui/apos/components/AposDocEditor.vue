@@ -141,6 +141,10 @@ export default {
       type: String,
       default: null
     },
+    type: {
+      type: String,
+      default: null
+    },
     copyOf: {
       type: Object,
       default: null

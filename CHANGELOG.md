@@ -11,6 +11,9 @@ They keep the focus on elements inside modals and give it back to their parent m
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
 * Add schema field `hidden` property to always hide a field
 * Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
+* Respect `_aposEditorModal` property of a document if present, otherwise fall back to the usual way
+of determining which component to use.
+* For convenience in custom editors, pass the new prop `type`, the original type of the document being copied or edited.
 
 ### Fixes
 

@@ -392,9 +392,10 @@ export default {
       this[action](this.context);
     },
     async edit(doc) {
-      await apos.modal.execute(this.moduleOptions.components.editorModal, {
+      await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
-        docId: doc._id
+        docId: doc._id,
+        type: doc.type
       });
     },
     preview(doc) {
@@ -417,15 +418,15 @@ export default {
       });
       Object.assign(doc, complete);
 
-      apos.bus.$emit('admin-menu-click', {
-        itemName: `${this.moduleName}:editor`,
-        props: {
-          copyOf: {
-            ...this.current || doc,
-            _id: doc._id
-          }
-        }
+      await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, {
+        moduleName: this.moduleName,
+        copyOf: {
+          ...this.current || doc,
+          _id: doc._id
+        },
+        type: doc.type
       });
+
     },
     async customAction(doc, operation) {
       await apos.modal.execute(operation.modal, {
