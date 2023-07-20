@@ -8,6 +8,9 @@
 Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
 They keep the focus on elements inside modals and give it back to their parent modal when closed.
 * Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties. 
+* Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
+* Add schema field `hidden` property to always hide a field
+* Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
 
 ### Fixes
 - Fixes a problem in the rich text editor where the slash would not be deleted after item selectin from the insert menu.
@@ -20,9 +23,6 @@ They keep the focus on elements inside modals and give it back to their parent m
 
 ### Adds
 
-* Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
-* Add schema field `hidden` property to always hide a field
-* Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
 * Allows users to double-click a nested widget's breadcrumb entry and open its editor.
 * Adds support for a new `conditions` property in `addContextOperation` and validation of `addContextOperation` configuration.
 
