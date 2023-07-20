@@ -70,7 +70,7 @@ export default {
     tabs() {
       if (
         !this.currentTab ||
-        !this.tabs.find(tab => tab.isVisible === true && tab.name === this.currentTab)
+        !this.tabs.some(tab => tab.isVisible === true && tab.name === this.currentTab)
       ) {
         this.currentTab = this.firstVisibleTabName;
       }
