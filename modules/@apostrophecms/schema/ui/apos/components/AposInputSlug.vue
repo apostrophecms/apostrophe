@@ -191,9 +191,7 @@ export default {
         def: ''
       };
 
-      if (this.field.aposIsTemplate && !componentOnly) {
-        options.allow = this.field.page ? [ '/', '@' ] : '@';
-      } else if (this.field.page && !componentOnly) {
+      if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
 
