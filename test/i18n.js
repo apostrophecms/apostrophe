@@ -90,6 +90,148 @@ describe('static i18n', function() {
     const browserData = apos.i18n.getBrowserData(apos.task.getReq());
     assert.strictEqual(browserData.i18n.en.custom.customTestOne, 'Custom Test One From Subtype');
   });
+
+  it('should not offer adminLocale by default', function () {
+    assert.deepStrictEqual(apos.i18n.adminLocales, []);
+    assert.strictEqual(apos.i18n.defaultAdminLocale, null);
+    assert.strictEqual(
+      apos.user.schema.some((field) => field.name === 'adminLocale'),
+      false
+    );
+    const browserData = apos.i18n.getBrowserData(apos.task.getReq());
+    assert.strictEqual(browserData.locale, 'en');
+    assert.strictEqual(browserData.adminLocale, 'en');
+  });
+
+  it('should add user.adminLocale when configured', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: {},
+              fr: {
+                prefix: '/fr'
+              }
+            },
+            adminLocales: [
+              {
+                label: 'English',
+                value: 'en'
+              },
+              {
+                label: 'French',
+                value: 'fr'
+              }
+            ]
+          }
+        }
+      }
+    });
+
+    assert.deepStrictEqual(
+      apos.i18n.adminLocales,
+      [
+        {
+          label: 'English',
+          value: 'en'
+        },
+        {
+          label: 'French',
+          value: 'fr'
+        }
+      ]
+    );
+    assert.strictEqual(apos.i18n.defaultAdminLocale, null);
+    const field = apos.user.schema.find((field) => field.name === 'adminLocale');
+    assert(field);
+    assert.strictEqual(field.type, 'select');
+    assert.strictEqual(field.choices.length, 3);
+    assert.strictEqual(field.choices[0].value, '');
+    assert.strictEqual(field.choices[1].value, 'en');
+    assert.strictEqual(field.choices[2].value, 'fr');
+    assert.strictEqual(field.def, '');
+
+    {
+      const browserData = apos.i18n.getBrowserData(apos.task.getReq({
+        locale: 'en',
+        user: {
+          adminLocale: 'fr'
+        }
+      }));
+      assert.strictEqual(browserData.locale, 'en');
+      assert.strictEqual(browserData.adminLocale, 'fr');
+    }
+    {
+      const browserData = apos.i18n.getBrowserData(apos.task.getReq({
+        locale: 'fr',
+        user: {
+          adminLocale: 'en'
+        }
+      }));
+      assert.strictEqual(browserData.locale, 'fr');
+      assert.strictEqual(browserData.adminLocale, 'en');
+    }
+  });
+
+  it('should respect defaultAdminLocale when adminLocales are configured', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            adminLocales: [
+              {
+                label: 'English',
+                value: 'en'
+              },
+              {
+                label: 'French',
+                value: 'fr'
+              }
+            ],
+            defaultAdminLocale: 'fr'
+          }
+        }
+      }
+    });
+
+    // Correct default value
+    assert.strictEqual(apos.i18n.defaultAdminLocale, 'fr');
+    const field = apos.user.schema.find((field) => field.name === 'adminLocale');
+    assert(field);
+    assert.strictEqual(field.def, 'fr');
+
+    // adminLocale is defaultAdminLocale even if user.adminLocale is not present
+    const browserData = apos.i18n.getBrowserData(apos.task.getReq());
+    assert.strictEqual(browserData.locale, 'en');
+    assert.strictEqual(browserData.adminLocale, 'fr');
+  });
+
+  it('should respect defaultAdminLocale when adminLocales are NOT configured', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            defaultAdminLocale: 'fr'
+          }
+        }
+      }
+    });
+
+    assert.strictEqual(apos.i18n.defaultAdminLocale, 'fr');
+    assert.strictEqual(apos.user.schema.some((field) => field.name === 'adminLocale'), false);
+
+    // adminLocale is defaultAdminLocale even if user.adminLocale is not present
+    const browserData = apos.i18n.getBrowserData(apos.task.getReq());
+    assert.strictEqual(browserData.locale, 'en');
+    assert.strictEqual(browserData.adminLocale, 'fr');
+  });
 });
 
 describe('private locales', function() {

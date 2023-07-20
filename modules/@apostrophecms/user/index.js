@@ -28,6 +28,11 @@
 // You may also call `apos.user.addSecret('name')` to add a new
 // secret property. This is convenient when implementing a module
 // such as `@apostrophecms/signup`.
+//
+// ### `adminLocale` schema field
+// A select field auto-created by the module, allowing the user to choose
+// their preferred language for the admin UI. It will be added only if
+// @apostrophecms/i18n is configured with `adminLocales`.
 
 const credentials = require('credentials');
 const prompts = require('prompts');
@@ -49,7 +54,27 @@ module.exports = {
     showPermissions: true,
     relationshipSuggestionIcon: 'account-box-icon'
   },
-  fields(self) {
+  fields(self, options) {
+    const fields = {};
+    // UI Locale
+    const locales = [ ...options.apos.i18n.adminLocales ];
+    if (locales.length > 0) {
+      const def = options.apos.i18n.defaultAdminLocale || '';
+      fields.localeField = {
+        type: 'select',
+        name: 'adminLocale',
+        label: 'apostrophe:uiLanguageLabel',
+        choices: [
+          {
+            label: 'apostrophe:uiLanguageWebsite',
+            value: ''
+          },
+          ...locales
+        ],
+        def
+      };
+    }
+
     return {
       add: {
         title: {
@@ -98,14 +123,16 @@ module.exports = {
           ],
           def: 'guest',
           required: true
-        }
+        },
+        ...fields
       },
       remove: [ 'visibility' ],
       group: {
         basics: {
           label: 'apostrophe:basics',
           fields: [
-            'title'
+            'title',
+            'adminLocale'
           ]
         },
         utility: {

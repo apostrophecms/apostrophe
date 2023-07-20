@@ -464,6 +464,8 @@
   "type": "Type",
   "typeWithCount": "{{ type }} ({{ count }})",
   "unableToSwitchModes": "Unable to switch modes.",
+  "uiLanguageLabel": "UI Language",
+  "uiLanguageWebsite": "Same as Website",
   "undo": "Undo",
   "undoFailed": "The operation could not be undone.",
   "undoPublish": "Undo Publish",
