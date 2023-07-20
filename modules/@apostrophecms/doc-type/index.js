@@ -1938,11 +1938,11 @@ module.exports = {
             // even if everything is in the archive, as "No" is often the default.
             return [
               {
-                value: '0',
+                value: false,
                 label: 'apostrophe:no'
               },
               {
-                value: '1',
+                value: true,
                 label: 'apostrophe:yes'
               }
             ];
