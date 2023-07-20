@@ -179,7 +179,7 @@ module.exports = {
         label: 'apostrophe:restore',
         messages: {
           progress: 'Restoring {{ type }}...',
-          completed: 'Restoring {{ count }} {{ type }}.'
+          completed: 'Restored {{ count }} {{ type }}.'
         },
         icon: 'archive-arrow-up-icon',
         if: {

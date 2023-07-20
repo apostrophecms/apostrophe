@@ -11,6 +11,7 @@
         :icon="checkboxIcon"
         @click="selectAll"
         ref="selectAll"
+        data-apos-test="selectAll"
       />
       <div
         v-for="{
@@ -25,6 +26,7 @@
         <AposButton
           v-if="!operations"
           :label="label"
+          :action="action"
           :icon="icon"
           :disabled="!checkedCount"
           :modifiers="['small']"

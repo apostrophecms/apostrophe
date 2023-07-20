@@ -32,10 +32,10 @@
       v-for="field in schema" :key="field.name"
       :data-apos-field="field.name"
       :is="fieldStyle === 'table' ? 'td' : 'div'"
-      v-show="displayComponent(field.name)"
+      v-show="displayComponent(field)"
     >
       <component
-        v-show="displayComponent(field.name)"
+        v-show="displayComponent(field)"
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
@@ -48,6 +48,7 @@
         :doc-id="docId"
         :ref="field.name"
         :generation="generation"
+        @update-doc-data="onUpdateDocData"
       />
     </component>
     <slot name="after" />
@@ -139,7 +140,8 @@ export default {
   emits: [
     'input',
     'reset',
-    'validate'
+    'validate',
+    'update-doc-data'
   ],
   data() {
     return {
@@ -159,7 +161,6 @@ export default {
       this.schema.forEach(item => {
         fields[item.name] = {};
         fields[item.name].field = item;
-        fields[item.name].field.aposIsTemplate = this.value?.data?.aposIsTemplate;
         fields[item.name].value = {
           data: this.value[item.name]
         };
@@ -282,7 +283,7 @@ export default {
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
 
-      this.schema.filter(field => this.displayComponent(field.name)).forEach(field => {
+      this.schema.filter(field => this.displayComponent(field)).forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
@@ -309,24 +310,30 @@ export default {
         this.$emit('input', { ...this.next });
       }
     },
-    displayComponent(fieldName) {
-      if (this.currentFields) {
-        if (!this.currentFields.includes(fieldName)) {
-          return false;
-        }
-      }
-      // Might not be a conditional field at all, so test explicitly for false
-      if (this.conditionalFields[fieldName] === false) {
+    displayComponent({ name, hidden = false }) {
+      if (hidden === true) {
         return false;
-      } else {
-        return true;
       }
+
+      if (this.currentFields && !this.currentFields.includes(name)) {
+        return false;
+      }
+
+      // Might not be a conditional field at all, so test explicitly for false
+      if (this.conditionalFields[name] === false) {
+        return false;
+      }
+
+      return true;
     },
     scrollFieldIntoView(fieldName) {
       // The refs for a name are an array if that ref was assigned
       // in a v-for. We know there is only one in this case
       // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
       this.$refs[fieldName][0].$el.scrollIntoView();
+    },
+    onUpdateDocData(data) {
+      this.$emit('update-doc-data', data);
     }
   }
 };

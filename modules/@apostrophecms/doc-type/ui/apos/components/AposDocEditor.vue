@@ -67,11 +67,12 @@
               :conditional-fields="conditionalFields('other')"
               :doc-id="docId"
               :value="docFields"
-              @input="updateDocFields"
-              @validate="triggerValidate"
               :server-errors="serverErrors"
               :ref="tab.name"
               :generation="generation"
+              @input="updateDocFields"
+              @validate="triggerValidate"
+              @update-doc-data="onUpdateDocFields"
             />
           </div>
         </template>
@@ -668,6 +669,10 @@ export default {
       apos.bus.$emit('admin-menu-click', {
         itemName: `${this.moduleName}:editor`
       });
+    },
+    onUpdateDocFields(value) {
+      this.updateDocFields(value);
+      this.generation++;
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
