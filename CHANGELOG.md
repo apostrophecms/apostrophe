@@ -24,6 +24,8 @@ incomplete projection and should not be used in new code.
 * Fixes a problem in the rich text editor where the slash would not be deleted after item selectin from the insert menu.
 * Modules that have a `public` or `i18n` subdirectory no longer generate a
 warning if they export no code.
+* Clean up focus parent event handlers when components are destroyed. Prevents a slow degradation of performance while editing.
+Thanks to [Joshua N. Miller](https://github.com/jmiller-rise8).
 
 ### Changes
 
