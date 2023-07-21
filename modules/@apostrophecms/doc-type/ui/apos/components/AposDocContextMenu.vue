@@ -315,7 +315,10 @@ export default {
       );
     },
     manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+      return this.moduleOptions.localized && !this.autopublish;
+    },
+    autopublish() {
+      return this.context._aposAutopublish ?? this.moduleOptions.autopublish;
     },
     isModified() {
       if (!this.current) {

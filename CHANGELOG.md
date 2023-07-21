@@ -11,9 +11,14 @@ They keep the focus on elements inside modals and give it back to their parent m
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
 * Add schema field `hidden` property to always hide a field
 * Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
-* Respect `_aposEditorModal` property of a document if present, otherwise fall back to the usual way
-of determining which component to use. This is a powerful addition to
-custom editor components for piece and page types.
+* The front end UI now respects the `_aposEditorModal` and `_aposAutopublish`
+properties of a document if present, and otherwise falls back to module
+configuration. This is a powerful addition to custom editor components
+for piece and page types, allowing "virtual piece types" on the back end that
+deal with many content types to give better hints to the UI.
+* Respect the `_aposAutopublish` property of a document if prsent, otherwise
+fall back to module configuration.
+
 * For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
 * For better results in custom editor components, pass the prop `copyOfId`, which implies
 the custom editor should fetch the original itself by its means of choice.
