@@ -17,7 +17,7 @@ export default {
     }
 
     i18next.init({
-      lng: canonicalize(i18n.locale),
+      lng: canonicalize(i18n.adminLocale),
       fallbackLng,
       resources: {},
       debug: i18n.debug,
@@ -45,15 +45,15 @@ export default {
       }
     });
 
-    for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.locale])) {
-      i18next.addResourceBundle(canonicalize(i18n.locale), ns, phrases, true, true);
+    for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.adminLocale])) {
+      i18next.addResourceBundle(canonicalize(i18n.adminLocale), ns, phrases, true, true);
     }
-    if (i18n.locale !== i18n.defaultLocale) {
+    if (i18n.adminLocale !== i18n.defaultLocale) {
       for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.defaultLocale])) {
         i18next.addResourceBundle(canonicalize(i18n.defaultLocale), ns, phrases, true, true);
       }
     }
-    if ((i18n.locale !== 'en') && (i18n.defaultLocale !== 'en')) {
+    if ((i18n.adminLocale !== 'en') && (i18n.defaultLocale !== 'en')) {
       for (const [ ns, phrases ] of Object.entries(i18n.i18n.en)) {
         i18next.addResourceBundle('en', ns, phrases, true, true);
       }
@@ -85,7 +85,7 @@ export default {
         return '';
       }
       const result = i18next.t(key, {
-        lng: i18n.locale,
+        lng: i18n.adminLocale,
         ...options
       });
       if (i18n.show) {
