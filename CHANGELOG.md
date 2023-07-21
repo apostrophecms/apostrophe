@@ -12,12 +12,20 @@ They keep the focus on elements inside modals and give it back to their parent m
 * Add schema field `hidden` property to always hide a field
 * Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
 * Respect `_aposEditorModal` property of a document if present, otherwise fall back to the usual way
-of determining which component to use.
-* For convenience in custom editors, pass the new prop `type`, the original type of the document being copied or edited.
-* For better results in custom editors, pass the prop `copyOfId`, which implies
+of determining which component to use. This is a powerful addition to
+custom editor components for piece and page types.
+* For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
+* For better results in custom editor components, pass the prop `copyOfId`, which implies
 the custom editor should fetch the original itself by its means of choice.
 For backwards compatibility `copyOf` is still passed, but it may be an
 incomplete projection and should not be used in new code.
+* Custom context operations now receive a `docId` prop, which should
+be used in preference to `doc` because `doc` may be an incomplete
+projection.
+* Those creating custom context operations for documents can now
+specify both a `props` object for additional properties to be passed to
+their modal and a `docProps` object to map properties from the document
+to props of their choosing.
 
 ### Fixes
 
