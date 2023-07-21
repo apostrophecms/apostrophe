@@ -411,15 +411,11 @@ export default {
           this.$emit('close', doc);
         }
       }
-      // Because the page or piece manager might give us just a projected,
-      // minimum number of properties otherwise
-      const complete = await apos.http.get(`${this.moduleOptions.action}/${doc._id}`, {
-        busy: true
-      });
-      Object.assign(doc, complete);
 
       await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
+        copyOfId: doc._id,
+        // Passed for bc
         copyOf: {
           ...this.current || doc,
           _id: doc._id
