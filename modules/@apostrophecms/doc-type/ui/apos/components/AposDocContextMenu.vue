@@ -427,8 +427,16 @@ export default {
     async customAction(doc, operation) {
       await apos.modal.execute(operation.modal, {
         moduleName: operation.moduleName,
-        doc
+        // For backwards compatibility
+        doc,
+        ...docProps(doc),
+        ...operation.props
       });
+      function docProps(doc) {
+        return Object.fromEntries(Object.entries(operation.docProps || {}).map(([key, value]) => {
+          return [key, doc[value]];
+        }));
+      }
     },
     async localize(doc) {
       // If there are changes warn the user before discarding them before
