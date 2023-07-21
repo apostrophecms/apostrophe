@@ -589,13 +589,13 @@ module.exports = {
         }
       },
       getBrowserData(req) {
-        const uiLocale = req.user?.adminLocale === ''
+        const adminLocale = req.user?.adminLocale === ''
           ? req.locale
           : req.user?.adminLocale || self.defaultAdminLocale || req.locale;
         const i18n = {
-          [uiLocale]: self.getBrowserBundles(uiLocale)
+          [adminLocale]: self.getBrowserBundles(adminLocale)
         };
-        if (uiLocale !== self.defaultLocale) {
+        if (adminLocale !== self.defaultLocale) {
           i18n[self.defaultLocale] = self.getBrowserBundles(self.defaultLocale);
         }
         // In case the default locale also has inadequate admin UI phrases
@@ -605,7 +605,7 @@ module.exports = {
         const result = {
           i18n,
           locale: req.locale,
-          adminLocale: uiLocale,
+          adminLocale,
           defaultLocale: self.defaultLocale,
           defaultNamespace: self.defaultNamespace,
           locales: self.locales,
