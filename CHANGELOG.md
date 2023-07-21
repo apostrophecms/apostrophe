@@ -16,7 +16,7 @@ properties of a document if present, and otherwise falls back to module
 configuration. This is a powerful addition to custom editor components
 for piece and page types, allowing "virtual piece types" on the back end that
 deal with many content types to give better hints to the UI.
-* Respect the `_aposAutopublish` property of a document if prsent, otherwise
+* Respect the `_aposAutopublish` property of a document if present, otherwise
 fall back to module configuration.
 
 * For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
