@@ -141,8 +141,12 @@ export default {
       type: String,
       default: null
     },
-    copyOf: {
-      type: Object,
+    type: {
+      type: String,
+      default: null
+    },
+    copyOfId: {
+      type: String,
       default: null
     }
   },
@@ -282,7 +286,7 @@ export default {
         return 'apostrophe:restore';
       } else if (this.manuallyPublished) {
         if (this.canPublish) {
-          if (this.copyOf) {
+          if (this.copyOfId) {
             return 'apostrophe:publish';
           } else if (this.original && this.original.lastPublishedAt) {
             return 'apostrophe:update';
@@ -290,7 +294,7 @@ export default {
             return 'apostrophe:publish';
           }
         } else {
-          if (this.copyOf) {
+          if (this.copyOfId) {
             return 'apostrophe:submit';
           } else if (this.original && this.original.lastPublishedAt) {
             return 'apostrophe:submitUpdate';
@@ -377,19 +381,24 @@ export default {
         }
       }
       this.modal.triggerFocusRefresh++;
-    } else if (this.copyOf) {
-      const newInstance = klona(this.copyOf);
+    } else if (this.copyOfId) {
+      // Because the page or piece manager might give us just a projected,
+      // minimum number of properties otherwise, and because we need to
+      // make sure we use our preferred module to fetch the content
+      const newInstance = await apos.http.get(`${this.moduleOptions.action}/${this.copyOfId}`, {
+        busy: true
+      });
       delete newInstance.parked;
-      newInstance.title = `Copy of ${this.copyOf.title}`;
-      if (this.copyOf.slug.startsWith('/')) {
-        const matches = this.copyOf.slug.match(/\/([^/]+)$/);
+      newInstance.title = `Copy of ${newInstance.title}`;
+      if (newInstance.slug.startsWith('/')) {
+        const matches = newInstance.slug.match(/\/([^/]+)$/);
         if (matches) {
           newInstance.slug = `${apos.page.page.slug}/copy-of-${matches[1]}`;
         } else {
           newInstance.slug = '/copy-of-home-page';
         }
       } else {
-        newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+        newInstance.slug = newInstance.slug.replace(/([^/]+)$/, 'copy-of-$1');
       }
       delete newInstance._id;
       delete newInstance._url;
@@ -571,8 +580,8 @@ export default {
           body._targetId = apos.page.page._id.replace(':published', ':draft');
           body._position = 'lastChild';
         }
-        if (this.copyOf) {
-          body._copyingId = this.copyOf._id;
+        if (this.copyOfId) {
+          body._copyingId = this.copyOfId;
         }
       }
       let doc;
