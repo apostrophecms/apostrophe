@@ -68,7 +68,7 @@ module.exports = function(self) {
         console.log('Cropping ' + tempFile + ' to ' + originalFile);
         try {
           await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, originalFile, {
-            crop: crop,
+            crop,
             sizes: self.imageSizes
           });
         } catch (e) {

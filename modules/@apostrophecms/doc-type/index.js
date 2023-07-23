@@ -2063,7 +2063,7 @@ module.exports = {
           finalize() {
             const type = query.get('type');
             if (type) {
-              query.and({ type: type });
+              query.and({ type });
             }
           }
         },

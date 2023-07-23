@@ -26,8 +26,8 @@ module.exports = {
           });
           return self.send(req, 'chooserModal', {
             options: self.options,
-            limit: limit,
-            types: types
+            limit,
+            types
           });
         }
       }

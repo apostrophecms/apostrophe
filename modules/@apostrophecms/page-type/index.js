@@ -257,11 +257,11 @@ module.exports = {
         const keys = [];
         const regexp = pathToRegexp(pattern, keys);
         self.rules[pattern] = {
-          pattern: pattern,
+          pattern,
           middleware: Array.prototype.slice.call(arguments, 1, arguments.length - 1),
           handler: arguments[arguments.length - 1],
-          regexp: regexp,
-          keys: keys
+          regexp,
+          keys
         };
       },
       // Match a URL according to the provided rule as registered
@@ -458,7 +458,7 @@ module.exports = {
         }
         return schema;
         function getLabel(name) {
-          const choice = _.find(self.apos.page.typeChoices, { name: name });
+          const choice = _.find(self.apos.page.typeChoices, { name });
           let label = choice && choice.label;
           if (!label) {
             const manager = self.apos.doc.getManager(name);

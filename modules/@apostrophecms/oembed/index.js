@@ -158,9 +158,9 @@ module.exports = {
         }
         html = html.replace('STYLE', style);
         return {
-          title: title,
+          title,
           type: 'rich',
-          html: html
+          html
         };
       },
       // Returns browser-side javascript to load a given

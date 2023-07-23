@@ -110,8 +110,8 @@ module.exports = {
         async function insert() {
           await self.db.insertOne({
             _id: name,
-            when: when,
-            idleTimeout: idleTimeout,
+            when,
+            idleTimeout,
             unique: self.apos.util.generateId()
           });
         }

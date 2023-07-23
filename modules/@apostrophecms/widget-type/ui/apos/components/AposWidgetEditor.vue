@@ -89,7 +89,7 @@ export default {
         hasErrors: false
       },
       modal: {
-        title: this.editLabel,
+        title: '',
         active: false,
         type: 'slide',
         showModal: false
