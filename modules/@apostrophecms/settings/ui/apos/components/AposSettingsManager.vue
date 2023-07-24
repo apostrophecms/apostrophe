@@ -12,6 +12,7 @@
       <AposButton
         type="default"
         label="apostrophe:close"
+        :disabled="busy"
         @click="close"
       />
     </template>
@@ -19,23 +20,23 @@
       <AposModalBody class="apos-settings__group">
         <template #bodyMain>
           <!-- TODO PHASE 2 groups -->
-          <ul class="apos-settings__group-items">
+          <!-- <ul class="apos-settings__group-items">
             <li
               class="apos-settings__group-item apos-is-active"
             >
               Preferences
             </li>
-          </ul>
+          </ul> -->
         </template>
       </AposModalBody>
     </template>
     <template #main>
       <AposModalBody v-if="docReady" class="apos-settings__content">
         <template #bodyMain>
-          <h2 class="apos-settings__heading">
-            <!-- TODO PHASE 2 active group name -->
+          <!-- TODO PHASE 2 active group name -->
+          <!-- <h2 class="apos-settings__heading">
             Preferences
-          </h2>
+          </h2> -->
           <!-- TODO PHASE 2 groups -->
           <AposSubform
             v-for="subform in subforms"
@@ -53,11 +54,11 @@
 </template>
 
 <script>
-import TheAposSettingsLogic from 'Modules/@apostrophecms/settings/logic/TheAposSettings';
+import AposSettingsManagerLogic from 'Modules/@apostrophecms/settings/logic/AposSettingsManager';
 
 export default {
   name: 'AposSettingsManager',
-  mixins: [ TheAposSettingsLogic ],
+  mixins: [ AposSettingsManagerLogic ],
   emits: [ 'safe-close', 'modal-result' ]
 };
 </script>

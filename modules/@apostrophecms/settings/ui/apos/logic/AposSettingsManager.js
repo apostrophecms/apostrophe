@@ -8,13 +8,16 @@ export default {
         active: false,
         showModal: false
       },
+      values: {
+        data: {}
+      },
       docReady: false,
       // Object same as serverErrors (AposEditorMixin)
       errors: null,
-      busy: false,
-      values: {
-        data: {}
-      }
+      busy: false
+      // TODO updated state (changed with timeOut) when save is successful,
+      // sent to the Subform component.
+      // updatedState: false
     };
   },
   computed: {
@@ -34,11 +37,8 @@ export default {
   },
   methods: {
     close() {
-      if (!this.modal.busy) {
-        this.modal.showModal = false;
-      }
+      this.modal.showModal = false;
     },
-
     async submit(event) {
       this.errors = null;
       this.busy = true;
@@ -56,12 +56,13 @@ export default {
           fallback: this.$t('apos-signup:error')
         });
       } finally {
-        setTimeout(() => {
-          this.busy = false;
-        }, 1000);
+        this.busy = false;
+        // FIXME here for testing reasons, remove in the next ticket.
+        // setTimeout(() => {
+        //   this.busy = false;
+        // }, 1000);
       }
     },
-
     async loadData() {
       const result = await apos.http.get(this.action, {
         busy: true
@@ -70,7 +71,6 @@ export default {
       this.setSubformValues(result);
       this.docReady = true;
     },
-
     setSubformValues(values) {
       const newValues = {};
       for (const subform of this.subforms) {
@@ -81,7 +81,6 @@ export default {
       }
       this.values.data = newValues;
     },
-
     async handleSaveError(e, { fallback }) {
       console.error(e);
       if (e.body && e.body.data && e.body.data.errors) {

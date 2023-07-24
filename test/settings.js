@@ -154,4 +154,152 @@ describe('user settings', function () {
     assert.deepEqual(browserData.subforms, subforms);
     assert.equal(browserData.action, '/api/v1/@apostrophecms/settings');
   });
+
+  it('should return 404 when settings user data and no configuration', async function () {
+    apos = await t.create({
+      root: module
+    });
+    const { jar } = await login(apos);
+
+    await assert.rejects(
+      apos.http.get('/api/v1/@apostrophecms/settings', { jar }),
+      {
+        status: 404
+      }
+    );
+
+  });
+
+  it('should load settings user data', async function () {
+    apos = await createCommonInstance();
+    const { jar, user } = await login(apos);
+    const result = await apos.http.get('/api/v1/@apostrophecms/settings', {
+      jar
+    });
+
+    assert(result._id);
+    assert.deepEqual(result, {
+      _id: user._id,
+      adminLocale: '',
+      firstName: '',
+      lastName: ''
+    });
+  });
+
+  it('should validate when updating settings user data and no configuration', async function () {
+    apos = await t.create({
+      root: module
+    });
+
+    {
+      const { jar } = await login(apos);
+
+      await assert.rejects(
+        apos.http.patch('/api/v1/@apostrophecms/settings/name', {
+          jar
+        }),
+        {
+          status: 404
+        }
+      );
+      await t.destroy(apos);
+    }
+
+    apos = await createCommonInstance();
+    {
+      const { jar } = await login(apos);
+      await assert.rejects(
+        apos.http.patch('/api/v1/@apostrophecms/settings/non-existing', {
+          jar
+        }),
+        {
+          status: 404
+        }
+      );
+    }
+  });
+
+  it('should update settings', async function () {
+    apos = await createCommonInstance();
+    const { jar, user } = await login(apos);
+    const result = await apos.http.patch('/api/v1/@apostrophecms/settings/adminLocale', {
+      body: {
+        adminLocale: 'fr'
+      },
+      jar
+    });
+
+    assert(result._id);
+    assert.deepEqual(result, {
+      _id: user._id,
+      adminLocale: 'fr'
+    });
+    const _user = await apos.user.find(apos.task.getReq(), { _id: user._id }).toObject();
+    assert.equal(_user.adminLocale, 'fr');
+  });
 });
+
+async function createCommonInstance() {
+  return t.create({
+    root: module,
+    modules: {
+      '@apostrophecms/i18n': {
+        options: {
+          adminLocales: [
+            {
+              label: 'English',
+              value: 'en'
+            },
+            {
+              label: 'French',
+              value: 'fr'
+            }
+          ]
+        }
+      },
+      '@apostrophecms/user': {
+        fields: {
+          add: {
+            firstName: {
+              type: 'string',
+              label: 'First Name'
+            },
+            lastName: {
+              type: 'string',
+              label: 'Last Name'
+            }
+          }
+        }
+      },
+      '@apostrophecms/settings': {
+        options: {
+          subforms: {
+            name: {
+              label: 'Name',
+              fields: [ 'firstName', 'lastName' ],
+              preview: '{{ firstName }} {{ lastName }}'
+            },
+            adminLocale: {
+              fields: [ 'adminLocale' ]
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+async function login(apos) {
+  const user = await t.createUser(apos, 'editor', {
+    username: 'editor',
+    password: 'editor'
+  });
+  const jar = await t.getUserJar(apos, user);
+  await apos.http.get('/', { jar });
+
+  return {
+    apos,
+    user,
+    jar
+  };
+}
