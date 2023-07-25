@@ -117,12 +117,6 @@ export default {
     },
     moduleOptions() {
       return window.apos.adminBar;
-    },
-    unpublishedLabel() {
-      return this.moduleOptions.unpublishedLabel || 'apostrophe:draft';
-    },
-    unpublishedTooltip() {
-      return this.moduleOptions.unpublishedTooltip || 'apostrophe:notYetPublished';
     }
   },
   mounted() {
