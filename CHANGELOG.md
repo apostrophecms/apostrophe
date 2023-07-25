@@ -31,6 +31,7 @@ projection.
 specify both a `props` object for additional properties to be passed to
 their modal and a `docProps` object to map properties from the document
 to props of their choosing.
+* Adds support to add context labels in admin bar.
 
 ### Fixes
 
