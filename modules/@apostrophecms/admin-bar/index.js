@@ -396,7 +396,7 @@ module.exports = {
       //
       // ```js
       // self.addContextLabel({
-      //   is: 'myLabel'
+      //   id: 'myLabel'
       //   label: 'apos:myLabel',
       //   tooltip: 'apos:myTooltip',
       //   last: true,
