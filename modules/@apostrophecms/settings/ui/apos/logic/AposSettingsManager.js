@@ -1,6 +1,6 @@
 export default {
   name: 'AposSettingsManager',
-  emits: [ 'safe-close', 'modal-result' ],
+  emits: [ 'safe-close' ],
   data() {
     return {
       modal: {
@@ -14,10 +14,9 @@ export default {
       docReady: false,
       // Object same as serverErrors (AposEditorMixin)
       errors: null,
-      busy: false
-      // TODO updated state (changed with timeOut) when save is successful,
-      // sent to the Subform component.
-      // updatedState: false
+      busy: false,
+      preview: true,
+      updateTimeout: null
     };
   },
   computed: {
@@ -35,9 +34,19 @@ export default {
     this.modal.active = true;
     await this.loadData();
   },
+  beforeDestroy() {
+    clearTimeout(this.updateTimeout);
+  },
   methods: {
     close() {
       this.modal.showModal = false;
+    },
+    updatePreview(event) {
+      this.preview = event;
+      if (!event) {
+        clearTimeout(this.updateTimeout);
+        this.updateTimeout = null;
+      }
     },
     async submit(event) {
       this.errors = null;
@@ -51,16 +60,16 @@ export default {
             }
         );
         this.values.data[event.name] = values;
+        this.updateTimeout = setTimeout(() => {
+          this.updateTimeout = null;
+        }, 3000);
+        this.updatePreview(true);
       } catch (e) {
         await this.handleSaveError(e, {
-          fallback: this.$t('apos-signup:error')
+          fallback: this.$t('apostrophe:error')
         });
       } finally {
         this.busy = false;
-        // FIXME here for testing reasons, remove in the next ticket.
-        // setTimeout(() => {
-        //   this.busy = false;
-        // }, 1000);
       }
     },
     async loadData() {

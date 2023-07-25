@@ -36,11 +36,9 @@ module.exports = {
 
         for (const [ name, config ] of Object.entries(self.options.subforms)) {
           const schema = self.getSubformSchema(name);
-          const label = config.label || schema[0]?.label;
           self.subforms.push({
             ...config,
             name,
-            label,
             schema
           });
         }
