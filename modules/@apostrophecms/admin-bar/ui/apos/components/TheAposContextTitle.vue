@@ -33,9 +33,17 @@
       />
       <AposLabel
         v-else
-        :label="unpublishedLabel"
-        :tooltip="unpublishedTooltip"
+        :label="'apostrophe:draft'"
+        :tooltip="'apostrophe:notYetPublished'"
         :modifiers="['apos-is-warning', 'apos-is-filled']"
+      />
+      <AposLabel
+        class="apos-admin-bar__title-context-label"
+        v-for="{id, label, tooltip = '', modifiers = []} in moduleOptions.contextLabels"
+        :key="id"
+        :label="label"
+        :tooltip="tooltip"
+        :modifiers="modifiers"
       />
     </span>
   </transition-group>
@@ -165,6 +173,10 @@ export default {
   &__document {
     margin-top: 3.5px;
   }
+}
+
+.apos-admin-bar__title-context-label  {
+  margin-left: 5px;
 }
 
 .apos-admin-bar__title__indicator {

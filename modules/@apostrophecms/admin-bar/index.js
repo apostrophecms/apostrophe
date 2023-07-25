@@ -92,6 +92,7 @@ module.exports = {
     self.groups = [];
     self.groupLabels = {};
     self.bars = [];
+    self.contextLabels = [];
     self.enableBrowserData();
   },
   handlers(self) {
@@ -355,7 +356,8 @@ module.exports = {
           tabId: cuid(),
           contextEditorName,
           pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft'),
-          bars: self.bars
+          bars: self.bars,
+          contextLabels: self.contextLabels
         };
       },
 
@@ -378,6 +380,33 @@ module.exports = {
         self.bars.push(bar);
 
         self.bars.sort((a, b) => {
+          if (a.last === true && b.last === true) {
+            return 0;
+          }
+          return b.last === true ? -1 : 1;
+        });
+      },
+
+      // Add custom context labels and place the ones
+      // that have `last: true` at the end
+      // of the list so that they will be
+      // displayed after the others.
+      //
+      // Example:
+      //
+      // ```js
+      // self.addContextLabel({
+      //   is: 'myLabel'
+      //   label: 'apos:myLabel',
+      //   tooltip: 'apos:myTooltip',
+      //   last: true,
+      //   modifiers: ['apos-is-warning', 'apos-is-filled']
+      // });
+      // ```
+      addContextLabel(label) {
+        self.contextLabels.push(label);
+
+        self.contextLabels.sort((a, b) => {
           if (a.last === true && b.last === true) {
             return 0;
           }
