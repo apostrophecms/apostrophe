@@ -37,6 +37,12 @@ module.exports = {
         for (const [ name, config ] of Object.entries(self.options.subforms)) {
           const schema = self.getSubformSchema(name);
           const label = config.label || schema[0]?.label;
+
+          // Don't allow malformed subform.fields, the only required prop.
+          if (!Array.isArray(config.fields) || config.fields.length === 0) {
+            throw new Error(`[@apostrophecms/settings] The subform "${name}" must have at least one field.`);
+          }
+
           self.subforms.push({
             ...config,
             name,
@@ -49,25 +55,27 @@ module.exports = {
       // Get the subset of the user schema that is relevant to the configured
       // subforms.
       inferUserSchema() {
-        const schema = [];
         const subforms = self.options.subforms;
         const userSchema = self.apos.user.schema;
         const allSettingsFields = [
           ...new Set(
             Object.keys(subforms)
               .reduce((acc, subform) => {
-                return acc.concat(subforms[subform].fields);
+                return acc.concat(subforms[subform].fields || []);
               }, [])
           )
         ];
         self.validateSettingsSchema(allSettingsFields, userSchema);
 
-        for (const field of userSchema) {
-          if (allSettingsFields.includes(field.name)) {
-            schema.push(field);
-          }
-        }
-        return schema;
+        return allSettingsFields
+          .filter(field => {
+            return userSchema.some(userField => userField.name === field);
+          })
+          // extra safety
+          .filter(Boolean)
+          .map(field => {
+            return userSchema.find(userField => userField.name === field);
+          });
       },
 
       // Validate that the fields configured in the settings module exist in the
