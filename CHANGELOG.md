@@ -4,10 +4,10 @@
 
 ### Adds
 
-* Accessibility improved for navigation inside modals and various UI elements.  
+* Accessibility improved for navigation inside modals and various UI elements.
 Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
 They keep the focus on elements inside modals and give it back to their parent modal when closed.
-* Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties. 
+* Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties.
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
 * Add schema field `hidden` property to always hide a field
 * Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
@@ -40,6 +40,7 @@ to props of their choosing.
 warning if they export no code.
 * Clean up focus parent event handlers when components are destroyed. Prevents a slow degradation of performance while editing.
 Thanks to [Joshua N. Miller](https://github.com/jmiller-rise8).
+* Fixes a visual discrepancy in the rich text editor where empty paragraphs would appear smaller in preview mode compared to edit mode.
 
 ### Changes
 
@@ -140,8 +141,8 @@ are made before the last `apostrophe:modulesRegistered` handler has fired.
 If you need to call Apostrophe's `find()` methods at startup,
 it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 * Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
-* Adds a `prefix` option to the http frontend util module.  
-If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
+* Adds a `prefix` option to the http frontend util module.
+If explicitly set to `false`, prevents the prefix from being automatically added to the URL,
 when making calls with already-prefixed URLs for instance.
 * Adds the `redirectToFirstLocale` option to the `i18n` module to prevent users from reaching a version of their site that would not match any locale when requesting the site without a locale prefix in the URL.
 * If just one instance of a piece type should always exist (per locale if localized), the
