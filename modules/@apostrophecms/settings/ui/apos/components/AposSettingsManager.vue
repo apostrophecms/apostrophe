@@ -1,6 +1,6 @@
 <template>
   <AposModal
-    class="apos-settings-manager"
+    class="apos-settings"
     :modal="modal"
     modal-title="Manage Settings"
     @esc="close"
@@ -16,40 +16,63 @@
         @click="close"
       />
     </template>
-    <!-- TODO PHASE 2 groups -->
-    <!-- <template #leftRail>
+    <template #leftRail>
       <AposModalBody class="apos-settings__group">
         <template #bodyMain>
           <ul class="apos-settings__group-items">
             <li
-              class="apos-settings__group-item apos-is-active"
+              v-for="(group, name) in groups"
+              :key="name"
+              class="apos-settings__group-item"
+              :class="{ 'apos-is-active': name === activeGroup }"
             >
-              Preferences
+              <button
+                data-apos-test="groupTrigger"
+                :data-apos-test-name="name"
+                :data-apos-test-label="$t(group.label)"
+                @click="activeGroup = name"
+              >
+                {{ $t(group.label) }}
+              </button>
             </li>
           </ul>
         </template>
       </AposModalBody>
-    </template> -->
+    </template>
     <template #main>
       <AposModalBody v-if="docReady" class="apos-settings__content">
         <template #bodyMain>
-          <!-- TODO PHASE 2 active group name -->
-          <!-- <h2 class="apos-settings__heading">
-            Preferences
-          </h2> -->
-          <!-- TODO PHASE 2 groups -->
-          <AposSubform
-            v-for="subform in subforms"
-            :key="subform.name"
-            :busy="busy"
-            :errors="errors"
-            :subform="subform"
-            :values="values.data[subform.name]"
-            :preview="preview"
-            :update-indicator="!!updateTimeout"
-            @update-preview="updatePreview"
-            @submit="submit"
-          />
+          <div
+            v-for="(group, name) in groups"
+            v-show="name === activeGroup"
+            class="apos-settings__subform-group"
+            :key="name"
+            data-apos-test="subformGroup"
+            :data-apos-test-name="name"
+            :data-apos-test-label="$t(group.label)"
+            :data-apos-test-active="name === activeGroup"
+          >
+            <h2 class="apos-settings__heading">
+              {{ $t(group.label) }}
+            </h2>
+            <AposSubform
+              v-for="subform in group.subforms"
+              :key="subform.name"
+              :class="{ 'apos-separator': subforms.length > 1 }"
+              :busy="busy"
+              :errors="errors"
+              :subform="subform"
+              :values="values.data[subform.name]"
+              :expanded="expanded === subform.name"
+              :update-indicator="!!subformUpdateTimeouts[subform.name]"
+              data-apos-test="subform"
+              :data-apos-test-name="subform.name"
+              :data-apos-test-label="$t(subform.label)"
+              :data-apos-test-expanded="expanded ? 'true' : 'false'"
+              @update-expanded="updateExpanded"
+              @submit="submit"
+            />
+          </div>
         </template>
       </AposModalBody>
     </template>
@@ -67,27 +90,22 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-settings-manager {
+.apos-settings {
   @include type-base;
 
   ::v-deep .apos-modal__inner {
-    // TODO decide on 1/2 vs 2/3, until phase 2 no left rail and static width
-    // $width: calc(calc(100vw / 3) * 2);
+    // 1/2 or 2/3 width
     // $width: calc(100vw / 2);
-    $width: 500px;
+    $width: calc(calc(100vw / 3) * 2);
     $vertical-spacing: 95px;
     $horizontal-spacing: calc(calc(100vw - #{$width}) / 2);
 
-    // Revise when we have left rail
-    // top: $vertical-spacing;
-    // bottom: $vertical-spacing;
-    transform: translateY(50%);
+    top: $vertical-spacing;
     right: $horizontal-spacing;
+    bottom: $vertical-spacing;
     left: $horizontal-spacing;
     width: $width;
-    height: fit-content;
-    min-height: 320px;
-    max-height: calc(100vh - #{$vertical-spacing * 2});
+    height: calc(100vh - #{$vertical-spacing * 2});
   }
 
   ::v-deep .apos-modal__main--with-left-rail {
@@ -96,38 +114,49 @@ export default {
 
   ::v-deep .apos-modal__body-inner {
     // padding: $spacing-triple $spacing-triple $spacing-double;
-    padding: $spacing-triple;
+    padding: $spacing-double $spacing-triple;
   }
 
   ::v-deep .apos-modal__header__main {
     // padding: $spacing-triple $spacing-triple $spacing-double;
     padding: $spacing-double $spacing-triple;
   }
-}
 
-.apos-settings__heading {
-  @include type-title;
-  margin: 0 0 $spacing-double 0;
-}
+  &__heading {
+    @include type-title;
+    margin: 0 0 $spacing-double 0;
+  }
 
-.apos-settings__content {
-  padding: 0;
-}
+  &__content {
+    padding: 0;
+  }
 
-.apos-settings__group {
-  padding: 0;
-  border-right: 1px solid var(--a-base-9);
-}
+  &__group {
+    padding: 0;
+    border-right: 1px solid var(--a-base-9);
+  }
 
-.apos-settings__group-items {
-  @include apos-list-reset();
+  &__group-items {
+    @include apos-list-reset();
+  }
 }
 
 .apos-settings__group-item {
   @include type-base;
-  margin-bottom: $spacing-base + $spacing-half;
+  margin-bottom: $spacing-half;
+
   &.apos-is-active {
     color: var(--a-primary);
+  }
+
+  > button {
+    @include apos-button-reset();
+    width: 100%;
+    padding: $spacing-base 0;
+  }
+
+  .apos-separator {
+    border-bottom: 1px solid var(--a-base-10);
   }
 }
 </style>

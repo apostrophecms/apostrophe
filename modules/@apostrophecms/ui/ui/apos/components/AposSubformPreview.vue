@@ -3,7 +3,7 @@
     <div class="apos-subform-preview__label">
       {{ $t(subform.label || subform.schema?.[0].label || 'n/a') }}
     </div>
-    <div class="apos-subform-preview__value">
+    <div class="apos-subform-preview__value" :class="{ 'is-help': !!subform.help }">
       <component
         v-if="subform.previewComponent"
         :is="subform.previewComponent"
@@ -31,6 +31,9 @@ export default {
   },
   computed: {
     previewValue() {
+      if (this.subform.help) {
+        return this.$t(this.subform.help);
+      }
       let preview = this.subform.preview;
       const values = inferFieldValues(this.subform.schema, this.values, this.$t);
 
@@ -39,7 +42,6 @@ export default {
           .map(field => `{{ ${field} }}`)
           .join(' ');
       }
-      console.log('PREVIEW', preview, values);
       return this.$t(preview, values);
     }
   }
@@ -111,21 +113,23 @@ function inferFieldValues(schema, values, $t) {
   padding: $spacing-double 0;
   align-items: center;
 
+  &__value {
+    @include type-large;
+    line-height: 1;
+    color: var(--a-base-1);
+
+    > span {
+      display: inline-block;
+    }
+  }
+
+  &__value.is-help,
   &__label {
     @include type-base;
 
     display: inline-block;
     color: var(--a-base-3);
     line-height: 1;
-  }
-
-  &__value {
-    @include type-large;
-    line-height: 1;
-
-    > span {
-      display: inline-block;
-    }
   }
 }
 </style>

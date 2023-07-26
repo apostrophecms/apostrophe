@@ -113,6 +113,7 @@ describe('user settings', function () {
                 fields: [ 'adminLocale' ]
               }
             }
+            // No groups configured
           }
         }
       }
@@ -143,16 +144,46 @@ describe('user settings', function () {
     assert.equal(nameSubform.label, 'Name');
     assert.equal(nameSubform.preview, '{{ firstName }} {{ lastName }}');
     assert.deepEqual(nameSubform.schema, nameSchema);
+    assert.deepEqual(nameSubform.group, {
+      name: 'ungrouped',
+      label: 'apostrophe:ungrouped'
+    });
 
     const adminLocaleSubform = subforms.find(subform => subform.name === 'adminLocale');
     assert.equal(adminLocaleSubform.label, undefined);
     assert.equal(adminLocaleSubform.preview, undefined);
     assert.deepEqual(adminLocaleSubform.schema, adminLocaleSchema);
+    assert.deepEqual(adminLocaleSubform.group, {
+      name: 'ungrouped',
+      label: 'apostrophe:ungrouped'
+    });
 
     // Appropriate browser data is sent
     const browserData = apos.settings.getBrowserData();
     assert.deepEqual(browserData.subforms, subforms);
     assert.equal(browserData.action, '/api/v1/@apostrophecms/settings');
+  });
+
+  it('should init groups', async function () {
+    apos = await createCommonInstance();
+    const [ first, second, third ] = apos.settings.subforms;
+    assert.equal(apos.settings.subforms.length, 3);
+
+    assert.equal(first.name, 'name');
+    assert.deepEqual(first.group, {
+      name: 'account',
+      label: 'Account'
+    });
+    assert.equal(second.name, 'adminLocale');
+    assert.deepEqual(second.group, {
+      name: 'preferences',
+      label: 'Preferences'
+    });
+    assert.equal(third.name, 'display');
+    assert.deepEqual(third.group, {
+      name: 'ungrouped',
+      label: 'apostrophe:ungrouped'
+    });
   });
 
   it('should return 404 when settings user data and no configuration', async function () {
@@ -181,6 +212,7 @@ describe('user settings', function () {
     assert.deepEqual(result, {
       _id: user._id,
       adminLocale: '',
+      displayName: '',
       firstName: '',
       lastName: ''
     });
@@ -267,6 +299,10 @@ async function createCommonInstance() {
             lastName: {
               type: 'string',
               label: 'Last Name'
+            },
+            displayName: {
+              type: 'string',
+              label: 'Display Name'
             }
           }
         }
@@ -274,13 +310,26 @@ async function createCommonInstance() {
       '@apostrophecms/settings': {
         options: {
           subforms: {
+            display: {
+              fields: [ 'displayName' ]
+            },
+            adminLocale: {
+              fields: [ 'adminLocale' ]
+            },
             name: {
               label: 'Name',
               fields: [ 'firstName', 'lastName' ],
               preview: '{{ firstName }} {{ lastName }}'
+            }
+          },
+          groups: {
+            account: {
+              label: 'Account',
+              subforms: [ 'name', 'nonExisting' ]
             },
-            adminLocale: {
-              fields: [ 'adminLocale' ]
+            preferences: {
+              label: 'Preferences',
+              subforms: [ 'adminLocale' ]
             }
           }
         }

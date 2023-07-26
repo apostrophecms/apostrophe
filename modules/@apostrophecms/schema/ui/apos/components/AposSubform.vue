@@ -1,30 +1,7 @@
 <template>
   <div class="apos-subform">
-    <!-- Preview mode -->
-    <div v-if="preview" class="apos-subform__preview">
-      <div class="apos-subform__preview-grid">
-        <AposSubformPreview
-          v-if="preview"
-          :subform="subform"
-          :values="values"
-        />
-        <span
-          v-if="updateIndicator"
-          class="apos-subform__preview-update-indicator"
-        >{{ $t('apostrophe:updated') }}</span>
-        <AposIndicator
-          v-else
-          class="apos-subform__preview-icon"
-          icon="chevron-down-icon"
-        />
-      </div>
-      <button
-        class="apos-subform__preview-trigger"
-        @click="togglePreview"
-      />
-    </div>
     <!-- Schema -->
-    <div v-else class="apos-subform__schema">
+    <div v-if="expanded" class="apos-subform__schema">
       <span v-if="subform.label" class="apos-subform__schema-label">
         {{ $t(subform.label) }}
       </span>
@@ -59,6 +36,34 @@
         />
       </div>
     </div>
+    <!-- Preview mode -->
+    <div v-else class="apos-subform__preview">
+      <div class="apos-subform__preview-grid">
+        <AposSubformPreview
+          :subform="subform"
+          :values="values"
+        />
+        <span
+          v-if="updateIndicator && !triggerHover"
+          class="apos-subform__preview-update-indicator"
+        >{{ $t('apostrophe:updated') }}</span>
+        <span
+          v-else-if="triggerHover"
+          class="apos-subform__preview-edit-indicator"
+        >{{ $t('apostrophe:edit') }}</span>
+        <AposIndicator
+          v-else
+          class="apos-subform__preview-icon"
+          icon="chevron-down-icon"
+        />
+      </div>
+      <button
+        class="apos-subform__preview-trigger"
+        @click="toggleExpanded"
+        @mouseenter="triggerHover = true"
+        @mouseleave="triggerHover = false"
+      />
+    </div>
   </div>
 </template>
 <script>
@@ -73,6 +78,7 @@ export default {
 <style lang="scss" scoped>
 .apos-subform {
   position: relative;
+  max-width: $input-max-width;
 
   &__preview-trigger {
     z-index: $z-index-default;
@@ -94,18 +100,12 @@ export default {
 
   &__preview-grid {
     display: grid;
-    grid-template-columns: 1fr 120px;
+    grid-template-columns: 1fr 80px;
     align-items: center;
-    // align with the modal header language indicator,
-    // which is too deep and can't be re-styled
-    // margin-right: $spacing-double;
   }
 
   &__schema {
-    padding-top: $spacing-double;
-    // align with the modal header language indicator,
-    // which is too deep and can't be re-styled
-    // margin-right: $spacing-double;
+    padding: $spacing-double 0;
   }
 
   &__schema-label {
@@ -125,8 +125,13 @@ export default {
   }
 
   &__preview-icon,
+  &__preview-edit-indicator,
   &__preview-update-indicator {
     justify-self: end;
+  }
+
+  &__preview-edit-indicator {
+    color: var(--a-base-1);
   }
 
   &__preview-update-indicator {

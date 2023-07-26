@@ -15,8 +15,9 @@ export default {
       // Object same as serverErrors (AposEditorMixin)
       errors: null,
       busy: false,
-      preview: true,
-      updateTimeout: null
+      expanded: null,
+      subformUpdateTimeouts: {},
+      activeGroup: null
     };
   },
   computed: {
@@ -28,24 +29,45 @@ export default {
     },
     subforms() {
       return this.moduleOptions.subforms;
+    },
+    groups() {
+      const groupSet = {};
+
+      this.subforms.forEach(subform => {
+        if (subform.group && !groupSet[subform.group.name]) {
+          groupSet[subform.group.name] = {
+            name: subform.group.name,
+            label: subform.group.label,
+            index: [ subform.name ],
+            subforms: [ subform ]
+          };
+        } else if (subform.group) {
+          groupSet[subform.group.name].index.push(subform.name);
+          groupSet[subform.group.name].subforms.push(subform);
+        }
+      });
+
+      return groupSet;
     }
   },
   async mounted() {
+    this.activeGroup = Object.keys(this.groups)[0];
     this.modal.active = true;
     await this.loadData();
   },
   beforeDestroy() {
-    clearTimeout(this.updateTimeout);
+    Object.values(this.subformUpdateTimeouts)
+      .forEach(clearTimeout);
   },
   methods: {
     close() {
       this.modal.showModal = false;
     },
-    updatePreview(event) {
-      this.preview = event;
-      if (!event) {
-        clearTimeout(this.updateTimeout);
-        this.updateTimeout = null;
+    updateExpanded(event) {
+      this.expanded = event.value ? event.name : null;
+      if (this.expanded) {
+        clearTimeout(this.subformUpdateTimeouts[event.name]);
+        this.$delete(this.subformUpdateTimeouts, event.name);
       }
     },
     async submit(event) {
@@ -60,10 +82,14 @@ export default {
             }
         );
         this.values.data[event.name] = values;
-        this.updateTimeout = setTimeout(() => {
-          this.updateTimeout = null;
+        const updateTimeout = setTimeout(() => {
+          this.$delete(this.subformUpdateTimeouts, event.name);
         }, 3000);
-        this.updatePreview(true);
+        this.$set(this.subformUpdateTimeouts, event.name, updateTimeout);
+        this.updateExpanded({
+          name: event.name,
+          value: false
+        });
       } catch (e) {
         await this.handleSaveError(e, {
           fallback: this.$t('apostrophe:error')
