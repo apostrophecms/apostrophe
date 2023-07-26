@@ -1,6 +1,3 @@
-// FIXME move to the Schema module during the next task.
-// TODO docs.
-// TODO preview mode.
 import { klona } from 'klona';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 
@@ -23,9 +20,17 @@ export default {
     busy: {
       type: Boolean,
       default: false
+    },
+    preview: {
+      type: Boolean,
+      default: true
+    },
+    updateIndicator: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: [ 'submit', 'cancel' ],
+  emits: [ 'submit', 'cancel', 'update-preview' ],
   data() {
     return {
       docFields: {
@@ -53,11 +58,14 @@ export default {
       this.serverErrors = newErrors;
     }
   },
-  // If we don't do for this, we get stale values.
+  // If we don't do this, we get stale initial values.
   created() {
     this.docFields.data = klona(this.values);
   },
   methods: {
+    togglePreview() {
+      this.$emit('update-preview', !this.preview);
+    },
     updateDocFields(value) {
       this.docFields = value;
     },
@@ -75,8 +83,8 @@ export default {
       });
     },
     async cancel() {
-      // TODO set preview mode on.
       this.$emit('cancel');
+      this.togglePreview();
     }
   }
 };

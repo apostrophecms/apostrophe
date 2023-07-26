@@ -36,7 +36,6 @@ module.exports = {
 
         for (const [ name, config ] of Object.entries(self.options.subforms)) {
           const schema = self.getSubformSchema(name);
-          const label = config.label || schema[0]?.label;
 
           // Don't allow malformed subform.fields, the only required prop.
           if (!Array.isArray(config.fields) || config.fields.length === 0) {
@@ -46,7 +45,6 @@ module.exports = {
           self.subforms.push({
             ...config,
             name,
-            label,
             schema
           });
         }

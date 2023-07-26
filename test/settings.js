@@ -145,7 +145,7 @@ describe('user settings', function () {
     assert.deepEqual(nameSubform.schema, nameSchema);
 
     const adminLocaleSubform = subforms.find(subform => subform.name === 'adminLocale');
-    assert.equal(adminLocaleSubform.label, adminLocaleSchema[0].label);
+    assert.equal(adminLocaleSubform.label, undefined);
     assert.equal(adminLocaleSubform.preview, undefined);
     assert.deepEqual(adminLocaleSubform.schema, adminLocaleSchema);
 

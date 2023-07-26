@@ -16,20 +16,20 @@
         @click="close"
       />
     </template>
-    <template #leftRail>
+    <!-- TODO PHASE 2 groups -->
+    <!-- <template #leftRail>
       <AposModalBody class="apos-settings__group">
         <template #bodyMain>
-          <!-- TODO PHASE 2 groups -->
-          <!-- <ul class="apos-settings__group-items">
+          <ul class="apos-settings__group-items">
             <li
               class="apos-settings__group-item apos-is-active"
             >
               Preferences
             </li>
-          </ul> -->
+          </ul>
         </template>
       </AposModalBody>
-    </template>
+    </template> -->
     <template #main>
       <AposModalBody v-if="docReady" class="apos-settings__content">
         <template #bodyMain>
@@ -45,6 +45,9 @@
             :errors="errors"
             :subform="subform"
             :values="values.data[subform.name]"
+            :preview="preview"
+            :update-indicator="!!updateTimeout"
+            @update-preview="updatePreview"
             @submit="submit"
           />
         </template>
@@ -68,18 +71,23 @@ export default {
   @include type-base;
 
   ::v-deep .apos-modal__inner {
-    // TODO decide on 1/2 vs 2/3
+    // TODO decide on 1/2 vs 2/3, until phase 2 no left rail and static width
+    // $width: calc(calc(100vw / 3) * 2);
     // $width: calc(100vw / 2);
-    $width: calc(calc(100vw / 3) * 2);
+    $width: 500px;
     $vertical-spacing: 95px;
     $horizontal-spacing: calc(calc(100vw - #{$width}) / 2);
 
-    top: $vertical-spacing;
+    // Revise when we have left rail
+    // top: $vertical-spacing;
+    // bottom: $vertical-spacing;
+    transform: translateY(50%);
     right: $horizontal-spacing;
-    bottom: $vertical-spacing;
     left: $horizontal-spacing;
     width: $width;
-    height: calc(100vh - #{$vertical-spacing * 2});
+    height: fit-content;
+    min-height: 320px;
+    max-height: calc(100vh - #{$vertical-spacing * 2});
   }
 
   ::v-deep .apos-modal__main--with-left-rail {
@@ -87,11 +95,13 @@ export default {
   }
 
   ::v-deep .apos-modal__body-inner {
-    padding: $spacing-triple $spacing-triple $spacing-double;
+    // padding: $spacing-triple $spacing-triple $spacing-double;
+    padding: $spacing-triple;
   }
 
-  ::v-deep .apos-busy__spinner {
-    display: inline-block;
+  ::v-deep .apos-modal__header__main {
+    // padding: $spacing-triple $spacing-triple $spacing-double;
+    padding: $spacing-double $spacing-triple;
   }
 }
 
@@ -101,8 +111,7 @@ export default {
 }
 
 .apos-settings__content {
-  padding-top: 0;
-  padding-left: 0;
+  padding: 0;
 }
 
 .apos-settings__group {
