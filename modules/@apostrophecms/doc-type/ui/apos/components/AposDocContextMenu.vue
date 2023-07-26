@@ -436,8 +436,8 @@ export default {
         ...operation.props
       });
       function docProps(doc) {
-        return Object.fromEntries(Object.entries(operation.docProps || {}).map(([key, value]) => {
-          return [key, doc[value]];
+        return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
+          return [ key, doc[value] ];
         }));
       }
     },
