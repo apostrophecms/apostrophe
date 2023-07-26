@@ -3,5 +3,5 @@
 }
 
 [data-rich-text] p:empty::after {
-  content: "\00A0";
+  content: '\00A0';
 }
