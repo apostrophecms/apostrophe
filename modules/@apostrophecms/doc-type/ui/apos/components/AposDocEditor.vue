@@ -519,7 +519,7 @@ export default {
       await this.restore(this.original);
       await this.loadDoc();
     },
-    async onSave(navigate = false) {
+    async onSave({ navigate = false } = {}) {
       if (this.canPublish || !this.manuallyPublished) {
         await this.save({
           andPublish: this.manuallyPublished,
