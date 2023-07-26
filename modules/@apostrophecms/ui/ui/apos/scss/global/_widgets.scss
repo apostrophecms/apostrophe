@@ -1,3 +1,7 @@
 [data-apos-area] [data-apos-area] {
   margin: var(--a-widget-margin);
 }
+
+[data-rich-text] p:empty::after {
+  content: "\00A0";
+}
