@@ -154,7 +154,9 @@ describe('user settings', function () {
     });
 
     // Appropriate browser data is sent
-    const browserData = apos.settings.getBrowserData();
+    const browserData = apos.settings.getBrowserData(apos.task.getReq({
+      session: {}
+    }));
     assert.deepEqual(browserData.subforms, subforms);
     assert.equal(browserData.action, '/api/v1/@apostrophecms/settings');
   });
