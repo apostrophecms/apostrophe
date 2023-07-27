@@ -46,7 +46,8 @@ export default {
       const tabs = [];
       for (const key in this.groups) {
         if (key !== 'utility') {
-          const conditionalFields = this.conditionalFields('other');
+          // AposRelationshipEditor does not implement AposEditorMixin with the function conditionalFields
+          const conditionalFields = this.conditionalFields?.('other') || [];
           const fields = this.groups[key].fields;
           tabs.push({
             name: key,
