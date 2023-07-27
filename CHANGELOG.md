@@ -35,6 +35,8 @@ to props of their choosing.
 
 ### Fixes
 
+* `AposDocEditor` `onSave` method signature. We now always expect an object when a parameter is passed to the function to check
+the value of `navigate` flag.
 * Fixes a problem in the rich text editor where the slash would not be deleted after item selectin from the insert menu.
 * Modules that have a `public` or `i18n` subdirectory no longer generate a
 warning if they export no code.
