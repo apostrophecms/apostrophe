@@ -116,7 +116,6 @@ function inferFieldValues(schema, values, $t) {
   &__value {
     @include type-large;
     line-height: 1;
-    color: var(--a-base-1);
 
     > span {
       display: inline-block;

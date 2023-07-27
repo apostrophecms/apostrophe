@@ -45,12 +45,7 @@ describe('user settings', function () {
       }
     );
 
-    const testFields = [
-      'role',
-      'username',
-      'password',
-      'email'
-    ];
+    const testFields = [ ...apos.settings.forbiddenFields ];
 
     for (const field of testFields) {
       apos.settings.options.subforms = {
@@ -166,24 +161,78 @@ describe('user settings', function () {
 
   it('should init groups', async function () {
     apos = await createCommonInstance();
-    const [ first, second, third ] = apos.settings.subforms;
-    assert.equal(apos.settings.subforms.length, 3);
+    const [ first, second, third, fourth ] = apos.settings.subforms;
+    assert.equal(apos.settings.subforms.length, 4);
 
     assert.equal(first.name, 'name');
     assert.deepEqual(first.group, {
       name: 'account',
       label: 'Account'
     });
-    assert.equal(second.name, 'adminLocale');
+    assert.equal(second.name, 'password');
     assert.deepEqual(second.group, {
+      name: 'account',
+      label: 'Account'
+    });
+    assert.equal(third.name, 'adminLocale');
+    assert.deepEqual(third.group, {
       name: 'preferences',
       label: 'Preferences'
     });
-    assert.equal(third.name, 'display');
-    assert.deepEqual(third.group, {
+    assert.equal(fourth.name, 'display');
+    assert.deepEqual(fourth.group, {
       name: 'ungrouped',
       label: 'apostrophe:ungrouped'
     });
+  });
+
+  it('should handle protected subforms', async function () {
+    apos = await createCommonInstance();
+    const [ first, second, third, fourth ] = apos.settings.subforms;
+    assert.equal(apos.settings.subforms.length, 4);
+
+    assert.equal(first.name, 'name');
+    assert.equal(first.protected, 'password');
+    // verify the explicitly set by the config private flag is removed
+    assert.equal(typeof first._passwordChangeForm, 'undefined');
+    assert.deepEqual(first.fields, [ 'firstName', 'lastName' ]);
+    assert.equal(first.schema.length, 3);
+    // last field is the current password field
+    {
+      const pwdField = first.schema[first.schema.length - 1];
+      assert.equal(pwdField.type, 'password');
+      assert.equal(pwdField.name, 'passwordCurrent');
+      assert.equal(pwdField.required, true);
+    }
+
+    assert.equal(second.name, 'password');
+    assert.equal(second.protected, 'password');
+    assert.equal(second._passwordChangeForm, true);
+    // displayName is removed
+    assert.deepEqual(second.fields, [ 'password' ]);
+    assert(second.help);
+    assert.equal(second.schema[0].name, 'password');
+    assert.equal(second.schema[0].type, 'password');
+    assert.equal(second.schema[1].name, 'passwordRepeat');
+    assert.equal(second.schema[1].type, 'password');
+    assert.equal(second.schema[2].name, 'passwordCurrent');
+    assert.equal(second.schema[2].type, 'password');
+
+    assert.equal(third.name, 'adminLocale');
+    assert.equal(!!third.protected, false);
+    assert.equal(third.schema.length, 1);
+
+    assert.equal(fourth.name, 'display');
+    assert.equal(fourth.protected, 'password');
+    assert.deepEqual(fourth.fields, [ 'displayName' ]);
+    assert.equal(fourth.schema.length, 2);
+    // last field is the current password field
+    {
+      const pwdField = fourth.schema[fourth.schema.length - 1];
+      assert.equal(pwdField.type, 'password');
+      assert.equal(pwdField.name, 'passwordCurrent');
+      assert.equal(pwdField.required, true);
+    }
   });
 
   it('should return 404 when settings user data and no configuration', async function () {
@@ -269,6 +318,114 @@ describe('user settings', function () {
     const _user = await apos.user.find(apos.task.getReq(), { _id: user._id }).toObject();
     assert.equal(_user.adminLocale, 'fr');
   });
+
+  it('should change password', async function () {
+    apos = await createCommonInstance();
+    const { jar } = await login(apos);
+
+    // Passwords do not match
+    await assert.rejects(
+      apos.http.patch('/api/v1/@apostrophecms/settings/password', {
+        body: {
+          password: 'newpassword',
+          passwordRepeat: 'doesNotMatch',
+          passwordCurrent: 'invalid'
+        },
+        jar
+      }),
+      function (err) {
+        assert.equal(err.status, 400);
+        assert.equal(err.body.data.errors[0].path, 'passwordRepeat');
+        assert.equal(err.body.data.errors[0].message, 'invalid');
+        return true;
+      }
+    );
+
+    // Current password is invalid
+    await assert.rejects(
+      apos.http.patch('/api/v1/@apostrophecms/settings/password', {
+        body: {
+          password: 'newpassword',
+          passwordRepeat: 'newpassword',
+          passwordCurrent: 'invalid'
+        },
+        jar
+      }),
+      function (err) {
+        assert.equal(err.status, 403);
+        assert.equal(err.body.data.path, 'passwordCurrent');
+        assert.equal(err.body.name, 'forbidden');
+        return true;
+      }
+    );
+
+    await apos.http.patch('/api/v1/@apostrophecms/settings/password', {
+      body: {
+        password: 'newpassword',
+        passwordRepeat: 'newpassword',
+        passwordCurrent: 'editor'
+      },
+      jar
+    });
+
+    await assert.rejects(t.loginAs(apos, 'editor', 'editor'));
+    await logout(apos, 'editor', 'editor', jar);
+    await t.loginAs(apos, 'editor', 'newpassword');
+  });
+
+  it('should password protect subforms', async function () {
+    apos = await createCommonInstance();
+    const { jar, user } = await login(apos);
+    assert(!user.displayName);
+
+    // No current password
+    await assert.rejects(
+      apos.http.patch('/api/v1/@apostrophecms/settings/display', {
+        body: {
+          displayName: 'Hacker'
+        },
+        jar
+      }),
+      function (err) {
+        assert.equal(err.status, 403);
+        assert.equal(err.body.data.path, 'passwordCurrent');
+        assert.equal(err.body.name, 'forbidden');
+        return true;
+      }
+    );
+
+    // Current password is invalid
+    await assert.rejects(
+      apos.http.patch('/api/v1/@apostrophecms/settings/display', {
+        body: {
+          displayName: 'Editor',
+          passwordCurrent: 'invalid'
+        },
+        jar
+      }),
+      function (err) {
+        assert.equal(err.status, 403);
+        assert.equal(err.body.data.path, 'passwordCurrent');
+        assert.equal(err.body.name, 'forbidden');
+        return true;
+      }
+    );
+
+    await apos.http.patch('/api/v1/@apostrophecms/settings/display', {
+      body: {
+        displayName: 'Editor',
+        passwordCurrent: 'editor'
+      },
+      jar
+    });
+
+    const validateUser = await apos.user
+      .find(apos.task.getReq(), { _id: user._id })
+      .toObject();
+
+    assert.equal(validateUser.displayName, 'Editor');
+
+  });
 });
 
 async function createCommonInstance() {
@@ -311,7 +468,11 @@ async function createCommonInstance() {
         options: {
           subforms: {
             display: {
-              fields: [ 'displayName' ]
+              fields: [ 'displayName' ],
+              // same as `protected: 'password'`
+              protected: true,
+              // validate it can't happen
+              _passwordChangeForm: true
             },
             adminLocale: {
               fields: [ 'adminLocale' ]
@@ -319,13 +480,20 @@ async function createCommonInstance() {
             name: {
               label: 'Name',
               fields: [ 'firstName', 'lastName' ],
-              preview: '{{ firstName }} {{ lastName }}'
+              preview: '{{ firstName }} {{ lastName }}',
+              protected: 'password'
+            },
+            password: {
+              // Ensure that only `password` will be used
+              fields: [ 'password', 'displayName' ],
+              // Test system protected fields
+              protected: false
             }
           },
           groups: {
             account: {
               label: 'Account',
-              subforms: [ 'name', 'nonExisting' ]
+              subforms: [ 'name', 'nonExisting', 'password' ]
             },
             preferences: {
               label: 'Preferences',
@@ -351,4 +519,24 @@ async function login(apos) {
     user,
     jar
   };
+}
+
+async function logout(apos, username, password, jar) {
+  await apos.http.post(
+    '/api/v1/@apostrophecms/login/logout',
+    {
+      body: {
+        username,
+        password,
+        session: true
+      },
+      jar
+    }
+  );
+  await apos.http.get(
+    '/',
+    {
+      jar
+    }
+  );
 }
