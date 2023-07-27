@@ -21,7 +21,7 @@ export default {
       type: Boolean,
       default: false
     },
-    preview: {
+    expanded: {
       type: Boolean,
       default: true
     },
@@ -30,14 +30,15 @@ export default {
       default: false
     }
   },
-  emits: [ 'submit', 'cancel', 'update-preview' ],
+  emits: [ 'submit', 'cancel', 'update-expanded' ],
   data() {
     return {
       docFields: {
         data: {},
         hasErrors: false
       },
-      triggerValidation: false
+      triggerValidation: false,
+      triggerHover: false
     };
   },
 
@@ -56,6 +57,9 @@ export default {
     },
     errors(newErrors) {
       this.serverErrors = newErrors;
+    },
+    expanded(newExpanded) {
+      this.triggerHover = false;
     }
   },
   // If we don't do this, we get stale initial values.
@@ -63,8 +67,11 @@ export default {
     this.docFields.data = klona(this.values);
   },
   methods: {
-    togglePreview() {
-      this.$emit('update-preview', !this.preview);
+    toggleExpanded() {
+      this.$emit('update-expanded', {
+        name: this.subform.name,
+        value: !this.expanded
+      });
     },
     updateDocFields(value) {
       this.docFields = value;
@@ -83,8 +90,10 @@ export default {
       });
     },
     async cancel() {
-      this.$emit('cancel');
-      this.togglePreview();
+      this.$emit('cancel', {
+        name: this.subform.name
+      });
+      this.toggleExpanded();
     }
   }
 };
