@@ -13,6 +13,7 @@ module.exports = {
     // All subforms `protection` prop will be converted to the actual type.
     // Invalid protection type will panic.
     self.protectionTypes = {
+      // Protection type to be used if protected is simply set to `true`.
       true: 'password',
       password: 'password'
       // TODO phase 3
