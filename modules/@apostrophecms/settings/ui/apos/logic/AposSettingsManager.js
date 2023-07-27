@@ -51,7 +51,16 @@ export default {
     }
   },
   async mounted() {
-    this.activeGroup = Object.keys(this.groups)[0];
+    if (apos.settings.restore) {
+      this.activeGroup = this.subforms
+        .find(subform => subform.name === apos.settings.restore)
+        ?.group?.name;
+      this.activeGroup && this.setUpdatedTimeout(apos.settings.restore);
+      apos.settings.restore = null;
+    }
+    if (!this.activeGroup) {
+      this.activeGroup = Object.keys(this.groups)[0];
+    }
     this.modal.active = true;
     await this.loadData();
   },
@@ -82,14 +91,16 @@ export default {
             }
         );
         this.values.data[event.name] = values;
-        const updateTimeout = setTimeout(() => {
-          this.$delete(this.subformUpdateTimeouts, event.name);
-        }, 3000);
-        this.$set(this.subformUpdateTimeouts, event.name, updateTimeout);
+        this.setUpdatedTimeout(event.name);
         this.updateExpanded({
           name: event.name,
           value: false
         });
+        // Reload
+        const subform = this.subforms.find(subform => subform.name === event.name);
+        if (subform?.reload) {
+          window.location.reload();
+        }
       } catch (e) {
         await this.handleSaveError(e, {
           fallback: this.$t('apostrophe:error')
@@ -97,6 +108,12 @@ export default {
       } finally {
         this.busy = false;
       }
+    },
+    setUpdatedTimeout(name) {
+      const updateTimeout = setTimeout(() => {
+        this.$delete(this.subformUpdateTimeouts, name);
+      }, 3000);
+      this.$set(this.subformUpdateTimeouts, name, updateTimeout);
     },
     async loadData() {
       const result = await apos.http.get(this.action, {

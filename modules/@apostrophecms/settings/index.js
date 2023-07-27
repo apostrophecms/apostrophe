@@ -4,7 +4,6 @@ module.exports = {
   options: {
     alias: 'settings',
     subforms: {},
-    // XXX not implemented until Phase 2
     groups: {}
   },
 
@@ -15,8 +14,9 @@ module.exports = {
     // Invalid protection types will panic.
     self.protectedTypes = {
       true: 'password',
-      password: 'password',
-      email: 'email'
+      password: 'password'
+      // TODO phase 3
+      // email: 'email'
     };
     // Collection of fieldName: protectedType objects for system forced protected fields.
     // The order is important, the first match is used (first have higher priority).
@@ -41,6 +41,12 @@ module.exports = {
       // TODO remove in phase 3
       'username',
       'email'
+    ];
+    // Fields that should trigger reload after saving.
+    // Do not modify this array directly, use
+    // `self.apos.settings.addReloadAfterSaveField(fieldName)` instead.
+    self.reloadAfterSaveFields = [
+      'adminLocale'
     ];
     self.userSchema = [];
     self.subforms = [];
@@ -92,6 +98,17 @@ module.exports = {
         }
       },
 
+      // Public API method.
+      // Add a field to the reload after save fields list.
+      // Modules can add their own reload after save fields here
+      // via 'apostrophe:modulesRegistered' event handler:
+      // `self.apos.settings.addReloadAfterSaveField('myField');`
+      addReloadAfterSaveField(fieldName) {
+        if (!self.reloadAfterSaveFields.includes(fieldName)) {
+          self.reloadAfterSaveFields.push(fieldName);
+        }
+      },
+
       hasSchema() {
         return self.userSchema.length > 0;
       },
@@ -112,6 +129,9 @@ module.exports = {
           if (config.protected) {
             config.protected = self.protectedTypes[config.protected];
           }
+          // Auto reload after save.
+          config.reload = config.reload || self.reloadAfterSaveFields
+            .some(field => config.fields.includes(field));
           // No one is allowed to set the flag but us.
           delete config._passwordChangeForm;
           const schema = self.getSubformSchema(name);
@@ -392,6 +412,19 @@ module.exports = {
         return subform;
       },
 
+      // Handle the after save logic. If the saved subform requires reload
+      // after save, we will add session indicator that will allow the client
+      // to restore its state. The client is responsible for the actual reload.
+      // The session value contains the current subform name. The value is sent
+      // once via the `getBrowserData` method and then removed from the session.
+      handleAfterSave(req, subform) {
+        if (!subform.reload) {
+          return;
+        }
+        req.session.aposSettingsReload = subform.name;
+        // TODO email(s) in phase 3
+      },
+
       addToAdminBar() {
         if (!self.hasSchema()) {
           return;
@@ -418,9 +451,13 @@ module.exports = {
       },
 
       getBrowserData(req) {
+        const restore = req.session.aposSettingsReload;
+        delete req.session.aposSettingsReload;
+
         return {
           subforms: self.subforms,
-          action: self.action
+          action: self.action,
+          restore
         };
       }
     };
@@ -484,6 +521,8 @@ module.exports = {
 
           await self.apos.schema.convert(req, subform.schema, req.body, user);
           await self.apos.user.update(req, user, { permissions: false });
+
+          await self.handleAfterSave(req, subform, user);
 
           const values = {
             _id: user._id
