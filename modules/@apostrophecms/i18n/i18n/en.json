@@ -425,7 +425,7 @@
   "selectPage": "Select Page",
   "selectedMenuItem": "✓ {{ label }}",
   "sentenceJoiner": " ",
-  "settings": "Manage Settings",
+  "settings": "Personal Settings",
   "shareDraft": "Share Draft",
   "shareDraftCopyLink": "Copy draft link",
   "shareDraftDescription": "Enabling draft sharing will allow anyone with this link to view the current draft",

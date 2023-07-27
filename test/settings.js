@@ -194,7 +194,7 @@ describe('user settings', function () {
     assert.equal(apos.settings.subforms.length, 4);
 
     assert.equal(first.name, 'name');
-    assert.equal(first.protected, 'password');
+    assert.equal(first.protection, 'password');
     // verify the explicitly set by the config private flag is removed
     assert.equal(typeof first._passwordChangeForm, 'undefined');
     assert.deepEqual(first.fields, [ 'firstName', 'lastName' ]);
@@ -208,7 +208,7 @@ describe('user settings', function () {
     }
 
     assert.equal(second.name, 'password');
-    assert.equal(second.protected, 'password');
+    assert.equal(second.protection, 'password');
     assert.equal(second._passwordChangeForm, true);
     // displayName is removed
     assert.deepEqual(second.fields, [ 'password' ]);
@@ -221,11 +221,11 @@ describe('user settings', function () {
     assert.equal(second.schema[2].type, 'password');
 
     assert.equal(third.name, 'adminLocale');
-    assert.equal(!!third.protected, false);
+    assert.equal(!!third.protection, false);
     assert.equal(third.schema.length, 1);
 
     assert.equal(fourth.name, 'display');
-    assert.equal(fourth.protected, 'password');
+    assert.equal(fourth.protection, 'password');
     assert.deepEqual(fourth.fields, [ 'displayName' ]);
     assert.equal(fourth.schema.length, 2);
     // last field is the current password field
@@ -471,8 +471,8 @@ async function createCommonInstance() {
           subforms: {
             display: {
               fields: [ 'displayName' ],
-              // same as `protected: 'password'`
-              protected: true,
+              // same as `protection: 'password'`
+              protection: true,
               // validate it can't happen
               _passwordChangeForm: true
             },
@@ -483,13 +483,13 @@ async function createCommonInstance() {
               label: 'Name',
               fields: [ 'firstName', 'lastName' ],
               preview: '{{ firstName }} {{ lastName }}',
-              protected: 'password'
+              protection: 'password'
             },
             password: {
               // Ensure that only `password` will be used
               fields: [ 'password', 'displayName' ],
               // Test system protected fields
-              protected: false
+              protection: false
             }
           },
           groups: {

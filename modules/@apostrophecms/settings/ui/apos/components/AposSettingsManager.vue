@@ -2,7 +2,7 @@
   <AposModal
     class="apos-settings"
     :modal="modal"
-    modal-title="Manage Settings"
+    :modal-title="$t('apostrophe:settings')"
     @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"

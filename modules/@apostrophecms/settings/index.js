@@ -8,29 +8,29 @@ module.exports = {
   },
 
   init(self) {
-    // List of all allowed protected types and their aliases (`subform.protected: type`).
+    // List of all allowed protection types and their aliases (`subform.protection: type`).
     // The key is the type or alias, the value is the actual type (always a string).
-    // All subforms `protected` prop will be converted to the actual type.
-    // Invalid protection types will panic.
-    self.protectedTypes = {
+    // All subforms `protection` prop will be converted to the actual type.
+    // Invalid protection type will panic.
+    self.protectionTypes = {
       true: 'password',
       password: 'password'
       // TODO phase 3
       // email: 'email'
     };
-    // Collection of fieldName: protectedType objects for system forced protected fields.
+    // Collection of fieldName: protectionType objects for system forced protected fields.
     // The order is important, the first match is used (first have higher priority).
     // If there are multiple fields in the subform, having a system protected field,
     // the first match from this list wins. If there is specifically `password` field
     // in the subform, the schema will be completely replaced with the auto-generated
     // password schema.
     // Do not modify this object directly, use
-    // `self.apos.settings.addProtectedField(fieldName, protectedType)` instead.
+    // `self.apos.settings.addProtectedField(fieldName, protectionType)` instead.
     self.systemProtectedFields = {
-      password: self.protectedTypes.password
+      password: self.protectionTypes.password
       // TODO phase 3
-      // username: self.protectedTypes.password,
-      // email: self.protectedTypes.email
+      // username: self.protectionTypes.password,
+      // email: self.protectionTypes.email
     };
     // Completely forbidden fields, they are not allowed in the subforms.
     // Do not modify this array directly, use
@@ -76,14 +76,14 @@ module.exports = {
       // self.apos.settings.addProtectedField('myField', 'password');
       // self.apos.settings.addProtectedField('myField', 'email');
       // ```
-      addProtectedField(fieldName, protectedType) {
-        if (!self.protectedTypes[protectedType]) {
+      addProtectedField(fieldName, protectionType) {
+        if (!self.protectionTypes[protectionType]) {
           throw new Error(
-            `[@apostrophecms/settings] Attempt to add a protected field "${fieldName}" with invalid protected type "${protectedType}".`
+            `[@apostrophecms/settings] Attempt to add a protected field "${fieldName}" with invalid protection type "${protectionType}".`
           );
         }
         if (!self.systemProtectedFields[fieldName]) {
-          self.systemProtectedFields[fieldName] = self.protectedTypes[protectedType];
+          self.systemProtectedFields[fieldName] = self.protectionTypes[protectionType];
         }
       },
 
@@ -122,12 +122,12 @@ module.exports = {
           if (!Array.isArray(config.fields) || config.fields.length === 0) {
             throw new Error(`[@apostrophecms/settings] The subform "${name}" must have at least one field.`);
           }
-          // Don't allow malformed subform.protected.
-          if (config.protected && !self.protectedTypes[config.protected]) {
-            throw new Error(`[@apostrophecms/settings] The protected type "${config.protected}" is not valid.`);
+          // Don't allow malformed subform.protection.
+          if (config.protection && !self.protectionTypes[config.protection]) {
+            throw new Error(`[@apostrophecms/settings] The protection type "${config.protection}" is not valid.`);
           }
-          if (config.protected) {
-            config.protected = self.protectedTypes[config.protected];
+          if (config.protection) {
+            config.protection = self.protectionTypes[config.protection];
           }
           // Auto reload after save.
           config.reload = config.reload || self.reloadAfterSaveFields
@@ -250,14 +250,14 @@ module.exports = {
         }
       },
 
-      // Enhance the subforms - `protected` security.
+      // Enhance the subforms - `protection` security.
       // This method requires initialized self.subforms.
       enhanceSubforms() {
-        // 1. Add protected flag to subforms for system protected fields.
-        for (const [ fieldName, protectedType ] of Object.entries(self.systemProtectedFields)) {
+        // 1. Add protection flag to subforms for system protected fields.
+        for (const [ fieldName, protectionType ] of Object.entries(self.systemProtectedFields)) {
           self.subforms = self.subforms.map(subform => {
             if (subform.fields.includes(fieldName)) {
-              subform.protected = protectedType || true;
+              subform.protection = protectionType || true;
             }
             return subform;
           });
@@ -265,7 +265,7 @@ module.exports = {
 
         // 2. Ehhance the protected forms schema.
         self.subforms = self.subforms.map(subform => {
-          if (!subform.protected) {
+          if (!subform.protection) {
             return subform;
           }
 
@@ -312,10 +312,10 @@ module.exports = {
         });
       },
 
-      // Enhance the protected subform schema based on the protected type.
+      // Enhance the protected subform schema based on the protection type.
       enhanceProtectedSubform(subform) {
-        switch (subform.protected) {
-          case self.protectedTypes.password: {
+        switch (subform.protection) {
+          case self.protectionTypes.password: {
             // Last field so that it doesn't mess up with the "first field label"
             // detection on the client side (when form label is not specified).
             subform.schema.push({
@@ -326,10 +326,10 @@ module.exports = {
             });
             break;
           }
-          // TODO `self.protectedTypes.email' in phase 3
+          // TODO `self.protectionTypes.email' in phase 3
 
           default: {
-            throw new Error(`[@apostrophecms/settings] Not supported protected type "${subform.protected}".`);
+            throw new Error(`[@apostrophecms/settings] Not supported protection type "${subform.protection}".`);
           }
         }
       },
@@ -363,21 +363,21 @@ module.exports = {
 
       // Detect protected subforms and handle them.
       handleProtectedSubform(req, subform, payload) {
-        if (!subform.protected) {
+        if (!subform.protection) {
           return;
         }
         if (subform._passwordChangeForm) {
           return self.handlePasswordChangeSubform(req, subform, payload);
         }
-        switch (subform.protected) {
-          case self.protectedTypes.password: {
+        switch (subform.protection) {
+          case self.protectionTypes.password: {
             return self.handlePasswordProtectedSubform(req, subform, payload);
           }
-          // TODO `self.protectedTypes.email' in phase 3
+          // TODO `self.protectionTypes.email' in phase 3
 
           // Should not happen as we validate the protected type in the init phase.
           default: {
-            throw self.apos.error('invalid', `Not supported protected type "${subform.protected}".`);
+            throw self.apos.error('invalid', `Not supported protected type "${subform.protection}".`);
           }
         }
       },
