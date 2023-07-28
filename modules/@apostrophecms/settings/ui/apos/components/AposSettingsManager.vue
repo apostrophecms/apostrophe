@@ -59,6 +59,7 @@
               v-for="subform in group.subforms"
               :key="subform.name"
               :class="{ 'apos-separator': subforms.length > 1 }"
+              :ref="subform.name"
               :busy="busy"
               :errors="errors"
               :subform="subform"

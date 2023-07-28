@@ -1,6 +1,12 @@
 export default {
   name: 'AposSettingsManager',
   emits: [ 'safe-close' ],
+  props: {
+    restore: {
+      type: String,
+      default: null
+    }
+  },
   data() {
     return {
       modal: {
@@ -18,7 +24,8 @@ export default {
       busy: false,
       expanded: null,
       subformUpdateTimeouts: {},
-      activeGroup: null
+      activeGroup: null,
+      restoreRefTimeout: null
     };
   },
   computed: {
@@ -52,20 +59,26 @@ export default {
     }
   },
   async mounted() {
-    if (apos.settings.restore) {
-      this.activeGroup = this.subforms
-        .find(subform => subform.name === apos.settings.restore)
-        ?.group?.name;
-      this.activeGroup && this.setUpdatedTimeout(apos.settings.restore);
-      apos.settings.restore = null;
-    }
     if (!this.activeGroup) {
       this.activeGroup = Object.keys(this.groups)[0];
     }
     this.modal.active = true;
     await this.loadData();
+
+    if (this.restore) {
+      const subform = this.subforms
+        .find(subform => subform.name === this.restore);
+      this.activeGroup = subform?.group?.name;
+      if (this.activeGroup) {
+        this.restoreRefTimeout = setTimeout(() => {
+          this.$refs[subform.name]?.[0]?.scrollIntoView();
+        }, 1000);
+        this.setUpdatedTimeout(this.restore, 5000);
+      }
+    }
   },
   beforeDestroy() {
+    clearTimeout(this.restoreRefTimeout);
     Object.values(this.subformUpdateTimeouts)
       .forEach(clearTimeout);
   },
@@ -110,10 +123,10 @@ export default {
         this.busy = false;
       }
     },
-    setUpdatedTimeout(name) {
+    setUpdatedTimeout(name, ms = 3000) {
       const updateTimeout = setTimeout(() => {
         this.$delete(this.subformUpdateTimeouts, name);
-      }, 3000);
+      }, ms);
       this.$set(this.subformUpdateTimeouts, name, updateTimeout);
     },
     async loadData() {

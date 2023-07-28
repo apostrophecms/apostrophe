@@ -82,6 +82,9 @@ export default {
     this.docFields.data = klona(this.values);
   },
   methods: {
+    scrollIntoView() {
+      this.$el.scrollIntoView();
+    },
     toggleExpanded() {
       this.$emit('update-expanded', {
         name: this.subform.name,
@@ -109,6 +112,17 @@ export default {
         name: this.subform.name
       });
       this.toggleExpanded();
+      // Security: we don't want to leave any passwords in the DOM
+      this.$nextTick(() => {
+        this.clearPasswords();
+      });
+    },
+    clearPasswords() {
+      this.subform.schema
+        .filter(field => field.type === 'password')
+        .forEach(field => {
+          this.docFields.data[field.name] = '';
+        });
     }
   }
 };
