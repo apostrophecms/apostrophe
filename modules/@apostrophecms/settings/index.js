@@ -22,7 +22,7 @@
 //     // Optional subform label. Used in both preview and edit mode.
 //     label: 'Profile',
 //     // Optional subform help text. It is rendered instead
-//     // the subform preview value in preview mode only.
+//     // of the subform preview value in preview mode only.
 //     help: 'Your full name',
 //     // The subform value rendered in preview mode, but only if `help` option is not provided.
 //     // A string or i18n key / template can be specified.
