@@ -1,3 +1,91 @@
+// Enable users to manage their personal settings (user record).
+//
+// ## Options
+//
+// `subforms`
+//
+// An object with subform configurations. The key is the subform name, the value
+// is the subform configuration described below. Subforms rendered on the client
+// side have two modes - preview and edit. The initial mode is preview. The configuration
+// provides the necessary information for both modes.
+//
+// ```js
+// subforms: {
+//   // The subform name
+//   name: {
+//     // Required subform fields, shown in the order specified. The fields should
+//     // exist in the user schema. The information is used in edit mode only.
+//     // Currently supported system user fields are 'adminLocale' and 'password'.
+//     // Keep in mind 'adminLocale' is available only if the `apostrophecms/i18n` module
+//     // has the appropriate configuration.
+//     fields: [ 'firstName', 'lastName' ],
+//     // Optional subform label. Used in both preview and edit mode.
+//     label: 'Profile',
+//     // Optional subform help text. It is rendered instead
+//     // of the subform preview value in preview mode only.
+//     help: 'Your full name',
+//     // The subform value rendered in preview mode, but only if `help` option is not provided.
+//     // A string or i18n key / template can be specified.
+//     // If not specified, the UI will attempt to generate a
+//     // preview value based on the subform schema and field values (space separated).
+//     preview: '{{ firstName }} {{ lastName }}',
+//     // In effect ONLY if `preview` and `help` options are not present. Provide a custom,
+//     // already registered (admin UI) component to render the subform preview value.
+//     // The subform config object and current field values will be passed as props.
+//     previewComponent: 'MyComponent',
+//     // Optional protection type. Currently allowed values are `password`
+//     // and `true` (alias of `password`). If specified, the subform will be
+//     // protected by the user current password.
+//     protection: true,
+//     // Optional flag to indicate that the subform should be reloaded after save.
+//     reload: true
+//   }
+// }
+// ```
+//
+// `groups`
+//
+// An object with group configurations. The key is the group name, the value
+// is the group configuration, described below. Groups are used to organize
+// subforms in the settings modal (tabs). If no groups are configured, a single group
+// named "ungrouped" will be created. The order of the groups is respected.
+//
+// ```js
+// groups: {
+//   // The group name
+//   account: {
+//     // The group label.
+//     label: 'Account',
+//     // The subforms that belong to the group. The order is respected.
+//     subforms: [ 'name', 'password' ]
+//   }
+// }
+// ```
+//
+// ## API
+//
+// Add a protected field to the system protected fields list. This will ensure
+// that any subform containing that field will be ALWAYS protected by
+// the user's current password. It is recommended to use this method in the
+// `apostrophe:modulesRegistered` event handler.
+// `self.apos.settings.addProtectedField(fieldName, protectionType)`
+//
+// Add a forbidden field to the forbidden fields list. This will ensure that
+// the field will not be allowed in any subform. It is recommended to use this
+// method in the `apostrophe:modulesRegistered` event handler.
+// `self.apos.settings.addForbiddenField(fieldName)`
+//
+// Add a field to the reload after save fields list. This will ensure that
+// the subform containing the field will be reloaded after save.
+// It is recommended to use this method in the `apostrophe:modulesRegistered`
+// event handler.
+// `self.apos.settings.addReloadAfterSaveField(fieldName)`
+//
+// ## UI
+//
+// An example of a custom `previewComponent` with the core components explained
+// can be found in the relevant PR:
+// https://github.com/apostrophecms/apostrophe/pull/4236
 const { klona } = require('klona');
 
 module.exports = {
