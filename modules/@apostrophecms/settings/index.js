@@ -83,7 +83,7 @@
 //
 // ## UI
 //
-// An example of custom `preivewComponent` and core components explained
+// An example of a custom `previewComponent` with the core components explained
 // can be found in the relevant PR:
 // https://github.com/apostrophecms/apostrophe/pull/4236
 const { klona } = require('klona');
