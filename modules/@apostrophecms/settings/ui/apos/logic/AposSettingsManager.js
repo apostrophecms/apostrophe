@@ -6,7 +6,8 @@ export default {
       modal: {
         busy: false,
         active: false,
-        showModal: false
+        showModal: false,
+        type: 'settings'
       },
       values: {
         data: {}
