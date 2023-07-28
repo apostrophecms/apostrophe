@@ -66,7 +66,7 @@
 //
 // Add a protected field to the system protected fields list. This will ensure
 // that any subform containing that field will be ALWAYS protected by
-// the user current password. It is recommended to use this method in the
+// the user's current password. It is recommended to use this method in the
 // `apostrophe:modulesRegistered` event handler.
 // `self.apos.settings.addProtectedField(fieldName, protectionType)`
 //
