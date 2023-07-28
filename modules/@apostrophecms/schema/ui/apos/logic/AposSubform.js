@@ -1,3 +1,18 @@
+// Renders a single subform by configuration. Supports preview and edit modes.
+// The component is not tied to a specific module and communicates with the
+// parent component via events. See the `AposSettingsManager` component for
+// an example of how to implement this component.
+//
+// ## Props
+// `values` prop is the current value of the subform, which is an object.
+// `subform` prop is the schema for the subform, which is an object.
+// `errors` prop is an array or object as expected by the Editor Mixin.
+// `busy` prop is a boolean indicating whether the subform (edit mode) is busy.
+// `expanded` prop is a boolean indicating whether the subform is in preview (false)
+// or edit (true) mode.
+// `updateIndicator` prop is a boolean indicating whether the subform should
+// display an updated indicator in preview mode.
+
 import { klona } from 'klona';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 
