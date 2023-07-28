@@ -4,6 +4,32 @@
 //
 // `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance if necessary.
 // It usually is not necessary. Use `req.t` if you need to localize in a route.
+//
+// ## Options
+//
+// ### `locales` TODO
+//
+// ### `defaultLocale` TODO
+//
+// ### `adminLocales`
+//
+// Controls what admin UI language can be set per user. If set, `adminLocale` user field
+// will be automatically added to the user schema.
+// Contains an array of objects with `label` and `value` properties:
+// ```js
+// {
+//   label: 'English',
+//   value: 'en'
+// }
+// ```
+//
+// ### `defaultAdminLocale`
+//
+// The default admin UI language. If `adminLocales` are configured, it should
+// should match a `value` property from the list. Furthermore, it will be used
+// as the default value for the`adminLocale` user field.
+// Example: `defaultLocale: 'fr'`.
+//
 
 const i18next = require('i18next');
 const fs = require('fs');
