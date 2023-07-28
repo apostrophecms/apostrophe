@@ -5,7 +5,7 @@
 // `subforms`
 //
 // An object with subform configurations. The key is the subform name, the value
-// is the subform configuration, described bellow. Subforms rendered on the client
+// is the subform configuration, described below. Subforms rendered on the client
 // side have two modes - preview and edit. The initial mode is preview. The configuration
 // provides the necessary information for both modes.
 //
@@ -46,7 +46,7 @@
 // `groups`
 //
 // An object with group configurations. The key is the group name, the value
-// is the group configuration, described bellow. Groups are used to organize
+// is the group configuration, described below. Groups are used to organize
 // subforms in the settings modal (tabs). If no groups are configured, a single group
 // named "ungrouped" will be created. The order of the groups is respected.
 //
