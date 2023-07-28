@@ -6,11 +6,12 @@
     <div class="apos-subform-preview__value" :class="{ 'is-help': !!subform.help }">
       <component
         v-if="subform.previewComponent"
+        class="apos-subform-preview__value-block"
         :is="subform.previewComponent"
         :subform="subform"
         :values="values"
       />
-      <span v-else>
+      <span class="apos-subform-preview__value-block" v-else>
         {{ previewValue }}
       </span>
     </div>
@@ -77,8 +78,7 @@ function inferFieldValues(schema, values, $t) {
       case 'select': {
         result[field.name] = field.choices
           .filter(choice => choice.value === value)
-          .map(choice => $t(choice.label))
-          .join(', ');
+          .map(choice => $t(choice.label))[0] || '';
         break;
       }
 
@@ -86,7 +86,7 @@ function inferFieldValues(schema, values, $t) {
         const labels = [];
         for (const choice of field.choices) {
           if ((value || []).includes(choice.value)) {
-            labels.push(choice.label);
+            labels.push($t(choice.label));
           }
         }
         result[field.name] = labels.join(', ');
@@ -116,10 +116,10 @@ function inferFieldValues(schema, values, $t) {
   &__value {
     @include type-large;
     line-height: 1;
+  }
 
-    > span {
-      display: inline-block;
-    }
+  &__value-block {
+    display: inline-block;
   }
 
   &__value.is-help,
