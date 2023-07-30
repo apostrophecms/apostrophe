@@ -315,7 +315,10 @@ export default {
       );
     },
     manuallyPublished() {
-      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+      return this.moduleOptions.localized && !this.autopublish;
+    },
+    autopublish() {
+      return this.context._aposAutopublish ?? this.moduleOptions.autopublish;
     },
     isModified() {
       if (!this.current) {
@@ -392,9 +395,10 @@ export default {
       this[action](this.context);
     },
     async edit(doc) {
-      await apos.modal.execute(this.moduleOptions.components.editorModal, {
+      await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
-        docId: doc._id
+        docId: doc._id,
+        type: doc.type
       });
     },
     preview(doc) {
@@ -410,28 +414,32 @@ export default {
           this.$emit('close', doc);
         }
       }
-      // Because the page or piece manager might give us just a projected,
-      // minimum number of properties otherwise
-      const complete = await apos.http.get(`${this.moduleOptions.action}/${doc._id}`, {
-        busy: true
-      });
-      Object.assign(doc, complete);
 
-      apos.bus.$emit('admin-menu-click', {
-        itemName: `${this.moduleName}:editor`,
-        props: {
-          copyOf: {
-            ...this.current || doc,
-            _id: doc._id
-          }
-        }
+      await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, {
+        moduleName: this.moduleName,
+        copyOfId: doc._id,
+        // Passed for bc
+        copyOf: {
+          ...this.current || doc,
+          _id: doc._id
+        },
+        type: doc.type
       });
+
     },
     async customAction(doc, operation) {
       await apos.modal.execute(operation.modal, {
         moduleName: operation.moduleName,
-        doc
+        // For backwards compatibility
+        doc,
+        ...docProps(doc),
+        ...operation.props
       });
+      function docProps(doc) {
+        return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
+          return [ key, doc[value] ];
+        }));
+      }
     },
     async localize(doc) {
       // If there are changes warn the user before discarding them before

@@ -46,28 +46,40 @@ export default {
       const tabs = [];
       for (const key in this.groups) {
         if (key !== 'utility') {
+          // AposRelationshipEditor does not implement AposEditorMixin with the function conditionalFields
+          const conditionalFields = this.conditionalFields?.('other') || [];
+          const fields = this.groups[key].fields;
           tabs.push({
             name: key,
             label: this.groups[key].label,
-            fields: this.groups[key].fields
+            fields,
+            isVisible: fields.some(field => conditionalFields[field] !== false)
           });
         }
       }
 
       return tabs;
+    },
+    firstVisibleTabName() {
+      const { name = null } = this.tabs.find(tab => tab.isVisible === true) || {};
+
+      return name;
     }
   },
 
   watch: {
     tabs() {
-      if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
-        this.currentTab = this.tabs[0] && this.tabs[0].name;
+      if (
+        !this.currentTab ||
+        !this.tabs.some(tab => tab.isVisible === true && tab.name === this.currentTab)
+      ) {
+        this.currentTab = this.firstVisibleTabName;
       }
     }
   },
 
   mounted() {
-    this.currentTab = this.tabs[0] ? this.tabs[0].name : null;
+    this.currentTab = this.firstVisibleTabName;
   },
   methods: {
     switchPane(id) {

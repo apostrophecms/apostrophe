@@ -129,6 +129,9 @@ export default {
     },
     canRedo() {
       return this.undone.length > 0;
+    },
+    autopublish() {
+      return this.context.autopublish ?? this.moduleOptions.autopublish;
     }
   },
   watch: {
@@ -715,7 +718,7 @@ export default {
     },
     async getPublished() {
       const moduleOptions = window.apos.modules[this.context.type];
-      const manuallyPublished = moduleOptions.localized && !moduleOptions.autopublish;
+      const manuallyPublished = moduleOptions.localized && !this.autopublish;
       if (manuallyPublished && this.context.lastPublishedAt) {
         const action = window.apos.modules[this.context.type].action;
         const doc = await apos.http.get(`${action}/${this.context._id}`, {

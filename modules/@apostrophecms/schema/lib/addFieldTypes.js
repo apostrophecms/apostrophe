@@ -162,16 +162,9 @@ module.exports = (self) => {
     // if field.page is true, expect a page slug (slashes allowed,
     // leading slash required). Otherwise, expect a object-style slug
     // (no slashes at all)
-    convert: function (req, field, data, destination) {
-      const options = {
-        def: field.def
-      };
-      if (field.page) {
-        options.allow = '/';
-      }
-      if (data.aposIsTemplate) {
-        options.allow = field.page ? [ '/', '@' ] : '@';
-      }
+    convert (req, field, data, destination) {
+      const options = self.getSlugFieldOptions(field, data);
+
       destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
 
       if (field.page) {

@@ -43,6 +43,15 @@ export default {
   computed: {
     item() {
       return this.published || this.draft;
+    },
+    moduleOptions() {
+      return apos.modules[this.item.type];
+    },
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.autopublish;
+    },
+    autopublish() {
+      return this.item._aposAutopublish ?? this.moduleOptions.autopublish;
     }
   }
 };

@@ -191,9 +191,7 @@ export default {
         def: ''
       };
 
-      if (this.field.aposIsTemplate) {
-        options.allow = this.field.page ? [ '/', '@' ] : '@';
-      } else if (this.field.page && !componentOnly) {
+      if (this.field.page && !componentOnly) {
         options.allow = '/';
       }
 
@@ -269,18 +267,6 @@ export default {
         // doc editor modal it will momentarily be tracked as archived but
         // without not have the archive prefix, so check that too.
         updated = this.isArchived && archivePrefix ? `${archivePrefix}${updated}` : updated;
-      } else if (this.field.aposIsTemplate) {
-        let prefix = '';
-        if (this.field.page) {
-          if (!updated.startsWith('/@')) {
-            prefix = '/@';
-          }
-        } else {
-          if (!updated.startsWith('@')) {
-            prefix = '@';
-          }
-        }
-        updated = prefix + updated;
       }
 
       return updated;

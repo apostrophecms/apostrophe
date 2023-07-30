@@ -4,19 +4,48 @@
 
 ### Adds
 
-* Accessibility improved for navigation inside modals and various UI elements.  
+* Accessibility improved for navigation inside modals and various UI elements.
 Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
 They keep the focus on elements inside modals and give it back to their parent modal when closed.
-* Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties. 
+* Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties.
+* Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
+* Add schema field `hidden` property to always hide a field
+* Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
+* The front end UI now respects the `_aposEditorModal` and `_aposAutopublish`
+properties of a document if present, and otherwise falls back to module
+configuration. This is a powerful addition to custom editor components
+for piece and page types, allowing "virtual piece types" on the back end that
+deal with many content types to give better hints to the UI.
+* Respect the `_aposAutopublish` property of a document if present, otherwise
+fall back to module configuration.
+
+* For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
+* For better results in custom editor components, pass the prop `copyOfId`, which implies
+the custom editor should fetch the original itself by its means of choice.
+For backwards compatibility `copyOf` is still passed, but it may be an
+incomplete projection and should not be used in new code.
+* Custom context operations now receive a `docId` prop, which should
+be used in preference to `doc` because `doc` may be an incomplete
+projection.
+* Those creating custom context operations for documents can now
+specify both a `props` object for additional properties to be passed to
+their modal and a `docProps` object to map properties from the document
+to props of their choosing.
+* Adds support to add context labels in admin bar.
 * Adds support for admin UI language configuration in the `@apostrophecms/i18n` module. The new options allow control over the default admin UI language and configures the list of languages, that any individual logged in user can choose from. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/i18n.html) for more details.
 * Adds `adminLocale` User field to allow users to set their preferred admin UI language, but only when the `@apostrophecms/i18n` is configured accordingly (see above). 
 * Adds `@apostrophecms@settings` module and a "Personal Settings" feature. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/settings.html) for more details.
 
 ### Fixes
 
+* `AposDocEditor` `onSave` method signature. We now always expect an object when a parameter is passed to the function to check
+the value of `navigate` flag.
 * Fixes a problem in the rich text editor where the slash would not be deleted after item selectin from the insert menu.
 * Modules that have a `public` or `i18n` subdirectory no longer generate a
 warning if they export no code.
+* Clean up focus parent event handlers when components are destroyed. Prevents a slow degradation of performance while editing.
+Thanks to [Joshua N. Miller](https://github.com/jmiller-rise8).
+* Fixes a visual discrepancy in the rich text editor where empty paragraphs would appear smaller in preview mode compared to edit mode.
 
 ### Changes
 
@@ -28,9 +57,11 @@ that are not symlinked.
 ## 3.52.0 (2023-07-06)
 
 ### Changes
+
 * Foreign widget UI no longer uses inverted theme styles.
 
 ### Adds
+
 * Allows users to double-click a nested widget's breadcrumb entry and open its editor.
 * Adds support for a new `conditions` property in `addContextOperation` and validation of `addContextOperation` configuration.
 
@@ -115,8 +146,8 @@ are made before the last `apostrophe:modulesRegistered` handler has fired.
 If you need to call Apostrophe's `find()` methods at startup,
 it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
 * Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
-* Adds a `prefix` option to the http frontend util module.  
-If explicitly set to `false`, prevents the prefix from being automatically added to the URL,  
+* Adds a `prefix` option to the http frontend util module.
+If explicitly set to `false`, prevents the prefix from being automatically added to the URL,
 when making calls with already-prefixed URLs for instance.
 * Adds the `redirectToFirstLocale` option to the `i18n` module to prevent users from reaching a version of their site that would not match any locale when requesting the site without a locale prefix in the URL.
 * If just one instance of a piece type should always exist (per locale if localized), the
