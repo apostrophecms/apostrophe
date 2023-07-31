@@ -504,7 +504,20 @@ module.exports = {
         }
       },
       enableLogger() {
-        self.logger = self.options.logger ? self.options.logger(self.apos) : require('./lib/logger.js')(self.apos);
+        // Legacy, configured via this module.
+        if (self.options.logger) {
+          self.logger = self.options.logger(self.apos);
+          return;
+        }
+        // New, configured via the `log` module.
+        const logOpts = self.apos.structuredLog.options;
+        if (logOpts.logger) {
+          self.logger = typeof logOpts.logger === 'function'
+            ? logOpts.logger(self.apos)
+            : logOpts.logger;
+          return;
+        }
+        self.logger = require('./lib/logger.js')(self.apos);
       },
       // Log a message. The default
       // implementation wraps `console.log` and passes on

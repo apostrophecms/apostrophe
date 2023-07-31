@@ -74,6 +74,11 @@ module.exports = {
     // Routes in their final ready-to-add-to-Express form
     self._routes = [];
 
+    // Add structured logging if we passed the util module.
+    if (self.apos.util && (self.apos.util !== self)) {
+      self.logger = self.apos.structuredLog.getLoggerForModule(self);
+    }
+
     // Add i18next phrases if we started up after the i18n module,
     // which will call this for us if we start up before it
     if (self.apos.i18n && (self.apos.i18n !== self)) {
@@ -172,6 +177,51 @@ module.exports = {
           }
           return async req => route(req, req.params._id);
         }
+      },
+
+      // Per module log handlers.
+      // Usage (same arguments for all log handlers):
+      // self.logError('event-type');
+      // self.logError('event-type', { key: 'value' });
+      // self.logError('event-type', 'some message');
+      // self.logError('event-type', 'some message', { key: 'value' });
+      // self.logError(req, ...); - with any of the above argument variations.
+      // Event type is required and can be any string.
+      // If `req` is provided, the `data` object argument will be enriched with additional
+      // information from the request.
+      // Example:
+      // self.logError('event-type', 'some message', { key: 'value' });
+      // will log:
+      // 'current-module-name: event-type: some message',
+      // {
+      //   type: 'event-type',
+      //   severity: 'error',
+      //   module: 'current-module-name',
+      //   key: 'value',
+      // }
+      // If the option `messageAs` of `@apostrophecms/log` is set to 'msg',
+      // the result of the above log entry will be:
+      // {
+      //   type: 'event-type',
+      //   severity: 'error',
+      //   module: 'current-module-name',
+      //   key: 'value',
+      //   msg: 'current-module-name: event-type: some message',
+      // }
+      // If `filter` option is set, the log entry will be logged only if the
+      // `severity` or `eventType` match any filter. For more information about
+      // filters see `@apostrophecms/log` module.
+      logDebug(...args) {
+        self.logger.debug(...args);
+      },
+      logInfo(...args) {
+        self.logger.info(...args);
+      },
+      logWarn(...args) {
+        self.logger.warn(...args);
+      },
+      logError(...args) {
+        self.logger.error(...args);
       },
 
       routeWrappers: {

@@ -1,5 +1,6 @@
 module.exports = {
   modules: {
+    '@apostrophecms/log': {},
     '@apostrophecms/error': {},
     '@apostrophecms/util': {},
     '@apostrophecms/i18n': {},
