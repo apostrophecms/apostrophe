@@ -323,6 +323,10 @@ export default {
     },
     getDefault() {
       const object = {};
+      if (this.readOnly) {
+        return object;
+      }
+
       this.field.schema.forEach(field => {
         if (field.name.startsWith('_')) {
           return;
