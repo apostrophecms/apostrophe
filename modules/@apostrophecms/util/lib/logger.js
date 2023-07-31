@@ -75,6 +75,12 @@ module.exports = function (apos) {
     warn: function(...args) {
       // eslint-disable-next-line no-console
       console.warn(...logModule.formatLogByEnv(args));
+    },
+
+    // Automatically tear down if available.
+
+    async destroy() {
+      // Nothing to do
     }
   };
 };

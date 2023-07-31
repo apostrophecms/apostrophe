@@ -46,6 +46,17 @@ module.exports = {
     self.warnedDev = {};
     return self.enableLogger();
   },
+  handlers(self) {
+    return {
+      'apostrophe:destroy': {
+        async destroyLogger() {
+          if (self.logger.destroy) {
+            await self.logger.destroy();
+          }
+        }
+      }
+    };
+  },
   methods(self) {
     return {
       // generate a unique identifier for a new page or other object.
