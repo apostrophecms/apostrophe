@@ -124,7 +124,7 @@ module.exports = {
     // Completely forbidden fields, they are not allowed in the subforms.
     // Do not modify this array directly, use
     // `self.apos.settings.addForbiddenField(fieldName)` instead.
-    self.forbiddenFields = [
+    self.systemForbiddenFields = [
       'role',
       'disabled',
       // TODO remove in phase 3
@@ -134,7 +134,7 @@ module.exports = {
     // Fields that should trigger reload after saving.
     // Do not modify this array directly, use
     // `self.apos.settings.addReloadAfterSaveField(fieldName)` instead.
-    self.reloadAfterSaveFields = [
+    self.systemReloadAfterSaveFields = [
       'adminLocale'
     ];
     self.userSchema = [];
@@ -182,8 +182,8 @@ module.exports = {
       // via 'apostrophe:modulesRegistered' event handler:
       // `self.apos.settings.addForbiddenField('myField');`
       addForbiddenField(fieldName) {
-        if (!self.forbiddenFields.includes(fieldName)) {
-          self.forbiddenFields.push(fieldName);
+        if (!self.systemForbiddenFields.includes(fieldName)) {
+          self.systemForbiddenFields.push(fieldName);
         }
       },
 
@@ -193,8 +193,8 @@ module.exports = {
       // via 'apostrophe:modulesRegistered' event handler:
       // `self.apos.settings.addReloadAfterSaveField('myField');`
       addReloadAfterSaveField(fieldName) {
-        if (!self.reloadAfterSaveFields.includes(fieldName)) {
-          self.reloadAfterSaveFields.push(fieldName);
+        if (!self.systemReloadAfterSaveFields.includes(fieldName)) {
+          self.systemReloadAfterSaveFields.push(fieldName);
         }
       },
 
@@ -219,7 +219,7 @@ module.exports = {
             config.protection = self.protectionTypes[config.protection];
           }
           // Auto reload after save.
-          config.reload = config.reload || self.reloadAfterSaveFields
+          config.reload = config.reload || self.systemReloadAfterSaveFields
             .some(field => config.fields.includes(field));
           // No one is allowed to set the flag but us.
           delete config._passwordChangeForm;
@@ -333,7 +333,7 @@ module.exports = {
           if (!userSchema.some(field => field.name === name)) {
             throw new Error(`[@apostrophecms/settings] The field "${name}" is not a valid user field.`);
           }
-          if (self.forbiddenFields.includes(name)) {
+          if (self.systemForbiddenFields.includes(name)) {
             throw new Error(`[@apostrophecms/settings] The field "${name}" is forbidden.`);
           }
         }

@@ -45,7 +45,7 @@ describe('user settings', function () {
       }
     );
 
-    const testFields = [ ...apos.settings.forbiddenFields ];
+    const testFields = [ ...apos.settings.systemForbiddenFields ];
 
     for (const field of testFields) {
       apos.settings.options.subforms = {
