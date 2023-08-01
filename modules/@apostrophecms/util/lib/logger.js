@@ -39,13 +39,7 @@ module.exports = function (apos) {
 
     debug: function(...args) {
       // eslint-disable-next-line no-console
-      if (console.debug) {
-        // eslint-disable-next-line no-console
-        console.debug(...logModule.formatLogByEnv(args));
-      } else {
-        // eslint-disable-next-line no-console
-        console.log(...logModule.formatLogByEnv(args));
-      }
+      console.debug(...logModule.formatLogByEnv(args));
     },
 
     // Log an error message. The default implementation
@@ -77,7 +71,7 @@ module.exports = function (apos) {
       console.warn(...logModule.formatLogByEnv(args));
     },
 
-    // Automatically tear down if available.
+    // Automatically tear down the logger if available.
 
     async destroy() {
       // Nothing to do

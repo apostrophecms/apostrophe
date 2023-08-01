@@ -9,7 +9,8 @@
 // If a function it accepts `apos` and returns an object with
 // at least `info`, `debug`, `warn` and `error` methods. If a `destroy` method
 // is present it will be invoked and awaited (Promise) when Apostrophe is shut down.
-// If an object it must have at least `info`, `debug`, `warn` and `error` methods.
+// The object, or the returned object, must have `info`, `debug`, `warn` and `error` methods.
+// If `destroy` is present it will be invoked and awaited (Promise) when Apostrophe is shut down.
 // If this option is not supplied, logs are simply written to the Node.js `console`.
 // Calls to `apos.utils.info`, `apos.utils.error`, etc. or module level `self.logInfo`,
 // `self.logError`, etc are routed through this object by Apostrophe.
@@ -22,8 +23,9 @@
 //
 // When the messageAs option is set, the message argument to apos.util.info, etc.
 // is bundled into the second, object - based argument as a property of the name
-// given, and only the object argument is passed to Pino. If there is
-// no object-based argument an object is created.
+// given, and only the object argument is passed to the `logger`, which is useful
+// if using Pino.
+// If there is no object-based argument an object is created.
 // Example:
 // ```js
 // {
@@ -87,6 +89,8 @@ module.exports = {
     alias: 'structuredLog'
   },
   init(self) {
+    self.filters = {};
+    self.initFilters();
   },
   methods(self) {
     return {
@@ -114,9 +118,93 @@ module.exports = {
           }
         };
       },
-      // Internal module, do not use it directly. See `@apostrophecms/module` for
+
+      // Normalize the filters. Detect configuration and set defaults
+      // per the current NODE_ENV if needed.
+      // Convert `{ *: true }` to an object with all severity levels.
+      // Convert severity/event type wildcards to arrays.
+      // Override the configuration with the `APOS_FILTER_LOGS` environment variable.
+      initFilters() {
+        self.filters = self.options.filter || {};
+        if (process.env.APOS_FILTER_LOGS) {
+          self.filters = self.processEnvFilter(process.env.APOS_FILTER_LOGS);
+        }
+        self.filters['*'] = self.filters['*'] || {};
+
+        // Transform *: true.
+        if (self.filters['*'] === true) {
+          self.filters['*'] = {
+            severity: self.getDefaultSeverity(false)
+          };
+        } else if (!self.filters['*'].severity || self.filters['*'].severity.length === 0) {
+          // Add environment specific severity levels if no severity is specified.
+          self.filters['*'] = {
+            ...self.filters['*'],
+            severity: self.getDefaultSeverity(process.env.NODE_ENV === 'production')
+          };
+        }
+
+        // Handle wildcards and validate.
+        Object.keys(self.filters).forEach((module) => {
+          Object.keys(self.filters[module]).forEach((type) => {
+            if (self.filters[module][type] === true || self.filters[module][type] === '*') {
+              self.filters[module][type] = type === 'severity'
+                ? self.getDefaultSeverity(false)
+                : [ '*' ];
+            }
+            if (!Array.isArray(self.filters[module][type]) || self.filters[module][type].length === 0) {
+              throw new Error(
+                `Invalid ${type} filter for module ${module}: ${JSON.stringify(self.filters[module][type])}`
+              );
+            }
+          });
+        });
+      },
+      // Convert a string filter configuration to an object.
+      // Example:
+      // `*:severity:warn,error;@apostrophecms/login:events:success,failure`
+      // results in:
+      // {
+      //   '*': {
+      //     severity: [ 'warn', 'error' ]
+      //   },
+      //   '@apostrophecms/login': {
+      //     events: [ 'success', 'failure' ]
+      //   }
+      // }
+      // Log all is just `*`.
+      processEnvFilter(envFilter) {
+        const filter = {};
+        if (envFilter === '*') {
+          filter['*'] = true;
+          return filter;
+        }
+        envFilter.split(';').forEach((entry) => {
+          const [ module, ...criteria ] = entry.split(':');
+          const [ type, ...values ] = criteria;
+          const value = values.join(':');
+          if ([ 'severity', 'events' ].includes(type)) {
+            filter[module] = {
+              [type]: value.split(',')
+            };
+          } else {
+            throw new Error(`Unknown filter type: ${type}`);
+          }
+        });
+        return filter;
+      },
+      getDefaultSeverity(forProd = false) {
+        return forProd
+          ? [ 'warn', 'error' ]
+          : [ 'debug', 'info', 'warn', 'error' ];
+      },
+
+      // Internal method, do not use it directly. See `@apostrophecms/module` for
       // module level logging methods - logInfo, logError, etc.
       logEntry(moduleSelf, severity, req, eventType, message, data) {
+        if (!self.shouldKeepEntry(moduleSelf, severity, req, eventType)) {
+          return;
+        }
         const args = self.processLoggerArgs(
           moduleSelf,
           severity,
@@ -125,11 +213,10 @@ module.exports = {
           message,
           data
         );
-        if (self.shouldKeepEntry(data)) {
-          self.apos.util[severity](...args);
-        }
+        self.apos.util[severity](...args);
       },
-      // Do a minimal computation and validation of the arguemnts - logs should
+      // An internal method, do not use it directly.
+      // Do a minimal computation and validation of the arguments - logs should
       // be fast. The function exepects 4 or 5 arguments (without counting the first optional `moduleSelf` argument),
       // but all of the below will work:
       // processLogArgs(moduleSelf, severity = 'info', eventType = 'event-type');
@@ -156,9 +243,7 @@ module.exports = {
       //
       // Returns [ data ] or [ message, data ] depending on option.messageAs.
       // `data` is always an object containing at least a `type` and `severity` properties.
-      processLoggerArgs(...allArgs) {
-        const args = allArgs.slice(1);
-        const moduleSelf = allArgs[0];
+      processLoggerArgs(moduleSelf, ...args) {
         let severity;
         let req;
         let eventType;
@@ -173,7 +258,7 @@ module.exports = {
           [ severity, eventType, message, data ] = args;
         }
 
-        if (!_.isString(eventType)) {
+        if (typeof eventType !== 'string') {
           throw new Error('Event type must be a string');
         }
         if (_.isPlainObject(message)) {
@@ -183,11 +268,9 @@ module.exports = {
         data = data ? { ...data } : {};
         data.type = eventType;
         data.severity = severity;
-        if (moduleSelf) {
-          data.module = moduleSelf.__meta?.name;
-        }
+        data.module = moduleSelf.__meta?.name ?? '__unknown__';
 
-        if (_.isString(message) && message.trim().length > 0) {
+        if (typeof message === 'string' && message.trim().length > 0) {
           message = data.module
             ? `${data.module}: ${eventType}: ${message}`
             : `${eventType}: ${message}`;
@@ -226,9 +309,47 @@ module.exports = {
       // Assess the module filter configuration and determine if the log
       // should be kept or rejected.
       //
-      // `data` argument should be an object returned from `processLogArgs(...)`.
-      shouldKeepEntry(data) {
-        // FIXME implement
+      // `moduleSelf` and `args` arguments should be the same as
+      // passed to `processLogArgs(...)`.
+      shouldKeepEntry(moduleSelf, ...args) {
+        // Detect severity and eventType
+        let severity;
+        let req;
+        let eventType;
+        if (args[1] && typeof args[1].t === 'function') {
+          // eslint-disable-next-line no-unused-vars
+          [ severity, req, eventType ] = args;
+        } else {
+          [ severity, eventType ] = args;
+        }
+        const module = moduleSelf.__meta?.name ?? '__unknown__';
+
+        // 1. Module filter
+        if (self.filters[module] &&
+          self.filters[module].severity &&
+          !self.filters[module].severity.includes(severity)
+        ) {
+          return false;
+        }
+        if (self.filters[module] &&
+          self.filters[module].events &&
+          !self.filters[module].events.includes(eventType) &&
+          !self.filters[module].events.includes('*')
+        ) {
+          return false;
+        }
+
+        // 2. Global filter
+        if (!self.filters['*'].severity.includes(severity)) {
+          return false;
+        }
+        if (self.filters['*'].events &&
+          !self.filters['*'].events.includes(eventType) &&
+          !self.filters['*'].events.includes('*')
+        ) {
+          return false;
+        }
+
         return true;
       },
 
@@ -237,11 +358,11 @@ module.exports = {
           ? JSON.stringify
           : (obj) => JSON.stringify(obj, null, 2);
         const formatString = process.env.NODE_ENV !== 'production' && args.length > 1
-          ? (str) => str.replace(/\n/g, '\n  ')
+          ? (str) => str.trim() + '\n'
           : (str) => str;
 
         return args.map((arg) => {
-          if (_.isString(arg)) {
+          if (typeof arg === 'string') {
             return formatString(arg);
           }
           if (_.isPlainObject(arg)) {
