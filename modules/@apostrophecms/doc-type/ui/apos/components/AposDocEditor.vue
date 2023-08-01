@@ -271,16 +271,6 @@ export default {
         };
       }
     },
-    currentFields() {
-      if (this.currentTab) {
-        const tabFields = this.tabs.find((item) => {
-          return item.name === this.currentTab;
-        });
-        return this.filterOutParkedFields(tabFields.fields);
-      } else {
-        return [];
-      }
-    },
     saveLabel() {
       if (this.restoreOnly) {
         return 'apostrophe:restore';
@@ -492,6 +482,10 @@ export default {
     },
     getDefault() {
       const doc = {};
+      if (this.readOnly || this.restoreOnly) {
+        return doc;
+      }
+
       this.schema.forEach(field => {
         if (field.name.startsWith('_')) {
           return;

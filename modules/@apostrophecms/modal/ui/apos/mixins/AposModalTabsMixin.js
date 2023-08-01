@@ -61,7 +61,7 @@ export default {
       return tabs;
     },
     firstVisibleTabName() {
-      const { name = null } = this.tabs.find(tab => tab.isVisible === true) || {};
+      const { name = null } = this.tabs.find(tab => tab.isVisible === true) || this.tabs[0] || {};
 
       return name;
     }
