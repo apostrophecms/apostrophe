@@ -482,10 +482,6 @@ export default {
     },
     getDefault() {
       const doc = {};
-      if (this.readOnly || this.restoreOnly) {
-        return doc;
-      }
-
       this.schema.forEach(field => {
         if (field.name.startsWith('_')) {
           return;
