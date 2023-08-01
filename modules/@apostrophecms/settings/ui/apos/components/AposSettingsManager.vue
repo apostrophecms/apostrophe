@@ -58,9 +58,9 @@
             <AposSubform
               v-for="subform in group.subforms"
               :key="subform.name"
-              :class="{ 'apos-separator': subforms.length > 1 }"
               :ref="subform.name"
               :busy="busy"
+              :separator="group.subforms.length > 1"
               :errors="errors"
               :subform="subform"
               :values="values.data[subform.name]"
@@ -97,7 +97,7 @@ export default {
   ::v-deep .apos-modal__inner {
     // 1/2 or 2/3 width
     // $width: calc(100vw / 2);
-    $width: calc(calc(100vw / 3) * 2);
+    $width: min(700px, calc(calc(100vw / 3) * 2));
     $vertical-spacing: 95px;
     $horizontal-spacing: calc(calc(100vw - #{$width}) / 2);
 
@@ -130,6 +130,7 @@ export default {
 
   &__content {
     padding: 0;
+    scroll-behavior: smooth;
   }
 
   &__group {
@@ -156,10 +157,6 @@ export default {
     padding: $spacing-base 0;
     // TODO do a11y
     outline: none;
-  }
-
-  .apos-separator {
-    border-bottom: 1px solid var(--a-base-10);
   }
 }
 </style>

@@ -76,7 +76,7 @@
 // `self.apos.settings.addForbiddenField(fieldName)`
 //
 // Add a field to the reload after save fields list. This will ensure that
-// the subform containing the field will be reloaded after save.
+// the page will be reloaded after subform containing the field is saved.
 // It is recommended to use this method in the `apostrophe:modulesRegistered`
 // event handler.
 // `self.apos.settings.addReloadAfterSaveField(fieldName)`

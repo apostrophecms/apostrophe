@@ -43,6 +43,10 @@ export default {
     updateIndicator: {
       type: Boolean,
       default: false
+    },
+    separator: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'submit', 'cancel', 'update-expanded' ],
@@ -53,7 +57,8 @@ export default {
         hasErrors: false
       },
       triggerValidation: false,
-      triggerHover: false
+      triggerHover: false,
+      scrollTimeout: null
     };
   },
 
@@ -75,11 +80,19 @@ export default {
     },
     expanded(newExpanded) {
       this.triggerHover = false;
+      if (newExpanded) {
+        setTimeout(() => {
+          this.scrollIntoView();
+        }, 350);
+      }
     }
   },
   // If we don't do this, we get stale initial values.
   created() {
     this.docFields.data = klona(this.values);
+  },
+  beforeDestroy() {
+    clearTimeout(this.scrollTimeout);
   },
   methods: {
     scrollIntoView() {

@@ -27,7 +27,9 @@
 //
 // The default admin UI language. If `adminLocales` are configured, it should
 // should match a `value` property from the list. Furthermore, it will be used
-// as the default value for the`adminLocale` user field.
+// as the default value for the`adminLocale` user field. If it is not set,
+// but `adminLocales` is set, then the default is to display the admin UI
+// in the same language as the website content.
 // Example: `defaultLocale: 'fr'`.
 //
 

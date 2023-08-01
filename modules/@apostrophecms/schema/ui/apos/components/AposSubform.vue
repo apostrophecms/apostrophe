@@ -1,43 +1,46 @@
 <template>
-  <div class="apos-subform">
+  <div class="apos-subform" :class="{ 'apos-separator': separator }">
     <!-- Schema -->
-    <div v-if="expanded" class="apos-subform__schema">
-      <span v-if="subform.label" class="apos-subform__schema-label">
-        {{ $t(subform.label) }}
-      </span>
-      <AposSchema
-        :class="{ 'apos-subform__disabled': busy }"
-        data-apos-test="subformSchema"
-        :data-apos-test-name="subform.name"
-        ref="schema"
-        :trigger-validation="triggerValidation"
-        :schema="schema"
-        :value="docFields"
-        :following-values="followingValues()"
-        :conditional-fields="conditionalFields()"
-        :server-errors="serverErrors"
-        @input="updateDocFields"
-        @validate="triggerValidate"
-      />
-      <div class="apos-subform__controls">
-        <AposButton
-          data-apos-test="subformCancel"
-          :disabled="busy"
-          type="subtle"
-          label="apostrophe:cancel"
-          @click="cancel"
+    <transition name="slide-fade">
+      <div v-if="expanded" class="apos-subform__schema">
+        <span v-if="subform.label" class="apos-subform__schema-label">
+          {{ $t(subform.label) }}
+        </span>
+        <AposSchema
+          :class="{ 'apos-subform__disabled': busy }"
+          data-apos-test="subformSchema"
+          :data-apos-test-name="subform.name"
+          ref="schema"
+          :trigger-validation="triggerValidation"
+          :schema="schema"
+          :value="docFields"
+          :following-values="followingValues()"
+          :conditional-fields="conditionalFields()"
+          :server-errors="serverErrors"
+          :modifiers="['small']"
+          @input="updateDocFields"
+          @validate="triggerValidate"
         />
-        <AposButton
-          data-apos-test="subformSubmit"
-          :disabled="busy || docFields.hasErrors"
-          type="primary"
-          label="apostrophe:save"
-          @click="submit"
-        />
+        <div class="apos-subform__controls">
+          <AposButton
+            data-apos-test="subformCancel"
+            :disabled="busy"
+            type="subtle"
+            label="apostrophe:cancel"
+            @click="cancel"
+          />
+          <AposButton
+            data-apos-test="subformSubmit"
+            :disabled="busy || docFields.hasErrors"
+            type="primary"
+            label="apostrophe:save"
+            @click="submit"
+          />
+        </div>
       </div>
-    </div>
+    </transition>
     <!-- Preview mode -->
-    <div v-else class="apos-subform__preview">
+    <div v-if="!expanded" class="apos-subform__preview">
       <div class="apos-subform__preview-grid">
         <AposSubformPreview
           :subform="subform"
@@ -142,5 +145,20 @@ export default {
     opacity: 0.5;
     pointer-events: none;
   }
+}
+
+.apos-separator {
+  border-bottom: 1px solid var(--a-base-10);
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-in;
+}
+.slide-fade-leave-active {
+  // nothing on expand: false
+}
+.slide-fade-enter, .slide-fade-leave-to {
+  transform: translateY(-5px);
+  opacity: 0;
 }
 </style>

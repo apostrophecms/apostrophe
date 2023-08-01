@@ -13,7 +13,7 @@ export default {
         busy: false,
         active: false,
         showModal: false,
-        type: 'settings'
+        type: 'overlay'
       },
       values: {
         data: {}
