@@ -263,7 +263,15 @@ export default {
     async beginGroupedOperation(action, operations) {
       const operation = operations.find(o => o.action === action);
 
-      await this.confirmOperation(operation);
+      operation.modal ? await this.modalOperation(operation) : await this.confirmOperation(operation);
+    },
+    async modalOperation({
+      modal, label, ...rest
+    }) {
+      await apos.modal.execute(modal, {
+        moduleName: label,
+        ...rest
+      });
     },
     async confirmOperation ({
       modalOptions = {}, action, operations, label, ...rest
