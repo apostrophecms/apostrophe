@@ -156,13 +156,13 @@ module.exports = {
         for (const [ module, config ] of Object.entries(self.filters)) {
           for (const [ type, value ] of Object.entries(config)) {
             if (value === true || value === '*') {
-              self.filters[module][type] = (type === 'severity')
+              config[type] = (type === 'severity')
                 ? self.getDefaultSeverity(false)
                 : [ '*' ];
             }
-            if (!Array.isArray(self.filters[module][type])) {
+            if (!Array.isArray(config[type])) {
               throw new Error(
-                `Invalid ${type} filter for module ${module}: ${JSON.stringify(self.filters[module][type])}`
+                `Invalid ${type} filter for module ${module}: ${JSON.stringify(config[type])}`
               );
             }
           }
