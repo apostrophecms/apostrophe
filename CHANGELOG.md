@@ -18,7 +18,6 @@ for piece and page types, allowing "virtual piece types" on the back end that
 deal with many content types to give better hints to the UI.
 * Respect the `_aposAutopublish` property of a document if present, otherwise
 fall back to module configuration.
-
 * For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
 * For better results in custom editor components, pass the prop `copyOfId`, which implies
 the custom editor should fetch the original itself by its means of choice.
@@ -35,6 +34,7 @@ to props of their choosing.
 * Adds support for admin UI language configuration in the `@apostrophecms/i18n` module. The new options allow control over the default admin UI language and configures the list of languages, that any individual logged in user can choose from. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/i18n.html) for more details.
 * Adds `adminLocale` User field to allow users to set their preferred admin UI language, but only when the `@apostrophecms/i18n` is configured accordingly (see above). 
 * Adds `@apostrophecms/settings` module and a "Personal Settings" feature. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/settings.html) for more details.
+* Adds `$and` operator on `addContextOperation` `if` property in order to check multiple fields before showing or hiding a context operation.
 
 ### Fixes
 

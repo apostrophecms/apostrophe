@@ -271,16 +271,6 @@ export default {
         };
       }
     },
-    currentFields() {
-      if (this.currentTab) {
-        const tabFields = this.tabs.find((item) => {
-          return item.name === this.currentTab;
-        });
-        return this.filterOutParkedFields(tabFields.fields);
-      } else {
-        return [];
-      }
-    },
     saveLabel() {
       if (this.restoreOnly) {
         return 'apostrophe:restore';
