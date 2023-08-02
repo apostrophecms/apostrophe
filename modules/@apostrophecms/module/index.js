@@ -75,7 +75,7 @@ module.exports = {
     // Routes in their final ready-to-add-to-Express form
     self._routes = [];
 
-    // Add structured logging if we passed the util module.
+    // Enable structured logging after util module is initialized.
     if (self.apos.util && (self.apos.util !== self)) {
       self.__structuredLoggingEnabled = true;
     }
