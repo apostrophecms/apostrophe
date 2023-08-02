@@ -57,6 +57,7 @@ module.exports = {
 
     self.__helpers = {};
     self.templateData = self.options.templateData || {};
+    self.__structuredLoggingEnabled = false;
 
     if (self.apos.asset) {
       if (!self.apos.asset.chains) {
@@ -76,7 +77,7 @@ module.exports = {
 
     // Add structured logging if we passed the util module.
     if (self.apos.util && (self.apos.util !== self)) {
-      self.logger = self.apos.structuredLog.getLoggerForModule(self);
+      self.__structuredLoggingEnabled = true;
     }
 
     // Add i18next phrases if we started up after the i18n module,
@@ -94,6 +95,10 @@ module.exports = {
 
   methods(self) {
     return {
+      // `self.logInfo`, `self.logError`, etc. available for every module except
+      // `error`, `util` and the `log` module itself.
+      ...require('./lib/log')(self),
+
       compileSectionRoutes(section) {
         _.each(self[section] || {}, function(routes, method) {
           _.each(routes, function(config, name) {
@@ -177,51 +182,6 @@ module.exports = {
           }
           return async req => route(req, req.params._id);
         }
-      },
-
-      // Per module log handlers.
-      // Usage (same arguments for all log handlers):
-      // self.logError('event-type');
-      // self.logError('event-type', { key: 'value' });
-      // self.logError('event-type', 'some message');
-      // self.logError('event-type', 'some message', { key: 'value' });
-      // self.logError(req, ...); - with any of the above argument variations.
-      // Event type is required and can be any string.
-      // If `req` is provided, the `data` object argument will be enriched with additional
-      // information from the request.
-      // Example:
-      // self.logError('event-type', 'some message', { key: 'value' });
-      // will log:
-      // 'current-module-name: event-type: some message',
-      // {
-      //   type: 'event-type',
-      //   severity: 'error',
-      //   module: 'current-module-name',
-      //   key: 'value',
-      // }
-      // If the option `messageAs` of `@apostrophecms/log` is set to 'msg',
-      // the result of the above log entry will be:
-      // {
-      //   type: 'event-type',
-      //   severity: 'error',
-      //   module: 'current-module-name',
-      //   key: 'value',
-      //   msg: 'current-module-name: event-type: some message',
-      // }
-      // If `filter` option is set, the log entry will be logged only if the
-      // `severity` or `eventType` match any filter. For more information about
-      // filters see `@apostrophecms/log` module.
-      logDebug(...args) {
-        self.logger.debug(...args);
-      },
-      logInfo(...args) {
-        self.logger.info(...args);
-      },
-      logWarn(...args) {
-        self.logger.warn(...args);
-      },
-      logError(...args) {
-        self.logger.error(...args);
       },
 
       routeWrappers: {

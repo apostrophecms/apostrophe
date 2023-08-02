@@ -459,7 +459,233 @@ describe('structured logging', function () {
       apos.util.generateId = id;
     });
 
-    it.only('should filter entries', async function () {
+    it('should filter entries with minimal config', async function () {
+      await t.destroy(apos);
+      apos = await t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: {
+              filter: {
+                '*': {
+                  severity: [ 'error' ]
+                },
+                'test-module': {
+                  events: [ 'type1' ]
+                }
+              }
+            }
+          }
+        }
+      });
+
+      assert.deepEqual(apos.structuredLog.filters, {
+        '*': {
+          severity: [ 'error' ]
+        },
+        'test-module': {
+          events: [ 'type1' ]
+        }
+      });
+
+      let savedArgs = [];
+      const debug = apos.util.logger.debug;
+      apos.util.logger.debug = (...args) => {
+        savedArgs = args;
+      };
+      const info = apos.util.logger.info;
+      apos.util.logger.info = (...args) => {
+        savedArgs = args;
+      };
+      const warn = apos.util.logger.warn;
+      apos.util.logger.warn = (...args) => {
+        savedArgs = args;
+      };
+      const error = apos.util.logger.error;
+      apos.util.logger.error = (...args) => {
+        savedArgs = args;
+      };
+
+      // ### DEBUG
+      // No match
+      apos.global.logDebug('type2');
+      assert.equal(savedArgs.length, 0);
+
+      // No match - type from another module
+      savedArgs = [];
+      apos.global.logDebug('type1');
+      assert.equal(savedArgs.length, 0);
+
+      // Matches the global severity
+      savedArgs = [];
+      apos.global.logError('type1');
+      assert.equal(savedArgs.length, 2);
+      savedArgs = [];
+      apos.global.logError('type2');
+      assert.equal(savedArgs.length, 2);
+
+      // Matches the module type only
+      savedArgs = [];
+      apos.testModule.logDebug('type1');
+      assert.equal(savedArgs.length, 2);
+
+      // Matches the global severity and module type
+      savedArgs = [];
+      apos.testModule.logError('type1');
+      assert.equal(savedArgs.length, 2);
+
+      // Matches the global severity only
+      savedArgs = [];
+      apos.testModule.logError('type2');
+      assert.equal(savedArgs.length, 2);
+
+      // No match
+      savedArgs = [];
+      apos.testModule.logWarn('type3');
+      assert.equal(savedArgs.length, 0);
+
+      apos.util.logger.debug = debug;
+      apos.util.logger.info = info;
+      apos.util.logger.warn = warn;
+      apos.util.logger.error = error;
+    });
+
+    it('should match all with wildcard global config', async function () {
+      await t.destroy(apos);
+      apos = await t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: {
+              filter: {
+                '*': true
+              }
+            }
+          }
+        }
+      });
+
+      assert.deepEqual(apos.structuredLog.filters, {
+        '*': {
+          severity: [ 'debug', 'info', 'warn', 'error' ]
+        }
+      });
+
+      let savedArgs = [];
+      const debug = apos.util.logger.debug;
+      apos.util.logger.debug = (...args) => {
+        savedArgs = args;
+      };
+      const info = apos.util.logger.info;
+      apos.util.logger.info = (...args) => {
+        savedArgs = args;
+      };
+      const warn = apos.util.logger.warn;
+      apos.util.logger.warn = (...args) => {
+        savedArgs = args;
+      };
+      const error = apos.util.logger.error;
+      apos.util.logger.error = (...args) => {
+        savedArgs = args;
+      };
+
+      // ### DEBUG
+      savedArgs = [];
+      apos.testModule.logDebug('type1');
+      assert.equal(savedArgs.length, 2);
+      savedArgs = [];
+      apos.testModule.logInfo('type1');
+      assert.equal(savedArgs.length, 2);
+      apos.testModule.logWarn('type1');
+      assert.equal(savedArgs.length, 2);
+      apos.testModule.logError('type1');
+      assert.equal(savedArgs.length, 2);
+
+      apos.util.logger.debug = debug;
+      apos.util.logger.info = info;
+      apos.util.logger.warn = warn;
+      apos.util.logger.error = error;
+    });
+
+    it('should filter entries with wildcard module events config', async function () {
+      await t.destroy(apos);
+      apos = await t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: {
+              filter: {
+                '*': {
+                  severity: [ 'error' ],
+                  events: [ 'type1' ]
+                },
+                'test-module': {
+                  events: '*'
+                }
+              }
+            }
+          }
+        }
+      });
+
+      assert.deepEqual(apos.structuredLog.filters, {
+        '*': {
+          severity: [ 'error' ],
+          events: [ 'type1' ]
+        },
+        'test-module': {
+          events: [ '*' ]
+        }
+      });
+
+      let savedArgs = [];
+      const debug = apos.util.logger.debug;
+      apos.util.logger.debug = (...args) => {
+        savedArgs = args;
+      };
+      const info = apos.util.logger.info;
+      apos.util.logger.info = (...args) => {
+        savedArgs = args;
+      };
+      const warn = apos.util.logger.warn;
+      apos.util.logger.warn = (...args) => {
+        savedArgs = args;
+      };
+      const error = apos.util.logger.error;
+      apos.util.logger.error = (...args) => {
+        savedArgs = args;
+      };
+
+      // ### DEBUG
+      savedArgs = [];
+      // Match the global type only
+      apos.global.logDebug('type1');
+      assert.equal(savedArgs.length, 2);
+
+      savedArgs = [];
+      // No match
+      apos.global.logDebug('type2');
+      assert.equal(savedArgs.length, 0);
+
+      // Always match because of the event type wildcard
+      savedArgs = [];
+      apos.testModule.logDebug('any-type');
+      assert.equal(savedArgs.length, 2);
+      savedArgs = [];
+      apos.testModule.logInfo('any-type');
+      assert.equal(savedArgs.length, 2);
+      apos.testModule.logWarn('any-type');
+      assert.equal(savedArgs.length, 2);
+      apos.testModule.logError('any-type');
+      assert.equal(savedArgs.length, 2);
+
+      apos.util.logger.debug = debug;
+      apos.util.logger.info = info;
+      apos.util.logger.warn = warn;
+      apos.util.logger.error = error;
+    });
+
+    it('should filter entries with verbose config', async function () {
       await t.destroy(apos);
       apos = await t.create({
         modules: {
@@ -511,13 +737,49 @@ describe('structured logging', function () {
       };
 
       // ### DEBUG
+      // No match
       apos.global.logDebug('type2');
-      assert.deepEqual(savedArgs, []);
+      assert.equal(savedArgs.length, 0);
 
+      // Matches the type only
       savedArgs = [];
       apos.global.logDebug('type1');
-      console.log(savedArgs);
+      assert.equal(savedArgs.length, 2);
 
+      // Matches the type and severity
+      savedArgs = [];
+      apos.global.logError('type1');
+      assert.equal(savedArgs.length, 2);
+
+      // Matches the global type and module severity
+      savedArgs = [];
+      apos.testModule.logDebug('type1');
+      assert.equal(savedArgs.length, 2);
+
+      // Matches the global type and severity
+      savedArgs = [];
+      apos.testModule.logError('type1');
+      assert.equal(savedArgs.length, 2);
+
+      // Matches the global type only
+      savedArgs = [];
+      apos.testModule.logInfo('type1');
+      assert.equal(savedArgs.length, 2);
+
+      // Matches the module type only
+      savedArgs = [];
+      apos.testModule.logInfo('type2');
+      assert.equal(savedArgs.length, 2);
+
+      // No match
+      savedArgs = [];
+      apos.testModule.logWarn('type3');
+      assert.equal(savedArgs.length, 0);
+
+      apos.util.logger.debug = debug;
+      apos.util.logger.info = info;
+      apos.util.logger.warn = warn;
+      apos.util.logger.error = error;
     });
   });
 
@@ -633,6 +895,69 @@ describe('structured logging', function () {
 
       assert.deepEqual(apos.structuredLog.filters, {
         '*': { severity: [ 'info', 'warn', 'error' ] }
+      });
+    });
+  });
+
+  describe('APOS_FILTER_LOGS', function () {
+    beforeEach(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    after(async function () {
+      delete process.env.APOS_FILTER_LOGS;
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('should override default filter configuration (wildcard)', async function () {
+      process.env.APOS_FILTER_LOGS = '*';
+      apos = await t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: {
+              filter: {
+                '*': { severity: [ 'info', 'warn', 'error' ] },
+                'test-module': { events: [ 'type1' ] }
+              }
+            }
+          }
+        }
+      });
+
+      assert.deepEqual(apos.structuredLog.filters, {
+        '*': {
+          severity: [ 'debug', 'info', 'warn', 'error' ]
+        }
+      });
+    });
+
+    it('should override filter configuration via env', async function () {
+      process.env.APOS_FILTER_LOGS = '*:severity:warn,error;test-module:events:type1,type2:severity:info';
+      apos = await t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: {
+              filter: {
+                '*': { severity: [ 'info', 'warn', 'error' ] },
+                'test-module': { events: [ 'type3' ] }
+              }
+            }
+          }
+        }
+      });
+
+      assert.deepEqual(apos.structuredLog.filters, {
+        '*': {
+          severity: [ 'warn', 'error' ]
+        },
+        'test-module': {
+          severity: [ 'info' ],
+          events: [ 'type1', 'type2' ]
+        }
       });
     });
   });

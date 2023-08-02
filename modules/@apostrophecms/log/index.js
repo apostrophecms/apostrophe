@@ -55,10 +55,22 @@
 //       // Log all errors and warnings from any module
 //       '*': {
 //         severity: [ 'warn', 'error' ]
+//         // match all severity levels
+//         // severity: '*'
+//         // match event types
+//         // events: [ 'event-type-1', 'event-type-2' ]
+//         // match all event types
+//         // events: '*'
 //       },
 //       // Log specific event types from the login module
 //       '@apostrophecms/login': {
 //         events: [ 'incorrect-username', 'incorrect-password' ]
+//         // match all event types
+//         // events: '*'
+//         // match specific severity levels
+//         // severity: [ 'info' ]
+//         // match all severity levels
+//         // severity: '*'
 //       }
 //     }
 //   }
@@ -66,7 +78,8 @@
 // ```
 // In this example, all errors and warnings from any module, but
 // only the specific event types (no matter the severity) from the login
-// module, are logged.
+// module, are logged. The logs will be kept if *either* criterion is met.
+// `filter['*'] = true` enables logging of all events from all modules.
 //
 // ## Environment Variables
 //
@@ -77,7 +90,7 @@
 // ```sh
 // # same as the `filter` example above
 // export APOS_FILTER_LOGS='*:severity:warn,error;@apostrophecms/login:events:incorrect-username,incorrect-password'
-// # log everything
+// # log everything, analogous to `{ filter: { '*': true }}`
 // export APOS_FILTER_LOGS='*'
 // ```
 //
@@ -94,50 +107,34 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Logger for a module factory.
-      // The created logger object contains `debug`, `info`, `warn` and `error` methods,
-      // each suuporting the following signature:
-      // - (eventType)
-      // - (eventType, data)
-      // - (eventType, message)
-      // - (eventType, message, data)
-      // - (req, eventType[, message, data]) message and data are optional
-      getLoggerForModule(moduleSelf) {
-        return {
-          debug: (...args) => {
-            self.logEntry(moduleSelf, 'debug', ...args);
-          },
-          info: (...args) => {
-            self.logEntry(moduleSelf, 'info', ...args);
-          },
-          warn: (...args) => {
-            self.logEntry(moduleSelf, 'warn', ...args);
-          },
-          error: (...args) => {
-            self.logEntry(moduleSelf, 'error', ...args);
-          }
-        };
-      },
-
       // Normalize the filters. Detect configuration and set defaults
       // per the current NODE_ENV if needed.
       // Convert `{ *: true }` to an object with all severity levels.
-      // Convert severity/event type wildcards to arrays.
-      // Override the configuration with the `APOS_FILTER_LOGS` environment variable.
+      // Convert severity wildcards to arrays of (all) severity levels. This
+      // speeds up the severity detection (no wildcards match).
+      // Convert eventType wildcards to `[ '*' ]` array.
+      // Override the configuration with the `APOS_FILTER_LOGS` environment variable
+      // if set.
       initFilters() {
         self.filters = self.options.filter || {};
         if (process.env.APOS_FILTER_LOGS) {
-          self.filters = self.processEnvFilter(process.env.APOS_FILTER_LOGS);
+          try {
+            self.filters = self.parseEnvFilter(process.env.APOS_FILTER_LOGS);
+          } catch (e) {
+            throw new Error(`Invalid APOS_FILTER_LOGS environment variable: ${e.message}`);
+          }
         }
         self.filters['*'] = self.filters['*'] || {};
 
-        // Transform *: true.
+        // Transform *: true - log absolutely everything.
         if (self.filters['*'] === true) {
           self.filters['*'] = {
             severity: self.getDefaultSeverity(false)
           };
-        } else if (!self.filters['*'].severity || self.filters['*'].severity.length === 0) {
-          // Add environment specific severity levels if no severity is specified.
+          return;
+        }
+        // Add environment specific severity levels if no severity is specified.
+        if (!self.filters['*'].severity || self.filters['*'].severity.length === 0) {
           self.filters['*'] = {
             ...self.filters['*'],
             severity: self.getDefaultSeverity(process.env.NODE_ENV === 'production')
@@ -172,24 +169,29 @@ module.exports = {
       //     events: [ 'success', 'failure' ]
       //   }
       // }
-      // Log all is just `*`.
-      processEnvFilter(envFilter) {
+      // Log all is just `*` and results in `{ '*': true }`.
+      parseEnvFilter(envFilter) {
         const filter = {};
         if (envFilter === '*') {
           filter['*'] = true;
           return filter;
         }
         envFilter.split(';').forEach((entry) => {
-          const [ module, ...criteria ] = entry.split(':');
-          const [ type, ...values ] = criteria;
-          const value = values.join(':');
-          if ([ 'severity', 'events' ].includes(type)) {
-            filter[module] = {
-              [type]: value.split(',')
-            };
-          } else {
-            throw new Error(`Unknown filter type: ${type}`);
-          }
+          const [ module, ...criteria ] = entry
+            .trim()
+            .split(':')
+            .map((str) => str.trim());
+          // Trnasform e.g. `events:ev1,ev2` to`{ events: [ 'ev1', 'ev2' ] }`.
+          filter[module] = criteria.reduce((acc, current, index, arr) => {
+            if (index % 2) {
+              return acc;
+            }
+            if (!arr[index + 1] || typeof arr[index + 1] !== 'string') {
+              throw new Error(`Malformed configuration for module "${module}".`);
+            }
+            acc[current] = arr[index + 1].split(',').map((str) => str.trim());
+            return acc;
+          }, {});
         });
         return filter;
       },
@@ -201,6 +203,16 @@ module.exports = {
 
       // Internal method, do not use it directly. See `@apostrophecms/module` for
       // module level logging methods - logInfo, logError, etc.
+      // `moduleSelf` is the module `self` object.
+      // The allowed `severity` levels are `debug`, `info`, `warn` and `error`.
+      // `severity` is required.
+      // `req` (optional) is an apos request object.
+      // The implementor will suport the following signature:
+      // - (eventType)
+      // - (eventType, data)
+      // - (eventType, message)
+      // - (eventType, message, data)
+      // - (req, eventType[, message, data]) where message and data are optional
       logEntry(moduleSelf, severity, req, eventType, message, data) {
         if (!self.shouldKeepEntry(moduleSelf, severity, req, eventType)) {
           return;
@@ -311,8 +323,13 @@ module.exports = {
       //
       // `moduleSelf` and `args` arguments should be the same as
       // passed to `processLogArgs(...)`.
+      //
+      // The module and global configs are merged.
+      // The logic is as follows:
+      // - if severity is matched, keep the log (no matter the event type)
+      // - if eventType is matched, keep the log (no matter the severity)
       shouldKeepEntry(moduleSelf, ...args) {
-        // Detect severity and eventType
+        // Detect severity and eventType from the arguments.
         let severity;
         let req;
         let eventType;
@@ -324,35 +341,31 @@ module.exports = {
         }
         const module = moduleSelf.__meta?.name ?? '__unknown__';
 
-        // 1. Module filter
-        if (self.filters[module] &&
-          self.filters[module].severity &&
-          !self.filters[module].severity.includes(severity)
-        ) {
-          return false;
-        }
-        if (self.filters[module] &&
-          self.filters[module].events &&
-          !self.filters[module].events.includes(eventType) &&
-          !self.filters[module].events.includes('*')
-        ) {
-          return false;
-        }
+        // Consolidate and match severity and event type.
+        const severityArr = [
+          ...new Set([
+            ...self.filters['*'].severity,
+            ...(self.filters[module]?.severity || [])
+          ])
+        ];
+        const eventsArr = [
+          ...new Set([
+            ...(self.filters['*'].events || []),
+            ...(self.filters[module]?.events || [])
+          ])
+        ];
+        const severityMatch = severityArr.includes(severity);
+        const eventsMatch = eventsArr.length > 0
+          ? eventsArr.includes(eventType) || eventsArr.includes('*')
+          : severityMatch;
 
-        // 2. Global filter
-        if (!self.filters['*'].severity.includes(severity)) {
-          return false;
-        }
-        if (self.filters['*'].events &&
-          !self.filters['*'].events.includes(eventType) &&
-          !self.filters['*'].events.includes('*')
-        ) {
-          return false;
-        }
-
-        return true;
+        return severityMatch || eventsMatch;
       },
 
+      // Stringify object arguments. If the environment is not `production`,
+      // pretty print the objects and add a new line at the end of string arguments.
+      // This method is meant to be used from the methods of a custom `logger`.
+      // See the default logger implementation in `util/lib/logger.js` for an example.
       formatLogByEnv(args) {
         const formatObj = process.env.NODE_ENV === 'production'
           ? JSON.stringify
