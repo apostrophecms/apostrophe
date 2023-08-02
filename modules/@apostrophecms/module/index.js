@@ -241,6 +241,7 @@ module.exports = {
           });
         }
         const response = getResponse(err);
+        logError(req, err, response);
         // err.stack includes basic description of error
         if (Object.keys(response.data).length > 1) {
           response.fn(`${req.method} ${req.url}: \n\n${err.stack}\n\n${JSON.stringify(response.data, null, '  ')}`);
@@ -253,6 +254,9 @@ module.exports = {
           data: response.data,
           message: response.message
         });
+        function logError(req, error, response) {
+          console.log(response);
+        }
         function getResponse(err) {
           let name, data, code, fn, message, path;
           if (err && err.name && self.apos.http.errors[err.name]) {

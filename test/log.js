@@ -1326,6 +1326,73 @@ describe('structured logging', function () {
 
       apos.util.logger.warn = saved;
     });
+  });
 
+  describe('apiError', function () {
+    before(async function () {
+      await t.destroy(apos);
+      apos = await t.create({
+        modules: {
+          'test-piece': {
+            extend: '@apostrophecms/piece-type',
+            fields: {
+              add: {
+                field1: {
+                  type: 'string',
+                  label: 'Field1',
+                  required: true
+                },
+                field2: {
+                  type: 'string',
+                  label: 'Field2',
+                  required: true
+                }
+              }
+            }
+          },
+          'test-module': {
+            apiRoutes(self) {
+              return {
+                get: {
+                  async conflict(req) {
+                    throw self.apos.error('conflict', 'Conflict error', { some: 'data' });
+                  }
+                }
+              };
+            }
+          }
+        }
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it.only('should log conflict error', async function () {
+      await t.createAdmin(apos, {
+        username: 'admin',
+        password: 'admin'
+      });
+      await apos.http.get('/');
+      const jar = await t.loginAs(apos, 'admin', 'admin');
+      // try {
+      //   await apos.http.get('/api/v1/test-module/conflict', {
+      //     jar
+      //   });
+      // } catch (e) {
+      //   console.log(e);
+      // }
+
+      try {
+        await apos.http.post('/api/v1/test-piece', {
+          body: {},
+          jar
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    });
   });
 });
