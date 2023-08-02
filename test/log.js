@@ -44,7 +44,7 @@ describe('structured logging', function () {
       });
     });
 
-    it('should format entries', function () {
+    it('should format entries for readability', function () {
       // id spy
       const id = apos.util.generateId;
       apos.util.generateId = () => 'test-id';
@@ -63,9 +63,9 @@ describe('structured logging', function () {
       assert.equal(
         savedArgs[1],
 `{
+  "module": "test-module",
   "type": "event-type",
-  "severity": "debug",
-  "module": "test-module"
+  "severity": "debug"
 }`
       );
 
@@ -76,10 +76,10 @@ describe('structured logging', function () {
       assert.equal(
         savedArgs[0],
 `{
-  "type": "event-type",
-  "severity": "debug",
+  "msg": "test-module: event-type: some message",
   "module": "test-module",
-  "msg": "test-module: event-type: some message"
+  "type": "event-type",
+  "severity": "debug"
 }`
       );
       assert.equal(typeof savedArgs[1], 'undefined');
@@ -98,9 +98,9 @@ describe('structured logging', function () {
       assert.equal(
         savedArgs[1],
 `{
+  "module": "test-module",
   "type": "event-type",
-  "severity": "info",
-  "module": "test-module"
+  "severity": "info"
 }`
       );
 
@@ -117,9 +117,9 @@ describe('structured logging', function () {
       assert.equal(
         savedArgs[1],
 `{
+  "module": "test-module",
   "type": "event-type",
-  "severity": "warn",
-  "module": "test-module"
+  "severity": "warn"
 }`
       );
 
@@ -136,11 +136,74 @@ describe('structured logging', function () {
       assert.equal(
         savedArgs[1],
 `{
+  "module": "test-module",
   "type": "event-type",
-  "severity": "error",
-  "module": "test-module"
+  "severity": "error"
 }`
       );
+
+      // With req
+      savedArgs = [];
+      apos.testModule.logError(
+        apos.task.getReq({
+          originalUrl: '/module/test',
+          path: '/test',
+          method: 'GET',
+          ip: '1.2.3.4',
+          query: { foo: 'bar' }
+        }),
+        'event-type'
+      );
+      assert.equal(savedArgs[0], 'test-module: event-type\n');
+      assert.equal(
+        savedArgs[1],
+`{
+  "module": "test-module",
+  "type": "event-type",
+  "severity": "error",
+  "url": "/module/test",
+  "path": "/test",
+  "method": "GET",
+  "ip": "1.2.3.4",
+  "query": {
+    "foo": "bar"
+  },
+  "requestId": "test-id"
+}`
+      );
+
+      // With req and message as
+      savedArgs = [];
+      apos.structuredLog.options.messageAs = 'message';
+      apos.testModule.logError(
+        apos.task.getReq({
+          originalUrl: '/module/test',
+          path: '/test',
+          method: 'GET',
+          ip: '1.2.3.4',
+          query: { foo: 'bar' }
+        }),
+        'event-type'
+      );
+      assert.equal(savedArgs.length, 1);
+      assert.equal(
+        savedArgs[0],
+`{
+  "message": "test-module: event-type",
+  "module": "test-module",
+  "type": "event-type",
+  "severity": "error",
+  "url": "/module/test",
+  "path": "/test",
+  "method": "GET",
+  "ip": "1.2.3.4",
+  "query": {
+    "foo": "bar"
+  },
+  "requestId": "test-id"
+}`
+      );
+      delete apos.structuredLog.options.messageAs;
 
       apos.util.generateId = id;
       console.debug = debug;
@@ -225,6 +288,7 @@ describe('structured logging', function () {
       apos.testModule.logDebug(apos.task.getReq({
         originalUrl: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type');
@@ -232,6 +296,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1], {
         url: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' },
         requestId: 'test-id',
@@ -243,6 +308,7 @@ describe('structured logging', function () {
       apos.testModule.logDebug(apos.task.getReq({
         originalUrl: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message');
@@ -250,6 +316,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1], {
         url: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' },
         requestId: 'test-id',
@@ -261,6 +328,7 @@ describe('structured logging', function () {
       apos.testModule.logDebug(apos.task.getReq({
         originalUrl: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
@@ -268,6 +336,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1], {
         url: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' },
         requestId: 'test-id',
@@ -280,6 +349,7 @@ describe('structured logging', function () {
       apos.testModule.logDebug(apos.task.getReq({
         originalUrl: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', { foo: 'bar' });
@@ -287,6 +357,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1], {
         url: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' },
         requestId: 'test-id',
@@ -333,6 +404,7 @@ describe('structured logging', function () {
       apos.testModule.logInfo(apos.task.getReq({
         originalUrl: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
@@ -340,6 +412,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1], {
         url: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' },
         requestId: 'test-id',
@@ -386,6 +459,7 @@ describe('structured logging', function () {
       apos.testModule.logWarn(apos.task.getReq({
         originalUrl: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
@@ -393,6 +467,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1], {
         url: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' },
         requestId: 'test-id',
@@ -439,6 +514,7 @@ describe('structured logging', function () {
       apos.testModule.logError(apos.task.getReq({
         originalUrl: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
@@ -446,6 +522,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1], {
         url: '/module/test',
         path: '/test',
+        method: 'GET',
         ip: '1.2.3.4',
         query: { foo: 'bar' },
         requestId: 'test-id',
@@ -781,6 +858,20 @@ describe('structured logging', function () {
       apos.util.logger.warn = warn;
       apos.util.logger.error = error;
     });
+
+    it('it should shutdown logger', async function () {
+      await t.destroy(apos);
+      apos = await t.create({});
+
+      let called = false;
+      apos.util.logger.destroy = async () => {
+        called = true;
+      };
+      await t.destroy(apos);
+      apos = null;
+
+      assert.equal(called, true);
+    });
   });
 
   describe('production', function () {
@@ -853,7 +944,7 @@ describe('structured logging', function () {
       assert.equal(savedArgs[0], 'test-module: event-type');
       assert.equal(
         savedArgs[1],
-        '{"type":"event-type","severity":"warn","module":"test-module"}'
+        '{"module":"test-module","type":"event-type","severity":"warn"}'
       );
 
       // ### ERROR
@@ -868,7 +959,7 @@ describe('structured logging', function () {
       assert.equal(savedArgs[0], 'test-module: event-type');
       assert.equal(
         savedArgs[1],
-        '{"type":"event-type","severity":"error","module":"test-module"}'
+        '{"module":"test-module","type":"event-type","severity":"error"}'
       );
 
       apos.util.generateId = id;

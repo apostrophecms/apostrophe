@@ -278,26 +278,25 @@ module.exports = {
           message = undefined;
         }
         data = data ? { ...data } : {};
-        data.type = eventType;
-        data.severity = severity;
-        data.module = moduleSelf.__meta?.name ?? '__unknown__';
+        const aposModule = moduleSelf.__meta?.name ?? '__unknown__';
 
         if (typeof message === 'string' && message.trim().length > 0) {
-          message = data.module
-            ? `${data.module}: ${eventType}: ${message}`
+          message = aposModule
+            ? `${aposModule}: ${eventType}: ${message}`
             : `${eventType}: ${message}`;
         } else {
-          message = data.module
-            ? `${data.module}: ${eventType}`
+          message = aposModule
+            ? `${aposModule}: ${eventType}`
             : eventType;
         }
-
-        data = self.processRequestData(req, data);
-
         if (self.options.messageAs) {
           data[self.options.messageAs] = message;
-          return [ data ];
         }
+        data.module = aposModule;
+        data.type = eventType;
+        data.severity = severity;
+
+        data = self.processRequestData(req, data);
 
         return [ message, data ];
       },
@@ -307,14 +306,29 @@ module.exports = {
         if (!req) {
           return data;
         }
+
+        // Keep the proper property order for better readability.
+        const message = {};
+        if (self.options.messageAs) {
+          message[self.options.messageAs] = data[self.options.messageAs];
+        }
+        const {
+          module: _module, type, severity, ...rest
+        } = data;
+
         return {
+          ...message,
+          module: _module,
+          type,
+          severity,
           // https://expressjs.com/en/api.html#req.originalUrl
           url: req.originalUrl,
           path: req.path,
+          method: req.method,
           ip: req.ip,
           query: req.query,
           requestId: req.requestId || self.apos.util.generateId(),
-          ...data
+          ...rest
         };
       },
 
